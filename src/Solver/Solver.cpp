@@ -2,6 +2,8 @@
  * Implementation of common routines for the 'Solver' routines.
  */
 
+#include <iostream>
+
 #include <vector>
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
@@ -38,6 +40,7 @@ Solver::Solver(
     this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
     this->timerCqh = this->solver_timeKeeper->AddTimer("collisionhandler", "Rebuild coll. handler");
     this->timerREFluid = this->solver_timeKeeper->AddTimer("refluid", "Rebuild RunawayFluid");
+    this->timerSPIHandler = this->solver_timeKeeper->AddTimer("spihandler", "Rebuild SPIHandler");
     this->timerRebuildTerms = this->solver_timeKeeper->AddTimer("equations", "Rebuild terms");
 }
 
@@ -71,6 +74,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         len_t matUqnId = utmm[uqnId];
         // Iterate over each equation term
+        len_t operatorId = 0;
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             const real_t *x = unknowns->GetUnknownData(it->first);
         
@@ -86,7 +90,11 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
                 // - with respect to                               x_derivId
                 it->second->SetJacobianBlock(it->first, derivId, jac, x);
             }
+
+            operatorId++;
         }
+
+        //printf("operatorId = " LEN_T_PRINTF_FMT "\n", operatorId);
     }
     jac->PartialAssemble();
 
@@ -234,6 +242,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
 
     this->ionHandler->Rebuild();
     // Rebuild ionHandler, collision handlers and RunawayFluid
+
     solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
@@ -258,6 +267,12 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
             uqty->Store(pp->GetData(), 0, true);
         }
     }
+
+    solver_timeKeeper->StartTimer(timerSPIHandler);
+    if(this->SPI!=nullptr){
+        this->SPI-> Rebuild(dt);
+    }
+    solver_timeKeeper->StopTimer(timerSPIHandler);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqnId = nontrivial_unknowns[i];

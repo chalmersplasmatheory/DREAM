@@ -101,15 +101,32 @@ initial electrc field profile is defined.
 Boundary condition
 ******************
 The second equation in :eq:`eq_E_field` requires a boundary condition at
-:math:`r=r_{\rm wall}` to be given. In DREAM, two different boundary conditions
-can be applied at the tokamak wall.
+:math:`r=r_{\rm wall}` to be given. In DREAM, three different boundary
+conditions can be applied at the tokamak wall.
 
-The first boundary condition, ``BC_TYPE_PRESCRIBED``, prescribes the time
-evolution of the loop voltage :math:`V_{\rm loop,wall}` on the tokamak wall.
-This is particularly useful for simulating experimental scenarios where the
-parameter :math:`V_{\rm loop,wall}` has been measured.
+**The first boundary condition**, ``BC_TYPE_PRESCRIBED``, prescribes the time
+evolution of the loop voltage :math:`V_{\rm loop,wall}` on the tokamak wall
+(normalized to the tokamak major radius :math:`R_0`). This is particularly
+useful for simulating experimental scenarios where the parameter
+:math:`V_{\rm loop,wall}` has been measured.
 
-The second boundary condition, ``BC_TYPE_SELFCONSISTENT``, instead lets the user
+.. code-block:: python
+
+   import DREAM.Settings.Equations.ElectricField as ElectricField
+
+   ds = DREAMSettings()
+   ...
+   # Tokamak major radius
+   R0        = 1.65
+   # Define evolution of V_loop/R0
+   Vmax      = 1
+   V_loop_t  = np.linspace(0, 1, 100)
+   V_loop_R0 = (Vmax/R0)*(1 - (1-t)**2)
+
+   ds.eqsys.E_field.setBoundaryCondition(bctype=ElectricField.BC_TYPE_PRESCRIBED,
+                                         V_loop_wall_R0=V_loop_R0, times=V_loop_t, R0=R0)
+
+**The second boundary condition**, ``BC_TYPE_SELFCONSISTENT``, instead lets the user
 specify the (inverse) tokamak wall time, :math:`1/\tau_{\rm wall}`, which
 directly corresponds to the wall resistivity. The perfectly conducting limit
 :math:`\tau_{\rm wall} = \infty` is supported, and is obtained by setting
@@ -117,11 +134,51 @@ directly corresponds to the wall resistivity. The perfectly conducting limit
 radius ``R0`` can be explicitly set, independently of the geometry used, since 
 the external inductance otherwise diverges for infinite major radius.
 
+.. code-block:: python
+
+   import DREAM.Settings.Equations.ElectricField as ElectricField
+
+   ds = DREAMSettings()
+   ...
+   # Tokamak major radius
+   R0       = 1.65
+   # Wall time
+   tau_wall = .01   # (s)
+   
+   ds.eqsys.E_field.setBoundaryCondition(bctype=ElectricField.BC_TYPE_SELFCONSISTENT,
+                                         inverse_wall_time=1/tau_wall, R0=R0)
+
+**The third boundary condition**, ``BC_TYPE_TRANSFORMER``, can be seen as a
+combination of the two other boundary conditions, with a resistive wall *and*
+a prescribed loop voltage (although at the transformer, which passes through the
+axis of symmetry at :math:`R=0`).
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.ElectricField as ElectricField
+
+   ds = DREAMSettings()
+   ...
+   # Tokamak major radius
+   R0        = 1.65
+   # Define evolution of V_loop/R0
+   Vmax      = 1
+   V_loop_t  = np.linspace(0, 1, 100)
+   V_loop_R0 = (Vmax/R0)*(1 - (1-t)**2)
+   # Wall time
+   tau_wal   = .01  # (s)
+
+   ds.eqsys.E_field.setBoundaryCondition(bctype=ElectricField.BC_TYPE_PRESCRIBED,
+                                         inverse_wall_time=1/tau_wall, R0=R0,
+                                         V_loop_wall_R0=V_loop_R0, times=V_loop_t)
+
 .. note::
 
-   With both boundary conditions, the tokamak wall location ``wall_radius`` must
+   With all boundary conditions, the tokamak wall location ``wall_radius`` must
    be specified. This parameter denotes the minor radial coordinate of the
    tokamak wall (i.e. the distance of the wall from the center of the plasma).
+   This is done via the call ``ds.radialgrid.setWallRadius(b)``, where ``b`` is
+   the desired wall radius.
 
 Class documentation
 -------------------

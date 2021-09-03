@@ -171,6 +171,12 @@ namespace DREAM::FVM {
             real_t *r, real_t *r_f,
             real_t *dr, real_t *dr_f
         ) {
+            if (this->r == r &&
+                this->r_f == r_f &&
+                this->dr == dr &&
+                this->dr_f == dr_f)
+                return;
+
             DeallocateGrid();
 
             this->r    = r;
@@ -207,6 +213,12 @@ namespace DREAM::FVM {
             }        
             this->VpVol = VpVol;
             this->VpVol_f = VpVol_f;
+        }
+
+        void GetRThetaFromCartesian(real_t *r, real_t *theta, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaFromCartesian(r,theta,x,y,z,lengthScale, startingGuessR);}
+        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta){return this->generator->GetGradRCartesian(gradRCartesian,r,theta);}
+        real_t FindClosestApproach(real_t x1, real_t y1, real_t z1, real_t x2, real_t y2, real_t z2){
+            return this->generator->FindClosestApproach(x1, y1, z1, x2, y2, z2);
         }
 
         /**

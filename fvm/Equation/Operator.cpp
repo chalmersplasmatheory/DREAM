@@ -123,14 +123,17 @@ void Operator::Evaluate(real_t *vec, const real_t *x) {
  *   x = f^-1( -g(y) ),
  *
  * where 'f^-1' denotes the inverse of 'f(x)'.
+ *
+ * (It is okay for this operator to contain multiple evaluable terms,
+ * such that
+ *
+ *   f1(x) + f2(x) + g(y) = 0
+ *
+ * assuming that f1 & f2 are linear in x).
  */
 void Operator::EvaluableTransform(real_t *vec) {
-    if (this->eval_terms.size() != 1)
-        throw OperatorException(
-            "This operator must have exactly one evaluable term for it to be evaluable."
-        );
-
-    eval_terms[0]->EvaluableTransform(vec);
+    for (auto term : eval_terms)
+        term->EvaluableTransform(vec);
 }
 
 /**
@@ -163,7 +166,7 @@ bool Operator::IsEvaluable() const {
         return false;
     else return
         (this->predetermined != nullptr && this->eval_terms.size() == 0) ||
-        (this->predetermined == nullptr && this->eval_terms.size() == 1);
+        (this->predetermined == nullptr && this->eval_terms.size() >= 1);
 }
 
 /**
@@ -266,8 +269,10 @@ void Operator::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
  * printTerms: Print info about which terms contribute.
  */
 bool Operator::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
-    bool printTerms
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x, bool
+#ifndef NDEBUG
+    printTerms
+#endif
 ) {
     bool contributes = false;
 
@@ -275,7 +280,7 @@ bool Operator::SetJacobianBlock(
         bool c = (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
         contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 
@@ -283,7 +288,7 @@ bool Operator::SetJacobianBlock(
         bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
         contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 
@@ -302,7 +307,7 @@ bool Operator::SetJacobianBlock(
             bool c = (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
             contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 
@@ -320,15 +325,17 @@ bool Operator::SetJacobianBlock(
  * x:       Value of the unknown quantity.
  */
 bool Operator::SetJacobianBlockBC(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
-    bool printTerms
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x, bool
+#ifndef NDEBUG
+    printTerms
+#endif
 ) {
     bool contributes = false;
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {
         bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
         contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 

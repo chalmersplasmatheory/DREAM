@@ -1,8 +1,9 @@
 # DREAM
 This directory contains the Disruption Runaway Electron Avoidance Model (DREAM)
-code. The online documentation is available at https://ft.nephy.chalmers.se/dream.
+code. The **online documentation** is available at https://ft.nephy.chalmers.se/dream.
 
-The official DREAM paper is now on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).
+The official DREAM paper has now been published: [doi:10.1016/j.cpc.2021.108098](https://doi.org/10.1016/j.cpc.2021.108098).
+(it is also on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).)
 
 ## Requirements
 To compile DREAM, you need to have the following software installed:
@@ -100,11 +101,24 @@ physics model and various mathematical details can be found under
 [doc/notes/](https://github.com/chalmersplasmatheory/DREAM/tree/master/doc/notes).
 
 ## Usage in publications
-DREAM is still under heavy development and results obtained with the code may
-not be suitable for publication yet. A journal paper describing the code is
-currently in preparation.
+If you use DREAM in your scientific publications, please cite the
+[DREAM paper](https://doi.org/10.1016/j.cpc.2021.108098):
+```
+@article {DREAM,
+    title = {DREAM: A fluid-kinetic framework for tokamak disruption runaway electron simulations},
+    journal = {Computer Physics Communications},
+    volume = {268},
+    pages = {108098},
+    year = {2021},
+    issn = {0010-4655},
+    doi = {https://doi.org/10.1016/j.cpc.2021.108098},
+    url = {https://www.sciencedirect.com/science/article/pii/S0010465521002101},
+    author = {Mathias Hoppe and Ola Embreus and Tünde Fülöp}
+}
+```
 
 ## Authors
-DREAM is authored and maintained by [Ola Embreus](https://github.com/Embreus)
+DREAM is authored by [Ola Embreus](https://github.com/Embreus)
 and [Mathias Hoppe](https://github.com/hoppe93), along with members of the
-[Chalmers Plasma Theory group](https://ft.nephy.chalmers.se/).
+[Chalmers Plasma Theory group](https://ft.nephy.chalmers.se/). It is currently
+maintained by Mathias Hoppe and members of the Chalmers Plasma Theory group.

@@ -15,6 +15,7 @@
 #include <string>
 #include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/DREAMException.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 
 

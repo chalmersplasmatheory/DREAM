@@ -6,6 +6,7 @@
  */
 
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
+#include "FVM/Grid/fluxGridType.enum.hpp"
 
 
 using namespace DREAM::FVM;
@@ -79,7 +80,7 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                         real_t B,Jacobian,ROverR0,NablaR2;
                         fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
                         real_t BOverBmin = 1.0;
-                        if(Bmin!=0)
+                        if(Bmin[ir]!=0)
                             BOverBmin = B/Bmin[ir];
                         real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0[j],BOverBmin);
                         tmp[it] = Jacobian * mg->evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
@@ -104,7 +105,7 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                             real_t B,Jacobian,ROverR0,NablaR2;
                             fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
                             real_t BOverBmin = 1;
-                            if(Bmin!=0)
+                            if(Bmin[ir]!=0)
                                 BOverBmin = B/Bmin[ir];
 
                             grid->GetMomentumGrid(0)->EvaluateMetricOverP2(i,j,fluxGridType, 1, &theta,&BOverBmin, sqrtg_tmp);
@@ -154,9 +155,9 @@ void BounceSurfaceMetric::InterpolateToFluxGrid(
  * Evaluates the metric at poloidal angle theta: Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
  */
 const real_t BounceSurfaceMetric::evaluateAtTheta(len_t ir, len_t i, len_t j, real_t theta, fluxGridType fluxGridType) const {
-    real_t ct = 0; // cos(theta);
-    real_t st = 0; // sin(theta);
-    sincos(theta, &st, &ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+
     return evaluateAtTheta(ir,i,j,theta,ct,st,fluxGridType);
 }
 /**
@@ -171,13 +172,23 @@ const real_t BounceSurfaceMetric::evaluateAtTheta(len_t /*ir*/, len_t i, len_t j
 /**
  * Deallocator
  */
-void BounceSurfaceMetric::DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2){
+void BounceSurfaceMetric::DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2, fluxGridType fluxGrid){
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i = 0; i<np1*np2; i++){
-            bool trap = isTrapped[ir][i];
-            // delete only if allocated
-            if( (trap && trappedAllocated) || ( (!trap) && passingAllocated) ) 
-                delete [] data[ir][i];   
+        for (len_t j = 0; j < np2; j++) {
+            for(len_t i = 0; i<np1; i++){
+                bool trap = false;
+                switch (fluxGrid) {
+                    case FLUXGRIDTYPE_DISTRIBUTION: trap = grid->IsTrapped(ir, i, j); break;
+                    case FLUXGRIDTYPE_RADIAL: trap = grid->IsTrapped_fr(ir, i, j); break;
+                    case FLUXGRIDTYPE_P1: trap = grid->IsTrapped_f1(ir, i, j); break;
+                    case FLUXGRIDTYPE_P2: trap = grid->IsTrapped_f2(ir, i, j); break;
+                    default: break;
+                }
+
+                // delete only if allocated
+                if( (trap && trappedAllocated) || ( (!trap) && passingAllocated) ) 
+                    delete [] data[ir][j*np1 + i];
+            }
         }         
         delete [] data[ir];
     }
