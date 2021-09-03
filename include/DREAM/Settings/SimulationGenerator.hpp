@@ -121,9 +121,9 @@ namespace DREAM {
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
         
         // Routines for constructing specific equations
-        static void ConstructEquation_E_field(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
