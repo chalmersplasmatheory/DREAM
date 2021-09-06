@@ -13,6 +13,7 @@
 #include "FVM/UnknownQuantity.hpp"
 
 // Linear solvers
+#include "FVM/Solvers/MIGMRES.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #ifdef PETSC_HAVE_MKL_PARDISO
 #   include "FVM/Solvers/MIMKL.hpp"
@@ -348,7 +349,9 @@ void Solver::SelectLinearSolver(const len_t N) {
 }
 
 FVM::MatrixInverter *Solver::ConstructLinearSolver(const len_t N, enum OptionConstants::linear_solver ls) {
-    if (ls == OptionConstants::LINEAR_SOLVER_LU)
+    if (ls == OptionConstants::LINEAR_SOLVER_GMRES)
+        return new FVM::MIGMRES(N, nontrivial_unknowns, unknowns);
+    else if (ls == OptionConstants::LINEAR_SOLVER_LU)
         return new FVM::MILU(N);
     else if (ls == OptionConstants::LINEAR_SOLVER_MKL) {
 #ifdef PETSC_HAVE_MKL_PARDISO
