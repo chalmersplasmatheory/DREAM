@@ -21,7 +21,9 @@ using namespace std;
  */
 MIGMRES::MIGMRES(
     const len_t n, vector<len_t>& nontrivial_unknowns,
-    UnknownQuantityHandler *unknowns
+    UnknownQuantityHandler *unknowns,
+    PetscErrorCode (*converge)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
+    void *context
 ) {
     KSPCreate(PETSC_COMM_WORLD, &this->ksp);
     this->xn = n;
@@ -46,6 +48,9 @@ MIGMRES::MIGMRES(
 
     PCSetType(pc, PCBJACOBI);
     PCBJacobiSetTotalBlocks(pc, this->nBlocks, this->blocks);
+
+    if (converge != nullptr)
+        this->SetConvergenceTest(converge, context);
 }
 
 /**
@@ -77,5 +82,16 @@ void MIGMRES::Invert(Matrix *A, Vec *b, Vec *x) {
     // Solve
     KSPSetType(this->ksp, KSPGMRES);
     KSPSolve(this->ksp, *b, *x);
+}
+
+/*
+ * Set the function to use for checking if the
+ * solution is converged.
+ */
+void MIGMRES::SetConvergenceTest(
+    PetscErrorCode (*converge)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
+    void *context
+) {
+    KSPSetConvergenceTest(this->ksp, converge, context, nullptr);
 }
 

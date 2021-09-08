@@ -18,10 +18,17 @@ namespace DREAM::FVM {
         PetscInt *blocks;
         len_t nBlocks;
 	public:
-		MIGMRES(const len_t, std::vector<len_t>&, UnknownQuantityHandler*);
+		MIGMRES(const len_t, std::vector<len_t>&, UnknownQuantityHandler*,
+            PetscErrorCode (*)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
+            void*
+        );
         ~MIGMRES();
 
 		virtual void Invert(Matrix*, Vec*, Vec*) override;
+        void SetConvergenceTest(
+            PetscErrorCode (*)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
+            void*
+        );
 	};
 }
 
