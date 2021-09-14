@@ -6,11 +6,13 @@
  */
 
 #include <vector>
+#include <softlib/SFile.h>
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/MatrixInverter.hpp"
@@ -36,6 +38,7 @@ namespace DREAM {
 
         // Flag indicating which linear solver to use
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
+        enum OptionConstants::linear_solver backupSolver = OptionConstants::LINEAR_SOLVER_NONE;
 
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
@@ -46,17 +49,25 @@ namespace DREAM {
         DiagonalPreconditioner *diag_prec=nullptr;
         FVM::MatrixInverter *inverter=nullptr;
 
+        // Main matrix inverter to use
+        FVM::MatrixInverter *mainInverter=nullptr;
+        // Robust backup inverter to use if necessary
+        FVM::MatrixInverter *backupInverter=nullptr;
+
+        SPIHandler *SPI;
+
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
         FVM::TimeKeeper *solver_timeKeeper;
-        len_t timerTot, timerCqh, timerREFluid, timerRebuildTerms;
+        len_t timerTot, timerCqh, timerREFluid, timerSPIHandler, timerRebuildTerms;
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
     public:
         Solver(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
-            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU
+            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
+            enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE
         );
         virtual ~Solver();
 
@@ -66,6 +77,9 @@ namespace DREAM {
         void RebuildTerms(const real_t, const real_t);
 
         void CalculateNonTrivial2Norm(const real_t*, real_t*);
+
+        ConvergenceChecker *GetConvergenceChecker() { return convChecker; }
+        len_t GetMatrixSize() { return this->matrix_size; }
 
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
@@ -80,6 +94,9 @@ namespace DREAM {
             this->cqh_runaway = cqh_runaway;
             this->REFluid = REFluid;
         }
+
+        virtual void SetSPIHandler(SPIHandler *SPI){this->SPI=SPI;}
+
         virtual void SetIonHandler(IonHandler *ih) 
             {this->ionHandler = ih;}
         virtual void SetInitialGuess(const real_t*) = 0;
@@ -93,9 +110,15 @@ namespace DREAM {
         virtual void SaveTimings(SFile*, const std::string& path="") = 0;
         void SaveTimings_rebuild(SFile*, const std::string& path="");
 
+        FVM::MatrixInverter *ConstructLinearSolver(const len_t, enum OptionConstants::linear_solver);
         void SetConvergenceChecker(ConvergenceChecker*);
         void SetPreconditioner(DiagonalPreconditioner*);
         void SelectLinearSolver(const len_t);
+
+        virtual void SwitchToBackupInverter();
+        void SwitchToMainInverter();
+
+        virtual void WriteDataSFile(SFile*, const std::string&);
     };
 
     class SolverException : public DREAM::FVM::FVMException {

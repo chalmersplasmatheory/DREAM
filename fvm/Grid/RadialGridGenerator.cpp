@@ -4,7 +4,6 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include <gsl/gsl_errno.h>
-#include <math.h>
 
 using namespace std;
 using namespace DREAM::FVM;
@@ -78,10 +77,6 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
 // Evaluates the magnetic field strength at radial index ir 
 // on the distribution grid and poloidal angle theta
 real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
-    real_t 
-        ct = 0, // cos(theta) 
-        st = 0; // sin(theta)
-    sincos(theta, &st, &ct);
     real_t ROverR0 = ROverR0AtTheta(ir,theta);
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t Bpol = 0;
@@ -92,10 +87,6 @@ real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
 // Evaluates the magnetic field strength at radial index ir 
 // on the radial flux grid and poloidal angle theta
 real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
-    real_t 
-        ct = 0, // cos(theta) 
-        st = 0; // sin(theta)
-    sincos(theta, &st, &ct);
     real_t ROverR0 = ROverR0AtTheta_f(ir,theta);
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t Bpol = 0;
@@ -125,13 +116,40 @@ const real_t EPSREL = 0;
  * Finds the extremum of the magnetic field on the interval [0,pi]. 
  * If sgn=1, returns the minimum.
  * If sgn=-1, returns the maximum.
+ *
+ * This routine assumes that the the magnetic field strength attains
+ * exactly one minimum and one maximum along a given flux surface, and
+ * that the magnetic field strength varies monotonically along a flux
+ * surface between the two extrema.
  */
-real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxGridType fluxGridType){
-    if(!isUpDownSymmetric)
-        throw FVMException(
-            "RadialGridGenerator: for magnetic geometry which is not up-down symmetric,"
-            " must override getTheta functions."
-        );
+real_t RadialGridGenerator::FindMagneticFieldExtremum(
+    len_t ir, int_t sgn, fluxGridType fluxGridType
+) {
+    real_t theta_lim_lower = 0, theta_lim_upper = M_PI;
+
+    // Adjust the limits if the magnetic field is not up-down symmetric...
+    if(!isUpDownSymmetric) {
+        real_t
+            B, Beps, guess = sgn>0 ? 0 : M_PI;
+
+        // Evaluate magnetic field on both sides of the guess point
+        // to determine in which direction (upper/lower half plane)
+        // the extremum lies...
+        if (fluxGridType == FLUXGRIDTYPE_DISTRIBUTION) {
+            B = BAtTheta(ir, guess+sgn*EPSABS);
+            Beps = BAtTheta(ir, 2*M_PI-(guess+sgn*EPSABS));
+        } else {
+            B = BAtTheta_f(ir, guess+sgn*EPSABS);
+            Beps = BAtTheta_f(ir, 2*M_PI-(guess+sgn*EPSABS));
+        }
+
+        // Is extremum in upper half plane?
+        if (sgn*B < sgn*Beps)
+            theta_lim_lower = 0, theta_lim_upper = M_PI;
+        else
+            theta_lim_lower = M_PI, theta_lim_upper = 2*M_PI;
+    }
+	
     EvalBParams params = {ir, this, sgn};
     gsl_function gsl_func;
     if(fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -140,19 +158,21 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxG
         gsl_func.function = &(gslEvalB);
     gsl_func.params = &(params);
 
-    real_t theta_lim_lower = 0;
-    real_t theta_lim_upper = M_PI;
     real_t theta_guess;
-    if(sgn==1){
-        // if B has a local minimum in theta=0, return 0
-        theta_guess = 10*EPSABS;
+    if((sgn==1 && theta_lim_lower < M_PI) || (sgn==-1 && theta_lim_upper > M_PI)) {
+        // if B has an local minimum in theta=theta_lower, return theta_lower
+        theta_guess = theta_lim_lower + 10*EPSABS;
         if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
-            return 0;
-    } else { 
+            return theta_lim_lower;
+    } else {
         // if B has a local maximum in theta=pi, return pi
-        theta_guess=M_PI-10*EPSABS;
-        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params))
-            return M_PI;
+        theta_guess=theta_lim_upper-10*EPSABS;
+        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params)) {
+            if (theta_lim_upper == 2*M_PI)
+                return 0;
+            else
+                return theta_lim_upper;
+        }
     }
     // otherwise, find extremum with fmin algorithm
     gsl_min_fminimizer_set(
@@ -176,3 +196,4 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxG
     else
         return extremum; 
 }
+

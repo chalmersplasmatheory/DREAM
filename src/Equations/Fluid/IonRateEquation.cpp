@@ -34,15 +34,23 @@ using namespace DREAM;
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
-    bool addFluidIonization, bool addFluidJacobian
+    bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), 
     addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
+    SetName("IonRateEquation");
+
     this->unknowns  = unknowns;
-    this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
-    this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    if(isAbl){
+		this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES_ABL);
+		this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_ABL);
+		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_ABL);
+    }else{
+		this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+		this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+		this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    }
 
     AllocateRateCoefficients();
 }
@@ -173,11 +181,12 @@ void IonRateEquation::Rebuild(
  * Z0:      Ion charge state.
  * rOffset: Offset in matrix block to set elements of.
  */
-void IonRateEquation::SetCSJacobianBlock(
+bool IonRateEquation::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac,
     const real_t* nions,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
+    bool contributes = (derivId==uqtyId);
     if (derivId == uqtyId) 
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset, JACOBIAN);
 
@@ -189,13 +198,17 @@ void IonRateEquation::SetCSJacobianBlock(
     bool setIonization = addFluidIonization || addFluidJacobian;
 
     if(derivId == id_T_cold) {
+        contributes = true;
         #include "IonRateEquation.setDT.cpp"
     }
 
     if(derivId == id_n_cold){
+        contributes = true;
         #include "IonRateEquation.setDN.cpp"        
     }
     #undef NI
+
+    return contributes;
 }
 
 /**

@@ -1,9 +1,12 @@
 
 import numpy as np
 
+from . OtherQuantity import OtherQuantity
 from . OtherFluidQuantity import OtherFluidQuantity
 from . OtherKineticQuantity import OtherKineticQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
+
+from . AvalancheGrowthRate import AvalancheGrowthRate
 
 
 class OtherQuantities:
@@ -11,6 +14,9 @@ class OtherQuantities:
 
     SPECIAL_TREATMENT = {
         # List of other quantities with their own classes
+        'f_hot_ripple_pmn': OtherQuantity,
+        'f_re_ripple_pmn': OtherQuantity,
+        'GammaAva': AvalancheGrowthRate,
         'nu_D_f1': OtherKineticQuantity,
         'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,
@@ -43,6 +49,14 @@ class OtherQuantities:
         return self.quantities[index]
 
 
+    def __iter__(self):
+        """
+        Iterate over other quantities.
+        """
+        for key, item in self.quantities.items():
+            yield key, item
+
+
     def __repr__(self):
         return self.__str__()
 
@@ -72,7 +86,7 @@ class OtherQuantities:
         self.grid = grid
 
 
-    def setQuantity(self, name, data, attributes=None):
+    def setQuantity(self, name, data, attributes=None, datatype=None):
         """
         Add the given quantity to the list of other quantities.
 
@@ -83,17 +97,26 @@ class OtherQuantities:
         if 'description' in attributes:
             desc = attributes['description']
 
-        if name in self.SPECIAL_TREATMENT:
-            o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+        if datatype is not None:
+            if data.ndim == 4 and self.momentumgrid is not None:
+                o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output)
+            else:
+                o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+        elif name in self.SPECIAL_TREATMENT:
+            if data.ndim == 4 and self.momentumgrid is not None:
+                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            else:
+                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)
         else:
             if self.name == 'scalar':
                 o = OtherScalarQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
             elif data.ndim == 2:
                 o = OtherFluidQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
-            elif data.ndim == 4:
+            elif data.ndim == 4 and self.momentumgrid is not None:
                 o = OtherKineticQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
-                raise Exception("Unrecognized number of dimensions of other quantity '{}': {}.".format(name, data.ndim))
+                #raise Exception("Unrecognized number of dimensions of other quantity '{}': {}.".format(name, data.ndim))
+                o = OtherQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
 
         setattr(self, name, o)
         self.quantities[name] = o
@@ -112,6 +135,22 @@ class OtherQuantities:
                 self.setQuantity(name=oqn, data=quantities[oqn], attributes=quantities[oqn+'@@'])
             else:
                 self.setQuantity(name=oqn, data=quantities[oqn])
+
+
+    def resetQuantity(self, quantity, datatype):
+        """
+        Reinitializes the named other quantity, making it of the given
+        data type.
+        """
+        if quantity not in self.quantities:
+            return
+
+        attr = {}
+        q = self.quantities[quantity]
+        if hasattr(q, 'description'):
+            attr['description'] = q.description
+
+        self.setQuantity(name=quantity, data=q.data, attributes=attr, datatype=datatype)
 
 
     def tostring(self, padding=''):

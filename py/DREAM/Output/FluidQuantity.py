@@ -5,6 +5,8 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib import animation
+
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
@@ -54,7 +56,7 @@ class FluidQuantity(UnknownQuantity):
         return self.data[index]
 
 
-    def animate(self, keep=[], ax=None, repeat=False, repeat_delay=None, interval=None, blit=True, **kwargs):
+    def animate(self, keep=[], ax=None, repeat=False, repeat_delay=None, speed=None, blit=True, save=None, dpi=None, **kwargs):
         """
         Creates an animation of the time evolution of this
         fluid quantity.
@@ -81,8 +83,8 @@ class FluidQuantity(UnknownQuantity):
             return (line, lbl) + tuple(keeplines)
 
         # Automatically determine the plotting interval
-        if interval is None:
-            interval = 50
+        if speed is None:
+            speed = 50
         
         line, = ax.plot(self.radius, self.data[0,:], 'k', linewidth=2, **kwargs)
 
@@ -109,7 +111,7 @@ class FluidQuantity(UnknownQuantity):
         idx  = 0
         tfac = 1
         tunits = ['s', 'ms', 'µs', 'ns', 'ps']
-        while tmax*tfac < 1 and idx < len(tunits):
+        while tmax*tfac < 1 and idx < len(tunits)-1:
             idx += 1
             tfac = (1e3)**(idx)
 
@@ -120,8 +122,15 @@ class FluidQuantity(UnknownQuantity):
 
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=self.time.size,
-            interval=interval, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
+            interval=speed, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
             fargs=(self, ax, line, txt, keeplines, tfac, tunits[idx], keep))
+
+        # Save animation?
+        if save:
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
+            writer.setup(fig, save, dpi=dpi)
+            ani.save(save, writer=writer)
+            print("Done saving video to '{}'.".format(save))
 
         if show:
             plt.show()
@@ -143,14 +152,17 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True, VpVol=False, **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
 
-        :param ax:    Matplotlib axes object to use for plotting.
-        :param show:  If 'True', shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
-        :param VpVol: Weight quantity with ``grid.VpVol`` when plotting.
+        :param ax:       Matplotlib axes object to use for plotting.
+        :param show:     If 'True', shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param log:      If ``True``, plot on a logarithmic scale.
+        :param colorbar: If ``True``, and a 2D plot is requested, also draw a colorbar.
+        :param VpVol:    Weight quantity with ``grid.VpVol`` when plotting.
+        :param weight:   Optional quantity to weight this quantity with when plotting.
 
         :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
@@ -173,6 +185,11 @@ class FluidQuantity(UnknownQuantity):
             data = self.data[:]
             if VpVol:
                 data *= self.grid.VpVol[:]
+            if weight is not None:
+                data *= weight
+
+            if log:
+                data = np.log10(np.abs(data))
 
             cp = ax.contourf(self.radius, self.time, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
@@ -187,20 +204,118 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, **kwargs):
+        """
+        Plot the radial profile of this quantity revolved over a 
+        poloidal cross section at the specified time step. 
+        NOTE: Currently assumes a cylindrical flux surface geometry!
+        
+        :param matplotlib.pyplot.axis ax:   Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to
+              'matplotlib.pyplot.show()' with 'block=False'. If
+              'None', this is interpreted as 'True' if 'ax' is
+              also 'None'.
+        :param int t: Time index to plot
+        :param matplotlib.pyplot.colorbar colorbar: Specify wether or not to include a colorbar
+        :param bool displayGrid: Specify wether or not to display a polar grid in the plot
+        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the 
+                     maximum and minimum values of the data stored by this object
+                     over all time steps
+
+        :return: a matplotlib axis object and a colorbar object
+        (which may be 'None' if not used).
+        """
+        
+        genax = ax is None
+
+        if genax:
+            ax = plt.subplot(polar=True)
+            ax.set_facecolor('k')
+            ax.set_ylim([self.grid.r[0],self.grid.r[-1]])
+            ax.set_title('t = '+str(self.grid.t[t]))
+
+            if not displayGrid:
+                ax.grid(None)
+                ax.set_yticklabels([])
+                ax.set_xticklabels([])
+
+            if show is None:
+                show = True
+                
+        theta=np.linspace(0,2*np.pi)
+        data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        if maxMinScale:
+            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
+        else:
+            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
+			
+        cb = None
+        if colorbar:
+            cb = plt.colorbar(mappable=cp, ax=ax)
+            cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+            
+        if show:
+            plt.show(block=False)
+            
+        return ax, cb
+
+        
+    def animatePoloidal(self, t=None, repeat=False, repeat_delay=None, speed=None, dpi=100, save=None,**kwargs):
+        """
+        Make an animation of poloidal plots of the present quantity, 
+        including the specified time steps.
+        
+        :param slice t: time steps to include in the animation
+        :param bool repeat: If ``True``, repeats the animation.
+        :param int repeat_delay: Time between consecutive animation runs in milliseconds
+        :param int speed: delay between frames in milliseconds
+        :param float dpi: animation resolution
+        :param str save: title of the file (if any) into which the animation is saved
+        """
+        
+        fig, ax=plt.subplots(1,1)
+        
+        if t is None:
+            t=range(len(self.grid.t))
+            
+        ax,cb=self.plotPoloidal(show=False,t=0,**kwargs)
+        
+        def update_ani(t, fq, ax):
+            ax.clear()
+            ax=fq.plotPoloidal(colorbar=False, show=False,t=t,**kwargs)
+        
+            
+        # Create the animation
+        ani = animation.FuncAnimation(fig, update_ani, frames=t,
+            repeat=repeat, repeat_delay=repeat_delay, interval=speed,
+            fargs=(self, ax))
+        
+        if save:
+            # Make animation
+            writer = animation.FFMpegFileWriter(fps=fps)
+            writer.setup(fig, save, dpi=dpi)
+            ani.save(save, writer=writer)
+            print("Done saving video to '{}'.".format(save))
+		            
+        plt.show()
+
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
-        :param t:    Time index to plot.
-        :param ax:   Matplotlib axes object to use for plotting.
-        :param show: If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param t:      Time index to plot.
+        :param ax:     Matplotlib axes object to use for plotting.
+        :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
+        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
         """
@@ -217,17 +332,29 @@ class FluidQuantity(UnknownQuantity):
         vpv = self.grid.VpVol[:]
         for it in t:
             data = self.data[it,:]
+            wlbl = ''
             if VpVol:
                 data *= vpv
+                wlbl += "*V'"
+            if weight is not None:
+                data *= weight
+                wlbl += '*w'
 
-            ax.plot(self.radius, data)
+
+            if log:
+                if np.any(data>0):
+                    ax.semilogy(self.time, data, **kwargs)
+                else:
+                    ax.semilogy(self.time, -data, '--', **kwargs)
+            else:
+                ax.plot(self.radius, data, **kwargs)
 
             # Add legend label
             tval, unit = self.grid.getTimeAndUnit(it)
             lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}$'.format(tval, unit))
 
         ax.set_xlabel(r'Radius $r$ (m)')
-        ax.set_ylabel('{}'.format(self.getTeXName()))
+        ax.set_ylabel('{}{}'.format(self.getTeXName(), wlbl))
 
         if len(lbls) > 0:
             ax.legend(lbls)
@@ -235,16 +362,19 @@ class FluidQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
 
-        return ax
+        return ax   	
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
-        :param r:    Radial index to plot evolution for.
-        :param ax:   Matplotlib axes object to use for plotting.
-        :param show: If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param r:      Radial index to plot evolution for.
+        :param ax:     Matplotlib axes object to use for plotting.
+        :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
+        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
         """
@@ -260,16 +390,27 @@ class FluidQuantity(UnknownQuantity):
         lbls = []
         for ir in r:
             data = self.data[:,ir]
+            wlbl = ''
             if VpVol:
                 data *= self.grid.VpVol[ir]
+                wlbl += "*V'"
+            if weight is not None:
+                data *= weight
+                wlbl += '*w'
 
-            ax.plot(self.time, data)
+            if log:
+                if np.any(data>0):
+                    ax.semilogy(self.time, data, **kwargs)
+                else:
+                    ax.semilogy(self.time, -data, '--', **kwargs)
+            else:
+                ax.plot(self.time, data, **kwargs)
 
             # Add legend label
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
 
         ax.set_xlabel(r'Time $t$')
-        ax.set_ylabel('{}'.format(self.getTeXName()))
+        ax.set_ylabel('{}{}'.format(self.getTeXName(), wlbl))
 
         if len(lbls) > 1:
             ax.legend(lbls)
@@ -280,7 +421,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None):
+    def plotIntegral(self, ax=None, show=None, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -295,7 +436,7 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.time, self.integral())
+        ax.plot(self.time, self.integral(), **kwargs)
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 

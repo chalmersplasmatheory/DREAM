@@ -54,6 +54,14 @@ namespace DREAM::FVM {
             enum momentumgrid_type, real_t *out=nullptr
         );
 
+        const real_t *GetX1(){ return this->x1; }
+        const real_t *GetX2(){ return this->x2; }
+        const real_t *GetX3(){ return this->x3; }
+        const len_t GetNx1(){ return this->nx1; }
+        const len_t GetNx2(){ return this->nx2; }
+        const len_t GetNx3(){ return this->nx3; }
+
+
         enum momentumgrid_type GetGridType() const { return this->gridtype; }
     };
 

@@ -15,6 +15,8 @@ DREAM::TransportBC<T>::TransportBC(
     DREAM::FVM::Grid *grid, T *tt,
     enum bctype type
 ) : FVM::BC::BoundaryCondition(grid), transportOperator(tt), type(type) {
+    
+    SetName("TransportBC");
 
     if (type == TRANSPORT_BC_DF_CONST && grid->GetNr() == 1)
         throw DREAMException(
@@ -28,13 +30,16 @@ DREAM::TransportBC<T>::TransportBC(
  * Add elements to the given Jacobian.
  */
 template<typename T>
-void DREAM::TransportBC<T>::AddToJacobianBlock(
+bool DREAM::TransportBC<T>::AddToJacobianBlock(
     const len_t uqtyId, const len_t derivId, DREAM::FVM::Matrix *jac, const real_t*
 ) {
+    bool contributes = (derivId == uqtyId);
     if (derivId == uqtyId)
         this->AddToMatrixElements(jac, nullptr);
 
     // TODO handle derivatives of coefficients
+    
+    return contributes;
 }
 
 /**

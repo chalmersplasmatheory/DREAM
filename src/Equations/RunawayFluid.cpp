@@ -61,10 +61,9 @@ RunawayFluid::RunawayFluid(
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
-    real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, collSettingsForEc,
-        Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, 
+        collSettingsForEc, Eceff_mode, ions, lnLambdaEI
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -264,6 +263,33 @@ void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_roo
         gsl_root_fdfsolver_iterate (s);
         real_t root_prev = root;
         root    = gsl_root_fdfsolver_root (s);
+        status = gsl_root_test_delta(root, root_prev, epsabs, epsrel);
+        if (status == GSL_SUCCESS)
+            break;
+    }
+}
+
+/**
+ * Finds the root of the provided gsl_function_fdf using the provided
+ * derivative-based solver.
+ *  root: guess for the solution (and is overwritten by the obtained numerical solution)
+ */
+void RunawayFluid::FindRoot_fdf_bounded(real_t x_lower, real_t x_upper, real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel, real_t epsabs){
+    gsl_root_fdfsolver_set (s, &gsl_func, root);
+    int status;
+    len_t max_iter = 30;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        gsl_root_fdfsolver_iterate (s);
+        real_t root_prev = root;
+        root    = gsl_root_fdfsolver_root (s);
+        if (root < x_lower){
+            root = (root_prev + x_lower) * 0.5;
+            gsl_root_fdfsolver_set(s, &gsl_func, root);
+        }
+        else if (root > x_upper){
+            root = (root_prev + x_upper) * 0.5;
+            gsl_root_fdfsolver_set(s, &gsl_func, root);
+        }
         status = gsl_root_test_delta(root, root_prev, epsabs, epsrel);
         if (status == GSL_SUCCESS)
             break;
@@ -577,6 +603,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
         pStar_params = {constTerm,ir,this, collSettingsForPc}; 
         gsl_func.params = &pStar_params;
 
+
         if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
@@ -691,8 +718,9 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );
     
+    real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
     real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
-            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
+            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->evaluateLnLambdaT(Tcold,nfree)) * sigmaBar;
     return BraamsConductivity;
 }
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
@@ -700,7 +728,11 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
 }
 /**
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
- * taken from O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
+ * taken from 
+ *  A Redl, C Angioni, E Belli, O Sauter et al. Phys Plasmas 28, 022502 (2021) 
+ * which generalizes the original
+ *  study by
+ *  O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
  */
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionLess){
     real_t ft = 1 - rGrid->GetEffPassFrac(ir);
@@ -714,13 +746,16 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         const real_t *jtot = unknowns->GetUnknownData(id_jtot);
         real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
         const real_t qR0 = fabs(rGrid->SafetyFactorNormalized(ir,mu0Ip)); // use unsigned safety factor
-        real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
-        real_t nuEStar = 0.012*(ncold/1e20)*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
+        real_t lnLee = 31.3 - log(sqrt(ncold)/Tcold);
+        real_t nuEStar = 6.921e-18*ncold*lnLee*Zeff * qR0/(eps*sqrt(eps) * Tcold*Tcold);
 
-        X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
+        // SAUTER MODEL: X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
+        X /= 1 + 0.25*(1.0 - 0.7*ft)*sqrt(nuEStar)*(1+0.45*sqrt(Zeff-1)) 
+            + 0.61*(1.0 - 0.41*ft) * nuEStar/sqrt(Zeff);
     }
-    return 1 - (1+0.36/Zeff)*X + X*X/Zeff * (0.59-0.23*X);
+    // SAUTER MODEL: return 1 - (1+0.36/Zeff)*X + X*X/Zeff * (0.59-0.23*X);
+    return 1 - (1 + 0.21/Zeff)*X + X*X/Zeff * (0.54-0.33*X);
 }
 
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionLess){
@@ -771,9 +806,12 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
             return 0;
         real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
-        return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
-            ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless)
-            - evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff-h,ncold[ir],collisionless) ) / (2*h);
+        real_t sigma = evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless);
+        real_t dsigma = Z0/nfree * (Z0 - nZ0Z0/nfree) * ( -sigma
+            + evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless) ) / h;
+        real_t lnLT = lnLambdaEE->evaluateLnLambdaT(Tcold[ir],nfree);
+        dsigma -= sigma/lnLT *  Z0/nfree; // d/dni lnLambda
+        return dsigma;
     } else 
         return 0;
 }

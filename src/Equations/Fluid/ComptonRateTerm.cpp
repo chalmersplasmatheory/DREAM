@@ -15,6 +15,8 @@ ComptonRateTerm::ComptonRateTerm(
 ) : FVM::DiagonalComplexTerm(g,uqn, operandGrid), RunawaySourceTerm(g,uqn),
     REFluid(rf), scaleFactor(scaleFactor) {
 
+    SetName("ComptonRateTerm");
+
     AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
     AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
 }

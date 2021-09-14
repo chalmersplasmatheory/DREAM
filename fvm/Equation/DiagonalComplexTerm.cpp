@@ -33,7 +33,7 @@ DiagonalComplexTerm::~DiagonalComplexTerm(){
 * (so that w at phase-space point z only depends on U(z) and not, for example,
 * on integrals of U). 
 */
-void DiagonalComplexTerm::AddWeightsJacobian(
+bool DiagonalComplexTerm::AddWeightsJacobian(
     const len_t /*uqtyId*/, const len_t derivId, Matrix *jac, const real_t* x
 ){
     /**
@@ -42,7 +42,7 @@ void DiagonalComplexTerm::AddWeightsJacobian(
     */
     len_t nMultiples=0;
     if(!HasJacobianContribution(derivId, &nMultiples))
-        return;
+        return false;
     
     ResetDiffWeights();
     SetDiffWeights(derivId, nMultiples);
@@ -78,6 +78,8 @@ void DiagonalComplexTerm::AddWeightsJacobian(
             for(len_t i=0; i<NCells; i++)
                 jac->SetElement(i, n*NCells+i, diffWeights[n*NCells + i] * x[i] ); 
     }
+
+    return true;
 }
 
 /**

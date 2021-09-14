@@ -123,14 +123,17 @@ void Operator::Evaluate(real_t *vec, const real_t *x) {
  *   x = f^-1( -g(y) ),
  *
  * where 'f^-1' denotes the inverse of 'f(x)'.
+ *
+ * (It is okay for this operator to contain multiple evaluable terms,
+ * such that
+ *
+ *   f1(x) + f2(x) + g(y) = 0
+ *
+ * assuming that f1 & f2 are linear in x).
  */
 void Operator::EvaluableTransform(real_t *vec) {
-    if (this->eval_terms.size() != 1)
-        throw OperatorException(
-            "This operator must have exactly one evaluable term for it to be evaluable."
-        );
-
-    eval_terms[0]->EvaluableTransform(vec);
+    for (auto term : eval_terms)
+        term->EvaluableTransform(vec);
 }
 
 /**
@@ -163,7 +166,7 @@ bool Operator::IsEvaluable() const {
         return false;
     else return
         (this->predetermined != nullptr && this->eval_terms.size() == 0) ||
-        (this->predetermined == nullptr && this->eval_terms.size() == 1);
+        (this->predetermined == nullptr && this->eval_terms.size() >= 1);
 }
 
 /**
@@ -258,28 +261,57 @@ void Operator::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
 /**
  * Set the specified block in the given jacobian matrix.
  *
- * uqtyId:  ID of the unknown quantity to which the matrix row belongs.
- * derivId: ID of the unknown quantity with respect to which the
- *          operator should be differentiated.
- * jac:     Jacobian matrix (block) to set.
- * x:       Value of the unknown quantity.
+ * uqtyId:     ID of the unknown quantity to which the matrix row belongs.
+ * derivId:    ID of the unknown quantity with respect to which the
+ *             operator should be differentiated.
+ * jac:        Jacobian matrix (block) to set.
+ * x:          Value of the unknown quantity.
+ * printTerms: Print info about which terms contribute.
  */
-void Operator::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+bool Operator::SetJacobianBlock(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x, bool
+#ifndef NDEBUG
+    printTerms
+#endif
 ) {
-    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
+    bool contributes = false;
 
-    for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
+        bool c = (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
+        contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
+
+    for (auto it = terms.begin(); it != terms.end(); it++) {
+        bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+        contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
 
     // Advection-diffusion term?
-    if (adterm != nullptr)
-        adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
+    if (adterm != nullptr) {
+        contributes |=
+#ifndef NDEBUG
+            adterm->SetJacobianBlock(uqtyId, derivId, jac, x, printTerms);
+#else
+            adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
+#endif
+    }
 
     // Boundary conditions
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {
+            bool c = (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
+            contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
+
+    return contributes;
 }
 
 /**
@@ -292,11 +324,22 @@ void Operator::SetJacobianBlock(
  * jac:     Jacobian matrix (block) to set.
  * x:       Value of the unknown quantity.
  */
-void Operator::SetJacobianBlockBC(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+bool Operator::SetJacobianBlockBC(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x, bool
+#ifndef NDEBUG
+    printTerms
+#endif
 ) {
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+    bool contributes = false;
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {
+        bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+        contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
+
+    return contributes;
 }
 
 /**
