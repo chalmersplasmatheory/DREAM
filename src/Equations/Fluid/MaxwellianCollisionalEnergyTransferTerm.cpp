@@ -28,6 +28,8 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
 ) : FVM::EquationTerm(g), index_i(index_i), index_j(index_j), isIon_i(isIon_i), isIon_j(isIon_j),
     unknowns(u), lnLambda(lnL), ionHandler(ionHandler)
 {
+    SetName("MaxwellianCollisionalEnergyTransferTerm");
+
     if(isIon_i){
         this->mi = ionHandler->GetIonSpeciesMass(index_i);
         this->Zi = ionHandler->GetZ(index_i);
@@ -93,9 +95,9 @@ void MaxwellianCollisionalEnergyTransferTerm::SetVectorElements(real_t *vec, con
 /**
  * Sets the jacobian block of this equation term
  */
-void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
+bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
     if( !HasJacobianContribution(derivId) ) 
-        return;
+        return false;
 
     const real_t *lnL = isEI ? lnLambda->GetLnLambdaT() : lnLambda->GetLnLambdaII();
     
@@ -154,6 +156,8 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
                 jac->SetElement(ii,n*nr+ir, vec/lnL[ir]*lnLambda->evaluatePartialAtP(ir,0,derivId,n,lnLambda_settings) );
         }
     }
+
+    return true;
 }
 
 /**

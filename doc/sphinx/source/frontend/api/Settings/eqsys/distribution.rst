@@ -658,13 +658,13 @@ diffusion coefficient in DREAM:
    # Magnetic perturbation
    dB_B = np.array([...])   # shape (nt, nr)
 
-   ds.eqsys.f_hot.setMagneticPerturbation(dBB=dB_B, t=t, r=r)
+   ds.eqsys.f_hot.transport.setMagneticPerturbation(dBB=dB_B, t=t, r=r)
 
 If a constant and uniform perturbation level is desired, the more compact syntax
 
 .. code-block:: python
 
-   ds.eqsys.f_hot.setMagneticPerturbation(dBB=1e-3)
+   ds.eqsys.f_hot.transport.setMagneticPerturbation(dBB=1e-3)
 
 can also be used. In this example, the magnetic perturbation
 :math:`\delta B/B = 10^{-3}` is used in every time step and at all radial
@@ -698,6 +698,8 @@ The following boundary conditions can be applied:
 | ``BC_CONSERVATIVE`` | Assume that no particles can leave the plasma through :math:`r=a`. (default) |
 +---------------------+------------------------------------------------------------------------------+
 | ``BC_F_0``          | Assume that :math:`f(r>a) = 0`.                                              |
++---------------------+------------------------------------------------------------------------------+
+| ``BC_DF_CONST``     | Assume that :math:`\partial f/\partial r = \mathrm{const.}` on plasma edge.  |
 +---------------------+------------------------------------------------------------------------------+
 
 Example

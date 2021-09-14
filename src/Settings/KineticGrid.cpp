@@ -16,6 +16,7 @@
 #include "FVM/Grid/PXiGrid/XiBiUniformThetaGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformThetaGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiTrappedPassingBoundaryLayerGridGenerator.hpp"
 
 
 using namespace DREAM;
@@ -60,6 +61,11 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     s->DefineSetting(mod + "/p_f",  "Grid points of the momentum flux grid", 0, (real_t*) nullptr);
     s->DefineSetting(mod + "/xi_f", "Grid points of the pitch flux grid", 0, (real_t*) nullptr);
    
+   // trapped grid
+   s->DefineSetting(mod + "/dximax", "Maximum allowed grid spacing (trapped/passing grid)", (real_t)2);
+   s->DefineSetting(mod + "/nxipass", "Number of grid points between xi0Trapped_max and +1", (int_t)1);
+   s->DefineSetting(mod + "/nxitrap", "Number of grid points between 0 and xi0Trapped_min", (int_t)1);
+   s->DefineSetting(mod + "/boundarylayerwidth", "Width of the grid cell containing each trapped-passing boundary (typically << 1)", (real_t)1e-3);
 }
 
 /**
@@ -283,6 +289,16 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
             const real_t *xi_f = s->GetRealArray(mod + "/xi_f", 1, &len_xif);
             xgg = new FVM::PXiGrid::XiCustomGridGenerator(xi_f, len_xif-1);
         } break;
+
+        case OptionConstants::PXIGRID_XITYPE_TRAPPED: {
+            real_t dxiMax = s->GetReal(mod + "/dximax");
+            len_t nxiPass = s->GetInteger(mod + "/nxipass");
+            len_t nxiTrap = s->GetInteger(mod + "/nxitrap");
+            real_t width  = s->GetReal(mod + "/boundarylayerwidth");
+
+            xgg = new FVM::PXiGrid::XiTrappedPassingBoundaryLayerGridGenerator(dxiMax, nxiPass, nxiTrap, width);
+        } break;
+
         default:
             throw SettingsException(
                 "%s: Unrecognized XI grid type specified: %d.",

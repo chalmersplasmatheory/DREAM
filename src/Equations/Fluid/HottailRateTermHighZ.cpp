@@ -23,6 +23,8 @@ HottailRateTermHighZ::HottailRateTermHighZ(
     id_Efield(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
     id_tau(unknowns->GetUnknownID(OptionConstants::UQTY_TAU_COLL))
 {
+    SetName("HottailRateTermHighZ");
+
     AddUnknownForJacobian(unknowns,id_Efield);
     AddUnknownForJacobian(unknowns,id_ncold);
     AddUnknownForJacobian(unknowns,id_tau);
@@ -114,11 +116,14 @@ real_t HottailRateTermHighZ::PcFunc(real_t p, void *par) {
     real_t Zeff = params->ionHandler->GetZeff(ir);
 
     real_t p2 = p*p;
-    real_t g3 = (1+p2)*sqrt(1+p2);
-    
+    real_t gamma = sqrt(1+p2); 
+     
     // for the non-relativistic distribution, this function is
     // approximately linear, yielding efficient root finding
-    return sqrt(sqrt( p2*p2*p*E*E*EPF * (-dFdpOverF) )) - sqrt(sqrt( 3.0*(1+Zeff)*g3));
+    return  sqrt((p/gamma)*cbrt( p2*E*E*EPF * (-dFdpOverF) )) - sqrt(cbrt( 3*(1+Zeff)));
+    // previous equivalent expression:
+    // real_t g3 = (1+p2)*gamma;
+    // return  sqrt(cbrt( p2*p2*p*E*E*EPF * (-dFdpOverF) )) - sqrt(cbrt( 3.0*(1+Zeff)*g3));
 }
 
 /**
@@ -149,7 +154,7 @@ real_t HottailRateTermHighZ::evaluateCriticalMomentum(len_t ir, real_t &f, real_
     gsl_params.tau   = unknowns->GetUnknownData(id_tau)[ir];
     
     real_t root = (pCrit_prev[ir] == 0) ? 5*distHT->GetInitialThermalMomentum(ir) : pCrit_prev[ir];
-    RunawayFluid::FindRoot_fdf(root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
+    RunawayFluid::FindRoot_fdf_bounded(0,std::numeric_limits<real_t>::infinity(),root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
     f = gsl_params.F;
     dfdp = gsl_params.dFdp;
     return root;
@@ -179,7 +184,7 @@ real_t HottailRateTermHighZ::evaluatePartialCriticalMomentum(len_t ir, len_t der
     }
 
     real_t root = pCrit[ir];
-    RunawayFluid::FindRoot_fdf(root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
+    RunawayFluid::FindRoot_fdf_bounded(0,std::numeric_limits<real_t>::infinity(),root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
     return (root - pCrit[ir])/h;
 }
 
@@ -187,9 +192,9 @@ real_t HottailRateTermHighZ::evaluatePartialCriticalMomentum(len_t ir, len_t der
 /**
  * Sets the Jacobian of this equation term
  */
-void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
+bool HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
     if(!HasJacobianContribution(derivId))
-        return;
+        return false;
 
     for(len_t ir=0; ir<nr; ir++){
         const len_t xiIndex = this->GetXiIndexForEDirection(ir);
@@ -217,6 +222,8 @@ void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t 
         }
         jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, scaleFactor * dGamma * V);
     }
+
+    return true;
 }
 
 /**

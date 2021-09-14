@@ -50,6 +50,9 @@ namespace DREAM {
         //Fine structure constant
         static const real_t alpha;
 
+        //Avogadro number
+        static const real_t N_Avogadro;
+        
         //Rydberg constant in eV
         static const real_t Ry;
 

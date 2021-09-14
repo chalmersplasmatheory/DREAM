@@ -23,6 +23,8 @@ PXiInternalTrapping::PXiInternalTrapping(
     Grid *g, Operator *oprtr
 ) : PXiAdvectionDiffusionBoundaryCondition(g, oprtr) {
     
+    SetName("PXiInternalTrapping");
+
     this->LocateTrappedRegion();
 }
 
@@ -174,19 +176,24 @@ bool PXiInternalTrapping::Rebuild(const real_t, UnknownQuantityHandler*) { retur
 /**
  * Add elements to the Jacobian.
  */
-void PXiInternalTrapping::AddToJacobianBlock(
+bool PXiInternalTrapping::AddToJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
+    bool contributes = false;
     if (uqtyId == derivId){
         interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
         this->AddToMatrixElements(jac, nullptr);
+        contributes = true;
     }
     // Handle derivatives of coefficients (we assume that the coefficients
     // do not depend on the distribution functions...)
     else
-        this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-            uqtyId, derivId, jac, x, true
-        );
+        contributes |=
+            this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+                uqtyId, derivId, jac, x, true
+            );
+
+    return contributes;
 }
 
 /**
@@ -359,11 +366,13 @@ void PXiInternalTrapping::_addElements(
 /**
  * Reset the rows of the jacobian corresponding to -xi_T <= xi0 < 0.
  */
-void PXiInternalTrapping::SetJacobianBlock(
+bool PXiInternalTrapping::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t*
 ) {
     if (uqtyId == derivId)
         this->SetMatrixElements(jac, nullptr);
+    
+    return (uqtyId == derivId);
 }
 
 /**

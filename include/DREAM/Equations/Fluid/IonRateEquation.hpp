@@ -9,7 +9,7 @@
 
 namespace DREAM {
     class IonRateEquation : public IonEquationTerm<FVM::EquationTerm> {
-    private:
+    protected:
         enum SetMode {MATRIX, JACOBIAN};
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
@@ -26,7 +26,7 @@ namespace DREAM {
     public:
         IonRateEquation(
             FVM::Grid*, IonHandler*, const len_t, ADAS*, 
-            FVM::UnknownQuantityHandler*,bool,bool
+            FVM::UnknownQuantityHandler*,bool,bool,bool
         );
         virtual ~IonRateEquation();
 
@@ -44,7 +44,7 @@ namespace DREAM {
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
-        virtual void SetCSJacobianBlock(
+        virtual bool SetCSJacobianBlock(
             const len_t, const len_t, FVM::Matrix*, const real_t*,
             const len_t iIon, const len_t Z0, const len_t rOffset
         ) override;

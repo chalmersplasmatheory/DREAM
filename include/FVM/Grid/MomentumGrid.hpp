@@ -4,7 +4,6 @@
 namespace DREAM::FVM { class MomentumGrid; }
 
 #include <string>
-#include "DREAM/IO.hpp"
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
@@ -140,7 +139,7 @@ namespace DREAM::FVM {
             if(BOverBmin<1+eps)
                 return 1;
             if(fabs(xi0)<eps){
-                DREAM::IO::PrintWarning("MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
+                printf("WARNING: MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
                 return 1;
             }
                 

@@ -349,6 +349,30 @@ from the command line and accepts the following arguments:
 | ``--type-real``      | C++ type to use for real numbers.                                                                                           |
 +----------------------+-----------------------------------------------------------------------------------------------------------------------------+
 
+Opacity and AMJUEL
+^^^^^^^^^^^^^^^^^^
+The ADAS-coefficients are calculated in the low density limit, corresponding to a completely transparent plasma, an assumption which might not always be valid. At high densities, the plasma can become opaque to line radiation resulting from transistions involving the ground state. For example, this might be the case for the Lyman radiation from hydrogen isotopes after a massive injection of the type planned for ITER disruption mitigation. In that case, it might be more accurate to use coefficients where the bound-bound transitions involving the ground state are removed. For hydrogen isotopes, such coefficients are available in the AMJUEL database. Thus, there are two opacity modes available:
+
++------------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
+| Name                                     | Description                                                                                                                  |
++==========================================+==============================================================================================================================+
+| ``ION_OPACITY_MODE_TRANSPARENT``         | Use ADAS coefficients, corresponding to a completely transparent plasma                                                      |
++------------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
+| ``ION_OPACITY_MODE_GROUND_STATE_OPAQUE`` | Use coefficients disregarding bound-bound transitions involving the ground state, assuming a complete opacity to those lines |
++------------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
+
+.. note::
+   
+   The ``ION_OPACITY_MODE_GROUND_STATE_OPAQUE`` is currently only supported for hydrogen species.
+   
+Example
+^^^^^^^
+The following example illustrates how to create a deuterium ion species whith radiation, ionization and recombination calculated assuming opacity to Lyman radiation:
+
+.. code-block:: python
+
+   ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=40e20, opacity_mode=Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE)
+
 NIST
 ^^^^
 DREAM uses ionization and binding energy values tabulated in the database of the
@@ -501,6 +525,30 @@ mechanism in a DREAM simulation:
    # Add tritium ion species to list of ions
    ds.eqsys.n_i.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
 
+
+Connection to SPI
+-----------------
+An ion species can be connected to a Shattered Pellet Injection (SPI), so that a specified fraction of the ablated material is added to the density of this species. The newly added material is added with the equilibrium charge state distribution, reflecting the fact that the ionization takes place very rapidly in the usually rather hot plasma into which the pellet is injected. The most general way to connect an ion species to an SPI is to set the argument ``SPIMolarFraction`` to a vector specifying the fraction of the particles in each shard added to the ``ds.eqsys.spi`` object which consists of the ion species being created. By default, ``SPIMolarFraction=-1``, telling DREAM that this species is not part of an SPI. Additionally, if one wants the pellet to consist of a certain isotope of a certain species, this can also be specified by the argument ``isotope`` to the ``addIon()``-method. The default value of ``isotope`` is 0, meaning the naturally occuring mix of isotopes.
+
+Example
+^^^^^^^
+The following example illustrates how to add ions in a way that makes the injected pellet consist of 95% deuterium and 5% neon.
+
+.. code-block:: python
+
+   ...
+   nShardD=1000 # Number of shards
+   ...
+   
+   # Add ions connected to the shards using the SPIMolarFraction argument
+   ds.eqsys.n_i.addIon(name='D_inj', Z=1, isotope=2, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e0, SPIMolarFraction=0.95*np.ones(nShard))
+   ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e0, SPIMolarFraction=0.05*np.ones(nShard))
+   
+.. note::
+
+   To avoid numerical errors arrising when the density of an ion species is zero, the initial ion density must be set to a small but finite value also for the species related to an SPI, in this case ``n=1e0``.
+   
+In some cases, however, it might be more convenient to create the ion species connected to an SPI by passing a pointer to the ``ds.eqsys.n_i``-object to a helper function in the ``ds.eqsys.spi``-class, se the documentation of the :ref:`SPI settings<ds-eqsys-spi>`.
 
 Class documentation
 -------------------

@@ -11,6 +11,7 @@ DREAMSettings
    momentumgrid
    other
    output
+   radialgrid
    solver
    timestep
 
@@ -35,7 +36,7 @@ settings for a particular module of the kernel:
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`output<ds-output>`              | Settings related to the simulation output.                                   |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``radialgrid``                        | Radial grid settings.                                                        |
+| :ref:`radialgrid<ds-radialgrid>`      | Radial grid settings.                                                        |
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`runawaygrid<ds-momentumgrid>`   | Runaway momentum grid settings.                                              |
 +---------------------------------------+------------------------------------------------------------------------------+

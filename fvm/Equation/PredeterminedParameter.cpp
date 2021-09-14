@@ -38,9 +38,9 @@ PredeterminedParameter::~PredeterminedParameter() {
  * with respect to anything of a constant is zero, we don't need
  * to do anything).
  */
-void PredeterminedParameter::SetJacobianBlock(
+bool PredeterminedParameter::SetJacobianBlock(
     const len_t /*derivId*/, const len_t /*uqtyId*/, Matrix* /*jac*/, const real_t* /*x*/
-) { }
+) { return false; }
 
 /**
  * Set the elements in the matrix and on the RHS corresponding

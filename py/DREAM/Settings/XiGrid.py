@@ -10,6 +10,7 @@ TYPE_BIUNIFORM = 2
 TYPE_UNIFORM_THETA = 3
 TYPE_BIUNIFORM_THETA = 4
 TYPE_CUSTOM = 5
+TYPE_TRAPPED = 6
 
 
 class XiGrid:
@@ -34,6 +35,11 @@ class XiGrid:
         self.nthetasep = None
         self.nthetasep_frac = None
         self.thetasep  = None
+
+        self.trapped_dxiMax = None
+        self.trapped_NxiPass = None
+        self.trapped_NxiTrap = None
+        self.trapped_blWidth = None     # Trapped/passing boundary layer width
 
         self.xi_f = None
 
@@ -111,14 +117,23 @@ class XiGrid:
         self.nxi = np.size(self.xi_f) - 1
 
 
+    def setTrappedPassingBoundaryLayerGrid(self, dxiMax=2, NxiPass=1, NxiTrap=1, boundaryLayerWidth=1e-3):
+        self.setType(TYPE_TRAPPED)
+
+        self.trapped_dxiMax = float(dxiMax)
+        self.trapped_NxiPass = int(NxiPass)
+        self.trapped_NxiTrap = int(NxiTrap)
+        self.trapped_blWidth = float(boundaryLayerWidth)
+
+
     def setType(self, ttype):
         """
         Set the type of xi grid generator.
         """
-        if ttype in [TYPE_UNIFORM,TYPE_BIUNIFORM,TYPE_UNIFORM_THETA,TYPE_BIUNIFORM_THETA]:
+        if ttype in [TYPE_UNIFORM,TYPE_BIUNIFORM,TYPE_UNIFORM_THETA,TYPE_BIUNIFORM_THETA,TYPE_CUSTOM,TYPE_TRAPPED]:
             self.type = ttype
         else:
-            raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
+            raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, ttype))
 
 
     def fromdict(self, data):
@@ -142,6 +157,11 @@ class XiGrid:
                 self.nthetasep_frac = data['nxisep_frac']
         elif self.type == TYPE_CUSTOM:
             self.xi_f = data['xi_f']
+        elif self.type == TYPE_TRAPPED:
+            self.trapped_dxiMax = float(data['dximax'])
+            self.trapped_NxiPass = int(data['nxipass'])
+            self.trapped_NxiTrap = int(data['nxitrap'])
+            self.trapped_blWidth = float(data['boundarylayerwidth'])
             
         self.verifySettings()
 
@@ -179,6 +199,11 @@ class XiGrid:
             data['xisep'] = self.thetasep
         elif self.type == TYPE_CUSTOM:
             data['xi_f'] = self.xi_f
+        elif self.type == TYPE_TRAPPED:
+            data['dximax'] = self.trapped_dxiMax
+            data['nxipass'] = self.trapped_NxiPass
+            data['nxitrap'] = self.trapped_NxiTrap
+            data['boundarylayerwidth'] = self.trapped_blWidth
 
         return data
 
@@ -190,8 +215,12 @@ class XiGrid:
         if self.type in [TYPE_UNIFORM,TYPE_BIUNIFORM,TYPE_UNIFORM_THETA,TYPE_BIUNIFORM_THETA,TYPE_CUSTOM]:
             if self.nxi is None or self.nxi <= 0:
                 raise DREAMException("XiGrid {}: Invalid value assigned to 'nxi': {}. Must be > 0.".format(self.name, self.nxi))
+        elif self.type in [TYPE_TRAPPED]:
+            # No further checkes required here
+            pass
         else:
             raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
+
         if self.type == TYPE_BIUNIFORM:
             if self.nxisep is not None and (self.nxisep <= 0 or self.nxisep >= self.nxi):
                 raise DREAMException("XiGrid {}: Invalid value assigned to 'nxisep': {}. Must be > 0 and < nxi.".format(self.name, self.nxisep))
@@ -211,5 +240,14 @@ class XiGrid:
                 raise DREAMException("XiGrid {}: Neither 'nthetasep' nor 'nthetasep_frac' have been specified.".format(self.name))
             elif self.thetasep is None or self.thetasep <= 0 or self.thetasep >= np.pi:
                 raise DREAMException("XiGrid {}: Invalid value assigned to 'thetasep': {}. Must be > 0 and < pi.".format(self.name, self.thetasep))
+        elif self.type == TYPE_TRAPPED:
+            if self.trapped_dxiMax <= 0:
+                raise DREAMException("XiGrid {}: The trapped/passing grid parameter 'dxiMax' must be > 0.".format(self.name))
+            elif self.trapped_NxiPass < 1:
+                raise DREAMException("XiGrid {}: The trapped/passing grid parameter 'NxiPass' must be > 0.".format(self.name))
+            elif self.trapped_NxiTrap < 1:
+                raise DREAMException("XiGrid {}: The trapped/passing grid parameter 'NxiTrap' must be > 0.".format(self.name))
+            elif self.trapped_blWidth <= 0:
+                raise DREAMException("XiGrid {}: The trapped/passing grid parameter 'boundaryLayerWidth' must be > 0.".format(self.name))
 
 

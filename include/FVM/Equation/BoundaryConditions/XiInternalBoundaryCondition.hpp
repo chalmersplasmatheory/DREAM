@@ -12,10 +12,10 @@ namespace DREAM::FVM::BC {
 
         bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
-        virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override {}
+        virtual bool AddToJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override {return false;}
         virtual void AddToMatrixElements(Matrix*, real_t*) override {}
         virtual void AddToVectorElements(real_t*, const real_t*) override {}
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override {}
+        virtual bool SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override {return false;}
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override {}
     };

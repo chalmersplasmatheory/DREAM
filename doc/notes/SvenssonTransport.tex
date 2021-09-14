@@ -1,0 +1,235 @@
+\documentclass[11pt,a4paper,english
+]{article}
+\pdfoutput=1
+
+\usepackage{babel}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[hidelinks, colorlinks,urlcolor=blue]{hyperref}
+
+\usepackage{physics} 
+\usepackage{datetime2} % To make the date ISO formatted
+
+%% Partial derivative 'd':
+\newcommand{\pd}{\ensuremath{\partial}}
+%% 'e' and 'i' should be straight:
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\ii}{\mathrm{i}}
+
+\newcommand{\nRE}{\ensuremath{n_{\rm RE}}}
+\newcommand{\nuD}{\ensuremath{\nu_{\rm D}}}
+\newcommand{\nus}{\ensuremath{\nu_{\rm s}}}
+
+
+%% Change the margin in the documents
+\usepackage[
+            top    = 3cm,              %% top margin
+            bottom = 3cm,              %% bottom margin
+            left   = 2.5cm, right  = 2.5cm %% left and right margins
+]{geometry}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}%% v v v v v v v v v v v v v v v v v v v v v v v v v v
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%% vvv Internal title page vvv %%%%%%%%%%%%%%%%%%%%%
+\title{Implementation of the transport equations of 
+ Pontus' paper into DREAM}
+\author{Andr\'eas Sundstr\"om}
+\date{2021-06-10}
+
+\maketitle
+%%%%%%%%%%%%%%%%%%%% ^^^ Internal title page ^^^ %%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{Theoretical starting point}
+We take our starting point in eq.~(3.5) of Pontu's paper
+[\href{https://doi.org/10.1017/S0022377820001592}{\textsc{doi}:~10.1017/S0022377820001592};
+arXiv:~\url{https://arxiv.org/abs/2010.07156}]:
+\begin{equation}\label{eq:reduced-kinetic}
+\pdv{F}{t}+\frac{1}{\tau}\pdv{p}\qty[\Big.U(p)F]
+=\frac{1}{r}\pdv{r}\qty[r\ev{\mathsf{D}}_\xi\pdv{F}{r}],
+\end{equation}
+which is the reduced (integrated over pitch-angle) kinetic
+equation. Here, $r$ is the radial component (in cylindrical geometry),
+$p$ is the momentum coordinate (normalized to $m_{\ee}c$), $F$ is the
+pitch-angle-integrated distribution function such that the runaway
+electron density is given by
+\begin{equation}
+\nRE(r,t) = \int_{p_*}^{\infty}\dd{p}F(r,p;t),
+\end{equation}
+$U$ is the pitch-angle averaged force (the form of which is not
+important for the implementation),
+% \begin{equation}
+% U(p) = \frac{E}{E_{\rm c}}\coth(W)
+% -\tau\qty[\frac{p\nuD}{2}+p\nus+F_{\rm br}
+% +\frac{p^2\gamma\nuD}{\tau_{\rm syn}E/E_{\rm c}}\qty(\coth(W)-W^{-1})]
+% \end{equation}
+and $\ev{D}_{\xi}$ is the pitch-angle averaged diffusion coefficient
+\begin{equation}\label{eq:ev_D_xi}
+\ev{\mathsf{D}}_{\xi}=\ev{\mathsf{D}}_{\xi}(p)
+=\int_{-1}^{1}\dd{\xi} \mathsf{D}(p,\xi)\frac{W\ee^{W\xi}}{2\sinh(W)}.
+\end{equation}
+The parameter $W=W(r,p,t)$ is the width of the distribution in pitch
+angle, and is given by
+\begin{equation}
+W(t,r,p) = \frac{2E(r,t)/E_{\rm c}}{p\nuD(r,t)\tau(r,t)},
+%\equiv \frac{\Delta{p}(r,t)}{p},
+\end{equation}
+where $\tau$ is the relativistic collision time and
+\begin{equation}
+\nuD = \tau^{-1}\frac{\gamma}{p^3}(1+Z_{\rm eff})
+= \tau^{-1}\frac{\sqrt{1+p^2}}{p^3}(1+Z_{\rm eff})
+\end{equation}
+is the deflection (pitch-angle scattering) collision
+frequency. The width in pich angle can now be written as
+\begin{equation}
+W(t,r,p) = \frac{e}{m_{\ee}c}\frac{2E(r,t)p^2\tau}{\sqrt{1+p^2}(1+Z_{\rm eff})}.
+\end{equation}
+For better numerical stability, the integrand in \eqref{eq:ev_D_xi}
+can be rewritten as
+\begin{equation}
+\frac{\ee^{W\xi}}{2\sinh(W)}
+= \frac{\ee^{W(\xi-1)}}{1-\ee^{-2W}}.
+\end{equation}
+
+
+\subsection{Radial fluid transport equations}
+If we allow for an inhomogeneous plasma, \eqref{eq:reduced-kinetic} is
+modified to
+\begin{equation}\label{eq:reduced-kinetic_VD}
+\pdv{F}{t}+\frac{1}{\tau}\pdv{p}\qty[\Big.U(p)F]
+=\frac{1}{r}\pdv{r}\qty[r\qty(-\ev{\mathsf{A}}_\xi+\ev{\mathsf{D}}_\xi\pdv{r})F],
+\end{equation}
+where $\ev{\mathsf{A}}_\xi$ is the pitch-angle averaged radial
+advection term, ``defined equivalently to'' \eqref{eq:ev_D_xi}. Given
+these conditions (see the paper), the lowest-order solution for $F$
+becomes
+\begin{equation}
+F_0(p,r;t) = \nRE(r,t)
+\frac{\gamma_{\rm r}\tau E_{\rm c}}{E-\bar{E}_{\rm c}^{\rm eff}}
+\exp(-\frac{\gamma_{\rm r}\tau E_{\rm c}(p-p_{*})}{E-\bar{E}_{\rm c}^{\rm eff}})
+\equiv \frac{\nRE(r,t)}{\bar{p}_r(r,t)}\exp(-\frac{p-p_{*}}{\bar{p}_r(r,t)}),
+\end{equation}
+where %
+\begin{equation}
+\bar{p}_r(r,t)\equiv\frac{(E-\bar{E}_{\rm c}^{\rm eff})/E_{\rm c}}
+{\gamma_{\rm r}\tau}
+=\frac{e}{m_{\ee}c}\,\frac{E-\bar{E}_{\rm c}^{\rm eff}}
+{\gamma_{\rm r}}.
+\end{equation}
+Under the assumption that the radial transport is small, we may uae
+this distribution to evaluate the lowest-order transport term.
+
+Integrating \eqref{eq:reduced-kinetic_VD} over $p$ gives
+\begin{equation}\label{eq:n_RE}
+\pdv{\nRE}{t} + \frac{1}{r}\pdv{r}
+\qty[r\qty(\frac{\bar\varGamma_{0}}{a}\nRE(r,t)+\tilde\varGamma_{0}\pdv{\nRE}{r})]
+=\gamma_{\rm r}\nRE,
+\end{equation}
+where $a$ is the minor radius of the tokamak, and the advection and
+diffusion coefficients, $\bar\varGamma_{0}$ and $\tilde\varGamma_{0}$,
+respectively, are given by
+\begin{equation}
+\begin{aligned}
+\frac{\bar\varGamma_{0}}{a}\nRE+\tilde\varGamma_{0}\pdv{\nRE}{r}
+=&\int_{p_*}^{\infty}\qty(\ev{\mathsf{A}}_{\xi}F_0-\ev{\mathsf{D}}_{\xi}\pdv{F_0}{r})\dd{p}\\
+=&
+\int_{0}^{\infty}\ev{\mathsf{A'}}_{\xi}\frac{\nRE(r,t)}{\bar{p}_r}\ee^{-p'/\bar{p}_r}\dd{p'}\\
+&-\int_{0}^{\infty}\ev{\mathsf{D'}}_{\xi}
+\qty(\frac{\pd_r\nRE}{\bar{p}_r}-\frac{\nRE\,\pd_r\bar{p}_r}{\bar{p}_r^2}
++\frac{\nRE}{\bar{p}_r}\frac{p'\,\pd_r\bar{p}_r}{\bar{p}_r^2})
+\ee^{-p'/\bar{p}_r}\dd{p'}\\
+=&\frac{\nRE(r,t)}{\bar{p}_r}
+\int_{0}^{\infty}\qty[\ev{\mathsf{A'}}_{\xi} +\ev{\mathsf{D'}}_{\xi}
+\qty(\frac{\pd_r\bar{p}_r}{\bar{p}_r}
+-\frac{p'\,\pd_r\bar{p}_r}{\bar{p}_r^2})]
+\ee^{-p'/\bar{p}_r}\dd{p'}\\
+&-\frac{\pd_r\nRE}{\bar{p}_r}\int_{0}^{\infty}\ev{\mathsf{D'}}_{\xi}
+\ee^{-p'/\bar{p}_r}\dd{p'},
+\end{aligned}
+\end{equation}
+where $p'=p-p_{*}$ and $\ev{V'}_\xi=\ev{V}_\xi(p'+p_*)$ (same for
+$\ev{D'}_\xi$). Individually,  $\bar\varGamma_{0}$ and
+$\tilde\varGamma_{0}$ are given as
+\begin{align}
+\frac{\bar\varGamma_{0}}{a}
+=&
+\frac{1}{\bar{p}_r}
+\int_{0}^{\infty}\qty[\ev{\mathsf{A'}}_{\xi} +\ev{\mathsf{D'}}_{\xi}
+\frac{1}{\bar{p}_r}\qty(1-\frac{p'}{\bar{p}_r})\pdv{\bar{p}_r}{r}]
+\ee^{-p'/\bar{p}_r}\dd{p'},
+\\
+\tilde\varGamma_{0}=&
+\int_{0}^{\infty}-\frac{1}{\bar{p}_r}\ev{\mathsf{D'}}_{\xi}
+\ee^{-p'/\bar{p}_r}\dd{p'}.
+\end{align}
+We also note that with %
+$\bar{p}_r(r,t)=(E-\bar{E}_{\rm c}^{\rm eff})/\gamma_{\rm r}\tau$, %
+\begin{equation}
+\pdv{\bar{p}_r}{r}=
+\frac{1}{\gamma_{\rm r}\tau E_{\rm c}}
+\pdv{(E-\bar{E}_{\rm c}^{\rm eff})}{r}
+-\frac{E-\bar{E}_{\rm c}^{\rm eff}}{(\gamma_{\rm r}\tau E_{\rm c})^2}
+\qty(\gamma_{\rm r}E_{\rm c}\pdv{\tau}{r}
++\tau E_{\rm c}\pdv{\gamma_{\rm r}}{r}
++\gamma_{\rm r}\tau\pdv{E_{\rm c}}{r}).
+\end{equation}
+We could also express $\bar{\varGamma}_0$ in terms of
+$\bar{p}_{r}^{-1}$, which means rewiting the derivative as 
+\begin{equation}
+\frac{1}{\bar{p}_r^{-1}}\pdv{\bar{p}_r^{-1}}{r}=-\frac{1}{\bar{p}_r}\pdv{\bar{p}_r}{r},
+\end{equation}
+and the advection term becomes
+\begin{equation}
+\frac{\bar\varGamma_{0}}{a} =
+\int_{0}^{\infty}\qty[\bar{p}_r^{-1}\ev{\mathsf{A'}}_{\xi} -\ev{\mathsf{D'}}_{\xi}
+\qty(1-p'\,\bar{p}_r^{-1})\pdv{\bar{p}_r^{-1}}{r}]
+\ee^{-p'/\bar{p}_r}\dd{p'}.
+\end{equation}
+Note that while $\bar{p}_{r}$ has been moved into the integrals, it
+does not depend on $p'$.
+
+
+
+
+
+
+\subsection{Notes on the normalization}
+
+In \href{https://arxiv.org/abs/2010.07156}{Pontus' paper}, elelctric fields are normalized to the critical
+electric field
+\begin{equation}
+E_{\rm c} = \frac{n_{\ee}e^3\ln\varLambda}{4\pi\epsilon_0^2m_{\ee}c^2}
+= \frac{m_{\ee}c}{e\tau}.
+\end{equation}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%% The bibliography %%%%%%%%%%%%%%%%%%%%%%%%%%
+%\newpage
+%% This bibliography uses BibTeX
+%\bibliographystyle{ieeetr}
+%\bibliography{references}%requires a file named 'references.bib'
+%% Citations are as usual: \cite{example_article}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{document}%% ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

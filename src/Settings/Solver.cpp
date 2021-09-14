@@ -27,6 +27,7 @@ using namespace std;
 void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/type", "Equation system solver type", (int_t)OptionConstants::SOLVER_TYPE_NONLINEAR);
 
+    s->DefineSetting(MODULENAME "/backupsolver", "Type of backup linear solver to use if the main linear solver fails", (int_t)OptionConstants::LINEAR_SOLVER_NONE);
     s->DefineSetting(MODULENAME "/linsolv", "Type of linear solver to use", (int_t)OptionConstants::LINEAR_SOLVER_LU);
     s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
@@ -39,6 +40,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/debug/printmatrixinfo", "Print detailed information about the PETSc matrix", (bool)false);
     s->DefineSetting(MODULENAME "/debug/printjacobianinfo", "Print detailed information about the jacobian PETSc matrix", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savejacobian", "If true, saves the jacobian matrix in the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/savesolution", "Saves the solution in the specified iteration, i.e. x = (J^-1)F", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savematrix", "If true, saves the linear operator matrix in the specified time step(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savenumericaljacobian", "If true, evaluates the jacobian numerically and saves it for the specified iteration(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/saverhs", "If true, saves the RHS vector in the specified iteration(s)", (bool)false);
@@ -82,6 +84,9 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
+
+    solver->SetSPIHandler(eqsys->GetSPIHandler());
+
     solver->SetIonHandler(eqsys->GetIonHandler());
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
@@ -132,13 +137,15 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
 	vector<UnknownQuantityEquation*> *eqns,
     EquationSystem *eqsys
 ) {
-    enum OptionConstants::linear_solver linsolv =
-        (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
+    enum OptionConstants::linear_solver
+        backups = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/backupsolver"),
+        linsolv = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
 
     int_t maxiter     = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
     bool verbose      = s->GetBool(MODULENAME "/verbose");
     bool savejacobian = s->GetBool(MODULENAME "/debug/savejacobian");
+    bool savesolution = s->GetBool(MODULENAME "/debug/savesolution");
     bool savenumjac   = s->GetBool(MODULENAME "/debug/savenumericaljacobian");
     bool saveresidual = s->GetBool(MODULENAME "/debug/saveresidual");
     bool printdebug   = s->GetBool(MODULENAME "/debug/printjacobianinfo");
@@ -146,8 +153,8 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, maxiter, reltol, verbose);
-    snl->SetDebugMode(printdebug, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem);
+    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose);
+    snl->SetDebugMode(printdebug, savejacobian, savesolution, saveresidual, savenumjac, timestep, iteration, savesystem);
 
     return snl;
 }

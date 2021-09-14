@@ -1,0 +1,179 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{diagbox}
+\usepackage{wrapfig}
+\usepackage[utf8]{inputenc}
+%\usepackage[swedish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{units}
+\usepackage{ae}
+\usepackage{icomma}
+\usepackage{color}
+\usepackage{graphics} 
+\usepackage{bbm}
+\usepackage{float}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{hyperref}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{braket}
+\usepackage{pdfpages}
+
+\usepackage{tcolorbox}
+
+\newcommand{\N}{\ensuremath{\mathbbm{N}}}
+\newcommand{\Z}{\ensuremath{\mathbbm{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbbm{Q}}}
+\newcommand{\R}{\ensuremath{\mathbbm{R}}}
+\newcommand{\C}{\ensuremath{\mathbbm{C}}}
+\newcommand{\id}{\ensuremath{\,\mathrm{d}}}
+\newcommand{\rd}{\ensuremath{\mathrm{d}}}
+\newcommand{\Ordo}{\ensuremath{\mathcal{O}}}% Stora Ordo
+\renewcommand{\L}{\ensuremath{\mathcal{L}}}% Stora Ordo
+\newcommand{\sub}[1]{\ensuremath{_{\text{#1}}}}
+\newcommand{\ddx}[1]{\ensuremath{ \frac{\partial}{\partial #1} }}
+\newcommand{\ddxx}[2]{\ensuremath{ \frac{\partial^2}{\partial #1 \partial #2} }}
+%\newcommand{\sup}[1]{\ensuremath{^{\text{#1}}}}
+\renewcommand{\b}[1]{\ensuremath{ {\bf #1 } }}
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{center}
+\Large \bf On two integrals appearing in the relativistic test particle operator.
+\end{center}
+
+We need to evaluate
+\begin{align}
+\psi_0 &= \int_0^p \frac{\exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]}}{\sqrt{1+s^2}} \, \rd s \nonumber \\
+&= \int_0^\infty \frac{\exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]}}{\sqrt{1+s^2}} \, \rd s  - \int_p^\infty \frac{\exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]}}{\sqrt{1+s^2}} \, \rd s, \nonumber \\
+\psi_1 &= \int_0^p \exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]} \, \rd s \nonumber \\
+&= \int_0^\infty \exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]} \, \rd s  - \int_p^\infty \exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]} \, \rd s.
+\end{align}
+The two definite integrals can be expressed in terms of the modified Bessel functions $K$ as
+\begin{align}
+\int_0^\infty \frac{\exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]}}{\sqrt{1+s^2}} \, \rd s &=  e^{1/\Theta}K_0\left(\frac{1}{\Theta}\right) \nonumber \\
+\int_0^\infty \exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]} \, \rd s   &= e^{1/\Theta}K_1\left(\frac{1}{\Theta}\right).
+\end{align}
+The remainder can be rewritten, using the change of variables
+\begin{align}
+x &= \sqrt{1+s^2}, \nonumber \\
+\rd x &= \frac{s}{x}\rd s, \nonumber \\
+s &= \sqrt{x^2-1},
+\end{align}
+so that
+\begin{align}
+\int_p^\infty \frac{\exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]}}{\sqrt{1+s^2}} \, \rd s &= \int_\gamma^\infty \frac{\exp{\Bigl[-(x-1)/\Theta\Bigr]}}{\sqrt{x^2-1}} \, \rd x, \nonumber \\
+&= e^{-(\gamma-1)/\Theta}   \int_\gamma^\infty \frac{\exp{\Bigl[-(x-\gamma)/\Theta\Bigr]}}{\sqrt{x^2-1}} \nonumber \\
+\int_p^\infty \exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]} \, \rd s &= \int_\gamma^\infty \frac{x}{\sqrt{x^2-1}}\exp{\Bigl[-(x-1)/\Theta\Bigr]} \, \rd x, \nonumber \\
+&= e^{-(\gamma-1)/\Theta}\int_\gamma^\infty \frac{x}{\sqrt{x^2-1}}\exp{\Bigl[-(x-\gamma)/\Theta\Bigr]} \, \rd x.
+\end{align}
+We can therefore write them on the Laguerre integration form
+\begin{align}
+\psi_0 &= e^{1/\Theta}K_0(1/\Theta) - e^{-(\gamma-1)/\Theta} \int_\gamma^\infty \frac{1}{\sqrt{x^2-1}} w(x) \, \rd x , \nonumber \\
+\psi_1 &= e^{1/\Theta}K_1(1/\Theta) - e^{-(\gamma-1)/\Theta} \int_\gamma^\infty \frac{x}{\sqrt{x^2-1}} w(x) \, \rd x , \nonumber \\
+w &= \exp\Bigl[-(x-\gamma)/\Theta\Bigr].
+\end{align}
+To obtain an energy-independent quadrature we can translate $x-\gamma \mapsto x$.
+
+
+\section{Partial temperature derivative}
+For the evaluation of the Jacobian, we need to evaluate (with $\Theta = T/mc^2$)
+\begin{align}
+\frac{\partial \psi_0}{\partial T} &= \frac{1}{mc^2\Theta^2}\int_0^p \left(1-\frac{1}{\sqrt{1+s^2}}\right) \exp\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr] \nonumber \\
+&= \frac{\psi_1 - \psi_0}{T\Theta}, \\
+\frac{\partial \psi_1}{\partial T} &= \frac{1}{mc^2\Theta^2}\int_0^p \left(\sqrt{1+s^2}-1\right) \exp\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]  \nonumber \\
+&= \frac{\psi_2 - \psi_1}{T\theta},
+\end{align}
+where we introduce 
+\begin{align}
+\psi_2 &= \int_0^p \sqrt{1+s^2} \exp{\Bigl[-(\sqrt{1+s^2}-1)/\Theta\Bigr]} \, \rd s \nonumber \\
+&= e^{1/\Theta}[K_0(1/\Theta) + \Theta K_1(1/\Theta)] - e^{-(\gamma-1)/\Theta}\int_\gamma^\infty \frac{x^2}{\sqrt{x^2-1}}w(x)\,\rd x
+\end{align}
+
+\section{Asymptotic expansions}
+In this section we give asymptotic expansions of the $\psi$ functions which can be useful in certain limits.
+
+\subsection{Superthermal limit, $\gamma - 1 \gg \Theta$}
+
+For the evaluation of the three special functions $\psi_n$, we require the evaluation of the integrals
+\begin{align}
+P_k = \int_{\gamma}^\infty \frac{x^k}{\sqrt{x^2-1}}e^{-(x-\gamma)/\Theta}\,\rd x,
+\end{align}
+for $k=0,\,1,\,2$. A useful asymptotic expansion valid for $\Theta \ll 1$ is obtained by repeated integration by parts
+\begin{align}
+P_k &= \Theta \frac{\gamma^k}{\sqrt{\gamma^2-1}} + \int_\gamma^\infty \frac{\rd}{\rd x}\left(\frac{x^k}{\sqrt{x^2-1}}\right)e^{-(x-\gamma)/\Theta} \rd x \nonumber \\
+&= ... \nonumber \\
+&= \Theta \sum_{n=0}^\infty \Theta^n  \left(\frac{\rd}{\rd \gamma}\right)^n\left(\frac{\gamma^k}{\sqrt{\gamma^2-1}}\right). 
+\end{align}
+Carrying out this expansion to second-to-leading order yields
+\begin{align}
+P_k &\sim \Theta \frac{\gamma^k}{p} + \Theta^2 \frac{\gamma^{k-1}[(k-1)p^2 - 1]}{p^3} + \Ordo(\Theta^3/p^5).
+\end{align}
+This approximation is accurate in the superthermal limit: $p \gg \sqrt{\Theta}$.
+
+This produces the following expressions for the special functions:
+\begin{align}
+\psi_0 &\sim e^{1/\Theta}K_0\left(\frac{1}{\Theta}\right) - \frac{\Theta}{p} e^{-(\gamma-1)/\Theta} + \Theta^2\frac{\gamma}{ p^3}e^{-(\gamma-1)/\Theta} \nonumber \\
+\psi_1 &\sim e^{1/\Theta}K_1\left(\frac{1}{\Theta}\right) - \Theta \frac{\gamma}{p}e^{-(\gamma-1)/\Theta} +\frac{\Theta^2 }{p^3}e^{-(\gamma-1)/\Theta}  \\
+\psi_2 &\sim e^{1/\Theta}K_0\left(\frac{1}{\Theta}\right) + \Theta\left[ e^{1/\Theta} K_1\left(\frac{1}{\Theta}\right)  - \frac{\gamma^2}{p}e^{-(\gamma-1)/\Theta}\right] - \Theta^2 \frac{\gamma(\gamma^2-2)}{p^3} e^{-(\gamma-1)/\Theta}\nonumber
+\end{align}
+At $\gamma-1 = 10\Theta$, each of these expanded forms have a relative error of approximately $10^{-8}$, compared to the exact expressions.
+
+
+\subsection{Non-relativistic or low-energy limit, $\mathrm{max}(\Theta,\,\gamma-1)\ll 1$}
+In the non-relativistic limit, we may use the alternative form of the $\psi$ functions:
+\begin{align}
+\psi_n = \int_0^p (1+s^2)^{(n-1)/2} \exp\Big[ - (\sqrt{1+s^2} - 1)/\Theta \Big] \rd s.
+\end{align}
+By making a change of variables
+\begin{align}
+\frac{\sqrt{1+s^2}-1}{\Theta} &= x^2 , \nonumber \\
+\frac{1}{\Theta}\frac{s\rd s}{\sqrt{1+s^2}} &= 2x\rd x, \nonumber \\ 
+s &= \sqrt{ (1+\Theta x^2)^2 - 1} = x\sqrt{2\Theta}\sqrt{1+ \frac{1}{2}\Theta x^2} ,
+\end{align}
+the integral is recast into
+\begin{align}
+\psi_n &= \sqrt{2\Theta} \int_0^{x_m(p)} \frac{(1+\Theta x^2)^{n}}{\sqrt{1+\frac{1}{2}\Theta x^2}} e^{-x^2} \, \rd x, \nonumber \\
+x_m &= \sqrt{\frac{\gamma-1}{\Theta}}.
+\end{align}
+The integrand can be Taylor expanded with
+\begin{align}
+\frac{(1+\Theta x^2)^{n}}{\sqrt{1+\frac{1}{2}\Theta x^2}} \sim 1 + \frac{4n-1}{4}\Theta x^2 + \frac{1}{4}\left(2n^2 - 3n + \frac{3}{8}\right)\Theta^2 x^4 + \Ordo\bigl(\Theta^3 x^6\bigr).
+\end{align}
+Using the integral identities 
+\begin{align}
+\int_0^{x_m} e^{-x^2} \,\rd x &= \frac{\sqrt{\pi}}{2}\mathrm{erf}(x_m), \nonumber \\
+\int_0^{x_m} x^2e^{-x^2} \,\rd x &= \frac{\sqrt{\pi}}{4}\mathrm{erf}(x_m) - \frac{1}{2} x_m e^{-x_m^2}, \nonumber \\
+\int_0^{x_m} x^4e^{-x^2} \,\rd x &= \frac{3\sqrt{\pi}}{8}\mathrm{erf}(x_m) - \frac{3+2x_m^2}{4}x_m e^{-x_m^2},
+\end{align}
+we obtain
+\begin{align}
+\frac{1}{\sqrt{2\Theta}}\psi_n &\sim \left[ 1 + \frac{4n-1}{8}\Theta + \frac{3}{16}\left(2n^2- 3n + \frac{3}{8}\right)\Theta^2 \right] \frac{\sqrt{\pi}}{2}\mathrm{erf}(x_m) \nonumber \\
+& - \frac{\Theta}{8} x_m e^{-x_m^2} \left[ 4n-1 + \Theta \frac{3+2x_m^2}{2}\left(2n^2-3n+\frac{3}{8}\right)  \right]
+\end{align}
+These expressions have a relative error $<10^{-8}$ when $\gamma-1 < 0.01$ (i.e. when $p<0.15$) or when $\Theta < 0.005$ (corresponding to temperatures $T < 2.5\,$keV).
+
+%\section{Lorentz conductivity calculation}
+%Consider the equation
+%\begin{align}
+%\frac{1}{\mathcal{V}'}\frac{\partial}{\partial p}\left(\mathcal{V}'\{A^p\} f\right) + \frac{1}{\mathcal{V}'}\frac{\partial}{\partial \xi}\left(\mathcal{V}' \{A^\xi\} f\right) +  = \frac{1}{\mathcal{V}'}\frac{\partial}{\partial \xi}\left(\mathcal{V}'\{D^{\xi\xi}\}\frac{\partial f}{\partial \xi} \right) 
+%\end{align}
+%in the limit $D \gg A$ for which $f = f_0 + f_1+ ...$ where $f_0 = f_0(p)$. The equation then takes the form
+%\begin{align}
+%\frac{1}{\mathcal{V'}}\left(\frac{\partial \mathcal{V}'\{A^p\}}{\partial p} + \frac{\partial  \mathcal{V}'\{A^\xi\}}{\partial \xi}\right)f_0 + \{A^p\}\frac{\partial f_0}{\partial p} = \frac{1}{\mathcal{V}'}\frac{\partial}{\partial \xi}\left(\mathcal{V}'\{D^{\xi\xi}\}\frac{\partial f_1}{\partial \xi} \right) 
+%\end{align}
+%Integrating over $\rd \xi \, \mathcal{V}'$ from $\xi = \xi$ to $1$ (where $\{A^\xi\}$ and $\{D^{\xi\xi}\}$ both vanish for $\xi=1$) yields
+%\begin{align}
+%\frac{\partial}{\partial p}\left( f_0\int_\xi^1\rd \xi \, \mathcal{V}'\{A^p\}\right) - \mathcal{V}'\{A^\xi\} f_0 = -\mathcal{V}'\{D^{\xi\xi}\}\frac{\partial f_1}{\partial \xi}.
+%\end{align}
+%Dividing by $\mathcal{V'}\{D^{\xi\xi}\}$ and again integrating over $\xi$, from $0$ to $\xi$, yields
+%\begin{align}
+%
+%\end{align}
+
+\end{document}

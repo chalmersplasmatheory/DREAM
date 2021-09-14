@@ -110,3 +110,41 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 
     return true;
 }
+
+/**
+ * Calculate the radial flux label 'r' corresponding to the given
+ * point in the cartesian SPI coordinate system (centred on the
+ * magnetic axis).
+ */
+void CylindricalRadialGridGenerator::GetRThetaFromCartesian(
+   real_t *r, real_t *theta, real_t x, real_t y, real_t , real_t, real_t
+) {
+    *r = sqrt(x*x+y*y);
+    *theta = std::atan2(y,x);
+}
+
+/**
+ * Calculate the gradient of the radial flux label 'r' 
+ * in cartesian SPI coordinates.
+ */
+void CylindricalRadialGridGenerator::GetGradRCartesian(
+    real_t *gradRCartesian, real_t , real_t theta
+) {
+    gradRCartesian[0]=cos(theta);
+    gradRCartesian[1]=sin(theta);
+    gradRCartesian[2]=0;
+}
+
+/**
+ * Calculate the radial flux label 'r' at the point of closest approach
+ * to the magnetic axis along straight the line between the points given by
+ * (x1, y1, z1) and (x2, y2, z2) in the SPI coordinate system
+ */
+real_t CylindricalRadialGridGenerator::FindClosestApproach(
+    real_t x1, real_t y1, real_t,
+    real_t x2, real_t y2, real_t
+) {
+    real_t tc = -(x1*(x2-x1)+y1*(y2-y1))/((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+    return sqrt((x1+tc*(x2-x1))*(x1+tc*(x2-x1))+(y1+tc*(y2-y1))*(y1+tc*(y2-y1)));
+}
+

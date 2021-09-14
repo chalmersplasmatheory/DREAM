@@ -77,6 +77,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
         eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
+        nullptr,    // transport operator (only used for f_re)
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
         &oqty_terms->f_hot_ripple_Dxx, rescaleMaxwellian
     );
@@ -257,7 +258,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     bool hasNreTransport = ConstructTransportTerm(
         Op_Nre, "eqsys/n_re", fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-        eqsys->GetUnknownHandler(),s, false, false,
+        eqsys,s, false, false,
         &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
     );
     if(hasNreTransport)
@@ -272,7 +273,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     bool hasFHotTerm = ConstructTransportTerm(
         Op_fhot_tmp, "eqsys/f_hot", eqsys->GetHotTailGrid(),
         OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-        eqsys->GetUnknownHandler(),s, true, false,
+        eqsys,s, true, false,
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc
     );
     if(hasFHotTerm){ // add kinetic term integrated over momentum

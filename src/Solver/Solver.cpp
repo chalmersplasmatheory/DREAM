@@ -2,6 +2,8 @@
  * Implementation of common routines for the 'Solver' routines.
  */
 
+#include <iostream>
+
 #include <vector>
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
@@ -11,6 +13,7 @@
 #include "FVM/UnknownQuantity.hpp"
 
 // Linear solvers
+#include "FVM/Solvers/MIGMRES.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #ifdef PETSC_HAVE_MKL_PARDISO
 #   include "FVM/Solvers/MIMKL.hpp"
@@ -29,14 +32,16 @@ using namespace std;
 Solver::Solver(
     FVM::UnknownQuantityHandler *unknowns,
     vector<UnknownQuantityEquation*> *unknown_equations,
-    enum OptionConstants::linear_solver lsolve
+    enum OptionConstants::linear_solver lsolve,
+    enum OptionConstants::linear_solver bksolve
 )
-    : unknowns(unknowns), unknown_equations(unknown_equations), linearSolver(lsolve) {
+    : unknowns(unknowns), unknown_equations(unknown_equations), linearSolver(lsolve), backupSolver(bksolve) {
 
     this->solver_timeKeeper = new FVM::TimeKeeper("Solver rebuild");
     this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
     this->timerCqh = this->solver_timeKeeper->AddTimer("collisionhandler", "Rebuild coll. handler");
     this->timerREFluid = this->solver_timeKeeper->AddTimer("refluid", "Rebuild RunawayFluid");
+    this->timerSPIHandler = this->solver_timeKeeper->AddTimer("spihandler", "Rebuild SPIHandler");
     this->timerRebuildTerms = this->solver_timeKeeper->AddTimer("equations", "Rebuild terms");
 }
 
@@ -70,6 +75,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         len_t matUqnId = utmm[uqnId];
         // Iterate over each equation term
+        len_t operatorId = 0;
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             const real_t *x = unknowns->GetUnknownData(it->first);
         
@@ -85,7 +91,11 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
                 // - with respect to                               x_derivId
                 it->second->SetJacobianBlock(it->first, derivId, jac, x);
             }
+
+            operatorId++;
         }
+
+        //printf("operatorId = " LEN_T_PRINTF_FMT "\n", operatorId);
     }
     jac->PartialAssemble();
 
@@ -233,6 +243,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
 
     this->ionHandler->Rebuild();
     // Rebuild ionHandler, collision handlers and RunawayFluid
+
     solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
@@ -257,6 +268,12 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
             uqty->Store(pp->GetData(), 0, true);
         }
     }
+
+    solver_timeKeeper->StartTimer(timerSPIHandler);
+    if(this->SPI!=nullptr){
+        this->SPI-> Rebuild(dt);
+    }
+    solver_timeKeeper->StopTimer(timerSPIHandler);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqnId = nontrivial_unknowns[i];
@@ -319,38 +336,98 @@ void Solver::SaveTimings_rebuild(SFile *sf, const std::string& path) {
  * N: Number of rows (or columns) in matrix to invert.
  */
 void Solver::SelectLinearSolver(const len_t N) {
-    if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
-        this->inverter = new FVM::MILU(N);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MKL)
+    if (this->linearSolver == this->backupSolver)
+        throw SolverException(
+            "The main and backup linear solvers may not be the same."
+        );
+
+    this->mainInverter = this->ConstructLinearSolver(N, this->linearSolver);
+    this->inverter = this->mainInverter;
+
+    if (this->backupSolver != OptionConstants::LINEAR_SOLVER_NONE)
+        this->backupInverter = this->ConstructLinearSolver(N, this->backupSolver);
+}
+
+/**
+ * Check if GMRES has converged.
+ *
+ * ksp:    KSP solver context.
+ * it:     Iteration number.
+ * rnorm:  Estimated 2-norm of preconditioned residual.
+ * reason: (return) reason for convergence.
+ * cctx:   Convergence context.
+ */
+/*PetscErrorCode CheckGMRESConverged(
+    KSP ksp, PetscInt it, PetscReal, KSPConvergedReason *reason,
+    void *cctx
+) {
+    Solver *solver = (Solver*)cctx;
+    ConvergenceChecker *cc = solver->GetConvergenceChecker();
+
+    Vec _x, _dx;
+    VecCreateSeq(PETSC_COMM_WORLD, solver->GetMatrixSize(), &_x);
+
+    KSPBuildSolution(ksp, _x, &_x);
+    KSPBuildResidual(ksp, NULL, NULL, &_dx);
+
+    real_t *x, *dx;
+    VecGetArray(_x, &x);
+    VecGetArray(_dx, &dx);
+
+    bool conv = cc->IsConverged(x, dx, false);
+
+    VecRestoreArray(_dx, &dx);
+    VecRestoreArray(_x, &x);
+
+    VecDestroy(&_dx);
+    VecDestroy(&_x);
+
+    printf("Converged? %s\n", conv?"yes":"no");
+
+    if (conv)
+        *reason = KSP_CONVERGED_RTOL_NORMAL;
+    else
+        *reason = KSP_CONVERGED_ITERATING;
+
+    return 0;
+}*/
+
+FVM::MatrixInverter *Solver::ConstructLinearSolver(const len_t N, enum OptionConstants::linear_solver ls) {
+    if (ls == OptionConstants::LINEAR_SOLVER_GMRES) {
+       //return new FVM::MIGMRES(N, nontrivial_unknowns, unknowns, &CheckGMRESConverged, this);
+       return new FVM::MIGMRES(N, nontrivial_unknowns, unknowns, nullptr, nullptr);
+    } else if (ls == OptionConstants::LINEAR_SOLVER_LU)
+        return new FVM::MILU(N);
+    else if (ls == OptionConstants::LINEAR_SOLVER_MKL) {
 #ifdef PETSC_HAVE_MKL_PARDISO
-        this->inverter = new FVM::MIMKL(N);
+        return new FVM::MIMKL(N);
 #else
         throw SolverException(
             "Your version of PETSc does not include support for Intel MKL PARDISO. "
             "To use this linear solver you must recompile PETSc."
         );
 #endif
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+    } else if (ls == OptionConstants::LINEAR_SOLVER_MUMPS) {
 #ifdef PETSC_HAVE_MUMPS
-        this->inverter = new FVM::MIMUMPS(N);
+        return new FVM::MIMUMPS(N);
 #else
         throw SolverException(
             "Your version of PETSc does not include support for MUMPS. "
             "To use this linear solver you must recompile PETSc."
         );
 #endif
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_SUPERLU)
+    } else if (ls == OptionConstants::LINEAR_SOLVER_SUPERLU) {
 #ifdef PETSC_HAVE_SUPERLU
-        this->inverter = new FVM::MISuperLU(N);
+        return new FVM::MISuperLU(N);
 #else
         throw SolverException(
             "Your version of PETSc does not include support for SuperLU. "
             "To use this linear solver you must recompile PETSc."
         );
 #endif
-    else
+    } else
         throw SolverException(
-            "Unrecognized linear solver specified: %d.", this->linearSolver
+            "Unrecognized linear solver specified: %d.", ls
         );
 }
 
@@ -374,4 +451,27 @@ void Solver::SetPreconditioner(DiagonalPreconditioner *dp) {
 
     this->diag_prec = dp;
 }
+
+/**
+ * Switch to using the backup inverter instead of the main inverter.
+ */
+void Solver::SwitchToBackupInverter() {
+    if (this->inverter == this->backupInverter)
+        throw DREAMException("Backup matrix inverter failed with PETSc error: " INT_T_PRINTF_FMT, inverter->GetReturnCode());
+
+    this->inverter = this->backupInverter;
+}
+
+/**
+ * Switch to using the main inverter.
+ */
+void Solver::SwitchToMainInverter() {
+    this->inverter = this->mainInverter;
+}
+
+/**
+ * Empty routine for writing solver data to output file.
+ * This method should be overridden where needed.
+ */
+void Solver::WriteDataSFile(SFile*, const std::string&) {}
 

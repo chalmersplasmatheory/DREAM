@@ -2,6 +2,9 @@
  * Definition of equations relating to j_hot (the radial profile 
  * of parallel current density j_|| / (B/B_min) of hot electrons).
  */
+ 
+#include <sstream>
+#include <iomanip>
 
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -56,9 +59,36 @@ void SimulationGenerator::ConstructEquation_j_hot(
                 (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
             if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
                 // With collfreq_mode FULL, n_hot is defined as density above some threshold.
-                pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
-                // TODO: format desc so that pThreshold is given explicitly (ie 5*p_Te in this case) 
-                desc = "integral(v_par*f_hot, p>pThreshold)"; 
+                pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold"); 
+                
+                std::ostringstream str;
+                str <<std::fixed << std::setprecision(3) << pThreshold;
+                switch(pMode){
+                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC:{
+                        desc = "integral(v_par*f_hot, p>"+str.str()+"*me*c)";
+                        break;
+                    } 
+                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL:{
+                        desc = "integral(v_par*f_hot, p>"+str.str()+"*pThermal)";
+                        break;
+                    }
+                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
+                        desc = "integral(v_par*f_hot), smooth lower limit at p="+str.str()+"*pThermal";
+                        break;
+                    }
+                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_MC:{
+                        desc = "integral(v_par*f_hot, p<"+str.str()+"*me*c)";
+                        break;
+                    } 
+                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_THERMAL:{
+                        desc = "integral(v_par*f_hot, p<"+str.str()+"*pThermal)";
+                        break;
+                    }
+                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
+                        desc = "integral(v_par*f_hot), smooth upper limit at p="+str.str()+"*pThermal";
+                        break;
+                    }    
+                }
             }
             FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
             Op1->AddTerm(new CurrentDensityFromDistributionFunction(

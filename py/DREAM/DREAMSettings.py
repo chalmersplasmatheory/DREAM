@@ -21,8 +21,7 @@ from .Settings.Atomics import Atomics
 
 class DREAMSettings:
     
-    TIMESTEP_TYPE_CONSTANT = 1
-    
+
     def __init__(self, filename=None, path="", chain=True, keepignore=False):
         """
         Construct a new DREAMSettings object. If 'filename' is given,
@@ -59,7 +58,7 @@ class DREAMSettings:
 
         if filename is not None:
             if type(filename) == str:
-                self.load(filename, path=path)
+                self.load(filename, path=path, lazy=False)
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
 
@@ -174,13 +173,13 @@ class DREAMSettings:
         self.init['timeindex']  = timeindex
 
 
-    def load(self, filename, path=""):
+    def load(self, filename, path="", lazy=False):
         """
         Load a DREAMSettings object from the named HDF5 file.
         'path' specifies the path within the HDF5 file where
         the DREAMSettings object is stored.
         """
-        data = DREAMIO.LoadHDF5AsDict(filename, path=path)
+        data = DREAMIO.LoadHDF5AsDict(filename, path=path, lazy=lazy)
         self.fromdict(data, filename=filename)
 
 

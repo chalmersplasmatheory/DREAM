@@ -18,6 +18,8 @@ AvalancheSourceRP::AvalancheSourceRP(
     real_t pCutoff, real_t scaleFactor, RPSourceMode sm
 ) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceMode(sm)
 {
+    SetName("AvalancheSourceRP");
+
     id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     id_Efield = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->pCutoff = pCutoff;

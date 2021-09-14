@@ -90,9 +90,15 @@ real_t CoulombLogarithm::evaluateLnLambdaC(len_t ir){
 real_t CoulombLogarithm::evaluateLnLambdaT(len_t ir){
     real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
     real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
-    if(n_free == 0)
+    return evaluateLnLambdaT(T_cold,n_free);
+}
+/**
+ * Evaluates the thermal lnLambda at temperature T and densiy n
+ */
+real_t CoulombLogarithm::evaluateLnLambdaT(real_t T, real_t n){
+    if(n == 0)
         return 0;
-    return 14.9 - 0.5*log(n_free/1e20) + log(T_cold/1e3);
+    return 14.9 - 0.5*log(n/1e20) + log(T/1e3);
 }
 
 /**

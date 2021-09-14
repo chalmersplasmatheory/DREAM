@@ -175,7 +175,7 @@ def dict2h5(f, data, path=''):
         elif type(data[key]) == np.ndarray:
             f.create_dataset(key, data[key].shape, data=data[key])
         else:
-            raise DREAMIOException("Unrecognized data type of entry '{}/{}'.".format(path, key))
+            raise DREAMIOException("Unrecognized data type of entry '{}/{}': {}.".format(path, key, type(data[key])))
 
 
 def h52dict(f, path='', lazy=False):
@@ -219,7 +219,10 @@ def getData(f, key):
     if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
         return f[key][:].tostring().decode('utf-8')
     elif f[key].dtype == 'object':  # New strings
-        return f[key][:][0].decode()
+        if f[key].shape == ():
+            return f[key][()].decode()
+        else:
+            return f[key][:][0].decode()
     else:
         return f[key][:]
 

@@ -102,7 +102,7 @@ ds_re.timestep.setNt(Nt)
 
 ds_re.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds_re.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds_re.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 0)
+ds_re.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall_R0 = 0)
 
 # Set Rechester-Rosenbluth transport
 # in T_cold

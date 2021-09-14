@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
     if (a->splash)
         splash();
 
-    cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
+    cout << "commit " << DREAM_GIT_SHA1 << endl;
 
     // Except on NaN (but only in debug mode)
 #if !defined(NDEBUG) && defined(__linux__)

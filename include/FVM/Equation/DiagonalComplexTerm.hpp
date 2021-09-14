@@ -31,7 +31,7 @@ namespace DREAM::FVM {
         UnknownQuantityHandler *unknowns;
 
         virtual bool TermDependsOnUnknowns() override {return true;}
-        virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
+        virtual bool AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetDiffWeights(len_t, len_t) = 0; 
     public:
         DiagonalComplexTerm(Grid*, UnknownQuantityHandler*, Grid *operandGrid=nullptr);

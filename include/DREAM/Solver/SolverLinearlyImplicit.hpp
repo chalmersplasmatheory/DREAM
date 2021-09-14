@@ -55,6 +55,8 @@ namespace DREAM {
 
         void SaveDebugInfo(len_t, FVM::Matrix*, const real_t*);
         void SetDebugMode(bool, bool, bool, int_t, bool);
+
+        virtual void WriteDataSFile(SFile*, const std::string&) override;
     };
 }
 

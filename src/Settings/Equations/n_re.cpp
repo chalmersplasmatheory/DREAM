@@ -8,8 +8,10 @@
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
+#include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
@@ -32,6 +34,10 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
 
+    s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
+    s->DefineSetting(MODULENAME "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
+
     DefineOptions_Transport(MODULENAME, s, false);
 
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
@@ -53,10 +59,12 @@ void SimulationGenerator::DefineOptions_n_re(
  */
 void SimulationGenerator::ConstructEquation_n_re(
     EquationSystem *eqsys, Settings *s,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    FVM::Operator *transport_fre
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+    FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
     len_t id_n_tot = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
@@ -121,13 +129,50 @@ void SimulationGenerator::ConstructEquation_n_re(
     bool hasTransport = ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        eqsys->GetUnknownHandler(), s, false, false,
-        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
+        eqsys, s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc,
+        oqty_terms
     );
-    if(hasTransport)
+    if(hasTransport) {
+        // If 'f_re' is enabled, the user should disable transport
+        // for 'n_re' as it will be included automatically.
+        if (transport_fre != nullptr)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_INCONSISTENT_RE_TRANSPORT,
+                "Inconsistent runaway transport settings are used. When 'f_re' "
+                "is radially transported, no transport should be applied to "
+                "'n_re' as this is handled automatically."
+            );
+        
         desc_sources += " + transport";
 
-    if(!desc_sources.compare(""))
+        // Also enable flux limiters
+        enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
+            (enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/r");
+        enum OptionConstants::adv_jacobian_mode adv_jac_mode_r =
+            (enum OptionConstants::adv_jacobian_mode)s->GetInteger(MODULENAME "/adv_interp/r_jac");
+        real_t fluxLimiterDamping = s->GetReal(MODULENAME "/adv_interp/fluxlimiterdamping");
+
+        Op_nRE->SetAdvectionInterpolationMethod(
+            adv_interp_r, adv_jac_mode_r, FVM::FLUXGRIDTYPE_RADIAL,
+            id_n_re, fluxLimiterDamping
+        );
+    // Account for transport of f_re...
+    } else if (transport_fre != nullptr) {
+        len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+        FVM::Operator *Op_fRE = new FVM::Operator(fluidGrid);
+        Op_fRE->AddTerm(
+            new KineticEquationTermIntegratedOverMomentum(
+                fluidGrid, runawayGrid, transport_fre, id_f_re,
+                eqsys->GetUnknownHandler()
+            )
+        );
+
+        desc_sources += " - f_re transport";
+        eqsys->SetOperator(id_n_re, id_f_re, Op_fRE);
+    }
+
+    if (!desc_sources.compare(""))
         desc_sources = "0";
 
     eqsys->SetOperator(id_n_re, id_n_re,  Op_nRE, "dn_re/dt =" + desc_sources);

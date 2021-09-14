@@ -1,6 +1,8 @@
 #ifndef _OTHER_QUANTITY_HANDLER_HPP
 #define _OTHER_QUANTITY_HANDLER_HPP
 
+namespace DREAM { class OtherQuantityHandler; }
+
 #include <map>
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
@@ -17,7 +19,10 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
+#include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
@@ -30,6 +35,7 @@ namespace DREAM {
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
+            DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
             // Radial transport boundary conditions
@@ -41,14 +47,20 @@ namespace DREAM {
             DREAM::TransportDiffusiveBC *n_re_diffusive_bc=nullptr;
             DREAM::TransportAdvectiveBC *T_cold_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *T_cold_diffusive_bc=nullptr;
+            // Svensson transport coefficients
+            DREAM::SvenssonTransportAdvectionTermA *svensson_A=nullptr;
+            DREAM::SvenssonTransportDiffusionTerm  *svensson_D=nullptr;
+            DREAM::SvenssonTransportAdvectionTermD *svensson_advD=nullptr;
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
+            // Hyperresistive diffusion term
+            DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
         };
 
-    private:
+    protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
 
@@ -64,7 +76,7 @@ namespace DREAM {
 
         // indices to unknownquantities
         len_t 
-            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, 
+            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip, id_Ip, id_psi_edge, id_psi_wall;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids 
@@ -89,7 +101,7 @@ namespace DREAM {
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );
-        ~OtherQuantityHandler();
+        virtual ~OtherQuantityHandler();
 
         void DefineQuantities();
         OtherQuantity *GetByName(const std::string&);

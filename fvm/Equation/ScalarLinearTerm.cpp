@@ -89,12 +89,16 @@ void ScalarLinearTerm::SetVectorElements(real_t *vec, const real_t *x) {
 /**
  * Set a block for this term in the given jacobian matrix.
  */
-void ScalarLinearTerm::SetJacobianBlock(
+bool ScalarLinearTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* /*x*/
 ) {
+    bool contributes = false;
     if (derivId == uqtyId) {
         this->SetMatrixElements(jac, nullptr);
+        contributes = true;
     }
+
+    return contributes;
 }
 
 /**

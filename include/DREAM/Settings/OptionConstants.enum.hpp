@@ -34,6 +34,11 @@ enum ion_data_type {
     ION_DATA_TYPE_DYNAMIC=3
 };
 
+enum ion_opacity_mode {
+	OPACITY_MODE_TRANSPARENT=1,
+	OPACITY_MODE_GROUND_STATE_OPAQUE=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,
@@ -48,7 +53,8 @@ enum adas_interp_type {
 // Type of radial grid
 enum radialgrid_type {
     RADIALGRID_TYPE_CYLINDRICAL=1,
-    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2
+    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2,
+    RADIALGRID_TYPE_NUMERICAL=3
 };
 
 // Type of momentum grid
@@ -70,7 +76,8 @@ enum pxigrid_xitype {
     PXIGRID_XITYPE_BIUNIFORM=2,
     PXIGRID_XITYPE_UNIFORM_THETA=3,
     PXIGRID_XITYPE_BIUNIFORM_THETA=4,
-    PXIGRID_XITYPE_CUSTOM=5
+    PXIGRID_XITYPE_CUSTOM=5,
+    PXIGRID_XITYPE_TRAPPED=6
 };
 
 // Type of advection interpolation coefficient for jacobian
@@ -80,6 +87,10 @@ enum adv_jacobian_mode {
     AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
 };
 
+enum radialgrid_numeric_format {
+    RADIALGRID_NUMERIC_FORMAT_LUKE=1
+};
+
 /////////////////////////////////////
 ///
 /// SOLVER OPTIONS
@@ -87,16 +98,17 @@ enum adv_jacobian_mode {
 /////////////////////////////////////
 enum solver_type {
     SOLVER_TYPE_LINEARLY_IMPLICIT=1,
-    SOLVER_TYPE_NONLINEAR=2,
-    SOLVER_TYPE_NONLINEAR_SNES=3
+    SOLVER_TYPE_NONLINEAR=2
 };
 // Linear solver type (used by both the linear-implicit
 // and nonlinear solvers)
 enum linear_solver {
+    LINEAR_SOLVER_NONE=0,       // only for backup solver
     LINEAR_SOLVER_LU=1,
     LINEAR_SOLVER_MUMPS=2,
     LINEAR_SOLVER_MKL=3,
-    LINEAR_SOLVER_SUPERLU=4
+    LINEAR_SOLVER_SUPERLU=4,
+    LINEAR_SOLVER_GMRES=5
 };
 
 /////////////////////////////////////
@@ -145,6 +157,7 @@ enum uqty_f_re_inittype {
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
+    UQTY_V_LOOP_WALL_EQN_TRANSFORMER=3     // V_loop on wall is evolved self-consistently AND externally applied via transformer action
 };
 
 enum uqty_n_cold_eqn {
@@ -155,6 +168,11 @@ enum uqty_n_cold_eqn {
 enum uqty_T_cold_eqn {
     UQTY_T_COLD_EQN_PRESCRIBED=1,   // T_cold prescribed by the user
     UQTY_T_COLD_SELF_CONSISTENT=2   // T_cold calculated self-consistently
+};
+
+enum uqty_T_abl_eqn {
+    UQTY_T_ABL_EQN_PRESCRIBED=1,   // T_abl prescribed by the user
+    UQTY_T_ABL_SELF_CONSISTENT=2   // T_abl calculated self-consistently
 };
 
 enum uqty_T_i_eqn {
@@ -283,6 +301,42 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
 };
 
+enum eqterm_spi_velocity_mode {
+    EQTERM_SPI_VELOCITY_MODE_NONE=1,
+    EQTERM_SPI_VELOCITY_MODE_PRESCRIBED=2
+};
+
+enum eqterm_spi_ablation_mode {
+    EQTERM_SPI_ABLATION_MODE_NEGLECT=1,
+    EQTERM_SPI_ABLATION_MODE_FLUID_NGS=2,
+    EQTERM_SPI_ABLATION_MODE_KINETIC_NGS=3,
+    EQTERM_SPI_ABLATION_MODE_NGPS=4
+};
+
+enum eqterm_spi_deposition_mode {
+    EQTERM_SPI_DEPOSITION_MODE_NEGLECT=1,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL=2,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE=3,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN=4
+};
+
+enum eqterm_spi_heat_absorbtion_mode {
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT=1,
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS=2,
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS_GAUSSIAN=3
+};
+
+enum eqterm_spi_cloud_radius_mode {
+    EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT=1,
+    EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT=2,
+    EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT=3
+};
+
+enum eqterm_spi_abl_ioniz_mode {
+    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
+    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
+};
+
 enum eqterm_particle_source_shape {
     EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN = 1,    // Maxwellian shape with temperature T_cold
     EQTERM_PARTICLE_SOURCE_SHAPE_DELTA = 2          // Delta function in p=0
@@ -293,3 +347,11 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
+
+
+// Option for which parameter to do the 1D interpolation (time or plasma current)
+enum svensson_interp1d_param {
+    SVENSSON_INTERP1D_TIME=1,
+    SVENSSON_INTERP1D_IP=2
+};
+        

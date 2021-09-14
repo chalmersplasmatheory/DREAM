@@ -17,12 +17,6 @@ namespace DREAM::FVM {
             ***bounceData_f1   = nullptr,
             ***bounceData_f2   = nullptr;
 
-        bool 
-            **isTrapped = nullptr, 
-            **isTrapped_fr = nullptr, 
-            **isTrapped_f1 = nullptr,
-            **isTrapped_f2 = nullptr;
-
         // Size NR+ x (NP1+ x NP2+).
         // If isTrapped, contains bounce point theta_b1 or theta_b2,
         // otherwise empty.
@@ -54,7 +48,7 @@ namespace DREAM::FVM {
         real_t ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType);
 
         const real_t *GetBounceData(len_t ir, len_t i, len_t j, fluxGridType) const;
-        virtual void DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2);
+        virtual void DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2, fluxGridType fluxGrid);
     public:
         BounceSurfaceQuantity(Grid *grid, FluxSurfaceQuantity *fluxSurfaceQuantity);
         virtual ~BounceSurfaceQuantity();

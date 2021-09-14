@@ -44,18 +44,23 @@ IONIZATION_MODE_FLUID = 1
 IONIZATION_MODE_KINETIC = 2
 IONIZATION_MODE_KINETIC_APPROX_JAC=3
 
+ION_OPACITY_MODE_TRANSPARENT = 1
+ION_OPACITY_MODE_GROUND_STATE_OPAQUE = 2
+
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, ttype=0, Z0=None, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+    def __init__(self, settings, name, Z, ttype=0, Z0=None, isotope=0, SPIMolarFraction=-1.0, opacity_mode = ION_OPACITY_MODE_TRANSPARENT, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
 
         :param DREAMSettings settings: Parent DREAMSettings object.
         :param str name:               Name by which the ion species will be referred to.
         :param int Z:                  Ion charge number.
+        :param int isotope:            Ion mass number.
         :param int ttype:              Method to use for evolving ions in time.
         :param int Z0:                 Charge state to populate with given density.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
         :param T:                      Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
@@ -69,8 +74,12 @@ class IonSpecies:
         self.settings = settings
         self.name     = name
         self.Z        = int(Z)
+        self.isotope  = int(isotope)
         self.ttype    = None
         self.tritium  = tritium
+        self.opacity_mode = opacity_mode
+
+        self.setSPIMolarFraction(SPIMolarFraction)
 
         # Emit warning if 'T' is used as name but 'tritium = False',
         # as this may indicate a user error
@@ -162,6 +171,13 @@ class IonSpecies:
         for this species.
         """
         return self.ttype
+        
+    def getOpacityMode(self):
+        """
+        Returns the opacity mode to use for evolving the ion densities
+        for this species.
+        """
+        return self.opacity_mode
 
     def getTemperature(self):
         """
@@ -175,6 +191,18 @@ class IonSpecies:
         Returns the atomic charge for this ion species.
         """
         return self.Z
+
+
+    def getIsotope(self): return self.isotope
+
+
+    def getSPIMolarFraction(self): return self.SPIMolarFraction
+    
+    def setSPIMolarFraction(self, SPIMolarFraction):
+        if np.isscalar(SPIMolarFraction):
+            self.SPIMolarFraction = np.array([SPIMolarFraction])
+        else:
+            self.SPIMolarFraction = SPIMolarFraction
 
 
     def isTritium(self):

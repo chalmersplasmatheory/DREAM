@@ -45,88 +45,67 @@ perpendicular :math:`p_\perp` to the magnetic field).
 
    Describe the use of the custom momentum grids.
 
-.. todo::
+.. _ds-momentumgrid-trapped:
 
-   Describe the use of the ``setTrappedPassingBoundaryLayerGrid()`` method.
+Trapped/passing boundary
+------------------------
+In toroidal geometry, particles with
+:math:`|\xi_0| < \sqrt{1-B_{\rm min}/B_{\rm max}}` will be trapped and bounce
+back and forth in the magnetic field. Here, :math:`B_{\rm max}` is the maximum
+magnetic field strength experienced along the flux surface/orbit, and
+:math:`B_{\rm min}` is the minimum magnetic field strength, at which point the
+particle instantaneously has :math:`\xi = \xi_0`.
+
+To accurately resolve a distribution function in a toroidal magnetic, the set of
+points :math:`\xi_{0,{\rm T}}` referred to as the trapped-passing
+boundary---which separates the particles which are trapped from those that are
+passing in momentum space---must be resolved very accurately (i.e. we must place
+grid points very close to these points). DREAM provides a particular grid type
+for automatically locating the trapped-passing boundary and placing grid points
+in appropriate locations. To use this grid, call the method
+:py:meth:`DREAM.Settings.MomentumGrid.MomentumGrid.setTrappedPassingBoundaryLayerGrid`
+on the desired momentum grid.
+
+Since the grid is automatically assembled based on the location of the
+trapped-passing boundaries, there are limited options for the user to customize
+the grid spacing. The method 
+:py:meth:`DREAM.Settings.MomentumGrid.MomentumGrid.setTrappedPassingBoundaryLayerGrid`
+takes four arguments, and typically the user may at least want to specify the
+parameter ``dxiMax`` to indicate to DREAM the maximum allowed size of each grid
+cell. The user can also fine tune the spacing in the fully-trapped and
+fully-passing regions separately using the ``nxiPass`` and ``nxiTrap``
+parameters, which set (half) the number of grid points to place in each of the
+two regions. Finally, the parameter ``boundaryLayerWidth`` indicates how close
+points should be placed to the trapped-passing boundary points
+:math:`\xi_{0,{\rm T}}` in order to resolve them accurately, and should
+generally be a very small number. If the boundary layer width is too large,
+the solution can behave weirdly close to the trapped-passing boundary.
+
+.. note::
+
+   The original version of the method
+   :py:meth:`DREAM.Settings.MomentumGrid.MomentumGrid.setTrappedPassingBoundaryLayerGrid`
+   required the user to manually specify the location of the trapped-passing
+   boundary at every radius using the ``xi0Trapped`` parameter. In more recent
+   versions, however, the trapped-passing boundary can be automatically
+   calculated by DREAM during initialization. This is practically always the
+   desired behaviour, in which case ``xi0Trapped`` need not be specified.
+
+Example
+*******
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(dxiMax=1e-3, boundaryLayerWidth=1e-4)
 
 Object documentation
 --------------------
-.. py:class:: MomentumGrid
 
-Methods
-+++++++
-
-.. py:method:: __init__(name, enabled=True, ttype=MOMENTUMGRID_TYPE_PXI, np=100, nxi=1, pmax=None)
-
-   Construct a new MomentumGrid object.
-
-   :param str name: Name of the momentum grid (either ``hottailgrid`` or ``runawaygrid``).
-   :param bool enabled: Whether or not the grid is to be used during the simulation.
-   :param int type: Type of momentum grid (currently, only ``MOMENTUMGRID_TYPE_PXI``, for spherical coordinates, is supported).
-   :param int np: Number of distribution grid points in the spherical coordinate :math:`p`.
-   :param int nxi: Number of distribution grid points in the spherical coordinate :math:`\xi`.
-   :param float pmax: Value of upper flux grid boundary, expressed in the spherical coordinate :math:`p`.
-
-.. py:method:: set(enabled=True, ttype=MOMENTUMGRID_TYPE_PXI, np=100, nxi=1, pmax=None)
-
-   Set all settings for this momentum grid in one go after creating the object.
-
-   :param bool enabled: Whether or not the grid is to be used during the simulation.
-   :param int type: Type of momentum grid (currently, only ``MOMENTUMGRID_TYPE_PXI``, for spherical coordinates, is supported).
-   :param int np: Number of distribution grid points in the spherical coordinate :math:`p`.
-   :param int nxi: Number of distribution grid points in the spherical coordinate :math:`\xi`.
-   :param float pmax: Value of upper flux grid boundary, expressed in the spherical coordinate :math:`p`.
-
-.. py:method:: setEnabled(enabled=True)
-
-   Specifies whether or not this momentum grid should be enabled and used
-   during the DREAM simulation.
-
-   :param bool enabled: Whether or not the grid is to be used during the simulation.
-
-.. py:method:: setNp(np)
-
-   Sets the number of points to use for the distribution grid in the spherical
-   coordinate :math:`p`.
-
-   :param int np: Number of grid points to use in the spherical coordinate :math:`p`.
-
-.. py:method:: setNxi(nxi)
-
-   Sets the number of points to use for the distribution grid in the spherical
-   coordinate :math:`\xi`.
-
-   :param int nxi: Number of grid points to use in the spherical coordinate :math:`\xi`.
-
-.. py:method:: setPmax(pmax)
-
-   Set the value of the upper boundary in the spherical momentum coordinate
-   :math:`p`. The value is assigned to the last point on the momentum flux grid.
-
-   :param float pmax: Value of the last momentum flux grid point.
-
-Attributes
-++++++++++
-
-.. py:attribute:: name
-
-   Name of grid. This must either be ``hottailgrid`` or ``runawaygrid``.
-
-.. py:attribute:: pgrid
-
-   Grid object for coordinate :math:`p`. This object specifies how to generate
-   the corresponding coordinate grid.
-
-.. py:attribute:: type
-
-   Momentum grid type. Either ``TYPE_PXI`` (for :math:`p/\xi` coordinates) or
-   ``TYPE_PPARPPERP`` (for :math:`p_\parallel/p_\perp` coordinates). At the
-   moment, only the former is supported.
-
-.. py:attribute:: xigrid
-
-   Grid object for coordinate :math:`\xi`. This object specifies how to generate
-   the corresponding coordinate grid.
+.. autoclass:: DREAM.Settings.MomentumGrid.MomentumGrid
+   :members:
+   :undoc-members:
+   :special-members: __init__, __contains__, __getitem__
 
 Examples
 --------

@@ -15,6 +15,7 @@ LINEAR_SOLVER_LU      = 1
 LINEAR_SOLVER_MUMPS   = 2
 LINEAR_SOLVER_MKL     = 3
 LINEAR_SOLVER_SUPERLU = 4
+LINEAR_SOLVER_GMRES   = 5
 
 
 class Solver:
@@ -29,6 +30,7 @@ class Solver:
         self.debug_printmatrixinfo = False
         self.debug_printjacobianinfo = False
         self.debug_savejacobian = False
+        self.debug_savesolution = False
         self.debug_savematrix = False
         self.debug_savenumericaljacobian = False
         self.debug_saverhs = False
@@ -37,14 +39,15 @@ class Solver:
         self.debug_timestep = 0
         self.debug_iteration = 1
 
+        self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
         self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
-                 savematrix=False, savenumericaljacobian=False, saverhs=False, saveresidual=False,
-                 savesystem=False, timestep=0, iteration=1):
+                 savesolution=False, savematrix=False, savenumericaljacobian=False, saverhs=False,
+                 saveresidual=False, savesystem=False, timestep=0, iteration=1):
         """
         Enable output of debug information.
 
@@ -59,6 +62,7 @@ class Solver:
         NON-LINEAR SOLVER
         :param bool printjacobianinfo:     If ``True``, calls ``PrintInfo()`` on the jacobian matrix.
         :param bool savejacobian:          If ``True``, saves the jacobian matrix using a PETSc viewer.
+        :param bool savesolution:          If ``True``, saves the solution vector to a ``.mat`` file.
         :param bool savenumericaljacobian: If ``True``, evaluates the jacobian matrix numerically and saves it using a PETSc viewer.
         :param bool saveresidual:          If ``True``, saves the residual vector to a ``.mat`` file.
         :param int iteration:              Index of iteration to save debug info for. If ``0``, saves in all iterations. If ``timestep`` is ``0``, this parameter is always ignored.
@@ -66,6 +70,7 @@ class Solver:
         self.debug_printmatrixinfo = printmatrixinfo
         self.debug_printjacobianinfo = printjacobianinfo
         self.debug_savejacobian = savejacobian
+        self.debug_savesolution = savesolution
         self.debug_savematrix = savematrix
         self.debug_savenumericaljacobian = savenumericaljacobian
         self.debug_saverhs = saverhs
@@ -73,6 +78,14 @@ class Solver:
         self.debug_savesystem = savesystem
         self.debug_timestep = timestep
         self.debug_iteration = iteration
+
+
+    def setBackupSolver(self, backup):
+        """
+        Set the backup linear solver to use in case the main linear
+        solver fails. Set to ``None`` to disable (default).
+        """
+        self.backupsolver = backup
 
 
     def setLinearSolver(self, linsolv):
@@ -150,8 +163,11 @@ class Solver:
         if 'preconditioner' in data:
             self.preconditioner.fromdict(data['preconditioner'])
 
+        if 'backupsolver' in data:
+            self.backupsolver = int(data['backupsolver'])
+
         if 'debug' in data:
-            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
+            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
 
             for f in flags:
                 if f in data['debug']:
@@ -195,12 +211,16 @@ class Solver:
             data['debug'] = {
                 'printjacobianinfo': self.debug_printjacobianinfo,
                 'savejacobian': self.debug_savejacobian,
+                'savesolution': self.debug_savesolution,
                 'savenumericaljacobian': self.debug_savenumericaljacobian,
                 'saveresidual': self.debug_saveresidual,
                 'savesystem': self.debug_savesystem,
                 'timestep': self.debug_timestep,
                 'iteration': self.debug_iteration
             }
+
+            if self.backupsolver is not None:
+                data['backupsolver'] = self.backupsolver
 
         return data
 
@@ -231,6 +251,8 @@ class Solver:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_printjacobianinfo': {}. Expected boolean.".format(type(self.debug_printjacobianinfo)))
             elif type(self.debug_savejacobian) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_savejacobian': {}. Expected boolean.".format(type(self.debug_savejacobian)))
+            elif type(self.debug_savesolution) != bool:
+                raise DREAMException("Solver: Invalid type of parameter 'debug_savesolution': {}. Expected boolean.".format(type(self.debug_savesolution)))
             elif type(self.debug_saverhs) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_saverhs': {}. Expected boolean.".format(type(self.debug_saverhs)))
             elif type(self.debug_saveresidual) != bool:
@@ -253,8 +275,10 @@ class Solver:
         Verifies the settings for the linear solver (which is used
         by both the 'LINEAR_IMPLICIT' and 'NONLINEAR' solvers).
         """
-        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL, LINEAR_SOLVER_SUPERLU]
+        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL, LINEAR_SOLVER_SUPERLU, LINEAR_SOLVER_GMRES]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
+        elif self.backupsolver is not None and self.backupsolver not in solv:
+            raise DREAMException("Solver: Unrecognized backup linear solver type: {}.".format(self.backupsolver))
 
 

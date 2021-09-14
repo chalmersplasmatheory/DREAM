@@ -20,19 +20,23 @@ TritiumRateTerm::TritiumRateTerm(
     FVM::Grid *g, IonHandler *ions, FVM::UnknownQuantityHandler *uqn, const len_t iIon,
     RunawayFluid *rf, real_t scaleFactor
 ) : IonEquationTerm<FVM::EquationTerm>(g, ions, iIon), RunawaySourceTerm(g,uqn),
-    REFluid(rf), scaleFactor(scaleFactor) { }
+    REFluid(rf), scaleFactor(scaleFactor) {
+
+    SetName("TritiumRateTerm");
+}
 
 
 /**
  * Set elements of the Jacobian corresponding to this equation term.
  */
-void TritiumRateTerm::SetCSJacobianBlock(
+bool TritiumRateTerm::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac,
     const real_t*,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     if (uqtyId == derivId)
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
+    return (uqtyId==derivId);
 }
 
 /**

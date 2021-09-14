@@ -16,6 +16,7 @@ namespace DREAM { class EquationSystem; }
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/FVMException.hpp"
@@ -53,6 +54,7 @@ namespace DREAM {
 
         PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
+        SPIHandler *SPI = nullptr;
 
         AnalyticDistributionRE *distRE = nullptr;
         AnalyticDistributionHottail *distHT = nullptr;
@@ -96,6 +98,7 @@ namespace DREAM {
 
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
+        SPIHandler *GetSPIHandler() { return this->SPI; }
 
         AnalyticDistributionRE *GetAnalyticREDistribution() { return this->distRE;}
         AnalyticDistributionHottail *GetAnalyticHottailDistribution() { return this->distHT;}
@@ -154,6 +157,9 @@ namespace DREAM {
             this->initializer->SetRunawayFluid(REF);
         }
 
+        void SetSPIHandler(SPIHandler *SPI) {
+            this->SPI = SPI;
+        }
         void SetAnalyticDists(AnalyticDistributionRE *RE, AnalyticDistributionHottail *HT){
             this->distRE = RE;
             this->distHT = HT;
@@ -179,6 +185,7 @@ namespace DREAM {
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
+        void SaveSolverData(SFile *sf, const std::string& n) { this->solver->WriteDataSFile(sf, n); }
         void SaveTimings(SFile*, const std::string&);
 
         void Solve();

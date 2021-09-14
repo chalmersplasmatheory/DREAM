@@ -91,14 +91,24 @@ real_t AnalyticDistributionHottail::evaluateEnergyDistributionFromTau(len_t ir, 
         }
     }
 
-    if(dfdp != nullptr)
-        *dfdp = - f * 2*p*p / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
+    if(dfdp != nullptr){
+        if(s==0)
+            *dfdp = 0;
+        else
+            *dfdp = - f * 2*p*p / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
+    }
 
-    if(dFdpOverF != nullptr)
-        *dFdpOverF = - 2*p*p / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
-
-    if(dFdTau != nullptr)
-        *dFdTau = - 2*f / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
-
+    if(dFdpOverF != nullptr){
+        if(s==0)
+            *dFdpOverF = 0;
+        else
+            *dFdpOverF = - 2*p*p / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
+    }
+    if(dFdTau != nullptr){
+        if(s==0)
+            *dFdTau = std::numeric_limits<real_t>::infinity();
+        else
+            *dFdTau = - 2*f / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
+    }
     return f;
 }

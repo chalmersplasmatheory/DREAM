@@ -431,9 +431,10 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
  * jac:     Jacobian matrix block to populate.
  * x:       Value of the unknown quantity.
  */
-void AdvectionTerm::SetJacobianBlock(
+bool AdvectionTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
+    bool contributes = (uqtyId == derivId);
     interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
     if ( (uqtyId == derivId) && !this->coefficientsShared)
         this->SetMatrixElements(jac, nullptr);
@@ -444,7 +445,9 @@ void AdvectionTerm::SetJacobianBlock(
     */
     len_t nMultiples;
     if(!HasJacobianContribution(derivId, &nMultiples))
-        return;
+        return contributes;
+    else
+        contributes = true;
     
 
     // TODO: allocate differentiation coefficients in a more logical location
@@ -459,6 +462,8 @@ void AdvectionTerm::SetJacobianBlock(
         SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x);
         SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x);
     }
+
+    return contributes;
 }
 
 

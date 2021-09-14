@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "DREAM/ADAS.hpp"
+#include "DREAM/AMJUEL.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/OutputGeneratorSFile.hpp"
@@ -44,17 +45,20 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     ADAS *adas = LoadADAS(s);
     // Load NIST database
     NIST *nist = LoadNIST(s);
+    // Load AMJUEL database
+    AMJUEL *amjuel = LoadAMJUEL(s);
 
     // Construct equation system
     EquationSystem *eqsys = ConstructEquationSystem(
         s, scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid,
-        adas, nist
+        adas, nist, amjuel
     );
 
     // Set up simulation
     Simulation *sim = new Simulation();
     sim->SetADAS(adas);
     sim->SetNIST(nist);
+    sim->SetAMJUEL(amjuel);
     sim->SetEquationSystem(eqsys);
 
     LoadOutput(s, sim);
@@ -107,6 +111,14 @@ ADAS *SimulationGenerator::LoadADAS(Settings *s) {
  */
 NIST *SimulationGenerator::LoadNIST(Settings*) {
     return new NIST();
+}
+
+/**
+ * Load AMJUEL database (ionization/recombination/radiation rates 
+ * for hydrogen isotopes, including coefficients for Lyman opaque conditions).
+ */
+AMJUEL *SimulationGenerator::LoadAMJUEL(Settings*){
+	return new AMJUEL();
 }
 
 /**

@@ -58,6 +58,37 @@ const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *
 }
 
 /**
+ * Returns the unknown data for the previous time step in a single,
+ * contiguously stored vector for all the specified unknowns.
+ *
+ * nontrivial_unknowns: List of unknowns to get data for.
+ *                      (these are usually the "non-trivial" unknowns that
+ *                      appear in the equation system solved)
+ */
+const real_t *UnknownQuantityHandler::GetLongVectorPrevious(const vector<len_t>& nontrivial_unknowns, real_t *vec) {
+    return GetLongVectorPrevious(nontrivial_unknowns.size(), nontrivial_unknowns.data(), vec);
+}
+const real_t *UnknownQuantityHandler::GetLongVectorPrevious(const len_t n, const len_t *iuqn, real_t *vec) {
+    const len_t size = GetLongVectorSize(n, iuqn);
+
+    if (vec == nullptr)
+        vec = new real_t[size];
+
+    for (len_t i = 0, offset = 0; i < n; i++) {
+        UnknownQuantity *uqn = unknowns[iuqn[i]];
+        const len_t N = uqn->NumberOfElements();
+        const real_t *data = uqn->GetDataPrevious();
+
+        for (len_t j = 0; j < N; j++)
+            vec[offset + j] = data[j];
+
+        offset += N;
+    }
+
+    return vec;
+}
+
+/**
  * Returns the data for all unknowns in a single long vector.
  *
  * vec: Vector to store data in. Must be of the size reported by

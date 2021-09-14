@@ -25,6 +25,8 @@ namespace DREAM::FVM {
 
         const real_t *GetLongVector(const std::vector<len_t>& nontrivials, real_t *vec=nullptr);
         const real_t *GetLongVector(const len_t, const len_t*, real_t *vec=nullptr);
+        const real_t *GetLongVectorPrevious(const std::vector<len_t>& nontrivials, real_t *vec=nullptr);
+        const real_t *GetLongVectorPrevious(const len_t, const len_t*, real_t *vec=nullptr);
         const len_t GetLongVectorSize(const std::vector<len_t>& nontrivials);
         const len_t GetLongVectorSize(const len_t, const len_t*);
 

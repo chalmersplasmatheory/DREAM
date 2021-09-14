@@ -197,16 +197,24 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     // set toroidal flux psi_t defined by dpsi_t/dpsi_p = qR0 (safety factor)
     // or equivalently as the toroidal magnetic field integrated over a 
     // poloidal cross section
-    if(this->psiToroidal != nullptr)
+    if(this->psiToroidal != nullptr) {
         delete [] psiToroidal;
-    this->psiToroidal = new real_t[nr];
-    psiToroidal[0] = 0;
-    for(len_t ir=1;ir<nr;ir++){
-        real_t x = VpVol[ir-1]*BtorGOverR0[ir-1]*FSA_1OverR2[ir-1]*dr[ir-1];
-        psiToroidal[ir] = psiToroidal[ir-1] + x;
-        psiToroidal[ir-1] += 0.5*x;
+        delete [] psiToroidal_f;
     }
-    psiToroidal[nr-1] += 0.5*VpVol[nr-1]*BtorGOverR0[nr-1]*FSA_1OverR2[nr-1]*dr[nr-1];
+
+    this->psiToroidal = new real_t[nr];
+    this->psiToroidal_f = new real_t[nr+1];
+
+    // Calculate psi_t by integrating using a trapezoidal rule.
+    real_t x, x_f = VpVol_f[0]*BtorGOverR0_f[0]*FSA_1OverR2_f[0];
+    psiToroidal_f[0] = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        x    = VpVol[ir]*BtorGOverR0[ir]*FSA_1OverR2[ir];
+        psiToroidal[ir] = psiToroidal_f[ir] + 0.5*(x_f+x)*(r[ir]-r_f[ir]);
+
+        x_f  = VpVol_f[ir+1]*BtorGOverR0_f[ir+1]*FSA_1OverR2_f[ir+1];
+        psiToroidal_f[ir+1] = psiToroidal[ir] + 0.5*(x_f+x)*(r_f[ir+1]-r[ir]);
+    }
 }
 
 /**

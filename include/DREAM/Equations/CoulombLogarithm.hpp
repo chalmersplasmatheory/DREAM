@@ -63,6 +63,7 @@ namespace DREAM {
 
         real_t evaluateLnLambdaC(len_t ir);
         real_t evaluateLnLambdaT(len_t ir);
+        real_t evaluateLnLambdaT(real_t T, real_t n);
         real_t evaluateLnLambdaII(len_t ir);
     };
 }

@@ -19,6 +19,8 @@ IonPrescribedParameter::IonPrescribedParameter(
     const len_t *ionIndices, MultiInterpolator1D *data
 ) : EquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
 
+    SetName("IonPrescribedParameter");
+
     this->Z = new len_t[nIons];
     for (len_t i = 0; i < nIons; i++)
         this->Z[i] = this->ions->GetZ(ionIndices[i]);
@@ -124,7 +126,7 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
  * with respect to anything of a constant is zero, we don't need
  * to do anything).
  */
-void IonPrescribedParameter::SetJacobianBlock(
+bool IonPrescribedParameter::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* /*x*/
 ) {
     if(uqtyId==derivId)
@@ -134,6 +136,8 @@ void IonPrescribedParameter::SetJacobianBlock(
                 for (len_t ir = 0; ir < nr; ir++)
                     jac->SetElement(idx*nr+ir, idx*nr+ir, 1.0);
             }
+
+    return (uqtyId==derivId);
 }
 
 /**

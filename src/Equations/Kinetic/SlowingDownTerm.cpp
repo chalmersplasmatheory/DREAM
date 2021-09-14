@@ -17,6 +17,8 @@ SlowingDownTerm::SlowingDownTerm(
     bool withKineticIonJacobian
 ) : FVM::AdvectionTerm(g) {
 
+    SetName("SlowingDownTerm");
+
     this->gridtype = mgtype;
     this->nuS = cqh->GetNuS();
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));

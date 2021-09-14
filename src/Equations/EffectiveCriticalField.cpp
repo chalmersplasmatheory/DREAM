@@ -20,8 +20,7 @@ using namespace DREAM;
  */
 EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), 
-    rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
-    thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution)
+    rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda)
 {
     nr = rGrid->GetNr();
     this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);

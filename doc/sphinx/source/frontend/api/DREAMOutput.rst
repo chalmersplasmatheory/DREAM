@@ -16,6 +16,8 @@ DREAMOutput
    Output/OtherQuantity
    Output/RunawayElectronDistributionFunction
    Output/ScalarQuantity
+   Output/SPIShardRadii
+   Output/SPIShardPositions
    Output/UnknownQuantity
 
 The DREAM Python interface contains an elaborate set of classes for handling
@@ -77,6 +79,10 @@ Equation system
 | :ref:`psi_wall<do-scalarquantity>`   | Poloidal flux at tokamak wall          |
 +--------------------------------------+----------------------------------------+
 | :ref:`V_loop_w<do-scalarquantity>`   | Loop voltage at tokamak wall           |
++--------------------------------------+----------------------------------------+
+| :ref:`x_p<do-spishardpositions>`     | SPI shard positions                    |
++--------------------------------------+----------------------------------------+
+| :ref:`Y_p<do-spishardradii>`         | SPI shard radii                        |
 +--------------------------------------+----------------------------------------+
 
 Other quantities

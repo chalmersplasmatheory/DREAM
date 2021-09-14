@@ -41,11 +41,11 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Flux limiter settings
     s->DefineSetting(mod + "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
-    s->DefineSetting(mod + "/adv_jac_mode/r", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
+    s->DefineSetting(mod + "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/p1", "Type of interpolation method to use in p1-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
-    s->DefineSetting(mod + "/adv_jac_mode/p1", "Type of interpolation method to use in the jacobian of the p1-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
+    s->DefineSetting(mod + "/adv_interp/p1_jac", "Type of interpolation method to use in the jacobian of the p1-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
-    s->DefineSetting(mod + "/adv_jac_mode/p2", "Type of interpolation method to use in the jacobian of the p2-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
+    s->DefineSetting(mod + "/adv_interp/p2_jac", "Type of interpolation method to use in the jacobian of the p2-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
@@ -68,13 +68,26 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 /**
  * Construct the equation for a general distribution function.
  *
- * s:   Object to load settings from.
- * mod: Name of module to load settings from.
+ * s:                 Object to load settings from.
+ * mod:               Name of module to load settings from.
+ * eqsys:             Equation system of the simulation.
+ * id_f:              ID in the eqsys of the distribution function to construct equation for.
+ * grid:              Grid on which the distribution function lives.
+ * gridtype:          Momentum coordinates used for the grid.
+ * cqty:              Collision quantity handler to use for the kinetic equation.
+ * addExternalBC:     If true, includes a regular external boundary condition on f.
+ * addInternalBC:     If true, includes a regular internal boundary condition on f.
+ * transport:         Alternative operator to use for adding radial transport to.
+ * advective_bc:      Pointer to an object in which to store the advective transport boundary condition (if enabled).
+ * diffusive_bc:      Pointer to an object in which to store the diffusive transport boundary condition (if enabled).
+ * ripple_Dxx:        Pointer to an object in which to store the ripple pitch scattering term (if enabled).
+ * rescaleMaxwellian: If true, rescales the initial distribution function so that it is consistent with the initial density.
  */
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
 ) {
@@ -150,11 +163,22 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         ));
 
     // Add transport term
-    ConstructTransportTerm(
+    bool hasTransport = ConstructTransportTerm(
         eqn, mod, grid,
-        gridtype, eqsys->GetUnknownHandler(),
+        gridtype, eqsys,
         s, true, false, advective_bc, diffusive_bc
     );
+
+    // If a separate 'transport' operator is desired, repeat
+    // for that operator...
+    if (hasTransport && transport != nullptr) {
+        *transport = new FVM::Operator(grid);
+        ConstructTransportTerm(
+            *transport, mod, grid,
+            gridtype, eqsys,
+            s, true, false
+        );
+    }
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to n_re?
@@ -172,15 +196,15 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/r");
     OptionConstants::adv_jacobian_mode adv_jac_mode_r = 
-            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/r");
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_interp/r_jac");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p1 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/p1");
     OptionConstants::adv_jacobian_mode adv_jac_mode_p1 = 
-            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/p1");
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_interp/p1_jac");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p2 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/p2");
     OptionConstants::adv_jacobian_mode adv_jac_mode_p2 = 
-            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/p2");
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_interp/p2_jac");
     real_t fluxLimiterDamping = (real_t)s->GetReal(mod + "/adv_interp/fluxlimiterdamping");
     eqn->SetAdvectionInterpolationMethod(
         adv_interp_r,  adv_jac_mode_r,  FVM::FLUXGRIDTYPE_RADIAL, 

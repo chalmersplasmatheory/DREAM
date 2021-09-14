@@ -87,6 +87,7 @@ void EquationSystem::ProcessSystem(const real_t t0) {
         }
     }
 
+
     // Initialize from output...
     if (this->initializerFile != "") 
         this->initializer->InitializeFromOutput(
@@ -239,3 +240,4 @@ void EquationSystem::Solve() {
         this->REFluid->PrintTimings();
     }
 }
+

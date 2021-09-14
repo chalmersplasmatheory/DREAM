@@ -26,6 +26,8 @@ DREAM::TransportPrescribed<T>::TransportPrescribed(
     nt(nt), nr(nr), np1(np1), np2(np2),
     coeff(coeff), t(t), r(r), p1(p1), p2(p2),
     momtype(inptype), gridtype(gridtype), interpmethod(interpmethod) {
+
+    this->T::SetName("TransportPrescribed");
     
     // Interpolate input coefficient onto 'grid'...
     InterpolateCoefficient();

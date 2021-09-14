@@ -41,6 +41,13 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
     # SETTERS
     ###################
     def setInitialProfile(self, temperature, radius=0):
+        """
+        Sets the initial temperature profile T=T(r) for when the temperature is
+        evolved self-consistently.
+
+        :param temperature: Scalar or vector giving the initial temperature profile.
+        :param radius: If ``temperature`` is a vector, contains the corresponding radial grid on which ``temperature`` is defined.
+        """
         _data, _rad = self._setInitialData(data=temperature, radius=radius)
 
         self.temperature = _data
@@ -51,6 +58,13 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
 
     def setPrescribedData(self, temperature, radius=0, times=0):
+        """
+        Prescribes a temperature evolution in time and space.
+
+        :param temperature: Scalar, vector or matrix giving the temperature throughout the simulation.
+        :param radius: If ``temperature`` is a function of radius, contains the radial grid on which it is defined.
+        :param times: If ``temperature`` is a function of time, contains the time grid on which it is defined.
+        """
         _t, _rad, _tim = self._setPrescribedData(temperature, radius, times)
         self.temperature = _t
         self.radius      = _rad
@@ -60,6 +74,15 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
 
     def setType(self, ttype):
+        """
+        Specifies whether to evolve the electron temperature according to a
+        prescribed function, or self-consistently.
+
+        :param ttype: Type of evolution. Can take one of the following values:
+
+        - ``TYPE_PRESCRIBED``: Evolve according to prescribed function.
+        - ``TYPE_SELFCONSISTENT``: Evolve self-consistently.
+        """
         if ttype == TYPE_PRESCRIBED:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
@@ -73,7 +96,12 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
+
     def setRecombinationRadiation(self, recombination=RECOMBINATION_RADIATION_NEGLECTED):
+        """
+        Specify whether or not to include recombination radiation when evolving
+        the temperature self-consistently.
+        """
         self.recombination = recombination
 
     

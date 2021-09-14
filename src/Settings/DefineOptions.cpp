@@ -31,6 +31,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_Output(s);
     DefineOptions_RunawayGrid(s);
     DefineOptions_Solver(s);
+    DefineOptions_SPI(s);
     DefineOptions_TimeStepper(s);
     DefineOptions_OtherQuantities(s);
 }

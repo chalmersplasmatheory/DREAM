@@ -15,15 +15,17 @@ class OtherQuantityHandler:
         self.runaway = None
         self.scalar  = None
 
+        self.categories = []
+
         if other is not None:
-            if 'fluid' in other:
-                self.fluid = OtherQuantities('fluid', other['fluid'], grid, output)
-            if 'hottail' in other:
-                self.hottail = OtherQuantities('hottail', other['hottail'], grid, output, grid.hottail)
-            if 'runaway' in other:
-                self.runaway = OtherQuantities('runaway', other['runaway'], grid, output, grid.runaway)
-            if 'scalar' in other:
-                self.scalar = OtherQuantities('scalar', other['scalar'], grid, output)
+            for category in other.keys():
+                self.categories.append(category)
+                if category == 'hottail':
+                    setattr(self, category, OtherQuantities(category, other[category], grid, output, grid.hottail))
+                elif category == 'runaway':
+                    setattr(self, category, OtherQuantities(category, other[category], grid, output, grid.runaway))
+                else:
+                    setattr(self, category, OtherQuantities(category, other[category], grid, output))
 
     
     def __contains__(self, item):
@@ -47,14 +49,8 @@ class OtherQuantityHandler:
         """
         s = "OtherQuantityHandler with"
         
-        if self.fluid:
-            s += "\n   fluid\n{}".format(self.fluid.tostring(padding=6*' '))
-        if self.hottail:
-            s += "\n   hottail\n{}".format(self.hottail.tostring(padding=6*' '))
-        if self.runaway:
-            s += "\n   runaway\n{}".format(self.runaway.tostring(padding=6*' '))
-        if self.scalar:
-            s += "\n   scalar\n{}".format(self.scalar.tostring(padding=6*' '))
+        for category in self.categories:
+            s += "\n   {}\n{}".format(category, self[category].tostring(padding=6*' '))
 
         return s
 

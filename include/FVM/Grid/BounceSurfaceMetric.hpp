@@ -16,7 +16,7 @@ namespace DREAM::FVM {
         void InterpolateToFluxGrid(
             real_t ***&bounceData, fluxGridType fluxGridType,
             len_t ntheta_interp_passing, const real_t *theta_passing);
-        virtual void DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2) override;
+        virtual void DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2, fluxGridType) override;
     public:
         BounceSurfaceMetric(Grid *grid, FluxSurfaceQuantity *Jacobian, FluxSurfaceQuantity *B, FluxSurfaceAverager *FSA);
         virtual ~BounceSurfaceMetric();

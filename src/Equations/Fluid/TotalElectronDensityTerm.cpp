@@ -12,7 +12,10 @@ using namespace DREAM;
  * Constructor
  */
 TotalElectronDensityTerm::TotalElectronDensityTerm(FVM::Grid *g, IonHandler *ih, real_t scaleFactor)
-    : DiagonalLinearTerm(g), ionHandler(ih), scaleFactor(scaleFactor) {}
+    : DiagonalLinearTerm(g), ionHandler(ih), scaleFactor(scaleFactor) {
+    
+    this->DiagonalTerm::SetName("TotalElectronDensityTerm");
+}
 
 
 /**
