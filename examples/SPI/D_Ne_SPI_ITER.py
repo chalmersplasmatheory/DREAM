@@ -51,16 +51,16 @@ run_init=True # Includes a single-step run to extract the conductivity and
 run_injection_init=True # Accelerate the distribution function to carry the right current
 
 run_injection=True # D or D/Ne injection
-run_CQ=False # Second Ne injection (if any), beginning of the CQ
+run_CQ=True # Second Ne injection (if any), beginning of the CQ
 
 # Specify number of restarts to do during the CQ
 nCQ_restart_start=2 # Number of CQ restart to start from
-nCQ_restart=0 # How many CQ restarts to run
+nCQ_restart=1 # How many CQ restarts to run
 
 # Temperature and electron distribution settings
 T_selfconsistent    = True
 hotTailGrid_enabled = False
-use_fluid_runaways = False
+use_fluid_runaways = True
 
 use_heat_transport=True
 use_f_hot_transport=False
@@ -83,8 +83,8 @@ Nt_injection = 1360
 
 Tmax_CQ = 17e-3
 Nt_CQ = 3000
-Tmax_CQ_restart = 0.2e-3
-Nt_CQ_restart = 100
+Tmax_CQ_restart = 129.6e-3
+Nt_CQ_restart = 40000
 
 # Grid parameters
 Nr = 11             # number of radial grid points
@@ -103,6 +103,7 @@ B0 = 5.3            # magnetic field strength in Tesla
 R0 = 6.2
 kappa = 1.0
 
+"""
 ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
 
 mu0 = sp.constants.mu_0
@@ -123,14 +124,15 @@ ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setWallRadius(radius_wall)
 ds.radialgrid.setMajorRadius(R0_set)
 ds.radialgrid.setNr(Nr)
-
 """
+
 # Set up cylindrical radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setNr(Nr)
 ds.radialgrid.setWallRadius(radius_wall)
-"""
+Delta = [0,0]
+
 
 #ds.radialgrid.visualize_analytic(nr=8, ntheta=40)
 
@@ -140,8 +142,9 @@ ds.radialgrid.setWallRadius(radius_wall)
 #######################################
 
 # Set E_field 
-E_initial = 0.00032 # initial electric field in V/m
-E_wall = 0.0        # boundary electric field in V/m
+E_initial = 0.00032   # initial electric field in V/m
+E_wall = 0.0          # boundary electric field in V/m
+inverse_wall_time = 2 # s^{-1}
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 ds.eqsys.E_field.setBoundaryCondition()
@@ -150,6 +153,8 @@ ds.eqsys.E_field.setBoundaryCondition()
 if use_fluid_runaways:
 	ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 	ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
+	ds.eqsys.n_re.setDreicer(RE.DREICER_RATE_NEURAL_NETWORK)
+	ds.eqsys.n_re.setTritium(True)
 
 # Set temperature profile
 T_initial = 20e3    # initial temperature in eV
@@ -158,8 +163,8 @@ temperature = T_initial*temp_prof
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radialgrid)
 
 # Settings for the first SPI (presumably consisting mostly of deuterium)
-nShardD=1742 # Number of shards
-NinjD=2e24 # Number of atoms
+nShardD=3843 # Number of shards
+NinjD=2.5e24 # Number of atoms
 alpha_maxD=0.17 # Divergence angle
 abs_vp_meanD=800 # Mean shard speed
 abs_vp_diffD=0.2*abs_vp_meanD # Width of the uniform shard speed distribution
@@ -168,9 +173,9 @@ molarFractionNe=0 # Molar fraction of neon (the rest is deuterium)
 # The shard velocities are set to zero for now, 
 # and will be changed later when the injections are supposed to start
 if molarFractionNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE, Ions.ION_OPACITY_TRANSPARENT], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
 else:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
 
 # Settings for the second Neon SPI
 nShardNe=50
@@ -207,7 +212,8 @@ ds.eqsys.spi.setRclPrescribedConstant(rcl)
 
 # Set background ions
 n_D = 1e20
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_D)
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=0.5*n_D, opacity_mode=Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE)
+ds.eqsys.n_i.addIon(name='T', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=0.5*n_D, tritium=True, opacity_mode=Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE)
 
 
 # set collision settings
@@ -243,21 +249,23 @@ ds.runawaygrid.setEnabled(False)
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
 ds.solver.setMaxIterations(maxiter = 500)
-#ds.solver.setTolerance(reltol=0.001)
+ds.solver.setTolerance(reltol=0.001)
 #ds.solver.setVerbose(True)
 
 ds.other.include('fluid', 'scalar')
 
-filename_ending='nShardD'+str(nShardD)+'NinjD'+str(NinjD)+'nShardNe'+str(nShardNe)+'NinjNe'+str(NinjNe)+'vpD'+str(abs_vp_meanD)+'vpNe'+str(abs_vp_meanNe)+'hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)	
-folder_name='Shaping/'
+filename_ending='nShardD'+str(nShardD)+'NinjD'+str(NinjD)+'nShardNe'+str(nShardNe)+'NinjNe'+str(NinjNe)+'vpD'+str(abs_vp_meanD)+'vpNe'+str(abs_vp_meanNe)+'LyOpaque_hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)	
+folder_name='finite_wall_time/with_runaways/'
 
 #if ds.radialgrid.type == RGrid.TYPE_ANALYTIC_TOROIDAL:
 #	filename_ending = filename_ending + 'analyticB'
 	
 #filename_ending = filename_ending +'kappa'+ str(kappa)
 #filename_ending = filename_ending +'delta_edge'+ str(delta[-1])
-filename_ending = filename_ending +'Delta_core'+ str(Delta[0])
+#filename_ending = filename_ending +'Delta_core'+ str(Delta[0])
 #filename_ending = filename_ending + 'toroidal'
+
+filename_ending = filename_ending + 'inverse_wall_time'+str(inverse_wall_time)
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -314,10 +322,12 @@ ds3 = DREAMSettings(ds2)
 # From now on, the temperature and electric field should be calculated self-consistently
 if T_selfconsistent:
 	ds3.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
-	ds3.eqsys.T_cold.setRecombinationRadiation(T_cold.RECOMBINATION_RADIATION_INCLUDED)
+	#ds3.eqsys.T_cold.setRecombinationRadiation(T_cold.RECOMBINATION_RADIATION_INCLUDED)
 	
 ds3.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall_R0 = E_wall*2*np.pi)
+#ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall_R0 = E_wall*2*np.pi)
+ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_SELFCONSISTENT, inverse_wall_time = inverse_wall_time, R0=R0)
+
 
 ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['v_p'])
 
@@ -360,7 +370,7 @@ ds4.timestep.setNumberOfSaveSteps(int(Tmax_CQ/1e-4))
 
 # Turn on transport, if any
 if use_heat_transport:
-	ds4.eqsys.T_cold.transport.setMagneticPerturbation(dBB=np.sqrt(R)*dBOverB*np.ones(radialgrid.shape).reshape(1,-1),r=radialgrid,t=[0])
+	ds4.eqsys.T_cold.transport.setMagneticPerturbation(dBB=np.sqrt(R0)*dBOverB*np.ones(radialgrid.shape).reshape(1,-1),r=radialgrid,t=[0])
 	ds4.eqsys.T_cold.transport.setBoundaryCondition(Transport.BC_F_0)
 if use_f_hot_transport and hotTailGrid_enabled:
 	ds4.eqsys.n_re.transport.prescribeDiffusion(drr=sp.constants.pi*sp.constants.c*R*dBOverB**2*np.ones(radialgrid.shape).reshape(1,-1),r=radialgrid,t=[0])
@@ -390,7 +400,7 @@ if run_CQ:
 #################
 ds5 = DREAMSettings(ds4)
 for iCQ in range(nCQ_restart_start-2,nCQ_restart):
-	if iCQ==-1:
+	if iCQ==0:
 		ds5.fromOutput(folder_name+'output_restart_CQ_'+filename_ending+'.h5')
 	else:
 		ds5.fromOutput(folder_name+'output_restart_CQ'+str(iCQ+2)+'_'+filename_ending+'.h5')
@@ -398,7 +408,7 @@ for iCQ in range(nCQ_restart_start-2,nCQ_restart):
 	ds5.timestep.setNt(Nt_CQ_restart)
 	ds5.timestep.setNumberOfSaveSteps(int(Tmax_CQ_restart/1e-4))
 
-	if iCQ==-1:
+	if iCQ==0:
 		do5=DREAMOutput(folder_name+'output_restart_CQ_'+filename_ending+'.h5')
 	else:
 		do5=DREAMOutput(folder_name+'output_restart_CQ'+str(iCQ+2)+'_'+filename_ending+'.h5')
