@@ -19,15 +19,15 @@ using namespace std;
  * Constructor.
  */
 SolverNonLinear::SolverNonLinear(
-	FVM::UnknownQuantityHandler *unknowns,
-	vector<UnknownQuantityEquation*> *unknown_equations,
+    FVM::UnknownQuantityHandler *unknowns,
+    vector<UnknownQuantityEquation*> *unknown_equations,
     EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls,
     enum OptionConstants::linear_solver bk,
-	const int_t maxiter, const real_t reltol,
-	bool verbose
+    const int_t maxiter, const real_t reltol,
+    bool verbose
 ) : Solver(unknowns, unknown_equations, ls, bk), eqsys(eqsys),
-	maxiter(maxiter), reltol(reltol), verbose(verbose) {
+    maxiter(maxiter), reltol(reltol), verbose(verbose) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -41,7 +41,7 @@ SolverNonLinear::SolverNonLinear(
  * Destructor.
  */
 SolverNonLinear::~SolverNonLinear() {
-	Deallocate();
+    Deallocate();
 
     delete this->timeKeeper;
 }
@@ -52,11 +52,11 @@ SolverNonLinear::~SolverNonLinear() {
  * another Newton step.
  */
 void SolverNonLinear::AcceptSolution() {
-	real_t *x = this->x1;
-	this->x1  = this->x0;
-	this->x0  = x;
+    real_t *x = this->x1;
+    this->x1  = this->x0;
+    this->x0  = x;
 
-	this->StoreSolution(x);
+    this->StoreSolution(x);
 }
 
 /**
@@ -65,7 +65,7 @@ void SolverNonLinear::AcceptSolution() {
 void SolverNonLinear::Allocate() {
     this->AllocateJacobianMatrix();
 
-	const len_t N = jacobian->GetNRows();
+    const len_t N = jacobian->GetNRows();
 
     // Select linear solver
     this->SelectLinearSolver(N);
@@ -73,13 +73,13 @@ void SolverNonLinear::Allocate() {
     VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_F);
     VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_dx);
 
-	this->x0 = new real_t[N];
-	this->x1 = new real_t[N];
-	this->dx = new real_t[N];
+    this->x0 = new real_t[N];
+    this->x1 = new real_t[N];
+    this->dx = new real_t[N];
     this->xinit = new real_t[N];
 
-	this->x_2norm  = new real_t[this->unknown_equations->size()];
-	this->dx_2norm = new real_t[this->unknown_equations->size()];
+    this->x_2norm  = new real_t[this->unknown_equations->size()];
+    this->dx_2norm = new real_t[this->unknown_equations->size()];
 }
 
 /**
@@ -106,17 +106,17 @@ void SolverNonLinear::Allocate() {
 void SolverNonLinear::AllocateJacobianMatrix() {
     if (this->jacobian != nullptr)
         delete this->jacobian;
-	this->jacobian = new FVM::BlockMatrix();
+    this->jacobian = new FVM::BlockMatrix();
 
-	for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-		len_t id = nontrivial_unknowns[i];
-		UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
+    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
+        len_t id = nontrivial_unknowns[i];
+        UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
 
-		unknownToMatrixMapping[id] =
-			this->jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac(), id);
-	}
+        unknownToMatrixMapping[id] =
+            this->jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac(), id);
+    }
 
-	this->jacobian->ConstructSystem();
+    this->jacobian->ConstructSystem();
 }
 
 /**
@@ -126,19 +126,19 @@ void SolverNonLinear::Deallocate() {
     if (backupInverter != nullptr)
         delete backupInverter;
 
-	delete mainInverter;
-	delete jacobian;
+    delete mainInverter;
+    delete jacobian;
 
-	delete [] this->x_2norm;
-	delete [] this->dx_2norm;
+    delete [] this->x_2norm;
+    delete [] this->dx_2norm;
 
-	delete [] this->x0;
-	delete [] this->x1;
-	delete [] this->dx;
+    delete [] this->x0;
+    delete [] this->x1;
+    delete [] this->dx;
     delete [] this->xinit;
 
-	VecDestroy(&this->petsc_F);
-	VecDestroy(&this->petsc_dx);
+    VecDestroy(&this->petsc_F);
+    VecDestroy(&this->petsc_dx);
 }
 
 /**
@@ -155,9 +155,9 @@ const string& SolverNonLinear::GetNonTrivialName(const len_t idx) {
  * Initialize the solver.
  */
 void SolverNonLinear::initialize_internal(
-	const len_t, vector<len_t>&
+    const len_t, vector<len_t>&
 ) {
-	this->Allocate();
+    this->Allocate();
 
     if (this->convChecker == nullptr)
         this->SetConvergenceChecker(
@@ -169,17 +169,17 @@ void SolverNonLinear::initialize_internal(
  * Check if the solver has converged.
  */
 bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
-	if (this->GetIteration() >= this->MaxIter()){
-		throw SolverException(
-			"Non-linear solver reached the maximum number of allowed "
-			"iterations: " LEN_T_PRINTF_FMT ".",
-			this->MaxIter()
-		);
-	}
-	
-	// always print verbose for the last few iterations before reaching max
-	const len_t numVerboseBeforeMax = 3; 
-	bool printVerbose = this->Verbose() || (this->MaxIter() - this->GetIteration())<=numVerboseBeforeMax;
+    if (this->GetIteration() >= this->MaxIter()){
+        throw SolverException(
+            "Non-linear solver reached the maximum number of allowed "
+            "iterations: " LEN_T_PRINTF_FMT ".",
+            this->MaxIter()
+        );
+    }
+    
+    // always print verbose for the last few iterations before reaching max
+    const len_t numVerboseBeforeMax = 3; 
+    bool printVerbose = this->Verbose() || (this->MaxIter() - this->GetIteration())<=numVerboseBeforeMax;
     if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
@@ -192,13 +192,13 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
  * guess: Vector containing values of initial guess.
  */
 void SolverNonLinear::SetInitialGuess(const real_t *guess) {
-	if (guess != nullptr) {
-		for (len_t i = 0; i < this->matrix_size; i++)
-			this->x0[i] = guess[i];
-	} else {
-		for (len_t i = 0; i < this->matrix_size; i++)
-			this->x0[i] = 0;
-	}
+    if (guess != nullptr) {
+        for (len_t i = 0; i < this->matrix_size; i++)
+            this->x0[i] = guess[i];
+    } else {
+        for (len_t i = 0; i < this->matrix_size; i++)
+            this->x0[i] = 0;
+    }
 }
 
 /**
@@ -206,7 +206,7 @@ void SolverNonLinear::SetInitialGuess(const real_t *guess) {
  */
 void SolverNonLinear::ResetSolution() {
     this->unknowns->GetLongVectorPrevious(this->nontrivial_unknowns, this->x0);
-	this->StoreSolution(this->x0);
+    this->StoreSolution(this->x0);
 }
 
 /**
@@ -225,12 +225,12 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
     this->nTimeStep++;
 
-	this->t  = t;
-	this->dt = dt;
+    this->t  = t;
+    this->dt = dt;
 
     this->timeKeeper->StartTimer(timerTot);
 
-	try {
+    try {
         this->_InternalSolve();
     } catch (FVM::FVMException &ex) {
         // Retry with backup-solver (if allowed and not already used)
@@ -257,15 +257,15 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 }
 
 void SolverNonLinear::_InternalSolve() {
-	// Take Newton steps
-	len_t iter = 0;
-	const real_t *x, *dx;
-	do {
-		iter++;
-		this->SetIteration(iter);
+    // Take Newton steps
+    len_t iter = 0;
+    const real_t *x, *dx;
+    do {
+        iter++;
+        this->SetIteration(iter);
 
 REDO_ITER:
-		dx = this->TakeNewtonStep();
+        dx = this->TakeNewtonStep();
         // Solution rejected (solver likely switched)
         if (dx == nullptr) {
             if (iter < this->MaxIter())
@@ -274,12 +274,10 @@ REDO_ITER:
                 throw SolverException("Maximum number of iterations reached while dx=nullptr.");
         }
 
-		x  = UpdateSolution(dx);
-
-		// TODO backtracking...
-		
-		AcceptSolution();
-	} while (!IsConverged(x, dx));
+        x  = UpdateSolution(dx);
+        
+        AcceptSolution();
+    } while (!IsConverged(x, dx));
 }
 
 /**
@@ -310,7 +308,7 @@ void SolverNonLinear::SaveJacobian(const std::string& name) {
  * Store the current solution to the UnknownQuantityHandler.
  */
 void SolverNonLinear::StoreSolution(const real_t *x) {
-	this->unknowns->Store(this->nontrivial_unknowns, x);
+    this->unknowns->Store(this->nontrivial_unknowns, x);
 }
 
 /**
@@ -318,15 +316,15 @@ void SolverNonLinear::StoreSolution(const real_t *x) {
  */
 const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timeKeeper->StartTimer(timerRebuild);
-	this->RebuildTerms(this->t, this->dt);
+    this->RebuildTerms(this->t, this->dt);
     this->timeKeeper->StopTimer(timerRebuild);
 
-	// Evaluate function vector
+    // Evaluate function vector
     this->timeKeeper->StartTimer(timerResidual);
-	real_t *fvec;
-	VecGetArray(this->petsc_F, &fvec);
-	this->BuildVector(this->t, this->dt, fvec, this->jacobian);
-	VecRestoreArray(this->petsc_F, &fvec);
+    real_t *fvec;
+    VecGetArray(this->petsc_F, &fvec);
+    this->BuildVector(this->t, this->dt, fvec, this->jacobian);
+    VecRestoreArray(this->petsc_F, &fvec);
     this->timeKeeper->StopTimer(timerResidual);
     
     // Reconstruct the jacobian matrix after taking the first
@@ -336,9 +334,9 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     if (this->nTimeStep == 1 && this->iteration == 2)
         this->AllocateJacobianMatrix();
 
-	// Evaluate jacobian
+    // Evaluate jacobian
     this->timeKeeper->StartTimer(timerJacobian);
-	this->BuildJacobian(this->t, this->dt, this->jacobian);
+    this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
 
@@ -348,7 +346,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     // Apply preconditioner (if enabled)
     this->Precondition(this->jacobian, this->petsc_F);
 
-	// Solve J*dx = F
+    // Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
 
@@ -366,13 +364,13 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     // Undo preconditioner (if enabled)
     this->UnPrecondition(this->petsc_dx);
 
-	// Copy dx
-	VecGetArray(this->petsc_dx, &fvec);
-	for (len_t i = 0; i < this->matrix_size; i++)
-		this->dx[i] = fvec[i];
-	VecRestoreArray(this->petsc_dx, &fvec);
-	
-	return this->dx;
+    // Copy dx
+    VecGetArray(this->petsc_dx, &fvec);
+    for (len_t i = 0; i < this->matrix_size; i++)
+        this->dx[i] = fvec[i];
+    VecRestoreArray(this->petsc_dx, &fvec);
+    
+    return this->dx;
 }
 
 
@@ -383,12 +381,12 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
  * length (damping) such that X>threshold*X0 after the iteration
  */
 const real_t MaximalStepLengthAtGridPoint(
-	real_t X0, real_t dX, real_t threshold
+    real_t X0, real_t dX, real_t threshold
 ){
-	real_t maxStepAtI = 1.0;
-	if(dX>X0*std::numeric_limits<real_t>::min()) // dX positive, with check to avoid overflow
-		maxStepAtI = (1-threshold) * X0 / dX;
-	return maxStepAtI;
+    real_t maxStepAtI = 1.0;
+    if(dX>X0*std::numeric_limits<real_t>::min()) // dX positive, with check to avoid overflow
+        maxStepAtI = (1-threshold) * X0 / dX;
+    return maxStepAtI;
 }
 
 /**
@@ -397,88 +395,88 @@ const real_t MaximalStepLengthAtGridPoint(
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
 const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler, len_t &id_uqn){
-	real_t maxStepLength = 1.0;
-	real_t threshold = 0.1;
+    real_t maxStepLength = 1.0;
+    real_t threshold = 0.1;
 
-	std::vector<len_t> ids_nonNegativeQuantities;
-	// add those quantities which we expect to be non-negative
-	// T_cold and n_cold will crash the simulation if negative, so they should always be added
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-	if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
-		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
-	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
-		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
-	if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
-		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
+    std::vector<len_t> ids_nonNegativeQuantities;
+    // add those quantities which we expect to be non-negative
+    // T_cold and n_cold will crash the simulation if negative, so they should always be added
+    ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+    ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
+    ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+    if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
+        ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
+    if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
+        ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
+    if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
+        ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
 
-	bool nonNegativeZeff = true;
-	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    bool nonNegativeZeff = true;
+    const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
-	const len_t N = nontrivial_unknowns.size();
-	const len_t N_nn = ids_nonNegativeQuantities.size();
-	len_t offset = 0;
-	// sum over non-trivial unknowns
-	for (len_t it=0; it<N; it++) {
-		const len_t id = nontrivial_unknowns[it];
-		FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
-		len_t NCells = uq->NumberOfElements();
-		
-		// check whether unknown it is a non-negative quantity
-		bool isNonNegativeQuantity = false;
-		for (len_t it_nn = 0; it_nn < N_nn; it_nn++)
-			if(id==ids_nonNegativeQuantities[it_nn])
-				isNonNegativeQuantity = true;
-		
-		// Quantities which physically cannot be negative, require that they cannot  
-		// be reduced by more than some threshold in each iteration.
-		if(isNonNegativeQuantity)
-			for(len_t i=0; i<NCells; i++){
-				// require x1 > threshold*x0
-				real_t maxStepAtI = MaximalStepLengthAtGridPoint(x0[offset+i], dx[offset+i], threshold);
-				// if this is a stronger constaint than current maxlength, override
-				if(maxStepAtI < maxStepLength && maxStepAtI>0){
-					maxStepLength = maxStepAtI;
-					id_uqn = id;
-				}
-			}
+    const len_t N = nontrivial_unknowns.size();
+    const len_t N_nn = ids_nonNegativeQuantities.size();
+    len_t offset = 0;
+    // sum over non-trivial unknowns
+    for (len_t it=0; it<N; it++) {
+        const len_t id = nontrivial_unknowns[it];
+        FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
+        len_t NCells = uq->NumberOfElements();
+        
+        // check whether unknown it is a non-negative quantity
+        bool isNonNegativeQuantity = false;
+        for (len_t it_nn = 0; it_nn < N_nn; it_nn++)
+            if(id==ids_nonNegativeQuantities[it_nn])
+                isNonNegativeQuantity = true;
+        
+        // Quantities which physically cannot be negative, require that they cannot  
+        // be reduced by more than some threshold in each iteration.
+        if(isNonNegativeQuantity)
+            for(len_t i=0; i<NCells; i++){
+                // require x1 > threshold*x0
+                real_t maxStepAtI = MaximalStepLengthAtGridPoint(x0[offset+i], dx[offset+i], threshold);
+                // if this is a stronger constaint than current maxlength, override
+                if(maxStepAtI < maxStepLength && maxStepAtI>0){
+                    maxStepLength = maxStepAtI;
+                    id_uqn = id;
+                }
+            }
 
-		if(nonNegativeZeff && id==id_ni){
-			len_t nZ = ionHandler->GetNZ();
-			const len_t *Zs = ionHandler->GetZs();
-			len_t nr = NCells/uq->NumberOfMultiples();
-			for(len_t ir=0; ir<nr; ir++){
-				real_t nZ0Z0=0;
-				real_t dnZ0Z0=0;
-				for(len_t iz=0; iz<nZ; iz++)
-					for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-						len_t ind = ionHandler->GetIndex(iz,Z0);
-						nZ0Z0 += Z0*Z0*x0[offset+ind*nr+ir];
-						dnZ0Z0 += Z0*Z0*dx[offset+ind*nr+ir];
-					}
-				real_t maxStepAtI = MaximalStepLengthAtGridPoint(nZ0Z0, dnZ0Z0, threshold);
-				if(maxStepAtI < maxStepLength && maxStepAtI>0){
-					maxStepLength = maxStepAtI;
-					id_uqn = id;
-				}
-			}
-		}
-		offset += NCells;
-	}
+        if(nonNegativeZeff && id==id_ni){
+            len_t nZ = ionHandler->GetNZ();
+            const len_t *Zs = ionHandler->GetZs();
+            len_t nr = NCells/uq->NumberOfMultiples();
+            for(len_t ir=0; ir<nr; ir++){
+                real_t nZ0Z0=0;
+                real_t dnZ0Z0=0;
+                for(len_t iz=0; iz<nZ; iz++)
+                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                        len_t ind = ionHandler->GetIndex(iz,Z0);
+                        nZ0Z0 += Z0*Z0*x0[offset+ind*nr+ir];
+                        dnZ0Z0 += Z0*Z0*dx[offset+ind*nr+ir];
+                    }
+                real_t maxStepAtI = MaximalStepLengthAtGridPoint(nZ0Z0, dnZ0Z0, threshold);
+                if(maxStepAtI < maxStepLength && maxStepAtI>0){
+                    maxStepLength = maxStepAtI;
+                    id_uqn = id;
+                }
+            }
+        }
+        offset += NCells;
+    }
 
-	// Add automatic damping for abnormally high number of iterations to force convergence
-	bool automaticDampingWithItertion = false; // skip the below for now; the method did not seem to stabilize ill-posed cases
-	if(automaticDampingWithItertion){ 
-		real_t minDamping = 0.1;
-		len_t itMax = 100;
-		len_t itThresh = 30;
-		if(iteration>itThresh)
-			maxStepLength *= std::max(minDamping, 
-				1.0 - ((1.0-minDamping)*(iteration-itThresh))/(itMax-itThresh));
-	}
+    // Add automatic damping for abnormally high number of iterations to force convergence
+    bool automaticDampingWithItertion = false; // skip the below for now; the method did not seem to stabilize ill-posed cases
+    if(automaticDampingWithItertion){ 
+        real_t minDamping = 0.1;
+        len_t itMax = 100;
+        len_t itThresh = 30;
+        if(iteration>itThresh)
+            maxStepLength *= std::max(minDamping, 
+                1.0 - ((1.0-minDamping)*(iteration-itThresh))/(itMax-itThresh));
+    }
 
-	return maxStepLength;
+    return maxStepLength;
 }
 
 /**
@@ -488,18 +486,19 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, len_t itera
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
     len_t id_uqn;
-	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,ionHandler,id_uqn);
-	
-	if(dampingFactor < 1 && this->Verbose()) {
+    //real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,ionHandler,id_uqn);
+    real_t dampingFactor = this->backtracker->Adjust(this->petsc_F, this->jacobian);
+    
+    if(dampingFactor < 1 && this->Verbose()) {
         DREAM::IO::PrintInfo();
-		DREAM::IO::PrintInfo("Newton iteration dynamically damped for unknown quantity: %s",unknowns->GetUnknown(id_uqn)->GetName().c_str());
-		DREAM::IO::PrintInfo("to conserve positivity, by a factor: %e", dampingFactor);
+        DREAM::IO::PrintInfo("Newton iteration dynamically damped for unknown quantity: %s",unknowns->GetUnknown(id_uqn)->GetName().c_str());
+        DREAM::IO::PrintInfo("to conserve positivity, by a factor: %e", dampingFactor);
         DREAM::IO::PrintInfo();
-	}
-	for (len_t i = 0; i < this->matrix_size; i++)
-		this->x1[i] = this->x0[i] - dampingFactor*dx[i];
-	
-	return this->x1;
+    }
+    for (len_t i = 0; i < this->matrix_size; i++)
+        this->x1[i] = this->x0[i] - dampingFactor*dx[i];
+    
+    return this->x1;
 }
 
 /**
