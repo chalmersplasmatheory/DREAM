@@ -111,6 +111,12 @@ enum linear_solver {
     LINEAR_SOLVER_GMRES=5
 };
 
+// Type of Newton step adjuster to use
+enum newton_step_adjuster {
+    NEWTON_STEP_ADJUSTER_PHYSICAL=1,
+    NEWTON_STEP_ADJUSTER_BACKTRACK=2
+};
+
 /////////////////////////////////////
 ///
 /// TIME STEPPER OPTIONS

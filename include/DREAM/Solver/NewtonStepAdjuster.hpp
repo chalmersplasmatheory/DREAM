@@ -18,7 +18,10 @@ namespace DREAM {
         ) : nontrivial_unknowns(nu), unknowns(uqh) {}
         virtual ~NewtonStepAdjuster() {}
 
-        virtual real_t Adjust(Vec&, FVM::BlockMatrix*) = 0;
+        virtual real_t Adjust(
+            len_t, const real_t*, const real_t*,
+            Vec&, FVM::BlockMatrix*
+        ) = 0;
     };
 }
 
