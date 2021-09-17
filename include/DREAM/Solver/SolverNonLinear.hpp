@@ -3,16 +3,16 @@
 
 #include "FVM/config.h"
 
-#include <petsc.h>
-#include <vector>
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/EquationSystem.hpp"
-#include "DREAM/Solver/Solver.hpp"
 #include "DREAM/Solver/NewtonStepAdjuster.hpp"
+#include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include <petsc.h>
+#include <vector>
 
 namespace DREAM {
 	class SolverNonLinear : public Solver {
@@ -31,6 +31,7 @@ namespace DREAM {
 		real_t *x_2norm, *dx_2norm;
 
         NewtonStepAdjuster *adjuster;
+        enum OptionConstants::newton_step_adjuster stepAdjusterType = OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL;
 
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
@@ -56,6 +57,7 @@ namespace DREAM {
 			std::vector<UnknownQuantityEquation*>*, EquationSystem*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
+            enum OptionConstants::newton_step_adjuster nsa=OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL,
 			const int_t maxiter=100, const real_t reltol=1e-6,
 			bool verbose=false
 		);
@@ -65,6 +67,7 @@ namespace DREAM {
         void AllocateJacobianMatrix();
 		void Deallocate();
 		const std::string& GetNonTrivialName(const len_t);
+        void InitStepAdjuster(enum OptionConstants::newton_step_adjuster);
 
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }

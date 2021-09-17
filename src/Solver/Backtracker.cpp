@@ -7,9 +7,9 @@
  * 'doc/notes/discretisation.pdf'.
  */
 
-#include <petsc.h>
 #include "DREAM/Solver/Backtracker.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include <petsc.h>
 
 
 using namespace DREAM;
@@ -18,8 +18,10 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-Backtracker::Backtracker(std::vector<len_t>& nu, FVM::UnknownQuantityHandler *uqh)
-    : NewtonStepAdjuster(nu, uqh) {
+Backtracker::Backtracker(
+    std::vector<len_t>& nu, FVM::UnknownQuantityHandler *uqh,
+    IonHandler *ions
+) : PhysicalStepAdjuster(nu, uqh, ions) {
 
     this->nnu = nu.size();
     this->f0 = new real_t[nnu];
@@ -45,7 +47,11 @@ Backtracker::~Backtracker() {
  * Determine the factor 'lambda' with which the next Newton step
  * should be adjusted.
  */
-real_t Backtracker::Adjust(Vec &F, FVM::BlockMatrix *jac) {
+real_t Backtracker::Adjust(
+    len_t iteration,
+    const real_t *x, const real_t *dx, Vec &F,
+    FVM::BlockMatrix *jac
+) {
     real_t lambda=1;
 
     EvaluateTargetFunction(F, jac);
@@ -63,6 +69,12 @@ real_t Backtracker::Adjust(Vec &F, FVM::BlockMatrix *jac) {
     this->lambda1 = lambda;
 
     // TODO Prevent Newton step from making key quantities negative
+    real_t alpha = this->PhysicalStepAdjuster::Adjust(iteration, x, dx, F, jac);
+
+    // If step must be constrained further due to physical reasons,
+    // do so...
+    if (lambda > alpha)
+        lambda = alpha;
 
     return lambda;
 }
@@ -75,7 +87,7 @@ real_t Backtracker::CalculateLambda() {
 
     // Iterate over non-trivial unknowns
     for (len_t i = 0; i < nnu; i++) {
-        real_t l;
+        real_t l = 1;
 
         if (this->nIteration == 2) {    // quadratic approximation to g(lambda)
             real_t gp0 = gradf_deltax[i];

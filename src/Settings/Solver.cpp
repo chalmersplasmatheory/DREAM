@@ -2,10 +2,10 @@
  * Construct a time stepper object.
  */
 
-#include "DREAM/IO.hpp"
-#include "DREAM/EquationSystem.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/Solver.hpp"
+#include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
@@ -31,6 +31,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/linsolv", "Type of linear solver to use", (int_t)OptionConstants::LINEAR_SOLVER_LU);
     s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
+    s->DefineSetting(MODULENAME "/stepadjust", "Method to use for adjusting Newton step", (int_t)OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
@@ -78,16 +79,15 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
             );
     }
 
+    solver->SetSPIHandler(eqsys->GetSPIHandler());
+    solver->SetIonHandler(eqsys->GetIonHandler());
+
     eqsys->SetSolver(solver);
     solver->SetCollisionHandlers(
         eqsys->GetHotTailCollisionHandler(),
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
-
-    solver->SetSPIHandler(eqsys->GetSPIHandler());
-
-    solver->SetIonHandler(eqsys->GetIonHandler());
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
         MODULENAME, s, u, solver->GetNonTrivials()
@@ -122,7 +122,7 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
     int_t timestep  = s->GetInteger(MODULENAME "/debug/timestep");
     bool savesystem = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto sli = new SolverLinearlyImplicit(u, eqns, eqsys, linsolv);
+    auto *sli = new SolverLinearlyImplicit(u, eqns, eqsys, linsolv);
     sli->SetDebugMode(printdebug, savematrix, saverhs, timestep, savesystem);
 
     return sli;
@@ -140,6 +140,8 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     enum OptionConstants::linear_solver
         backups = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/backupsolver"),
         linsolv = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
+    enum OptionConstants::newton_step_adjuster
+        nsa = (enum OptionConstants::newton_step_adjuster)s->GetInteger(MODULENAME "/stepadjust");
 
     int_t maxiter     = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
@@ -153,7 +155,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose);
+    auto *snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, nsa, maxiter, reltol, verbose);
     snl->SetDebugMode(printdebug, savejacobian, savesolution, saveresidual, savenumjac, timestep, iteration, savesystem);
 
     return snl;

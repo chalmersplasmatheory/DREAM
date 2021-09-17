@@ -1,14 +1,14 @@
 #ifndef _DREAM_SOLVER_NONLINEAR_BACKTRACKER_HPP
 #define _DREAM_SOLVER_NONLINEAR_BACKTRACKER_HPP
 
-#include <petsc.h>
-#include <vector>
-#include "DREAM/Solver/NewtonStepAdjuster.hpp"
+#include "DREAM/Solver/PhysicalStepAdjuster.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include <petsc.h>
+#include <vector>
 
 namespace DREAM {
-    class Backtracker : public NewtonStepAdjuster {
+    class Backtracker : public PhysicalStepAdjuster {
     protected:
         real_t *f0, *f1, *f2;
         real_t *gradf_deltax;
@@ -35,10 +35,13 @@ namespace DREAM {
         void ResetBacktracking();
 
     public:
-        Backtracker(std::vector<len_t>&, FVM::UnknownQuantityHandler*);
+        Backtracker(std::vector<len_t>&, FVM::UnknownQuantityHandler*, IonHandler*);
         virtual ~Backtracker();
 
-        virtual real_t Adjust(Vec&, FVM::BlockMatrix*) override;
+        virtual real_t Adjust(
+            len_t, const real_t*, const real_t*,
+            Vec&, FVM::BlockMatrix*
+        ) override;
     };
 }
 
