@@ -39,6 +39,16 @@ enum ion_opacity_mode {
 	OPACITY_MODE_GROUND_STATE_OPAQUE=2
 };
 
+enum ion_charged_diffusion_mode {
+	ION_CHARGED_DIFFUSION_MODE_NONE=1,
+	ION_CHARGED_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_diffusion_mode {
+	ION_NEUTRAL_DIFFUSION_MODE_NONE=1,
+	ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,

@@ -8,9 +8,12 @@
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/IonSPIDepositionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonChargedPrescribedDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonNeutralPrescribedDiffusionTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
 
+#include <iostream>
 
 using namespace DREAM;
 using namespace std;
@@ -32,6 +35,8 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/isotopes", "List of atomic mass numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/opacity_modes", "Specifies if/how opacity should be treated (neglected by default)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/charged_diffusion_modes", "Specifies how to treat diffusion of charged particles (neglected by default)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/neutral_diffusion_modes", "Specifies how to treat diffusion of neutral particles (neglected by default)", 1, dims, (int_t*)nullptr);    
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
@@ -41,6 +46,8 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonR(MODULENAME, s, "initialTi");
     DefineDataIonRT(MODULENAME, s, "prescribed");
+    DefineDataIonRT(MODULENAME, s, "charged_prescribed_diffusion");
+    DefineDataIonRT(MODULENAME, s, "neutral_prescribed_diffusion");
 }
 
 /**
@@ -86,6 +93,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     const int_t *_Z  = s->GetIntegerArray(MODULENAME "/Z", 1, &nZ);
     const int_t *itypes = s->GetIntegerArray(MODULENAME "/types", 1, &ntypes);
     const int_t *iopacity_modes = s->GetIntegerArray(MODULENAME "/opacity_modes", 1, &ntypes);
+    const int_t *icharged_diffusion_modes = s->GetIntegerArray(MODULENAME "/charged_diffusion_modes", 1, &ntypes);
+    const int_t *ineutral_diffusion_modes = s->GetIntegerArray(MODULENAME "/neutral_diffusion_modes", 1, &ntypes);
 
     // Parse list of ion names (stored as one contiguous string,
     // each substring separated by ';')
@@ -141,6 +150,14 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             );
         }
     }
+    
+    // Load transport settings
+    enum OptionConstants::ion_charged_diffusion_mode *charged_diffusion_mode = new enum OptionConstants::ion_charged_diffusion_mode[ntypes];
+    for (len_t i = 0; i < ntypes; i++)
+        charged_diffusion_mode[i] = (enum OptionConstants::ion_charged_diffusion_mode)icharged_diffusion_modes[i];
+    enum OptionConstants::ion_neutral_diffusion_mode *neutral_diffusion_mode = new enum OptionConstants::ion_neutral_diffusion_mode[ntypes];
+    for (len_t i = 0; i < ntypes; i++)
+        neutral_diffusion_mode[i] = (enum OptionConstants::ion_neutral_diffusion_mode)ineutral_diffusion_modes[i];
 
     // Load SPI-related settings
     len_t nZSPInShard;
@@ -309,6 +326,40 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             }else {
             	SPIOffset+=1;
             }
+        }
+    }
+    
+    // Find number of charge states with prescribed diffusion
+    len_t nZ0_charged_prescribed_diffusion = 0;
+    len_t nZ0_neutral_prescribed_diffusion = 0;
+    for(len_t iZ=0;iZ<nZ;iZ++){
+        if(charged_diffusion_mode[iZ] == OptionConstants::ION_CHARGED_DIFFUSION_MODE_PRESCRIBED){
+            nZ0_charged_prescribed_diffusion += Z[iZ];
+        }
+        if(neutral_diffusion_mode[iZ] == OptionConstants::ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED){
+            nZ0_neutral_prescribed_diffusion++;
+        }
+    }
+    
+    // Load prescribed diffusion coefficients
+    MultiInterpolator1D *DrrChargedPrescribed = LoadDataIonRT(
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_diffusion, "charged_prescribed_diffusion"
+    ); 
+    MultiInterpolator1D *DrrNeutralPrescribed = LoadDataIonRT(
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_diffusion, "neutral_prescribed_diffusion"
+    );
+    
+    // Add transport terms
+    len_t offsetChargedDiffusion = 0;
+    len_t offsetNeutralDiffusion = 0;
+    for(len_t iZ=0;iZ<nZ;iZ++){
+        if(charged_diffusion_mode[iZ] == OptionConstants::ION_CHARGED_DIFFUSION_MODE_PRESCRIBED){
+            eqn->AddTerm(new IonChargedPrescribedDiffusionTerm(fluidGrid, ih, true, iZ, offsetChargedDiffusion, DrrChargedPrescribed), true);
+            offsetChargedDiffusion+=Z[iZ];
+        }
+        if(neutral_diffusion_mode[iZ] == OptionConstants::ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED){
+            eqn->AddTerm(new IonNeutralPrescribedDiffusionTerm(fluidGrid, ih, true, iZ, offsetNeutralDiffusion, DrrNeutralPrescribed), true);
+            offsetNeutralDiffusion++;
         }
     }
 
