@@ -56,6 +56,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTermHighZ.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedDiffusionStochasticBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralPrescribedDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEnergyFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatFluxFromDistributionFunction.cpp"
