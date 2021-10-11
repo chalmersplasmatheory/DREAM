@@ -575,6 +575,22 @@ void SolverNonLinear::SaveDebugInfo(
             SaveNumericalJacobian(jacname);
         }
 
+        if (this->savesolution) {
+            string solname = "solution_dx";
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                solname += suffix;
+            solname += ".mat";
+
+            real_t *xvec;
+            VecGetArray(this->petsc_dx, &xvec);
+
+            SFile *sf = SFile::Create(solname, SFILE_MODE_WRITE);
+            sf->WriteList("dx", xvec, this->jacobian->GetNRows());
+            sf->Close();
+
+            VecRestoreArray(this->petsc_dx, &xvec);
+        }
+
         // Save full output?
         if (this->savesystem) {
             string outname = "debugout";
@@ -599,6 +615,8 @@ void SolverNonLinear::SaveDebugInfo(
  *                    PETSc matrix for the jacobian in every iteration.
  * savejacobian:      If true, saves the jacobian using a PETSc viewer in
  *                    the specified time step(s).
+ * savesolution:      If true, saves the solution vector in the specified
+ *                    time step(s).
  * savevector:        If true, saves the residual vector in the specified
  *                    time step(s).
  * savenumjac:        If true, calculates the jacobian numerically and saves
@@ -611,11 +629,12 @@ void SolverNonLinear::SaveDebugInfo(
  *                    solution is saved.
  */
 void SolverNonLinear::SetDebugMode(
-    bool printjacobianinfo, bool savejacobian, bool savevector,
+    bool printjacobianinfo, bool savesolution, bool savejacobian, bool savevector,
     bool savenumjac, int_t timestep, int_t iteration, bool savesystem
 ) {
     this->printjacobianinfo = printjacobianinfo;
     this->savejacobian      = savejacobian;
+    this->savesolution      = savesolution;
     this->savevector        = savevector;
     this->savenumjac        = savenumjac;
     this->savetimestep      = timestep;

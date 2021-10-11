@@ -1,6 +1,8 @@
 #ifndef _OTHER_QUANTITY_HANDLER_HPP
 #define _OTHER_QUANTITY_HANDLER_HPP
 
+namespace DREAM { class OtherQuantityHandler; }
+
 #include <map>
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
@@ -17,8 +19,10 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
@@ -43,14 +47,20 @@ namespace DREAM {
             DREAM::TransportDiffusiveBC *n_re_diffusive_bc=nullptr;
             DREAM::TransportAdvectiveBC *T_cold_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *T_cold_diffusive_bc=nullptr;
+            // Svensson transport coefficients
+            DREAM::SvenssonTransportAdvectionTermA *svensson_A=nullptr;
+            DREAM::SvenssonTransportDiffusionTerm  *svensson_D=nullptr;
+            DREAM::SvenssonTransportAdvectionTermD *svensson_advD=nullptr;
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
+            // Hyperresistive diffusion term
+            DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
         };
 
-    private:
+    protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
 
@@ -91,7 +101,7 @@ namespace DREAM {
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );
-        ~OtherQuantityHandler();
+        virtual ~OtherQuantityHandler();
 
         void DefineQuantities();
         OtherQuantity *GetByName(const std::string&);

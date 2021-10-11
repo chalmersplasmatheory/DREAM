@@ -7,6 +7,8 @@ from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
+from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
+from . IonThermalEnergy import IonThermalEnergy
 from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
@@ -32,6 +34,7 @@ class EquationSystem:
         'n_cold':       FluidQuantity,
         'n_hot':        FluidQuantity,
         'n_i':          IonHandler,
+        'N_i':          IonSpeciesFluidQuantity,
         'n_re':         RunawayElectronDensity,
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
@@ -44,6 +47,7 @@ class EquationSystem:
         'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
+        'W_i':          IonThermalEnergy,
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
     }
@@ -95,7 +99,7 @@ class EquationSystem:
         self.grid = grid
 
 
-    def setUnknown(self, name, data, attr):
+    def setUnknown(self, name, data, attr, datatype=None):
         """
         Add the given unknown to this equation system.
 
@@ -103,7 +107,9 @@ class EquationSystem:
         data: Data for the unknown (raw, as a dict from the output file).
         attr: List of attributes set to this unknown in the output file.
         """
-        if name in self.SPECIAL_TREATMENT:
+        if datatype is not None:
+            o = datatype(name=name, data=data, attr=attr, grid=self.grid, output=self.output)
+        elif name in self.SPECIAL_TREATMENT:
             o = self.SPECIAL_TREATMENT[name](name=name, data=data, attr=attr, grid=self.grid, output=self.output)
         else:
             o = UnknownQuantity(name=name, data=data, attr=attr, grid=self.grid, output=self.output)
@@ -125,5 +131,23 @@ class EquationSystem:
                 attr = unknowns[uqn+'@@']
 
             self.setUnknown(name=uqn, data=unknowns[uqn], attr=attr)
+
+
+    def resetUnknown(self, unknown, datatype):
+        """
+        Reinitializes the named unknown quantity, making it of the given
+        data type.
+        """
+        if unknown not in self.unknowns:
+            return
+
+        attr = {}
+        u = self.unknowns[unknown]
+        if 'description' in u.__dict__:
+            attr['description'] = u.description
+        if 'description_eqn' in u.__dict__:
+            attr['equation'] = u.description_eqn
+
+        self.setUnknown(name=unknown, data=u.data, attr=attr, datatype=datatype)
 
 

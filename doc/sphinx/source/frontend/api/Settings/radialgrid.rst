@@ -125,6 +125,15 @@ parameter to the parameters of the radial grid described above in
 Analytic toroidal grid
 ----------------------
 
+.. note::
+
+   When using toroidal geometry, it is important to adjust the :math:`\xi`
+   grids for :math:`f_{\rm hot}` and/or :math:`f_{\rm re}` (if used) so that
+   the trapped/passing boundaries are sufficiently resovled.
+
+   Details about how to do this can be found at
+   :ref:`ds-momentumgrid-trapped`.
+
 DREAM implements an analytic five-parameter toroidal magnetic field. The model
 includes the three shaping parameters illustrated in the figure below, namely
 elongation :math:`\kappa(r)`, triangularity :math:`\delta(r)` and Shafranov
@@ -215,6 +224,7 @@ specified in DREAM:
    IpRef = 200e3            # Reference plasma current which generates poloidal field
    psi = -mu0 * IpRef * (1-(rpsi/a)**2) * a
 
+   ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
    ds.radialgrid.setShaping(psi=psi, rpsi=rpsi, GOverR0=GOverR0, kappa=kappa,
        rkappa=rkappa, Delta=Delta, rDelta=rDelta, delta=delta, rdelta=rdelta)
    ds.radialgrid.setWallRadius(a*1.1)
@@ -223,6 +233,10 @@ specified in DREAM:
    # Numerics parameters
    ds.radialgrid.setMinorRadius(a)
    ds.radialgrid.setNr(100)
+
+   # If kinetic grids are enabled, you should also do...
+   ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(dxiMax=1e-3)
+   ds.runawaygrid.setTrappedPassingBoundaryLayerGrid(dxiMax=1e-3)
 
 .. note::
 
@@ -236,6 +250,15 @@ specified in DREAM:
 
 Numeric toroidal grid
 ---------------------
+.. note::
+
+   When using toroidal geometry, it is important to adjust the :math:`\xi`
+   grids for :math:`f_{\rm hot}` and/or :math:`f_{\rm re}` (if used) so that
+   the trapped/passing boundaries are sufficiently resovled.
+
+   Details about how to do this can be found at
+   :ref:`ds-momentumgrid-trapped`.
+
 DREAM allows numerical magnetic fields obtained from, for example,
 Grad-Shafranov solvers such as EFIT or LIUQE, to be used to specify the
 geometry in simulations. Numerically specified magnetic fields are not subject

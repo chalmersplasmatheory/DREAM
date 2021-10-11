@@ -33,7 +33,7 @@ namespace DREAM {
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
         // Debug settings
-        bool printjacobianinfo = false, savejacobian = false,
+        bool printjacobianinfo = false, savejacobian = false, savesolution = false,
             savevector = false, savenumjac = false, savesystem = false;
         len_t savetimestep = 0, saveiteration = 1;
 
@@ -95,7 +95,7 @@ namespace DREAM {
         virtual void SaveTimings(SFile*, const std::string& path="") override;
 
         void SaveDebugInfo(len_t, len_t);
-        void SetDebugMode(bool, bool, bool, bool, int_t, int_t, bool);
+        void SetDebugMode(bool, bool, bool, bool, bool, int_t, int_t, bool);
 
         virtual void SwitchToBackupInverter() override;
 

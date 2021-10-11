@@ -64,7 +64,8 @@ def gensettings(T, Z=300, EED=1e-6, n=5e19, yMax=5):
     ds.eqsys.j_ohm.setConductivityMode(JOhm.CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS)
 
     # set non-uniform xi grid with cells stradding the trapped-passing boundaries
-    ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(xi0Trapped, dxiMax=0.1, boundaryLayerWidth=1e-4)
+    #ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(xi0Trapped, dxiMax=0.1, boundaryLayerWidth=1e-4)     # old method
+    ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(dxiMax=0.1, boundaryLayerWidth=1e-4)      # new method
     ds.hottailgrid.setNp(40)
     ds.hottailgrid.setPmax(pMax)
 
@@ -118,7 +119,7 @@ def runT(T):
     jKinetic = do.eqsys.j_ohm[-1,:]
 
     ds.hottailgrid.setEnabled(False)
-    do = DREAM.runiface(ds,quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
     jFluid = do.eqsys.j_ohm[-1,:]
 
     eps = do.grid.r[:] / R0

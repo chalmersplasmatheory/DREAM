@@ -72,7 +72,7 @@ Setting :math:`\boldsymbol{F}(\boldsymbol{x})` and solving for
 
 .. math::
 
-   \boldsymbol{x}^{(l+1)}_{i+1} = x^{(l+1)}_i - \mathsf{J}^{-1}\left(
+   \boldsymbol{x}^{(l+1)}_{i+1} = \boldsymbol{x}^{(l+1)}_i - \mathsf{J}^{-1}\left(
    \boldsymbol{x}^{(l+1)}_i \right)
    \boldsymbol{F}\left( \boldsymbol{x}^{(l+1)}_i \right),
 
@@ -260,9 +260,11 @@ Non-linear solver
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | ``savejacobian``          | Save the jacobian matrix using the PETSc MATLAB binary viewer.                                                            |
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| ``savesolution``          | Save the solution vector :math:`\boldsymbol{x}_{i+1}^{(l+1)}-\boldsymbol{x}_i^{(l+1)}` to a ``.mat`` file.                |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | ``savenumericaljacobian`` | Approximate and save the jacobian matrix numerically. The matrix is saved using the PETSc MATLAB binary viewer.           |
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
-| ``saveresidual``          | Save the residual vector to a ``.mat`` file.                                                                              |
+| ``saveresidual``          | Save the residual vector :math:`\boldsymbol{F}(\boldsymbol{x})` to a ``.mat`` file.                                       |
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | ``savesystem``            | Generate a regular DREAM output file with the data in the last time step populated from the most recent Newton iteration. |
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
