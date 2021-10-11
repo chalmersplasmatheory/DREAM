@@ -54,11 +54,19 @@ ION_CHARGED_DIFFUSION_MODE_PRESCRIBED = 2
 ION_NEUTRAL_DIFFUSION_MODE_NONE = 1
 ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED = 2
 
+ION_CHARGED_ADVECTION_MODE_NONE = 1
+ION_CHARGED_ADVECTION_MODE_PRESCRIBED = 2
+
+ION_NEUTRAL_ADVECTION_MODE_NONE = 1
+ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED = 2
+
 class IonSpecies:
     
     def __init__(self, settings, name, Z, ttype=0, Z0=None, isotope=0, SPIMolarFraction=-1.0, opacity_mode = ION_OPACITY_MODE_TRANSPARENT, 
         charged_diffusion_mode=ION_CHARGED_DIFFUSION_MODE_NONE, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None,
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
+        charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
+        neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,        
         T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
@@ -90,6 +98,8 @@ class IonSpecies:
         self.opacity_mode = opacity_mode
         self.charged_diffusion_mode = None
         self.neutral_diffusion_mode = None
+        self.charged_advection_mode = None
+        self.neutral_advection_mode = None
 
         self.setSPIMolarFraction(SPIMolarFraction)
 
@@ -129,6 +139,7 @@ class IonSpecies:
 
         self.T = self.setTemperature(T)
         
+        # Initialize diffusion
         self.charged_prescribed_diffusion = None
         self.rChargedPrescribedDiffusion = None
         self.tChargedPrescribedDiffusion = None
@@ -147,6 +158,24 @@ class IonSpecies:
         else:
             self.neutral_diffusion_mode = neutral_diffusion_mode
 
+        # Initialize advection
+        self.charged_prescribed_advection = None
+        self.rChargedPrescribedAdvection = None
+        self.tChargedPrescribedAdvection = None
+        if charged_advection_mode == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+            self.initialize_charged_prescribed_advection(charged_prescribed_advection = charged_prescribed_advection, rChargedPrescribedAdvection = rChargedPrescribedAdvection,
+                tChargedPrescribedAdvection = tChargedPrescribedAdvection, interpr=interpr, interpt=interpt)
+        else:
+            self.charged_advection_mode = charged_advection_mode
+            
+        self.neutral_prescribed_advection = None
+        self.rNeutralPrescribedAdvection = None
+        self.tNeutralPrescribedAdvection = None
+        if neutral_advection_mode == ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+            self.initialize_neutral_prescribed_advection(neutral_prescribed_advection = neutral_prescribed_advection, rNeutralPrescribedAdvection = rNeutralPrescribedAdvection,
+                tNeutralPrescribedAdvection = tNeutralPrescribedAdvection, interpr=interpr, interpt=interpt)
+        else:
+            self.neutral_advection_mode = neutral_advection_mode
 
     def setTemperature(self, T):
         """
@@ -174,6 +203,9 @@ class IonSpecies:
         """
         return self.n
         
+        
+        
+    # Getters for diffusion-related quantities    
     def getChargedPrescribedDiffusion(self):
         """
         Returns the prescribed charged diffusion coefficient array for this ion species.
@@ -209,6 +241,47 @@ class IonSpecies:
         Returns the prescribed neutral diffusion coefficient array for this ion species.
         """
         return self.neutral_prescribed_diffusion
+        
+        
+        
+    # Getters for advection-related quantities    
+    def getChargedPrescribedAdvection(self):
+        """
+        Returns the prescribed charged advection coefficient array for this ion species.
+        """
+        return self.charged_prescribed_advection
+        
+    def getRChargedPrescribedAdvection(self):
+        """
+        Returns the radial grid for the prescribed charged advection coefficient array for this ion species.
+        """
+        return self.rChargedPrescribedAdvection
+        
+    def getTChargedPrescribedAdvection(self):
+        """
+        Returns the time grid for the prescribed charged advection coefficient array for this ion species.
+        """
+        return self.tChargedPrescribedAdvection
+        
+    def getRNeutralPrescribedAdvection(self):
+        """
+        Returns the radial grid for the prescribed neutral advection coefficient array for this ion species.
+        """
+        return self.rNeutralPrescribedAdvection
+        
+    def getTNeutralPrescribedAdvection(self):
+        """
+        Returns the time grid for the prescribed neutral advection coefficient array for this ion species.
+        """
+        return self.tNeutralPrescribedAdvection
+        
+    def getNeutralPrescribedAdvection(self):
+        """
+        Returns the prescribed neutral advection coefficient array for this ion species.
+        """
+        return self.neutral_prescribed_advection
+        
+        
 
     def getName(self):
         """
@@ -254,10 +327,24 @@ class IonSpecies:
         
     def getNeutralDiffusionMode(self):
         """
-        Returns the neutral mode to use for evolving the ion densities
+        Returns the neutral diffusion mode to use for evolving the ion densities
         for this species.
         """
         return self.neutral_diffusion_mode
+        
+    def getChargedAdvectionMode(self):
+        """
+        Returns the charged advection mode to use for evolving the ion densities
+        for this species.
+        """
+        return self.charged_advection_mode
+        
+    def getNeutralAdvectionMode(self):
+        """
+        Returns the neutral advection mode to use for evolving the ion densities
+        for this species.
+        """
+        return self.neutral_advection_mode
 
     def getTemperature(self):
         """
@@ -528,6 +615,9 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
             
+            
+            
+            
     def initialize_charged_prescribed_diffusion(self, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None, interpr=None, interpt=None):
         """
         Prescribes the evolution of the charged diffusion coefficients for this ion species.
@@ -614,6 +704,98 @@ class IonSpecies:
             self.neutral_prescribed_diffusion = neutral_prescribed_diffusion
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral diffusion coefficient: {}.".format(self.name, neutral_prescribed_diffusion.shape))
+   
+   
+   
+   
+    def initialize_charged_prescribed_advection(self, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None, interpr=None, interpt=None):
+        """
+        Prescribes the evolution of the charged advection coefficients for this ion species.
+        """
+        self.charged_advection_mode = ION_CHARGED_ADVECTION_MODE_PRESCRIBED
+        if charged_prescribed_advection is None:
+            raise EquationException("ion_species: '{}': Prescribed charged advection coefficients must not be 'None'.".format(self.name))
+
+        # Convert lists to NumPy arrays
+        if type(charged_prescribed_advection) == list:
+            charged_prescribed_advection = np.array(charged_prescribed_advection)
+
+        # Scalar (assume density constant in spacetime)
+        if np.isscalar(charged_prescribed_advection):
+            self.tChargedPrescribedAdvection = np.array([0])
+            self.rChargedPrescribedAdvection = np.array([0,1])
+            self.charged_prescribed_advection = np.ones((self.Z,1,2)) * charged_prescribed_advection
+            return
+        if rChargedPrescribedAdvection is None:
+            raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
+
+        if len(charged_prescribed_advection.shape) == 1:
+            raise EquationException("ion_species: '{}': Prescribed charged advection coefficient data has only one dimension.".format(self.name))
+        elif len(charged_prescribed_advection.shape) == 2:
+            raise EquationException("ion_species: '{}': Prescribed charged advection coefficient data has only two dimensions.".format(self.name))
+        # Full time evolution of radial profiles of charge states
+        elif len(charged_prescribed_advection.shape) == 3:
+            if tChargedPrescribedAdvection is None:
+                raise EquationException("ion_species: '{}': 3D charged advection coefficient prescribed, but no time coordinates given.".format(self.name))
+
+            if self.Z != charged_prescribed_advection.shape[0] or tChargedPrescribedAdvection.size != charged_prescribed_advection.shape[1] or rChargedPrescribedAdvection.size != charged_prescribed_advection.shape[2]:
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed charged advection coefficient: {}x{}x{}. Expected {}x{}x{}"
+                    .format(self.name, charged_prescribed_advection.shape.shape[0], charged_prescribed_advection.shape.shape[1], charged_prescribed_advection.shape.shape[2], self.Z, tChargedPrescribedAdvection.size, rChargedPrescribedAdvection.size))
+            self.tChargedPrescribedAdvection = tChargedPrescribedAdvection
+            self.rChargedPrescribedAdvection = rChargedPrescribedAdvection
+            self.charged_prescribed_advection = charged_prescribed_advection
+        else:
+            raise EquationException("ion_species: '{}': Unrecognized shape of prescribed charged advection coefficient: {}.".format(self.name, charged_prescribed_advection.shape))
+
+    def initialize_neutral_prescribed_advection(self, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None, interpr=None, interpt=None):
+        """
+        Prescribes the evolution of the neutral advection coefficients for this ion species.
+        """
+        self.neutral_advection_mode = ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
+        if neutral_prescribed_advection is None:
+            raise EquationException("ion_species: '{}': Prescribed neutral advection coefficients must not be 'None'.".format(self.name))
+
+        # Convert lists to NumPy arrays
+        if type(neutral_prescribed_advection) == list:
+            neutral_prescribed_advection = np.array(neutral_prescribed_advection)
+
+        # Scalar (assume density constant in spacetime)
+        if np.isscalar(neutral_prescribed_advection):
+            self.tNeutralPrescribedAdvection = np.array([0])
+            self.rNeutralPrescribedAdvection = np.array([0,1])
+            self.neutral_prescribed_advection = np.ones((self.Z,1,2)) * neutral_prescribed_advection
+            return
+        if rNeutralPrescribedAdvection is None:
+            raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
+
+        if len(neutral_prescribed_advection.shape) == 1:
+            raise EquationException("ion_species: '{}': Prescribed neutral advection coefficient data has only one dimension.".format(self.name))
+        # As there is only one neutral charge state for a single species, all information needed here can actually be provided in a 2D array
+        elif len(neutral_prescribed_advection.shape) == 2:
+            if tneutralPrescribedAdvection is None:
+                raise EquationException("ion_species: '{}': 2D neutral advection coefficient prescribed, but no time coordinates given.".format(self.name))
+
+            if tNeutralPrescribedAdvection.size != neutral_prescribed_advection.shape[0] or rNeutralPrescribedAdvection.size != neutral_prescribed_advection.shape[1]:
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed neutral advection coefficient: {}x{}. Expected {}x{}"
+                    .format(self.name, neutral_prescribed_advection.shape.shape[0], neutral_prescribed_advection.shape.shape[1], tNeutralPrescribedAdvection.size, rNeutralPrescribedAdvection.size))
+            self.tNeutralPrescribedAdvection = tNeutralPrescribedAdvection
+            self.rNeutralPrescribedAdvection = rNeutralPrescribedAdvection
+            self.neutral_prescribed_advection = neutral_prescribed_advection.reshape((1,neutral_prescribed_advection.shape[0],neutral_prescribed_advection.shape[1]))
+        # Full time evolution of radial profiles of charge states
+        elif len(neutral_prescribed_advection.shape) == 3:
+            if tNeutralPrescribedAdvection is None:
+                raise EquationException("ion_species: '{}': 3D neutral advection coefficient prescribed, but no time coordinates given.".format(self.name))
+
+            if neutral_prescribed_advection.shape[0] != 1 or tNeutralPrescribedAdvection.size != neutral_prescribed_advection.shape[1] or rNeutralPrescribedAdvection.size != neutral_prescribed_advection.shape[2]:
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed neutral advection coefficient: {}x{}x{}. Expected {}x{}x{}"
+                    .format(self.name, neutral_prescribed_advection.shape.shape[0], neutral_prescribed_advection.shape.shape[1], neutral_prescribed_advection.shape.shape[2], self.Z, tNeutralPrescribedAdvection.size, rNeutralPrescribedAdvection.size))
+            self.tNeutralPrescribedAdvection = tNeutralPrescribedAdvection
+            self.rNeutralPrescribedAdvection = rNeutralPrescribedAdvection
+            self.neutral_prescribed_advection = neutral_prescribed_advection
+        else:
+            raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral advection coefficient: {}.".format(self.name, neutral_prescribed_advection.shape))
+
+
     
     def verifySettings(self):
         """
