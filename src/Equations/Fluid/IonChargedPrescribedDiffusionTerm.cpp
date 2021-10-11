@@ -12,8 +12,8 @@
 
 using namespace DREAM;
 
-IonChargedPrescribedDiffusionTerm::IonChargedPrescribedDiffusionTerm(FVM::Grid *grid, IonHandler *ions, bool allocCoefficients,
-	const len_t iIon, len_t offset, MultiInterpolator1D* DrrPrescribed
+IonChargedPrescribedDiffusionTerm::IonChargedPrescribedDiffusionTerm(FVM::Grid *grid, IonHandler *ions,
+	const len_t iIon, bool allocCoefficients, len_t offset, MultiInterpolator1D* DrrPrescribed
 	) : IonChargedAdvectionDiffusionTerm<FVM::DiffusionTerm>(grid, 
 	ions, iIon, allocCoefficients), offset(offset), DrrPrescribed(DrrPrescribed) {
 	

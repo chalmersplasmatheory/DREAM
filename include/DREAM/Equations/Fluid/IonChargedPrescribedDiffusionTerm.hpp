@@ -22,7 +22,7 @@ namespace DREAM {
 		virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/) override;
 		
 	public:
-		IonChargedPrescribedDiffusionTerm(FVM::Grid *g, IonHandler *ihdl, bool allocCoefficients, const len_t iIon, len_t offset, MultiInterpolator1D*);
+		IonChargedPrescribedDiffusionTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon, bool allocCoefficients, len_t offset, MultiInterpolator1D*);
 		~IonChargedPrescribedDiffusionTerm();
 	};
 }

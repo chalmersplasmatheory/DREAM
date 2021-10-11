@@ -19,7 +19,7 @@ namespace DREAM {
 		virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/) override;
 		
 	public:
-		IonNeutralPrescribedDiffusionTerm(FVM::Grid *g, IonHandler *ihdl, bool allocCoefficients, const len_t iIon, len_t offset, MultiInterpolator1D*);
+		IonNeutralPrescribedDiffusionTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon, bool allocCoefficients, len_t offset, MultiInterpolator1D*);
 		~IonNeutralPrescribedDiffusionTerm();
 		
 		virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

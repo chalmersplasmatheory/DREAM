@@ -10,8 +10,8 @@
 
 using namespace DREAM;
 
-IonNeutralPrescribedDiffusionTerm::IonNeutralPrescribedDiffusionTerm(FVM::Grid *grid, IonHandler *ions, bool allocCoefficients,
-	const len_t iIon, len_t offset, MultiInterpolator1D* DrrPrescribed
+IonNeutralPrescribedDiffusionTerm::IonNeutralPrescribedDiffusionTerm(FVM::Grid *grid, IonHandler *ions, const len_t iIon,
+    bool allocCoefficients, len_t offset, MultiInterpolator1D* DrrPrescribed
 	) : IonNeutralAdvectionDiffusionTerm<FVM::DiffusionTerm>(grid, 
 	ions, iIon, allocCoefficients), offset(offset), DrrPrescribed(DrrPrescribed) {
 	
