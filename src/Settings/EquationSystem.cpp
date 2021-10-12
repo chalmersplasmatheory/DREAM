@@ -170,7 +170,7 @@ void SimulationGenerator::ConstructEquations(
     if (eqsys->HasRunawayGrid()) {
         ConstructEquation_f_re(eqsys, s, oqty_terms, &transport_fre);
     }
-    ConstructEquation_E_field(eqsys, s);
+    ConstructEquation_E_field(eqsys, s, oqty_terms);
     ConstructEquation_j_hot(eqsys, s);
     ConstructEquation_j_tot(eqsys, s);
     ConstructEquation_j_ohm(eqsys, s);

@@ -36,6 +36,7 @@ namespace DREAM::FVM {
 
         const real_t *Eval(const real_t);
 
+        const real_t *GetBuffer() const { return this->buffer; }
         const real_t *GetX() const { return this->x; }
         const real_t *GetY() const { return this->y; }
     };
