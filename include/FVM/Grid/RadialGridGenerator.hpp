@@ -40,6 +40,13 @@ namespace DREAM::FVM {
         // TODO: in the interface, specify jtotRef instead of psiPrimeRef, where jtotRef
         //       is a reference current profile from which we calculate the generated poloidal magnetic field (or flux derivative) 
 
+        // Tolerance to use when switching between cartesian and flux surface coordinates
+        // Increasing the value of this tolerance seem to make it hard for SPI simulations
+        // to converge without also increasing the overall generak tolerance for the Newton solver,
+        // which is why we use this rather small value here. It does however not seem to slow down the
+        // simulations significantly
+        const real_t CartesianCoordinateTol = 1e-6;
+        
         // True if the flux surfaces are up-down symmetric, i.e. if B(theta) = B(-theta)
         // where (if true) theta=0 must correspond to outermost low-field side, B(0) = B_min. 
         bool isUpDownSymmetric = false;
@@ -69,9 +76,9 @@ namespace DREAM::FVM {
         len_t GetNr() const { return this->nr; }
         len_t GetNthetaInterp() const { return this->ntheta_interp; }
 
-        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t , real_t , real_t, real_t, real_t )=0;
-        virtual void GetGradRCartesian(real_t* ,real_t, real_t)=0;
-        virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t )=0;
+        virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t , real_t , real_t, real_t, real_t )=0;
+        virtual void GetGradRCartesian(real_t* ,real_t, real_t, real_t)=0;
+        virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t );
 
         virtual bool NeedsRebuild(const real_t t) const = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
