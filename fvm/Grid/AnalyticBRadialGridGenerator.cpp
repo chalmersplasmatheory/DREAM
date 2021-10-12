@@ -372,9 +372,9 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleExtrap(real_t 
         return xProvided[0];
     } else {
         if(r>xProvided_r[nProvided-1])
-            return gsl_spline_eval(spline_x, xProvided_r[nProvided-1], spline_acc);
+            return xProvided_r[nProvided-1];
         else if(r<xProvided_r[0])
-            return gsl_spline_eval(spline_x, xProvided_r[0], spline_acc);
+            return xProvided_r[0];
         else
             return gsl_spline_eval(spline_x, r, spline_acc);
     }   
@@ -400,6 +400,75 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleDerivExtrap(re
 }
 
 /**
+* Helper function for interpolation of elongation data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputElongation(real_t r){
+	const real_t *kappaProf = this->providedProfiles->kappa;
+	const real_t *kappa_r = this->providedProfiles->kappa_r;
+	const len_t nkappa = this->providedProfiles->nkappa;
+	
+	return InterpolateInputProfileSingleExtrap(r, nkappa, kappaProf, kappa_r, 
+	            this->spline_kappa, gsl_acc_kappa);
+}
+
+/**
+* Helper function for interpolation of the derivative of the elongation data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputElongationDeriv(real_t r){
+	const real_t *kappa_r = this->providedProfiles->kappa_r;
+	const len_t nkappa = this->providedProfiles->nkappa;
+	
+	return InterpolateInputProfileSingleDerivExtrap(r, nkappa, kappa_r, 
+	            this->spline_kappa, gsl_acc_kappa);
+}
+
+/**
+* Helper function for interpolation of triangularity data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputTriangularity(real_t r){
+	const real_t *deltaProf = this->providedProfiles->delta;
+	const real_t *delta_r = this->providedProfiles->delta_r;
+	const len_t ndelta = this->providedProfiles->ndelta;
+	
+	return InterpolateInputProfileSingleExtrap(r, ndelta, deltaProf, delta_r, 
+	            this->spline_delta, gsl_acc_delta);
+}
+
+/**
+* Helper function for interpolation of the derivative of the triangularity data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputTriangularityDeriv(real_t r){
+	const real_t *delta_r = this->providedProfiles->delta_r;
+	const len_t ndelta = this->providedProfiles->ndelta;
+	
+	return InterpolateInputProfileSingleDerivExtrap(r, ndelta, delta_r, 
+	            this->spline_delta, gsl_acc_delta);
+}
+
+/**
+* Helper function for interpolation of Shafranov shift data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputShafranovShift(real_t r){
+	const real_t *DeltaProf = this->providedProfiles->Delta;
+	const real_t *Delta_r = this->providedProfiles->Delta_r;
+	const len_t nDelta = this->providedProfiles->nDelta;
+	
+	return InterpolateInputProfileSingleExtrap(r, nDelta, DeltaProf, Delta_r, 
+	            this->spline_Delta, gsl_acc_Delta);
+}
+
+/**
+* Helper function for interpolation of the derivative of the Shafranov shift data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputShafranovShiftDeriv(real_t r){
+	const real_t *Delta_r = this->providedProfiles->Delta_r;
+	const len_t nDelta = this->providedProfiles->nDelta;
+	
+	return InterpolateInputProfileSingleDerivExtrap(r, nDelta, Delta_r, 
+	            this->spline_Delta, gsl_acc_Delta);
+}
+
+/**
  * Calculate the flux surface coordinates 'r, theta and phi' corresponding to the given
  * Cartesian coordinates (x,y,z).
  *
@@ -422,19 +491,6 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
         RMinusR0 = x;
     else
         RMinusR0 = hypot(R0+x, z)-R0;
-        
-	// Collect data for the given profiles of the shaping parameters
-	const real_t *kappaProf = this->providedProfiles->kappa;
-	const real_t *kappa_r = this->providedProfiles->kappa_r;
-	const len_t nkappa = this->providedProfiles->nkappa;
-	
-	const real_t *deltaProf = this->providedProfiles->delta;
-	const real_t *delta_r = this->providedProfiles->delta_r;
-	const len_t ndelta = this->providedProfiles->ndelta;
-	
-	const real_t *DeltaProf = this->providedProfiles->Delta;
-	const real_t *Delta_r = this->providedProfiles->Delta_r;
-	const len_t nDelta = this->providedProfiles->nDelta;
 	
                 
     // We start by finding the flux surface label 'rmin' corresponding to cos(theta)=0 (using Newton iteration)
@@ -445,10 +501,8 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	real_t kappa_p;
 	
 	do{
-	    kappa = InterpolateInputProfileSingleExtrap(r_tmp, nkappa, kappaProf, kappa_r, 
-	            this->spline_kappa, gsl_acc_kappa);
-	    kappa_p = InterpolateInputProfileSingleDerivExtrap(r_tmp, nkappa, kappa_r, 
-	              this->spline_kappa, gsl_acc_kappa);
+	    kappa = InterpolateInputElongation(r_tmp);
+	    kappa_p = InterpolateInputElongationDeriv(r_tmp);
 	    Zdiff = std::abs(y)-r_tmp*kappa;
 	    r_tmp = r_tmp + Zdiff/(r_tmp*kappa_p+kappa);
 	    
@@ -460,10 +514,8 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	// Evaluate RMinusR0_crit corresponding to rmin
 	real_t delta;
 	real_t Delta; 
-    delta = InterpolateInputProfileSingleExtrap(rmin, ndelta, deltaProf, delta_r, 
-            this->spline_delta, gsl_acc_delta);
-    Delta = InterpolateInputProfileSingleExtrap(rmin, nDelta, DeltaProf, Delta_r, 
-            this->spline_Delta, gsl_acc_delta);
+    delta = InterpolateInputTriangularity(rmin);
+    Delta = InterpolateInputShafranovShift(rmin);
     
     real_t RMinusR0_crit=Delta-rmin*sin(delta);
 	
@@ -488,12 +540,9 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	real_t ct;
 	do{
 	    // Calculate RMinusR0a corresponding to ra
-        delta = InterpolateInputProfileSingleExtrap(ra, ndelta, deltaProf, delta_r, 
-                this->spline_delta, gsl_acc_delta);
-        Delta = InterpolateInputProfileSingleExtrap(ra, nDelta, DeltaProf, Delta_r, 
-                this->spline_Delta, gsl_acc_delta);
-	    kappa = InterpolateInputProfileSingleExtrap(ra, nkappa, kappaProf, kappa_r, 
-	            this->spline_kappa, gsl_acc_kappa);
+        delta = InterpolateInputTriangularity(ra);
+        Delta = InterpolateInputShafranovShift(ra);
+	    kappa = InterpolateInputElongation(ra);
         
         if(ra==0){
         	st=1; // The value does not matter here as RMinusR0a = Delta anyway
@@ -516,12 +565,9 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
         RMinusR0a = Delta + ra*(ct*cos(delta*st)-st*sin(delta*st));
         
         // Similarly for rb
-        delta = InterpolateInputProfileSingleExtrap(rb, ndelta, deltaProf, delta_r, 
-                this->spline_delta, gsl_acc_delta);
-        Delta = InterpolateInputProfileSingleExtrap(rb, nDelta, DeltaProf, Delta_r, 
-                this->spline_Delta, gsl_acc_delta);
-	    kappa = InterpolateInputProfileSingleExtrap(rb, nkappa, kappaProf, kappa_r, 
-	            this->spline_kappa, gsl_acc_kappa);
+        delta = InterpolateInputTriangularity(rb);
+        Delta = InterpolateInputShafranovShift(rb);
+	    kappa = InterpolateInputElongation(rb);
         
         st = y/(rb*kappa);
 	    if(quadrant==1 || quadrant==4)
@@ -558,12 +604,9 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	real_t RMinusR0_tmp;
 	do{
 	    r_tmp=(ra+rb)/2.0;
-        delta = InterpolateInputProfileSingleExtrap(r_tmp, ndelta, deltaProf, delta_r, 
-                this->spline_delta, gsl_acc_delta);
-        Delta = InterpolateInputProfileSingleExtrap(r_tmp, nDelta, DeltaProf, Delta_r, 
-                this->spline_Delta, gsl_acc_delta);
-	    kappa = InterpolateInputProfileSingleExtrap(r_tmp, nkappa, kappaProf, kappa_r, 
-	            this->spline_kappa, gsl_acc_kappa);
+        delta = InterpolateInputTriangularity(r_tmp);
+        Delta = InterpolateInputShafranovShift(r_tmp);
+	    kappa = InterpolateInputElongation(r_tmp);
         
         st = y/(r_tmp*kappa);
 	    if(quadrant==1 || quadrant==4)
@@ -601,18 +644,12 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	real_t RMinusR0_newton;
 	real_t ddrRMinusR0_newton;
 	do {
-	    kappa   = InterpolateInputProfileSingleExtrap(r_tmp, nkappa, kappaProf, kappa_r, 
-	              this->spline_kappa, gsl_acc_kappa);
-	    kappa_p = InterpolateInputProfileSingleDerivExtrap(r_tmp, nkappa, kappa_r, 
-	              this->spline_kappa, gsl_acc_kappa);
-	    delta   = InterpolateInputProfileSingleExtrap(r_tmp, ndelta, deltaProf, delta_r, 
-	              this->spline_delta, gsl_acc_delta);
-	    delta_p = InterpolateInputProfileSingleDerivExtrap(r_tmp, ndelta, delta_r, 
-	              this->spline_delta, gsl_acc_delta);
-	    Delta   = InterpolateInputProfileSingleExtrap(r_tmp, nDelta, DeltaProf, Delta_r, 
-	              this->spline_Delta, gsl_acc_delta);
-	    Delta_p = InterpolateInputProfileSingleDerivExtrap(r_tmp, nDelta, Delta_r, 
-	              this->spline_Delta, gsl_acc_delta);
+	    kappa   = InterpolateInputElongation(r_tmp);
+	    kappa_p = InterpolateInputElongationDeriv(r_tmp);
+	    delta   = InterpolateInputTriangularity(r_tmp);
+	    delta_p = InterpolateInputTriangularityDeriv(r_tmp);
+	    Delta   = InterpolateInputShafranovShift(r_tmp);
+	    Delta_p = InterpolateInputShafranovShiftDeriv(r_tmp);
 	    
 	    st = y/(r_tmp*kappa);
 	    st_p = -y/(r_tmp*r_tmp*kappa*kappa)*(kappa+r*kappa_p);
@@ -644,37 +681,21 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	*phi = atan2(z,(R0+x)); 
     
 }
+
 /**
  * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
  *
  * See section 1.2 in doc/notes/theory.pdf for derivation
  */
 void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, real_t theta, real_t phi) {
-
-	// Collect data for the given profiles of the shaping parameters
-	const real_t *kappaProf = this->providedProfiles->kappa;
-	const real_t *kappa_r = this->providedProfiles->kappa_r;
-	const len_t nkappa = this->providedProfiles->nkappa;
 	
-	const real_t *deltaProf = this->providedProfiles->delta;
-	const real_t *delta_r = this->providedProfiles->delta_r;
-	const len_t ndelta = this->providedProfiles->ndelta;
-	
-	const real_t *Delta_r = this->providedProfiles->Delta_r;
-	const len_t nDelta = this->providedProfiles->nDelta;
-	
-    real_t delta  = InterpolateInputProfileSingleExtrap(r, ndelta, deltaProf, delta_r, 
-	                this->spline_delta, gsl_acc_delta);
-    real_t deltap = InterpolateInputProfileSingleDerivExtrap(r, ndelta, delta_r, 
-	                this->spline_delta, gsl_acc_delta);
+    real_t delta  = InterpolateInputTriangularity(r);
+    real_t deltap = InterpolateInputTriangularityDeriv(r);
     
-    real_t Deltap = InterpolateInputProfileSingleDerivExtrap(r, nDelta, Delta_r, 
-	                this->spline_Delta, gsl_acc_delta);
+    real_t Deltap = InterpolateInputShafranovShiftDeriv(r);
     
-    real_t kappa  = InterpolateInputProfileSingleExtrap(r, nkappa, kappaProf, kappa_r, 
-	                this->spline_kappa, gsl_acc_kappa);
-    real_t kappap = InterpolateInputProfileSingleDerivExtrap(r, nkappa, kappa_r, 
-	                this->spline_kappa, gsl_acc_kappa);
+    real_t kappa  = InterpolateInputElongation(r);
+    real_t kappap = InterpolateInputElongationDeriv(r);
     
     real_t st = sin(theta);
     real_t ct = cos(theta);
