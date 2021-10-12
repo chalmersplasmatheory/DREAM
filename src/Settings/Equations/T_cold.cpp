@@ -144,7 +144,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool hasTransport = ConstructTransportTerm(
         Op4, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        unknowns, s, false, true,
+        eqsys, s, false, true,
         &oqty_terms->T_cold_advective_bc,&oqty_terms->T_cold_diffusive_bc
     );
 

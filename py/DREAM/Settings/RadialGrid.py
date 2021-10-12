@@ -220,6 +220,8 @@ class RadialGrid:
         :param kappa:  Elongation.
         :param rkappa: Radial grid for elongation.
         """
+        self.setType(TYPE_ANALYTIC_TOROIDAL)
+
         self.setShapeParameter('Delta',   r=rDelta, data=Delta)
         self.setShapeParameter('delta',   r=rdelta, data=delta)
         self.setShapeParameter('GOverR0', r=rG,     data=GOverR0)

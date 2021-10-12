@@ -99,7 +99,9 @@ class KineticQuantity(UnknownQuantity):
         data = self.data[t,r,:]
 
         if type(moment) == str:
-            if moment == 'distribution': pass
+            if moment == 'distribution':
+                # Divide by range of xi
+                data = data/2
             elif moment == 'density':
                 data = data * self.momentumgrid.Vprime_VpVol[r,:]
             elif moment == 'current':
@@ -110,7 +112,7 @@ class KineticQuantity(UnknownQuantity):
         else:
             raise OutputException("Invalid type of parameter 'moment'.")
             
-        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / 2
+        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2)
 
         return favg
 

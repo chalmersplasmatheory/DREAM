@@ -2,7 +2,8 @@
 This directory contains the Disruption Runaway Electron Avoidance Model (DREAM)
 code. The **online documentation** is available at https://ft.nephy.chalmers.se/dream.
 
-The official DREAM paper is now on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).
+The official DREAM paper has now been published: [doi:10.1016/j.cpc.2021.108098](https://doi.org/10.1016/j.cpc.2021.108098).
+(it is also on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).)
 
 ## Requirements
 To compile DREAM, you need to have the following software installed:
@@ -101,14 +102,18 @@ physics model and various mathematical details can be found under
 
 ## Usage in publications
 If you use DREAM in your scientific publications, please cite the
-[DREAM paper](https://arxiv.org/abs/2103.16457):
+[DREAM paper](https://doi.org/10.1016/j.cpc.2021.108098):
 ```
 @article {DREAM,
-    author = {Hoppe, M. and Embreus, O. and F\"ul\"op, T.},
-    title = {DREAM: a fluid-kinetic framework for tokamak disruption runaway electron simulations},
-    url = {https://arxiv.org/abs/2103.16457},
+    title = {DREAM: A fluid-kinetic framework for tokamak disruption runaway electron simulations},
+    journal = {Computer Physics Communications},
+    volume = {268},
+    pages = {108098},
     year = {2021},
-    note = {Under consideration for publication in Computer Physics Communications}
+    issn = {0010-4655},
+    doi = {https://doi.org/10.1016/j.cpc.2021.108098},
+    url = {https://www.sciencedirect.com/science/article/pii/S0010465521002101},
+    author = {Mathias Hoppe and Ola Embreus and Tünde Fülöp}
 }
 ```
 

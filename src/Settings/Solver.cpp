@@ -40,6 +40,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/debug/printmatrixinfo", "Print detailed information about the PETSc matrix", (bool)false);
     s->DefineSetting(MODULENAME "/debug/printjacobianinfo", "Print detailed information about the jacobian PETSc matrix", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savejacobian", "If true, saves the jacobian matrix in the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/savesolution", "Saves the solution in the specified iteration, i.e. x = (J^-1)F", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savematrix", "If true, saves the linear operator matrix in the specified time step(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savenumericaljacobian", "If true, evaluates the jacobian numerically and saves it for the specified iteration(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/saverhs", "If true, saves the RHS vector in the specified iteration(s)", (bool)false);
@@ -144,6 +145,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
     bool verbose      = s->GetBool(MODULENAME "/verbose");
     bool savejacobian = s->GetBool(MODULENAME "/debug/savejacobian");
+    bool savesolution = s->GetBool(MODULENAME "/debug/savesolution");
     bool savenumjac   = s->GetBool(MODULENAME "/debug/savenumericaljacobian");
     bool saveresidual = s->GetBool(MODULENAME "/debug/saveresidual");
     bool printdebug   = s->GetBool(MODULENAME "/debug/printjacobianinfo");
@@ -152,7 +154,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
     auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose);
-    snl->SetDebugMode(printdebug, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem);
+    snl->SetDebugMode(printdebug, savejacobian, savesolution, saveresidual, savenumjac, timestep, iteration, savesystem);
 
     return snl;
 }

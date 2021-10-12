@@ -12,6 +12,7 @@
 #include "DREAM/MultiInterpolator1D.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
+#include "DREAM/Settings/LoadData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Simulation.hpp"
@@ -28,22 +29,6 @@
 #include "FVM/Interpolator3D.hpp"
 
 namespace DREAM {
-    struct dream_2d_data {
-        real_t
-            *x, *t, *r;
-        len_t nt, nr;
-        enum FVM::Interpolator1D::interp_method interp;
-    };
-    struct dream_4d_data {
-        real_t
-            **x,        // Size nt-by-(nr*np1*np2)
-            *t, *r, *p1, *p2;
-        len_t nt, nr, np1, np2;
-        enum FVM::Interpolator3D::momentumgrid_type gridtype;
-        enum FVM::Interpolator3D::interp_method ps_interp;
-        enum FVM::Interpolator1D::interp_method time_interp;
-    };
-
     class SimulationGenerator {
     public:
         // PUBLIC INTERFACE
@@ -136,17 +121,18 @@ namespace DREAM {
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
         
         // Routines for constructing specific equations
-        static void ConstructEquation_E_field(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
-        static void ConstructEquation_f_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_f_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
-            bool, bool, DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
+            bool, bool, DREAM::FVM::Operator **transport=nullptr,
+            DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
             DREAM::RipplePitchScattering **rps=nullptr, bool rescaleMaxwellian=false
         );
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
@@ -177,7 +163,7 @@ namespace DREAM {
         static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
 
-        static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
@@ -195,6 +181,7 @@ namespace DREAM {
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
+
         template<typename T>
         static T *ConstructTransportTerm_internal(
             const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type,
@@ -205,11 +192,16 @@ namespace DREAM {
             enum OptionConstants::eqterm_transport_bc, T2*,
             FVM::Operator*, const std::string&, FVM::Grid*
         );
+        template<typename T>
+        static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, EquationSystem*, Settings*, const std::string& subname="transport");
+        
         static bool ConstructTransportTerm(
             FVM::Operator*, const std::string&, FVM::Grid*,
-            enum OptionConstants::momentumgrid_type, FVM::UnknownQuantityHandler*,
+            enum OptionConstants::momentumgrid_type, EquationSystem*,
             Settings*, bool, bool, DREAM::TransportAdvectiveBC** abc=nullptr,
-            DREAM::TransportDiffusiveBC** dbc=nullptr, const std::string& subname="transport"
+            DREAM::TransportDiffusiveBC** dbc=nullptr,
+            struct OtherQuantityHandler::eqn_terms *oqty_terms=nullptr,
+            const std::string& subname="transport"
         );
 
         static void ConstructEquation_SPI(EquationSystem*, Settings*);

@@ -64,6 +64,7 @@ ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 #ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_NEGLECT)
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(DistFunc.AD_INTERP_UPWIND)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

@@ -112,6 +112,7 @@ namespace DREAM::FVM {
             *psiPrimeRef   = nullptr,
             *psiPrimeRef_f = nullptr,
             *psiToroidal   = nullptr,
+            *psiToroidal_f = nullptr,
             R0;
         
         // Orbit-phase-space Jacobian factors
@@ -170,6 +171,12 @@ namespace DREAM::FVM {
             real_t *r, real_t *r_f,
             real_t *dr, real_t *dr_f
         ) {
+            if (this->r == r &&
+                this->r_f == r_f &&
+                this->dr == dr &&
+                this->dr_f == dr_f)
+                return;
+
             DeallocateGrid();
 
             this->r    = r;
@@ -284,6 +291,10 @@ namespace DREAM::FVM {
             { return psiToroidal; }
         const real_t GetToroidalFlux(len_t ir) const 
             { return psiToroidal[ir]; }
+        const real_t *GetToroidalFlux_f() const
+            { return psiToroidal_f; }
+        const real_t GetToroidalFlux_f(len_t ir) const
+            { return psiToroidal_f[ir]; }
         
         /**
          * Getters of flux-surface averaged Jacobian

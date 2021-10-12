@@ -47,6 +47,8 @@ class SolverNonLinear(Solver):
         single range of time steps where the backup solver was used.
         """
         r = np.linspace(1, self.output.grid.t.size, self.output.grid.t.size)[np.where(self.backupinverter)]
+        if not r:
+            return []
 
         arr = []
         start = r[0]

@@ -20,13 +20,13 @@ namespace DREAM {
 
         bool active = false;
 
-        std::function<void(FVM::QuantityData*)> storeFunc;
+        std::function<void(const real_t, FVM::QuantityData*)> storeFunc;
 
     public:
         OtherQuantity(
             const std::string& name, const std::string& desc,
             FVM::Grid *grid, const len_t nMultiples, enum FVM::fluxGridType fgt,
-            std::function<void(FVM::QuantityData*)> storeFunc
+            std::function<void(const real_t, FVM::QuantityData*)> storeFunc
         ) : name(name), description(desc), grid(grid), nMultiples(nMultiples), fgt(fgt) {
 
             this->storeFunc = storeFunc;
@@ -48,7 +48,7 @@ namespace DREAM {
             this->data->SaveSFile(sf, this->name, path, this->description);
         }
         void Store(const real_t t) {
-            this->storeFunc(this->data);
+            this->storeFunc(t, this->data);
             this->data->SaveStep(t, true);
         }
     };
