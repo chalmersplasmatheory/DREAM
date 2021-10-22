@@ -208,13 +208,7 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
         );
 
     const len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
-
-    // Define the "negative" RE density
-    const len_t id_nre_neg = eqsys->SetUnknown(
-        OptionConstants::UQTY_N_RE_NEG,
-        OptionConstants::UQTY_N_RE_NEG_DESC,
-        fluidGrid
-    );
+    const len_t id_nre_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
     
     FVM::Operator *Op_nREn     = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_nREn_fre = new FVM::Operator(fluidGrid);
