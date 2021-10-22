@@ -15,6 +15,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -215,8 +216,10 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
         fluidGrid
     );
     
+    FVM::Operator *Op_nREn     = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_nREn_fre = new FVM::Operator(fluidGrid);
 
+    Op_nREn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
     Op_nREn_fre->AddTerm(
         new DensityFromDistributionFunction(
             fluidGrid, runawayGrid, id_nre_neg, id_f_re,
@@ -225,6 +228,7 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
             FVM::MomentQuantity::XI_MODE_NEG    // only integrate over negative xi
         )
     );
+    eqsys->SetOperator(id_nre_neg, id_nre_neg, Op_nREn);
     eqsys->SetOperator(id_nre_neg, id_f_re, Op_nREn_fre, "integral(f_re, xi0<0)");
 
     // Initialize n_re_neg to zero
