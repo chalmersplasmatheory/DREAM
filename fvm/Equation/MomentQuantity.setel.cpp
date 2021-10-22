@@ -28,7 +28,7 @@
         switch (xiMode) {
             case XI_MODE_NEG: {
                 for (len_t j = 1; j < np2+1; j++) {
-                    if (xi_f[j]*xi_f[j-1] < 0) {
+                    if (xi_f[j]*xi_f[j-1] < 0 || xi_f[j] == 0) {
                         jmax = j;
                         dxi_last = -xi_f[j-1];
                         break;
@@ -37,7 +37,7 @@
             } break;
             case XI_MODE_POS: {
                 for (len_t j = 1; j < np2+1; j++) {
-                    if (xi_f[j]*xi_f[j-1] < 0) {
+                    if (xi_f[j]*xi_f[j-1] < 0 || xi_f[j] == 0) {
                         j0 = j-1;
                         dxi_first = xi_f[j];
                         break;
