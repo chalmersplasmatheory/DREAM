@@ -69,6 +69,13 @@ Table of contents
      <p>Browse the Python output interface documentation</p>
    </div>
    <div style="clear:both"></div>
+   <div class="admonition note" style="width:49%; float:left">
+     <a href="start/examples/index.html">
+       <p class="admonition-title">Examples</p>
+     </a>
+     <p>View examples of DREAM simulations</p>
+   </div>
+   <div style="clear:both"></div>
 
 Introduction
 ************
