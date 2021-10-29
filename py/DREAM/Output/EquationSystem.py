@@ -36,6 +36,7 @@ class EquationSystem:
         'n_i':          IonHandler,
         'N_i':          IonSpeciesFluidQuantity,
         'n_re':         RunawayElectronDensity,
+        'n_re_neg':     RunawayElectronDensity,
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
         'psi_p':        FluidQuantity,
