@@ -69,9 +69,10 @@ namespace DREAM {
             for (len_t ir = 0; ir < nr; ir++){
                 real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
                 real_t VpVol = rGrid->GetVpVol(ir);
+                real_t Bmin = rGrid->GetBmin(ir);
 
                 // psit', multiplied by 2*pi
-                real_t psitPrime  = VpVol*BdotPhi;
+                real_t psitPrime  = VpVol*BdotPhi / Bmin;
 
                 //real_t w = -rGrid->GetVpVol(ir)*rGrid->GetFSA_1OverR2(ir) * rGrid->GetBTorG(ir) / rGrid->GetBmin(ir);
                 real_t w = -psitPrime;

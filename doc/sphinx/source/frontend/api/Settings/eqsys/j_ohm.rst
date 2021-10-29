@@ -29,6 +29,8 @@ a similar integral moment, but integrated for momenta above some cutoff).
 
 
 
+.. _ds-eqsys-j_ohm-conductivity:
+
 Conductivity formulas
 ---------------------
 
