@@ -341,9 +341,8 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
-
     // Print/save debug info (if requested)
-    this->SaveDebugInfo(this->nTimeStep, this->iteration);
+    this->SaveDebugInfoBefore(this->nTimeStep, this->iteration);
 
     // Apply preconditioner (if enabled)
     this->Precondition(this->jacobian, this->petsc_F);
@@ -365,13 +364,16 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
     // Undo preconditioner (if enabled)
     this->UnPrecondition(this->petsc_dx);
-
+    
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
 	for (len_t i = 0; i < this->matrix_size; i++)
 		this->dx[i] = fvec[i];
 	VecRestoreArray(this->petsc_dx, &fvec);
 	
+    // Save additional debug info (if requested)
+    this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
+
 	return this->dx;
 }
 
@@ -524,12 +526,13 @@ void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
 }
 
 /**
- * Save debugging information for the current iteration.
+ * Save debugging information for the current iteration,
+ * _before_ the new solution has been calculated.
  *
  * iTimeStep:  Current time step index.
  * iIteration: Current iteration index.
  */
-void SolverNonLinear::SaveDebugInfo(
+void SolverNonLinear::SaveDebugInfoBefore(
     len_t iTimeStep, len_t iIteration
 ) {
     if ((this->savetimestep == iTimeStep &&
@@ -575,6 +578,27 @@ void SolverNonLinear::SaveDebugInfo(
             SaveNumericalJacobian(jacname);
         }
 
+        if (this->printjacobianinfo)
+            this->jacobian->PrintInfo();
+    }
+}
+
+/**
+ * Save debugging information for the current iteration,
+ * _after_ the new solution has been calculated.
+ *
+ * iTimeStep:  Current time step index.
+ * iIteration: Current iteration index.
+ */
+void SolverNonLinear::SaveDebugInfoAfter(
+    len_t iTimeStep, len_t iIteration
+) {
+    if ((this->savetimestep == iTimeStep &&
+        (this->saveiteration == iIteration || this->saveiteration == 0)) ||
+         this->savetimestep == 0) {
+
+        string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
+
         if (this->savesolution) {
             string solname = "solution_dx";
             if (this->savetimestep == 0 || this->saveiteration == 0)
@@ -602,11 +626,8 @@ void SolverNonLinear::SaveDebugInfo(
             outgen->SaveCurrent();
             delete outgen;
         }
-
-        if (this->printjacobianinfo)
-            this->jacobian->PrintInfo();
     }
-}
+}        
 
 /**
  * Enable or disable debug mode.
