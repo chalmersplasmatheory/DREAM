@@ -673,7 +673,7 @@ class IonSpecies:
         if np.isscalar(neutral_prescribed_diffusion):
             self.tNeutralPrescribedDiffusion = np.array([0])
             self.rNeutralPrescribedDiffusion = np.array([0,1])
-            self.neutral_prescribed_diffusion = np.ones((self.Z,1,2)) * neutral_prescribed_diffusion
+            self.neutral_prescribed_diffusion = np.ones((1,1,2)) * neutral_prescribed_diffusion
             return
         if rNeutralPrescribedDiffusion is None:
             raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
@@ -763,7 +763,7 @@ class IonSpecies:
         if np.isscalar(neutral_prescribed_advection):
             self.tNeutralPrescribedAdvection = np.array([0])
             self.rNeutralPrescribedAdvection = np.array([0,1])
-            self.neutral_prescribed_advection = np.ones((self.Z,1,2)) * neutral_prescribed_advection
+            self.neutral_prescribed_advection = np.ones((1,1,2)) * neutral_prescribed_advection
             return
         if rNeutralPrescribedAdvection is None:
             raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
