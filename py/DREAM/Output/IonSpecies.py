@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from .IonState import IonState
 from .OutputException import OutputException
+from .FluidQuantity import FluidQuantity
 
 
 class IonSpecies:
@@ -138,4 +139,20 @@ class IonSpecies:
             plt.show(block=False)
 
         return ax
-
+        
+    def plotSum(self, Z0 = None, **kwargs):
+        if Z0 is None: Z0 = slice(None)
+        states = self.ionstates[Z0]
+        data = None
+        for state in states:
+            if data is None:
+                data = state.data
+            else:
+                data = data + state.data
+                
+        _IonSum = FluidQuantity(name = self.name, data=data, attr=list(), grid=self.grid, output=self.output)
+        return _IonSum.plot(**kwargs)
+        
+        
+        
+        
