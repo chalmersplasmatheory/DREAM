@@ -190,7 +190,6 @@ class Ui_ManualFit(object):
         self.lblZ0.setText(_translate("ManualFit", "<html><head/><body><p>Charge state Z<span style=\" vertical-align:sub;\">0</span></p></body></html>"))
         self.groupBox.setTitle(_translate("ManualFit", "Fit input parameters"))
         self.label_15.setText(_translate("ManualFit", "Fitting method"))
-        self.cbMethod.setPlaceholderText(_translate("ManualFit", "Fitting method"))
         self.label.setText(_translate("ManualFit", "Lower temperature cut-off"))
         self.lblTlower.setText(_translate("ManualFit", "0"))
         self.label_3.setText(_translate("ManualFit", "Upper temperature cut-off"))
