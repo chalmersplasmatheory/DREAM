@@ -94,7 +94,8 @@ namespace DREAM {
         virtual void PrintTimings() override;
         virtual void SaveTimings(SFile*, const std::string& path="") override;
 
-        void SaveDebugInfo(len_t, len_t);
+        void SaveDebugInfoBefore(len_t, len_t);
+        void SaveDebugInfoAfter(len_t, len_t);
         void SetDebugMode(bool, bool, bool, bool, bool, int_t, int_t, bool);
 
         virtual void SwitchToBackupInverter() override;
