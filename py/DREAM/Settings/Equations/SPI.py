@@ -63,11 +63,11 @@ class SPI(UnknownQuantity):
         """
         super().__init__(settings=settings)
 
-        self.velocity           = velocity
-        self.ablation           = ablation
-        self.deposition         = deposition
-        self.heatAbsorbtion     = heatAbsorbtion
-        self.cloudRadiusMode    = cloudRadiusMode
+        self.velocity           = int(velocity)
+        self.ablation           = int(ablation)
+        self.deposition         = int(deposition)
+        self.heatAbsorbtion     = int(heatAbsorbtion)
+        self.cloudRadiusMode    = int(cloudRadiusMode)
         self.VpVolNormFactor    = VpVolNormFactor
         self.rclPrescribedConstant = rclPrescribedConstant
 
@@ -336,11 +336,11 @@ class SPI(UnknownQuantity):
         """
         Set all options from a dictionary.
         """
-        self.velocity       = data['velocity']
-        self.ablation       = data['ablation']
-        self.deposition     = data['deposition']
-        self.heatAbsorbtion = data['heatAbsorbtion']
-        self.cloudRadiusMode = data['cloudRadiusMode']
+        self.velocity       = int(data['velocity'])
+        self.ablation       = int(data['ablation'])
+        self.deposition     = int(data['deposition'])
+        self.heatAbsorbtion = int(data['heatAbsorbtion'])
+        self.cloudRadiusMode = int(data['cloudRadiusMode'])
 
         self.VpVolNormFactor = data['VpVolNormFactor']
         self.rclPrescribedConstant = data['rclPrescribedConstant']

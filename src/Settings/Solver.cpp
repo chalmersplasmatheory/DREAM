@@ -154,7 +154,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
     auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose);
-    snl->SetDebugMode(printdebug, savejacobian, savesolution, saveresidual, savenumjac, timestep, iteration, savesystem);
+    snl->SetDebugMode(printdebug, savesolution, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem);
 
     return snl;
 }
