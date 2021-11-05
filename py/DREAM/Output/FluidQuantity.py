@@ -217,20 +217,14 @@ class FluidQuantity(UnknownQuantity):
         poloidal cross section at the specified time step. 
         NOTE: Currently assumes a cylindrical flux surface geometry!
         
-        :param matplotlib.pyplot.axis ax:   Matplotlib axes object to use for plotting.
-        :param bool show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
-        :param int t: Time index to plot
-        :param matplotlib.pyplot.colorbar colorbar: Specify wether or not to include a colorbar
-        :param bool displayGrid: Specify wether or not to display a polar grid in the plot
-        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the 
-                     maximum and minimum values of the data stored by this object
-                     over all time steps
+        :param matplotlib.pyplot.Axis ax:   Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to 'matplotlib.pyplot.show()' with 'block=False'. If 'None', this is interpreted as 'True' if 'ax' is also 'None'.
+        :param int t: Time index to plot.
+        :param matplotlib.pyplot.Colorbar colorbar: Specify wether or not to include a colorbar.
+        :param bool displayGrid: Specify wether or not to display a polar grid in the plot.
+        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the maximum and minimum values of the data stored by this object over all time steps.
 
-        :return: a matplotlib axis object and a colorbar object
-        (which may be 'None' if not used).
+        :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
         
         genax = ax is None
