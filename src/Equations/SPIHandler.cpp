@@ -399,8 +399,17 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
     for(len_t ir=0;ir<nr;ir++){
         heatAbsorbtionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            if(YpPrevious[ip]>0 && irp[ip]<nr)
-                heatAbsorbtionRate[ir]+=-M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+            if(YpPrevious[ip]>0 && irp[ip]<nr){
+                real_t heatAbsorbtionPrefactor = M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                
+                heatAbsorbtionRate[ir]+=-heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                
+                // Account for shifted re-deposition
+                if(rCoordPNext[ip]>rCoordPPrevious[ip] && irp[ip]<nr-1)
+                    heatAbsorbtionRate[ir]+=heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                else if(rCoordPNext[ip]<rCoordPPrevious[ip] && irp[ip]>0)
+                    heatAbsorbtionRate[ir]+=heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+            }
         }
     }
 }
