@@ -318,11 +318,11 @@ void SPIHandler::Rebuild(real_t dt){
         for(len_t ip=0;ip<nShard;ip++){
             if(rCoordPNext[ip]>rCoordPPrevious[ip]){
                 for(len_t ir=0;ir<nr-1;ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=depositionProfilesAllShards[(ir+1)*nShard+ip];
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+1)*nShard+ip];
                 }
             }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
                 for(len_t ir=nr-1;ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=depositionProfilesAllShards[(ir-1)*nShard+ip];
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-1)*nShard+ip];
                 }
             }
         }
@@ -404,11 +404,12 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
                 
                 heatAbsorbtionRate[ir]+=-heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                 
-                // Account for shifted re-deposition
-                if(rCoordPNext[ip]>rCoordPPrevious[ip] && irp[ip]<nr-1)
-                    heatAbsorbtionRate[ir]+=heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
-                else if(rCoordPNext[ip]<rCoordPPrevious[ip] && irp[ip]>0)
-                    heatAbsorbtionRate[ir]+=heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                // Account for shifted re-deposition 
+                // NOTE: only strictly valid for delta function kernel (assumes deposition only on one side of r=0)
+                if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
             }
         }
     }
@@ -703,7 +704,16 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
             for(len_t ir=0;ir<nr;ir++){
                 for(len_t ip=0;ip<nShard;ip++){
                     if(YpPrevious[ip]>0 && irp[ip]<nr){
-                        jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                        real_t prefactor = -scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                        real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                        
+                        // Account for shifted re-deposition
+                        if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                            jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                        else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                            jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                    
+                        jac->SetElement(ir,ip,jacEl);
                         jacIsSet=true;
                     }
                 }
@@ -713,7 +723,16 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(irp[ip]<nr){
-                    jac->SetElement(ir,irp[ip],-scaleFactor*3.0/2.0*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    real_t prefactor = -scaleFactor*3.0/2.0*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec;
+                    real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                        
+                    // Account for shifted re-deposition
+                    if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                        jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                    else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                        jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                
+                    jac->SetElement(ir,irp[ip],jacEl);
                     jacIsSet=true;
                 }
             }
@@ -722,7 +741,16 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(irp[ip]<nr){
-                    jac->SetElement(ir,irp[ip],-scaleFactor*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    real_t prefactor = -scaleFactor*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                    real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                        
+                    // Account for shifted re-deposition
+                    if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                        jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                    else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                        jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                
+                    jac->SetElement(ir,irp[ip],jacEl);
                     jacIsSet=true;
                 }
             }
