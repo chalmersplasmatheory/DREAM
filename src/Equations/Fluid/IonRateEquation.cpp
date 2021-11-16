@@ -191,10 +191,14 @@ bool IonRateEquation::SetCSJacobianBlock(
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset, JACOBIAN);
 
     #define NI(J,V) \
-        jac->SetElement(\
-            rOffset+ir, ir, \
-            (V) * nions[rOffset+ir+(J)*Nr] \
-        )
+        do {\
+            if (nions[rOffset+ir+(J)*Nr] > 1 && (V) > 1e-40) { \
+                jac->SetElement(\
+                    rOffset+ir, ir, \
+                    (V) * nions[rOffset+ir+(J)*Nr] \
+                ); \
+            } \
+        } while (false)
     bool setIonization = addFluidIonization || addFluidJacobian;
 
     if(derivId == id_T_cold) {
