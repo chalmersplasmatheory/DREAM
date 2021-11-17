@@ -281,10 +281,20 @@ class Ions(UnknownQuantity):
         isotopes     = data['isotopes']
         types        = data['types']
         opacity_modes = data['opacity_modes']
-        charged_diffusion_modes = data['charged_diffusion_modes']
-        neutral_diffusion_modes = data['neutral_diffusion_modes']
-        charged_advection_modes = data['charged_advection_modes']
-        neutral_advection_modes = data['neutral_advection_modes']
+
+        charged_diffusion_modes = [ION_CHARGED_DIFFUSION_MODE_NONE]*len(Z)
+        neutral_diffusion_modes = [ION_NEUTRAL_DIFFUSION_MODE_NONE]*len(Z)
+        charged_advection_modes = [ION_CHARGED_ADVECTION_MODE_NONE]*len(Z)
+        neutral_advection_modes = [ION_NEUTRAL_ADVECTION_MODE_NONE]*len(Z)
+
+        if 'charged_diffusion_modes' in data:
+            charged_diffusion_modes = data['charged_diffusion_modes']
+        if 'neutral_diffusion_modes' in data:
+            neutral_diffusion_modes = data['neutral_diffusion_modes']
+        if 'charged_advection_modes' in data:
+            charged_advection_modes = data['charged_advection_modes']
+        if 'neutral_advection_modes' in data:
+            neutral_advection_modes = data['neutral_advection_modes']
 
         SPIMolarFraction = data['SPIMolarFraction']
         nZSPI = len(Z)-np.sum(SPIMolarFraction<0)
