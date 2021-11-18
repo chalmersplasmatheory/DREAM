@@ -342,9 +342,8 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
-
     // Print/save debug info (if requested)
-    this->SaveDebugInfo(this->nTimeStep, this->iteration);
+    this->SaveDebugInfoBefore(this->nTimeStep, this->iteration);
 
     // Apply preconditioner (if enabled)
     this->Precondition(this->jacobian, this->petsc_F);
@@ -366,13 +365,16 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
     // Undo preconditioner (if enabled)
     this->UnPrecondition(this->petsc_dx);
-
+    
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
 	for (len_t i = 0; i < this->matrix_size; i++)
 		this->dx[i] = fvec[i];
 	VecRestoreArray(this->petsc_dx, &fvec);
 	
+    // Save additional debug info (if requested)
+    this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
+
 	return this->dx;
 }
 
@@ -525,12 +527,13 @@ void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
 }
 
 /**
- * Save debugging information for the current iteration.
+ * Save debugging information for the current iteration,
+ * _before_ the new solution has been calculated.
  *
  * iTimeStep:  Current time step index.
  * iIteration: Current iteration index.
  */
-void SolverNonLinear::SaveDebugInfo(
+void SolverNonLinear::SaveDebugInfoBefore(
     len_t iTimeStep, len_t iIteration
 ) {
     if ((this->savetimestep == iTimeStep &&
@@ -576,6 +579,43 @@ void SolverNonLinear::SaveDebugInfo(
             SaveNumericalJacobian(jacname);
         }
 
+        if (this->printjacobianinfo)
+            this->jacobian->PrintInfo();
+    }
+}
+
+/**
+ * Save debugging information for the current iteration,
+ * _after_ the new solution has been calculated.
+ *
+ * iTimeStep:  Current time step index.
+ * iIteration: Current iteration index.
+ */
+void SolverNonLinear::SaveDebugInfoAfter(
+    len_t iTimeStep, len_t iIteration
+) {
+    if ((this->savetimestep == iTimeStep &&
+        (this->saveiteration == iIteration || this->saveiteration == 0)) ||
+         this->savetimestep == 0) {
+
+        string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
+
+        if (this->savesolution) {
+            string solname = "solution_dx";
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                solname += suffix;
+            solname += ".mat";
+
+            real_t *xvec;
+            VecGetArray(this->petsc_dx, &xvec);
+
+            SFile *sf = SFile::Create(solname, SFILE_MODE_WRITE);
+            sf->WriteList("dx", xvec, this->jacobian->GetNRows());
+            sf->Close();
+
+            VecRestoreArray(this->petsc_dx, &xvec);
+        }
+
         // Save full output?
         if (this->savesystem) {
             string outname = "debugout";
@@ -587,11 +627,8 @@ void SolverNonLinear::SaveDebugInfo(
             outgen->SaveCurrent();
             delete outgen;
         }
-
-        if (this->printjacobianinfo)
-            this->jacobian->PrintInfo();
     }
-}
+}        
 
 /**
  * Enable or disable debug mode.
@@ -600,6 +637,8 @@ void SolverNonLinear::SaveDebugInfo(
  *                    PETSc matrix for the jacobian in every iteration.
  * savejacobian:      If true, saves the jacobian using a PETSc viewer in
  *                    the specified time step(s).
+ * savesolution:      If true, saves the solution vector in the specified
+ *                    time step(s).
  * savevector:        If true, saves the residual vector in the specified
  *                    time step(s).
  * savenumjac:        If true, calculates the jacobian numerically and saves
@@ -612,11 +651,12 @@ void SolverNonLinear::SaveDebugInfo(
  *                    solution is saved.
  */
 void SolverNonLinear::SetDebugMode(
-    bool printjacobianinfo, bool savejacobian, bool savevector,
+    bool printjacobianinfo, bool savesolution, bool savejacobian, bool savevector,
     bool savenumjac, int_t timestep, int_t iteration, bool savesystem
 ) {
     this->printjacobianinfo = printjacobianinfo;
     this->savejacobian      = savejacobian;
+    this->savesolution      = savesolution;
     this->savevector        = savevector;
     this->savenumjac        = savenumjac;
     this->savetimestep      = timestep;

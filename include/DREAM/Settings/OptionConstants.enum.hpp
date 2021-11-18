@@ -76,7 +76,8 @@ enum pxigrid_xitype {
     PXIGRID_XITYPE_BIUNIFORM=2,
     PXIGRID_XITYPE_UNIFORM_THETA=3,
     PXIGRID_XITYPE_BIUNIFORM_THETA=4,
-    PXIGRID_XITYPE_CUSTOM=5
+    PXIGRID_XITYPE_CUSTOM=5,
+    PXIGRID_XITYPE_TRAPPED=6
 };
 
 // Type of advection interpolation coefficient for jacobian
@@ -106,7 +107,8 @@ enum linear_solver {
     LINEAR_SOLVER_LU=1,
     LINEAR_SOLVER_MUMPS=2,
     LINEAR_SOLVER_MKL=3,
-    LINEAR_SOLVER_SUPERLU=4
+    LINEAR_SOLVER_SUPERLU=4,
+    LINEAR_SOLVER_GMRES=5
 };
 
 /////////////////////////////////////

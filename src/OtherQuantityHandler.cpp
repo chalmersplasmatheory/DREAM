@@ -56,12 +56,16 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
-    id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
-    id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
-    id_psi_wall = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
+
+    if (unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX))
+        id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    if (unknowns->HasUnknown(OptionConstants::UQTY_PSI_EDGE))
+        id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
+    if (unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL))
+        id_psi_wall = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
 
     if (hottailGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
@@ -227,35 +231,35 @@ void OtherQuantityHandler::DefineQuantities() {
     // HELPER MACROS (to make definitions more compact)
     // Define on scalar grid
     #define DEF_SC(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
 
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_FL_MUL(NAME, MUL, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
 
     // Define on hot-tail grid
     #define DEF_HT(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_HT_FR(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_HT_F1(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_HT_F2(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
 
     // Define on runaway grid
     #define DEF_RE(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_RE_FR(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_RE_F1(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_RE_F2(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
 
     // fluid/...
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
@@ -325,6 +329,11 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
     
+    // Hyperresistive parameter
+    if (tracked_terms->psi_p_hyperresistive != nullptr)
+        DEF_FL_FR("fluid/Lambda_hypres", "Hyper-resistive diffusion coefficient Lambda [H]",
+            qd->Store(this->tracked_terms->psi_p_hyperresistive->GetLambda());
+        );
     // Power terms in heat equation
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
@@ -384,14 +393,18 @@ void OtherQuantityHandler::DefineQuantities() {
         );
 
     if (tracked_terms->T_cold_transport) {
-        DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
-            const real_t *Ar = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetAdvectionCoeffR(0);
-            qd->Store(Ar);
-        );
-        DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
-            const real_t *Drr = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetDiffusionCoeffRR(0);
-            qd->Store(Drr);
-        );
+        if (tracked_terms->T_cold_transport->GetAdvectionTerms().size() > 0) {
+            DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
+                const real_t *Ar = this->tracked_terms->T_cold_transport->GetAdvectionCoeffR(0);
+                qd->Store(Ar);
+            );
+        }
+        if (tracked_terms->T_cold_transport->GetDiffusionTerms().size() > 0) {
+            DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
+                const real_t *Drr = this->tracked_terms->T_cold_transport->GetDiffusionCoeffRR(0);
+                qd->Store(Drr);
+            );
+        }
     }
 
     /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
@@ -620,29 +633,48 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     }
 
-    // Magnetic energy and internal inductance
-    DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
-        real_t v = evaluateMagneticEnergy();
-        qd->Store(&v);
-    );
-    DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
-        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        real_t v = 2*evaluateMagneticEnergy() / (Ip*Ip);
-        qd->Store(&v);
-    );
-    DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
-        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        real_t Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
-        real_t v = Li * 2/Constants::mu0;
-        qd->Store(&v);
-    );
-    DEF_SC("scalar/L_i_flux", "Internal inductance for poloidal flux psi_p, normalized to R0 [J/A^2 m]",
-        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        const real_t psip_0 = this->unknowns->GetUnknownData(id_psip)[0];
-        const real_t psip_a = this->unknowns->GetUnknownData(id_psi_edge)[0];
-        real_t v = (psip_a - psip_0) / Ip;
-        qd->Store(&v);
-    );
+    if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
+        this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {
+        // Magnetic energy and internal inductance
+        DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
+            real_t v = evaluateMagneticEnergy();
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
+            const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+            real_t v;
+            if (Ip != 0)
+                v = 2*evaluateMagneticEnergy() / (Ip*Ip);
+            else
+                v = std::numeric_limits<real_t>::infinity();
+
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
+            const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+            real_t Li;
+            if (Ip != 0)
+                Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
+            else
+                Li = std::numeric_limits<real_t>::infinity();
+
+            real_t v = Li * 2/Constants::mu0;
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/L_i_flux", "Internal inductance for poloidal flux psi_p, normalized to R0 [J/A^2 m]",
+            const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+            const real_t psip_0 = this->unknowns->GetUnknownData(id_psip)[0];
+            const real_t psip_a = this->unknowns->GetUnknownData(id_psi_edge)[0];
+
+            real_t v;
+            if (Ip != 0)
+                v = (psip_a - psip_0) / Ip;
+            else
+                v = std::numeric_limits<real_t>::infinity();
+
+            qd->Store(&v);
+        );
+    }
     
     // Declare groups of parameters (for registering
     // multiple parameters in one go)

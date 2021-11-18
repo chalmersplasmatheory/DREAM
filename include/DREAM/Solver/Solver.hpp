@@ -88,6 +88,9 @@ namespace DREAM {
 
         void CalculateNonTrivial2Norm(const real_t*, real_t*);
 
+        ConvergenceChecker *GetConvergenceChecker() { return convChecker; }
+        len_t GetMatrixSize() { return this->matrix_size; }
+
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
         std::vector<len_t> GetNonTrivials() { return this->nontrivial_unknowns; }

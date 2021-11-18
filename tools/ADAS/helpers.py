@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import pi
-from scipy.integrate import quad, trapezoid
+from scipy.integrate import quad
 from scipy.special import kve
 import sys
 

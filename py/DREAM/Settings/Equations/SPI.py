@@ -63,11 +63,11 @@ class SPI(UnknownQuantity):
         """
         super().__init__(settings=settings)
 
-        self.velocity           = velocity
-        self.ablation           = ablation
-        self.deposition         = deposition
-        self.heatAbsorbtion     = heatAbsorbtion
-        self.cloudRadiusMode    = cloudRadiusMode
+        self.velocity           = int(velocity)
+        self.ablation           = int(ablation)
+        self.deposition         = int(deposition)
+        self.heatAbsorbtion     = int(heatAbsorbtion)
+        self.cloudRadiusMode    = int(cloudRadiusMode)
         self.VpVolNormFactor    = VpVolNormFactor
         self.rclPrescribedConstant = rclPrescribedConstant
 
@@ -111,7 +111,7 @@ class SPI(UnknownQuantity):
         cdf=integrate.cumtrapz(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
         return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
-    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, add=True, **kwargs):
+    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, **kwargs):
         """
         sets (or adds) nShard shards with radii distributed accordin to 
         rpDistrParksStatistical(), with the characteristic inverse shard size kp 
@@ -125,6 +125,9 @@ class SPI(UnknownQuantity):
         :param numpy.ndarray molarFractions: Molar fraction with which each ion species contribute
         :param list ionNames: List of names for the ion species to be added and connected 
                   to the ablation of this pellet
+        :param list opacity_modes: List of opacity modes for every ion species the pellet consists of.
+                  If 'None', this argument is omitted when adding the ion species, so that the default 
+                  settings (transparent) is used
         :param bool add: If 'True', add the new pellet shards to the existing ones, otherwise 
              existing shards are cleared
              
@@ -167,6 +170,7 @@ class SPI(UnknownQuantity):
             if SPIMolarFractionPrevious[0]!=-1:
                 ion.setSPIMolarFraction(np.concatenate((SPIMolarFractionPrevious,np.zeros(nShard))))
                 
+                
         # Add an ion species connected to this pellet to the ion settings
         for iZ in range(len(Zs)):
             
@@ -175,7 +179,11 @@ class SPI(UnknownQuantity):
             # to zero for previously set shards
             SPIMolarFraction=np.zeros(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
-            self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
+            if opacity_modes is not None:
+                self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
+            
+            else:
+                self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
             
         return kp
         
@@ -236,7 +244,7 @@ class SPI(UnknownQuantity):
             # becomes f(alpha)=sin(alpha)/(1-cos(alpha_max/2)). We sample from this
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
-            alpha=np.arcsin(np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
+            alpha=np.arccos(1-np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
             
             # The angle in the yz-plane is simply drawn randomly
             phi=2*np.pi*np.random.uniform(size=nShard)
@@ -269,14 +277,14 @@ class SPI(UnknownQuantity):
         else:
             self.vp=vp_init
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,nDim=2, add=True, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,nDim=2, add=True, opacity_modes = None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
         (available at https://hdl.handle.net/20.500.12380/302296)
         """
         
-        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, add, **kwargs)
+        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,nDim,add)
         return kp

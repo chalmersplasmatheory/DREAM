@@ -90,8 +90,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Enables/disables avalanche generation.
         """
-        self.avalanche = int(avalanche)
-        self.pCutAvalanche = pCutAvalanche
+        if avalanche == False:
+            self.avalanche = AVALANCHE_MODE_NEGLECT
+        else:
+            self.avalanche = int(avalanche)
+            self.pCutAvalanche = pCutAvalanche
 
 
     def setDreicer(self, dreicer):
@@ -99,24 +102,32 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         Dreicer runaway rate.
         """
-        self.dreicer = int(dreicer)
+        if dreicer == False:
+            self.dreicer = DREICER_RATE_DISABLED
+        else:
+            self.dreicer = int(dreicer)
+
 
     def setCompton(self, compton, photonFlux = None):
         """
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        if compton == COMPTON_RATE_ITER_DMS:
-            # set fluid compton source and standard ITER flux of 1e18
-            compton = COMPTON_MODE_FLUID
+        if compton == False:
+            self.compton = COMPTON_MODE_NEGLECT
+        else:
+            if compton == COMPTON_RATE_ITER_DMS:
+                # set fluid compton source and standard ITER flux of 1e18
+                compton = COMPTON_MODE_FLUID
+                if photonFlux is None:
+                    photonFlux = ITER_PHOTON_FLUX_DENSITY
+            
             if photonFlux is None:
-                photonFlux = ITER_PHOTON_FLUX_DENSITY
-        
-        if photonFlux is None:
-            raise EquationException("n_re: Compton photon flux must be set.")
+                raise EquationException("n_re: Compton photon flux must be set.")
 
-        self.compton = int(compton)
-        self.comptonPhotonFlux = photonFlux
+            self.compton = int(compton)
+            self.comptonPhotonFlux = photonFlux
+
 
     def setEceff(self, Eceff):
         """
@@ -133,13 +144,18 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.tritium = tritium
 
+
     def setHottail(self, hottail):
         """
         Specify which model to use for hottail runaway generation
         """
-        self.hottail = hottail
-        if hottail != HOTTAIL_MODE_DISABLED:
-            self.settings.eqsys.f_hot.enableAnalyticalDistribution()
+        if hottail == False:
+            self.hottail = HOTTAIL_MODE_DISABLED
+        else:
+            self.hottail = hottail
+            if hottail != HOTTAIL_MODE_DISABLED:
+                self.settings.eqsys.f_hot.enableAnalyticalDistribution()
+
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):

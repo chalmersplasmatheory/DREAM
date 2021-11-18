@@ -102,8 +102,12 @@ void RadiatedPowerTerm::SetWeights(){
 		                Li += PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
 		            Bi = 0;
 		            // Binding energy rate term
-		            if(Z0>0 && includePRB)       // Recombination gain
+		            if(Z0>0 && includePRB) {     // Recombination gain
+                        // Not needed as dWi was evaluated at the correct Z0 in the
+                        // previous iteration (when the if's are put in this order...)
+		                //dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 		                Bi -= dWi * ACD_interper->Eval(Z0, n_cold[i], T_cold[i]);
+                    }
 		            if(Z0<Zs[iz]){ // Ionization loss
 		                dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
 		                Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);

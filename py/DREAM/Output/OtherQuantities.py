@@ -98,12 +98,12 @@ class OtherQuantities:
             desc = attributes['description']
 
         if datatype is not None:
-            if data.ndim == 4:
+            if data.ndim == 4 and self.momentumgrid is not None:
                 o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output)
             else:
                 o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         elif name in self.SPECIAL_TREATMENT:
-            if data.ndim == 4:
+            if data.ndim == 4 and self.momentumgrid is not None:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)
@@ -112,7 +112,7 @@ class OtherQuantities:
                 o = OtherScalarQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
             elif data.ndim == 2:
                 o = OtherFluidQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
-            elif data.ndim == 4:
+            elif data.ndim == 4 and self.momentumgrid is not None:
                 o = OtherKineticQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
                 #raise Exception("Unrecognized number of dimensions of other quantity '{}': {}.".format(name, data.ndim))

@@ -63,6 +63,22 @@ class IonMetaData:
         raise KeyError("No ion species named '{}' found in output.".format(name))
 
 
+    def getIonOffset(self, name, Z0=0):
+        """
+        Returns the array index of the named ion species (and charge state)
+        which can be used to index a vector with all ion species located one
+        after another.
+        """
+        idx = 0
+        for i in range(len(self.names)):
+            if self.names[i] == name:
+                return idx + Z0
+
+            idx += self.Z[i]+1
+
+        raise KeyError(f"No ion named {name} found in the output.")
+
+
     def getCharge(self, i):
         """
         Get the ion charge for the ion with the specified index.

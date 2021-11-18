@@ -80,11 +80,13 @@ def _mplcursors_frmt1d(sel, eqsys=None):
     """
     x, y = sel.target
 
-    sx = 'x: {:d}'.format(int(x))
+    rx = int(np.round(x))
+
+    sx = 'x: {:d}'.format(rx)
     sy = 'y: {:.5e}'.format(y)
 
     if eqsys is not None:
-        sx += ' ({})'.format(eqsys[x].toxstring(x))
+        sx += ' ({})'.format(eqsys[rx].toxstring(rx))
 
     s = sx + '\n' + sy
 
