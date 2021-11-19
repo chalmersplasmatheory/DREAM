@@ -5,6 +5,7 @@ __pycache__
 \#*\#
 build
 build-*.sh
+.cache
 doc/*/*.aux
 doc/*/*.bcf
 doc/*/*.blg
