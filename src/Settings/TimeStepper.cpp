@@ -68,11 +68,8 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
 
 #ifdef DREAM_IS_PYTHON_LIBRARY
     void *terminatefunc = s->GetAddress(MODULENAME "/terminatefunc");
-    if (terminatefunc != nullptr) {
-        printf("Termination function specified!\n");
+    if (terminatefunc != nullptr)
         ts->SetPythonTerminateFunc(terminatefunc);
-    } else
-        printf("No termination function specified.\n");
 #endif
 
     eqsys->SetTimeStepper(ts);
