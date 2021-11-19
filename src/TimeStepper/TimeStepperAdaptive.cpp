@@ -55,9 +55,10 @@ using namespace std;
  */
 TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
+    EquationSystem *eqsys,
     vector<len_t>& nontrivials, ConvergenceChecker *cc, int_t checkEvery,
     bool verbose, bool constantStep
-) : TimeStepper(uqh), tMax(tMax), dt(dt0), nontrivials(nontrivials),
+) : TimeStepper(uqh, eqsys), tMax(tMax), dt(dt0), nontrivials(nontrivials),
   checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
     this->stepsSinceCheck = checkEvery;
@@ -299,7 +300,10 @@ void TimeStepperAdaptive::HandleException(FVM::FVMException &ex) {
  * time. Returns 'false' otherwise.
  */
 bool TimeStepperAdaptive::IsFinished() {
-    return (this->stepSucceeded && (this->currentTime+this->oldDt) >= this->tMax);
+    bool v = (this->stepSucceeded && (this->currentTime+this->oldDt) >= this->tMax);
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    return (v || this->PythonIsTerminate());
+#endif
 }
 
 /**

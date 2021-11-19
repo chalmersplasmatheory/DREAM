@@ -122,6 +122,7 @@ namespace DREAM {
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
         Simulation *GetSimulation() { return this->simulation; }
+        TimeStepper *GetTimeStepper() { return this->timestepper; }
 
         std::vector<real_t>& GetTimes() { return this->times; }
 

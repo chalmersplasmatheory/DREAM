@@ -7,7 +7,8 @@
 
 std::vector<PyObject*>
     callback_timestep,
-    callback_iteration;
+    callback_iteration,
+    callback_timestep_term;
 
 
 /**
@@ -48,5 +49,32 @@ void dreampy_callback_iteration(DREAM::Simulation *sim) {
         PyObject_CallOneArg(f, cap);
 
     Py_DECREF(cap);
+}
+
+/**
+ * Central callback function for determining when the time
+ * stepping should be terminated.
+ */
+bool dreampy_callback_return_bool(void *func, DREAM::Simulation *sim) {
+    PyObject *cap = PyCapsule_New(sim, "sim", NULL);
+    bool v = true;
+
+    PyObject *f = (PyObject*)func;
+
+    PyObject *ret = PyObject_CallOneArg(f, cap);
+
+    if (ret == nullptr) {
+        PyErr_PrintEx(1);
+        throw DREAM::DREAMException(
+            "Python termination function error."
+        );
+    }
+
+    v = PyObject_IsTrue(ret);
+    Py_DECREF(ret);
+
+    Py_DECREF(cap);
+
+    return v;
 }
 
