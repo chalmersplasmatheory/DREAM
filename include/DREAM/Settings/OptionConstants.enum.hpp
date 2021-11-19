@@ -118,7 +118,8 @@ enum linear_solver {
 /////////////////////////////////////
 enum timestepper_type {
     TIMESTEPPER_TYPE_CONSTANT=1,
-    TIMESTEPPER_TYPE_ADAPTIVE=2
+    TIMESTEPPER_TYPE_ADAPTIVE=2,
+    TIMESTEPPER_TYPE_PYTHON_TERMINATE=3
 };
 
 /////////////////////////////////////

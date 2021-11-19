@@ -31,6 +31,10 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/nsavesteps", "Number of time steps to save to output (downsampling)", (int_t)0);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
 
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    s->DefineSetting(MODULENAME "/terminatefunc", "Python function used to determine when to terminate time stepping", (void*)nullptr);
+#endif
+
     // Tolerance settings for adaptive time stepper
     DefineToleranceSettings(MODULENAME, s);
 }
@@ -49,11 +53,11 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
     TimeStepper *ts;
     switch (type) {
         case OptionConstants::TIMESTEPPER_TYPE_CONSTANT:
-            ts = ConstructTimeStepper_constant(s, u);
+            ts = ConstructTimeStepper_constant(s, u, eqsys);
             break;
 
         case OptionConstants::TIMESTEPPER_TYPE_ADAPTIVE:
-            ts = ConstructTimeStepper_adaptive(s, u, nontrivials);
+            ts = ConstructTimeStepper_adaptive(s, u, eqsys, nontrivials);
             break;
 
         default:
@@ -62,9 +66,45 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
             );
     }
 
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    void *terminatefunc = s->GetAddress(MODULENAME "/terminatefunc");
+    if (terminatefunc != nullptr) {
+        printf("Termination function specified!\n");
+        ts->SetPythonTerminateFunc(terminatefunc);
+    } else
+        printf("No termination function specified.\n");
+#endif
+
     eqsys->SetTimeStepper(ts);
 }
 
+
+/**
+ * Construct a TimeStepperAdaptive object according to the
+ * provided settings.
+ *
+ * s: Settings object specifying how to construct the
+ *    TimeStepperAdaptive object.
+ */
+TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
+    Settings *s, FVM::UnknownQuantityHandler *u,
+    EquationSystem *eqsys, vector<len_t> *nontrivials
+) {
+    int_t checkevery = s->GetInteger(MODULENAME "/checkevery");
+    real_t tmax = s->GetReal(MODULENAME "/tmax");
+    real_t dt = s->GetReal(MODULENAME "/dt");
+    bool verbose = s->GetBool(MODULENAME "/verbose");
+    bool conststep = s->GetBool(MODULENAME "/constantstep");
+
+    if (dt == 0)
+        dt = 1;
+
+    ConvergenceChecker *cc = LoadToleranceSettings(
+        MODULENAME, s, u, *nontrivials
+    );
+
+    return new TimeStepperAdaptive(tmax, dt, u, eqsys, *nontrivials, cc, checkevery, verbose, conststep);
+}
 
 /**
  * Construct a TimeStepperConstant object according to the
@@ -73,7 +113,10 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
  * s: Settings object specifying how to construct the
  *    TimeStepperConstant object.
  */
-TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings *s, FVM::UnknownQuantityHandler *u) {
+TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(
+    Settings *s, FVM::UnknownQuantityHandler *u,
+    EquationSystem *eqsys
+) {
     real_t tmax = s->GetReal(MODULENAME "/tmax");
     real_t dt   = s->GetReal(MODULENAME "/dt", false);
     int_t nt    = s->GetInteger(MODULENAME "/nt", false);
@@ -98,37 +141,10 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
     // Generate object
     if (dtset) {
         s->MarkUsed(MODULENAME "/dt");
-        return new TimeStepperConstant(tmax, dt, u, nSaveSteps);
+        return new TimeStepperConstant(tmax, dt, u, eqsys, nSaveSteps);
     } else {
         s->MarkUsed(MODULENAME "/nt");
-        return new TimeStepperConstant(tmax, (len_t)nt, u, nSaveSteps);
+        return new TimeStepperConstant(tmax, (len_t)nt, u, eqsys, nSaveSteps);
     }
-}
-
-/**
- * Construct a TimeStepperAdaptive object according to the
- * provided settings.
- *
- * s: Settings object specifying how to construct the
- *    TimeStepperAdaptive object.
- */
-TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
-    Settings *s, FVM::UnknownQuantityHandler *u,
-    vector<len_t> *nontrivials
-) {
-    int_t checkevery = s->GetInteger(MODULENAME "/checkevery");
-    real_t tmax = s->GetReal(MODULENAME "/tmax");
-    real_t dt = s->GetReal(MODULENAME "/dt");
-    bool verbose = s->GetBool(MODULENAME "/verbose");
-    bool conststep = s->GetBool(MODULENAME "/constantstep");
-
-    if (dt == 0)
-        dt = 1;
-
-    ConvergenceChecker *cc = LoadToleranceSettings(
-        MODULENAME, s, u, *nontrivials
-    );
-
-    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, cc, checkevery, verbose, conststep);
 }
 

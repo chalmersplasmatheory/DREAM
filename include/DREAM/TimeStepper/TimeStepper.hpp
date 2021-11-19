@@ -1,7 +1,7 @@
 #ifndef _DREAM_TIME_STEPPER_HPP
 #define _DREAM_TIME_STEPPER_HPP
 
-namespace DREAM { class TimeStepper; }
+namespace DREAM { class EquationSystem; class TimeStepper; }
 
 #include <vector>
 #include "DREAM/Solver/Solver.hpp"
@@ -10,15 +10,23 @@ namespace DREAM { class TimeStepper; }
 
 namespace DREAM {
     class TimeStepper {
+    public:
+        typedef bool (*timestep_terminate_func_t)(void*, Simulation*);
+
     protected:
         FVM::UnknownQuantityHandler *unknowns;
+        EquationSystem *eqsys;
 
         // Pointer to Solver object used for inverting equation system
         Solver *solver;
 
+        // Python termination members
+        timestep_terminate_func_t python_caller;
+        void *python_terminate_func;
+
     public:
-        TimeStepper(FVM::UnknownQuantityHandler *u)
-            : unknowns(u) {}
+        TimeStepper(FVM::UnknownQuantityHandler *u, EquationSystem *eqsys)
+            : unknowns(u), eqsys(eqsys) {}
         virtual ~TimeStepper() {}
 
         virtual real_t CurrentTime() const = 0;
@@ -30,6 +38,10 @@ namespace DREAM {
         virtual void PrintProgress() = 0;
         virtual void ValidateStep() = 0;
 
+        bool PythonIsTerminate();
+
+        void SetPythonCaller(timestep_terminate_func_t f) { this->python_caller = f; }
+        void SetPythonTerminateFunc(void *f) { this->python_terminate_func = f; }
         void SetSolver(Solver *s) { this->solver = s; }
     };
 

@@ -163,6 +163,7 @@ static PyObject *dreampy_setup_simulation(
             sim->GetEquationSystem(), sfp
         );
         sim->SetOutputGenerator(ogs);
+        sim->GetEquationSystem()->GetTimeStepper()->SetPythonCaller(dreampy_callback_return_bool);
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;

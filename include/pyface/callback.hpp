@@ -13,7 +13,9 @@ extern std::vector<PyObject*>
     callback_iteration;
 
 void register_callback_functions(DREAM::Simulation*);
+PyObject *capsule_to_simulation(DREAM::Simulation*);
 void dreampy_callback_timestep(DREAM::Simulation*);
 void dreampy_callback_iteration(DREAM::Simulation*);
+bool dreampy_callback_return_bool(void*, DREAM::Simulation*);
 
 #endif/*_DREAM_PYFACE_CALLBACK_HPP*/

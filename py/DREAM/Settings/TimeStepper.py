@@ -14,14 +14,14 @@ TYPE_ADAPTIVE = 2
 
 class TimeStepper:
     
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, terminatefunc=None):
         """
         Constructor.
         """
-        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep)
+        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep, terminatefunc=None)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, terminatefunc=None):
         """
         Set properties of the time stepper.
         """
@@ -36,6 +36,7 @@ class TimeStepper:
         self.setConstantStep(constantstep)       
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
+        self.terminatefunc = terminatefunc
 
 
     def __contains__(self, item):
@@ -104,6 +105,17 @@ class TimeStepper:
         self.tolerance.set(reltol=float(reltol))
 
 
+    def setTerminationFunction(self, func):
+        """
+        Sets the Python function to call in order to determine when terminate
+        the time stepping. **NOTE**: This functionality is only available when
+        DREAM is compiled and run as a Python library.
+
+        :param func: Python function determining when to terminate time stepping. Takes a libdreampyface 'Simulation' object as input and returns a bool.
+        """
+        self.terminatefunc = func
+
+
     def setTmax(self, tmax):
         if tmax is None:
             self.tmax = None
@@ -116,7 +128,7 @@ class TimeStepper:
 
 
     def setType(self, ttype):
-        if ttype != TYPE_CONSTANT and ttype != TYPE_ADAPTIVE:
+        if ttype not in [TYPE_CONSTANT, TYPE_ADAPTIVE]:
             raise DREAMException("TimeStepper: Unrecognized time stepper type specified: {}".format(ttype))
 
         if ttype == TYPE_ADAPTIVE:
@@ -150,6 +162,7 @@ class TimeStepper:
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
+        if 'terminatefunc' in data: self.terminatefunc = data['terminatefunc']
         
         self.verifySettings()
 
@@ -172,6 +185,9 @@ class TimeStepper:
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
             data['nsavesteps'] = int(self.nSaveSteps)
+
+            if self.terminatefunc != None:
+                data['terminatefunc'] = self.terminatefunc
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
             data['verbose'] = self.verbose

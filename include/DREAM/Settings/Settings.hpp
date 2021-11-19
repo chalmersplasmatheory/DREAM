@@ -25,7 +25,8 @@ namespace DREAM {
             SETTING_TYPE_INT_ARRAY,
             SETTING_TYPE_REAL,
             SETTING_TYPE_REAL_ARRAY,
-            SETTING_TYPE_STRING
+            SETTING_TYPE_STRING,
+            SETTING_TYPE_ADDRESS
         };
         typedef struct _setting {
             std::string description;
@@ -43,6 +44,7 @@ namespace DREAM {
                     case SETTING_TYPE_INT_ARRAY: delete [] (int_t*)value; break;
                     case SETTING_TYPE_REAL_ARRAY: delete [] (real_t*)value; break;
                     case SETTING_TYPE_STRING: delete (std::string*)value; break;
+                    case SETTING_TYPE_ADDRESS: delete (void**)value; break;
 
                     default: break;
                 }
@@ -63,6 +65,7 @@ namespace DREAM {
                 case SETTING_TYPE_REAL: return "a real number";
                 case SETTING_TYPE_REAL_ARRAY: return "an array of real numbers";
                 case SETTING_TYPE_STRING: return "a string";
+                case SETTING_TYPE_ADDRESS: return "an address";
 
                 default: throw SettingsException("Unrecognized setting type: %d.", s);
             }
@@ -99,6 +102,7 @@ namespace DREAM {
         void DefineSetting(const std::string& name, const std::string& desc, len_t n, const real_t *defaultValue, bool mandatory=false);
         void DefineSetting(const std::string& name, const std::string& desc, len_t ndims, const len_t dims[], const real_t *defaultValue, bool mandatory=false);
         void DefineSetting(const std::string& name, const std::string& desc, const std::string& defaultValue, bool mandatory=false);
+        void DefineSetting(const std::string& name, const std::string& desc, void *defaultValue, bool mandatory=false);
 
         bool HasSetting(const std::string&);
 
@@ -112,6 +116,7 @@ namespace DREAM {
         const real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, len_t dims[], bool markused=true);
         const std::string GetString(const std::string&, bool markused=true);
         std::vector<std::string> GetStringList(const std::string&, const char delim=';', bool markused=true);
+        void *GetAddress(const std::string&, bool markused=true);
 
         void MarkUsed(const std::string&);
 
@@ -124,6 +129,7 @@ namespace DREAM {
         void SetSetting(const std::string& name, len_t n, real_t *value);
         void SetSetting(const std::string& name, len_t ndims, const len_t dims[], real_t *value);
         void SetSetting(const std::string& name, const std::string& value);
+        void SetSetting(const std::string& name, void *value);
 
         void DisplaySettings();
     };
