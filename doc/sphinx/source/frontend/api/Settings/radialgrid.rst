@@ -224,6 +224,7 @@ specified in DREAM:
    IpRef = 200e3            # Reference plasma current which generates poloidal field
    psi = -mu0 * IpRef * (1-(rpsi/a)**2) * a
 
+   ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
    ds.radialgrid.setShaping(psi=psi, rpsi=rpsi, GOverR0=GOverR0, kappa=kappa,
        rkappa=rkappa, Delta=Delta, rDelta=rDelta, delta=delta, rdelta=rdelta)
    ds.radialgrid.setWallRadius(a*1.1)

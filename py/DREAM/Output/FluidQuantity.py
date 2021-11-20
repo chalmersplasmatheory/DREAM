@@ -214,33 +214,27 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
         """
         Plot the radial profile of this quantity revolved over a 
         poloidal cross section at the specified time step. 
         NOTE: Currently assumes a cylindrical flux surface geometry!
         
-        :param matplotlib.pyplot.axis ax:   Matplotlib axes object to use for plotting.
-        :param bool show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
-        :param int t: Time index to plot
-        :param matplotlib.pyplot.colorbar colorbar: Specify wether or not to include a colorbar
-        :param bool displayGrid: Specify wether or not to display a polar grid in the plot
-        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the 
-                     maximum and minimum values of the data stored by this object
-                     over all time steps
+        :param matplotlib.pyplot.Axis ax:   Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to 'matplotlib.pyplot.show()' with 'block=False'. If 'None', this is interpreted as 'True' if 'ax' is also 'None'.
+        :param int t: Time index to plot.
+        :param matplotlib.pyplot.Colorbar colorbar: Specify wether or not to include a colorbar.
+        :param bool displayGrid: Specify wether or not to display a polar grid in the plot.
+        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the maximum and minimum values of the data stored by this object over all time steps.
 
-        :return: a matplotlib axis object and a colorbar object
-        (which may be 'None' if not used).
+        :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
         
         genax = ax is None
@@ -260,16 +254,26 @@ class FluidQuantity(UnknownQuantity):
                 show = True
                 
         theta=np.linspace(0,2*np.pi)
-        data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        if logscale:
+        	data_mat=np.log10(self.data[t,:])*np.ones((len(theta),len(self.grid.r)))
+        else:
+        	data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        	
         if maxMinScale:
-            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
+            if logscale:
+                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data))), **kwargs)
+            else:
+                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
         else:
             cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
 			
         cb = None
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
-            cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+            if logscale:
+                cb.ax.set_ylabel('$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
+            else:
+                cb.ax.set_ylabel('{}'.format(self.getTeXName()))
             
         if show:
             plt.show(block=False)
@@ -316,7 +320,7 @@ class FluidQuantity(UnknownQuantity):
 		            
         plt.show()
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False):
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
@@ -353,11 +357,11 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data)
+                    ax.semilogy(self.time, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--')
+                    ax.semilogy(self.time, -data, '--', **kwargs)
             else:
-                ax.plot(self.radius, data)
+                ax.plot(self.radius, data, **kwargs)
 
             # Add legend label
             tval, unit = self.grid.getTimeAndUnit(it)
@@ -375,7 +379,7 @@ class FluidQuantity(UnknownQuantity):
         return ax   	
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
@@ -410,11 +414,11 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data)
+                    ax.semilogy(self.time, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--')
+                    ax.semilogy(self.time, -data, '--', **kwargs)
             else:
-                ax.plot(self.time, data)
+                ax.plot(self.time, data, **kwargs)
 
             # Add legend label
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
@@ -431,7 +435,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None):
+    def plotIntegral(self, ax=None, show=None, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -446,7 +450,7 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.time, self.integral())
+        ax.plot(self.time, self.integral(), **kwargs)
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 

@@ -44,8 +44,8 @@ dreampyface.register_callback_timestep_finished(callback)
 
 s = dreampyface.setup_simulation(ds)
 
-unknowns = s.getUnknowns()
-for uq, info in unknowns.items():
+uinfo = s.unknowns.getInfo()
+for uq, info in uinfo.items():
     print('{:12s}  {:8d}  {}'.format(uq, info['nelements'], info['description']))
 
 #do = s.run()

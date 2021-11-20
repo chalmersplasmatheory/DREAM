@@ -33,7 +33,11 @@ class IonSpeciesScalarQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        s = '({}) Ion species scalar quantity of size NI x NT = {} x {}\n'.format(self.name, *self.data.shape)
+        if self.data.ndim == 2:
+            nt, ni = self.data.shape
+        else:
+            ni, nt = 1, self.data.shape[0]
+        s = '({}) Ion species scalar quantity of size NT x NI = {} x {}\n'.format(self.name, nt, ni)
         for i in range(len(self.ions.Z)):
             s += "  {:2s} (Z = {:3d})\n".format(*self.ions[i])
 
@@ -46,7 +50,12 @@ class IonSpeciesScalarQuantity(UnknownQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        return ScalarQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], grid=self.grid, output=self.output, attr=self.attr)
+        if self.data.ndim == 2:
+            data = self.data[:,idx]
+        else:
+            data = self.data[:]
+
+        return ScalarQuantity(name='{}_{}'.format(self.name, name), data=data, grid=self.grid, output=self.output, attr=self.attr)
 
     
     def dumps(self, ion=None, r=None, t=None):

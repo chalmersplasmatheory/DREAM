@@ -7,8 +7,40 @@
 
 std::vector<PyObject*>
     callback_timestep,
-    callback_iteration;
+    callback_iteration,
+    callback_timestep_term;
 
+
+/**
+ * Put the 'DREAM::Simulation' object into a capsule and
+ * construct a new 'dreampyface.Simulation' object.
+ */
+PyObject *capsule_to_simulation(DREAM::Simulation *sim) {
+    PyObject *cap = PyCapsule_New(sim, "sim", NULL);
+
+    PyObject *name = PyUnicode_FromString("Simulation");
+    PyObject *sys_mod_dict = PyImport_GetModuleDict();
+
+    PyObject *sim_mod = PyMapping_GetItemString(sys_mod_dict, "dreampyface.Simulation");
+    if (sim_mod == nullptr) {
+        PyErr_PrintEx(1);
+        throw DREAM::DREAMException(
+            "Python termination function error."
+        );
+    }
+
+    PyObject *pysim = PyObject_CallMethodOneArg(sim_mod, name, cap);
+    if (pysim == nullptr) {
+        PyErr_PrintEx(1);
+        throw DREAM::DREAMException(
+            "Python termination function error."
+        );
+    }
+
+    Py_DECREF(cap);
+
+    return pysim;
+}
 
 /**
  * Helper function for registering the DREAMpy callback functions
@@ -29,12 +61,12 @@ void register_callback_functions(DREAM::Simulation *sim) {
  * equation system by one time step.
  */
 void dreampy_callback_timestep(DREAM::Simulation *sim) {
-    PyObject *cap = PyCapsule_New(sim, "sim", NULL);
+    PyObject *pysim = capsule_to_simulation(sim);
 
     for (auto f : callback_timestep)
-        PyObject_CallOneArg(f, cap);
+        PyObject_CallOneArg(f, pysim);
 
-    Py_DECREF(cap);
+    Py_DECREF(pysim);
 }
 
 /**
@@ -42,11 +74,38 @@ void dreampy_callback_timestep(DREAM::Simulation *sim) {
  * has completed another iteration.
  */
 void dreampy_callback_iteration(DREAM::Simulation *sim) {
-    PyObject *cap = PyCapsule_New(sim, "sim", NULL);
+    PyObject *pysim = capsule_to_simulation(sim);
 
     for (auto f : callback_iteration)
-        PyObject_CallOneArg(f, cap);
+        PyObject_CallOneArg(f, pysim);
 
-    Py_DECREF(cap);
+    Py_DECREF(pysim);
+}
+
+/**
+ * Central callback function for determining when the time
+ * stepping should be terminated.
+ */
+bool dreampy_callback_return_bool(void *func, DREAM::Simulation *sim) {
+    PyObject *pysim = capsule_to_simulation(sim);
+    bool v = true;
+
+    PyObject *f = (PyObject*)func;
+
+    PyObject *ret = PyObject_CallOneArg(f, pysim);
+
+    if (ret == nullptr) {
+        PyErr_PrintEx(1);
+        throw DREAM::DREAMException(
+            "Python termination function error."
+        );
+    }
+
+    v = PyObject_IsTrue(ret);
+    Py_DECREF(ret);
+
+    Py_DECREF(pysim);
+
+    return v;
 }
 

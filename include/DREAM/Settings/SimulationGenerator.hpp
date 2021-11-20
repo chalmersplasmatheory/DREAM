@@ -121,9 +121,9 @@ namespace DREAM {
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
         
         // Routines for constructing specific equations
-        static void ConstructEquation_E_field(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
@@ -209,8 +209,8 @@ namespace DREAM {
         static void ConstructEquation_x_p_prescribed_constant_velocity(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
-        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
-        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<len_t>*);
+        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
+        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*, std::vector<len_t>*);
 
         // Data loading routines
         static void DefineDataR(const std::string&, Settings*, const std::string& name="data");

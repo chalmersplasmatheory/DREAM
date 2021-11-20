@@ -14,6 +14,7 @@
 #include "FVM/UnknownQuantity.hpp"
 
 // Linear solvers
+#include "FVM/Solvers/MIGMRES.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #ifdef PETSC_HAVE_MKL_PARDISO
 #   include "FVM/Solvers/MIMKL.hpp"
@@ -369,8 +370,55 @@ void Solver::SelectLinearSolver(const len_t N) {
         this->backupInverter = this->ConstructLinearSolver(N, this->backupSolver);
 }
 
+/**
+ * Check if GMRES has converged.
+ *
+ * ksp:    KSP solver context.
+ * it:     Iteration number.
+ * rnorm:  Estimated 2-norm of preconditioned residual.
+ * reason: (return) reason for convergence.
+ * cctx:   Convergence context.
+ */
+/*PetscErrorCode CheckGMRESConverged(
+    KSP ksp, PetscInt it, PetscReal, KSPConvergedReason *reason,
+    void *cctx
+) {
+    Solver *solver = (Solver*)cctx;
+    ConvergenceChecker *cc = solver->GetConvergenceChecker();
+
+    Vec _x, _dx;
+    VecCreateSeq(PETSC_COMM_WORLD, solver->GetMatrixSize(), &_x);
+
+    KSPBuildSolution(ksp, _x, &_x);
+    KSPBuildResidual(ksp, NULL, NULL, &_dx);
+
+    real_t *x, *dx;
+    VecGetArray(_x, &x);
+    VecGetArray(_dx, &dx);
+
+    bool conv = cc->IsConverged(x, dx, false);
+
+    VecRestoreArray(_dx, &dx);
+    VecRestoreArray(_x, &x);
+
+    VecDestroy(&_dx);
+    VecDestroy(&_x);
+
+    printf("Converged? %s\n", conv?"yes":"no");
+
+    if (conv)
+        *reason = KSP_CONVERGED_RTOL_NORMAL;
+    else
+        *reason = KSP_CONVERGED_ITERATING;
+
+    return 0;
+}*/
+
 FVM::MatrixInverter *Solver::ConstructLinearSolver(const len_t N, enum OptionConstants::linear_solver ls) {
-    if (ls == OptionConstants::LINEAR_SOLVER_LU)
+    if (ls == OptionConstants::LINEAR_SOLVER_GMRES) {
+       //return new FVM::MIGMRES(N, nontrivial_unknowns, unknowns, &CheckGMRESConverged, this);
+       return new FVM::MIGMRES(N, nontrivial_unknowns, unknowns, nullptr, nullptr);
+    } else if (ls == OptionConstants::LINEAR_SOLVER_LU)
         return new FVM::MILU(N);
     else if (ls == OptionConstants::LINEAR_SOLVER_MKL) {
 #ifdef PETSC_HAVE_MKL_PARDISO

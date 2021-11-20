@@ -220,6 +220,8 @@ class RadialGrid:
         :param kappa:  Elongation.
         :param rkappa: Radial grid for elongation.
         """
+        self.setType(TYPE_ANALYTIC_TOROIDAL)
+
         self.setShapeParameter('Delta',   r=rDelta, data=Delta)
         self.setShapeParameter('delta',   r=rdelta, data=delta)
         self.setShapeParameter('GOverR0', r=rG,     data=GOverR0)
@@ -371,7 +373,10 @@ class RadialGrid:
         kappa = lambda r : interppar(r, self.kappa_r, self.kappa)
 
         # Construct flux surfaces
-        R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        if np.isinf(self.R0):
+            R = lambda r, t : Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        else:
+            R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
         Z = lambda r, t : r*kappa(r)*np.sin(t)
 
         # Flux surfaces
@@ -382,7 +387,10 @@ class RadialGrid:
         ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2)
         ax.axis('equal')
 
-        ax.set_xlabel('Major radius $R$ (m)')
+        if np.isinf(self.R0):
+            ax.set_xlabel('Major radius $R-R_0$ (m)')
+        else:
+            ax.set_xlabel('Major radius $R$ (m)')
         ax.set_ylabel('Height $Z$ (m)')
 
         if show:

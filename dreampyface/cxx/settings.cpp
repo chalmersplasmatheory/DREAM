@@ -86,6 +86,7 @@ void dreampy_load_dict(DREAM::Settings *s, const string& path, PyObject *dict) {
                 case Settings::SETTING_TYPE_STRING:     dreampy_load_string(s, sname, val); break;
                 case Settings::SETTING_TYPE_INT_ARRAY:  dreampy_load_int_array(s, sname, val); break;
                 case Settings::SETTING_TYPE_REAL_ARRAY: dreampy_load_real_array(s, sname, val); break;
+                case Settings::SETTING_TYPE_ADDRESS:    dreampy_load_address(s, sname, val); break;
 
                 default:
                     throw DREAM::DREAMException(
@@ -95,6 +96,24 @@ void dreampy_load_dict(DREAM::Settings *s, const string& path, PyObject *dict) {
             }
         }
     }
+}
+
+/**
+ * Load a setting as an address from the given Python object.
+ *
+ * s:    Settings object to assign value to.
+ * name: Name of setting to assign.
+ * obj:  Python object to load value from.
+ */
+void dreampy_load_address(Settings *s, const string& name, PyObject *obj) {
+    if (PyFunction_Check(obj)) {
+        Py_INCREF(obj);
+        s->SetSetting(name, (void*)obj);
+    } else
+        throw DREAM::DREAMException(
+            "Setting '%s': Unrecognized data type of specified value: %s. Expected function.",
+            name.c_str(), obj->ob_type->tp_name
+        );
 }
 
 /**

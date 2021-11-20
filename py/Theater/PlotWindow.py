@@ -138,17 +138,16 @@ class SimulationThread(QThread):
         """
         Run the simulation.
         """
-        self.simulation.onTimestep(lambda ptr : self.timestepCompleted(ptr))
+        self.simulation.onTimestep(lambda sim : self.timestepCompleted(sim))
         out = self.simulation.run()
 
 
-    def timestepCompleted(self, ptr):
+    def timestepCompleted(self, sim):
         """
         Function to be called whenever the simulation has completed
         another time step.
         """
-        s = Simulation(ptr)
-        x, y = self.callback(s)
+        x, y = self.callback(sim)
 
         self.timestepTaken.emit(x, y)
 
