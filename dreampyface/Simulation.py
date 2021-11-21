@@ -52,6 +52,20 @@ class Simulation:
         return libdreampy.get_max_time(self.ptr)
 
 
+    def getRadius(self):
+        """
+        Returns the radial grid used in the simulation.
+        """
+        return libdreampy.get_radius_vector(self.ptr)
+
+
+    def getTime(self):
+        """
+        Returns the time grid (so far) of the simulation.
+        """
+        return libdreampy.get_time_vector(self.ptr)
+
+
     def onIteration(self, callback):
         """
         Register a function to be called whenever another solver

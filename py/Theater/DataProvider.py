@@ -12,6 +12,20 @@ class DataProvider:
         pass
 
 
+    def getRadius(self):
+        """
+        Returns the radius vector of the data.
+        """
+        raise NotImplementedError()
+
+
+    def getTime(self):
+        """
+        Returns the time vector of the data.
+        """
+        raise NotImplementedError()
+
+
     def getOtherInfo(self, name=None):
         """
         Get basic information about all other quantities.

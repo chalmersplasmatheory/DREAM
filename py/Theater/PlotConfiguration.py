@@ -1,6 +1,7 @@
-# A class for generating matplotlib plots from DREAMOutput objects.
+# A class for generating matplotlib plots from DataProvider objects.
 
 import matplotlib.pyplot as plt
+import numpy as np
 import numbers
 
 
@@ -15,8 +16,10 @@ class PlotConfiguration:
         self.axs = None
         self.lines = {}
         self.shape = (nrows, ncols)
+
+        self.cache = {}
         
-        self.config = {}
+        self.config = []
 
 
     def addQuantity(self, name, x, y, title=None, xlabel=None, xmin=None, xmax=None,
@@ -40,11 +43,11 @@ class PlotConfiguration:
         elif not callable(y) and type(y) != str:
             raise Exception("The variable 'y' must be either a string or a callable.")
 
-        self.config.append({
+        config = {
             'name': name,
             'x': x,
             'y': y
-        })
+        }
 
         if title is not None: config['title'] = title
         if xlabel is not None: config['xlabel'] = xlabel
@@ -53,6 +56,53 @@ class PlotConfiguration:
         if ymin is not None: config['ymin'] = ymin
         if ymax is not None: config['ymax'] = ymax
         if log is not None: config['log'] = log
+
+        self.config.append(config)
+
+        # Need to update shape of subplots?
+        self.reshape()
+
+
+    def loadData(self, data):
+        """
+        Loads the most recently calculated data from the given
+        DataProvider.
+        """
+        self.cache = {
+            't': data.getTime(),
+            'r': data.getRadius()
+        }
+
+        return self.cache
+
+
+    def monitorsQuantity(self, name):
+        """
+        Checks if the named quantity has been added to this configuration
+        and returns ``True`` if this is the case. Otherwise, returns ``False``.
+        """
+        for i in range(len(self.config)):
+            if self.config[i]['name'] == name:
+                return True
+
+        return False
+
+
+    def removeByAxes(self, ax):
+        """
+        Remove a quantity by specifying the axes on which it is plotted.
+        """
+        found = False
+        for i in range(len(self.config)):
+            if self.axs[i] == ax:
+                del self.config[i]
+                found = True
+                break
+
+        if not found:
+            raise Exception(f"The selected quantity could not be found in the plot.")
+
+        self.reshape()
 
 
     def removeQuantity(self, name):
@@ -64,25 +114,64 @@ class PlotConfiguration:
         for i in range(len(self.config)):
             if self.config[i]['name'] == name:
                 del self.config[i]
+                found = True
                 break
 
         if not found:
             raise Exception(f"The quantity with name '{name}' has not been configured.")
 
+        self.reshape()
 
-    def render(self, output):
+
+    def render(self, data, clearAxes=False):
         """
         Render the plot with data from the given data object.
         
-        :param output: Data to render (can be a dict or a DREAMOutput object).
+        :param data: Data to render (should be a DataProvider object).
+        :param clearAxes: If ``True``, clears and recreates the figure axes.
         """
+        # Pre-load calculated data
+        self.loadData(data)
+
+        # Create subplot axes (if needed)
         isUpdate = True
         if self.axs is None or self.axs.shape != self.shape:
-            self.axs = fig.subplots(nrows=self.shape[0], ncols=self.shape[1]).flatten()
+            self.fig.clear()
+            self.axs = self.fig.subplots(nrows=self.shape[0], ncols=self.shape[1])
+            if type(self.axs) != np.array:
+                self.axs = np.array(self.axs)
+            self.axs = self.axs.flatten()
+
             isUpdate = False
 
+        # Draw on the axes
         for i in range(len(self.config)):
-            self._makeplot(output, self.axs[i], self.config[i], isSimpleUpdate=isUpdate)
+            self._makeplot(self.axs[i], self.config[i], isSimpleUpdate=isUpdate)
+
+        # Clear empty axes
+        if not isUpdate:
+            for i in range(len(self.config), self.shape[0]*self.shape[1]):
+                self.axs[i].axis('off')
+
+        self.fig.canvas.draw()
+
+
+    def reshape(self):
+        """
+        If necessary, reshapes the subplot configuration so that it
+        has as few empty plots as possible.
+        """
+        #if self.shape[0]*self.shape[1] < len(self.config):
+        l = len(self.config)
+        m = int(np.floor(np.sqrt(l)))
+        n = m
+
+        if m*n >= l:
+            self.shape = (m, n)
+        elif m*(n+1) >= l:
+            self.shape = (m, n+1)
+        else:
+            self.shape = (m+1, n+1)
 
 
     def setShape(self, nrows, ncols):
@@ -97,12 +186,23 @@ class PlotConfiguration:
         self.shape = (nrows, ncols)
     
 
-    def _makeplot(self, output, ax, config, isSimpleUpdate):
+    def _evalExpression(self, expr):
+        """
+        Evaluate the given expression.
+        """
+        local = {
+            't': self.cache['t'],
+            'r': self.cache['r']
+        }
+
+        return eval(expr, globals(), local)
+
+
+    def _makeplot(self, ax, config, isSimpleUpdate):
         """
         Paint a single plot on the given axis, using the given
         plot configuration.
 
-        :param output: Output object to fetch data from.
         :param ax: Axis to plot on.
         :param config: Instructions for how to paint plot.
         :param bool isSimpleUpdate: If ``True``, indicates that this is a minor update of the plot so that 'line.set_data()' is admissible to use. Otherwise the whole plot is completely repainted.
@@ -118,18 +218,16 @@ class PlotConfiguration:
         log    = False if 'log' not in config else config['log']
 
         if callable(xf):
-            x = xf(output)
+            x = xf(self.cache[name])
         elif type(xf) == str:
-            # TODO
-            pass
+            x = self._evalExpression(xf)
         else:
             raise Exception(f"{name}: Unrecognized type of 'x' specification.")
 
         if callable(yf):
-            y = yf(output)
+            y = yf(self.cache[name])
         elif type(yf) == str:
-            # TODO
-            pass
+            y = self._evalExpression(xf)
         else:
             raise Exception(f"{name}: Unrecognized type of 'y' specification.")
 
@@ -138,12 +236,14 @@ class PlotConfiguration:
             h.set_data(x, y)
         else:
             if log:
-                h, _ = ax.semilogy(x, y)
+                h = ax.semilogy(x, y)
             else:
-                h, _ = ax.plot(x, y)
+                h = ax.plot(x, y)
 
             if 'title' in config:
                 ax.set_title(config['title'])
+            else:
+                ax.set_title(name)
             if xlabel is not None:
                 ax.set_xlabel(xlabel)
 

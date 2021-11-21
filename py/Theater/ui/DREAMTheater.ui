@@ -33,7 +33,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="QFrame" name="frame">
+         <widget class="QFrame" name="framePlot">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>

@@ -11,6 +11,7 @@ if __name__ == '__main__':
     win = Theater.DREAMTheater('dream_settings.h5')
     #win = Theater.DREAMTheater('../examples/theater/dream_settings.h5')
     #win = Theater.DREAMTheater('../examples/runaway/output.h5')
+
     win.show()
     sys.exit(app.exec_())
 

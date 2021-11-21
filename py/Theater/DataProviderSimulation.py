@@ -17,6 +17,20 @@ class DataProviderSimulation(DataProvider):
         self.simulation = simulation
 
 
+    def getRadius(self):
+        """
+        Returns the radius vector of the data.
+        """
+        return self.simulation.getRadius()
+
+
+    def getTime(self):
+        """
+        Returns the time vector of the data.
+        """
+        return self.simulation.getTime()
+
+
     def getOtherInfo(self, name=None):
         """
         Returns basic information about the other quantities

@@ -303,6 +303,8 @@ bool TimeStepperAdaptive::IsFinished() {
     bool v = (this->stepSucceeded && (this->currentTime+this->oldDt) >= this->tMax);
 #ifdef DREAM_IS_PYTHON_LIBRARY
     return (v || this->PythonIsTerminate());
+#else
+    return v;
 #endif
 }
 

@@ -2,7 +2,10 @@
  * Access to details from the 'Simulation' object.
  */
 
+#include <vector>
 #include "DREAM/Simulation.hpp"
+#include "FVM/Grid/RadialGrid.hpp"
+#include "pyface/numpy.h"
 #include "pyface/simulation.hpp"
 
 
@@ -58,6 +61,66 @@ static PyObject *dreampy_get_max_time(
         return NULL;
 
     return PyFloat_FromDouble(sim->GetEquationSystem()->GetMaxTime());
+}
+
+/**
+ * Returns the radial grid used for the simulation.
+ *
+ * PYTHON PARAMETERS
+ * sim: PyCapsule object containing a pointer to the DREAM::Simulation
+ *      object to access.
+ */
+static PyObject *dreampy_get_radius_vector(
+    PyObject* /*self*/, PyObject *args
+) {
+    DREAM::Simulation *sim = get_simulation_from_capsule(args);
+
+    if (sim == NULL)
+        return NULL;
+
+    DREAM::FVM::RadialGrid *rg = sim->GetEquationSystem()->GetFluidGrid()->GetRadialGrid();
+    const real_t *radii = rg->GetR();
+
+    npy_intp l = rg->GetNr();
+    PyObject *arr = PyArray_SimpleNew(1, &l, NPY_DOUBLE);
+    real_t *p = reinterpret_cast<real_t*>(
+        PyArray_DATA(reinterpret_cast<PyArrayObject*>(arr))
+    );
+
+    for (npy_intp i = 0; i < l; i++)
+        p[i] = radii[i];
+
+    return arr;
+}
+
+/**
+ * Returns the list of time steps taken so far.
+ *
+ * PYTHON PARAMETERS
+ * sim: PyCapsule object containing a pointer to the DREAM::Simulation
+ *      object to access.
+ */
+static PyObject *dreampy_get_time_vector(
+    PyObject* /*self*/, PyObject *args
+) {
+    DREAM::Simulation *sim = get_simulation_from_capsule(args);
+
+    if (sim == NULL)
+        return NULL;
+
+    std::vector<real_t>& times = sim->GetEquationSystem()->GetTimes();
+
+    npy_intp l = times.size();
+    PyObject *arr = PyArray_SimpleNew(1, &l, NPY_DOUBLE);
+    real_t *p = reinterpret_cast<real_t*>(
+        PyArray_DATA(reinterpret_cast<PyArrayObject*>(arr))
+    );
+
+    for (npy_intp i = 0; i < l; i++)
+        p[i] = times[i];
+
+    return arr;
+
 }
 
 }

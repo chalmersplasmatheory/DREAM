@@ -101,6 +101,8 @@ bool TimeStepperConstant::IsFinished() {
     bool v = (this->tIndex>=this->Nt);
 #ifdef DREAM_IS_PYTHON_LIBRARY
     return (v || this->PythonIsTerminate());
+#else
+    return v;
 #endif
 }
 

@@ -28,6 +28,8 @@ static PyMethodDef dreampyMethods[] = {
     {"get_others", dreampy_get_others, METH_VARARGS, "Returns a dictionary with information about all other quantities of the equation system."},
     {"get_other_data", (PyCFunction)(void(*)(void))dreampy_get_other_data, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with data for the other quantity corresponding to all completed time steps."},
     {"get_other_info", (PyCFunction)(void(*)(void))dreampy_get_other_info, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with information about the named other quantity."},
+    {"get_radius_vector", dreampy_get_radius_vector, METH_VARARGS, "Returns the radial grid used in the simulation."},
+    {"get_time_vector", dreampy_get_time_vector, METH_VARARGS, "Returns a list of time steps completed so far."},
     {"get_unknowns", dreampy_get_unknowns, METH_VARARGS, "Returns a dictionary with information about all unknowns of the equation system."},
     {"get_unknown_data", (PyCFunction)(void(*)(void))dreampy_get_unknown_data, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with data for the unknown quantity corresponding to all completed time steps."},
     {"get_unknown_info", (PyCFunction)(void(*)(void))dreampy_get_unknown_info, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with information about the named unknown quantity."},

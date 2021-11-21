@@ -5,10 +5,10 @@
 
 from . import resolvedreampaths
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtGui, QtWidgets, Qt
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QCursor
-from PyQt5.QtCore import Qt as QtCursor
+from PyQt5.QtCore import Qt, QPoint
 from .ui import DREAMTheater_design
 
 from DREAM import DREAMSettings, DREAMOutput
@@ -16,19 +16,28 @@ from . controls.CodeEditor import CodeEditor
 from . DataProviderOutput import DataProviderOutput
 from . DataProviderSimulation import DataProviderSimulation
 from . import evaluateExpression
+from . PlotConfiguration import PlotConfiguration
 from . SimulationThread import SimulationThread
 import dreampyface
 from dreampyface import Simulation
 import h5py
+import matplotlib as mpl
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 import traceback
 import random
 import sys
+
+from . DialogFluidQuantity import DialogFluidQuantity
 
 try:
     import webbrowser
 except Exception as ex:
     print("Unable to load the 'webbrowser' module. Will not be able to direct you to excellent music.")
     print(ex)
+
+# Disable use of TeX for rendering text
+mpl.rc('text', usetex=False)
 
 
 class DREAMTheater(QtWidgets.QMainWindow):
@@ -86,6 +95,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
         self.editor.executeCommand.connect(self.runScript)
 
         self.bindEvents()
+        self.setupPlots()
 
 
     def bindEvents(self):
@@ -258,6 +268,27 @@ class DREAMTheater(QtWidgets.QMainWindow):
         return self.treeViewModel.itemFromIndex(self.ui.treeView.selectionModel().selectedIndexes()[0])
 
 
+    def onFigureClicked(self, event):
+        """
+        Triggered when the figure is clicked.
+        """
+        if event.guiEvent.button() != Qt.RightButton:
+            return
+        if event.inaxes is None:
+            return
+
+        menu = QtWidgets.QMenu()
+
+        # Monitor
+        actionRemove = menu.addAction("Remove")
+        
+        #print(self.ui.framePlot.mapToGlobal(QPoint(event.x, event.y)))
+        res = menu.exec_(self.ui.framePlot.mapToGlobal(QPoint(event.x, event.y)))
+        if res == actionRemove:
+            self.plotconfig.removeByAxes(event.inaxes)
+            self.plotconfig.render(self.output, clearAxes=True)
+
+
     def openDocumentation(self):
         webbrowser.open_new_tab('https://ft.nephy.chalmers.se/dream')
 
@@ -275,7 +306,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
         Direct the user to some excellent music.
         """
         selection = [
-            # Pull me under
+            # Pull Me Under
             'https://www.youtube.com/watch?v=mipc-JxrhRk',
             # Octavarium
             'https://www.youtube.com/watch?v=XYV8Zt2k0RQ',
@@ -338,11 +369,16 @@ class DREAMTheater(QtWidgets.QMainWindow):
 
         menu = QtWidgets.QMenu()
 
+        # Monitor
         actionMonitor = menu.addAction("Monitor")
-        actionMonitor.setCheckable(True)
+        #actionMonitor.setCheckable(True)
+        #if self.plotconfig.monitorsQuantity(item.text()):
+        #    actionMonitor.setChecked(True)
 
+        # Separator
         menu.addSeparator()
 
+        # Plot
         actionPlot = menu.addAction("Plot")
 
         action = menu.exec_(self.ui.treeView.viewport().mapToGlobal(position))
@@ -351,6 +387,22 @@ class DREAMTheater(QtWidgets.QMainWindow):
             QMessageBox.critical(self,
                 "Plotting not implemented yet",
                 "Plotting of quantities has not been implemented yet")
+        elif action == actionMonitor:
+            # TODO determine if this is a kinetic, fluid or scalar quantity...
+            diag = DialogFluidQuantity(r=self.output.grid.r, parent=self)
+            if not diag.exec_():
+                return
+            
+            if diag.getPlotType() == diag.PLOT_TYPE_RADIAL_PROFILE:
+                x = 'r'
+                y = lambda data : data[-1,:]
+            else:
+                ridx = diag.getRadialIndex()
+                x = 't'
+                y = lambda data : data[:,ridx]
+
+            self.plotconfig.addQuantity(item.text(), x=x, y=y, xlabel=x)
+            self.plotconfig.render(self.data)
 
     
     def runScript(self):
@@ -358,7 +410,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
         Run the current Python script.
         """
         self.enableEditor(False)
-        self.editor.viewport().setCursor(QCursor(QtCursor.WaitCursor))
+        self.editor.viewport().setCursor(QCursor(Qt.WaitCursor))
 
         # Check if a subset of the code is selected...
         code = self.editor.textCursor().selection().toPlainText()
@@ -375,7 +427,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
                 'Exception was raised',
                 '{}: The Python code raised the following exception:\n\n{}'.format(type(ex).__name__, traceback.format_exc()))
 
-        self.editor.viewport().setCursor(QCursor(QtCursor.IBeamCursor))
+        self.editor.viewport().setCursor(QCursor(Qt.IBeamCursor))
         self.enableEditor(True)
         self.editor.setFocus()
 
@@ -441,6 +493,22 @@ class DREAMTheater(QtWidgets.QMainWindow):
         Set that the script has been modified (or not).
         """
         self.editor.document().setModified(mod)
+
+
+    def setupPlots(self):
+        """
+        Initialization of the 'Plots' section on the window.
+        """
+        self.figure = Figure(tight_layout=True)
+        self.canvas = FigureCanvas(self.figure)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.canvas)
+        self.ui.framePlot.setLayout(layout)
+
+        self.plotconfig = PlotConfiguration(self.figure)
+        # Bind mouse click event
+        self.plotconfig.fig.canvas.mpl_connect('button_press_event', self.onFigureClicked)
 
 
     def simulationFinished(self):

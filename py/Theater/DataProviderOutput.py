@@ -16,6 +16,20 @@ class DataProviderOutput(DataProvider):
         self.output = output
 
 
+    def getRadius(self):
+        """
+        Returns the radius vector of the data.
+        """
+        return self.output.grid.r
+
+
+    def getTime(self):
+        """
+        Returns the time vector of the data.
+        """
+        return self.output.grid.t
+
+
     def getOtherInfo(self, name=None):
         """
         Returns basic information about the unknowns of
