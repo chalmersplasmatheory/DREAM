@@ -39,7 +39,7 @@ namespace DREAM::FVM {
 
         void InterpolateInputProfileToGrid(
             const len_t, const real_t*, const real_t*,
-            const len_t, const real_t*,
+            const len_t, const real_t*, const real_t*,
             gsl_spline*, gsl_interp_accel*,
             real_t**, real_t**, real_t**, real_t**
         );
