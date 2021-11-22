@@ -140,10 +140,11 @@ void AnalyticDistributionRE::constructXiSpline(){
                 ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, FVM::RadialGrid::FSA_FUNC_XI, &xi0
             );
         }
+        xiArr[N_SPLINE-1] = 1.0;
         gsl_spline_init (xi0OverXiSpline[ir], xiArr, FuncArr, N_SPLINE);
         // the integral int( xi0/<xi>, xiT, 1 ) over the entire spline 
         // will appear repeatedly and is therefore stored 
-        integralOverFullPassing[ir] = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiT,1.0,xiSplineAcc[ir]);
+        integralOverFullPassing[ir] = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiArr[0],1.0,xiSplineAcc[ir]);
     }
     delete [] xiArr;
     delete [] FuncArr;
@@ -179,13 +180,13 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     real_t dist2 = 0; // contribution to exponent from negative pitch
 
     if (xi0>xiT)
-        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi0,1.0,xiSplineAcc[ir],&dist1);
+        dist1 = gsl_spline_eval_integ(xi0OverXiSpline[ir],xi0,1.0,xiSplineAcc[ir]);
     else 
         dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,&dist1)
     
     if(xi0<-xiT) // add [xi0, -xiT] part but mirror the interval: spline is 
                  // only defined for positive pitch since it's symmetric
-        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir],&dist2);
+        dist2 = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir]);
     
     return exp(-A*(dist1+dist2));
 }
