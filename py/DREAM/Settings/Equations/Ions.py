@@ -425,7 +425,6 @@ class Ions(UnknownQuantity):
         icharged_diffusion_modes =self.getChargedDiffusionModes()
         ineutral_diffusion_modes =self.getNeutralDiffusionModes()
         icharged_advection_modes =self.getChargedAdvectionModes()
-        print(icharged_advection_modes)
         ineutral_advection_modes =self.getNeutralAdvectionModes()
         isotopes     = self.getIsotopes()
         initial = None
