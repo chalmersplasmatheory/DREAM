@@ -289,15 +289,8 @@ void DREAM::SettingsSFile::SaveSettings(
         // Construct full name of setting
         string fullname = group + sname;
 
+        // Create non-existant groups in the file
         CreateGroup(sname, group, groups, sf);
-
-        // Should we create a new group?
-        /*auto slash = name.find('/');
-        if (slash != string::npos) {
-            string groupname = name.substr(0, slash);
-
-            if (std::find(groups.begin(), groups.end(), groupname) == 
-        }*/
 
         switch (set->type) {
             case Settings::SETTING_TYPE_BOOL:
