@@ -421,7 +421,7 @@ void DREAM::SettingsSFile::SaveIntegerArray(
     for (len_t i = 0; i < ndims; i++)
         _dims[i] = dims[i];
 
-    //sf->WriteMultiInt64Array(name, arr, ndims, _dims);
+    sf->WriteMultiInt64Array(name, arr, ndims, _dims);
 
     delete [] _dims;
 }
