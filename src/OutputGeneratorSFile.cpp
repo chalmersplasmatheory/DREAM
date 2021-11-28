@@ -16,12 +16,14 @@ using namespace std;
  * Constructor.
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
-	EquationSystem *eqsys, const std::string& filename
-) : OutputGenerator(eqsys), filename(filename) {}
+	EquationSystem *eqsys, const std::string& filename,
+    bool savesettings
+) : OutputGenerator(eqsys, savesettings), filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
-	EquationSystem *eqsys, SFile *sf
-) : OutputGenerator(eqsys), sf(sf) {}
+	EquationSystem *eqsys, SFile *sf,
+    bool savesettings
+) : OutputGenerator(eqsys, savesettings), sf(sf) {}
 
 /**
  * Destructor.
