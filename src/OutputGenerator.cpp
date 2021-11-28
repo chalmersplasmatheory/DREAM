@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/OutputGenerator.hpp"
+#include "DREAM/Settings/Settings.hpp"
 
 
 using namespace DREAM;
@@ -37,6 +38,9 @@ void OutputGenerator::Save(bool current) {
 
     // Save ion metadata
     this->SaveIonMetaData("ionmeta");
+
+    // Save settings
+    this->SaveSettings("settings");
 
     // Save solver statistics
     this->SaveSolverData("solver");

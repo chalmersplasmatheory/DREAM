@@ -5,6 +5,8 @@
 
 #include <string>
 #include "DREAM/OutputGeneratorSFile.hpp"
+#include "DREAM/Settings/Settings.hpp"
+#include "DREAM/Settings/SFile.hpp"
 
 
 using namespace DREAM;
@@ -212,9 +214,10 @@ void OutputGeneratorSFile::SaveOtherQuantities(const std::string& name) {
 
 /**
  * Save settings used for this simulation
- * TODO TODO TODO
  */
-void OutputGeneratorSFile::SaveSettings(const std::string&) {
+void OutputGeneratorSFile::SaveSettings(const std::string& name) {
+    this->sf->CreateStruct(name);
+    SettingsSFile::SaveSettings(this->eqsys->GetSettings(), this->sf, name);
 }
 
 /**

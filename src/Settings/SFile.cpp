@@ -1,9 +1,10 @@
 /**
- * LOAD SETTINGS VIA THE SOFTLIB SFILE INTERFACE
+ * LOAD/SAVE SETTINGS VIA THE SOFTLIB SFILE INTERFACE
  * This module loads settings from a file using the softlib SFile interface,
  * i.e. from HDF5, MATLAB MAT or SDT files.
  */
 
+#include <map>
 #include <string>
 #include <softlib/SFile.h>
 #include "DREAM/IO.hpp"
@@ -227,5 +228,214 @@ void DREAM::SettingsSFile::LoadRealArray(
     set->SetSetting(name, ndims, dims, v);
 
     delete [] dims;
+}
+
+/**
+ * Creates any groups in the 'name' which do not already exist.
+ *
+ * name:   Name of setting to be saved (including full path relative to 'path').
+ * path:   Path relative to root of file to save setting in (assumed to exist).
+ * groups: List of groups which have already been created.
+ */
+void DREAM::SettingsSFile::CreateGroup(
+    const string& name, const string& path, vector<string> &groups,
+    SFile *sf
+) {
+    size_t slash = name.find('/'), start = 0;
+    string group = "";
+    while (slash != string::npos) {
+        group += name.substr(start, slash-start);
+
+        // If the group does not exist in 'groups'...
+        if (std::find(groups.begin(), groups.end(), group) == std::end(groups)) {
+            sf->CreateStruct(path+group);
+            groups.push_back(group);
+        }
+
+        group += '/';
+        start = slash+1;
+        slash = name.find('/', start);
+    }
+}
+
+/**
+ * Save the given Settings object using the SFile interface.
+ *
+ * settings: Settings object to write.
+ * sf:       SFile object to write to.
+ * path:     Path in output file to write settings to.
+ */
+void DREAM::SettingsSFile::SaveSettings(
+    Settings *s, SFile *sf, const string& path
+) {
+    string group = path;
+    if (path.back() != '/')
+        group += '/';
+
+    const map<string, Settings::setting_t*> smap = s->GetSettings();
+    vector<string> groups;
+
+    for (auto const& [name, set] : smap) {
+        // Ignore unused settings
+        if (not set->used)
+            continue;
+
+        string sname;
+        if (name[0] == '/')
+            sname = name.substr(1);
+        else
+            sname = name;
+
+        // Construct full name of setting
+        string fullname = group + sname;
+
+        CreateGroup(sname, group, groups, sf);
+
+        // Should we create a new group?
+        /*auto slash = name.find('/');
+        if (slash != string::npos) {
+            string groupname = name.substr(0, slash);
+
+            if (std::find(groups.begin(), groups.end(), groupname) == 
+        }*/
+
+        switch (set->type) {
+            case Settings::SETTING_TYPE_BOOL:
+                SettingsSFile::SaveBool(fullname, s->GetBool(name), sf);
+                break;
+            case Settings::SETTING_TYPE_INT:
+                SettingsSFile::SaveInteger(fullname, s->GetInteger(name), sf);
+                break;
+            case Settings::SETTING_TYPE_INT_ARRAY: {
+                len_t *dims = new len_t[set->ndims];
+                const int_t *arr = s->GetIntegerArray(name, set->ndims, dims);
+
+                SettingsSFile::SaveIntegerArray(fullname, arr, set->ndims, dims, sf);
+
+                delete [] dims;
+            } break;
+            case Settings::SETTING_TYPE_REAL:
+                SettingsSFile::SaveReal(fullname, s->GetReal(name), sf);
+                break;
+            case Settings::SETTING_TYPE_REAL_ARRAY: {
+                len_t *dims = new len_t[set->ndims];
+                const real_t *arr = s->GetRealArray(name, set->ndims, dims);
+
+                SettingsSFile::SaveRealArray(fullname, arr, set->ndims, dims, sf);
+
+                delete [] dims;
+            } break;
+            case Settings::SETTING_TYPE_STRING:
+                SettingsSFile::SaveString(fullname, s->GetString(name), sf);
+                break;
+            
+            default:
+                throw SettingsException(
+                    "SettingsSFile: Unrecognized setting type: " LEN_T_PRINTF_FMT,
+                    set->type
+                );
+        }
+    }
+}
+
+/**
+ * Save a value of type 'bool' to the given SFile object.
+ *
+ * name: Full path to setting in SFile object.
+ * b:    Value to write.
+ * sf:   SFile object to write to.
+ */
+void DREAM::SettingsSFile::SaveBool(
+    const string& name, bool b, SFile *sf
+) {
+    int64_t v = b?1:0;
+    sf->WriteInt64List(name, &v, 1);
+}
+
+/**
+ * Save a value of type 'real' to the given SFile object.
+ *
+ * name: Full path to setting in SFile object.
+ * r:    Value to write.
+ * sf:   SFile object to write to.
+ */
+void DREAM::SettingsSFile::SaveReal(
+    const string& name, real_t r, SFile *sf
+) {
+    double v = r;
+    sf->WriteScalar(name, v);
+}
+
+/**
+ * Save a value of type 'int_t' to the given SFile object.
+ *
+ * name: Full path to setting in SFile object.
+ * i:    Value to write.
+ * sf:   SFile object to write to.
+ */
+void DREAM::SettingsSFile::SaveInteger(
+    const string& name, int_t i, SFile *sf
+) {
+    int64_t v = i;
+    sf->WriteInt64List(name, &v, 1);
+}
+
+/**
+ * Save a value of type 'real_t*' to the given SFile object.
+ *
+ * name:  Full path to setting in SFile object.
+ * arr:   Array to write to SFile.
+ * ndims: Number of dimensions of array.
+ * dims:  Size of each dimension of array.
+ * sf:    SFile object to write to.
+ */
+void DREAM::SettingsSFile::SaveRealArray(
+    const string& name, const real_t *arr,
+    const len_t ndims, const len_t *dims,
+    SFile *sf
+) {
+    sfilesize_t *_dims = new sfilesize_t[ndims];
+    for (len_t i = 0; i < ndims; i++)
+        _dims[i] = dims[i];
+
+    sf->WriteMultiArray(name, arr, ndims, _dims);
+
+    delete [] _dims;
+}
+
+/**
+ * Save a value of type 'int_t*' to the given SFile object.
+ *
+ * name:  Full path to setting in SFile object.
+ * arr:   Array to write to SFile.
+ * ndims: Number of dimensions of array.
+ * dims:  Size of each dimension of array.
+ * sf:    SFile object to write to.
+ */
+void DREAM::SettingsSFile::SaveIntegerArray(
+    const string& name, const int_t *arr,
+    const len_t ndims, const len_t *dims,
+    SFile *sf
+) {
+    sfilesize_t *_dims = new sfilesize_t[ndims];
+    for (len_t i = 0; i < ndims; i++)
+        _dims[i] = dims[i];
+
+    //sf->WriteMultiInt64Array(name, arr, ndims, _dims);
+
+    delete [] _dims;
+}
+
+/**
+ * Save a value of type 'string' to the given SFile object.
+ *
+ * name: Full path to the setting in the SFile object.
+ * str:  String to save.
+ * sf:   SFile object to save value to.
+ */
+void DREAM::SettingsSFile::SaveString(
+    const string& name, const string& str, SFile *sf
+) {
+    sf->WriteString(name, str);
 }
 
