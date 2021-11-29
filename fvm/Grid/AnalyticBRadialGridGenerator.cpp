@@ -131,11 +131,11 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     struct shape_profiles *pp = this->providedProfiles;
 
     DeallocateShapeProfiles();
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G_r,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi_r,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa_r, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta_r, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta_r, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
 
     if(r_f[0]==0) // standard situation
         psiPrimeRef_f[0] = 0; // no poloidal field at r=0 since no toroidal current is enclosed
@@ -328,7 +328,7 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
  */
 void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
     const len_t nr, const real_t *r, const real_t *r_f,
-    const len_t nProvided, const real_t *xProvided,
+    const len_t nProvided, const real_t *rProvided, const real_t *xProvided,
     gsl_spline *spline_x, gsl_interp_accel *spline_acc,
     real_t **x, real_t **xPrime, real_t **x_f, real_t **xPrime_f
 ) {
@@ -342,8 +342,13 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             (*x)[ir]      = xProvided[0];
             (*xPrime)[ir] = 0;
         } else {
-            (*x)[ir]      = gsl_spline_eval(spline_x, r[ir], spline_acc);
-            (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], spline_acc);
+            if (r[ir] > rProvided[nProvided-1]) {
+                (*x)[ir]      = xProvided[nProvided-1];
+                (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, rProvided[nProvided-1], spline_acc);
+            } else {
+                (*x)[ir]      = gsl_spline_eval(spline_x, r[ir], spline_acc);
+                (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], spline_acc);
+            }
         }
     }
     for (len_t ir=0; ir < nr+1; ir++){
@@ -351,8 +356,13 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             (*x_f)[ir]      = xProvided[0];
             (*xPrime_f)[ir] = 0;
         } else {
-            (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
-            (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
+            if (r_f[ir] > rProvided[nProvided-1]) {
+                (*x_f)[ir]      = xProvided[nProvided-1];
+                (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, rProvided[nProvided-1], spline_acc);
+            } else {
+                (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
+                (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
+            }
         }
     }
 }

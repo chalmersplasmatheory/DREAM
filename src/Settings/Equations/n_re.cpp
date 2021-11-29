@@ -6,6 +6,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
+#include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
@@ -14,6 +15,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -33,6 +35,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
+    s->DefineSetting(MODULENAME "/negative_re", "When in kinetic mode, properly account for runaways in both positive and negative pitch directions.", (bool)false);
 
     s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
@@ -62,6 +65,10 @@ void SimulationGenerator::ConstructEquation_n_re(
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
     FVM::Operator *transport_fre
 ) {
+    // Introduce negative runaway density?
+    if (s->GetBool(MODULENAME "/negative_re"))
+        ConstructEquation_n_re_neg(eqsys, s);
+
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -187,5 +194,38 @@ void SimulationGenerator::ConstructEquation_n_re(
     real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(id_n_re, n_re_init);
     delete [] n_re_init;
+}
+
+void SimulationGenerator::ConstructEquation_n_re_neg(
+    EquationSystem *eqsys, Settings*
+) {
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
+    
+    if (runawayGrid == nullptr)
+        throw SettingsException(
+            "n_re: Density of negative runaways requires the runaway kinetic grid to be used."
+        );
+
+    const len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+    const len_t id_nre_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
+    
+    FVM::Operator *Op_nREn     = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_nREn_fre = new FVM::Operator(fluidGrid);
+
+    Op_nREn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+    Op_nREn_fre->AddTerm(
+        new DensityFromDistributionFunction(
+            fluidGrid, runawayGrid, id_nre_neg, id_f_re,
+            eqsys->GetUnknownHandler(), 0,
+            FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC,
+            FVM::MomentQuantity::XI_MODE_NEG    // only integrate over negative xi
+        )
+    );
+    eqsys->SetOperator(id_nre_neg, id_nre_neg, Op_nREn);
+    eqsys->SetOperator(id_nre_neg, id_f_re, Op_nREn_fre, "integral(f_re, xi0<0)");
+
+    // Initialize n_re_neg to zero
+    eqsys->SetInitialValue(id_nre_neg, nullptr);
 }
 

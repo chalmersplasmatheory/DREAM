@@ -161,6 +161,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_RE) {
             uqn_scales[id] = eqn_scales[id] = RUNAWAY_FRACTION*DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_N_RE_NEG) {
+            uqn_scales[id] = eqn_scales[id] = RUNAWAY_FRACTION*DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_TOT) {
             uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_NI_DENS) {
