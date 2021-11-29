@@ -164,6 +164,7 @@ namespace DREAM {
         static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);
+        static void ConstructEquation_n_re_neg(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 

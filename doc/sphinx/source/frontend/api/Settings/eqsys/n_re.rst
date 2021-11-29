@@ -150,10 +150,27 @@ The ``FLUID`` model modifies the ``FLUID_HESSLOW`` model by replacing the denomi
 :math:`\sqrt{4\bar\nu_s+\bar\nu_s\bar\nu_D}`, which increases the accuracy for 
 nearly neutral plasmas dominated by hydrogen collisions.
 
+.. warning::
+
+   The kinetic avalanche source, ``AVALANCHE_MODE_KINETIC``, makes explicit use
+   of the runaway density :math:`n_{\rm re}`. Hence, it is not possible to model
+   avalanche generation in simulations where the hot-tail grid is intended to
+   contain all, or a significant fraction of, the runaway electrons. If the
+   runaways should be resolved kinetically, the runaway grid should also be
+   enabled.
+
 .. note::
+
    Running the ``dream_avalanche`` physics test with the --plot flag 
    compares the ``FLUID`` and ``FLUID_HESSLOW`` models with the 
    kinetic calculation. 
+
+.. note::
+
+   If you are using kinetic avalanche generation and the electric field changes
+   sign during the simulation, read :ref:`negative electric fields` below and
+   call `ds.eqsys.n_re.setNegativeRunaways()` on the settings object to
+   properly account for the direction of motion of the runaways.
 
 .. todo::
 
@@ -554,6 +571,57 @@ An example of how the mode for the critical effective field can be set to ``CYLI
    ds = DREAMSettings()
 
    ds.eqsys.n_re.setEceff(RunawayElectrons.COLLQTY_ECEFF_MODE_CYLINDRICAL)
+
+
+Negative electric fields
+------------------------
+Runaway generation is generally treated correctly regardless of the sign of the
+sign of the electric field in DREAM. One exception occurs for the avalanche
+source when the electric field *changes* sign during the simulation. In this
+case, in default mode, the sign change may cause excessive avalanching in the
+new direction of the electric field. To resolve this issue, the density of
+runaways travelling anti-parallel to the magnetic field (called `n_re_neg` in
+the code) can be introduced in the system. When this is done, the kinetic
+avalanche source is automatically modified to account for whether runaways are
+travelling parallel or anti-parallel to the magnetic field.
+
+.. note::
+
+   Tracking the direction of motion of the runaways requires the runaway grid
+   to enabled.
+
+The density of runaway electrons travelling anti-parallel to the magnetic field
+is defined as
+
+.. math::
+
+   \left\langle n_{\rm re}^{\rm neg}\right\rangle = 
+       \frac{1}{V'}\int_{p_{\rm re}}^{-\infty} \int_{-1}^1 f_{\rm re}
+       \mathcal{V}'\,\mathrm{d}\xi_0 \mathrm{d} p.
+
+The avalanche source term in the kinetic equation is then modified to become
+
+.. math::
+
+   S(n_{\rm re}) \to S^{+}(n_{\rm re}) - S^{+}(n_{\rm re}^{\rm neg}) + S^{-}(n_{\rm re}^{\rm neg})
+
+where the superscript sign indicates whether the source creates electrons in the
+parallel (+) or anti-parallel (-) direction (corresponding to positive and
+negative values of :math:`\xi_0` respectively). In the default source, the
+avalanche electrons are created in the direction instantaneously parallel to the
+electric field.
+
+Example
+^^^^^^^
+To include the density of anti-parallel runaways, simply do the following:
+
+.. code-block::
+
+   from DREAM import DREAMSettings
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.n_re.setNegativeRunaways(True)
 
 
 Transport

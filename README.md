@@ -111,8 +111,8 @@ If you use DREAM in your scientific publications, please cite the
     pages = {108098},
     year = {2021},
     issn = {0010-4655},
-    doi = {https://doi.org/10.1016/j.cpc.2021.108098},
-    url = {https://www.sciencedirect.com/science/article/pii/S0010465521002101},
+    doi = {10.1016/j.cpc.2021.108098},
+    url = {https://doi.org/10.1016/j.cpc.2021.108098},
     author = {Mathias Hoppe and Ola Embreus and Tünde Fülöp}
 }
 ```

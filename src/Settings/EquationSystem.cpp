@@ -314,6 +314,9 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_SCL(PSI_WALL);
     DEFU_SCL(I_P);
 
+    if (s->GetBool("eqsys/n_re/negative_re"))
+        DEFU_FLD(N_RE_NEG);
+
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         len_t nShard;
