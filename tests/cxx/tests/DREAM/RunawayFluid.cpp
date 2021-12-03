@@ -296,6 +296,7 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
         grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
         DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
         eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
+        DREAM::OptionConstants::EQTERM_AVALANCHE_TRAPPING_CORRECTION_NEGLECT,
         DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0
     );
     REFluid->Rebuild();
