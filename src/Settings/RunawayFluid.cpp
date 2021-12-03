@@ -39,10 +39,11 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     cqsetForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
     cqsetForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
-    OptionConstants::conductivity_mode cond_mode      = (enum OptionConstants::conductivity_mode)    s->GetInteger("eqsys/j_ohm/conductivityMode");
-    OptionConstants::eqterm_dreicer_mode dreicer_mode = (enum OptionConstants::eqterm_dreicer_mode)  s->GetInteger("eqsys/n_re/dreicer");
-    OptionConstants::collqty_Eceff_mode Eceff_mode    = (enum OptionConstants::collqty_Eceff_mode)   s->GetInteger("eqsys/n_re/Eceff");
-    OptionConstants::eqterm_avalanche_mode ava_mode   = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    OptionConstants::conductivity_mode cond_mode                = (enum OptionConstants::conductivity_mode)    s->GetInteger("eqsys/j_ohm/conductivityMode");
+    OptionConstants::eqterm_dreicer_mode dreicer_mode           = (enum OptionConstants::eqterm_dreicer_mode)  s->GetInteger("eqsys/n_re/dreicer");
+    OptionConstants::collqty_Eceff_mode Eceff_mode              = (enum OptionConstants::collqty_Eceff_mode)   s->GetInteger("eqsys/n_re/Eceff");
+    OptionConstants::eqterm_avalanche_mode ava_mode             = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    OptionConstants::eqterm_avalanche_fluid_factor ava_factor   = (enum OptionConstants::eqterm_avalanche_fluid_factor)s->GetInteger("eqsys/n_re/avalanche_factor");
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)  s->GetInteger("eqsys/n_re/compton/mode");
     real_t compton_photon_flux = s->GetReal("eqsys/n_re/compton/flux");
 
@@ -69,7 +70,7 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     
     RunawayFluid *REF = new RunawayFluid(
         g, unknowns, nuS, nuD, lnLEE, lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
-        cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux
+        cond_mode,dreicer_mode,Eceff_mode,ava_mode,ava_factor,compton_mode,compton_photon_flux
     );
     distRE->SetREFluid(REF);
     eqsys->SetAnalyticDists(distRE, distHT);

@@ -30,6 +30,7 @@ void SimulationGenerator::DefineOptions_n_re(
     Settings *s
 ) {
     s->DefineSetting(MODULENAME "/avalanche", "Model to use for secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/avalanche_factor", "Avalanche growth rate as in eq. 18 by Rosenbluth & Putvinski.", (int_t) OptionConstants::EQTERM_AVALANCHE_FLUID_FACTOR_NEGLECT);
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);

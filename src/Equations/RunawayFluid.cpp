@@ -39,13 +39,14 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
     OptionConstants::eqterm_avalanche_mode ava_mode,
+    OptionConstants::eqterm_avalanche_fluid_factor ava_factor,
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
     unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
     cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
-    ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
+    ava_mode(ava_mode), ava_factor(ava_factor), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
  {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -336,7 +337,15 @@ void RunawayFluid::CalculateGrowthRates(){
 
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
-        real_t pc = criticalREMomentum[ir]; 
+
+        // multiply by correction factor
+        if (ava_factor == OptionConstants::EQTERM_AVALANCHE_FLUID_FACTOR_INCLUDE){
+            real_t eps = (this->rGrid->GetR(ir)) / (this->rGrid->GetR0());
+            real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
+            avalancheGrowthRate[ir] *=  sqrt(M_PI*phi/3) * avalancheRosenbluthPutvinskiFactor(ir);
+        }
+
+        real_t pc = criticalREMomentum[ir];
         tritiumRate[ir] = evaluateTritiumRate(pc);
         comptonRate[ir] = evaluateComptonRate(pc, compton_photon_flux, gsl_ad_w);
         DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,compton_photon_flux, gsl_ad_w);
@@ -364,9 +373,28 @@ void RunawayFluid::CalculateGrowthRates(){
                     "Temperature is outside the range of validity for the neural network. "
                     "Falling back to the Connor-Hastie formula instead."
                 );
-        } 
+        }
     }
 }
+
+/**
+ * Returns the correction factor for the avalanche growth rate based on eq. 18 in
+ *  M N Rosenbluth and S V Putsvinski, Nucl. Fusion 37, 1355 (1997).
+ */
+real_t RunawayFluid::avalancheRosenbluthPutvinskiFactor(len_t ir){
+    real_t Zeff = this->ions->GetZeff(ir);
+    real_t EoverEceff = Eterm[ir]/effectiveCriticalField[ir];
+
+    // calculate inverse aspect ratio and the neoclassical factor from eq. 11
+    real_t eps = (this->rGrid->GetR(ir)) / (this->rGrid->GetR0());
+    real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
+
+    // calculate and return factor from eq. 18
+    real_t x = (1 - 1/EoverEceff + 4*M_PI*(Zeff+1)*(Zeff+1)
+            / (3*phi*(Zeff+5)*(EoverEceff*EoverEceff + 4/(phi*phi) - 1)));
+    return 1/sqrt(x);
+}
+
 
 /**
  * Returns the normalized runaway rate due to beta decay of tritium. The net 
@@ -848,25 +876,41 @@ real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len
  * assuming the E-field dependence is captured via the (E-Eceff) coefficient
  * and density via Eceff ~ n_tot.
  */
-void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId) {
-    if( !( (derivId==id_Eterm) || (derivId==id_ntot) ) ){
-        for(len_t ir = 0; ir<nr; ir++)
-            dGamma[ir] = 0;
-    }else{
-        // set dGamma to d(Gamma)/d(E_term)
-        for(len_t ir=0; ir<nr; ir++)
-            dGamma[ir] = avalancheGrowthRate[ir] / ( fabs(Eterm[ir]) - effectiveCriticalField[ir] );
+void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId){
 
-        // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
-        if(derivId==id_ntot)
-            for(len_t ir=0; ir<nr; ir++)
-                dGamma[ir] *= - effectiveCriticalField[ir] / ntot[ir];
-        // else multiply by sign of E
-        else if(derivId==id_Eterm)
-            for(len_t ir=0;ir<nr;ir++){
-                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
-                dGamma[ir] *= sgnE;
+    for(len_t ir=0; ir<nr; ir++)
+        dGamma[ir] = 0;
+
+    if( (derivId==id_ntot) || (derivId==id_Eterm) ){
+
+        if(ava_factor == OptionConstants::EQTERM_AVALANCHE_FLUID_FACTOR_INCLUDE){
+            for(len_t ir=0; ir<nr; ir++){
+                real_t eps = (this->rGrid->GetR(ir))/(this->rGrid->GetR0());
+                real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
+                real_t Zeff = this->ions->GetZeff(ir);
+                real_t E = Eterm[ir];
+                real_t Eceff = effectiveCriticalField[ir];
+
+                real_t b = 4*M_PI*(Zeff+1)*(Zeff+1) / (3*phi*(Zeff+5));
+                real_t d = E*E / (Eceff*Eceff) + 4/(phi*phi) - 1;
+                real_t g = 2 * b * E / (Eceff*Eceff*Eceff * d*d) - 1 / (E*E);
+                real_t f = avalancheRosenbluthPutvinskiFactor(ir);
+
+                dGamma[ir] += (g * E * f*f / 2) * (Eceff*(derivId==id_Eterm) - E*(derivId==id_ntot));
+
             }
+        }
+
+        for(len_t ir=0; ir<nr; ir++){
+            if(derivId==id_ntot){
+                dGamma[ir] -= 1 / (Eterm[ir] - effectiveCriticalField[ir]);
+                dGamma[ir] *= avalancheGrowthRate[ir] * effectiveCriticalField[ir] / ntot[ir];
+
+            }else if(derivId==id_Eterm){
+                dGamma[ir] += 1 / (Eterm[ir] - effectiveCriticalField[ir]);
+                dGamma[ir] *= avalancheGrowthRate[ir];
+            }
+        }
     }
 }
 

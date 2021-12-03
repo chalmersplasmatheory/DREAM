@@ -51,6 +51,7 @@ namespace DREAM {
         OptionConstants::eqterm_dreicer_mode dreicer_mode;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
+        OptionConstants::eqterm_avalanche_fluid_factor ava_factor;
         OptionConstants::eqterm_compton_mode compton_mode;
         real_t compton_photon_flux;
 
@@ -137,6 +138,7 @@ namespace DREAM {
             OptionConstants::eqterm_dreicer_mode,
             OptionConstants::collqty_Eceff_mode,
             OptionConstants::eqterm_avalanche_mode,
+            OptionConstants::eqterm_avalanche_fluid_factor,
             OptionConstants::eqterm_compton_mode,
             real_t compton_flux
         );
@@ -146,6 +148,8 @@ namespace DREAM {
         static void FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel=3e-3, real_t epsabs=0);
         static void FindRoot_fdf_bounded(real_t x_lower, real_t x_upper, real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel=3e-3, real_t epsabs=0);
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
+
+        real_t avalancheRosenbluthPutvinskiFactor(len_t ir);
 
         static real_t evaluateTritiumRate(real_t gamma_c);
         static real_t evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
