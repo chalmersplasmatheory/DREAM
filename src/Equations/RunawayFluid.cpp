@@ -883,7 +883,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
 
     if( (derivId==id_ntot) || (derivId==id_Eterm) ){
 
-        if(ava_factor == OptionConstants::EQTERM_AVALANCHE_TRAPPING_CORRECTION_INCLUDE){
+        if(ava_trapping == OptionConstants::EQTERM_AVALANCHE_TRAPPING_CORRECTION_INCLUDE){
             for(len_t ir=0; ir<nr; ir++){
                 real_t eps = (this->rGrid->GetR(ir))/(this->rGrid->GetR0());
                 real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
@@ -903,7 +903,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
 
         for(len_t ir=0; ir<nr; ir++){
             if(derivId==id_ntot){
-                dGamma[ir] -= 1 / (Eterm[ir] - effectiveCriticalField[ir]) * 15; // test
+                dGamma[ir] -= 1 / (Eterm[ir] - effectiveCriticalField[ir]);
                 dGamma[ir] *= avalancheGrowthRate[ir] * effectiveCriticalField[ir] / ntot[ir];
 
             }else if(derivId==id_Eterm){
