@@ -51,7 +51,7 @@ namespace DREAM {
         OptionConstants::eqterm_dreicer_mode dreicer_mode;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
-        OptionConstants::eqterm_avalanche_fluid_factor ava_factor;
+        OptionConstants::eqterm_avalanche_trapping_correction ava_trapping;
         OptionConstants::eqterm_compton_mode compton_mode;
         real_t compton_photon_flux;
 
@@ -138,7 +138,7 @@ namespace DREAM {
             OptionConstants::eqterm_dreicer_mode,
             OptionConstants::collqty_Eceff_mode,
             OptionConstants::eqterm_avalanche_mode,
-            OptionConstants::eqterm_avalanche_fluid_factor,
+            OptionConstants::eqterm_avalanche_trapping_correction,
             OptionConstants::eqterm_compton_mode,
             real_t compton_flux
         );

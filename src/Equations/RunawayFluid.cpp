@@ -39,14 +39,14 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
     OptionConstants::eqterm_avalanche_mode ava_mode,
-    OptionConstants::eqterm_avalanche_fluid_factor ava_factor,
+    OptionConstants::eqterm_avalanche_trapping_correction ava_trapping,
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
     unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
     cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
-    ava_mode(ava_mode), ava_factor(ava_factor), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
+    ava_mode(ava_mode), ava_trapping(ava_trapping), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
  {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -338,8 +338,8 @@ void RunawayFluid::CalculateGrowthRates(){
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
 
-        // multiply by correction factor
-        if (ava_factor == OptionConstants::EQTERM_AVALANCHE_FLUID_FACTOR_INCLUDE){
+        // multiply by trapping correction factor
+        if (ava_trapping == OptionConstants::EQTERM_AVALANCHE_TRAPPING_CORRECTION_INCLUDE){
             real_t eps = (this->rGrid->GetR(ir)) / (this->rGrid->GetR0());
             real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
             avalancheGrowthRate[ir] *=  sqrt(M_PI*phi/3) * avalancheRosenbluthPutvinskiFactor(ir);
@@ -883,7 +883,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
 
     if( (derivId==id_ntot) || (derivId==id_Eterm) ){
 
-        if(ava_factor == OptionConstants::EQTERM_AVALANCHE_FLUID_FACTOR_INCLUDE){
+        if(ava_factor == OptionConstants::EQTERM_AVALANCHE_TRAPPING_CORRECTION_INCLUDE){
             for(len_t ir=0; ir<nr; ir++){
                 real_t eps = (this->rGrid->GetR(ir))/(this->rGrid->GetR0());
                 real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
@@ -903,7 +903,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
 
         for(len_t ir=0; ir<nr; ir++){
             if(derivId==id_ntot){
-                dGamma[ir] -= 1 / (Eterm[ir] - effectiveCriticalField[ir]);
+                dGamma[ir] -= 1 / (Eterm[ir] - effectiveCriticalField[ir]) * 15; // test
                 dGamma[ir] *= avalancheGrowthRate[ir] * effectiveCriticalField[ir] / ntot[ir];
 
             }else if(derivId==id_Eterm){

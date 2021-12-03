@@ -247,9 +247,9 @@ enum eqterm_avalanche_mode {                        // Avalanche generation is..
     EQTERM_AVALANCHE_MODE_KINETIC = 4               // modelled kinetically with RP avalanche source
 };
 
-enum eqterm_avalanche_fluid_factor {                // Additional factor in eq. 18 from Rosenbluth & Putvinski is...
-    EQTERM_AVALANCHE_FLUID_FACTOR_NEGLECT = 1,      // neglected
-    EQTERM_AVALANCHE_FLUID_FACTOR_INCLUDE = 2,      // included
+enum eqterm_avalanche_trapping_correction {             // Additional factor in eq. 18 from Rosenbluth & Putvinski is...
+    EQTERM_AVALANCHE_TRAPPING_CORRECTION_NEGLECT = 1,   // neglected
+    EQTERM_AVALANCHE_TRAPPING_CORRECTION_INCLUDE = 2,   // included
 };
 
 enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...
