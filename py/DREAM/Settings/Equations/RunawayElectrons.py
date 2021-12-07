@@ -25,9 +25,12 @@ AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
 AVALANCHE_MODE_KINETIC = 4
 
+AVALANCHE_TRAPPING_CORRECTION_NEGLECT = 1
+AVALANCHE_TRAPPING_CORRECTION_INCLUDE = 2
+
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
-COMPTON_MODE_KINETIC = 3 
+COMPTON_MODE_KINETIC = 3
 COMPTON_RATE_ITER_DMS = -1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
@@ -37,14 +40,14 @@ AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
 AD_INTERP_UPWIND   = AdvectionInterpolation.AD_INTERP_UPWIND
 AD_INTERP_UPWIND_2ND_ORDER = AdvectionInterpolation.AD_INTERP_UPWIND_2ND_ORDER
 AD_INTERP_DOWNWIND = AdvectionInterpolation.AD_INTERP_DOWNWIND
-AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK 
-AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART 
-AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL 
-AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE 
-AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF  
+AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK
+AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART
+AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL
+AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE
+AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF
 
 AD_INTERP_JACOBIAN_LINEAR = AdvectionInterpolation.AD_INTERP_JACOBIAN_LINEAR
-AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL  
+AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL
 AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
 
 
@@ -55,13 +58,18 @@ HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT,
+                 avaTrapping=AVALANCHE_TRAPPING_CORRECTION_NEGLECT,
+                 dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT,
+                 Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0,
+                 tritium=False, hottail=HOTTAIL_MODE_DISABLED):
         """
         Constructor.
         """
         super().__init__(settings=settings)
 
         self.avalanche = avalanche
+        self.avaTrapping = avaTrapping
         self.dreicer   = dreicer
         self.compton   = compton
         self.comptonPhotonFlux = comptonPhotonFlux
@@ -86,7 +94,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.verifySettingsPrescribedInitialData()
 
 
-    def setAvalanche(self, avalanche, pCutAvalanche=0):
+    def setAvalanche(self, avalanche, pCutAvalanche=0,
+                     avaTrapping=AVALANCHE_TRAPPING_CORRECTION_NEGLECT):
         """
         Enables/disables avalanche generation.
         """
@@ -95,7 +104,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         else:
             self.avalanche = int(avalanche)
             self.pCutAvalanche = pCutAvalanche
-
+            if avaTrapping == False:
+                self.avaTrapping = AVALANCHE_TRAPPING_CORRECTION_NEGLECT
+            else:
+                self.avaTrapping = int(avaTrapping)
 
     def setDreicer(self, dreicer):
         """
@@ -121,7 +133,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 compton = COMPTON_MODE_FLUID
                 if photonFlux is None:
                     photonFlux = ITER_PHOTON_FLUX_DENSITY
-            
+
             if photonFlux is None:
                 raise EquationException("n_re: Compton photon flux must be set.")
 
@@ -162,7 +174,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Sets the interpolation method that is used in the advection terms of
         the transport equation.
-        
+
         :param int ad_int:               Interpolation method to use for the radial coordinate.
         :param int ad_jac:               Jacobian interpolation mode to use for the radial coordinate.
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
@@ -182,6 +194,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.comptonPhotonFlux  = data['compton']['flux']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        if 'avaTrapping' in data:
+            self.avaTrapping = int(data['avaTrapping'])
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
@@ -203,6 +218,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         data = {
             'avalanche': self.avalanche,
+            'avaTrapping': self.avaTrapping,
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche,
@@ -245,6 +261,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
+        if type(self.avaTrapping) != int:
+            raise EquationException("n_re: Invalid value assigned to 'avaTrapping'. Excepted integer.")
+        if self.avaTrapping == AVALANCHE_TRAPPING_CORRECTION_INCLUDE and self.avalanche == AVALANCHE_MODE_KINETIC:
+            raise EquationException("n_re: Invalid setting combination: trapping correction can only be used with FLUID avalanche.")
 
         self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()
