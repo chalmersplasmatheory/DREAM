@@ -2,6 +2,7 @@
 
 import argparse
 from DREAM import DREAMOutput, setup_interactive, who
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
@@ -54,11 +55,85 @@ def load_quantities(directory, timestep):
     return do
 
 
+def plotConvergenceOutput(do):
+    """
+    Plot the convergence of the unknowns in the given DREAMOutput object.
+    """
+    fig, ax = plt.subplots(1,1)
+
+    lines = []
+    for uname, u in do.eqsys.unknowns.items():
+        reltol = do.settings.solver.tolerance.getRelTol(uname)
+
+        if np.all(u.data==0):
+            continue
+
+        Delta = np.abs((u.data[:]/ u.data[-1,:])-1)
+
+        v = np.sum(Delta, axis=tuple(range(1,u.data.ndim))) / reltol
+        l, = ax.semilogy(do.grid.t, v, label=uname)
+        lines.append(l)
+
+    ax.plot([1, do.grid.t.size], [1, 1], 'k--')
+    ax.set_xlim([1, do.grid.t.size])
+
+    annot = ax.annotate("", xy=(0,0), xytext=(-20,20), textcoords="offset points", bbox={'boxstyle': 'round', 'fc':'w'}, arrowprops={'arrowstyle':'->'})
+    annot.set_visible(False)
+
+    def update_annot(line, ind):
+        x, y = line.get_data()
+        annot.xy = (x[ind['ind'][0]], y[ind['ind'][0]])
+        #annot.set(backgroundcolor=line.get_color())
+        annot.set(bbox={'boxstyle':'round', 'fc': 'w', 'ec': line.get_color()})
+        annot.set_text(line.get_label())
+    
+    def hover(event):
+        if event.inaxes == ax:
+            found = False
+            for line in lines:
+                cont, ind = line.contains(event)
+
+                if cont:
+                    update_annot(line, ind)
+                    annot.set_visible(True)
+                    fig.canvas.draw_idle()
+                    found = True
+                    break
+
+            if not found and annot.get_visible():
+                annot.set_visible(False)
+                fig.canvas.draw_idle()
+
+    fig.canvas.mpl_connect('motion_notify_event', hover)
+
+    plt.show(block=False)
+
+
+def plotConvergenceUnknown(u):
+    """
+    Plot the convergence of the given unknown quantity.
+    """
+    pass
+
+
+def plotConvergence(u=None):
+    """
+    Plot the convergence of a given unknown quantity of DREAMOutput object.
+    """
+    if u == None:
+        u = globals()['do']
+    
+    if type(u) == DREAMOutput:
+        plotConvergenceOutput(u)
+    else:
+        plotConvergenceUnknown(u)
+
+
 def create_argparser():
     parser = argparse.ArgumentParser(description="DREAM Debug Output CLI")
 
     parser.add_argument('-t', '--timestep', help="Timestep index to load", type=int, default=0)
-    parser.add_argument('directory', help="Name of directory containing debug output files to load", type=str, default=".")
+    parser.add_argument('directory', help="Name of directory containing debug output files to load", nargs='?', type=str, default=".")
 
     return parser.parse_args()
 
