@@ -240,7 +240,7 @@ namespace DREAM {
         real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n); 
         real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless);
         real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n);
-        void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
+        void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId, len_t nMultiples);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);
 
 

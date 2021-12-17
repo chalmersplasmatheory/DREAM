@@ -11,8 +11,7 @@ namespace DREAM {
     private:
         RunawayFluid *REFluid;
         const real_t pCutoff, aExp, scaleFactor;
-        len_t id_ntot;
-        len_t id_Efield;
+        len_t id_ntot, id_Efield, id_ni;
 
         real_t *dGammaFluid = nullptr;
         len_t nr_tmp=0;

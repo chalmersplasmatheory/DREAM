@@ -13,17 +13,18 @@ namespace DREAM {
     class AvalancheGrowthTerm : public FVM::DiagonalComplexTerm, public RunawaySourceTerm {
     private:
         RunawayFluid *REFluid;
-        len_t id_n_re;
+        len_t id_n_re, id_ni;
         real_t scaleFactor;
         real_t *dGamma = nullptr;
         len_t nr_tmp=0;
+        len_t nIons = 0;
 
         // if nr has changed, (re)allocate dGamma
         void AllocateDGamma(){
             if(nr_tmp != this->nr){
                 if(dGamma != nullptr)
                     delete [] dGamma;
-                dGamma = new real_t[this->nr];
+                dGamma = new real_t[this->nr * nIons];
                 nr_tmp = this->nr;
             }
         }
@@ -32,14 +33,14 @@ namespace DREAM {
         // Set weights for the Jacobian block. Uses differentiated growth rate provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
             AllocateDGamma();
-            REFluid->evaluatePartialContributionAvalancheGrowthRate(dGamma, derivId);
+            REFluid->evaluatePartialContributionAvalancheGrowthRate(dGamma, derivId, nMultiples);
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++){
                 for (len_t ir = 0; ir < nr; ir++){
                     const len_t xiIndex = this->GetXiIndexForEDirection(ir);
                     const real_t V = this->GetVolumeScaleFactor(ir);
 
-                    diffWeights[offset + n1[ir]*xiIndex] = scaleFactor*dGamma[ir] * V;
+                    diffWeights[offset + n1[ir]*xiIndex] = scaleFactor*dGamma[ir+n*nr] * V;
                     offset += n1[ir]*n2[ir];
                 }
             }
@@ -64,9 +65,11 @@ namespace DREAM {
         ) : FVM::DiagonalComplexTerm(g, u, operandGrid), RunawaySourceTerm(g,u),
             REFluid(ref), scaleFactor(scaleFactor) {
 
-            id_n_re = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+            this->id_ni = this->unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+            this->id_n_re = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+            this->nIons = this->unknowns->GetUnknown(this->id_ni)->NumberOfMultiples();
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
-            AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
+            AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
         }
 
         ~AvalancheGrowthTerm(){

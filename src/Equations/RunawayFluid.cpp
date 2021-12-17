@@ -848,8 +848,10 @@ real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len
  * assuming the E-field dependence is captured via the (E-Eceff) coefficient
  * and density via Eceff ~ n_tot.
  */
-void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId) {
-    if( !( (derivId==id_Eterm) || (derivId==id_ntot) ) ){
+void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(
+    real_t *dGamma, len_t derivId, len_t nMultiples
+) {
+    /*if( !( (derivId==id_Eterm) || (derivId==id_ntot) ) ){
         for(len_t ir = 0; ir<nr; ir++)
             dGamma[ir] = 0;
     }else{
@@ -867,6 +869,26 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
                 real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
                 dGamma[ir] *= sgnE;
             }
+    }*/
+    if (derivId != id_Eterm && derivId != id_ni) {
+        for(len_t ir = 0; ir<nr*nMultiples; ir++)
+            dGamma[ir] = 0;
+    } else {
+        // set dGamma to d(Gamma)/d(E_term)
+        for (len_t n = 0; n < nMultiples; n++)
+            for(len_t ir=0; ir<nr; ir++)
+                dGamma[ir + n*nr] = avalancheGrowthRate[ir] / ( fabs(Eterm[ir]) - effectiveCriticalField[ir] );
+        
+        if (derivId == id_ni) {
+            for (len_t n = 0; n < nMultiples; n++)
+                for (len_t ir = 0; ir < nr; ir++)
+                    dGamma[ir + n*nr] *= -effectiveCriticalField[ir] / ntot[ir];
+        } else if(derivId==id_Eterm) {
+            for(len_t ir=0;ir<nr;ir++){
+                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
+                dGamma[ir] *= sgnE;
+            }
+        }
     }
 }
 

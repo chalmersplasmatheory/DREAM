@@ -27,12 +27,14 @@ ExternalAvalancheTerm::ExternalAvalancheTerm(
     FVM::UnknownQuantityHandler *u, real_t sf
 ) : FVM::DiagonalComplexTerm(g,u), REFluid(ref), pCutoff(pc), aExp(a), scaleFactor(sf) {
     id_ntot   = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Efield = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     
     SetName("ExternalAvalancheTerm");
 
     AddUnknownForJacobian(unknowns, id_Efield);
-    AddUnknownForJacobian(unknowns, id_ntot);
+    //AddUnknownForJacobian(unknowns, id_ntot);
+    AddUnknownForJacobian(unknowns, id_ni);
 }
 
 /**
@@ -54,22 +56,24 @@ void ExternalAvalancheTerm::SetWeights(){
 /**
  * Sets the jacobian of the weights of this equation term.
  */
-void ExternalAvalancheTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/) {
+void ExternalAvalancheTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     AllocateDGamma();
-    REFluid->evaluatePartialContributionAvalancheGrowthRate(dGammaFluid, derivId);
+    REFluid->evaluatePartialContributionAvalancheGrowthRate(dGammaFluid, derivId, nMultiples);
     const real_t *GammaFluid = REFluid->GetAvalancheGrowthRate();
     const real_t *n_tot = unknowns->GetUnknownData(id_ntot);
-    for(len_t ir=0; ir<nr; ir++){
-        if(GammaFluid[ir]<=0)
-            diffWeights[ir] = scaleFactor * dGammaFluid[ir];
-        else {
-            real_t GammaExternal = n_tot[ir]*AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
-            real_t dGammaExternal = 0;
-            if(derivId==id_ntot) // add external-contribution jacobian
-                dGammaExternal = AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
-            real_t Factor1 = pow(GammaExternal,aExp-1)*dGammaExternal + pow(GammaFluid[ir],aExp-1)*dGammaFluid[ir]; 
-            real_t Factor2 = pow(  pow(GammaExternal,aExp) + pow(GammaFluid[ir],aExp) , 1.0/aExp - 1.0);
-            diffWeights[ir] = scaleFactor * Factor1*Factor2;
+    for (len_t n = 0; n < nMultiples; n++) {
+        for(len_t ir=0; ir<nr; ir++){
+            if(GammaFluid[ir]<=0)
+                diffWeights[ir] = scaleFactor * dGammaFluid[ir];
+            else {
+                real_t GammaExternal = n_tot[ir]*AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
+                real_t dGammaExternal = 0;
+                if(derivId==id_ntot) // add external-contribution jacobian
+                    dGammaExternal = AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
+                real_t Factor1 = pow(GammaExternal,aExp-1)*dGammaExternal + pow(GammaFluid[ir],aExp-1)*dGammaFluid[ir]; 
+                real_t Factor2 = pow(  pow(GammaExternal,aExp) + pow(GammaFluid[ir],aExp) , 1.0/aExp - 1.0);
+                diffWeights[ir] = scaleFactor * Factor1*Factor2;
+            }
         }
     }
 }
