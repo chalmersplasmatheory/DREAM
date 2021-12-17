@@ -43,7 +43,7 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     OptionConstants::eqterm_dreicer_mode dreicer_mode                   = (enum OptionConstants::eqterm_dreicer_mode)  s->GetInteger("eqsys/n_re/dreicer");
     OptionConstants::collqty_Eceff_mode Eceff_mode                      = (enum OptionConstants::collqty_Eceff_mode)   s->GetInteger("eqsys/n_re/Eceff");
     OptionConstants::eqterm_avalanche_mode ava_mode                     = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    OptionConstants::eqterm_avalanche_trapping_correction ava_trapping  = (enum OptionConstants::eqterm_avalanche_trapping_correction)s->GetInteger("eqsys/n_re/avalanche_trapping");
+    OptionConstants::eqterm_avalanche_trapping_correction ava_trapping  = (enum OptionConstants::eqterm_avalanche_trapping_correction)s->GetInteger("eqsys/n_re/avaTrapping");
     OptionConstants::eqterm_compton_mode compton_mode                   = (enum OptionConstants::eqterm_compton_mode)  s->GetInteger("eqsys/n_re/compton/mode");
     real_t compton_photon_flux = s->GetReal("eqsys/n_re/compton/flux");
 

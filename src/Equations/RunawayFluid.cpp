@@ -340,6 +340,7 @@ void RunawayFluid::CalculateGrowthRates(){
 
         // multiply by trapping correction factor
         if (ava_trapping == OptionConstants::EQTERM_AVALANCHE_TRAPPING_CORRECTION_INCLUDE){
+
             real_t eps = (this->rGrid->GetR(ir)) / (this->rGrid->GetR0());
             real_t phi = 1/(1 + 1.46*sqrt(eps) + 1.72*eps);
             avalancheGrowthRate[ir] *=  sqrt(M_PI*phi/3) * avalancheRosenbluthPutvinskiFactor(ir);
