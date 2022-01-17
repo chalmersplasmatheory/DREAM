@@ -22,10 +22,12 @@ using namespace std;
 EquationSystem::EquationSystem(
     FVM::Grid *emptygrid, FVM::Grid *rgrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
-    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid
+    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
+    Settings *s
 ) : scalarGrid(emptygrid), fluidGrid(rgrid),
     hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    hottailGrid_type(ht_type), runawayGrid_type(re_type) {
+    hottailGrid_type(ht_type), runawayGrid_type(re_type),
+    settings(s) {
     
     this->initializer = new EqsysInitializer(
         &this->unknowns, &this->unknown_equations,
