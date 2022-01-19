@@ -682,7 +682,7 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Prescribed neutral diffusion coefficient data has only one dimension.".format(self.name))
         # As there is only one neutral charge state for a single species, all information needed here can actually be provided in a 2D array
         elif len(neutral_prescribed_diffusion.shape) == 2:
-            if tneutralPrescribedDiffusion is None:
+            if tNeutralPrescribedDiffusion is None:
                 raise EquationException("ion_species: '{}': 2D neutral diffusion coefficient prescribed, but no time coordinates given.".format(self.name))
 
             if tNeutralPrescribedDiffusion.size != neutral_prescribed_diffusion.shape[0] or rNeutralPrescribedDiffusion.size != neutral_prescribed_diffusion.shape[1]:
@@ -698,7 +698,7 @@ class IonSpecies:
 
             if neutral_prescribed_diffusion.shape[0] != 1 or tNeutralPrescribedDiffusion.size != neutral_prescribed_diffusion.shape[1] or rNeutralPrescribedDiffusion.size != neutral_prescribed_diffusion.shape[2]:
                 raise EquationException("ion_species: '{}': Invalid dimensions of prescribed neutral diffusion coefficient: {}x{}x{}. Expected {}x{}x{}"
-                    .format(self.name, neutral_prescribed_diffusion.shape.shape[0], neutral_prescribed_diffusion.shape.shape[1], neutral_prescribed_diffusion.shape.shape[2], self.Z, tNeutralPrescribedDiffusion.size, rNeutralPrescribedDiffusion.size))
+                    .format(self.name, neutral_prescribed_diffusion.shape[0], neutral_prescribed_diffusion.shape[1], neutral_prescribed_diffusion.shape[2], self.Z, tNeutralPrescribedDiffusion.size, rNeutralPrescribedDiffusion.size))
             self.tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusion
             self.rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusion
             self.neutral_prescribed_diffusion = neutral_prescribed_diffusion
@@ -772,7 +772,7 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Prescribed neutral advection coefficient data has only one dimension.".format(self.name))
         # As there is only one neutral charge state for a single species, all information needed here can actually be provided in a 2D array
         elif len(neutral_prescribed_advection.shape) == 2:
-            if tneutralPrescribedAdvection is None:
+            if tNeutralPrescribedAdvection is None:
                 raise EquationException("ion_species: '{}': 2D neutral advection coefficient prescribed, but no time coordinates given.".format(self.name))
 
             if tNeutralPrescribedAdvection.size != neutral_prescribed_advection.shape[0] or rNeutralPrescribedAdvection.size != neutral_prescribed_advection.shape[1]:
