@@ -347,9 +347,9 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data, **kwargs)
+                    ax.semilogy(self.radius, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--', **kwargs)
+                    ax.semilogy(self.radius, -data, '--', **kwargs)
             else:
                 ax.plot(self.radius, data, **kwargs)
 
