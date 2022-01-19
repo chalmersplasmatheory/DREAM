@@ -569,12 +569,12 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
     real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR
 ) {
     // Major radius coordinate
-    real_t  R = hypot(x-R0, z);
+    real_t  R = hypot(x+R0, z);
 
     // Position vector
-    real_t rhox = x-R0 - R0*(x-R0)/R;
+    real_t rhox = x+R0 - R0*(x+R0)/R;
     real_t rhoy = y;
-    real_t rhoz = z-R0 - R0*(z-R0)/R;
+    real_t rhoz = z+R0 - R0*z/R;
 
     // Minor radius at poloidal angle
     real_t rho = sqrt(rhox*rhox + rhoy*rhoy + rhoz*rhoz);
@@ -687,8 +687,23 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 /**
  * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
  */
-void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t, real_t) {
-	throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
+void NumericBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, real_t theta, real_t phi) {
+	//throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
+    real_t
+    dxdr = gsl_spline2d_eval_deriv_x(
+        this->spline_R, r, theta,
+        this->acc_r, this->acc_theta
+    ),
+    dydr = gsl_spline2d_eval_deriv_x(
+        this->spline_Z, r, theta,
+        this->acc_r, this->acc_theta
+    );
+    
+    dzdr = tan(phi)*dxdr;
+    
+    gradr[0] = 1/dxdr;
+    gradr[1] = 1/dydr;
+    gradr[2] = 1/dzdr;
 }
 
 
