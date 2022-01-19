@@ -47,7 +47,7 @@ class GEQDSK:
         R, Z = vertices[0][:,0], vertices[0][:,1]
 
         if theta is not None:
-            _theta = np.arctan2(R-self.R_major(0), Z-self.Z0)
+            _theta = np.arctan2(R-self.R0, Z-self.Z0)
             #_theta[-1] = _theta[0] + 2*np.pi
             i = -1
             while _theta[i] < 0:
@@ -110,14 +110,14 @@ class GEQDSK:
             Z.append(params['Z'])
 
         radius = np.array(radius)
-        psi = np.array(psi)
+        psi = np.array(psi) * 2*np.pi / self.R0
         kappa = np.array(kappa)
         delta = np.array(delta)
         Delta = np.array(Delta)
         GOverR0 = np.array(GOverR0)
 
         return {
-            'R0': self.R_major(0),
+            'R0': self.R0,
             'r': radius,
             'psi': psi,
             'kappa': kappa,
@@ -140,7 +140,7 @@ class GEQDSK:
 
         R_upper = R[Zind]
         drho_dpsi = self.rho.derivative()(psi_n)
-        R0 = self.R_major(0)
+        R0 = self.R0
         R_major = self.R_major(psi_n)
 
         # Shaping parameters
@@ -334,6 +334,8 @@ class GEQDSK:
         self.rho = InterpolatedUnivariateSpline(psi_n, rho)
         self.R_major = InterpolatedUnivariateSpline(psi_n, R_major)
 
+        self.R0 = self.R_major(0)
+
 
     def plot_flux_surfaces(self, ax=None, nr=10, ntheta=200, fit=True, *args, **kwargs):
         """
@@ -379,8 +381,8 @@ class GEQDSK:
         theta = np.linspace(0, 2*np.pi, ntheta)
         psi_n = np.linspace(0, 1, npsi+1)[1:]
 
-        Rp, Zp = self.R_major(0), self.Z0
-        psi_apRp = self.psi(Rp+self.rho(psi_n), self.Z0) * self.a_minor / Rp
+        Rp, Zp = self.R0, self.Z0
+        psi_apRp = 2*np.pi * self.psi(Rp+self.rho(psi_n), self.Z0) * self.a_minor / Rp
 
         ptx = np.zeros((psi_n.size, ntheta))
         pty = np.zeros((psi_n.size, ntheta))
