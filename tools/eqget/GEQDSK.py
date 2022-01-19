@@ -10,7 +10,7 @@ from matplotlib._contour import QuadContourGenerator
 import matplotlib.pyplot as plt
 import numpy as np
 import re
-from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
+from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline, RectBivariateSpline
 
 
 class GEQDSK:
@@ -38,12 +38,51 @@ class GEQDSK:
                     yield int(m)
 
 
-    def get_flux_surface(self, psi_n):
+    def get_flux_surface(self, psi_n, theta=None):
         """
         Trace the flux surface for the given normalized psi.
         """
         vertices, _ = self.contour_generator.create_contour(psi_n)
-        return vertices[0][:,0], vertices[0][:,1]
+        
+        R, Z = vertices[0][:,0], vertices[0][:,1]
+
+        if theta is not None:
+            _theta = np.arctan2(R-self.R_major(0), Z-self.Z0)
+            #_theta[-1] = _theta[0] + 2*np.pi
+            i = -1
+            while _theta[i] < 0:
+                _theta[i] += 2*np.pi
+                i -= 1
+
+            for i in range(1, _theta.size):
+                # The contour finding routine may sometimes give us the
+                # same point multiple times, so we have to remove them
+                # manually...
+                if _theta[i] == _theta[i-1]:
+                    _tt = np.zeros((_theta.size-1,))
+                    _tt[:i] = _theta[:i]
+                    _tt[i:] = _theta[(i+1):]
+
+                    _r = np.zeros((_theta.size-1,))
+                    _r[:i] = R[:i]
+                    _r[i:] = R[(i+1):]
+
+                    _z = np.zeros((_theta.size-1,))
+                    _z[:i] = Z[:i]
+                    _z[i:] = Z[(i+1):]
+
+                    _theta = _tt
+                    R = _r
+                    Z = _z
+                    break
+
+            _R = CubicSpline(_theta, R, bc_type='periodic')
+            _Z = CubicSpline(_theta, Z, bc_type='periodic')
+
+            R = _R(theta+np.pi/2)
+            Z = _Z(theta+np.pi/2)
+
+        return R, Z
 
 
     def parametrize_equilibrium(self, psi_n=None, npsi=40):
@@ -122,6 +161,35 @@ class GEQDSK:
             'R': R,
             'Z': Z
         }
+
+
+    def get_Br(self, R, Z):
+        """
+        Return the radial magnetic field component on the given (R,Z) grid.
+        """
+        Br = 1/R * self.psi(R, Z, dy=1, grid=False)
+        return Br
+
+
+    def get_Bz(self, R, Z):
+        """
+        Return the vertical magnetic field component on the given (R,Z) grid.
+        """
+        Bz = 1/R * self.psi(R, Z, dx=1, grid=False)
+        return Bz
+
+
+    def get_Btor(self, R, Z):
+        """
+        Return the toroidal magnetic field component on the given (R,Z) grid.
+        """
+        psi = self.psi(R, Z, grid=False)
+        psi_n = (psi - self.psi_axis) / (self.psi_bdry - self.psi_axis)
+
+        f  = self.f_psi(psi_n)
+        Btor = f / R
+
+        return Btor
 
 
     def load(self, filename):
@@ -233,6 +301,7 @@ class GEQDSK:
         self.pressure = InterpolatedUnivariateSpline(psi_n, data["pres"])
         self.p_prime  = self.pressure.derivative()
 
+        self.Z0 = data['zmid']
         self.R = np.linspace(data["rleft"], data["rleft"]+data["rdim"], self.nr)
         self.Z = np.linspace(data["zmid"]-data["zdim"]/2, data["zmid"]+data["zdim"]/2, self.nz)
 
@@ -303,6 +372,35 @@ class GEQDSK:
         return ax
 
 
+    def get_LUKE(self, npsi=80, ntheta=90):
+        """
+        Returns equilibrium data in the LUKE equilibrium format.
+        """
+        theta = np.linspace(0, 2*np.pi, ntheta)
+        psi_n = np.linspace(0, 1, npsi+1)[1:]
+
+        Rp, Zp = self.R_major(0), self.Z0
+        psi_apRp = self.psi(Rp+self.rho(psi_n), self.Z0) * self.a_minor / Rp
+
+        ptx = np.zeros((psi_n.size, ntheta))
+        pty = np.zeros((psi_n.size, ntheta))
+        for i in range(npsi):
+            ptx[i,:], pty[i,:] = self.get_flux_surface(psi_n[i], theta=theta)
+
+        ptBx = self.get_Br(ptx, pty)
+        ptBy = self.get_Bz(ptx, pty)
+        ptBPHI = self.get_Btor(ptx, pty)
+
+        return {
+            'id': 'GEQDSK data',
+            'Rp': np.array([Rp]), 'Zp': np.array([Zp]),
+            'psi_apRp': psi_apRp,
+            'theta': theta,
+            'ptx': ptx.T-Rp, 'pty': pty.T-Zp,
+            'ptBx': ptBx.T, 'ptBy': ptBy.T, 'ptBPHI': ptBPHI.T
+        }
+
+
     def save_eq_parameters(self, filename, nr=40):
         """
         Save the DREAM analytical equilibrium parameters corresponding to this
@@ -317,5 +415,18 @@ class GEQDSK:
             f['GOverR0'] = params['GOverR0']
             f['kappa'] = params['kappa']
             f['psi_p'] = params['psi']
+
+    
+    def save_LUKE(self, filename, npsi=80, ntheta=90):
+        """
+        Save this equilibrium in a LUKE compatible equilibrium file.
+        """
+        equil = self.get_LUKE(npsi=npsi, ntheta=ntheta)
+
+        with h5py.File(filename, 'w') as f:
+            f.create_group('equil')
+
+            for key in equil.keys():
+                f[f'equil/{key}'] = equil[key]
 
 
