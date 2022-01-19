@@ -351,7 +351,7 @@ class Ions(UnknownQuantity):
             tritium = (names[i] in tritiumnames)
             
             if charged_diffusion_modes[i] == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
-                cpd = charged_prescribed_diffusion['x'][pidx:(cpdidx+Z[i])]
+                cpd = charged_prescribed_diffusion['x'][cpdidx:(cpdidx+Z[i])]
                 rcpd = charged_prescribed_diffusion['r']
                 tcpd = charged_prescribed_diffusion['t']
                 cpdidx += Z[i]
@@ -361,7 +361,7 @@ class Ions(UnknownQuantity):
                 tcpd=None
                 
             if neutral_diffusion_modes[i] == ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
-                npd = neutral_prescribed_diffusion['x'][pidx:(cpdidx+1)]
+                npd = neutral_prescribed_diffusion['x'][npdidx:(npdidx+1)]
                 rnpd = neutral_prescribed_diffusion['r']
                 tnpd = neutral_prescribed_diffusion['t']
                 npdidx += 1
@@ -371,7 +371,7 @@ class Ions(UnknownQuantity):
                 tnpd=None
                 
             if charged_advection_modes[i] == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
-                cpa = charged_prescribed_advection['x'][pidx:(cpdidx+Z[i])]
+                cpa = charged_prescribed_advection['x'][cpaidx:(cpaidx+Z[i])]
                 rcpa = charged_prescribed_advection['r']
                 tcpa = charged_prescribed_advection['t']
                 cpaidx += Z[i]
@@ -381,7 +381,7 @@ class Ions(UnknownQuantity):
                 tcpa=None
                 
             if neutral_advection_modes[i] == ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
-                npa = neutral_prescribed_advection['x'][pidx:(cpdidx+1)]
+                npa = neutral_prescribed_advection['x'][npaidx:(npaidx+1)]
                 rnpa = neutral_prescribed_advection['r']
                 tnpa = neutral_prescribed_advection['t']
                 npaidx += 1

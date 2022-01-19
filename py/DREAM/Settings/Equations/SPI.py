@@ -111,7 +111,12 @@ class SPI(UnknownQuantity):
         cdf=integrate.cumtrapz(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
         return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
-    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, **kwargs):
+    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
+    charged_advection_modes = None, charged_prescribed_advections = None, rChargedPrescribedAdvections = None, tChargedPrescribedAdvections = None,
+    neutral_advection_modes = None, neutral_prescribed_advections = None, rNeutralPrescribedAdvections = None, tNeutralPrescribedAdvections = None,
+    charged_diffusion_modes = None, charged_prescribed_diffusions = None, rChargedPrescribedDiffusions = None, tChargedPrescribedDiffusions = None,
+    neutral_diffusion_modes = None, neutral_prescribed_diffusions = None, rNeutralPrescribedDiffusions = None, tNeutralPrescribedDiffusions = None,
+    **kwargs):
         """
         sets (or adds) nShard shards with radii distributed accordin to 
         rpDistrParksStatistical(), with the characteristic inverse shard size kp 
@@ -169,8 +174,81 @@ class SPI(UnknownQuantity):
             SPIMolarFractionPrevious=ion.getSPIMolarFraction()
             if SPIMolarFractionPrevious[0]!=-1:
                 ion.setSPIMolarFraction(np.concatenate((SPIMolarFractionPrevious,np.zeros(nShard))))
+            
+        # Fix arrays of settings to have correct shape if None is specified        
+        if opacity_modes is None:
+            opacity_modes = []
+            for iZ in range(len(Zs)):
+                opacity_modes.append(Ions.ION_OPACITY_MODE_TRANSPARENT)
                 
+        if charged_advection_modes is None:
+            charged_advection_modes = []
+            for iZ in range(len(Zs)):
+                charged_advection_modes.append(Ions.ION_CHARGED_ADVECTION_MODE_NONE)
+        if charged_prescribed_advections is None:
+            charged_prescribed_advections = []
+            for iZ in range(len(Zs)):
+                charged_prescribed_advections.append(None)
+        if rChargedPrescribedAdvections is None:
+            rChargedPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                rChargedPrescribedAdvections.append(None)
+        if tChargedPrescribedAdvections is None:
+            tChargedPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                tChargedPrescribedAdvections.append(None)
                 
+        if neutral_advection_modes is None:
+            neutral_advection_modes = []
+            for iZ in range(len(Zs)):
+                neutral_advection_modes.append(Ions.ION_NEUTRAL_ADVECTION_MODE_NONE)
+        if neutral_prescribed_advections is None:
+            neutral_prescribed_advections = []
+            for iZ in range(len(Zs)):
+                neutral_prescribed_advections.append(None)
+        if rNeutralPrescribedAdvections is None:
+            rNeutralPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                rNeutralPrescribedAdvections.append(None)
+        if tNeutralPrescribedAdvections is None:
+            tNeutralPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                tNeutralPrescribedAdvections.append(None)
+                
+        if charged_diffusion_modes is None:
+            charged_diffusion_modes = []
+            for iZ in range(len(Zs)):
+                charged_diffusion_modes.append(Ions.ION_CHARGED_DIFFUSION_MODE_NONE)
+        if charged_prescribed_diffusions is None:
+            charged_prescribed_diffusions = []
+            for iZ in range(len(Zs)):
+                charged_prescribed_diffusions.append(None)
+        if rChargedPrescribedDiffusions is None:
+            rChargedPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                rChargedPrescribedDiffusions.append(None)
+        if tChargedPrescribedDiffusions is None:
+            tChargedPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                tChargedPrescribedDiffusions.append(None)
+                
+        if neutral_diffusion_modes is None:
+            neutral_diffusion_modes = []
+            for iZ in range(len(Zs)):
+                neutral_diffusion_modes.append(Ions.ION_NEUTRAL_DIFFUSION_MODE_NONE)
+        if neutral_prescribed_diffusions is None:
+            neutral_prescribed_diffusions = []
+            for iZ in range(len(Zs)):
+                neutral_prescribed_diffusions.append(None)
+        if rNeutralPrescribedDiffusions is None:
+            rNeutralPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                rNeutralPrescribedDiffusions.append(None)
+        if tNeutralPrescribedDiffusions is None:
+            tNeutralPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                tNeutralPrescribedDiffusions.append(None)
+                                
         # Add an ion species connected to this pellet to the ion settings
         for iZ in range(len(Zs)):
             
@@ -179,12 +257,16 @@ class SPI(UnknownQuantity):
             # to zero for previously set shards
             SPIMolarFraction=np.zeros(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
-            if opacity_modes is not None:
-                self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
             
-            else:
-                self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
             
+            self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=n, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,
+            charged_diffusion_mode = charged_diffusion_modes[iZ], charged_prescribed_diffusion = charged_prescribed_diffusions[iZ], rChargedPrescribedDiffusion = rChargedPrescribedDiffusions[iZ], tChargedPrescribedDiffusion = tChargedPrescribedDiffusions[iZ],
+            neutral_diffusion_mode = neutral_diffusion_modes[iZ], neutral_prescribed_diffusion = neutral_prescribed_diffusions[iZ], rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusions[iZ], tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusions[iZ],
+            charged_advection_mode = charged_advection_modes[iZ], charged_prescribed_advection = charged_prescribed_advections[iZ], rChargedPrescribedAdvection = rChargedPrescribedAdvections[iZ], tChargedPrescribedAdvection = tChargedPrescribedAdvections[iZ],
+            neutral_advection_mode = neutral_advection_modes[iZ], neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ], tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ],
+            **kwargs)
+            
+              
         return kp
         
     def setShardPositionSinglePoint(self, nShard,shatterPoint,add=True):
