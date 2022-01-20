@@ -2,6 +2,7 @@
 import h5py
 import numpy as np
 import sys
+import eqhelpers
 
 try:
     sys.path.append('/afs/ipp/aug/ads-diags/common/python/lib')
@@ -81,6 +82,13 @@ def getLUKE(shot, time, npsi=80, ntheta=80, filename=None):
                 f['equil/{}'.format(key)] = equil[key]
 
     return equil
+
+
+def getShaping(shot, time, npsi=80, ntheta=80, filename=None, equil=None):
+    if equil is None:
+        equil = getLUKE(shot=shot, time=time, npsi=npsi, ntheta=ntheta)
+
+    return eqhelpers.parametrize_equilibrium(**equil)
 
 
 def getVolume(shot, time, filename=None):
