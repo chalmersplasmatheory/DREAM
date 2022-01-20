@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from ui import MainWindow_design
 from PlotWindow import PlotWindow
+from PlotShapingWindow import PlotShapingWindow
 from DREAM import DREAMIO
 
 import AUG
@@ -60,6 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btnPlotBz.clicked.connect(self.plotBz)
         self.ui.btnPlotBphi.clicked.connect(self.plotBphi)
 
+        self.ui.btnShaping.clicked.connect(self.calculateShaping)
         self.ui.btnSave.clicked.connect(self.save)
 
 
@@ -88,13 +90,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btnPlotBr.setEnabled(enabled)
         self.ui.btnPlotBz.setEnabled(enabled)
         self.ui.btnPlotBphi.setEnabled(enabled)
+        self.ui.btnShaping.setEnabled(enabled)
         self.ui.btnSave.setEnabled(enabled)
 
-    
-    def load(self):
-        """
-        Load data using the selected module.
-        """
+
+    def getShot(self):
         shot = self.ui.tbShot.text()
 
         # Try to convert to integer. If that fails, the user may
@@ -102,6 +102,14 @@ class MainWindow(QtWidgets.QMainWindow):
         try: shot = int(shot)
         except: pass
 
+        return shot
+
+    
+    def load(self):
+        """
+        Load data using the selected module.
+        """
+        shot = self.getShot()
         try:
             mod = self.ui.cbTokamak.currentData()
             self.equil = mod.getLUKE(shot)
@@ -110,7 +118,23 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plotFluxSurfaces()
             self.toggleEnabled(True)
         except Exception as ex:
-            QMessageBox.critical(self, 'Error loading shot', "The specified shot file could not be loaded:\n\n{}".format(ex))
+            QMessageBox.critical(self, 'Error loading shot', f"The specified shot file could not be loaded:\n\n{ex}")
+
+
+    def calculateShaping(self):
+        """
+        Calculate shaping parameters for the loaded magnetic equilibrium.
+        """
+        pass
+        try:
+            mod = self.ui.cbTokamak.currentData()
+            if not hasattr(mod, 'getShaping'):
+                raise Exception("The selected equilibrium handler does not support calculating shaping parameters.")
+
+            params = mod.getShaping(self.getShot(), equil=self.equil)
+            self.plotShaping(params)
+        except Exception as ex:
+            QMessageBox.critical(self, 'Error loading shot', f"The specified shot file could not be loaded:\n\n{ex}")
 
 
     def plotFluxSurfaces(self):
@@ -224,6 +248,18 @@ class MainWindow(QtWidgets.QMainWindow):
         Plot the toroidal magnetic field component.
         """
         self.plot2D(r'$B_\varphi$', self.equil['ptBPHI'])
+
+
+    def plotShaping(self, params):
+        """
+        Plot the DREAM shaping parameters.
+        """
+        if 'shaping' in self.windows:
+            self.windows['shaping'].close()
+
+        w = PlotShapingWindow(params)
+        w.show()
+        self.windows['shaping'] = w
 
 
     def save(self):

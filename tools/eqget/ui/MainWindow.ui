@@ -21,7 +21,7 @@
     <item>
      <layout class="QGridLayout" name="gridLayout" columnstretch="5,1,0">
       <property name="topMargin">
-       <number>10</number>
+       <number>0</number>
       </property>
       <item row="1" column="0">
        <widget class="QLineEdit" name="tbShot"/>
@@ -133,6 +133,13 @@
       <property name="topMargin">
        <number>0</number>
       </property>
+      <item>
+       <widget class="QPushButton" name="btnShaping">
+        <property name="text">
+         <string>Calculate shaping parameters</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <widget class="QPushButton" name="btnSave">
         <property name="text">
