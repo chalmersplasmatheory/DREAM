@@ -214,7 +214,7 @@ specified in DREAM:
    # Set shaping parameters
    Delta = np.linspace(0, 0.1*a, rDelta.size)   # Shafranov shift
    delta = np.linspace(0, 0.2, rdelta.size)     # Triangularity
-   kappa = np.linspace(0, 1.5, rkappa.size)     # Elongation
+   kappa = np.linspace(1, 1.5, rkappa.size)     # Elongation
 
    # Toroidal field function
    GOverR0 = B0       # = R*Bphi/R0
