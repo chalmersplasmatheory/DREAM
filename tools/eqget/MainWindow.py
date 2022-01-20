@@ -42,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.cbTokamak.addItem('ASDEX Upgrade', AUG)
 
         self.ui.cbTokamak.addItem('File', EqFile)
+        self.tokamakChanged()
 
         self.toggleEnabled(False)
         self.bindEvents()
@@ -63,6 +64,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui.btnShaping.clicked.connect(self.calculateShaping)
         self.ui.btnSave.clicked.connect(self.save)
+
+        self.ui.cbTokamak.currentTextChanged.connect(self.tokamakChanged)
 
 
     def closeEvent(self, event):
@@ -94,6 +97,23 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btnSave.setEnabled(enabled)
 
 
+    def tokamakChanged(self, e=None):
+        """
+        Event fired when the selected tokamak handler changes.
+        """
+        if self.ui.cbTokamak.currentText() == "File":
+            self.ui.lblDischarge.setText("Equilibrium file")
+            self.ui.btnLoad.setText("Open...")
+            enbl = False
+        else:
+            self.ui.lblDischarge.setText("Discharge")
+            self.ui.btnLoad.setText("Load")
+            enbl = True
+
+        self.ui.lblTime.setEnabled(enbl)
+        self.ui.tbTime.setEnabled(enbl)
+
+
     def getShot(self):
         shot = self.ui.tbShot.text()
 
@@ -110,6 +130,14 @@ class MainWindow(QtWidgets.QMainWindow):
         Load data using the selected module.
         """
         shot = self.getShot()
+
+        if self.ui.cbTokamak.currentText() == "File" and not shot:
+            shot, _ = QFileDialog.getOpenFileName(self, caption="Open equilibrium file", filter="All supported equilibria (*.h5 *.geqdsk);;LUKE equilibrium (*.h5);;GEQDSK file (*.geqdsk);;All files (*.*)")
+            if shot is None:
+                return
+
+            self.ui.tbShot.setText(shot)
+
         try:
             mod = self.ui.cbTokamak.currentData()
             self.equil = mod.getLUKE(shot)

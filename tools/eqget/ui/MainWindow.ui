@@ -27,21 +27,21 @@
        <widget class="QLineEdit" name="tbShot"/>
       </item>
       <item row="0" column="0">
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="lblDischarge">
         <property name="text">
          <string>Discharge:</string>
         </property>
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="lblTime">
         <property name="text">
          <string>Time:</string>
         </property>
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="lineEdit">
+       <widget class="QLineEdit" name="tbTime">
         <property name="text">
          <string>1.0</string>
         </property>
