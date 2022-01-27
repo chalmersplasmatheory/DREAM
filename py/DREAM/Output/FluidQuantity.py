@@ -152,7 +152,7 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, ms_time=False, **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
@@ -191,9 +191,18 @@ class FluidQuantity(UnknownQuantity):
             if log:
                 data = np.log10(np.abs(data))
 
-            cp = ax.contourf(self.radius, self.time, data, cmap='GeriMap', **kwargs)
+            if ms_time:
+                time = self.time*1e3
+            else:
+                time = self.time
+
+            cp = ax.contourf(self.radius, time, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
-            ax.set_ylabel(r'Time $t$')
+           
+            if ms_time:
+                ax.set_ylabel(r'Time $t$ (ms)')
+            else:
+                ax.set_ylabel(r'Time $t$ (s)')
 
             cb = None
             if colorbar:
@@ -425,7 +434,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None, **kwargs):
+    def plotIntegral(self, ax=None, show=None, ms_time = False, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -440,8 +449,16 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.time, self.integral(), **kwargs)
-        ax.set_xlabel(r'Time $t$')
+        if ms_time:
+            time = self.time*1e3
+        else:
+            time = self.time
+
+        ax.plot(time, self.integral(), **kwargs)
+        if ms_time:
+            ax.set_xlabel(r'Time $t$ (ms)')
+        else:
+            ax.set_xlabel(r'Time $t$ (s)')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 
         if show:
