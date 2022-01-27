@@ -68,6 +68,13 @@ class DataObject:
                 return self.data[index]
         else:
             return self.data[index]
+
+
+    def __int__(self):
+        if self.type == DATA_TYPE_ARRAY:
+            return int(self.data)
+        else:
+            return int(self[:])
     
 
     def __len__(self):

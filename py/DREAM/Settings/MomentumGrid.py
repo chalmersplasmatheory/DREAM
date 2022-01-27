@@ -191,9 +191,9 @@ class MomentumGrid:
         """
         self.name    = name
         self.enabled = data['enabled']
-        self.type    = data['type']
 
         if self.enabled:
+            self.type    = data['type']
             if self.type == TYPE_PXI:
                 self.pgrid = PGrid(name, data=data)
                 self.xigrid = XiGrid(name, data=data)

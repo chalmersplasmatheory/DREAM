@@ -59,6 +59,16 @@ class DREAMSettings:
         if filename is not None:
             if type(filename) == str:
                 self.load(filename, path=path, lazy=False)
+            elif type(filename) == dict:
+                self.fromdict(filename)
+
+                if chain:
+                    if 'output' in filename and 'filename' in filename['output']:
+                        self.fromOutput(filename['output']['filename'])
+                        self.output.setFilename('output.h5')
+
+                        if not keepignore:
+                            self.clearIgnore()
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
 

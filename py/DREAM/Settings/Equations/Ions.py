@@ -162,9 +162,21 @@ class Ions(UnknownQuantity):
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
-        isotopes     = data['isotopes']
-        types        = data['types']
-        opacity_modes = data['opacity_modes']
+
+        if 'isotopes' in data:
+            isotopes = data['isotopes']
+        else:
+            isotopes = [0]*Z.size
+
+        if 'types' in data:
+            types = data['types']
+        else:
+            types = [0]*Z.size
+
+        if 'opacity_modes' in data:
+            opacity_modes = data['opacity_modes']
+        else:
+            opacity_modes = self.getOpacityModes()
 
         SPIMolarFraction = data['SPIMolarFraction']
         nZSPI = len(Z)-np.sum(SPIMolarFraction<0)

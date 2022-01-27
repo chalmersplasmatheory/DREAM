@@ -157,8 +157,12 @@ class Solver:
 
         self.type = int(scal(data['type']))
         self.linsolv = int(data['linsolv'])
-        self.maxiter = int(data['maxiter'])
-        self.verbose = bool(data['verbose'])
+        
+        if 'maxiter' in data:
+            self.maxiter = int(data['maxiter'])
+
+        if 'verbose' in data:
+            self.verbose = bool(data['verbose'])
 
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])

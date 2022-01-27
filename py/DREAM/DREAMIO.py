@@ -227,6 +227,20 @@ def getData(f, key):
         return f[key][:]
 
 
+def unlazy(s):
+    """
+    Iterate through the given 'dict' consisting of 'DataObject's to load
+    in the actual data (and make it "not lazy loaded").
+    """
+    S = {}
+    for key in s.keys():
+        if type(s[key]) == dict:
+            S[key] = unlazy(s[key])
+        else:
+            S[key] = s[key][:]
+
+    return S
+
 class DREAMIOException(Exception):
     def __init__(self, msg):
         super(Exception, self).__init__(msg)

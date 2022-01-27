@@ -125,7 +125,16 @@ class DREAMOutput:
 
         # Load settings for the run
         if 'settings' in od:
-            self.settings = DREAMSettings(od['settings'])
+            s = od['settings']
+            if lazy:
+                # Actually read all settings
+                # (yes, we explicitly ignore the lazy loading request since
+                # much of the settings interface has been created without lazy
+                # loading in mind, and since settings are typically *very* small
+                # compared to full-blown DREAM output)
+                s = DREAMIO.unlazy(s)
+
+            self.settings = DREAMSettings(s)
 
         # Solver statistics
         if 'solver' in od:
