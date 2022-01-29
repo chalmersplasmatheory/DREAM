@@ -42,7 +42,12 @@ class GEQDSK:
         """
         Trace the flux surface for the given normalized psi.
         """
-        vertices, _ = self.contour_generator.create_contour(psi_n)
+        #vertices, _ = self.contour_generator.create_contour(psi_n)
+        v = self.contour_generator.create_contour(psi_n)
+        if len(v) == 1:
+            vertices = v
+        else:
+            vertices = v[0]
         
         R, Z = vertices[0][:,0], vertices[0][:,1]
 
