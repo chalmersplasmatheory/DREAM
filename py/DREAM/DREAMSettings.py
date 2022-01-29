@@ -112,7 +112,14 @@ class DREAMSettings:
         sets  = list(self.settings.keys())
         other = ['init']
 
-        for key in data:
+        # Settings to remove first
+        special = ['hottailgrid', 'runawaygrid']
+
+        datakeys = list(data.keys())
+        for k in special:
+            datakeys.remove(k)
+
+        for key in special+datakeys:
             # Warn about unrecognized settings
             if key in sets:
                 # Remove from list of not-found settings
