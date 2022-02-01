@@ -3,7 +3,7 @@
  * grid generator loads a numeric magnetic field from the specified file and
  * builds a correspondingly shaped radial grid.
  */
-
+#include <algorithm>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline2d.h>
 #include "FVM/Grid/NumericBRadialGridGenerator.hpp"
@@ -569,12 +569,12 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
     real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR
 ) {
     // Major radius coordinate
-    real_t  R = hypot(x+R0, z);
+    real_t  R = hypot(x+Rp, z);
 
     // Position vector
-    real_t rhox = x+R0 - R0*(x+R0)/R;
+    real_t rhox = x+Rp - Rp*(x+Rp)/R;
     real_t rhoy = y;
-    real_t rhoz = z+R0 - R0*z/R;
+    real_t rhoz = z - Rp*z/R;
 
     // Minor radius at poloidal angle
     real_t rho = sqrt(rhox*rhox + rhoy*rhoy + rhoz*rhoz);
@@ -583,10 +583,13 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
     real_t theta_tmp;
 
     // Poloidal angle
-    if (R >= R0)
+    if (R >= Rp)
         theta_tmp = std::atan2(rhoy, +hypot(rhox, rhoz));
     else
         theta_tmp = std::atan2(rhoy, -hypot(rhox, rhoz));
+        
+    if (theta_tmp < 0)
+        theta_tmp+=2*M_PI;
         
     *theta=theta_tmp;
         
@@ -595,14 +598,15 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	// to 'r' at 'theta'...
 	// We make a guess for a valid search intervall of startingGuessR+/-lengthScale, 
 	// and check if it has to be expanded before actually starting with the bisection
-	real_t ra = startingGuessR-lengthScale, rb=startingGuessR+lengthScale;
+	real_t ra = std::max(0.0, startingGuessR-lengthScale);
+	real_t rb = ra + lengthScale;
 	real_t rhoa, rhob;
 	do {
 		real_t
 		    xxa = gsl_spline2d_eval(
 		        this->spline_R, ra, *theta,
 		        this->acc_r, this->acc_theta
-		    ),
+		    ) - Rp,
 		    yya = gsl_spline2d_eval(
 		        this->spline_Z, ra, *theta,
 		        this->acc_r, this->acc_theta
@@ -612,7 +616,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 		    xxb = gsl_spline2d_eval(
 		        this->spline_R, rb, *theta,
 		        this->acc_r, this->acc_theta
-		    ),
+		    )-Rp,
 		    yyb = gsl_spline2d_eval(
 		        this->spline_Z, rb, *theta,
 		        this->acc_r, this->acc_theta
@@ -620,8 +624,8 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 		rhoa=hypot(xxa,yya);
 		rhob=hypot(xxb,yyb);
 		if(rhoa>rho && rhob>rho){
-			ra-=2*lengthScale;
-			rb-=2*lengthScale;
+			ra=std::max(0.0, ra-2*lengthScale);
+			rb=ra + 2*lengthScale;
 		}
 	    else if(rhoa<rho && rhob<rho){
 	        ra+=2*lengthScale;
@@ -631,12 +635,12 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	  
 	// Make the bisection
 	do {
-	    r_tmp = (ra-rb)/2;
+	    r_tmp = (ra+rb)/2;
 	    real_t
 	        xx = gsl_spline2d_eval(
 	            this->spline_R, r_tmp, *theta,
 	            this->acc_r, this->acc_theta
-	        ),
+	        )-Rp,
 	        yy = gsl_spline2d_eval(
 	            this->spline_Z, r_tmp, *theta,
 	            this->acc_r, this->acc_theta
@@ -680,7 +684,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	} while(std::abs(rho_newton-rho) > lengthScale * tolFactor);
 	*r=r_tmp;*/
 	
-	*phi = atan2(z,(R0+x)); 
+	*phi = atan2(z,(Rp+x)); 
 	
 }
 
@@ -690,20 +694,27 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 void NumericBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, real_t theta, real_t phi) {
 	//throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
     real_t
-    dxdr = gsl_spline2d_eval_deriv_x(
+    dRdr = gsl_spline2d_eval_deriv_x(
         this->spline_R, r, theta,
         this->acc_r, this->acc_theta
     ),
-    dydr = gsl_spline2d_eval_deriv_x(
+    dzdr = gsl_spline2d_eval_deriv_x(
+        this->spline_Z, r, theta,
+        this->acc_r, this->acc_theta
+    ),    
+    dRdtheta = gsl_spline2d_eval_deriv_y(
+        this->spline_R, r, theta,
+        this->acc_r, this->acc_theta
+    ),    
+    dzdtheta = gsl_spline2d_eval_deriv_y(
         this->spline_Z, r, theta,
         this->acc_r, this->acc_theta
     );
     
-    dzdr = tan(phi)*dxdr;
-    
-    gradr[0] = 1/dxdr;
-    gradr[1] = 1/dydr;
-    gradr[2] = 1/dzdr;
+    real_t common_factor = 1/(dRdr*dzdtheta - dRdtheta*dzdr);
+    gradr[0] = common_factor * dzdtheta * cos(phi);
+    gradr[1] = - common_factor * dRdtheta;
+    gradr[2] = common_factor * dzdtheta * sin(phi);
 }
 
 
