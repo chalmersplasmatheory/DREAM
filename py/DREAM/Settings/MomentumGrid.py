@@ -48,8 +48,8 @@ class MomentumGrid:
 
         self.type = ttype
         if self.type == TYPE_PXI:
-            self.pgrid = PGrid(self.name, np=np, pmax=pmax)
-            self.xigrid = XiGrid(self.name, nxi=nxi)
+            self.pgrid = PGrid(self.name, parent=self, np=np, pmax=pmax)
+            self.xigrid = XiGrid(self.name, parent=self, nxi=nxi)
         elif self.type == TYPE_PPARPPERP:
             raise DREAMException("No support implemented yet for 'ppar/pperp' grids.")
         else:
@@ -195,8 +195,8 @@ class MomentumGrid:
         if self.enabled:
             self.type    = data['type']
             if self.type == TYPE_PXI:
-                self.pgrid = PGrid(name, data=data)
-                self.xigrid = XiGrid(name, data=data)
+                self.pgrid = PGrid(name, parent=self, data=data)
+                self.xigrid = XiGrid(name, parent=self, data=data)
             elif self.type == TYPE_PPARPPERP:
                 raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
             else:

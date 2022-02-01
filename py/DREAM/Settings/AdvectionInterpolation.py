@@ -93,7 +93,7 @@ class AdvectionInterpolation:
             self.adv_jac_p1 = data['p1_jac'][:]
             self.adv_jac_p2 = data['p2_jac'][:]
 
-        self.fluxlimiterdamping = data['fluxlimiterdamping'][:]
+        self.fluxlimiterdamping = float(data['fluxlimiterdamping'])
 
 
     def todict(self):

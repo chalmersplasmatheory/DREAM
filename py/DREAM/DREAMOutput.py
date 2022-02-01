@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import os
 import DREAM.DREAMIO as DREAMIO
+from .helpers import merge_dicts
 
 from .DREAMSettings import DREAMSettings
 from .Output.EquationSystem import EquationSystem

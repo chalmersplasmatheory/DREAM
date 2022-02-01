@@ -163,17 +163,17 @@ class Ions(UnknownQuantity):
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
 
-        if 'isotopes' in data:
+        if 'isotopes' in data and len(data['isotopes']) == len(Z):
             isotopes = data['isotopes']
         else:
-            isotopes = [0]*Z.size
+            isotopes = [0]*len(Z)
 
-        if 'types' in data:
+        if 'types' in data and len(data['types']) == len(Z):
             types = data['types']
         else:
-            types = [0]*Z.size
+            types = [0]*len(Z)
 
-        if 'opacity_modes' in data:
+        if 'opacity_modes' in data and len(data['opacity_modes']) == len(Z):
             opacity_modes = data['opacity_modes']
         else:
             opacity_modes = self.getOpacityModes()
