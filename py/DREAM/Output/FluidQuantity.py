@@ -434,7 +434,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None, ms_time = False, **kwargs):
+    def plotIntegral(self, ax=None, show=None, ms_time = False, time_shift = 0, time_scale_factor = 1.0, w=1.0, time_derivative = False, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -453,8 +453,14 @@ class FluidQuantity(UnknownQuantity):
             time = self.time*1e3
         else:
             time = self.time
+            
+        time = time + time_shift
+        time = time*time_scale_factor
 
-        ax.plot(time, self.integral(), **kwargs)
+        if time_derivative:
+            ax.plot(time[:-1], np.diff(self.integral(w=w))/np.diff(time/time_scale_factor), **kwargs)
+        else:
+            ax.plot(time, self.integral(w=w), **kwargs)
         if ms_time:
             ax.set_xlabel(r'Time $t$ (ms)')
         else:
