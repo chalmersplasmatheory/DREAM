@@ -140,7 +140,7 @@ class IonSpecies:
 
         return ax
         
-    def plotSum(self, Z0 = None, **kwargs):
+    def plotSum(self, Z0 = None, integrate = False, **kwargs):
         if Z0 is None: Z0 = slice(None)
         states = self.ionstates[Z0]
         data = None
@@ -151,7 +151,10 @@ class IonSpecies:
                 data = data + state.data
                 
         _IonSum = FluidQuantity(name = self.name, data=data, attr=list(), grid=self.grid, output=self.output)
-        return _IonSum.plot(**kwargs)
+        if integrate:
+            return _IonSum.plotIntegral(**kwargs)
+        else:
+            return _IonSum.plot(**kwargs)
         
         
         
