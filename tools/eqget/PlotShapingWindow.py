@@ -1,4 +1,5 @@
 
+import numpy as np
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 
@@ -64,10 +65,10 @@ class PlotShapingWindow(QtWidgets.QFrame):
         Plot a single shaping parameter on the specified axes.
         """
         ax.plot(r, p, 'r')
-        ax.set_xlim([0, max(r)])
+        ax.set_xlim([0, np.amax(r)])
 
-        if min(p) >= 0:
-            ax.set_ylim([0, 1.1*max(p)])
+        if np.amin(p) >= 0:
+            ax.set_ylim([0, 1.1*np.amax(p)])
 
         ax.set_xlabel(r'$r$')
         ax.set_ylabel(name)
