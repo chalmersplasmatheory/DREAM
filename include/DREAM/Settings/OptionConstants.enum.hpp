@@ -357,6 +357,11 @@ enum eqterm_spi_abl_ioniz_mode {
     EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
 };
 
+enum eqterm_spi_magnetic_field_dependence_mode {
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT=1,
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK=2,
+};
+
 enum eqterm_particle_source_shape {
     EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN = 1,    // Maxwellian shape with temperature T_cold
     EQTERM_PARTICLE_SOURCE_SHAPE_DELTA = 2          // Delta function in p=0
