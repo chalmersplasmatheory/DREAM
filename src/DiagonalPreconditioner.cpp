@@ -186,6 +186,16 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE; // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_WI_ENER) {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE;
+        } else if (name == OptionConstants::UQTY_POT_UPS_0_HOT) {
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_POT_UPS_1_HOT) {
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_POT_UPS_2_HOT) {
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_POT_PI_0_HOT) {
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_POT_PI_1_HOT) {
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "
