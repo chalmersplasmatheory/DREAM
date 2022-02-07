@@ -599,7 +599,11 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	// We make a guess for a valid search intervall of startingGuessR+/-lengthScale, 
 	// and check if it has to be expanded before actually starting with the bisection
 	real_t ra = std::max(0.0, startingGuessR-lengthScale);
-	real_t rb = ra + lengthScale;
+	real_t rb = ra + 2*lengthScale;
+	if(rb>r_f[GetNr()]){
+	    ra -= rb - r_f[GetNr()]; 
+	    rb -= rb - r_f[GetNr()]; 
+	}
 	real_t rhoa, rhob;
 	do {
 		real_t
@@ -610,7 +614,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 		    yya = gsl_spline2d_eval(
 		        this->spline_Z, ra, *theta,
 		        this->acc_r, this->acc_theta
-		    );
+		    ) - this->Zp;
 		   
 		real_t
 		    xxb = gsl_spline2d_eval(
@@ -620,7 +624,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 		    yyb = gsl_spline2d_eval(
 		        this->spline_Z, rb, *theta,
 		        this->acc_r, this->acc_theta
-		    );
+		    )- this->Zp;
 		rhoa=hypot(xxa,yya);
 		rhob=hypot(xxb,yyb);
 		if(rhoa>rho && rhob>rho){
@@ -631,28 +635,34 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	        ra+=2*lengthScale;
 	        rb+=2*lengthScale;
 	    }
+	    if(rb>this->r_f[GetNr()])
+	        break;
 	  } while ((rhoa>rho && rhob>rho) || (rhoa<rho && rhob<rho));
 	  
 	// Make the bisection
-	do {
-	    r_tmp = (ra+rb)/2;
-	    real_t
-	        xx = gsl_spline2d_eval(
-	            this->spline_R, r_tmp, *theta,
-	            this->acc_r, this->acc_theta
-	        )-Rp,
-	        yy = gsl_spline2d_eval(
-	            this->spline_Z, r_tmp, *theta,
-	            this->acc_r, this->acc_theta
-	        );
+	if(rb<this->r_f[GetNr()]){
+	    do {
+	        r_tmp = (ra+rb)/2;
+	        real_t
+	            xx = gsl_spline2d_eval(
+	                this->spline_R, r_tmp, *theta,
+	                this->acc_r, this->acc_theta
+	            )-Rp,
+	            yy = gsl_spline2d_eval(
+	                this->spline_Z, r_tmp, *theta,
+	                this->acc_r, this->acc_theta
+	            ) - this->Zp;
 
-	    if (hypot(xx, yy) < rho)
-	        ra = r_tmp;
-	    else
-	        rb = r_tmp;
-	} while(std::abs(rb-ra) > lengthScale*CartesianCoordinateTol);
-	
-    *r=r_tmp;
+	        if (hypot(xx, yy) < rho)
+	            ra = r_tmp;
+	        else
+	            rb = r_tmp;
+	    } while(std::abs(rb-ra) > lengthScale*CartesianCoordinateTol);
+	    
+        *r=r_tmp;
+    } else{
+        *r=this->r_f[GetNr()]+1e-2; // Arbitrary value outside the radial grid
+    }
 
 	// Newton solver (disabled for now)
 	/*r_tmp=startingGuessR;
@@ -693,28 +703,34 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
  */
 void NumericBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, real_t theta, real_t phi) {
 	//throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
-    real_t
-    dRdr = gsl_spline2d_eval_deriv_x(
-        this->spline_R, r, theta,
-        this->acc_r, this->acc_theta
-    ),
-    dzdr = gsl_spline2d_eval_deriv_x(
-        this->spline_Z, r, theta,
-        this->acc_r, this->acc_theta
-    ),    
-    dRdtheta = gsl_spline2d_eval_deriv_y(
-        this->spline_R, r, theta,
-        this->acc_r, this->acc_theta
-    ),    
-    dzdtheta = gsl_spline2d_eval_deriv_y(
-        this->spline_Z, r, theta,
-        this->acc_r, this->acc_theta
-    );
-    
-    real_t common_factor = 1/(dRdr*dzdtheta - dRdtheta*dzdr);
-    gradr[0] = common_factor * dzdtheta * cos(phi);
-    gradr[1] = - common_factor * dRdtheta;
-    gradr[2] = common_factor * dzdtheta * sin(phi);
+	if(r<r_f[GetNr()]){
+        real_t
+        dRdr = gsl_spline2d_eval_deriv_x(
+            this->spline_R, r, theta,
+            this->acc_r, this->acc_theta
+        ),
+        dzdr = gsl_spline2d_eval_deriv_x(
+            this->spline_Z, r, theta,
+            this->acc_r, this->acc_theta
+        ),    
+        dRdtheta = gsl_spline2d_eval_deriv_y(
+            this->spline_R, r, theta,
+            this->acc_r, this->acc_theta
+        ),    
+        dzdtheta = gsl_spline2d_eval_deriv_y(
+            this->spline_Z, r, theta,
+            this->acc_r, this->acc_theta
+        );
+        
+        real_t common_factor = 1/(dRdr*dzdtheta - dRdtheta*dzdr);
+        gradr[0] = common_factor * dzdtheta * cos(phi);
+        gradr[1] = - common_factor * dRdtheta;
+        gradr[2] = common_factor * dzdtheta * sin(phi);
+    }else{
+        gradr[0] = 0;
+        gradr[1] = 0;
+        gradr[2] = 0;
+    }
 }
 
 
