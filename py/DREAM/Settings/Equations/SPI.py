@@ -30,6 +30,9 @@ CLOUD_RADIUS_MODE_NEGLECT=1
 CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT=2
 CLOUD_RADIUS_MODE_SELFCONSISTENT=3
 
+MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT = 1
+MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK = 2
+
 ZMolarMassList=[1,1,10]
 isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
 molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
@@ -41,7 +44,7 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT):
+    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT):
         """
         Constructor.
         
@@ -60,6 +63,7 @@ class SPI(UnknownQuantity):
         :param int deposition: Model used for the deposition of the ablated material
         :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
         :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
+        :param int magneticFieldDependenceMode: Mode used for calculating the magnetic field dependence of the albation
         """
         super().__init__(settings=settings)
 
@@ -70,6 +74,7 @@ class SPI(UnknownQuantity):
         self.cloudRadiusMode    = int(cloudRadiusMode)
         self.VpVolNormFactor    = VpVolNormFactor
         self.rclPrescribedConstant = rclPrescribedConstant
+        self.magneticFieldDependenceMode = magneticFieldDependenceMode
 
         self.rp       = None
         self.vp       = None
@@ -412,6 +417,13 @@ class SPI(UnknownQuantity):
         radius of the the neutral pellet cloud
         """
         self.cloudRadiusMode = int(cloudRadiusMode)
+        
+    def setMagneticFieldDependenceMode(self, magneticFieldDependenceMode):
+        """
+        Specifies which model to use for calculating the
+        magnetic field dependence of the ablation
+        """
+        self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
 
 
     def fromdict(self, data):
@@ -423,6 +435,7 @@ class SPI(UnknownQuantity):
         self.deposition     = int(data['deposition'])
         self.heatAbsorbtion = int(data['heatAbsorbtion'])
         self.cloudRadiusMode = int(data['cloudRadiusMode'])
+        self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
 
         self.VpVolNormFactor = data['VpVolNormFactor']
         self.rclPrescribedConstant = data['rclPrescribedConstant']
@@ -442,6 +455,7 @@ class SPI(UnknownQuantity):
             'deposition': self.deposition,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
+            'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
             'VpVolNormFactor': self.VpVolNormFactor,
             'rclPrescribedConstant': self.rclPrescribedConstant
         }
