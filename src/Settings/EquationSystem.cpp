@@ -11,6 +11,11 @@
 using namespace DREAM;
 using namespace std;
 
+// Temporary variable to be removed when settings
+// for nonlinear collision operator is
+// introduced. Set to true to add Braams-Karney
+// potentials as unknown quantities.
+bool useBraamsKarney = false;
 
 #define EQUATIONSYSTEM "eqsys"
 #define INITIALIZATION "init"
@@ -163,6 +168,10 @@ void SimulationGenerator::ConstructEquations(
     // Hot-tail quantities
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s, oqty_terms);
+
+        if (useBraamsKarney) {
+            ConstructEquation_BraamsKarney(eqsys, s);
+        }
     }
 
     // Runaway quantities
@@ -289,6 +298,14 @@ void SimulationGenerator::ConstructUnknowns(
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
         DEFU_HOT(F_HOT);
+
+        if (useBraamsKarney) {
+            DEFU_HOT(POT_UPS_0_HOT);
+            DEFU_HOT(POT_UPS_1_HOT);
+            DEFU_HOT(POT_UPS_2_HOT);
+            DEFU_HOT(POT_PI_0_HOT);
+            DEFU_HOT(POT_PI_1_HOT);
+        }
     }
 
     // Runaway quantities
