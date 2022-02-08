@@ -306,7 +306,7 @@ class GEQDSK:
         self.pressure = InterpolatedUnivariateSpline(psi_n, data["pres"])
         self.p_prime  = self.pressure.derivative()
 
-        self.Z0 = data['zmid']
+        self.Z0 = data['zmagx']
         self.R = np.linspace(data["rleft"], data["rleft"]+data["rdim"], self.nr)
         self.Z = np.linspace(data["zmid"]-data["zdim"]/2, data["zmid"]+data["zdim"]/2, self.nz)
 
