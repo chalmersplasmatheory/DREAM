@@ -37,6 +37,12 @@ void SimulationGenerator::DefineOptions_Initializer(Settings *s) {
     s->DefineSetting(INITIALIZATION "/filetimeindex", "Time index to take initialization data for from output file.", (int_t)-1);
     s->DefineSetting(INITIALIZATION "/fromfile", "Name of DREAM output file from which simulation should be initialized.", (const string)"");
     s->DefineSetting(INITIALIZATION "/t0", "Simulation at which to initialize the simulation.", (real_t)0.0);
+
+	s->DefineSetting(INITIALIZATION "/solver_maxiter", "Maximum number of iterations for non-linear steady-state solver.", (int_t)100);
+	s->DefineSetting(INITIALIZATION "/solver_reltol", "Relative tolerance used for non-linear steady-state solver.", (real_t)1e-6);
+	s->DefineSetting(INITIALIZATION "/solver_verbose", "Whether or not to print convergence information for non-linear steady-state solver.", (bool)false);
+	s->DefineSetting(INITIALIZATION "/solver_linear", "Primary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_LU);
+	s->DefineSetting(INITIALIZATION "/solver_backup", "Secondary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_NONE);
 }
 
 /**
@@ -238,6 +244,16 @@ real_t SimulationGenerator::ConstructInitializer(
         vector<string> ignoreList = s->GetStringList(INITIALIZATION "/eqsysignore");
         eqsys->SetInitializerFile(filename, ignoreList, timeIndex);
     }
+
+	len_t maxiter = (len_t)s->GetInteger(INITIALIZATION "/solver_maxiter");
+	real_t reltol = s->GetReal(INITIALIZATION "/solver_reltol");
+	bool verbose  = s->GetBool(INITIALIZATION "/solver_verbose");
+	enum OptionConstants::linear_solver linear_solver =
+		(enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_linear");
+	enum OptionConstants::linear_solver backup_solver =
+		(enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_backup");
+
+	eqsys->SetInitializerSolver(maxiter, reltol, linear_solver, backup_solver, verbose);
 
     return t0;
 }

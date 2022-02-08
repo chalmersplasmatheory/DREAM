@@ -9,6 +9,7 @@ from . UnknownQuantity import UnknownQuantity
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
+TYPE_PRESCRIBED_OHMIC_CURRENT = 3
 
 BC_TYPE_PRESCRIBED = 1
 BC_TYPE_SELFCONSISTENT = 2
@@ -153,17 +154,19 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         Set the type of equation to use for evolving the electric field. The
         available types are
 
-        +---------------------+----------------------------------------------------------------------------------------------+
-        | Name                | Description                                                                                  |
-        +=====================+==============================================================================================+
-        | TYPE_PRESCRIBED     | Prescribe spatiotemporal evolution of electric field.                                        |
-        +---------------------+----------------------------------------------------------------------------------------------+
-        | TYPE_SELFCONSISTENT | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
-        +---------------------+----------------------------------------------------------------------------------------------+
+        +-------------------------------+----------------------------------------------------------------------------------------------+
+        | Name                          | Description                                                                                  |
+        +===============================+==============================================================================================+
+        | TYPE_PRESCRIBED               | Prescribe spatiotemporal evolution of electric field.                                        |
+        +-------------------------------+----------------------------------------------------------------------------------------------+
+        | TYPE_SELFCONSISTENT           | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
+        +-------------------------------+----------------------------------------------------------------------------------------------+
+        | TYPE_PRESCRIBED_OHMIC_CURRENT | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
+        +-------------------------------+----------------------------------------------------------------------------------------------+
 
         :param int ttype: Type of electric field evolution to use.
         """
-        if ttype == TYPE_PRESCRIBED:
+        if ttype in [TYPE_PRESCRIBED, TYPE_PRESCRIBED_OHMIC_CURRENT]:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
@@ -211,8 +214,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 self.V_loop_wall_t  = data['bc']['V_loop_wall']['t']
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
-
-            
+        elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -252,7 +255,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                         'x': self.V_loop_wall_R0,
                         't': self.V_loop_wall_t
                 }                
-                    
+        elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -296,6 +300,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 
             self._verifySettingsPrescribedInitialData()
+        elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized equation type specified: {}.".format(self.type))
 

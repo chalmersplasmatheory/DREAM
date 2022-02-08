@@ -16,10 +16,12 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/EFieldFromConductivityTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"
 
@@ -140,6 +142,10 @@ void SimulationGenerator::ConstructEquation_E_field(
             ConstructEquation_E_field_selfconsistent(eqsys, s, oqty_terms);
             break;
 
+		case OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED_CURRENT:
+			ConstructEquation_E_field_prescribed_current(eqsys, s);
+			break;
+
         default:
             throw SettingsException(
                 "Unrecognized equation type for '%s': %d.",
@@ -224,5 +230,52 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 
     // Set equation for self-consistent boundary condition
     ConstructEquation_psi_wall_selfconsistent(eqsys,s);
+}
+
+/**
+ * Construct the equation for the electric field when the ohmic
+ * current is prescribed.
+ */
+void SimulationGenerator::ConstructEquation_E_field_prescribed_current(
+    EquationSystem *eqsys, Settings *s
+) {
+    FVM::Operator *eqnE = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqnj = new FVM::Operator(eqsys->GetFluidGrid());
+
+	eqnE->AddTerm(new FVM::IdentityTerm(eqsys->GetFluidGrid(), -1.0));
+	eqnj->AddTerm(
+		new EFieldFromConductivityTerm(
+			eqsys->GetFluidGrid(), eqsys->GetUnknownHandler(),
+			eqsys->GetREFluid()
+		)
+	);
+
+	const len_t id_j_tot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+
+	eqsys->SetOperator(
+		id_E_field, id_E_field, eqnE
+	);
+    eqsys->SetOperator(
+		id_E_field, id_j_tot,
+		eqnj, "E = j_tot / sigma"
+	);
+
+	// Initialize electric field to dummy value to allow RunawayFluid
+	// to be initialized first...
+	eqsys->SetInitialValue(id_E_field, nullptr);
+
+    // Initial value
+    eqsys->initializer->AddRule(
+        id_E_field,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+		nullptr,
+		// Dependencies..
+		id_j_tot,
+		EqsysInitializer::RUNAWAY_FLUID
+    );
+
+    // Set boundary condition psi_wall = 0
+    ConstructEquation_psi_wall_zero(eqsys,s);
 }
 

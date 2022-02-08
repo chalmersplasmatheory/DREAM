@@ -180,6 +180,17 @@ namespace DREAM {
             this->SetInitializerFile(n, tidx);
             this->initializerFileIgnore = l;
         }
+		void SetInitializerSolver(
+			const len_t maxiter, const real_t reltol,
+			enum OptionConstants::linear_solver linear_solver,
+			enum OptionConstants::linear_solver backup_solver,
+			bool verbose
+		) {
+			this->initializer->SetSolver(
+				maxiter, reltol, linear_solver,
+				backup_solver, verbose
+			);
+		}
         void SetIonHandler(IonHandler *ih) { 
             this->ionHandler = ih; 
             this->initializer->SetIonHandler(ih);

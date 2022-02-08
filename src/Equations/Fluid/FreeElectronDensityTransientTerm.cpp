@@ -34,6 +34,12 @@ void FreeElectronDensityTransientTerm::Rebuild(const real_t t, const real_t dt, 
  * Set the linear operator matrix elements corresponding to this term.
  */
 void FreeElectronDensityTransientTerm::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     len_t N = this->DiagonalTerm::grid->GetNCells();
     len_t nMultiples = ionHandler->GetNzs();
     for (len_t i = 0; i < N; i++)
@@ -50,6 +56,12 @@ void FreeElectronDensityTransientTerm::SetMatrixElements(FVM::Matrix *mat, real_
  * Set function vector for this term.
  */
 void FreeElectronDensityTransientTerm::SetVectorElements(real_t *vec, const real_t *nions) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     len_t N = this->DiagonalTerm::grid->GetNCells();
     len_t nMultiples = ionHandler->GetNzs();
     for (len_t i = 0; i < N; i++)
@@ -62,6 +74,12 @@ void FreeElectronDensityTransientTerm::SetVectorElements(real_t *vec, const real
  * Implementation of weights for this diagonal term
  */
 void FreeElectronDensityTransientTerm::SetWeights(){
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     len_t N = grid->GetNCells();
     for(len_t i=0; i<N; i++)
         for(len_t iz=0; iz<ionHandler->GetNZ(); iz++)

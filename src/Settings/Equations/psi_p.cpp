@@ -66,7 +66,7 @@ namespace DREAM {
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_psi_p(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings*
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
@@ -85,6 +85,16 @@ void SimulationGenerator::ConstructEquation_psi_p(
     eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
     eqsys->SetOperator(id_psi_p, id_j_tot, eqn_j1, "Poloidal flux Ampere's law");
 
+	/*enum OptionConstants::uqty_E_field_eqn Etype =
+		(enum OptionConstants::uqty_E_field_eqn)s->GetInteger("eqsys/E_field/type");*/
+
+	ConstructEquation_psi_init_nl(
+		eqsys, id_psi_p, id_j_tot, id_I_p
+	);
+	/*ConstructEquation_psi_init_integral(
+		eqsys, fluidGrid, id_psi_p, id_j_tot, id_I_p
+	);*/
+
     // Set outgoing flux from diffusion term due to dpsi/dr at r=a,
     // obtained from psi_edge = psi(a)
     eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
@@ -92,6 +102,36 @@ void SimulationGenerator::ConstructEquation_psi_p(
     eqsys->SetOperator(id_psi_p, id_psi_edge, eqn_j3);
     eqsys->SetOperator(id_psi_p, id_psi_p, eqn_j2);
     
+}
+
+/**
+ * Construct initialization rule for the poloidal flux which solves
+ * for the psi_p directly from Ampere's law.
+ */
+void SimulationGenerator::ConstructEquation_psi_init_nl(
+	EquationSystem *eqsys,
+	const len_t id_psi_p, const len_t id_j_tot, const len_t id_I_p
+) {
+    eqsys->initializer->AddRule(
+        id_psi_p,
+        EqsysInitializer::INITRULE_STEADY_STATE_SOLVE,
+		nullptr,
+        // Dependencies
+        id_j_tot,
+        id_I_p,
+		EqsysInitializer::RUNAWAY_FLUID
+    );
+}
+
+/**
+ * Construct initialization rule for the poloidal flux, utilizing
+ * the integral relationship between the poloidal flux and total
+ * current density.
+ */
+void SimulationGenerator::ConstructEquation_psi_init_integral(
+	EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
+	const len_t id_psi_p, const len_t id_j_tot, const len_t id_I_p
+) {
     /**
      * Initialization: define the function which integrates j_tot.
      * In principle, this expression is a direct inversion of the 

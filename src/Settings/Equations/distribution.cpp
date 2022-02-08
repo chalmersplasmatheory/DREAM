@@ -91,6 +91,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
 ) {
+	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     FVM::Operator *eqn = new FVM::Operator(grid);
 
     // Add transient term
@@ -245,6 +246,13 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         real_t *T0 = LoadDataR(mod, grid->GetRadialGrid(), s, "T0");
 
         ConstructEquation_f_maxwellian(id_f, eqsys, grid, n0, T0, rescaleMaxwellian);
+
+		eqsys->initializer->AddRule(
+			OptionConstants::UQTY_F_HOT,
+			EqsysInitializer::INITRULE_STEADY_STATE_SOLVE,
+			nullptr,
+			id_E_field
+		);
 
         delete [] T0;
         delete [] n0;
