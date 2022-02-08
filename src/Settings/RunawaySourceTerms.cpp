@@ -43,9 +43,11 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             else if (runawayGrid != nullptr)
                 pCut = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
 
-            if (grid == runawayGrid)
-                rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC) );
-            else if (grid == fluidGrid){
+            if (grid == runawayGrid) {
+                rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_POSITIVE) );
+                rsth->AddAvalancheNreNeg(new AvalancheSourceRP(grid, unknowns, pCut, +1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_POSITIVE));
+                rsth->AddAvalancheNreNegPos(new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_NEGATIVE));
+            } else if (grid == fluidGrid){
                 if(runawayGrid == nullptr) // match external growth to fluid formula in E~<Eceff limit
                     rsth->AddSourceTerm(eqnSign + "external avalanche", new ExternalAvalancheTerm(grid, pCut, -2.0, REFluid, unknowns, -1.0)  );
                 else  // use regular external RE growth (RP integrated over p>pCut)

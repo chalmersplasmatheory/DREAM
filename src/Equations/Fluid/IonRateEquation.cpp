@@ -191,10 +191,14 @@ bool IonRateEquation::SetCSJacobianBlock(
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset, JACOBIAN);
 
     #define NI(J,V) \
-        jac->SetElement(\
-            rOffset+ir, ir, \
-            (V) * nions[rOffset+ir+(J)*Nr] \
-        )
+        do {\
+            if (nions[rOffset+ir+(J)*Nr] > 1 && std::abs((V)) > 1e-40) { \
+                jac->SetElement(\
+                    rOffset+ir, ir, \
+                    (V) * nions[rOffset+ir+(J)*Nr] \
+                ); \
+            } \
+        } while (false)
     bool setIonization = addFluidIonization || addFluidJacobian;
 
     if(derivId == id_T_cold) {
@@ -225,10 +229,14 @@ void IonRateEquation::SetCSMatrixElements(
 ) {
     bool setIonization = addFluidIonization || (sm==JACOBIAN&&addFluidJacobian);
     #define NI(J,V) \
-        mat->SetElement(\
-            rOffset+ir, rOffset+ir+(J)*Nr, \
-            (V) \
-        )
+        do { \
+            if (std::abs((V)) > 1e-40) { \
+                mat->SetElement(\
+                    rOffset+ir, rOffset+ir+(J)*Nr, \
+                    (V) \
+                ); \
+            } \
+        } while (false)
     #   include "IonRateEquation.set.cpp"
     #undef NI
 }
@@ -248,7 +256,11 @@ void IonRateEquation::SetCSVectorElements(
 ) {
     bool setIonization = addFluidIonization;
     #define NI(J,V) \
-        vec[rOffset+ir] += (V) * nions[rOffset+ir+(J)*Nr]
+        do { \
+            if (nions[rOffset+ir+(J)*Nr] > 1 && std::abs((V)) > 1e-40) { \
+                vec[rOffset+ir] += (V) * nions[rOffset+ir+(J)*Nr]; \
+            } \
+        } while (false)
     #   include "IonRateEquation.set.cpp"
     #undef NI
 }

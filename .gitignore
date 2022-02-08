@@ -1,4 +1,5 @@
 *.h5
+.cache
 .gdb_history
 .vscode
 __pycache__

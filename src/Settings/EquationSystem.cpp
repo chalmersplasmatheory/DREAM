@@ -62,7 +62,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
     ADAS *adas, NIST *nist, AMJUEL *amjuel
 ) {
-    EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
+    EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid, s);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
     // Timing information
@@ -313,6 +313,9 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_SCL(PSI_EDGE);
     DEFU_SCL(PSI_WALL);
     DEFU_SCL(I_P);
+
+    if (s->GetBool("eqsys/n_re/negative_re"))
+        DEFU_FLD(N_RE_NEG);
 
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
