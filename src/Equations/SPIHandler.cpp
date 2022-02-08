@@ -386,7 +386,10 @@ void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
 
 real_t SPIHandler::CalculateBFieldDampingJOREK(len_t ir){
     if(ir<rGrid->GetNr()){
-        return pow(2.0/(rGrid->GetFSA_B(ir)*rGrid->GetBmin(ir)),0.843);
+        if((rGrid->GetFSA_B(ir)*rGrid->GetBmin(ir))>2.0)
+            return pow(2.0/(rGrid->GetFSA_B(ir)*rGrid->GetBmin(ir)),0.843);
+        else
+            return 1.0;
     }else{
         return 0.0;
     }
