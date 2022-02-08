@@ -38,18 +38,30 @@ class GEQDSK:
                     yield int(m)
 
 
-    def get_flux_surface(self, psi_n, theta=None):
+    def get_flux_surface(self, psi_n, theta=None, closedContourTol = 1e-6):
         """
         Trace the flux surface for the given normalized psi.
         """
         #vertices, _ = self.contour_generator.create_contour(psi_n)
-        v = self.contour_generator.create_contour(psi_n)
-        if len(v) == 1:
-            vertices = v
-        else:
-            vertices = v[0]
+        #v = self.contour_generator.create_contour(psi_n)
+        #if len(v) == 1:
+        #    vertices = v
+        #else:
+        #    vertices = v[-1]
+            
+        vertices = self.contour_generator.create_contour(psi_n)
         
-        R, Z = vertices[0][:,0], vertices[0][:,1]
+        iClosedContour = None
+        for i in range(len(vertices)):
+            if len(vertices[i].shape)==2:
+                if np.sqrt((vertices[i][0,0]-vertices[i][-1,0])**2 + (vertices[i][0,1]-vertices[i][-1,1])**2)<closedContourTol:
+                    iClosedContour = i
+                
+        if iClosedContour is not None:
+            R, Z = vertices[iClosedContour][:,0], vertices[iClosedContour][:,1]
+        else:
+            raise ValueError('No closed flux surface was found for psi_n={}'.format(psi_n))
+            
 
         if theta is not None:
             _theta = np.arctan2(R-self.R0, Z-self.Z0)
