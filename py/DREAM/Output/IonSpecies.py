@@ -141,6 +141,11 @@ class IonSpecies:
         return ax
         
     def plotSum(self, Z0 = None, integrate = False, **kwargs):
+        """
+        Plots the spatio-temporal evolution of the sum of the specified charge states of this ion species
+        Z0:         list of charge states to be summed and plotted
+        integrate:  if 'True', plot the volume integral of the specified charge states
+        """
         if Z0 is None: Z0 = slice(None)
         states = self.ionstates[Z0]
         data = None
