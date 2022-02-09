@@ -6,6 +6,7 @@ import numpy as np
 from matplotlib import animation
 
 from . ScalarQuantity import ScalarQuantity
+from .FluidQuantity import FluidQuantity
 from . OutputException import OutputException
 
 class SPIShardRadii(ScalarQuantity):
@@ -75,8 +76,29 @@ class SPIShardRadii(ScalarQuantity):
         
         :param slice shards: Shards wose volume should be plotted
         """
-        _Vp_tot=ScalarQuantity(name='V_{p,tot}',data=self.calcTotalVolume(shards), grid=self.grid, output=self.output)
+        _Vp_tot=ScalarQuantity(name='V_{p,tot} [m$^3$]',data=self.calcTotalVolume(shards), grid=self.grid, output=self.output)
         return _Vp_tot.plot(**kwargs)
+        
+    def plotAblatedVolume(self, shards = None, **kwargs):
+        nt = len(self.grid.t)
+        nr = len(self.grid.r)
+        data = np.zeros((nt,nr))
+        for it in range(1,nt):
+        
+            data[it,:] = data[it-1,:]
+            
+            rpPrev = self.calcRadii(shards = shards, t = it-1)
+            rp = self.calcRadii(shards = shards,t = it)
+            VPrev = 4*np.pi*rpPrev**3/3
+            V = 4*np.pi*rp**3/3
+            DV = VPrev - V
+            r, theta = self.output.eqsys.x_p.calcRadialCoordinate(shards = shards, t=it) # NOTE: assumes r stays the same during the whole saved time step! Should be improved!
+            for ir in range(nr):
+                data[it,ir] += np.sum(DV[(r>self.grid.r_f[ir]) & (r<self.grid.r_f[ir+1])])
+                
+        _ablatedVolume = FluidQuantity(name = "ablated volume [m$^3$]", data=data, attr=list(), grid=self.grid, output=self.output)
+        return _ablatedVolume.plot(**kwargs)
+            
         
     def plotPoloidal(self, ax=None, show=None, t=-1, displayGrid=False, sizeFactor=5e3, backgroundQuantity=None, **kwargs):
         """

@@ -14,11 +14,13 @@ using namespace std;
  * Constructor.
  */
 AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, fluxGridType fluxGridType, 
-        adv_bc bc_l, adv_bc bc_u){
+        adv_bc bc_l, adv_bc bc_u, len_t offset){
     this->grid = g;
     this->fgType = fluxGridType;
     this->bc_lower = bc_l;
     this->bc_upper = bc_u;
+    
+    this->offset=offset;
 
     this->delta_prev = new real_t[2*STENCIL_WIDTH];
     this->delta_tmp = new real_t[2*STENCIL_WIDTH];
@@ -89,7 +91,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
         ResetCoefficient();
     const real_t *x = nullptr, *x_f = nullptr;
     int_t N;
-    real_t *f = IsFluxLimiterMethod(adv_i) ? unknowns->GetUnknownData(id_unknown) : nullptr; 
+    real_t *f = IsFluxLimiterMethod(adv_i) ? unknowns->GetUnknownData(id_unknown)+offset : nullptr; 
     YFunc_params yf_par = {f,n1,n2,0,0,0};
     
     real_t(*YFunc)(int_t,void*);

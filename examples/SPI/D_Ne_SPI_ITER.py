@@ -19,6 +19,7 @@ from DREAM.DREAMSettings import DREAMSettings
 from DREAM.DREAMOutput import DREAMOutput
 from DREAM import runiface
 import DREAM.Settings.Equations.IonSpecies as Ions
+import DREAM.Settings.Equations.Ions as IonsAll
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.ElectricField as Efield
@@ -45,17 +46,17 @@ ds = DREAMSettings()
 #######################################
 
 # Choose which parts of the disruption should be simulated
-run_init=True # Includes a single-step run to extract the conductivity and 
+run_init=False # Includes a single-step run to extract the conductivity and 
 #                another one to set the efield according to the wanted current profiel
 
-run_injection_init=True # Accelerate the distribution function to carry the right current
+run_injection_init=False # Accelerate the distribution function to carry the right current
 
-run_injection=True # D or D/Ne injection
+run_injection=False # D or D/Ne injection
 run_CQ=True # Second Ne injection (if any), beginning of the CQ
 
 # Specify number of restarts to do during the CQ
 nCQ_restart_start=2 # Number of CQ restart to start from
-nCQ_restart=1 # How many CQ restarts to run
+nCQ_restart=0 # How many CQ restarts to run
 
 # Temperature and electron distribution settings
 T_selfconsistent    = True
@@ -82,7 +83,7 @@ Nt_injection = 1360
 # Nt_injection = 3000  
 
 Tmax_CQ = 17e-3
-Nt_CQ = 3000
+Nt_CQ = 10000
 Tmax_CQ_restart = 129.6e-3
 Nt_CQ_restart = 40000
 
@@ -144,7 +145,7 @@ Delta = [0,0]
 # Set E_field 
 E_initial = 0.00032   # initial electric field in V/m
 E_wall = 0.0          # boundary electric field in V/m
-inverse_wall_time = 2 # s^{-1}
+inverse_wall_time = 0 # s^{-1}
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 ds.eqsys.E_field.setBoundaryCondition()
@@ -163,8 +164,8 @@ temperature = T_initial*temp_prof
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radialgrid)
 
 # Settings for the first SPI (presumably consisting mostly of deuterium)
-nShardD=3843 # Number of shards
-NinjD=2.5e24 # Number of atoms
+nShardD=1742 # Number of shards
+NinjD=2e24 # Number of atoms
 alpha_maxD=0.17 # Divergence angle
 abs_vp_meanD=800 # Mean shard speed
 abs_vp_diffD=0.2*abs_vp_meanD # Width of the uniform shard speed distribution
@@ -184,8 +185,22 @@ alpha_maxNe=0.17
 abs_vp_meanNe=200
 abs_vp_diffNe=0.2*abs_vp_meanNe
 
+# Transport coefficients for the ablated neon
+charged_prescribed_advection = -500
+neutral_prescribed_advection = charged_prescribed_advection
+charged_prescribed_diffusion = 100
+neutral_prescribed_diffusion = 100
+
 if nShardNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
+	abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]),   
+	charged_advection_mode = Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED, charged_prescribed_advection =  charged_prescribed_advection,
+    neutral_advection_mode = Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, neutral_prescribed_advection =  neutral_prescribed_advection,
+    charged_diffusion_mode = Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, charged_prescribed_diffusion =  charged_prescribed_diffusion,
+    neutral_diffusion_mode = Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, neutral_prescribed_diffusion =  neutral_prescribed_diffusion)
+    
+ds.eqsys.n_i.setAdvectionInterpolationMethodCharged(ad_int=IonsAll.AD_INTERP_UPWIND,
+        ad_jac=IonsAll.AD_INTERP_JACOBIAN_UPWIND, fluxlimiterdamping=1.0)
 
 # Set geometrical parameters used to rescale VpVol when calculting the size of the flux surfaces
 if ds.radialgrid.type == RGrid.TYPE_CYLINDRICAL:
@@ -255,7 +270,8 @@ ds.solver.setTolerance(reltol=0.001)
 ds.other.include('fluid', 'scalar')
 
 filename_ending='nShardD'+str(nShardD)+'NinjD'+str(NinjD)+'nShardNe'+str(nShardNe)+'NinjNe'+str(NinjNe)+'vpD'+str(abs_vp_meanD)+'vpNe'+str(abs_vp_meanNe)+'LyOpaque_hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)	
-folder_name='finite_wall_time/with_runaways/'
+#folder_name='finite_wall_time/with_runaways/'
+folder_name = 'Iontransport/'
 
 #if ds.radialgrid.type == RGrid.TYPE_ANALYTIC_TOROIDAL:
 #	filename_ending = filename_ending + 'analyticB'
@@ -265,7 +281,7 @@ folder_name='finite_wall_time/with_runaways/'
 #filename_ending = filename_ending +'Delta_core'+ str(Delta[0])
 #filename_ending = filename_ending + 'toroidal'
 
-filename_ending = filename_ending + 'inverse_wall_time'+str(inverse_wall_time)
+#filename_ending = filename_ending + 'inverse_wall_time'+str(inverse_wall_time)
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -392,6 +408,9 @@ if run_CQ:
 
 		t_edge=(radius_wall-radius[1])/np.max(-ds4.eqsys.spi.vp[-3*nShardNe::3])
 		ds4.eqsys.spi.xp[-3*nShardNe:]=ds4.eqsys.spi.xp[-3*nShardNe:]+ds4.eqsys.spi.vp[-3*nShardNe:]*t_edge
+	
+	# filename_ending = filename_ending+"no_impur_transp"
+	filename_ending = filename_ending + 'adv'+str(charged_prescribed_advection)
 	
 	runiface(ds4, folder_name+'output_restart_CQ_'+filename_ending+'.h5', quiet=False)
 	

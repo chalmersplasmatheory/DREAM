@@ -37,6 +37,9 @@ namespace DREAM {
         virtual void SetWeights() override;
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
+        void SetWeights(const real_t*, real_t *w=nullptr);
+        void SetDiffWeights(len_t derivId, len_t nMultiples, const real_t*);
+
     public:
         RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, AMJUEL*,enum OptionConstants::ion_opacity_mode*, bool);
     };
