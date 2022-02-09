@@ -47,6 +47,8 @@ KineticEquationTermIntegratedOverMomentum::~KineticEquationTermIntegratedOverMom
     MatDestroy(&this->CsetElements);
     for (len_t i=0; i < unknowns->GetNUnknowns(); i++)
         MatDestroy(this->CsetJacobian+i);
+        
+    delete [] this->CsetJacobian;
 }
 
 
