@@ -26,6 +26,7 @@ doc/*/*/*.pdf
 doc/*/*/*.run.xml
 doc/*/*/*.snm
 doc/*/*/*.toc
+doc/notes/pdf
 doc/sphinx/build
 petsc_matrix
 petsc_matrix.info

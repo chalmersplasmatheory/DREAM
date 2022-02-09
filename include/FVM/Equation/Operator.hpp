@@ -42,8 +42,8 @@ namespace DREAM::FVM {
 
         ~Operator();
 
-        void AddTerm(AdvectionTerm *a);
-        void AddTerm(DiffusionTerm *d);
+        void AddTerm(AdvectionTerm *a, bool addAsEquationTerm = false);
+        void AddTerm(DiffusionTerm *d, bool addAsEquationTerm = false);
         void AddTerm(PredeterminedParameter *p);
         void AddTerm(EvaluableEquationTerm *t);
         void AddTerm(EquationTerm *t);
