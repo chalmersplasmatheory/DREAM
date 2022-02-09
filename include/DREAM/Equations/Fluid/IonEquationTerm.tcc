@@ -21,6 +21,15 @@ IonEquationTerm<T>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t 
     this->Zion = this->ions->GetZ(iIon);
 }
 
+/**
+ * Constructor for AdvectionTerm or DiffusionTerm
+ */
+template<class T>
+IonEquationTerm<T>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon, bool allocCoefficients)
+    : T(g, allocCoefficients), ions(ihdl), iIon(iIon) {
+
+    this->Zion = this->ions->GetZ(iIon);
+}
 
 /**
  * Constructor for MomentQuantity.

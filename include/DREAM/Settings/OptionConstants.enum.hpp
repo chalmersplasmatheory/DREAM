@@ -39,6 +39,26 @@ enum ion_opacity_mode {
 	OPACITY_MODE_GROUND_STATE_OPAQUE=2
 };
 
+enum ion_charged_diffusion_mode {
+	ION_CHARGED_DIFFUSION_MODE_NONE=1,
+	ION_CHARGED_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_diffusion_mode {
+	ION_NEUTRAL_DIFFUSION_MODE_NONE=1,
+	ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_charged_advection_mode {
+	ION_CHARGED_ADVECTION_MODE_NONE=1,
+	ION_CHARGED_ADVECTION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_advection_mode {
+	ION_NEUTRAL_ADVECTION_MODE_NONE=1,
+	ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,
@@ -335,6 +355,11 @@ enum eqterm_spi_cloud_radius_mode {
 enum eqterm_spi_abl_ioniz_mode {
     EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
     EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
+};
+
+enum eqterm_spi_magnetic_field_dependence_mode {
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT=1,
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK=2,
 };
 
 enum eqterm_particle_source_shape {
