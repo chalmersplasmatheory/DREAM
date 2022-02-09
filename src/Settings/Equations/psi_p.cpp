@@ -176,7 +176,7 @@ void SimulationGenerator::ConstructEquation_psi_init_integral(
 
         #undef integrand
         delete [] Itot;
-    };    
+    };
             
     eqsys->initializer->AddRule(
         id_psi_p,

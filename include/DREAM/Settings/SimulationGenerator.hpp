@@ -73,6 +73,9 @@ namespace DREAM {
             enum OptionConstants::momentumgrid_type
         );
 
+		static bool HasInitialEfield(EquationSystem*, Settings*);
+		static bool HasInitialJtot(EquationSystem*, Settings*);
+
         static void DefineOptions_RadialGrid(Settings*);
 
         static void DefineOptions_ADAS(Settings*);

@@ -3,6 +3,7 @@ from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
 from . PrescribedParameter import PrescribedParameter
+from . PrescribedInitialParameter import PrescribedInitialParameter
 
 CONDUCTIVITY_MODE_BRAAMS = 1
 CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS = 2
@@ -11,7 +12,7 @@ CONDUCTIVITY_MODE_SAUTER_COLLISIONAL = 3
 CORRECTED_CONDUCTIVITY_DISABLED = 1
 CORRECTED_CONDUCTIVITY_ENABLED  = 2
 
-class OhmicCurrent(PrescribedParameter,UnknownQuantity):
+class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
     def __init__(self, settings, condMode=CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS, corrCond=CORRECTED_CONDUCTIVITY_ENABLED):
         """
@@ -21,9 +22,13 @@ class OhmicCurrent(PrescribedParameter,UnknownQuantity):
 
         self.condMode     = condMode
         self.corrCond     = corrCond
+
         self.jpres        = None
         self.jpres_radius = None
         self.jpres_times  = None
+
+        self.jpres0        = None
+        self.jpres0_radius = None
 
 
     def setCorrectedConductivity(self, mode):
@@ -80,6 +85,19 @@ class OhmicCurrent(PrescribedParameter,UnknownQuantity):
         self.verifySettingsPrescribedData()
 
 
+    def setInitialProfile(self, j, radius=0):
+        """
+        Prescribes the desired initial current profile j_tot=j_tot(r), for
+        when the electric field evolves self-consistently in time.
+        """
+        _data, _rad = self._setInitialData(data=j, radius=radius)
+
+        self.jpres0 = _data
+        self.jpres0_radius = _rad
+
+        self.verifySettingsPrescribedInitialData()
+
+
     def fromdict(self, data):
         """
         Set all options from a dictionary.
@@ -93,6 +111,9 @@ class OhmicCurrent(PrescribedParameter,UnknownQuantity):
             self.jpres = data['data']['x']
             self.jpres_radius = data['data']['r']
             self.jpres_times = data['data']['t']
+        if 'jpres0' in data:
+            self.jpres0 = data['data']['x']
+            self.jpres0_radius = data['data']['r']
 
 
     def todict(self):
@@ -111,6 +132,11 @@ class OhmicCurrent(PrescribedParameter,UnknownQuantity):
                 'r': self.jpres_radius,
                 't': self.jpres_times
             }
+        elif self.jpres0 is not None:
+            data['init'] = {
+                'x': self.jpres0,
+                'r': self.jpres0_radius
+            }
 
         return data
 
@@ -121,9 +147,15 @@ class OhmicCurrent(PrescribedParameter,UnknownQuantity):
         """
         if self.jpres is not None:
             self.verifySettingsPrescribedData()
+        elif self.jpres0 is not None:
+            self.verifySettingsPrescribedInitialData()
 
 
     def verifySettingsPrescribedData(self):
         self._verifySettingsPrescribedData('j_ohm', self.jpres, self.jpres_radius, self.jpres_times)
+
+
+    def verifySettingsPrescribedInitialData(self):
+        self._verifySettingsPrescribedInitialData('j_ohm', self.jpres0, self.jpres0_radius)
 
 

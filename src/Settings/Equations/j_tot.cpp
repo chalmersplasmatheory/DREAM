@@ -70,7 +70,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 }
 
 void SimulationGenerator::ConstructEquation_j_tot_consistent(
-	EquationSystem *eqsys, Settings*
+	EquationSystem *eqsys, Settings *s
 ) {
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
@@ -95,15 +95,20 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     eqsys->SetOperator(id_j_tot, id_j_hot, eqn2);
     eqsys->SetOperator(id_j_tot, id_j_re,  eqn3);
     
-
     // Initialization
-    eqsys->initializer->AddRule(
-        id_j_tot,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        // Dependencies
-        id_j_ohm, id_j_hot, id_j_re
-    );
+	if (HasInitialJtot(eqsys, s)) {
+		real_t *jtot_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+		eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, jtot_init);
+		delete [] jtot_init;
+	} else {
+		eqsys->initializer->AddRule(
+			id_j_tot,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			// Dependencies
+			id_j_ohm, id_j_hot, id_j_re
+		);
+	}
 }
 
 void SimulationGenerator::ConstructEquation_Ip(

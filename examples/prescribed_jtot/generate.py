@@ -39,14 +39,15 @@ pMax = 1    # maximum momentum in units of m_e*c
 Np   = 300  # number of momentum grid points
 Nxi  = 20   # number of pitch grid points
 tMax = 1e-3 # simulation time in seconds
-Nt   = 20   # number of time steps
+Nt   = 2   # number of time steps
 
 with_fhot = False
 
 # Set E_field
 #ds.eqsys.E_field.setPrescribedData(E)
-ds.eqsys.E_field.setType(EField.TYPE_PRESCRIBED_OHMIC_CURRENT)
-ds.eqsys.j_ohm.setCurrentProfile(1e5)
+ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
+ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_PRESCRIBED, V_loop_wall_R0=0, R0=0.68)
+ds.eqsys.j_ohm.setInitialProfile(1e5)
 
 # Set temperature
 ds.eqsys.T_cold.setPrescribedData(T)

@@ -93,6 +93,7 @@ namespace DREAM {
 
         std::vector<int_t> ConstructExecutionOrder(struct initrule*);
 
+		EquationSystem *eqsys=nullptr;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
         enum OptionConstants::momentumgrid_type
             hottail_type, runaway_type;
@@ -100,7 +101,6 @@ namespace DREAM {
         CollisionQuantityHandler *cqhHottail=nullptr, *cqhRunaway=nullptr;
         IonHandler *ionHandler=nullptr;
         RunawayFluid *runawayFluid=nullptr;
-		EquationSystem *eqsys=nullptr;
 
 		len_t solver_maxiter = 100;
 		real_t solver_reltol = 1e-6;

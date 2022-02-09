@@ -31,6 +31,7 @@ void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
     s->DefineSetting(MODULENAME "/conductivityMode", "Determines which formula to use for the conductivity", (int_t) OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS);
 
 	DefineDataRT(MODULENAME, s, "data");
+	DefineDataR(MODULENAME, s, "init");
 }
 
 /**

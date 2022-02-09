@@ -170,12 +170,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
-
-            # Set E=0 if 'setInitialProfile' has not been previously called
-            # (if 'setInitialProfile()' has been called, 'self.radius != None'
-            # and 'self.times == None')
-            if (self.radius) is None or (self.times is not None):
-                self.setInitialProfile(efield=0)
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(ttype))
 
@@ -191,9 +185,11 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.radius = data['data']['r']
             self.times  = data['data']['t']
         elif self.type == TYPE_SELFCONSISTENT:
-            self.efield = data['init']['x']
-            self.radius = data['init']['r']
-            self.bctype = data['bc']['type']
+            if 'init' in data:
+                self.efield = data['init']['x']
+                self.radius = data['init']['r']
+                self.bctype = data['bc']['type']
+
             if self.bctype == BC_TYPE_PRESCRIBED:
                 self.V_loop_wall_R0   = data['bc']['V_loop_wall']['x']
                 self.V_loop_wall_t = data['bc']['V_loop_wall']['t']
@@ -236,10 +232,15 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 't': self.times
             }
         elif self.type == TYPE_SELFCONSISTENT:
-            data['init'] = {
-                'x': self.efield,
-                'r': self.radius,
-            }            
+            # The initial condition can either be given
+            # in terms of the electric field or in terms
+            # of the current density...
+            if self.efield is not None:
+                data['init'] = {
+                    'x': self.efield,
+                    'r': self.radius,
+                }            
+
             if self.bctype == BC_TYPE_PRESCRIBED:
                 data['bc']['V_loop_wall'] = {
                         'x': self.V_loop_wall_R0,
@@ -277,10 +278,11 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
             self._verifySettingsPrescribedData()
         elif self.type == TYPE_SELFCONSISTENT:
-            if type(self.efield) != np.ndarray:
-                raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
-            elif type(self.radius) != np.ndarray:
-                raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
+            if self.efield is not None:
+                if type(self.efield) != np.ndarray:
+                    raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
+                elif type(self.radius) != np.ndarray:
+                    raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
 
             # Check boundary condition
             if self.bctype == BC_TYPE_PRESCRIBED:
@@ -299,7 +301,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 
-            self._verifySettingsPrescribedInitialData()
+            if self.efield is not None:
+                self._verifySettingsPrescribedInitialData()
         elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
             pass
         else:

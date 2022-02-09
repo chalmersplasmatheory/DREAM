@@ -125,6 +125,28 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
 }
 
 /**
+ * Routines for checking if initial E/j_ohm profiles have been given.
+ */
+bool SimulationGenerator::HasInitialEfield(EquationSystem *eqsys, Settings *s) {
+    real_t *v = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+	if (v == nullptr)
+		return false;
+	else {
+		delete [] v;
+		return true;
+	}
+}
+bool SimulationGenerator::HasInitialJtot(EquationSystem *eqsys, Settings *s) {
+    real_t *v = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+	if (v == nullptr)
+		return false;
+	else {
+		delete [] v;
+		return true;
+	}
+}
+
+/**
  * Construct the equation for the electric field.
  */
 void SimulationGenerator::ConstructEquation_E_field(
@@ -184,6 +206,9 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     EquationSystem *eqsys, Settings* s,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
+	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+	const len_t id_j_tot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     // Set equations for self-consistent E field evolution
@@ -219,14 +244,48 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, dtTerm, eqn);
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Vloop);
     
-    /**
-     * Load initial electric field profile.
-     * If the input profile is not explicitly set, then 'SetInitialValue()' is
-     * called with a null-pointer which results in E=0 at t=0
-     */
-    real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
-    eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
-    delete [] Efield_init;
+	// Specify initialization...
+	if (HasInitialEfield(eqsys, s)) {
+		/**
+		 * Load initial electric field profile.
+		 * If the input profile is not explicitly set, then 'SetInitialValue()' is
+		 * called with a null-pointer which results in E=0 at t=0
+		 */
+		real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+		eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
+		delete [] Efield_init;
+	} else if (HasInitialJtot(eqsys, s)) {
+		RunawayFluid *REFluid = eqsys->GetREFluid();
+
+		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot =
+			[id_j_tot,REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+
+			const real_t *j_tot = u->GetUnknownData(id_j_tot);
+			const len_t nr = fluidGrid->GetNCells();
+			for (len_t ir = 0; ir < nr; ir++) {
+				real_t s = REFluid->GetElectricConductivity(ir);
+				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
+
+				Efield_init[ir] = j_tot[ir]*B / s;
+			}
+		};
+
+		// Initialize electric field to dummy value to allow RunawayFluid
+		// to be initialized first...
+		eqsys->SetInitialValue(id_E_field, nullptr);
+
+		eqsys->initializer->AddRule(
+			id_E_field,
+			EqsysInitializer::INITRULE_EVAL_FUNCTION,
+			initfunc_EfieldFromJtot,
+			// Dependencies..
+			id_j_tot,
+			EqsysInitializer::RUNAWAY_FLUID
+		);
+	} else
+		throw SettingsException(
+			"E_field: Self-consistent electric field evolution requested, but neither initial E or j_tot profiles have been specified."
+		);
 
     // Set equation for self-consistent boundary condition
     ConstructEquation_psi_wall_selfconsistent(eqsys,s);
