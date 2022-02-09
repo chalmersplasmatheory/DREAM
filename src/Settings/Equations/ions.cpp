@@ -379,8 +379,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     len_t nZ0_charged_prescribed_advection = 0;
     len_t nZ0_neutral_prescribed_advection = 0;
     for(len_t iZ=0;iZ<nZ;iZ++){
-        cout<<"charged advection modes: "<<charged_advection_mode[iZ]<<"\n";
-        cout<<"neutral advection modes: "<<neutral_advection_mode[iZ]<<"\n";
         if(charged_advection_mode[iZ] == OptionConstants::ION_CHARGED_ADVECTION_MODE_PRESCRIBED){
             nZ0_charged_prescribed_advection += Z[iZ];
         }
@@ -388,9 +386,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             nZ0_neutral_prescribed_advection++;
         }
     }
-    
-    cout<<" charged advection: "<<nZ0_charged_prescribed_advection<<"\n";
-    cout<<" neutral advection: "<<nZ0_neutral_prescribed_advection<<"\n";
     
     // Load prescribed diffusion coefficients
     MultiInterpolator1D *DrrChargedPrescribed = LoadDataIonRT(
@@ -427,12 +422,10 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     len_t offsetNeutralAdvection = 0;
     for(len_t iZ=0;iZ<nZ;iZ++){
         if(charged_advection_mode[iZ] == OptionConstants::ION_CHARGED_ADVECTION_MODE_PRESCRIBED){
-            cout<<"check charged \n";
             eqn->AddTerm(new IonChargedPrescribedAdvectionTerm(fluidGrid, ih, iZ, true, adv_interp_r_charged, adv_jac_mode_r_charged, id_ni, fluxLimiterDampingCharged, offsetChargedAdvection, FrChargedPrescribed), true);
             offsetChargedAdvection+=Z[iZ];
         }
         if(neutral_advection_mode[iZ] == OptionConstants::ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED){
-            cout<<"check neutral \n";
             eqn->AddTerm(new IonNeutralPrescribedAdvectionTerm(fluidGrid, ih, iZ, true, adv_interp_r_neutral, adv_jac_mode_r_neutral, id_ni, fluxLimiterDampingNeutral, offsetNeutralAdvection, FrNeutralPrescribed), true);
             offsetNeutralAdvection++;
         }
