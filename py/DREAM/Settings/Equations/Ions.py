@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.interpolate
 from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
@@ -77,7 +78,7 @@ class Ions(UnknownQuantity):
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
         """
-        if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
+        if (self.r is not None) and (r is not None) and (np.any(self.r[:] != r[:])):
             raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
@@ -123,6 +124,26 @@ class Ions(UnknownQuantity):
         if neutral_advection_mode==ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
             self.rNeutralPrescribedAdvection = ion.getRNeutralPrescribedAdvection()
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
+
+
+    def changeRadialGrid(self, r):
+        """
+        Change the radial grid used for the ion species.
+        """
+        for ion in self.ions:
+            if ion.r.size == 1:
+                ion.n = ion.n * np.ones(ion.n.shape[:-1] + (r.size,))
+                ion.T = ion.T * np.ones(ion.T.shape[:-1] + (r.size,))
+                ion.r = r
+            else:
+                fn = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                fT = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                ion.n = fn(r)
+                ion.T = fT(r)
+                ion.r = r
+
+        self.r = r
+
 
     def getCharges(self):
         """

@@ -170,6 +170,11 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
+
+            if self.efield is not None:
+                self.efield = None
+                self.radius = None
+                self.times = None
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(ttype))
 

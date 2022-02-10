@@ -57,7 +57,10 @@
                 len_t idx = j*np1 + i;
                 X(idx, common * Vp[idx] * dp2[j])
             }
-            X((jmax-1)*np1+i, common * Vp[(jmax-1)*np1+i] * dxi_last);
+
+			if (jmax-1 != j0) {
+				X((jmax-1)*np1+i, common * Vp[(jmax-1)*np1+i] * dxi_last);
+			}
         }
         ApplyX(ir)
         offset += np1*np2;
