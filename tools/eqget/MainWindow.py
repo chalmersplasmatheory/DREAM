@@ -2,6 +2,9 @@
 import numpy as np
 import traceback
 
+import sys
+sys.path.append('../../py')
+
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from ui import MainWindow_design
