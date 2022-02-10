@@ -47,7 +47,7 @@ with_fhot = False
 #ds.eqsys.E_field.setPrescribedData(E)
 ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
 ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_PRESCRIBED, V_loop_wall_R0=0, R0=0.68)
-ds.eqsys.j_ohm.setInitialProfile(1e5)
+ds.eqsys.j_ohm.setInitialProfile(1e5, Ip0=2e5)
 
 # Set temperature
 ds.eqsys.T_cold.setPrescribedData(T)

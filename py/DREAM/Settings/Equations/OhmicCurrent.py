@@ -29,6 +29,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
 
         self.jpres0        = None
         self.jpres0_radius = None
+        self.jpres0_Ip0    = None
 
 
     def setCorrectedConductivity(self, mode):
@@ -85,7 +86,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.verifySettingsPrescribedData()
 
 
-    def setInitialProfile(self, j, radius=0):
+    def setInitialProfile(self, j, radius=0, Ip0=None):
         """
         Prescribes the desired initial current profile j_tot=j_tot(r), for
         when the electric field evolves self-consistently in time.
@@ -94,6 +95,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
 
         self.jpres0 = _data
         self.jpres0_radius = _rad
+        self.jpres0_Ip0 = Ip0
 
         self.verifySettingsPrescribedInitialData()
 
@@ -112,8 +114,10 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
             self.jpres_radius = data['data']['r']
             self.jpres_times = data['data']['t']
         if 'jpres0' in data:
-            self.jpres0 = data['data']['x']
-            self.jpres0_radius = data['data']['r']
+            self.jpres0 = data['init']['x']
+            self.jpres0_radius = data['init']['r']
+        if 'Ip0' in data:
+            self.jpres0_Ip0 = data['Ip0']
 
 
     def todict(self):
@@ -137,6 +141,9 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
                 'x': self.jpres0,
                 'r': self.jpres0_radius
             }
+
+            if self.jpres0_Ip0 is not None:
+                data['Ip0'] = self.jpres0_Ip0
 
         return data
 

@@ -98,6 +98,18 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     // Initialization
 	if (HasInitialJtot(eqsys, s)) {
 		real_t *jtot_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+
+		// Re-scale to get right plasma current (Ip)?
+		if (s->GetReal("eqsys/j_ohm/Ip0") != 0) {
+			FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
+			const len_t nr = rGrid->GetNr();
+			const real_t Ip0 = s->GetReal("eqsys/j_ohm/Ip0");
+			real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(nr, rGrid, jtot_init);
+
+			for (len_t ir = 0; ir < nr; ir++)
+				jtot_init[ir] *= Ip0 / Ipj;
+		}
+
 		eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, jtot_init);
 		delete [] jtot_init;
 	} else {

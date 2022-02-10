@@ -32,6 +32,8 @@ void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
 
 	DefineDataRT(MODULENAME, s, "data");
 	DefineDataR(MODULENAME, s, "init");
+
+	s->DefineSetting(MODULENAME "/Ip0", "When specifying an initial j_tot profile, re-scale the profile to get this total plasma current", (real_t)0.0);
 }
 
 /**
