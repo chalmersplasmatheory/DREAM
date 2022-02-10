@@ -38,7 +38,8 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
     OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
-    OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01){
+    OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
+    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
@@ -62,6 +63,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->spi_deposition_mode=spi_deposition_mode;
     this->spi_heat_absorbtion_mode=spi_heat_absorbtion_mode;
     this->spi_cloud_radius_mode=spi_cloud_radius_mode;
+    this->spi_magnetic_field_dependence_mode=spi_magnetic_field_dependence_mode;
 
     // Set prescribed cloud radius (if any)
     if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT){
@@ -302,7 +304,12 @@ void SPIHandler::Rebuild(real_t dt){
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
         throw NotImplementedException("SPIHandler: NGPS ablation is not yet supported");
     }else {throw DREAMException("SPIHandler: unrecognized SPI shard ablation mode");}
-
+    
+    // Calculate magnetic field damping (if any)
+    if(spi_magnetic_field_dependence_mode==OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK)
+        for(len_t ip = 0; ip<nShard; ip++){
+            Ypdot[ip]*=CalculateBFieldDampingJOREK(irp[ip]);
+        }
     // Calculate radius of the neutral cloud (if any)
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
         CalculateRCld();
@@ -318,11 +325,11 @@ void SPIHandler::Rebuild(real_t dt){
         for(len_t ip=0;ip<nShard;ip++){
             if(rCoordPNext[ip]>rCoordPPrevious[ip]){
                 for(len_t ir=0;ir<nr-1;ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=depositionProfilesAllShards[(ir+1)*nShard+ip];
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+1)*nShard+ip];
                 }
             }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
                 for(len_t ir=nr-1;ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=depositionProfilesAllShards[(ir-1)*nShard+ip];
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-1)*nShard+ip];
                 }
             }
         }
@@ -377,6 +384,17 @@ void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
     }
 }
 
+real_t SPIHandler::CalculateBFieldDampingJOREK(len_t ir){
+    if(ir<rGrid->GetNr()){
+        if((rGrid->GetFSA_B(ir)*rGrid->GetBmin(ir))>2.0)
+            return pow(2.0/(rGrid->GetFSA_B(ir)*rGrid->GetBmin(ir)),0.843);
+        else
+            return 1.0;
+    }else{
+        return 0.0;
+    }
+}
+
 /**
  * Calculate deposition corresponding to the ablation, with a density conserving discretisation
  */
@@ -399,8 +417,18 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
     for(len_t ir=0;ir<nr;ir++){
         heatAbsorbtionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            if(YpPrevious[ip]>0 && irp[ip]<nr)
-                heatAbsorbtionRate[ir]+=-M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+            if(YpPrevious[ip]>0 && irp[ip]<nr){
+                real_t heatAbsorbtionPrefactor = M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                
+                heatAbsorbtionRate[ir]+=-heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                
+                // Account for shifted re-deposition 
+                // NOTE: only strictly valid for delta function kernel (assumes deposition only on one side of r=0)
+                if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+            }
         }
     }
 }
@@ -417,45 +445,47 @@ void SPIHandler::CalculateTimeAveragedDeltaSourceLocal(real_t *timeAveragedDelta
         for(len_t ir=0;ir<nr;ir++)
             timeAveragedDeltaSource[ir*nShard+ip]=0.0;
 
-        // Find out if the shard has passed its turning point (where the radial coordinate goes from decreasing to increasing)
-        // If so, we split the averaging in two steps, before and after the turning point (where the analythical expression used for the averaging breaks down)
-        // We determine wether the turning point has been passed by checking if there is a sign change of the 
-        // projection of the direction vector for the shard motion on the gradient of the radial coordinate before and after the time step
-        nSplit=1;
-        iSplit=0;
-        turningPointPassed=false;
-        rGrid->GetGradRCartesian(gradRCartesian,rCoordPNext[ip],thetaCoordPNext[ip],phiCoordPNext[ip]);
-        rGrid->GetGradRCartesian(gradRCartesianPrevious,rCoordPPrevious[ip],thetaCoordPPrevious[ip],phiCoordPPrevious[ip]);
-        turningPointPassed=((gradRCartesian[0]*(xp[3*ip]-xpPrevious[3*ip])+
-            gradRCartesian[1]*(xp[3*ip+1]-xpPrevious[3*ip+1])+
-            gradRCartesian[2]*(xp[3*ip+2]-xpPrevious[3*ip+2])) *
-            (gradRCartesianPrevious[0]*(xp[3*ip]-xpPrevious[3*ip])+
-            gradRCartesianPrevious[1]*(xp[3*ip+1]-xpPrevious[3*ip+1])+
-            gradRCartesianPrevious[2]*(xp[3*ip+2]-xpPrevious[3*ip+2])))<0;
+        if(irp[ip] < nr){
+            // Find out if the shard has passed its turning point (where the radial coordinate goes from decreasing to increasing)
+            // If so, we split the averaging in two steps, before and after the turning point (where the analythical expression used for the averaging breaks down)
+            // We determine wether the turning point has been passed by checking if there is a sign change of the 
+            // projection of the direction vector for the shard motion on the gradient of the radial coordinate before and after the time step
+            nSplit=1;
+            iSplit=0;
+            turningPointPassed=false;
+            rGrid->GetGradRCartesian(gradRCartesian,rCoordPNext[ip],thetaCoordPNext[ip],phiCoordPNext[ip]);
+            rGrid->GetGradRCartesian(gradRCartesianPrevious,rCoordPPrevious[ip],thetaCoordPPrevious[ip],phiCoordPPrevious[ip]);
+            turningPointPassed=((gradRCartesian[0]*(xp[3*ip]-xpPrevious[3*ip])+
+                gradRCartesian[1]*(xp[3*ip+1]-xpPrevious[3*ip+1])+
+                gradRCartesian[2]*(xp[3*ip+2]-xpPrevious[3*ip+2])) *
+                (gradRCartesianPrevious[0]*(xp[3*ip]-xpPrevious[3*ip])+
+                gradRCartesianPrevious[1]*(xp[3*ip+1]-xpPrevious[3*ip+1])+
+                gradRCartesianPrevious[2]*(xp[3*ip+2]-xpPrevious[3*ip+2])))<0;
 
-        while(iSplit<nSplit){
-            if(turningPointPassed){
-                if(iSplit==1){
-                    nSplit=2;
-                    rCoordPClosestApproach=rGrid->FindClosestApproach(xp[3*ip],xp[3*ip+1],xp[3*ip+2],xpPrevious[3*ip],xpPrevious[3*ip+1],xpPrevious[3*ip+2]);
-                    rSourceMax=max(rCoordPPrevious[ip],rCoordPClosestApproach); 
-                    rSourceMin=min(rCoordPPrevious[ip],rCoordPClosestApproach);
+            while(iSplit<nSplit){
+                if(turningPointPassed){
+                    if(iSplit==1){
+                        nSplit=2;
+                        rCoordPClosestApproach=rGrid->FindClosestApproach(xp[3*ip],xp[3*ip+1],xp[3*ip+2],xpPrevious[3*ip],xpPrevious[3*ip+1],xpPrevious[3*ip+2]);
+                        rSourceMax=max(rCoordPPrevious[ip],rCoordPClosestApproach); 
+                        rSourceMin=min(rCoordPPrevious[ip],rCoordPClosestApproach);
+                    }else{
+                        rSourceMax=max(rCoordPClosestApproach,rCoordPNext[ip]); 
+                        rSourceMin=min(rCoordPClosestApproach,rCoordPNext[ip]);
+                    }
                 }else{
-                    rSourceMax=max(rCoordPClosestApproach,rCoordPNext[ip]); 
-                    rSourceMin=min(rCoordPClosestApproach,rCoordPNext[ip]);
+                    rSourceMax=max(rCoordPPrevious[ip],rCoordPNext[ip]); 
+                    rSourceMin=min(rCoordPPrevious[ip],rCoordPNext[ip]);
                 }
-            }else{
-                rSourceMax=max(rCoordPPrevious[ip],rCoordPNext[ip]); 
-                rSourceMin=min(rCoordPPrevious[ip],rCoordPNext[ip]);
-            }
-    
-            for(len_t ir=0;ir<nr;ir++){
-                if(!(rGrid->GetR_f(ir)>rSourceMax || rGrid->GetR_f(ir+1)<rSourceMin)){
-                    timeAveragedDeltaSource[ir*nShard+ip]+=1.0/(rGrid->GetVpVol(ir)*VpVolNormFactor*(rSourceMax-rSourceMin))*
-                                                         (min(rGrid->GetR_f(ir+1),rSourceMax)-max(rGrid->GetR_f(ir),rSourceMin))/rGrid->GetDr(ir);
+        
+                for(len_t ir=0;ir<nr;ir++){
+                    if(!(rGrid->GetR_f(ir)>rSourceMax || rGrid->GetR_f(ir+1)<rSourceMin)){
+                        timeAveragedDeltaSource[ir*nShard+ip]+=1.0/(rGrid->GetVpVol(ir)*VpVolNormFactor*(rSourceMax-rSourceMin))*
+                                                             (min(rGrid->GetR_f(ir+1),rSourceMax)-max(rGrid->GetR_f(ir),rSourceMin))/rGrid->GetDr(ir);
+                    }
                 }
+                iSplit++;
             }
-            iSplit++;
         }
     }
 }
@@ -694,7 +724,16 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
             for(len_t ir=0;ir<nr;ir++){
                 for(len_t ip=0;ip<nShard;ip++){
                     if(YpPrevious[ip]>0 && irp[ip]<nr){
-                        jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                        real_t prefactor = -scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                        real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                        
+                        // Account for shifted re-deposition
+                        if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                            jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                        else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                            jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                    
+                        jac->SetElement(ir,ip,jacEl);
                         jacIsSet=true;
                     }
                 }
@@ -704,7 +743,16 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(irp[ip]<nr){
-                    jac->SetElement(ir,irp[ip],-scaleFactor*3.0/2.0*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    real_t prefactor = -scaleFactor*3.0/2.0*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec;
+                    real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                        
+                    // Account for shifted re-deposition
+                    if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                        jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                    else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                        jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                
+                    jac->SetElement(ir,irp[ip],jacEl);
                     jacIsSet=true;
                 }
             }
@@ -713,7 +761,16 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(irp[ip]<nr){
-                    jac->SetElement(ir,irp[ip],-scaleFactor*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    real_t prefactor = -scaleFactor*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                    real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
+                        
+                    // Account for shifted re-deposition
+                    if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                        jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
+                    else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                        jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                
+                    jac->SetElement(ir,irp[ip],jacEl);
                     jacIsSet=true;
                 }
             }
