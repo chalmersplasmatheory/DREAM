@@ -26,6 +26,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres        = None
         self.jpres_radius = None
         self.jpres_times  = None
+        self.jpres_Ip0    = None
 
         self.jpres0        = None
         self.jpres0_radius = None
@@ -70,7 +71,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.condMode = int(mode)
 
 
-    def setCurrentProfile(self, j, radius=0, times=0):
+    def setCurrentProfile(self, j, radius=0, times=0, Ip0=None):
         """
         Prescribes a current profile evolution in time and space.
 
@@ -82,6 +83,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres  = _j
         self.jpres_radius = _rad
         self.jpres_times  = _tim
+        self.jpres_Ip0 = Ip0
 
         self.verifySettingsPrescribedData()
 
@@ -113,11 +115,15 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
             self.jpres = data['data']['x']
             self.jpres_radius = data['data']['r']
             self.jpres_times = data['data']['t']
+
+            if 'Ip0' in data:
+                self.jpres_Ip0 = data['Ip0']
         if 'jpres0' in data:
             self.jpres0 = data['init']['x']
             self.jpres0_radius = data['init']['r']
-        if 'Ip0' in data:
-            self.jpres0_Ip0 = data['Ip0']
+
+            if 'Ip0' in data:
+                self.jpres0_Ip0 = data['Ip0']
 
 
     def todict(self):
@@ -136,6 +142,9 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
                 'r': self.jpres_radius,
                 't': self.jpres_times
             }
+            
+            if self.jpres_Ip0 is not None:
+                data['Ip0'] = self.jpres_Ip0
         elif self.jpres0 is not None:
             data['init'] = {
                 'x': self.jpres0,

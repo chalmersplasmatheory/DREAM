@@ -12,6 +12,7 @@
  * of a quantity 'X'.
  */
 
+#include <string>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
@@ -27,6 +28,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 /**
  * Implementation of a class which represents the Vloop term of the electric
@@ -282,10 +284,14 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 			id_j_tot,
 			EqsysInitializer::RUNAWAY_FLUID
 		);
-	} else
-		throw SettingsException(
-			"E_field: Self-consistent electric field evolution requested, but neither initial E or j_tot profiles have been specified."
-		);
+	} else {
+		const string& fromfile = s->GetString("init/fromfile", false);
+
+		if (fromfile == "")
+			throw SettingsException(
+				"E_field: Self-consistent electric field evolution requested, but neither initial E or j_tot profiles have been specified."
+			);
+	}
 
     // Set equation for self-consistent boundary condition
     ConstructEquation_psi_wall_selfconsistent(eqsys,s);

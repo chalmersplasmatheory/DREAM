@@ -54,10 +54,25 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+	FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
 
-	FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
+	FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-	FVM::Interpolator1D *interp = LoadDataRT_intp("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s);
+	struct dream_2d_data *dd = LoadDataRT("eqsys/j_ohm", rGrid, s);
+
+	// Re-scale to get right initial plasma current (Ip)?
+	if (s->GetReal("eqsys/j_ohm/Ip0") != 0) {
+		const real_t Ip0 = s->GetReal("eqsys/j_ohm/Ip0");
+		real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIp(rGrid, dd->x);
+
+		const real_t f = Ip0 / Ipj;
+		const len_t N = dd->nt * dd->nr;
+		for (len_t i = 0; i < N; i++)
+			dd->x[i] *= f;
+	}
+
+	FVM::Interpolator1D *interp = new FVM::Interpolator1D(dd->nt, dd->nr, dd->t, dd->x, dd->interp);
 	FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
 	eqn->AddTerm(pp);
 
@@ -104,7 +119,7 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 			FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
 			const len_t nr = rGrid->GetNr();
 			const real_t Ip0 = s->GetReal("eqsys/j_ohm/Ip0");
-			real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(nr, rGrid, jtot_init);
+			real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIp(rGrid, jtot_init);
 
 			for (len_t ir = 0; ir < nr; ir++)
 				jtot_init[ir] *= Ip0 / Ipj;
