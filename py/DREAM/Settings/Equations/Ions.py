@@ -79,7 +79,10 @@ class Ions(UnknownQuantity):
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
         """
         if (self.r is not None) and (r is not None) and (np.any(self.r[:] != r[:])):
-            raise EquationException("The radial grid must be the same for all ion species.")
+            if self.r.size == 1:
+                self.changeRadialGrid(r)
+            else:
+                raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
             
