@@ -190,10 +190,11 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.radius = data['data']['r']
             self.times  = data['data']['t']
         elif self.type == TYPE_SELFCONSISTENT:
+            self.bctype = data['bc']['type']
+
             if 'init' in data:
                 self.efield = data['init']['x']
                 self.radius = data['init']['r']
-                self.bctype = data['bc']['type']
 
             if self.bctype == BC_TYPE_PRESCRIBED:
                 self.V_loop_wall_R0   = data['bc']['V_loop_wall']['x']
