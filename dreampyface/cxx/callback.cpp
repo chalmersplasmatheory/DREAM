@@ -18,7 +18,8 @@ std::vector<PyObject*>
 PyObject *capsule_to_simulation(DREAM::Simulation *sim) {
     PyObject *cap = PyCapsule_New(sim, "sim", NULL);
 
-    PyObject *name = PyUnicode_FromString("Simulation");
+    //PyObject *name = PyUnicode_FromString("Simulation");
+	const char *name = "Simulation";
     PyObject *sys_mod_dict = PyImport_GetModuleDict();
 
     PyObject *sim_mod = PyMapping_GetItemString(sys_mod_dict, "dreampyface.Simulation");
@@ -29,7 +30,8 @@ PyObject *capsule_to_simulation(DREAM::Simulation *sim) {
         );
     }
 
-    PyObject *pysim = PyObject_CallMethodOneArg(sim_mod, name, cap);
+    //PyObject *pysim = PyObject_CallMethodOneArg(sim_mod, name, cap);
+	PyObject *pysim = PyObject_CallMethod(sim_mod, name, "O", cap);
     if (pysim == nullptr) {
         PyErr_PrintEx(1);
         throw DREAM::DREAMException(
@@ -62,10 +64,12 @@ void register_callback_functions(DREAM::Simulation *sim) {
  */
 void dreampy_callback_timestep(DREAM::Simulation *sim) {
     PyObject *pysim = capsule_to_simulation(sim);
+	PyObject *args = PyTuple_Pack(1, pysim);
 
     for (auto f : callback_timestep)
-        PyObject_CallOneArg(f, pysim);
+		PyObject_Call(f, args, NULL);
 
+	Py_DECREF(args);
     Py_DECREF(pysim);
 }
 
@@ -75,10 +79,12 @@ void dreampy_callback_timestep(DREAM::Simulation *sim) {
  */
 void dreampy_callback_iteration(DREAM::Simulation *sim) {
     PyObject *pysim = capsule_to_simulation(sim);
+	PyObject *args = PyTuple_Pack(1, pysim);
 
     for (auto f : callback_iteration)
-        PyObject_CallOneArg(f, pysim);
+        PyObject_Call(f, args, NULL);
 
+	Py_DECREF(args);
     Py_DECREF(pysim);
 }
 
@@ -88,11 +94,12 @@ void dreampy_callback_iteration(DREAM::Simulation *sim) {
  */
 bool dreampy_callback_return_bool(void *func, DREAM::Simulation *sim) {
     PyObject *pysim = capsule_to_simulation(sim);
+	PyObject *args = PyTuple_Pack(1, pysim);
     bool v = true;
 
     PyObject *f = (PyObject*)func;
 
-    PyObject *ret = PyObject_CallOneArg(f, pysim);
+    PyObject *ret = PyObject_Call(f, args, NULL);
 
     if (ret == nullptr) {
         PyErr_PrintEx(1);
@@ -104,6 +111,7 @@ bool dreampy_callback_return_bool(void *func, DREAM::Simulation *sim) {
     v = PyObject_IsTrue(ret);
     Py_DECREF(ret);
 
+	Py_DECREF(args);
     Py_DECREF(pysim);
 
     return v;
