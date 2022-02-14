@@ -23,7 +23,7 @@ namespace DREAM {
 								* sqrt(grid->GetRadialGrid()->GetFSA_B2(ir))
                                 / (s*s);
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                            diffWeights[offset + i] = dw;
+                            diffWeights[offset + i] = -dw;
                     offset += n1[ir]*n2[ir];
                 }
         }
