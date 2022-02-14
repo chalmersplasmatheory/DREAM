@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 #
-# This example shows how to set up a simple CODE-like runaway
-# scenario in DREAM. The simulation uses a constant temperature,
-# density and electric field, and generates a runaway current
-# through the electric field acceleration, demonstrating Dreicer generation.
+# This example shows how to set up a simple case where the current
+# density is prescribed. The simulation uses a constant temperature and
+# density.
 #
 # Run as
 #
