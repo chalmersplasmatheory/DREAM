@@ -146,18 +146,22 @@ def dict2h5(f, data, path=''):
     """
 
     for key in data:
-        if type(data[key]) == dict:
+        d = data[key]
+        if type(d) == DataObject:
+            d = d[:]
+
+        if type(d) == dict:
             o = f.create_group(key)
-            dict2h5(o, data[key], path=path+'/'+key)
-        elif type(data[key]) == float:
-            f.create_dataset(key, (1,), data=data[key])
-        elif type(data[key]) == int:
-            f.create_dataset(key, (1,), data=data[key], dtype='i8')
-        elif type(data[key]) == bool:
-            v = 1 if data[key] else 0
+            dict2h5(o, d, path=path+'/'+key)
+        elif type(d) == float:
+            f.create_dataset(key, (1,), data=d)
+        elif type(d) == int:
+            f.create_dataset(key, (1,), data=d, dtype='i8')
+        elif type(d) == bool:
+            v = 1 if d else 0
             f.create_dataset(key, (1,), data=v, dtype='i4')
-        elif type(data[key]) == str:
-            l = len(data[key])
+        elif type(d) == str:
+            l = len(d)
 
             # From h5py version 2.10.0 an on there is support for storing
             # UTF-8 strings. To allow this, but still remain backwards
@@ -166,16 +170,16 @@ def dict2h5(f, data, path=''):
             if version.parse(h5py.version.version) >= version.parse('2.10.0'):
                 dt = h5py.string_dtype()
                 dset = f.create_dataset(key, (1,), dtype=dt)
-                dset[0:l] = data[key]
+                dset[0:l] = d
             else:   # h5py < 2.10.0
                 dset = f.create_dataset(key, (1,), dtype='S'+str(l))
-                dset[0:l] = np.string_(data[key])
-        elif type(data[key]) == list:
-            f.create_dataset(key, (len(data[key]),), data=data[key])
-        elif type(data[key]) == np.ndarray:
-            f.create_dataset(key, data[key].shape, data=data[key])
+                dset[0:l] = np.string_(d)
+        elif type(d) == list:
+            f.create_dataset(key, (len(d),), data=d)
+        elif type(d) == np.ndarray:
+            f.create_dataset(key, d.shape, data=d)
         else:
-            raise DREAMIOException("Unrecognized data type of entry '{}/{}': {}.".format(path, key, type(data[key])))
+            raise DREAMIOException("Unrecognized data type of entry '{}/{}': {}.".format(path, key, type(d)))
 
 
 def h52dict(f, path='', lazy=False):
