@@ -68,7 +68,7 @@ void IonSourceTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
             real_t *n = currentData[i] + Z0*Nr;
 
             for (len_t ir = 0; ir < Nr; ir++)
-                rhs[idx*Nr+ir] -= n[ir];
+                rhs[idx*Nr+ir] += n[ir];
         }
     }
 }
@@ -89,7 +89,7 @@ void IonSourceTerm::SetVectorElements(real_t *vec, const real_t*) {
             real_t *n = currentData[i] + Z0*Nr;
 
             for (len_t ir = 0; ir < Nr; ir++)
-                vec[idx*Nr+ir] -= n[ir];
+                vec[idx*Nr+ir] += n[ir];
         }
     }
 }
