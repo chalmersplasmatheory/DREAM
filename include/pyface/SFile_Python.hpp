@@ -70,6 +70,11 @@ public:
     virtual void WriteUInt32Array(const std::string&, const uint32_t *const*, sfilesize_t, sfilesize_t) override;
     virtual void WriteUInt64Array(const std::string&, const uint64_t *const*, sfilesize_t, sfilesize_t) override;
 
+    virtual void WriteMultiInt32Array(const std::string&, const int32_t *, const sfilesize_t, const sfilesize_t *) override;
+    virtual void WriteMultiInt64Array(const std::string&, const int64_t *, const sfilesize_t, const sfilesize_t *) override;
+    virtual void WriteMultiUInt32Array(const std::string&, const uint32_t *, const sfilesize_t, const sfilesize_t *) override;
+    virtual void WriteMultiUInt64Array(const std::string&, const uint64_t *, const sfilesize_t, const sfilesize_t *) override;
+
     virtual void WriteList(const std::string&, const double*, sfilesize_t) override;
 
     virtual void WriteInt32List(const std::string&, const int32_t*, sfilesize_t) override;

@@ -512,6 +512,34 @@ void SFile_Python::WriteUInt64Array(
     return writeArray<uint64_t>(name, data[0], 2, dims, NPY_UINT64);
 }
 
+void SFile_Python::WriteMultiInt32Array(
+    const string& name, const int32_t * data,
+    const sfilesize_t ndim, const sfilesize_t * dims
+) {
+    return writeArray<int32_t>(name, data, ndim, dims, NPY_INT32);
+}
+
+void SFile_Python::WriteMultiInt64Array(
+    const string& name, const int64_t * data,
+    const sfilesize_t ndim, const sfilesize_t * dims
+) {
+    return writeArray<int64_t>(name, data, ndim, dims, NPY_INT64);
+}
+
+void SFile_Python::WriteMultiUInt32Array(
+    const string& name, const uint32_t * data,
+    const sfilesize_t ndim, const sfilesize_t * dims
+) {
+    return writeArray<uint32_t>(name, data, ndim, dims, NPY_UINT32);
+}
+
+void SFile_Python::WriteMultiUInt64Array(
+    const string& name, const uint64_t * data,
+    const sfilesize_t ndim, const sfilesize_t * dims
+) {
+    return writeArray<uint64_t>(name, data, ndim, dims, NPY_UINT64);
+}
+
 void SFile_Python::WriteList(
     const string& name, const double *data, sfilesize_t size
 ) {
