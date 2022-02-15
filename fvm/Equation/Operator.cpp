@@ -6,6 +6,8 @@
 #include <algorithm>
 #include "FVM/Equation/Operator.hpp"
 
+#include <iostream>
+#include <stdlib.h>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -24,24 +26,48 @@ Operator::~Operator() {}
 
 /**
  * Add an advection term to this operator.
+ * The optional argument addAsEquationTerm is included
+ * to make it possible to add also advection-diffusion
+ * terms as ordinary terms, ie not via an AdvectionDiffusionTerm.
+ * This is needed for example for advection-diffusion terms on a
+ * quantity with more multiples than one (e.g. ions in DREAM), as the
+ * AdvectionDiffusionTerm class is presently not adapted for such terms.
  */
-void Operator::AddTerm(AdvectionTerm *a) {
-    if (adterm == nullptr)
-        adterm = new AdvectionDiffusionTerm(this->grid);
+void Operator::AddTerm(AdvectionTerm *a, bool addAsEquationTerm) {
 
-    adterm->Add(a);
-    CheckConsistency();
+    if(addAsEquationTerm){
+        terms.push_back(a);
+        CheckConsistency();
+    }else{
+        if (adterm == nullptr)
+            adterm = new AdvectionDiffusionTerm(this->grid);
+
+        adterm->Add(a);
+        CheckConsistency();
+    }
 }
 
 /**
  * Add a diffusion term to this operator.
+ * The optional argument addAsEquationTerm is included
+ * to make it possible to add also advection-diffusion
+ * terms as ordinary terms, ie not via an AdvectionDiffusionTerm.
+ * This is needed for example for advection-diffusion terms on a
+ * quantity with more multiples than one (e.g. ions in DREAM), as the
+ * AdvectionDiffusionTerm class is presently not adapted for such terms.
  */
-void Operator::AddTerm(DiffusionTerm *d) {
-    if (adterm == nullptr)
-        adterm = new AdvectionDiffusionTerm(this->grid);
+void Operator::AddTerm(DiffusionTerm *d, bool addAsEquationTerm) {
 
-    adterm->Add(d);
-    CheckConsistency();
+    if(addAsEquationTerm){
+        terms.push_back(d);
+        CheckConsistency();
+    }else{
+        if (adterm == nullptr)
+            adterm = new AdvectionDiffusionTerm(this->grid);
+
+        adterm->Add(d);
+        CheckConsistency();
+    }
 }
 
 /**

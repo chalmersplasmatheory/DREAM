@@ -33,7 +33,7 @@ namespace DREAM {
 
         // Debug settings
         bool printjacobianinfo = false, savejacobian = false, savesolution = false,
-            savevector = false, savenumjac = false, savesystem = false;
+            savevector = false, savenumjac = false, savesystem = false, debugrescaled = false;
         len_t savetimestep = 0, saveiteration = 1;
 
         std::vector<len_t> nIterations;
@@ -95,7 +95,7 @@ namespace DREAM {
 
         void SaveDebugInfoBefore(len_t, len_t);
         void SaveDebugInfoAfter(len_t, len_t);
-        void SetDebugMode(bool, bool, bool, bool, bool, int_t, int_t, bool);
+        void SetDebugMode(bool, bool, bool, bool, bool, int_t, int_t, bool, bool);
 
         virtual void SwitchToBackupInverter() override;
 

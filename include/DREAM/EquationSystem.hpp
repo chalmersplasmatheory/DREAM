@@ -13,6 +13,7 @@ namespace DREAM { class EquationSystem; class Simulation; }
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
@@ -59,6 +60,7 @@ namespace DREAM {
         PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
         SPIHandler *SPI = nullptr;
+        Settings *settings = nullptr;
 
         AnalyticDistributionRE *distRE = nullptr;
         AnalyticDistributionHottail *distHT = nullptr;
@@ -84,7 +86,7 @@ namespace DREAM {
     public:
         EqsysInitializer *initializer=nullptr;
 
-        EquationSystem(FVM::Grid*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
+        EquationSystem(FVM::Grid*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, Settings*);
         ~EquationSystem();
         FVM::Grid *GetScalarGrid() { return this->scalarGrid; }
         FVM::Grid *GetFluidGrid() { return this->fluidGrid; }
@@ -109,6 +111,7 @@ namespace DREAM {
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
         SPIHandler *GetSPIHandler() { return this->SPI; }
+        Settings *GetSettings() { return this->settings; }
 
         AnalyticDistributionRE *GetAnalyticREDistribution() { return this->distRE;}
         AnalyticDistributionHottail *GetAnalyticHottailDistribution() { return this->distHT;}
@@ -189,6 +192,17 @@ namespace DREAM {
             this->SetInitializerFile(n, tidx);
             this->initializerFileIgnore = l;
         }
+		void SetInitializerSolver(
+			const len_t maxiter, const real_t reltol,
+			enum OptionConstants::linear_solver linear_solver,
+			enum OptionConstants::linear_solver backup_solver,
+			bool verbose
+		) {
+			this->initializer->SetSolver(
+				maxiter, reltol, linear_solver,
+				backup_solver, verbose
+			);
+		}
         void SetIonHandler(IonHandler *ih) { 
             this->ionHandler = ih; 
             this->initializer->SetIonHandler(ih);

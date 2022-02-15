@@ -19,6 +19,8 @@ namespace DREAM {
         FVM::Matrix *integrationMatrix;  // matrix with size equal to the (id_x,id_f) block matrix that contains integration weights
         PetscScalar *kineticVector;      // vector of size id_f
         PetscScalar *fluidVector;        // vector of size nr 
+        
+        Mat CsetElements=nullptr, *CsetJacobian;
 
         PetscInt *idxFluid;
         len_t NCells;

@@ -36,6 +36,17 @@ class ToleranceSettings:
             raise DREAMException("Unrecognized type of parameter 'unknown': {}.".format(type(unknown)))
 
 
+    def getRelTol(self, unknown):
+        """
+        Returns the relative tolerance of the named unknown.
+        """
+        i = self.getIndex(unknown)
+        if i < 0:
+            return self.reltol
+        else:
+            return self.overrides[i]['reltol']
+
+
     def fromdict(self, data):
         """
         Load tolerance settings from a dictionary.

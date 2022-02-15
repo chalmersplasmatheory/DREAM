@@ -38,6 +38,7 @@ class Solver:
         self.debug_savesystem = False
         self.debug_timestep = 0
         self.debug_iteration = 1
+        self.debug_rescaled = False
 
         self.backupsolver = None
         self.tolerance = ToleranceSettings()
@@ -47,7 +48,7 @@ class Solver:
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
                  savesolution=False, savematrix=False, savenumericaljacobian=False, saverhs=False,
-                 saveresidual=False, savesystem=False, timestep=0, iteration=1):
+                 saveresidual=False, savesystem=False, rescaled=False, timestep=0, iteration=1):
         """
         Enable output of debug information.
 
@@ -65,6 +66,7 @@ class Solver:
         :param bool savesolution:          If ``True``, saves the solution vector to a ``.mat`` file.
         :param bool savenumericaljacobian: If ``True``, evaluates the jacobian matrix numerically and saves it using a PETSc viewer.
         :param bool saveresidual:          If ``True``, saves the residual vector to a ``.mat`` file.
+        :param bool rescaled:              If ``True``, saves the rescaled versions of the jacobian/solution/residual.
         :param int iteration:              Index of iteration to save debug info for. If ``0``, saves in all iterations. If ``timestep`` is ``0``, this parameter is always ignored.
         """
         self.debug_printmatrixinfo = printmatrixinfo
@@ -76,6 +78,7 @@ class Solver:
         self.debug_saverhs = saverhs
         self.debug_saveresidual = saveresidual
         self.debug_savesystem = savesystem
+        self.debug_rescaled = rescaled
         self.debug_timestep = timestep
         self.debug_iteration = iteration
 
@@ -167,7 +170,7 @@ class Solver:
             self.backupsolver = int(data['backupsolver'])
 
         if 'debug' in data:
-            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
+            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
 
             for f in flags:
                 if f in data['debug']:
@@ -215,6 +218,7 @@ class Solver:
                 'savenumericaljacobian': self.debug_savenumericaljacobian,
                 'saveresidual': self.debug_saveresidual,
                 'savesystem': self.debug_savesystem,
+                'rescaled': self.debug_rescaled,
                 'timestep': self.debug_timestep,
                 'iteration': self.debug_iteration
             }
@@ -257,6 +261,8 @@ class Solver:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_saverhs': {}. Expected boolean.".format(type(self.debug_saverhs)))
             elif type(self.debug_saveresidual) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_saveresidual': {}. Expected boolean.".format(type(self.debug_saveresidual)))
+            elif type(self.debug_rescaled) != bool:
+                raise DREAMException("Solver: Invalid type of parameter 'debug_rescaled': {}. Expected boolean.".format(type(self.debug_rescaled)))
             elif type(self.debug_timestep) != int:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_timestep': {}. Expected integer.".format(type(self.debug_timestep)))
             elif type(self.debug_iteration) != int:

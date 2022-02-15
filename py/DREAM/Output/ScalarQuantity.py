@@ -84,7 +84,10 @@ class ScalarQuantity(UnknownQuantity):
         
         :param t: Selection of time points to dump.
         """
-        return self.data[t].__str__()
+        if t is not None:
+            return self.data[t].__str__()
+        else:
+            return self.data[:].__str__()
 
 
     def print(self, t=None):

@@ -227,7 +227,7 @@ void SolverLinearlyImplicit::SaveDebugInfo(len_t it, FVM::Matrix *mat, const rea
                 outname += suffix;
             outname += ".h5";
 
-            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname);
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname, true);
             outgen->SaveCurrent();
             delete outgen;
         }

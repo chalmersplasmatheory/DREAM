@@ -131,7 +131,7 @@ class DREAMOutput:
 
         # Load settings for the run
         if 'settings' in od:
-            self.settings = DREAMSettings(settings=od['settings'])
+            self.settings = DREAMSettings(od['settings'])
 
         # Solver statistics
         if 'solver' in od:

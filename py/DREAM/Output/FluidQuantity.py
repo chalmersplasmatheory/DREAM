@@ -162,7 +162,7 @@ class FluidQuantity(UnknownQuantity):
         return 1
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, unit='s', **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
@@ -201,9 +201,11 @@ class FluidQuantity(UnknownQuantity):
             if log:
                 data = np.log10(np.abs(data))
 
-            cp = ax.contourf(self.radius, self.time, data, cmap='GeriMap', **kwargs)
+            time = self.time * self._getTimeUnitFactor(unit)
+
+            cp = ax.contourf(self.radius, time, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
-            ax.set_ylabel(r'Time $t$')
+            ax.set_ylabel(fr'Time $t$ ({unit})')
 
             cb = None
             if colorbar:
@@ -357,9 +359,9 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data, **kwargs)
+                    ax.semilogy(self.radius, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--', **kwargs)
+                    ax.semilogy(self.radius, -data, '--', **kwargs)
             else:
                 ax.plot(self.radius, data, **kwargs)
 
@@ -435,7 +437,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None, **kwargs):
+    def plotIntegral(self, ax=None, show=None, unit='s', time_shift = 0, time_scale_factor = 1.0, w=1.0, time_derivative = False, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -450,8 +452,16 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.time, self.integral(), **kwargs)
-        ax.set_xlabel(r'Time $t$')
+        time = self.time * self._getTimeUnitFactor(unit)
+        time = time + time_shift
+        time = time*time_scale_factor
+
+        if time_derivative:
+            ax.plot(time[:-1], np.diff(self.integral(w=w))/np.diff(time/time_scale_factor), **kwargs)
+        else:
+            ax.plot(time, self.integral(w=w), **kwargs)
+
+        ax.set_xlabel(fr'Time $t$ ({unit})')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 
         if show:
@@ -483,5 +493,19 @@ class FluidQuantity(UnknownQuantity):
             return self.grid.integrate(self.data[:], w)
         else:
             return self.grid.integrate(self.data[t,:], w)
+
+
+    def _getTimeUnitFactor(self, unit):
+        """
+        Converts a time unit given as a string to a numeric factor
+        for converting the 'grid.time' vector to the specified units
+        (i.e. from seconds).
+        """
+        if unit == 's': return 1
+        elif unit == 'ms': return 1e3
+        elif unit == 'µs': return 1e6
+        elif unit == 'ns': return 1e9
+        else:
+            raise ValueError(f"Unrecognized time unit: '{unit}'.")
         
 

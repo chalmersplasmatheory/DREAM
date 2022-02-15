@@ -37,6 +37,12 @@ void SimulationGenerator::DefineOptions_Initializer(Settings *s) {
     s->DefineSetting(INITIALIZATION "/filetimeindex", "Time index to take initialization data for from output file.", (int_t)-1);
     s->DefineSetting(INITIALIZATION "/fromfile", "Name of DREAM output file from which simulation should be initialized.", (const string)"");
     s->DefineSetting(INITIALIZATION "/t0", "Simulation at which to initialize the simulation.", (real_t)0.0);
+
+	s->DefineSetting(INITIALIZATION "/solver_maxiter", "Maximum number of iterations for non-linear steady-state solver.", (int_t)100);
+	s->DefineSetting(INITIALIZATION "/solver_reltol", "Relative tolerance used for non-linear steady-state solver.", (real_t)1e-6);
+	s->DefineSetting(INITIALIZATION "/solver_verbose", "Whether or not to print convergence information for non-linear steady-state solver.", (bool)false);
+	s->DefineSetting(INITIALIZATION "/solver_linear", "Primary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_LU);
+	s->DefineSetting(INITIALIZATION "/solver_backup", "Secondary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_NONE);
 }
 
 /**
@@ -62,7 +68,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
     ADAS *adas, NIST *nist, AMJUEL *amjuel
 ) {
-    EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
+    EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid, s);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
     // Timing information
@@ -239,6 +245,16 @@ real_t SimulationGenerator::ConstructInitializer(
         eqsys->SetInitializerFile(filename, ignoreList, timeIndex);
     }
 
+	len_t maxiter = (len_t)s->GetInteger(INITIALIZATION "/solver_maxiter");
+	real_t reltol = s->GetReal(INITIALIZATION "/solver_reltol");
+	bool verbose  = s->GetBool(INITIALIZATION "/solver_verbose");
+	enum OptionConstants::linear_solver linear_solver =
+		(enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_linear");
+	enum OptionConstants::linear_solver backup_solver =
+		(enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_backup");
+
+	eqsys->SetInitializerSolver(maxiter, reltol, linear_solver, backup_solver, verbose);
+
     return t0;
 }
 
@@ -313,6 +329,9 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_SCL(PSI_EDGE);
     DEFU_SCL(PSI_WALL);
     DEFU_SCL(I_P);
+
+    if (s->GetBool("eqsys/n_re/negative_re"))
+        DEFU_FLD(N_RE_NEG);
 
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){

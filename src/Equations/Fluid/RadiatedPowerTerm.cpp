@@ -17,10 +17,12 @@
 using namespace DREAM;
 
 
-RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, 
-	ADAS *adas, NIST *nist, AMJUEL* amjuel,enum OptionConstants::ion_opacity_mode *opacity_modes, bool includePRB) 
-    : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) 
-{
+RadiatedPowerTerm::RadiatedPowerTerm(
+    FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, 
+	ADAS *adas, NIST *nist, AMJUEL* amjuel,
+    enum OptionConstants::ion_opacity_mode *opacity_modes, bool includePRB
+) : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) {
+
     SetName("RadiatedPowerTerm");
 
     this->adas = adas;
@@ -49,10 +51,29 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
 }
 
 
+/**
+ * Set the weights of this term.
+ */
 void RadiatedPowerTerm::SetWeights(){
+    this->SetWeights(nullptr);
+}
+
+/**
+ * Set the weights of this term, scaling contributions from the various ion
+ * species and charge states by the given factor 'ionScaleFactor'.
+ *
+ * ionScaleFactor: Scale factor to multiply contributions from ions with. One
+ *                 element per ion species and charge state. If 'nullptr',
+ *                 this factor is ignored.
+ * w:              Vector of weights to store weights in (if 'nullptr', use
+ *                 the regular 'weights' vector).
+ */
+void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
+
+    real_t *weights = (w==nullptr?this->weights : w);
     
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
@@ -114,7 +135,12 @@ void RadiatedPowerTerm::SetWeights(){
 		            }
 
                 }
-                weights[i] += n_i[indZ*NCells + i]*(Li+Bi);
+
+                real_t cont = n_i[indZ*NCells + i]*(Li+Bi);
+                if (ionScaleFactor != nullptr)
+                    weights[i] += ionScaleFactor[indZ] * cont;
+                else
+                    weights[i] += cont;
             }
         }
     }
@@ -135,7 +161,11 @@ void RadiatedPowerTerm::SetWeights(){
         }
 }
 
-void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
+void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t indZs){
+    this->SetDiffWeights(derivId, indZs, nullptr);
+}
+
+void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionScaleFactor) {
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -170,7 +200,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
         	                if(includePRB)
 	                            Li+=bremsPrefactor*sqrt(T_cold[i])*Z0*Z0*(1 + bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
-		                diffWeights[NCells*indZ + i] = Li+Bi;
+
+                        real_t cont = Li+Bi;
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[NCells*indZ + i] = ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[NCells*indZ + i] = cont;
 	                }
 	            }else{
 		            for (len_t i = 0; i < NCells; i++){
@@ -184,7 +219,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
 		                    dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
 		                    Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
 		                }
-		                diffWeights[NCells*indZ + i] = Li+Bi;
+
+                        real_t cont = Li+Bi;
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[NCells*indZ + i] = ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[NCells*indZ + i] = cont;
 		            }
                 }
             }
@@ -196,7 +236,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
                         len_t indZ = ionHandler->GetIndex(iz,Z0);
                         real_t dIonTerm = Z0*Z0;
                         real_t dRelativisticCorrection = bremsRel1*dIonTerm;
-                        diffWeights[NCells*indZ + i] += bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
+
+                        real_t cont = bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[NCells*indZ + i] += ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[NCells*indZ + i] += bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
                     }
             }
         }
@@ -226,7 +271,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
 				            if(includePRB)
 				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
-		                diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
+                        
+                        real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[i] += ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[i] += cont;
 	                }
                 }else{                
 		            for (len_t i = 0; i < NCells; i++){
@@ -240,7 +290,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
 		                    dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
 		                    dBi += dWi * SCD_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
 		                }
-		                diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
+
+                        real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[i] += ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[i] += cont;
 		            }
                 }
             }
@@ -272,7 +327,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 			            }
-		                diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
+
+                        real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[i] += ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[i] += cont;
 	                }
                 }else{ 
 		            for (len_t i = 0; i < NCells; i++){
@@ -286,7 +346,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
 		                    dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
 		                    dBi += dWi * SCD_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
 		                }
-		                diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
+                        
+                        real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (ionScaleFactor != nullptr)
+                            diffWeights[i] += ionScaleFactor[indZ] * cont;
+                        else
+                            diffWeights[i] += cont;
 		            }
                 }
             }

@@ -5,6 +5,8 @@
 
 #include <string>
 #include "DREAM/OutputGeneratorSFile.hpp"
+#include "DREAM/Settings/Settings.hpp"
+#include "DREAM/Settings/SFile.hpp"
 
 
 using namespace DREAM;
@@ -14,12 +16,14 @@ using namespace std;
  * Constructor.
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
-	EquationSystem *eqsys, const std::string& filename
-) : OutputGenerator(eqsys), filename(filename) {}
+	EquationSystem *eqsys, const std::string& filename,
+    bool savesettings
+) : OutputGenerator(eqsys, savesettings), filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
-	EquationSystem *eqsys, SFile *sf
-) : OutputGenerator(eqsys), sf(sf) {}
+	EquationSystem *eqsys, SFile *sf,
+    bool savesettings
+) : OutputGenerator(eqsys, savesettings), sf(sf) {}
 
 /**
  * Destructor.
@@ -212,9 +216,10 @@ void OutputGeneratorSFile::SaveOtherQuantities(const std::string& name) {
 
 /**
  * Save settings used for this simulation
- * TODO TODO TODO
  */
-void OutputGeneratorSFile::SaveSettings(const std::string&) {
+void OutputGeneratorSFile::SaveSettings(const std::string& name) {
+    this->sf->CreateStruct(name);
+    SettingsSFile::SaveSettings(this->eqsys->GetSettings(), this->sf, name);
 }
 
 /**

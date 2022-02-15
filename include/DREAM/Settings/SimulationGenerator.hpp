@@ -73,6 +73,9 @@ namespace DREAM {
             enum OptionConstants::momentumgrid_type
         );
 
+		static bool HasInitialEfield(EquationSystem*, Settings*);
+		static bool HasInitialJtot(EquationSystem*, Settings*);
+
         static void DefineOptions_RadialGrid(Settings*);
 
         static void DefineOptions_ADAS(Settings*);
@@ -124,6 +127,7 @@ namespace DREAM {
         static void ConstructEquation_E_field(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_E_field_prescribed_current(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
@@ -158,12 +162,25 @@ namespace DREAM {
         static void ConstructEquation_j_ohm(EquationSystem*, Settings*);
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
+		static void ConstructEquation_Ip(EquationSystem*);
+        static void ConstructEquation_j_tot_prescribed(EquationSystem*, Settings*);
+        static void ConstructEquation_j_tot_consistent(EquationSystem*, Settings*);
+
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
 
+		static void ConstructEquation_psi_init_integral(
+			EquationSystem*, Settings *s, FVM::Grid*,
+			const len_t, const len_t, const len_t
+		);
+		static void ConstructEquation_psi_init_nl(
+			EquationSystem*, const len_t, const len_t, const len_t
+		);
+
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);
+        static void ConstructEquation_n_re_neg(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 

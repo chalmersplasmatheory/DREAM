@@ -15,8 +15,10 @@ using namespace DREAM;
  */
 AvalancheSourceRP::AvalancheSourceRP(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t scaleFactor, RPSourceMode sm
-) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceMode(sm)
+    real_t pCutoff, real_t scaleFactor, RPSourceMode sm,
+    RPSourcePitchMode sxm
+) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceMode(sm),
+    sourceXiMode(sxm)
 {
     SetName("AvalancheSourceRP");
 
@@ -52,8 +54,15 @@ real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     real_t gm = sqrt(1+pm*pm);
     real_t pPart = ( 1/(gm-1) - 1/(gp-1) ) / dp;
     
-    const real_t E = unknowns->GetUnknownData(id_Efield)[ir];
-    int_t RESign = (E>=0) ? 1: -1;
+    int_t RESign;
+    if (this->sourceXiMode == RP_SOURCE_PITCH_ADAPTIVE) {
+        const real_t E = unknowns->GetUnknownData(id_Efield)[ir];
+        RESign = (E>=0) ? 1: -1;
+    } else if (this->sourceXiMode == RP_SOURCE_PITCH_POSITIVE)
+        RESign = 1;
+    else
+        RESign = -1;
+
     const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j, RESign);
     return scaleFactor * preFactor * pPart * deltaHat;
 }

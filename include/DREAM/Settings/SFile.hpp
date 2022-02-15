@@ -20,6 +20,15 @@ namespace DREAM {
         static void LoadString(const std::string&, SFile*, Settings*);
         static void LoadIntegerArray(const std::string&, const len_t, SFile*, Settings*);
         static void LoadRealArray(const std::string&, const len_t, SFile*, Settings*);
+
+        static void CreateGroup(const std::string&, const std::string&, std::vector<std::string>&, SFile*);
+        static void SaveSettings(Settings*, SFile*, const std::string&);
+        static void SaveBool(const std::string&, bool, SFile*);
+        static void SaveInteger(const std::string&, int_t, SFile*);
+        static void SaveReal(const std::string&, real_t, SFile*);
+        static void SaveIntegerArray(const std::string&, const int_t*, const len_t, const len_t*, SFile*);
+        static void SaveRealArray(const std::string&, const real_t*, const len_t, const len_t*, SFile*);
+        static void SaveString(const std::string&, const std::string&, SFile*);
     };
 }
 
