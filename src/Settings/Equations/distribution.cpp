@@ -91,7 +91,6 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
 ) {
-	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     FVM::Operator *eqn = new FVM::Operator(grid);
 
     // Add transient term
