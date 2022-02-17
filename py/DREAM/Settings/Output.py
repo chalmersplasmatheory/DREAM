@@ -67,7 +67,7 @@ class Output:
         self.timingfile = bool(data['timingfile'])
 
         if 'savesettings' in data:
-            self.savesettings = data['savesettings']
+            self.savesettings = bool(data['savesettings'])
 
         self.verifySettings()
 
