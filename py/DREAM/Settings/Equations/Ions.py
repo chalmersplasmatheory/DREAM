@@ -552,7 +552,7 @@ class Ions(UnknownQuantity):
 
         if len(tritiumnames) > 0:
             data['tritiumnames'] = tritiumnames
-        if (len(hydrogennames) > 0:
+        if len(hydrogennames) > 0:
             data['hydrogennames'] = hydrogennames
 
         if initial is not None:
