@@ -25,9 +25,6 @@ MILU::MILU(const len_t n) {
  */
 MILU::~MILU() {
     KSPDestroy(&this->ksp);
-    VecDestroy(&this->x);
-
-    delete [] this->x_data;
 }
 
 /**

@@ -13,6 +13,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Info.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Save.cpp"
     "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.cpp"
+    "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.nonlinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"

@@ -165,6 +165,7 @@ enum corrected_conductivity {
 enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_PRESCRIBED=1,     // E_field is prescribed by the user
     UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
+	UQTY_E_FIELD_EQN_PRESCRIBED_CURRENT=3,// j_ohm is prescribed by the user
 };
 
 enum uqty_f_re_inittype {
