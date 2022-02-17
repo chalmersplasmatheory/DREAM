@@ -217,13 +217,13 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpurit
 DREAM::IonHandler *RunawayFluid::GetIonHandler(
     DREAM::FVM::Grid *g, DREAM::FVM::UnknownQuantityHandler *uqh, const len_t N_IONS, const len_t *Z_IONS
 ) {
-    vector<string> tritiumNames(0);
+    vector<string> tritiumNames(0), hydrogenNames(0);
     vector<string> names(N_IONS);
     for (len_t i = 0; i < N_IONS; i++)
         names[i] = "";//ION_NAMES[i];
 
     return new DREAM::IonHandler(
-        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames
+        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames, hydrogenNames
     );
 }
 
