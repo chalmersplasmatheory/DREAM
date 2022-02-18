@@ -89,7 +89,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
 		(enum OptionConstants::uqty_E_field_eqn)s->GetInteger("eqsys/E_field/type");*/
 
 	ConstructEquation_psi_init_nl(
-		eqsys, id_psi_p, id_j_tot, id_I_p
+		eqsys, id_psi_p, id_j_tot, id_I_p, id_psi_edge
 	);
 	/*ConstructEquation_psi_init_integral(
 		eqsys, fluidGrid, id_psi_p, id_j_tot, id_I_p
@@ -110,7 +110,8 @@ void SimulationGenerator::ConstructEquation_psi_p(
  */
 void SimulationGenerator::ConstructEquation_psi_init_nl(
 	EquationSystem *eqsys,
-	const len_t id_psi_p, const len_t id_j_tot, const len_t id_I_p
+	const len_t id_psi_p, const len_t id_j_tot, const len_t id_I_p,
+	const len_t id_psi_edge
 ) {
     eqsys->initializer->AddRule(
         id_psi_p,
@@ -118,6 +119,7 @@ void SimulationGenerator::ConstructEquation_psi_init_nl(
 		nullptr,
         // Dependencies
         id_j_tot,
+		id_psi_edge,
         id_I_p,
 		EqsysInitializer::RUNAWAY_FLUID
     );

@@ -188,6 +188,12 @@ void EqsysInitializer::Execute(const real_t t0) {
         }
     }
 
+	// Non-linear equations to solve before finishing?
+	if (ssQty.size() > 0) {
+		this->NonLinearSolve(t0, ssQty);
+		ssQty.clear();
+	}
+
     // Verfiy that all unknown quantities have now been initialized
     this->VerifyAllInitialized();
 }

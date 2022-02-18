@@ -70,6 +70,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSPIDepositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIAblationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIHeatAbsorbtionTerm.cpp"
