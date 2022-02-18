@@ -345,6 +345,11 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             if (r[ir] > rProvided[nProvided-1]) {
                 (*x)[ir]      = xProvided[nProvided-1];
                 (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, rProvided[nProvided-1], spline_acc);
+			} else if (r[ir] < rProvided[0]) {
+				// Extrapolate linearly
+				real_t dx     = gsl_spline_eval_deriv(spline_x, rProvided[0], spline_acc);
+				(*x)[ir]      = xProvided[0] - (rProvided[0]-r[ir])*dx;
+				(*xPrime)[ir] = dx;
             } else {
                 (*x)[ir]      = gsl_spline_eval(spline_x, r[ir], spline_acc);
                 (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], spline_acc);
@@ -359,6 +364,10 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             if (r_f[ir] > rProvided[nProvided-1]) {
                 (*x_f)[ir]      = xProvided[nProvided-1];
                 (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, rProvided[nProvided-1], spline_acc);
+			} else if (r_f[ir] < rProvided[0]) {
+				real_t dx       = gsl_spline_eval_deriv(spline_x, rProvided[0], spline_acc);
+				(*x_f)[ir]      = xProvided[0] - (rProvided[0]-r_f[ir])*dx;
+				(*xPrime)[ir]   = dx;
             } else {
                 (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
                 (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
