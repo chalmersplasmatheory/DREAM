@@ -70,10 +70,10 @@ void IonChargedDiffusionStochasticBTerm::Deallocate(){
     delete [] this->dDrrdNi;
 }
 
-void IonChargedDiffusionStochasticBTerm::SetCoeffsAllCS(const real_t t){
+void IonChargedDiffusionStochasticBTerm::SetCoeffsAllCS(const real_t){
 }
 
-void IonChargedDiffusionStochasticBTerm::SetDiffCoeffsAllCS(const real_t t){
+void IonChargedDiffusionStochasticBTerm::SetDiffCoeffsAllCS(const real_t){
 }
 
 void IonChargedDiffusionStochasticBTerm::SetCoeffs(const len_t Z0){
