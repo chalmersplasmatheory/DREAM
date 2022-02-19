@@ -171,7 +171,7 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
     if(isIon){
         n = unknowns->GetUnknownData(id_Ni)[nr*index + ir];
         W = unknowns->GetUnknownData(id_Wi)[nr*index + ir];
-        nZ2=ionHandler->GetNZ0Z0(ir);
+        nZ2=ionHandler->GetNZ0Z0(index, ir);
     } else {
         n = unknowns->GetUnknownData(id_ncold)[ir];
         nZ2 = n;

@@ -119,6 +119,7 @@ namespace DREAM {
             {return nZ0Z0;}
         const real_t GetNZ0Z0(len_t ir) const 
             {return nZ0Z0[ir];}
+		const real_t GetNZ0Z0(len_t ion, len_t ir) const;
         const real_t* GetNZZ() const 
             {return nZZ;}
         const real_t GetNZZ(len_t ir) const 

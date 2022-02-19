@@ -284,6 +284,30 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
 
 
 /**
+ * Calculates the quantity <n Z0^2>_i for the given ion species,
+ * defined as
+ *
+ *   <n Z0^2>_i = sum_j n_i^(j) Z0_j^2
+ *
+ * i.e. essentially the effective charge for ion species i.
+ *
+ * ion: ID of ion species to calculate quantity for.
+ * ir:  Radial index to calculate quantity for.
+ */
+const real_t IonHandler::GetNZ0Z0(const len_t ion, const len_t ir) const {
+	const len_t Z = this->GetZ(ion);
+    const real_t *ni = unknowns->GetUnknownData(niID);
+	const len_t idx = GetIndex(ion, 0);
+
+	real_t nZ2 = 0;
+	for (len_t Z0 = 1; Z0 <= Z; Z0++)
+		nZ2 += ni[(idx+Z0)*nr+ir]*Z0*Z0;
+	
+	return nZ2;
+}
+
+
+/**
  * The inverse of GetIndex(...): takes the ion index and 
  * returns the corresponding iz and Z0
  */
