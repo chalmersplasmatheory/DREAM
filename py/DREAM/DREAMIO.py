@@ -225,6 +225,8 @@ def getData(f, key):
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
             return f[key][()].decode()
+        elif type(f[key][:][0]) == str:
+            return f[key][:][0]
         else:
             return f[key][:][0].decode()
     else:

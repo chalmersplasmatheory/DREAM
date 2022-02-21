@@ -93,7 +93,7 @@ DREAM::FVM::UnknownQuantityHandler *MeanExcitationEnergy::GetUnknownHandler(DREA
 DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     DREAM::FVM::Grid *g, DREAM::FVM::UnknownQuantityHandler *uqh, const len_t N_IONS, const len_t *Z_IONS
 ) {
-    vector<string> tritiumNames(0);
+    vector<string> tritiumNames(0), hydrogenNames(0);
     vector<string> names(N_IONS);
     len_t *Z = new len_t[N_IONS];// The ion charge numbers must be provided to the IONHandler as a dynamically allocated array to avoid memory issues
     for (len_t i = 0; i < N_IONS; i++){
@@ -102,7 +102,7 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     }
 
     return new DREAM::IonHandler(
-        g->GetRadialGrid(), uqh, Z, N_IONS, names, tritiumNames
+        g->GetRadialGrid(), uqh, Z, N_IONS, names, tritiumNames, hydrogenNames
     );
 }
 

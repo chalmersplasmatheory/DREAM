@@ -67,7 +67,7 @@ class IonSpecies:
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,        
-        T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+        T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
         """
         Constructor.
 
@@ -85,6 +85,7 @@ class IonSpecies:
         :param numpy.ndarray interpr:  Radial grid onto which ion densities should be interpolated.
         :param numpy.ndarray interpt:  Time grid onto which ion densities should be interpolated.
         :param bool tritium:           If ``True``, this ion species is treated as Tritium.
+        :param bool hydrogen:          If ``True``, this ion species is treated as Hydrogen.
         """
         if ';' in name:
             raise EquationException("ion_species: '{}': Invalid character found in ion name: '{}'.".format(name, ';'))
@@ -95,6 +96,7 @@ class IonSpecies:
         self.isotope  = int(isotope)
         self.ttype    = None
         self.tritium  = tritium
+        self.hydrogen = hydrogen
         self.opacity_mode = opacity_mode
         self.charged_diffusion_mode = None
         self.neutral_diffusion_mode = None
@@ -103,10 +105,16 @@ class IonSpecies:
 
         self.setSPIMolarFraction(SPIMolarFraction)
 
+        if self.tritium and self.hydrogen:
+            raise EquationException("ion_species: '{}': Ion species indicated as both Tritium and Hydrogen simultaneously.")
+
         # Emit warning if 'T' is used as name but 'tritium = False',
         # as this may indicate a user error
         if name == 'T' and tritium == False:
             print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
+        if name == 'H' and hydrogen == False:
+            print("WARNING: Ion species with name 'H' added, but 'hydrogen = False'.")
+
         self.n = None
         self.r = None
         self.t = None
@@ -370,6 +378,13 @@ class IonSpecies:
             self.SPIMolarFraction = np.array([SPIMolarFraction])
         else:
             self.SPIMolarFraction = SPIMolarFraction
+
+
+    def isHydrogen(self):
+        """
+        Returns ``True`` if this ion species is a hydrogen species.
+        """
+        return self.hydrogen
 
 
     def isTritium(self):
@@ -802,7 +817,11 @@ class IonSpecies:
         Verify that the settings of this ion species are correctly set.
         """
         if self.Z < 1:
-            raise EquationException("ion_species: '{}': Invalid atomic charge: {}.".format(self.Z))
+            raise EquationException("ion_species: '{}': Invalid atomic charge: {}.".format(self.name, self.Z))
+
+        if self.hydrogen or self.tritium:
+            if self.Z != 1:
+                raise EquationException(f"ion_species: '{self.name}': Ion indicated as Hydrogen/Tritium, but charge Z = {self.Z}.")
 
         if self.ttype == IONS_PRESCRIBED:
             if self.t.ndim != 1:
