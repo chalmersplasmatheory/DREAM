@@ -12,6 +12,8 @@ namespace DREAM {
     class EFieldFromConductivityTerm : public FVM::DiagonalComplexTerm {
     private:
         RunawayFluid *REFluid;
+		real_t scaleFactor = 1.0;
+
     protected:
         // Set weights for the Jacobian block. Uses differentiated conductivity provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
@@ -23,7 +25,7 @@ namespace DREAM {
 								* sqrt(grid->GetRadialGrid()->GetFSA_B2(ir))
                                 / (s*s);
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                            diffWeights[offset + i] = -dw;
+                            diffWeights[offset + i] = -scaleFactor * dw;
                     offset += n1[ir]*n2[ir];
                 }
         }
@@ -36,14 +38,16 @@ namespace DREAM {
 					/ REFluid->GetElectricConductivity(ir);
 
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                    weights[offset + i] = w;
+                    weights[offset + i] = scaleFactor * w;
                 offset += n1[ir]*n2[ir];
             }
         }
 
     public:
-        EFieldFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref) 
-            : FVM::DiagonalComplexTerm(g,u), REFluid(ref)
+        EFieldFromConductivityTerm(
+			FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref,
+			const real_t scaleFactor=1.0
+		) : FVM::DiagonalComplexTerm(g,u), REFluid(ref), scaleFactor(scaleFactor)
         {
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
