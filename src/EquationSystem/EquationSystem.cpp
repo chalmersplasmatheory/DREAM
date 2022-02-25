@@ -28,10 +28,10 @@ EquationSystem::EquationSystem(
     hottailGrid(hottailGrid), runawayGrid(runawayGrid),
     hottailGrid_type(ht_type), runawayGrid_type(re_type),
     settings(s) {
-    
+
     this->initializer = new EqsysInitializer(
         &this->unknowns, &this->unknown_equations,
-        fluidGrid, hottailGrid, runawayGrid,
+        this, fluidGrid, hottailGrid, runawayGrid,
         ht_type, re_type
     );
 }
@@ -198,6 +198,8 @@ void EquationSystem::Solve() {
         real_t tNext = timestepper->NextTime();
         this->currentTime = timestepper->CurrentTime();
         real_t dt = tNext - this->currentTime;
+
+        this->fluidGrid->Rebuild(tNext);
 
         try {
             istep++;

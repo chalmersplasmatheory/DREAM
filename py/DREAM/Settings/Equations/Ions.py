@@ -1,13 +1,30 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.interpolate
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
+from .. import AdvectionInterpolation
 
 # Model to use for ion heat
 IONS_T_I_NEGLECT = 1
 IONS_T_I_INCLUDE = 2
+
+# Interpolation methods for advection term in transport equation
+AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
+AD_INTERP_UPWIND   = AdvectionInterpolation.AD_INTERP_UPWIND
+AD_INTERP_UPWIND_2ND_ORDER = AdvectionInterpolation.AD_INTERP_UPWIND_2ND_ORDER
+AD_INTERP_DOWNWIND = AdvectionInterpolation.AD_INTERP_DOWNWIND
+AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK 
+AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART 
+AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL 
+AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE 
+AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF  
+
+AD_INTERP_JACOBIAN_LINEAR = AdvectionInterpolation.AD_INTERP_JACOBIAN_LINEAR
+AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL  
+AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
 
 class Ions(UnknownQuantity):
     
@@ -21,11 +38,29 @@ class Ions(UnknownQuantity):
         self.ions = list()
         self.r    = None
         self.t    = None
+        
+        self.rChargedPrescribedDiffusion = None
+        self.rNeutralPrescribedDiffusion = None
+        self.tChargedPrescribedDiffusion = None
+        self.tNeutralPrescribedDiffusion = None
+        
+        self.rChargedPrescribedAdvection = None
+        self.rNeutralPrescribedAdvection = None
+        self.tChargedPrescribedAdvection = None
+        self.tNeutralPrescribedAdvection = None
 
         self.ionization = ionization
         self.typeTi = IONS_T_I_NEGLECT
+        
+        self.advectionInterpolationCharged = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
+        self.advectionInterpolationNeutral = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
 
-    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT, T=None, n=None, r=None, t=None, tritium=False):
+    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT, 
+        charged_diffusion_mode=ION_CHARGED_DIFFUSION_MODE_NONE, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None,
+        neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
+        charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
+        neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
+        T=None, n=None, r=None, t=None, tritium=False, hydrogen=False):
 
         """
         Adds a new ion species to the plasma.
@@ -42,22 +77,76 @@ class Ions(UnknownQuantity):
         :param numpy.ndarray r: Radial grid on which the input density and temperature is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
+        :param bool hydrogen:   If ``True``, the ion species is treated as Hydrogen (single proton).
         """
-        if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
-            raise EquationException("The radial grid must be the same for all ion species.")
+        if (self.r is not None) and (r is not None) and (np.any(self.r[:] != r[:])):
+            if self.r.size == 1:
+                self.changeRadialGrid(r)
+            else:
+                raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
+            
+        if (self.rChargedPrescribedDiffusion is not None) and (rChargedPrescribedDiffusion is not None) and (np.any(self.rChargedPrescribedDiffusion != rChargedPrescribedDiffusion)):
+            raise EquationException("The radial grid for the prescribed charged diffusion must be the same for all ion species.")
+        if (self.tChargedPrescribedDiffusion is not None) and (tChargedPrescribedDiffusion is not None) and (np.any(self.tChargedPrescribedDiffusion != tChargedPrescribedDiffusion)):
+            raise EquationException("The time grid for the prescribed charged diffusion must be the same for all ion species.")
+            
+        if (self.rNeutralPrescribedDiffusion is not None) and (rNeutralPrescribedDiffusion is not None) and (np.any(self.rNeutralPrescribedDiffusion != rNeutralPrescribedDiffusion)):
+            raise EquationException("The radial grid for the prescribed neutral diffusion must be the same for all ion species.")
+        if (self.tNeutralPrescribedDiffusion is not None) and (tNeutralPrescribedDiffusion is not None) and (np.any(self.tNeutralPrescribedDiffusion != tNeutralPrescribedDiffusion)):
+            raise EquationException("The time grid for the prescribed neutral diffusion must be the same for all ion species.")
 
         if T is not None:
             self.typeTi = IONS_T_I_INCLUDE
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, Z0=Z0, isotope=isotope, SPIMolarFraction=SPIMolarFraction, opacity_mode=opacity_mode, T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, Z0=Z0, isotope=isotope, SPIMolarFraction=SPIMolarFraction, opacity_mode=opacity_mode, 
+            charged_diffusion_mode=charged_diffusion_mode, charged_prescribed_diffusion=charged_prescribed_diffusion, rChargedPrescribedDiffusion=rChargedPrescribedDiffusion, tChargedPrescribedDiffusion=tChargedPrescribedDiffusion,
+            neutral_diffusion_mode=neutral_diffusion_mode, neutral_prescribed_diffusion=neutral_prescribed_diffusion, rNeutralPrescribedDiffusion=rNeutralPrescribedDiffusion, tNeutralPrescribedDiffusion=tNeutralPrescribedDiffusion,           
+            charged_advection_mode=charged_advection_mode, charged_prescribed_advection=charged_prescribed_advection, rChargedPrescribedAdvection=rChargedPrescribedAdvection, tChargedPrescribedAdvection=tChargedPrescribedAdvection,
+            neutral_advection_mode=neutral_advection_mode, neutral_prescribed_advection=neutral_prescribed_advection, rNeutralPrescribedAdvection=rNeutralPrescribedAdvection, tNeutralPrescribedAdvection=tNeutralPrescribedAdvection,           
+            T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium, hydrogen=hydrogen)
 
         self.ions.append(ion)
 
         self.r = ion.getR()
         if ion.getTime() is not None:
             self.t = ion.getTime()
+            
+        if charged_diffusion_mode==ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
+            self.rChargedPrescribedDiffusion = ion.getRChargedPrescribedDiffusion()
+            self.tChargedPrescribedDiffusion = ion.getTChargedPrescribedDiffusion()
+            
+        if neutral_diffusion_mode==ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
+            self.rNeutralPrescribedDiffusion = ion.getRNeutralPrescribedDiffusion()
+            self.tNeutralPrescribedDiffusion = ion.getTNeutralPrescribedDiffusion()
+            
+        if charged_advection_mode==ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+            self.rChargedPrescribedAdvection = ion.getRChargedPrescribedAdvection()
+            self.tChargedPrescribedAdvection = ion.getTChargedPrescribedAdvection()
+            
+        if neutral_advection_mode==ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+            self.rNeutralPrescribedAdvection = ion.getRNeutralPrescribedAdvection()
+            self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
+
+
+    def changeRadialGrid(self, r):
+        """
+        Change the radial grid used for the ion species.
+        """
+        for ion in self.ions:
+            if ion.r.size == 1:
+                ion.n = ion.n * np.ones(ion.n.shape[:-1] + (r.size,))
+                ion.T = ion.T * np.ones(ion.T.shape[:-1] + (r.size,))
+                ion.r = r
+            else:
+                fn = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                fT = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                ion.n = fn(r)
+                ion.T = fT(r)
+                ion.r = r
+
+        self.r = r
 
 
     def getCharges(self):
@@ -108,6 +197,19 @@ class Ions(UnknownQuantity):
         self.ionization=ionization
 
 
+    def getHydrogenSpecies(self):
+        """
+        Returns a list of names of the ion species which are treated
+        as Hydrogen.
+        """
+        hydr = []
+        for ion in self.ions:
+            if ion.hydrogen:
+                hydr.append(ion.getName())
+
+        return hydr
+
+
     def getTritiumSpecies(self):
         """
         Returns a list of names of the ion species which are treated
@@ -134,6 +236,58 @@ class Ions(UnknownQuantity):
         contained by this object.
         """
         return [ion.getOpacityMode() for ion in self.ions]
+        
+    def getChargedDiffusionModes(self):
+        """
+        Returns a list of ion charged diffusion modes for the various ion species
+        contained by this object.
+        """
+        return [ion.getChargedDiffusionMode() for ion in self.ions]
+        
+    def getNeutralDiffusionModes(self):
+        """
+        Returns a list of ion neutral diffusion modes for the various ion species
+        contained by this object.
+        """
+        return [ion.getNeutralDiffusionMode() for ion in self.ions]
+        
+    def getChargedAdvectionModes(self):
+        """
+        Returns a list of ion charged advection modes for the various ion species
+        contained by this object.
+        """
+        return [ion.getChargedAdvectionMode() for ion in self.ions]
+        
+    def getNeutralAdvectionModes(self):
+        """
+        Returns a list of ion neutral advection modes for the various ion species
+        contained by this object.
+        """
+        return [ion.getNeutralAdvectionMode() for ion in self.ions]
+        
+    def setAdvectionInterpolationMethodCharged(self, ad_int=AD_INTERP_CENTRED,
+        ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
+        """
+        Sets the interpolation method that is used in the charged advection terms of
+        the transport equation.
+        
+        :param int ad_int:               Interpolation method to use for the radial coordinate.
+        :param int ad_jac:               Jacobian interpolation mode to use for the radial coordinate.
+        :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
+        """
+        self.advectionInterpolationCharged.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
+        
+    def setAdvectionInterpolationMethodNeutral(self, ad_int=AD_INTERP_CENTRED,
+        ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
+        """
+        Sets the interpolation method that is used in the neutral advection terms of
+        the transport equation.
+        
+        :param int ad_int:               Interpolation method to use for the radial coordinate.
+        :param int ad_jac:               Jacobian interpolation mode to use for the radial coordinate.
+        :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
+        """
+        self.advectionInterpolationNeutral.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
 
 
     def setIonType(self, index, ttype):
@@ -178,6 +332,20 @@ class Ions(UnknownQuantity):
         else:
             opacity_modes = self.getOpacityModes()
 
+        charged_diffusion_modes = [ION_CHARGED_DIFFUSION_MODE_NONE]*len(Z)
+        neutral_diffusion_modes = [ION_NEUTRAL_DIFFUSION_MODE_NONE]*len(Z)
+        charged_advection_modes = [ION_CHARGED_ADVECTION_MODE_NONE]*len(Z)
+        neutral_advection_modes = [ION_NEUTRAL_ADVECTION_MODE_NONE]*len(Z)
+
+        if 'charged_diffusion_modes' in data:
+            charged_diffusion_modes = data['charged_diffusion_modes']
+        if 'neutral_diffusion_modes' in data:
+            neutral_diffusion_modes = data['neutral_diffusion_modes']
+        if 'charged_advection_modes' in data:
+            charged_advection_modes = data['charged_advection_modes']
+        if 'neutral_advection_modes' in data:
+            neutral_advection_modes = data['neutral_advection_modes']
+
         SPIMolarFraction = data['SPIMolarFraction']
         nZSPI = len(Z)-np.sum(SPIMolarFraction<0)
         if nZSPI>0:
@@ -190,9 +358,18 @@ class Ions(UnknownQuantity):
         else:
             tritiumnames = []
 
+        if 'hydrogennames' in data:
+            hydrogennames = data['hydrogennames'].split(';')[:-1]
+        else:
+            hydrogennames = []
+
         initial    = None
         prescribed = None
         initialTi  = None
+        charged_prescribed_diffusion = None
+        neutral_prescribed_diffusion = None
+        charged_prescribed_advection = None
+        neutral_prescribed_advection = None
         self.typeTi = IONS_T_I_NEGLECT
         if 'typeTi' in data:
             self.typeTi = int(data['typeTi'])
@@ -200,9 +377,21 @@ class Ions(UnknownQuantity):
             initial = data['initial']
         if 'prescribed' in data:
             prescribed = data['prescribed']
+        if 'charged_prescribed_diffusion' in data:
+            charged_prescribed_diffusion = data['charged_prescribed_diffusion']
+        if 'neutral_prescribed_diffusion' in data:
+            neutral_prescribed_diffusion = data['neutral_prescribed_diffusion']
+        if 'charged_prescribed_advection' in data:
+            charged_prescribed_advection = data['charged_prescribed_advection']
+        if 'neutral_prescribed_advection' in data:
+            neutral_prescribed_advection = data['neutral_prescribed_advection']
+        if 'adv_interp_charged' in data:
+            self.advectionInterpolationCharged.fromdict(data['adv_interp_charged'])
+        if 'adv_interp_neutral' in data:
+            self.advectionInterpolationNeutral.fromdict(data['adv_interp_neutral'])
         if 'initialTi' in data:
             initialTi = data['initialTi']
-        iidx, pidx, spiidx = 0, 0, 0
+        iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx = 0, 0, 0, 0, 0, 0, 0
         for i in range(len(Z)):
             if types[i] == IONS_PRESCRIBED:
                 n = prescribed['x'][pidx:(pidx+Z[i]+1)]
@@ -225,8 +414,54 @@ class Ions(UnknownQuantity):
                 SPIMolarFractionSingleSpecies = SPIMolarFraction[spiidx]
                 spiidx+=1
             tritium = (names[i] in tritiumnames)
+            hydrogen = (names[i] in hydrogennames)
+            
+            if charged_diffusion_modes[i] == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
+                cpd = charged_prescribed_diffusion['x'][cpdidx:(cpdidx+Z[i])]
+                rcpd = charged_prescribed_diffusion['r']
+                tcpd = charged_prescribed_diffusion['t']
+                cpdidx += Z[i]
+            else:
+                cpd=None
+                rcpd=None
+                tcpd=None
+                
+            if neutral_diffusion_modes[i] == ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
+                npd = neutral_prescribed_diffusion['x'][npdidx:(npdidx+1)]
+                rnpd = neutral_prescribed_diffusion['r']
+                tnpd = neutral_prescribed_diffusion['t']
+                npdidx += 1
+            else:
+                npd=None
+                rnpd=None
+                tnpd=None
+                
+            if charged_advection_modes[i] == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+                cpa = charged_prescribed_advection['x'][cpaidx:(cpaidx+Z[i])]
+                rcpa = charged_prescribed_advection['r']
+                tcpa = charged_prescribed_advection['t']
+                cpaidx += Z[i]
+            else:
+                cpa=None
+                rcpa=None
+                tcpa=None
+                
+            if neutral_advection_modes[i] == ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+                npa = neutral_prescribed_advection['x'][npaidx:(npaidx+1)]
+                rnpa = neutral_prescribed_advection['r']
+                tnpa = neutral_prescribed_advection['t']
+                npaidx += 1
+            else:
+                npa=None
+                rnpa=None
+                tnpa=None
 
-            self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies, iontype=types[i], opacity_mode=opacity_modes[i], T=T, n=n, r=r, t=t, tritium=tritium)
+            self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies, iontype=types[i], opacity_mode=opacity_modes[i], 
+                charged_diffusion_mode=charged_diffusion_modes[i], charged_prescribed_diffusion = cpd, rChargedPrescribedDiffusion=rcpd, tChargedPrescribedDiffusion = tcpd,
+                neutral_diffusion_mode=neutral_diffusion_modes[i], neutral_prescribed_diffusion = npd, rNeutralPrescribedDiffusion=rnpd, tNeutralPrescribedDiffusion = tnpd,
+                charged_advection_mode=charged_advection_modes[i], charged_prescribed_advection = cpa, rChargedPrescribedAdvection=rcpa, tChargedPrescribedAdvection = tcpa,
+                neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa, rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
+                T=T, n=n, r=r, t=t, tritium=tritium, hydrogen=hydrogen)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
@@ -243,12 +478,21 @@ class Ions(UnknownQuantity):
         Z       = self.getCharges()
         itypes  = self.getTypes()
         iopacity_modes =self.getOpacityModes()
+        icharged_diffusion_modes =self.getChargedDiffusionModes()
+        ineutral_diffusion_modes =self.getNeutralDiffusionModes()
+        icharged_advection_modes =self.getChargedAdvectionModes()
+        ineutral_advection_modes =self.getNeutralAdvectionModes()
         isotopes     = self.getIsotopes()
         initial = None
         initialTi = None
         prescribed = None
+        charged_prescribed_diffusion = None
+        neutral_prescribed_diffusion = None
+        charged_prescribed_advection = None
+        neutral_prescribed_advection = None
         names   = ""
 
+        hydrogennames = ""
         tritiumnames = ""
 
         SPIMolarFraction = None
@@ -258,6 +502,8 @@ class Ions(UnknownQuantity):
 
             if ion.tritium:
                 tritiumnames += '{};'.format(ion.getName())
+            elif ion.hydrogen:
+                hydrogennames += '{};'.format(ion.getName())
 
             if ion.getTime() is None:
                 if initial is None:
@@ -279,17 +525,47 @@ class Ions(UnknownQuantity):
             else:
                 SPIMolarFraction = np.concatenate((SPIMolarFraction, ion.getSPIMolarFraction()))
                 
+            if ion.getChargedDiffusionMode()==ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
+                if charged_prescribed_diffusion is None:
+                    charged_prescribed_diffusion = np.copy(ion.getChargedPrescribedDiffusion())
+                else:
+                    charged_prescribed_diffusion = np.concatenate((charged_prescribed_diffusion, ion.getChargedPrescribedDiffusion()))
+           
+            if ion.getNeutralDiffusionMode()==ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
+                if neutral_prescribed_diffusion is None:
+                    neutral_prescribed_diffusion = np.copy(ion.getNeutralPrescribedDiffusion())
+                else:
+                    neutral_prescribed_diffusion = np.concatenate((neutral_prescribed_diffusion, ion.getNeutralPrescribedDiffusion()))
+
+            if ion.getChargedAdvectionMode()==ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+                if charged_prescribed_advection is None:
+                    charged_prescribed_advection = np.copy(ion.getChargedPrescribedAdvection())
+                else:
+                    charged_prescribed_advection = np.concatenate((charged_prescribed_advection, ion.getChargedPrescribedAdvection()))
+           
+            if ion.getNeutralAdvectionMode()==ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+                if neutral_prescribed_advection is None:
+                    neutral_prescribed_advection = np.copy(ion.getNeutralPrescribedAdvection())
+                else:
+                    neutral_prescribed_advection = np.concatenate((neutral_prescribed_advection, ion.getNeutralPrescribedAdvection()))
+                
         data = {
             'names': names,
             'Z': Z,
             'isotopes':isotopes,
             'SPIMolarFraction':SPIMolarFraction,
             'types': itypes,
-            'opacity_modes':iopacity_modes
+            'opacity_modes':iopacity_modes,
+            'charged_diffusion_modes':icharged_diffusion_modes,
+            'neutral_diffusion_modes':ineutral_diffusion_modes,
+            'charged_advection_modes':icharged_advection_modes,
+            'neutral_advection_modes':ineutral_advection_modes
         }
 
         if len(tritiumnames) > 0:
             data['tritiumnames'] = tritiumnames
+        if len(hydrogennames) > 0:
+            data['hydrogennames'] = hydrogennames
 
         if initial is not None:
             data['initial'] = {
@@ -304,6 +580,38 @@ class Ions(UnknownQuantity):
                 'x': prescribed
             }
 
+        if charged_prescribed_diffusion is not None:
+            data['charged_prescribed_diffusion'] = {
+                'r': self.rChargedPrescribedDiffusion,
+                't': self.tChargedPrescribedDiffusion,
+                'x': charged_prescribed_diffusion
+            }
+            
+        if neutral_prescribed_diffusion is not None:
+            data['neutral_prescribed_diffusion'] = {
+                'r': self.rNeutralPrescribedDiffusion,
+                't': self.tNeutralPrescribedDiffusion,
+                'x': neutral_prescribed_diffusion
+            }
+            
+        if charged_prescribed_advection is not None:
+            data['charged_prescribed_advection'] = {
+                'r': self.rChargedPrescribedAdvection,
+                't': self.tChargedPrescribedAdvection,
+                'x': charged_prescribed_advection
+            }
+            
+        if neutral_prescribed_advection is not None:
+            data['neutral_prescribed_advection'] = {
+                'r': self.rNeutralPrescribedAdvection,
+                't': self.tNeutralPrescribedAdvection,
+                'x': neutral_prescribed_advection
+            }
+        
+        # Flux limiter settings
+        data['adv_interp_charged'] = self.advectionInterpolationCharged.todict()
+        data['adv_interp_neutral'] = self.advectionInterpolationNeutral.todict()
+            
         data['initialTi'] = {
             'r': self.r,
             'x': initialTi

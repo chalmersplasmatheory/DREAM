@@ -1,5 +1,9 @@
 
 import numpy as np
+import traceback
+
+import sys
+sys.path.append('../../py')
 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
@@ -7,6 +11,7 @@ from ui import MainWindow_design
 from PlotWindow import PlotWindow
 from PlotShapingWindow import PlotShapingWindow
 from DREAM import DREAMIO
+from pathlib import Path
 
 import AUG
 import EqFile
@@ -46,6 +51,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.toggleEnabled(False)
         self.bindEvents()
+
+        if len(argv) == 1:
+            self.parsearg(argv[0])
 
 
     def bindEvents(self):
@@ -132,21 +140,25 @@ class MainWindow(QtWidgets.QMainWindow):
         shot = self.getShot()
 
         if self.ui.cbTokamak.currentText() == "File" and not shot:
-            shot, _ = QFileDialog.getOpenFileName(self, caption="Open equilibrium file", filter="All supported equilibria (*.h5 *.geqdsk);;LUKE equilibrium (*.h5);;GEQDSK file (*.geqdsk);;All files (*.*)")
-            if shot is None:
+            shot, _ = QFileDialog.getOpenFileName(self, caption="Open equilibrium file", filter="All supported equilibria (*.geqdsk *.h5 *.mat);;LUKE equilibrium (*.h5 *.mat);;GEQDSK file (*.geqdsk);;All files (*.*)")
+            if not shot:
                 return
 
             self.ui.tbShot.setText(shot)
 
+        self._load_internal(shot)
+
+
+    def _load_internal(self, data):
         try:
             mod = self.ui.cbTokamak.currentData()
-            self.equil = mod.getLUKE(shot)
-            print("Loaded '{}'...".format(shot))
+            self.equil = mod.getLUKE(data)
+            print("Loaded '{}'...".format(data))
 
             self.plotFluxSurfaces()
             self.toggleEnabled(True)
         except Exception as ex:
-            QMessageBox.critical(self, 'Error loading shot', f"The specified shot file could not be loaded:\n\n{ex}")
+            QMessageBox.critical(self, 'Error loading data', f"The specified data file could not be loaded:\n\n{ex}")
 
 
     def calculateShaping(self):
@@ -162,7 +174,16 @@ class MainWindow(QtWidgets.QMainWindow):
             params = mod.getShaping(self.getShot(), equil=self.equil)
             self.plotShaping(params)
         except Exception as ex:
-            QMessageBox.critical(self, 'Error loading shot', f"The specified shot file could not be loaded:\n\n{ex}")
+            QMessageBox.critical(self, 'Error loading shot', f"The specified shot file could not be loaded:\n\n{ex}\n\n{traceback.format_exc()}")
+
+
+    def parsearg(self, arg):
+        """
+        Parse an input argument.
+        """
+        if Path(arg).is_file():
+            self.ui.cbTokamak.setCurrentText('File')
+            self._load_internal(arg)
 
 
     def plotFluxSurfaces(self):

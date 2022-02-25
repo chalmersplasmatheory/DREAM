@@ -9,6 +9,7 @@ from . UnknownQuantity import UnknownQuantity
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
+TYPE_PRESCRIBED_OHMIC_CURRENT = 3
 
 BC_TYPE_PRESCRIBED = 1
 BC_TYPE_SELFCONSISTENT = 2
@@ -153,26 +154,27 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         Set the type of equation to use for evolving the electric field. The
         available types are
 
-        +---------------------+----------------------------------------------------------------------------------------------+
-        | Name                | Description                                                                                  |
-        +=====================+==============================================================================================+
-        | TYPE_PRESCRIBED     | Prescribe spatiotemporal evolution of electric field.                                        |
-        +---------------------+----------------------------------------------------------------------------------------------+
-        | TYPE_SELFCONSISTENT | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
-        +---------------------+----------------------------------------------------------------------------------------------+
+        +-------------------------------+----------------------------------------------------------------------------------------------+
+        | Name                          | Description                                                                                  |
+        +===============================+==============================================================================================+
+        | TYPE_PRESCRIBED               | Prescribe spatiotemporal evolution of electric field.                                        |
+        +-------------------------------+----------------------------------------------------------------------------------------------+
+        | TYPE_SELFCONSISTENT           | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
+        +-------------------------------+----------------------------------------------------------------------------------------------+
+        | TYPE_PRESCRIBED_OHMIC_CURRENT | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
+        +-------------------------------+----------------------------------------------------------------------------------------------+
 
         :param int ttype: Type of electric field evolution to use.
         """
-        if ttype == TYPE_PRESCRIBED:
+        if ttype in [TYPE_PRESCRIBED, TYPE_PRESCRIBED_OHMIC_CURRENT]:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
 
-            # Set E=0 if 'setInitialProfile' has not been previously called
-            # (if 'setInitialProfile()' has been called, 'self.radius != None'
-            # and 'self.times == None')
-            if (self.radius) is None or (self.times is not None):
-                self.setInitialProfile(efield=0)
+            if self.efield is not None:
+                self.efield = None
+                self.radius = None
+                self.times = None
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(ttype))
 
@@ -188,9 +190,12 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.radius = data['data']['r']
             self.times  = data['data']['t']
         elif self.type == TYPE_SELFCONSISTENT:
-            self.efield = data['init']['x']
-            self.radius = data['init']['r']
             self.bctype = data['bc']['type']
+
+            if 'init' in data:
+                self.efield = data['init']['x']
+                self.radius = data['init']['r']
+
             if self.bctype == BC_TYPE_PRESCRIBED:
                 self.V_loop_wall_R0   = data['bc']['V_loop_wall']['x']
                 self.V_loop_wall_t = data['bc']['V_loop_wall']['t']
@@ -211,8 +216,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 self.V_loop_wall_t  = data['bc']['V_loop_wall']['t']
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
-
-            
+        elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -233,10 +238,15 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 't': self.times
             }
         elif self.type == TYPE_SELFCONSISTENT:
-            data['init'] = {
-                'x': self.efield,
-                'r': self.radius,
-            }            
+            # The initial condition can either be given
+            # in terms of the electric field or in terms
+            # of the current density...
+            if self.efield is not None:
+                data['init'] = {
+                    'x': self.efield,
+                    'r': self.radius,
+                }            
+
             if self.bctype == BC_TYPE_PRESCRIBED:
                 data['bc']['V_loop_wall'] = {
                         'x': self.V_loop_wall_R0,
@@ -252,7 +262,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                         'x': self.V_loop_wall_R0,
                         't': self.V_loop_wall_t
                 }                
-                    
+        elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -273,10 +284,11 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
             self._verifySettingsPrescribedData()
         elif self.type == TYPE_SELFCONSISTENT:
-            if type(self.efield) != np.ndarray:
-                raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
-            elif type(self.radius) != np.ndarray:
-                raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
+            if self.efield is not None:
+                if type(self.efield) != np.ndarray:
+                    raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
+                elif type(self.radius) != np.ndarray:
+                    raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
 
             # Check boundary condition
             if self.bctype == BC_TYPE_PRESCRIBED:
@@ -295,7 +307,10 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 
-            self._verifySettingsPrescribedInitialData()
+            if self.efield is not None:
+                self._verifySettingsPrescribedInitialData()
+        elif self.type == TYPE_PRESCRIBED_OHMIC_CURRENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized equation type specified: {}.".format(self.type))
 

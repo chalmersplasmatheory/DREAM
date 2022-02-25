@@ -14,19 +14,23 @@ def parametrize_equilibrium(psi_apRp, ptBPHI, ptx, pty, Rp, Zp, *args, **kwargs)
       GOverR0 -- Toroidal magnetic field function
       psi     -- Poloidal flux
     """
-    n = psi.size
+    n = psi_apRp.size
 
     kappa, delta, Delta, GOverR0 = [], [], [], []
     for i in range(n):
         a = ptx[0,i]
 
         Zind = np.argmax(pty[:,i])
-        R_upper = ptx[Zind]+Rp
+        R_upper = ptx[Zind,i]+Rp
 
-        k = (max(pty)-min(pty)) / (2*a)
-        d = (ptx[0,i]+Rp-R_upper) / a
-        D = (max(ptx)+min(ptx))/2
-        G = (ptx[0,i]+Rp)*Btor[0,i] / Rp
+        k = (np.amax(pty[:,i])-np.amin(pty[:,i])) / (2*a)
+        #d = (ptx[0,i]+Rp-R_upper) / a
+        D = (np.amax(ptx[:,i])+np.amin(ptx[:,i]))/2
+        d = (Rp+D-R_upper) / a
+        G = (ptx[0,i]+Rp)*ptBPHI[0,i] / Rp
+
+        if np.isinf(k):
+            k = 0
 
         kappa.append(k)
         delta.append(d)
@@ -40,7 +44,7 @@ def parametrize_equilibrium(psi_apRp, ptBPHI, ptx, pty, Rp, Zp, *args, **kwargs)
         'delta': np.array(delta),
         'Delta': np.array(Delta),
         'GOverR0': np.array(GOverR0),
-        'psi': psi
+        'psi': psi_apRp * ptx[0,-1]
     }
 
 

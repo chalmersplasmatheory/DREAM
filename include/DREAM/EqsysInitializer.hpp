@@ -1,6 +1,8 @@
 #ifndef _DREAM_EQSYS_INITIALIZER_HPP
 #define _DREAM_EQSYS_INITIALIZER_HPP
 
+namespace DREAM { class EquationSystem; }
+
 #include <string>
 #include <vector>
 #include <softlib/SFile.h>
@@ -91,6 +93,7 @@ namespace DREAM {
 
         std::vector<int_t> ConstructExecutionOrder(struct initrule*);
 
+		EquationSystem *eqsys=nullptr;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
         enum OptionConstants::momentumgrid_type
             hottail_type, runaway_type;
@@ -98,6 +101,12 @@ namespace DREAM {
         CollisionQuantityHandler *cqhHottail=nullptr, *cqhRunaway=nullptr;
         IonHandler *ionHandler=nullptr;
         RunawayFluid *runawayFluid=nullptr;
+
+		len_t solver_maxiter = 100;
+		real_t solver_reltol = 1e-6;
+		enum OptionConstants::linear_solver linear_solver;
+		enum OptionConstants::linear_solver backup_solver;
+		bool solver_verbose = false;
 
         void __InitTR(
             FVM::UnknownQuantity*, const real_t, const int_t,
@@ -117,7 +126,7 @@ namespace DREAM {
     public:
         EqsysInitializer(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
-            FVM::Grid*, FVM::Grid*, FVM::Grid*,
+			EquationSystem*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             enum OptionConstants::momentumgrid_type,
             enum OptionConstants::momentumgrid_type
         );
@@ -150,11 +159,6 @@ namespace DREAM {
                     "An initialization rule for '%s' has already been created.",
                     this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
                 );
-            if (type == INITRULE_STEADY_STATE_SOLVE)
-                throw NotImplementedException(
-                    "%s: No support for solving for initial steady state implemented yet.",
-                    this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
-                );
 
             rules[uqtyId] = new struct initrule(
                 uqtyId, type,
@@ -166,12 +170,28 @@ namespace DREAM {
 
         void EvaluateEquation(const real_t, const int_t);
         void EvaluateFunction(const real_t, const int_t);
+		void NonLinearSolve(const real_t, std::vector<len_t>&);
+		
+		const char *GetQuantityName(const int_t);
 
         void Execute(const real_t);
         bool HasRuleFor(const int_t uqtyId) const;
         void InitializeFromOutput(const std::string&, const real_t, int_t, IonHandler*, std::vector<std::string>&);
         void InitializeFromOutput(SFile*, const real_t, int_t, IonHandler*, std::vector<std::string>&);
         void VerifyAllInitialized() const;
+
+		void SetSolver(
+			const len_t maxiter, const real_t reltol,
+			enum OptionConstants::linear_solver linear_solver,
+			enum OptionConstants::linear_solver backup_solver,
+			bool verbose
+		) {
+			this->solver_maxiter = maxiter;
+			this->solver_reltol  = reltol;
+			this->solver_verbose = verbose;
+			this->linear_solver  = linear_solver;
+			this->backup_solver  = backup_solver;
+		}
 
         void SetHottailCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqhHottail = cqh; }
