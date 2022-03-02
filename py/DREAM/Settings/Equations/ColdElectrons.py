@@ -73,9 +73,9 @@ class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParamet
         self.type = data['type']
 
         if self.type == TYPE_PRESCRIBED:
-            self.density = data['x']
-            self.radius  = data['r']
-            self.times   = data['t']
+            self.density = data['data']['x']
+            self.radius  = data['data']['r']
+            self.times   = data['data']['t']
         elif self.type == TYPE_SELFCONSISTENT:
             pass
         else:
