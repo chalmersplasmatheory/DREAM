@@ -316,9 +316,21 @@ class Ions(UnknownQuantity):
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
-        isotopes     = data['isotopes']
-        types        = data['types']
-        opacity_modes = data['opacity_modes']
+
+        if 'isotopes' in data and len(data['isotopes']) == len(Z):
+            isotopes = data['isotopes']
+        else:
+            isotopes = [0]*len(Z)
+
+        if 'types' in data and len(data['types']) == len(Z):
+            types = data['types']
+        else:
+            types = [0]*len(Z)
+
+        if 'opacity_modes' in data and len(data['opacity_modes']) == len(Z):
+            opacity_modes = data['opacity_modes']
+        else:
+            opacity_modes = self.getOpacityModes()
 
         charged_diffusion_modes = [ION_CHARGED_DIFFUSION_MODE_NONE]*len(Z)
         neutral_diffusion_modes = [ION_NEUTRAL_DIFFUSION_MODE_NONE]*len(Z)

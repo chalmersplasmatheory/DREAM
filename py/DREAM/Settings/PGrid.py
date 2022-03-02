@@ -11,7 +11,7 @@ TYPE_CUSTOM = 3
 class PGrid:
 
 
-    def __init__(self, name, ttype=1, np=0, pmax=None, data=None):
+    def __init__(self, name, parent, ttype=1, np=0, pmax=None, data=None):
         """
         Constructor.
 
@@ -25,6 +25,7 @@ class PGrid:
                  (except 'ttype' should be called 'pgrid')
         """
         self.name = name
+        self.parent = parent
 
         self.npsep = None
         self.npsep_frac = None
@@ -130,9 +131,9 @@ class PGrid:
 
         if self.type == TYPE_BIUNIFORM:
             if 'npsep' in data:
-                self.npsep = data['npsep']
+                self.npsep = int(data['npsep'])
             if 'npsep_frac' in data:
-                self.npsep_frac = data['npsep_frac']
+                self.npsep_frac = float(data['npsep_frac'])
 
             self.psep  = data['psep']
         elif self.type == TYPE_CUSTOM:
@@ -171,7 +172,10 @@ class PGrid:
         """
         Verify that all (mandatory) settings are set and consistent.
         """
-        if self.type == TYPE_UNIFORM or self.type == TYPE_BIUNIFORM or self.type == TYPE_CUSTOM:
+        if not self.parent.enabled:
+            return
+
+        if self.type in [TYPE_UNIFORM, TYPE_BIUNIFORM, TYPE_CUSTOM]:
             if self.np is None or self.np <= 0:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, self.np))
             elif self.pmax is None or self.pmax <= 0:
