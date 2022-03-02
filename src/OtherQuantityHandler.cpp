@@ -494,7 +494,7 @@ void OtherQuantityHandler::DefineQuantities() {
         const real_t *const* Ap = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
         qd->Store(nr_ht, (n1_ht+1)*n2_ht, Ap);
     );
-    DEF_HT_F1("hottail/Ap2", "Net second momentum advection on hot electron grid [m/s]",
+    DEF_HT_F2("hottail/Ap2", "Net second momentum advection on hot electron grid [m/s]",
         const real_t *const* Axi = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
         qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
     );
