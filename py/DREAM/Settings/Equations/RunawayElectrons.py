@@ -114,7 +114,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        if compton == False:
+        if compton == False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
             if compton == COMPTON_RATE_ITER_DMS:
