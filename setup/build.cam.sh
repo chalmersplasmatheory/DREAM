@@ -4,7 +4,7 @@
 # This script builds PETSc and DREAM on Cambridge CSD3 cluster (./build.cam.sh)
 # (https://docs.hpc.cam.ac.uk/hpc/index.html)
 #
-# Please load do ". environment.cam.sh" before running ./build.cam.sh (otherwise the initialization
+# Please do ". environment.cam.sh" before running ./build.cam.sh (otherwise the initialization
 # of conda fails).
 # The "environment.cam.sh" script will initialize DREAMPATH to its default value, and load
 # the required modules. petsc is installed locally in the shared RE directory, if you want
@@ -34,7 +34,7 @@ function install_petsc {
 
 function install_dream {
 	cd "$DREAMPATH" && rm -rf build && mkdir build && cd build &&
-	cmake .. -DPETSC_EXECUTABLE_RUNS=YES -DGSL_ROOT_DIR=/usr/local/Cluster-Apps/gsl/2.4/ -DMPI_CXX_COMPILER=/home/ir-fil1/rds/rds-ukaea-ap001/RE/petsc/arch-linux-c-opt/bin/ -DPETSC_DIR="$PETSC_DIR" -DPETSC_ARCH="$PETSC_ARCH" &&
+	cmake .. -DPETSC_EXECUTABLE_RUNS=YES -DGSL_ROOT_DIR=/usr/local/Cluster-Apps/gsl/2.4/ -DMPI_CXX_COMPILER=~/rds/rds-ukaea-ap001/RE/petsc/arch-linux-c-opt/bin/ -DPETSC_DIR="$PETSC_DIR" -DPETSC_ARCH="$PETSC_ARCH" &&
 	make -j8
 }
 
