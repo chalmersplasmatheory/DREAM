@@ -10,7 +10,7 @@ To compile DREAM, you need to have the following software installed:
 
 - [CMake](https://cmake.org/) >= 3.12
 - A C++17 compatible compiler (such as gcc >= 7.0)
-- [GNU Scientific Library](https://www.gnu.org/software/gsl/) >= 2.0
+- [GNU Scientific Library](https://www.gnu.org/software/gsl/) >= 2.4
 - [HDF5](https://www.hdfgroup.org/)
 - [PETSc](https://www.mcs.anl.gov/petsc)
 - OpenMP

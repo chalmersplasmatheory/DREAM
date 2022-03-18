@@ -16,7 +16,7 @@ installed on your system:
 
 - `CMake <https://cmake.org/>`_ version 3.12 or later
 - A C++17 compliant compiler and standard library (i.e. `gcc` >= 7 or equivalent)
-- `GNU Scientific Library <https://www.gnu.org/software/gsl/>`_ version 2.0 or later
+- `GNU Scientific Library <https://www.gnu.org/software/gsl/>`_ version 2.4 or later
 - `HDF5 <https://www.hdfgroup.org>`_
 - `PETSc <https://www.mcs.anl.gov/petsc/index.html>`_
 - OpenMP
