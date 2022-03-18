@@ -17,7 +17,7 @@ fi
 module purge
 
 # Load required modules
-module load gcc/11
+module load gcc/11 slurm
 module load hdf5-1.10.1-gcc-5.4.0-z7bre2k
 module load cmake gsl/2.4
 module load python
