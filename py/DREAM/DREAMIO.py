@@ -15,6 +15,7 @@ SSHSUPPORT = False
 try:
     import paramiko
     import re           # Regular expression matcher
+    import getpass
     SSHSUPPORT = True
 except ModuleNotFoundError: pass
 
@@ -85,7 +86,11 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
 
         except: pass
 
-        client.connect(host, port=port, username=user)
+        try:
+            client.connect(host, port=port, username=user)
+        except paramiko.ssh_exception.PasswordRequiredException as ex:
+            pw = getpass.getpass(prompt=f"{user}@{host}'s password: ")
+            client.connect(host, port=port, username=user, password=pw)
 
         # Open SFTP stream
         sftp = client.open_sftp()
