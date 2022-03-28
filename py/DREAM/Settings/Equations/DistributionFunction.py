@@ -310,7 +310,7 @@ class DistributionFunction(UnknownQuantity):
             # Advection interpolation
             data['adv_interp'] = self.advectionInterpolation.todict()
 
-            if self.init is not None:
+            if self.init:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']
                 data['init']['r'] = self.init['r']
