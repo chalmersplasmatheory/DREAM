@@ -48,6 +48,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/adv_interp_neutral/r_jac", "Type of interpolation method to use in the jacobian of the advection term", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(MODULENAME "/adv_interp_neutral/fluxlimiterdamping", "Underrelaxation parameter for the neutral advection term that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);    
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
+    s->DefineSetting(MODULENAME "/hydrogennames", "Names of the hydrogen ion species", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
 
@@ -125,8 +126,9 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         );
     }
 
-    // Get list of tritium species
+    // Get list of tritium and hydrogen species
     vector<string> tritiumNames = s->GetStringList(MODULENAME "/tritiumnames");
+	vector<string> hydrogenNames = s->GetStringList(MODULENAME "/hydrogennames");
 
     // Verify that exactly one type per ion species is given
     if (nZ != ntypes)
@@ -235,7 +237,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames);
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);
     eqsys->SetIonHandler(ih);
 
     // Initialize ion equations

@@ -306,6 +306,7 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed_current(
 ) {
     FVM::Operator *eqnE = new FVM::Operator(eqsys->GetFluidGrid());
     FVM::Operator *eqnj = new FVM::Operator(eqsys->GetFluidGrid());
+	FVM::Operator *eqnjre = new FVM::Operator(eqsys->GetFluidGrid());
 
 	eqnE->AddTerm(new FVM::IdentityTerm(eqsys->GetFluidGrid(), -1.0));
 	eqnj->AddTerm(
@@ -314,8 +315,15 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed_current(
 			eqsys->GetREFluid()
 		)
 	);
+	eqnjre->AddTerm(
+		new EFieldFromConductivityTerm(
+			eqsys->GetFluidGrid(), eqsys->GetUnknownHandler(),
+			eqsys->GetREFluid(), -1.0
+		)
+	);
 
 	const len_t id_j_tot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+	const len_t id_j_re    = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
 	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
 	eqsys->SetOperator(
@@ -323,7 +331,10 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed_current(
 	);
     eqsys->SetOperator(
 		id_E_field, id_j_tot,
-		eqnj, "E = j_tot / sigma"
+		eqnj, "E = (j_tot-j_re) / sigma"
+	);
+	eqsys->SetOperator(
+		id_E_field, id_j_re, eqnjre
 	);
 
 	// Initialize electric field to dummy value to allow RunawayFluid
@@ -337,6 +348,7 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed_current(
 		nullptr,
 		// Dependencies..
 		id_j_tot,
+		id_j_re,
 		EqsysInitializer::RUNAWAY_FLUID
     );
 

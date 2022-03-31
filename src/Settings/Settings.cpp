@@ -150,7 +150,7 @@ T *Settings::_GetArray(
     const len_t nExpectedDims, len_t ndims[],
     enum setting_type type, bool markused
 ) {
-    setting_t *s = _GetSetting(name, type);
+    setting_t *s = _GetSetting(name, type, markused);
 
     if (nExpectedDims != s->ndims)
         throw SettingsException(

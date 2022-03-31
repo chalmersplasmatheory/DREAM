@@ -176,7 +176,7 @@ namespace DREAM {
 			const len_t, const len_t, const len_t
 		);
 		static void ConstructEquation_psi_init_nl(
-			EquationSystem*, const len_t, const len_t, const len_t
+			EquationSystem*, const len_t, const len_t, const len_t, const len_t
 		);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);

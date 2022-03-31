@@ -15,6 +15,7 @@ SSHSUPPORT = False
 try:
     import paramiko
     import re           # Regular expression matcher
+    import getpass
     SSHSUPPORT = True
 except ModuleNotFoundError: pass
 
@@ -85,7 +86,11 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
 
         except: pass
 
-        client.connect(host, port=port, username=user)
+        try:
+            client.connect(host, port=port, username=user)
+        except paramiko.ssh_exception.PasswordRequiredException as ex:
+            pw = getpass.getpass(prompt=f"{user}@{host}'s password: ")
+            client.connect(host, port=port, username=user, password=pw)
 
         # Open SFTP stream
         sftp = client.open_sftp()
@@ -225,11 +230,27 @@ def getData(f, key):
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
             return f[key][()].decode()
+        elif type(f[key][:][0]) == str:
+            return f[key][:][0]
         else:
             return f[key][:][0].decode()
     else:
         return f[key][:]
 
+
+def unlazy(s):
+    """
+    Iterate through the given 'dict' consisting of 'DataObject's to load
+    in the actual data (and make it "not lazy loaded").
+    """
+    S = {}
+    for key in s.keys():
+        if type(s[key]) == dict:
+            S[key] = unlazy(s[key])
+        else:
+            S[key] = s[key][:]
+
+    return S
 
 class DREAMIOException(Exception):
     def __init__(self, msg):

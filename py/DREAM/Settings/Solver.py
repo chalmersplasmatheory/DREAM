@@ -11,6 +11,7 @@ from . Preconditioner import Preconditioner
 LINEAR_IMPLICIT = 1
 NONLINEAR       = 2
 
+BACKUP_SOLVER_NONE    = 0
 LINEAR_SOLVER_LU      = 1
 LINEAR_SOLVER_MUMPS   = 2
 LINEAR_SOLVER_MKL     = 3
@@ -157,8 +158,12 @@ class Solver:
 
         self.type = int(scal(data['type']))
         self.linsolv = int(data['linsolv'])
-        self.maxiter = int(data['maxiter'])
-        self.verbose = bool(data['verbose'])
+        
+        if 'maxiter' in data:
+            self.maxiter = int(data['maxiter'])
+
+        if 'verbose' in data:
+            self.verbose = bool(data['verbose'])
 
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
@@ -284,7 +289,7 @@ class Solver:
         solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL, LINEAR_SOLVER_SUPERLU, LINEAR_SOLVER_GMRES]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
-        elif self.backupsolver is not None and self.backupsolver not in solv:
+        elif self.backupsolver is not None and (self.backupsolver not in solv and self.backupsolver != BACKUP_SOLVER_NONE):
             raise DREAMException("Solver: Unrecognized backup linear solver type: {}.".format(self.backupsolver))
 
 

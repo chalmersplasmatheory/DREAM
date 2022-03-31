@@ -93,11 +93,6 @@ class EquationSystem:
             except EquationException as ex:
                 print("WARNING: {}".format(ex))
 
-        # Warn about missing settings
-        if len(sets) > 0:
-            for s in sets:
-                print("WARNING: Settings for unknown '{}' not specified.".format(s))
-
 
     def todict(self, verify=True):
         """

@@ -114,7 +114,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        if compton == False:
+        if compton == False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
             if compton == COMPTON_RATE_ITER_DMS:
@@ -185,7 +185,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Set all options from a dictionary.
         """
         self.avalanche = int(data['avalanche'])
-        self.pCutAvalanche = data['pCutAvalanche']
+
+        if 'pCutAvalanche' in data:
+            self.pCutAvalanche = data['pCutAvalanche']
+
         self.dreicer   = int(data['dreicer'])
         self.Eceff     = int(data['Eceff'])
         self.compton            = int(data['compton']['mode'])
