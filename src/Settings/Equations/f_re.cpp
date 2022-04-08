@@ -117,10 +117,10 @@ void SimulationGenerator::ConstructEquation_f_re(
     // but when the hot-tail grid is disabled and an initial n_re profile
     // is prescribed, we would like to make sure that f_re integrates
     // properly to n_re.
-    if (!eqsys->HasHotTailGrid()) {
-        const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    //if (!eqsys->HasHotTailGrid()) {
+        //const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
         const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-		const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+		//const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 		RunawayFluid *REFluid = eqsys->GetREFluid();
 
         enum OptionConstants::uqty_f_re_inittype inittype =
@@ -153,6 +153,13 @@ void SimulationGenerator::ConstructEquation_f_re(
 						const real_t *xi = runawayGrid->GetMomentumGrid(ir)->GetP2();
 						AnalyticDistributionRE *fRE = REFluid->GetAnalyticDistributionRE();
 
+						// NOTE: This distribution function is normalized such
+						// that
+						//
+						//   <n_re> = integral(f_re * V', 0, inf),
+						//
+						// i.e. unless pmax is set sufficiently high, the
+						// density moment of the discretized f_re
 						for (len_t j = 0; j < np2; j++)
 							for (len_t i = 0; i < np1; i++)
 								finit[offset + j*np1 + i] = fRE->evaluateFullDistribution(ir, xi[j], p[i]);
@@ -178,6 +185,6 @@ void SimulationGenerator::ConstructEquation_f_re(
             // Dependencies
             id_n_re, id_E_field, id_n_i
         );
-    }
+    //}
 }
 
