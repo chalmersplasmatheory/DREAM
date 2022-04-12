@@ -43,7 +43,7 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = 2*M_PI*grid->GetVpVol(ir)
+                real_t w = 2*M_PI
                     *sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
 
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
@@ -72,14 +72,12 @@ namespace DREAM {
             FVM::RadialGrid *rGrid = grid->GetRadialGrid();
             for (len_t ir = 0; ir < nr; ir++){
                 real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
-                real_t VpVol = rGrid->GetVpVol(ir);
                 real_t Bmin = rGrid->GetBmin(ir);
 
-                // psit', multiplied by 2*pi
-                real_t psitPrime  = VpVol*BdotPhi / Bmin;
+                // psit'/VpVol, multiplied by 2*pi
+                real_t psitPrimeOverVpVol  = BdotPhi / Bmin;
 
-                //real_t w = -rGrid->GetVpVol(ir)*rGrid->GetFSA_1OverR2(ir) * rGrid->GetBTorG(ir) / rGrid->GetBmin(ir);
-                real_t w = -psitPrime;
+                real_t w = -psitPrimeOverVpVol;
 
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
