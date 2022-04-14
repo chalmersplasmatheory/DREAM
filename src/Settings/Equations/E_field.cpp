@@ -72,10 +72,9 @@ namespace DREAM {
             FVM::RadialGrid *rGrid = grid->GetRadialGrid();
             for (len_t ir = 0; ir < nr; ir++){
                 real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
-                real_t Bmin = rGrid->GetBmin(ir);
 
                 // psit'/VpVol, multiplied by 2*pi
-                real_t psitPrimeOverVpVol  = BdotPhi / Bmin;
+                real_t psitPrimeOverVpVol  = BdotPhi;
 
                 real_t w = -psitPrimeOverVpVol;
 
