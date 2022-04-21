@@ -90,6 +90,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BraamsKarneyRHS.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BraamsKarneyLOperator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BraamsKarneyAdvection.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BraamsKarneyDiffusion.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"

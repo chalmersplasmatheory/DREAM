@@ -6,7 +6,9 @@ using namespace DREAM;
 
 // TODO: Move to a better place.
 static bool DoIntegralBC(len_t i, len_t j, len_t np1, len_t np2) {
+	//return false;
     (void)j, (void)np2;
+    //return true;
     return i == np1 - 1;
 }
 

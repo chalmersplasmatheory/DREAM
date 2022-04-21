@@ -26,6 +26,11 @@ DiffusionTerm::DiffusionTerm(Grid *rg, bool allocCoefficients)
         this->AllocateCoefficients();
 }
 
+DiffusionTerm::DiffusionTerm(Grid *g, UnknownQuantityHandler *unknowns)
+    : DiffusionTerm(g) {
+    this->unknowns = unknowns;
+}
+
 /**
  * Destructor.
  */
@@ -378,10 +383,16 @@ bool DiffusionTerm::SetJacobianBlock(
     // Set partial advection coefficients for this advection term 
     SetPartialDiffusionTerm(derivId, nMultiples);
 
+    bool momentumGrid = false;
+
+    // Assume momentumGrid = false if no unknowns exist.
+    if (unknowns)
+        momentumGrid = unknowns->GetUnknown(derivId)->GetGrid()->GetMomentumGrid(0)->GetNCells() > 1;
+
     for(len_t n=0; n<nMultiples; n++){
-        SetPartialJacobianContribution(0, JACOBIAN_SET_CENTER, n, jac, x);
-        SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x);
-        SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x);
+        SetPartialJacobianContribution(0, JACOBIAN_SET_CENTER, n, jac, x, momentumGrid);
+        SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x, momentumGrid);
+        SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x, momentumGrid);
     }
 
     return contributes;
@@ -390,19 +401,31 @@ bool DiffusionTerm::SetJacobianBlock(
 /**
  * Sets one of the diagonals in the jacobian block.
  */
-void DiffusionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobian_interp_mode set_mode, len_t n, Matrix *jac, const real_t *x){
+void DiffusionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobian_interp_mode set_mode, len_t n, Matrix *jac, const real_t *x, bool momentumGrid){
         ResetJacobianColumn();
         SetVectorElements(JacobianColumn, x, ddrr+n*(nr+1),
                             dd11+n*nr, dd12+n*nr,
                             dd21+n*nr, dd22+n*nr, set_mode);
-        len_t offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
-                continue;
-            for (len_t j = 0; j < n2[ir]; j++)
-                for (len_t i = 0; i < n1[ir]; i++)
-                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+diagonalOffset, JacobianColumn[offset + n1[ir]*j + i]);
-            offset += n1[ir]*n2[ir];
+        if (!momentumGrid) {
+            len_t offset = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
+                    continue;
+                for (len_t j = 0; j < n2[ir]; j++)
+                    for (len_t i = 0; i < n1[ir]; i++)
+                        jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+diagonalOffset, JacobianColumn[offset + n1[ir]*j + i]);
+                offset += n1[ir]*n2[ir];
+            }
+        } else {
+            len_t offset = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
+                    continue;
+                for (len_t j = 0; j < n2[ir]; j++)
+                    for (len_t i = 0; i < n1[ir]; i++)
+                        jac->SetElement(offset + n1[ir]*j + i, offset + n1[ir] * n2[ir] * diagonalOffset + n1[ir]*j + i, JacobianColumn[offset + n1[ir]*j + i]);
+                offset += n1[ir]*n2[ir];
+            }
         }
 }
 

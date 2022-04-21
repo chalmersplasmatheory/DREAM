@@ -13,6 +13,8 @@
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/Equations/Kinetic/BraamsKarneyAdvection.hpp"
+#include "DREAM/Equations/Kinetic/BraamsKarneyDiffusion.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -102,12 +104,19 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     bool isReducedEquation = 
         (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI &&
         grid->GetMomentumGrid(0)->GetNp2() == 1);
+
+    const bool useNonLinearCollop = true;
+
     // Determine whether electric field acceleration should be
     // modelled with an advection or a diffusion term
     //
     // XXX Here we assume that all momentum grids have
     // the same grid points
     if (isReducedEquation) {        
+        if (useNonLinearCollop) {
+            throw SettingsException("Reduced kinetic equation and non-linear collision operator are incompatible.");
+        }
+
         desc = "Reduced kinetic equation";
 
         eqn->AddTerm(new ElectricFieldDiffusionTerm(
@@ -123,11 +132,13 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         ));
 
         // Pitch scattering term
-        eqn->AddTerm(new PitchScatterTerm(
-            grid, cqty, gridtype,
-            eqsys->GetUnknownHandler(),
-            withFullIonJacobian
-        ));
+        if (!useNonLinearCollop) {
+            eqn->AddTerm(new PitchScatterTerm(
+                             grid, cqty, gridtype,
+                             eqsys->GetUnknownHandler(),
+                             withFullIonJacobian
+                             ));
+        }
         
         // Add ripple effects?
         if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
@@ -139,20 +150,48 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
     }
 
+    if (useNonLinearCollop) {
+        CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
+		FVM::UnknownQuantityHandler *uh = eqsys->GetUnknownHandler();
+		eqn->AddTerm(new BraamsKarneyAdvection(grid, uh, lnLambda,
+											   uh->GetUnknownID(OptionConstants::UQTY_POT_PI_0_HOT),
+											   uh->GetUnknownID(OptionConstants::UQTY_POT_PI_1_HOT)));
+		eqn->AddTerm(new BraamsKarneyDiffusion(grid, uh, lnLambda,
+											   uh->GetUnknownID(OptionConstants::UQTY_POT_UPS_1_HOT),
+											   uh->GetUnknownID(OptionConstants::UQTY_POT_UPS_2_HOT)));
+        // eqn->AddTerm(new SlowingDownTerm(
+        //                  grid, cqty, gridtype, 
+        //                  eqsys->GetUnknownHandler(),
+        //                  withFullIonJacobian
+        //                  ));
+        // eqn->AddTerm(new EnergyDiffusionTerm(
+        //                  grid, cqty, gridtype,
+        //                  eqsys->GetUnknownHandler(),
+        //                  withFullIonJacobian
+        //                  ));
+        // eqn->AddTerm(new PitchScatterTerm(
+        //                  grid, cqty, gridtype,
+        //                  eqsys->GetUnknownHandler(),
+        //                  withFullIonJacobian
+        //                  ));
+    }
+
     // ALWAYS PRESENT
     // Slowing down term
-    eqn->AddTerm(new SlowingDownTerm(
-        grid, cqty, gridtype, 
-        eqsys->GetUnknownHandler(),
-        withFullIonJacobian
-    ));
+    if (!useNonLinearCollop) {
+        eqn->AddTerm(new SlowingDownTerm(
+                         grid, cqty, gridtype, 
+                         eqsys->GetUnknownHandler(),
+                         withFullIonJacobian
+                         ));
 
-    // Energy diffusion
-    eqn->AddTerm(new EnergyDiffusionTerm(
-        grid, cqty, gridtype,
-        eqsys->GetUnknownHandler(),
-        withFullIonJacobian
-    ));
+        // // Energy diffusion
+        eqn->AddTerm(new EnergyDiffusionTerm(
+                         grid, cqty, gridtype,
+                         eqsys->GetUnknownHandler(),
+                         withFullIonJacobian
+                         ));
+    }
 
     // Synchrotron losses
     enum OptionConstants::eqterm_synchrotron_mode synchmode =

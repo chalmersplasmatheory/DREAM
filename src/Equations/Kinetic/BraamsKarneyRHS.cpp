@@ -4,6 +4,8 @@ using namespace DREAM;
 
 static bool DoIntegralBC(len_t i, len_t j, len_t np1, len_t np2) {
     (void)j, (void)np2;
+	//return false;
+    //return true;
     return i == np1 - 1;
 }
 
@@ -52,13 +54,24 @@ void BraamsKarneyRHS::SetElements(F1 X) {
                 len_t idx = offset + j * np1 + i;
 
                 if (!DoIntegralBC(i, j, np1, np2)) {
-                    if (i == 0 || j == 0 || j == np2 - 1) {
+                    // if (j == 0 || j == np2 - 1) {
+                    //     // RHS should be zero, since these
+                    //     // represent d Psi / d p = 0 and d Psi / d xi = 0.
+                    // } else {
+                    //     X(idx, idx, -1);
+                    // }
+
+
+
+                    if (/*i == 0 || */j == 0 || j == np2 - 1) {
                         // RHS should be zero, since these
                         // represent d Psi / d p = 0 and d Psi / d xi = 0.
                     } else {
                         X(idx, idx, -1);
                     }
                 }
+
+
             }
         }
 

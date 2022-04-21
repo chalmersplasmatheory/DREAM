@@ -15,7 +15,7 @@ using namespace std;
 // for nonlinear collision operator is
 // introduced. Set to true to add Braams-Karney
 // potentials as unknown quantities.
-bool useBraamsKarney = false;
+bool useBraamsKarney = true;
 
 #define EQUATIONSYSTEM "eqsys"
 #define INITIALIZATION "init"

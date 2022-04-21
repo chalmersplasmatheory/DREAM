@@ -33,14 +33,16 @@ namespace DREAM::FVM {
             **dd21=nullptr, **dd22=nullptr;
         real_t *JacobianColumn = nullptr;
 
+        UnknownQuantityHandler *unknowns = nullptr;
 
         bool coefficientsShared = false;
 
-        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
+        virtual void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*, bool);
         void ResetJacobianColumn();
 
     public:
         DiffusionTerm(Grid*, bool allocCoefficients=false);
+        DiffusionTerm(Grid*, UnknownQuantityHandler*);
         virtual ~DiffusionTerm();
 
         void AllocateCoefficients();
