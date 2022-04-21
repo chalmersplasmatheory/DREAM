@@ -603,7 +603,6 @@ void RunawayFluid::CalculateCriticalMomentum(){
         pStar_params = {constTerm,ir,this, collSettingsForPc}; 
         gsl_func.params = &pStar_params;
 
-
         if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
@@ -612,7 +611,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
             nuSnuDTerm = s*s*s*s + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
         } else {
 	        gsl_func.function = &(pStarFunction);
-	        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+	        //pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+            pStar = std::numeric_limits<real_t>::infinity();
 
             real_t s = pStar*constTerm;
 	        nuSnuDTerm = s*s*s*s;
@@ -623,7 +623,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
 
         // also store pc for use in other source functions, but which for E<Eceff is set to inf.
-        if (EMinusEceff<=0)
+        if (EMinusEceff<=0 || criticalREMomentumInvSq[ir] == 0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
             criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
@@ -634,12 +634,22 @@ void RunawayFluid::CalculateCriticalMomentum(){
  *  Returns nuS*p^3/gamma^2, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
-    return constPreFactor * nuS->evaluateAtP(ir,p,inSettings) / nuS->evaluatePreFactorAtP(p, inSettings->collfreq_mode);
+    real_t denom = nuS->evaluatePreFactorAtP(p, inSettings->collfreq_mode);
+
+    if (denom == 0)
+        return std::numeric_limits<double>::infinity();
+
+    return constPreFactor * nuS->evaluateAtP(ir,p,inSettings) / denom;
 }
 /** 
  * Returns nuD*p^3/gamma, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
+    real_t denom = nuS->evaluatePreFactorAtP(p, inSettings->collfreq_mode);
+
+    if (denom == 0)
+        return std::numeric_limits<double>::infinity();
+
     return constPreFactor * nuD->evaluateAtP(ir,p,inSettings) / nuD->evaluatePreFactorAtP(p, inSettings->collfreq_mode);
 }
 

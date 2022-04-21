@@ -50,6 +50,8 @@ namespace DREAM::FVM {
         real_t dampingWithIteration = 1.0, t_prev = -1.0, dt_prev = -1.0;
         len_t iteration=0;
 
+        UnknownQuantityHandler *unknowns = nullptr;
+
         // Memory allocation for various coefficients
         void AllocateCoefficients();
         void AllocateDifferentiationCoefficients();
@@ -58,13 +60,14 @@ namespace DREAM::FVM {
         void DeallocateDifferentiationCoefficients();
         void DeallocateInterpolationCoefficients();        
         
-        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
+        virtual void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*, bool);
         void ResetJacobianColumn();
 
         AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
             = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
     public:
         AdvectionTerm(Grid*, bool allocateCoeffs=false);
+        AdvectionTerm(Grid*, UnknownQuantityHandler *uh);
         ~AdvectionTerm();
 
         const real_t *const* GetAdvectionCoeffR() const { return this->fr; }

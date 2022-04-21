@@ -238,7 +238,7 @@ class DREAMEqsys:
         Updates the size variables of all unknowns.
         """
         for u in self.unknowns:
-            if u.name == 'f_hot':
+            if u.name == 'f_hot' or u.name.endswith('_HOT'):
                 u.setSizes(nr=self.nr, nxi=self.hot_nxi, np=self.hot_np)
             elif u.name == 'f_re':
                 u.setSizes(nr=self.nr, nxi=self.re_nxi, np=self.re_np)

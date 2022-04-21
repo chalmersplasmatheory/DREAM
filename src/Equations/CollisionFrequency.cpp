@@ -17,6 +17,8 @@
 
 using namespace DREAM;
 
+const bool removeee = false;
+
 /**
  * Constructor.
  */
@@ -52,7 +54,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p,inSettings);
     
     // Add electron contribution to collision frequency
-    real_t collFreq = lnLee * evaluateElectronTermAtP(ir,p,inSettings->collfreq_mode) * ntarget;
+    real_t collFreq = removeee ? 0 : lnLee * evaluateElectronTermAtP(ir,p,inSettings->collfreq_mode) * ntarget;
 
     len_t ind;
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
@@ -694,37 +696,39 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
 
     len_t pindStore;
     N = np1*np2;
-    if(isPXiGrid)
-        for(len_t ir = 0; ir<nr; ir++){
-            real_t ntarget = GetNTarget(ir, isNonScreened);
-            for(len_t i = 0; i<np1; i++){
-                electronTerm = ntarget*nColdTerm[ir][i]*preFactor[i];
-                for(len_t indZ=0; indZ<nzs; indZ++){
-                    real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
-                    len_t rind = (indZ*nr+ir)*N + i;
-                    len_t Nmax = rind + N; 
-                    for(len_t ind = rind; ind<Nmax; ind+=np1){
-                        ionLnLContrib[ind] += lnLContrib; 
-                        partQty[ind] += lnLContrib;
-                    }
-                }
-            }      
-        }
-    else {
-        for(len_t i = 0; i<np1; i++)
-            for(len_t j = 0; j<np2; j++){
-                pind = np1*j+i;                
-                for(len_t ir = 0; ir<nr; ir++){
-                    real_t ntarget = GetNTarget(ir, isNonScreened);
-                    electronTerm = ntarget*nColdTerm[ir][pind]*preFactor[pind];
+    if (!removeee) {
+        if(isPXiGrid)
+            for(len_t ir = 0; ir<nr; ir++){
+                real_t ntarget = GetNTarget(ir, isNonScreened);
+                for(len_t i = 0; i<np1; i++){
+                    electronTerm = ntarget*nColdTerm[ir][i]*preFactor[i];
                     for(len_t indZ=0; indZ<nzs; indZ++){
-                        len_t ind = (indZ*nr+ir)*N + pind;
                         real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
-                        ionLnLContrib[ind] += lnLContrib; 
-                        partQty[ind] += lnLContrib;
+                        len_t rind = (indZ*nr+ir)*N + i;
+                        len_t Nmax = rind + N; 
+                        for(len_t ind = rind; ind<Nmax; ind+=np1){
+                            ionLnLContrib[ind] += lnLContrib; 
+                            partQty[ind] += lnLContrib;
+                        }
                     }
-                }
-            }           
+                }      
+            }
+        else {
+            for(len_t i = 0; i<np1; i++)
+                for(len_t j = 0; j<np2; j++){
+                    pind = np1*j+i;                
+                    for(len_t ir = 0; ir<nr; ir++){
+                        real_t ntarget = GetNTarget(ir, isNonScreened);
+                        electronTerm = ntarget*nColdTerm[ir][pind]*preFactor[pind];
+                        for(len_t indZ=0; indZ<nzs; indZ++){
+                            len_t ind = (indZ*nr+ir)*N + pind;
+                            real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
+                            ionLnLContrib[ind] += lnLContrib; 
+                            partQty[ind] += lnLContrib;
+                        }
+                    }
+                }           
+        }
     }
     if(hasIonTerm){
         if(isPXiGrid){
@@ -843,6 +847,9 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
 
 
 void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
+    if (removeee)
+        return;
+
     len_t N = np1*np2*nr;
     if(partQty==nullptr)
         partQty = new real_t[N];
@@ -882,24 +889,26 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
     
     const real_t *ncold = unknowns->GetUnknownData(id_ncold);
     N = np1*np2;
-    if(isPXiGrid)
-        for(len_t i=0;i<np1;i++)
-            for(len_t ir=0; ir<nr; ir++){
-                real_t DDTElectronTerm = evaluateDDTElectronTermAtP(ir,pIn[i],collQtySettings->collfreq_mode);
-                real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[i],id_Tcold,0);
-                for(len_t j=0;j<np2;j++){
-                    pind = np1*j+i;
-                    TColdPartialContribution[N*ir + pind] = ncold[ir] * preFactor[i] *
-                        (lnLee[ir][pind]*DDTElectronTerm + dLnL * nColdTerm[ir][i]);
+    if (!removeee) {
+        if(isPXiGrid)
+            for(len_t i=0;i<np1;i++)
+                for(len_t ir=0; ir<nr; ir++){
+                    real_t DDTElectronTerm = evaluateDDTElectronTermAtP(ir,pIn[i],collQtySettings->collfreq_mode);
+                    real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[i],id_Tcold,0);
+                    for(len_t j=0;j<np2;j++){
+                        pind = np1*j+i;
+                        TColdPartialContribution[N*ir + pind] = ncold[ir] * preFactor[i] *
+                            (lnLee[ir][pind]*DDTElectronTerm + dLnL * nColdTerm[ir][i]);
+                    }
                 }
-            }
-    else
-        for(len_t pind=0;pind<N;pind++)
-            for(len_t ir=0; ir<nr; ir++){
-                real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[pind],id_Tcold,0);
-                TColdPartialContribution[N*ir + pind] = ncold[ir]*preFactor[pind] * 
-                    (lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode) + dLnL * nColdTerm[ir][pind]);
-            }
+        else
+            for(len_t pind=0;pind<N;pind++)
+                for(len_t ir=0; ir<nr; ir++){
+                    real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[pind],id_Tcold,0);
+                    TColdPartialContribution[N*ir + pind] = ncold[ir]*preFactor[pind] * 
+                        (lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode) + dLnL * nColdTerm[ir][pind]);
+                }
+    }
     len_t indZ, Zfact;
     if(hasIonTerm){
         if(isPXiGrid){
