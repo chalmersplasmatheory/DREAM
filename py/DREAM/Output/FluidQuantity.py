@@ -447,7 +447,9 @@ class FluidQuantity(UnknownQuantity):
         time = time*time_scale_factor
 
         if time_derivative:
-            ax.plot(time[:-1], np.diff(self.integral(w=w))/np.diff(time/time_scale_factor), **kwargs)
+            integrated_data = self.integral(w=w)
+            ax.plot(time[1:-1], (integrated_data[2:]-integrated_data[:-2])/((time[2:]-time[:-2])/time_scale_factor), **kwargs)
+            #ax.plot(time[:-1], np.diff(self.integral(w=w))/np.diff(time/time_scale_factor), **kwargs)
         else:
             ax.plot(time, self.integral(w=w), **kwargs)
 
