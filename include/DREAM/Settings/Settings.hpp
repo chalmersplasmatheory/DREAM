@@ -100,6 +100,8 @@ namespace DREAM {
         void DefineSetting(const std::string& name, const std::string& desc, len_t ndims, const len_t dims[], const real_t *defaultValue, bool mandatory=false);
         void DefineSetting(const std::string& name, const std::string& desc, const std::string& defaultValue, bool mandatory=false);
 
+		void UndefineSetting(const std::string& name);
+
         enum setting_type GetType(const std::string&);
 
         // GETTERS
