@@ -120,7 +120,6 @@ void InitializePotential(EquationSystem *eqsys, const char *unknown_name, const 
     len_t id_rhs = uh->GetUnknownID(rhs_name);
     len_t id_f_hot = uh->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-
     FVM::Operator *L_op = new FVM::Operator(hottailGrid);
     L_op->AddTerm(new BraamsKarneyLOperator(hottailGrid, a));
 
@@ -215,7 +214,7 @@ void InitializePotential(EquationSystem *eqsys, const char *unknown_name, const 
 void SimulationGenerator::ConstructEquation_BraamsKarney(EquationSystem *eqsys, Settings *s) {
     len_t nx[3];
     if (s->GetRealArray("eqsys/f_hot" "/init/x", 3, nx, false) != nullptr) {
-		throw SettingsException("Braams-Karney can only be initialized from Maxwellian.");
+		throw SettingsException("Braams-Karney can only be initialized to Maxwellian.");
 	}
 
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();

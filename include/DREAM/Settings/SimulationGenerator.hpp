@@ -183,6 +183,7 @@ namespace DREAM {
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
         static void ConstructEquation_BraamsKarney(EquationSystem*, Settings*);
+        static void ConstructEquation_HeatSource(EquationSystem*, Settings*, FVM::Operator *f_op);
 
         template<typename T>
         static T *ConstructTransportTerm_internal(

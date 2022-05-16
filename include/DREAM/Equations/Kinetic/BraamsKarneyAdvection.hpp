@@ -28,7 +28,7 @@ namespace DREAM {
 		DCoeffs dfs[dfs_n2][dfs_n1];
 
 		template<typename T1>
-		void SetCoefficients(T1 psi, real_t **df1, real_t **df2);
+		void SetCoefficients(T1 psi, bool overwrite, real_t **df1, real_t **df2);
 
         CoulombLogarithm *lnLambda;
         len_t id_pi_0, id_pi_1;

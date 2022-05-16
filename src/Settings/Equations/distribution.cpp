@@ -159,26 +159,13 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 		eqn->AddTerm(new BraamsKarneyDiffusion(grid, uh, lnLambda,
 											   uh->GetUnknownID(OptionConstants::UQTY_POT_UPS_1_HOT),
 											   uh->GetUnknownID(OptionConstants::UQTY_POT_UPS_2_HOT)));
-        // eqn->AddTerm(new SlowingDownTerm(
-        //                  grid, cqty, gridtype, 
-        //                  eqsys->GetUnknownHandler(),
-        //                  withFullIonJacobian
-        //                  ));
-        // eqn->AddTerm(new EnergyDiffusionTerm(
-        //                  grid, cqty, gridtype,
-        //                  eqsys->GetUnknownHandler(),
-        //                  withFullIonJacobian
-        //                  ));
-        // eqn->AddTerm(new PitchScatterTerm(
-        //                  grid, cqty, gridtype,
-        //                  eqsys->GetUnknownHandler(),
-        //                  withFullIonJacobian
-        //                  ));
+
+        // Add heat source
     }
 
     // ALWAYS PRESENT
     // Slowing down term
-    if (!useNonLinearCollop) {
+    //if (!useNonLinearCollop) {
         eqn->AddTerm(new SlowingDownTerm(
                          grid, cqty, gridtype, 
                          eqsys->GetUnknownHandler(),
@@ -191,7 +178,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
                          eqsys->GetUnknownHandler(),
                          withFullIonJacobian
                          ));
-    }
+        //}
 
     // Synchrotron losses
     enum OptionConstants::eqterm_synchrotron_mode synchmode =
