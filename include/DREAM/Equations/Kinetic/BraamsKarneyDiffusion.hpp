@@ -32,7 +32,7 @@ namespace DREAM {
 		virtual void SetPartialJacobianContribution(int_t diagonalOffset, jacobian_interp_mode set_mode, len_t n, FVM::Matrix *jac, const real_t *x, bool momentumGrid) override;
 
         template<typename T1, typename T2>
-		void SetCoefficients(T1 psi, T2 phi,
+		void SetCoefficients(T1 psi, T2 phi, bool overwrite,
 							 real_t **d11, real_t **d12,
 							 real_t **d21, real_t **d22);
     public:

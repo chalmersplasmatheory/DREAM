@@ -400,7 +400,7 @@ void setFD_P(F setCoeff, int i, int j, int np1, int np2, const real_t *dp, const
 }
 
 template<typename T1, typename T2>
-void BraamsKarneyDiffusion::SetCoefficients(T1 psi, T2 phi,
+void BraamsKarneyDiffusion::SetCoefficients(T1 psi, T2 phi, bool overwrite,
 											real_t **d11, real_t **d12,
 											real_t **d21, real_t **d22) {
 	len_t r_offset = 0;
@@ -444,31 +444,39 @@ void BraamsKarneyDiffusion::SetCoefficients(T1 psi, T2 phi,
                 real_t d12_val = 0;
                 real_t d11_val = 0;
                 real_t p = i == np1 ? p_f[i - 1] + dp_f[i - 1] : p_f[i];
-                real_t sintheta = sqrt(1 - xi_g[j] * xi_g[j]);
+                //real_t sintheta = sqrt(1 - xi_g[j] * xi_g[j]);
                 real_t gamma = sqrt(1 + p * p);
                 setFD_P([&] (int di, int dj, real_t coeff) {
                             d11_val += coeff * callPsi(i, j, di, dj);
                         }, i, j, np1, np2, dp, dxi, dximax, dxi0,
-                    p * gamma * gamma, gamma * gamma * gamma * gamma, 0, 0
+                    p, gamma * gamma, 0, 0
                     );
+                d11_val *= gamma;
 
                 setFD_P([&] (int di, int dj, real_t coeff) {
                             d12_val += coeff * callPsi(i, j, di, dj);
                         }, i, j, np1, np2, dp, dxi, dximax, dxi0,
-                    0, 0, -sintheta / p * gamma * gamma, sintheta / (p * p) * gamma * gamma
+                    0, 0, 1, -1 / p
                     );
+                d12_val *= gamma * (1 - xi_g[j] * xi_g[j]) / (p * p);
 
                 if (i == np1) {
-                    d11_val += gamma * gamma * callPhi(i, j, -1, 0);
+                    d11_val += gamma * callPhi(i, j, -1, 0);
                 } else {
-                    d11_val += gamma * gamma * (callPhi(i, j, 0, 0) +
+                    d11_val += gamma * (callPhi(i, j, 0, 0) +
                                                 callPhi(i, j, -1, 0)) / 2;
                 }
 
-                d11_val *= -alphabar(p_f[i]) / gamma;
-                d12_val *= -alphabar(p_f[i]) / gamma;
-				D11(ir, i, j, d11) = d11_val;
-				D12(ir, i, j, d12) = d12_val;
+                d11_val *= -alphabar(p_f[i]);
+                d12_val *= -alphabar(p_f[i]);
+
+                if (overwrite) {
+                    D11(ir, i, j, d11) = d11_val;
+                    D12(ir, i, j, d12) = d12_val;
+                } else {
+                    D11(ir, i, j, d11) += d11_val;
+                    D12(ir, i, j, d12) += d12_val;
+                }
             }
 
         for (len_t j = 0; j < np2 + 1; j++) 
@@ -477,34 +485,44 @@ void BraamsKarneyDiffusion::SetCoefficients(T1 psi, T2 phi,
                 real_t d21_val = 0;
                 real_t p = p_g[i];
                 real_t xi = j == np2 ? 1 : xi_f[j];
-                real_t sintheta = sqrt(1 - xi * xi);
+                //real_t sintheta = sqrt(1 - xi * xi);
                 real_t gamma = sqrt(1 + p * p);
                 setFD_XI([&] (int di, int dj, real_t coeff) {
                             d21_val += coeff * callPsi(i, j, di, dj);
                         }, i, j, np1, np2, dp, dxi, dximax, dxi0,
-                    0, -gamma * gamma * sintheta / p, gamma * gamma * sintheta / (p * p), 0
+                    0, 1, -1 / p, 0
                     );
+
+                d21_val *= gamma * (1 - xi * xi) / (p * p);
 
                 setFD_XI([&] (int di, int dj, real_t coeff) {
                             d22_val += coeff * callPsi(i, j, di, dj);
                         }, i, j, np1, np2, dp, dxi, dximax, dxi0,
-                    1 / p + p, 0, -xi / (p * p), (1 - xi * xi) / (p * p)
+                    1 / (p * p) + 1, 0, -xi / (p * p * p), (1 - xi * xi) / (p * p * p)
                     );
 
+                d22_val *= (1 - xi * xi) / (p * gamma);
+
+                real_t plus_norm = (1 - xi * xi) / (gamma * p * p);
                 if (j == np2) {
-                    d22_val += callPhi(i, j, 0, -1);
+                    d22_val += plus_norm * callPhi(i, j, 0, -1);
                 } else if (j == 0) {
-                    d22_val += callPhi(i, j, 0, 0);
+                    d22_val += plus_norm * callPhi(i, j, 0, 0);
                 } else {
-                    d22_val += (callPhi(i, j, 0, 0) +
-                                callPhi(i, j, 0, -1)) / 2;
+                    d22_val += plus_norm * (callPhi(i, j, 0, 0) +
+                                            callPhi(i, j, 0, -1)) / 2;
                 }
 
-                d21_val *= -alphabar(p_g[i]) / gamma;
-                d22_val *= -alphabar(p_g[i]) / gamma;
+                d21_val *= -alphabar(p_g[i]);
+                d22_val *= -alphabar(p_g[i]);
 
-				D21(ir, i, j, d21) = d21_val;
-				D22(ir, i, j, d22) = d22_val;
+                if (overwrite) {
+                    D21(ir, i, j, d21) = d21_val;
+                    D22(ir, i, j, d22) = d22_val;
+                } else {
+                    D21(ir, i, j, d21) += d21_val;
+                    D22(ir, i, j, d22) += d22_val;
+                }
             }
 
 		r_offset += np1 * np2;
@@ -523,7 +541,7 @@ void BraamsKarneyDiffusion::Rebuild(
         },
         [&] (len_t idx, int, int) {
             return ups_1[idx] + 4 * ups_2[idx];
-        }, this->d11, this->d12, this->d21, this->d22);
+        }, false, this->d11, this->d12, this->d21, this->d22);
 }
 
 // Set jacobian of the diffusion coefficients for this diffusion term
@@ -543,7 +561,7 @@ void BraamsKarneyDiffusion::SetPartialDiffusionTerm(len_t derivId, len_t) {
 				},
 				[&] (len_t, int di, int dj) {
 					return (di == n1_offsets[i] && dj == n2_offsets[j]) ? phi_coeff : 0;
-				}, this->dds[j][i].dd11, this->dds[j][i].dd12, this->dds[j][i].dd21, this->dds[j][i].dd22);
+				}, true, this->dds[j][i].dd11, this->dds[j][i].dd12, this->dds[j][i].dd21, this->dds[j][i].dd22);
 		}
 	}
 }

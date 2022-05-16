@@ -64,7 +64,7 @@ static real_t Gamma(const real_t p) {
 const real_t alphaBarOverLnLambda = 3.75927427447396469133e-19; // ec^4 / (eps0^2 * me^2 * c^3)
 
 template<typename T1>
-void BraamsKarneyAdvection::SetCoefficients(T1 psi, real_t **f1, real_t **f2) {
+void BraamsKarneyAdvection::SetCoefficients(T1 psi, bool overwrite, real_t **f1, real_t **f2) {
 	len_t r_offset = 0;
 
 	for (len_t ir = 0; ir < nr; ir++) {
@@ -104,11 +104,20 @@ void BraamsKarneyAdvection::SetCoefficients(T1 psi, real_t **f1, real_t **f2) {
 					// Same as i = np1 - 1.
 					real_t pi_combo_low = callPsi(i, j, -2, 0);
 					real_t pi_combo_high = callPsi(i, j, -1, 0);
-					F1(ir, i, j, f1) = -alphabar(p_f[i]) * Gamma(p_f[i - 1]) * (pi_combo_high - pi_combo_low) / dp_f[i - 1];
+                    if (overwrite) {
+                        F1(ir, i, j, f1) = -alphabar(p_f[i]) * Gamma(p_f[i - 1]) * (pi_combo_high - pi_combo_low) / dp_f[i - 1];
+                    } else {
+                        F1(ir, i, j, f1) += -alphabar(p_f[i]) * Gamma(p_f[i - 1]) * (pi_combo_high - pi_combo_low) / dp_f[i - 1];
+                    }
 				} else { // Not on a boundary.
 					real_t pi_combo_low = callPsi(i, j, -1, 0);
 					real_t pi_combo_high = callPsi(i, j, 0, 0);
-					F1(ir, i, j, f1) = -alphabar(p_f[i]) * Gamma(p_f[i]) * (pi_combo_high - pi_combo_low) / dp_f[i];
+
+                    if (overwrite) {
+                        F1(ir, i, j, f1) = -alphabar(p_f[i]) * Gamma(p_f[i]) * (pi_combo_high - pi_combo_low) / dp_f[i];
+                    } else {
+                        F1(ir, i, j, f1) += -alphabar(p_f[i]) * Gamma(p_f[i]) * (pi_combo_high - pi_combo_low) / dp_f[i];
+                    }
 				}
 			}
 		}
@@ -121,8 +130,13 @@ void BraamsKarneyAdvection::SetCoefficients(T1 psi, real_t **f1, real_t **f2) {
 					real_t pi_combo_low = callPsi(i, j, 0, -1);
 					real_t pi_combo_high = callPsi(i, j, 0, 0);
 
-                    F2(ir, i, j, f2) = alphabar(p[i]) * sqrt(1 - xi_f[j] * xi_f[j]) / (p[i] * gamma[i])
-                        * (pi_combo_high - pi_combo_low) / dxi_f[j];
+                    if (overwrite) {
+                        F2(ir, i, j, f2) = alphabar(p[i]) * (1 - xi_f[j] * xi_f[j]) / (p[i] * p[i] * gamma[i])
+                            * (pi_combo_high - pi_combo_low) / dxi_f[j];
+                    } else {
+                        F2(ir, i, j, f2) += alphabar(p[i]) * (1 - xi_f[j] * xi_f[j]) / (p[i] * p[i] * gamma[i])
+                            * (pi_combo_high - pi_combo_low) / dxi_f[j];
+                    }
                 }
 			}
 
@@ -140,7 +154,7 @@ void BraamsKarneyAdvection::Rebuild(const real_t, const real_t, FVM::UnknownQuan
     SetCoefficients(
         [&] (len_t idx, int, int) {
             return pi_0[idx] - 2 * pi_1[idx];
-        }, this->f1, this->f2);
+        }, false, this->f1, this->f2);
 }
 
 
@@ -159,7 +173,7 @@ void BraamsKarneyAdvection::SetPartialAdvectionTerm(len_t derivId, len_t /*nMult
 			SetCoefficients(
 				[&] (len_t, int di, int dj) {
 					return (di == n1_offsets[i] && dj == n2_offsets[j]) ? psi_coeff : 0;
-				}, this->dfs[j][i].df1, this->dfs[j][i].df2);
+				}, true, this->dfs[j][i].df1, this->dfs[j][i].df2);
 		}
 	}
 }
