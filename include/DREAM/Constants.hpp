@@ -17,6 +17,9 @@ namespace DREAM {
         //Elementary charge in C:
         static const real_t ec;
 
+		//Hydrogen mass in kg
+		static const real_t mH;
+
         //Deuterium mass in kg
         static const real_t mD; 
 

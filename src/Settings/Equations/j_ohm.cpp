@@ -29,6 +29,11 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
     s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (int_t) OptionConstants::CORRECTED_CONDUCTIVITY_ENABLED);
     s->DefineSetting(MODULENAME "/conductivityMode", "Determines which formula to use for the conductivity", (int_t) OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS);
+
+	DefineDataRT(MODULENAME, s, "data");
+	DefineDataR(MODULENAME, s, "init");
+
+	s->DefineSetting(MODULENAME "/Ip0", "When specifying an initial j_tot profile, re-scale the profile to get this total plasma current", (real_t)0.0);
 }
 
 /**

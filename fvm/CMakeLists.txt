@@ -152,8 +152,8 @@ endif ()
 # GNU Scientific Library
 find_package(GSL REQUIRED)
 if (GSL_FOUND)
-    if (GSL_VERSION VERSION_LESS 2.0)
-        message(FATAL_ERROR "DREAM needs GSL >= 2.0")
+    if (GSL_VERSION VERSION_LESS 2.4)
+        message(FATAL_ERROR "DREAM needs GSL >= 2.4")
     endif()
 
     target_include_directories(fvm PUBLIC "${GSL_INCLUDE_DIRS}")

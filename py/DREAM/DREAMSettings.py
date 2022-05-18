@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import os
 from . import DREAMIO as DREAMIO
+from . helpers import merge_dicts
 
 # Settings objects
 from .Settings.CollisionHandler import CollisionHandler
@@ -59,6 +60,23 @@ class DREAMSettings:
         if filename is not None:
             if type(filename) == str:
                 self.load(filename, path=path, lazy=False)
+            elif type(filename) == dict:
+                # We first generate an empty settings object so that we
+                # get all default values in a dict...
+                self.hottailgrid.setEnabled(False)
+                self.runawaygrid.setEnabled(False)
+                dct = self.todict(verify=False)
+                s = merge_dicts(dct, filename)
+
+                self.fromdict(s)
+
+                if chain:
+                    if 'output' in s and 'filename' in s['output']:
+                        self.fromOutput(s['output']['filename'])
+                        self.output.setFilename('output.h5')
+
+                        if not keepignore:
+                            self.clearIgnore()
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
 
@@ -102,7 +120,14 @@ class DREAMSettings:
         sets  = list(self.settings.keys())
         other = ['init']
 
-        for key in data:
+        # Settings to remove first
+        special = ['hottailgrid', 'runawaygrid']
+
+        datakeys = list(data.keys())
+        for k in special:
+            datakeys.remove(k)
+
+        for key in special+datakeys:
             # Warn about unrecognized settings
             if key in sets:
                 # Remove from list of not-found settings

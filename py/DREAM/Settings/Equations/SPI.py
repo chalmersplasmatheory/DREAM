@@ -430,18 +430,29 @@ class SPI(UnknownQuantity):
         """
         Set all options from a dictionary.
         """
-        self.velocity       = int(data['velocity'])
-        self.ablation       = int(data['ablation'])
-        self.deposition     = int(data['deposition'])
-        self.heatAbsorbtion = int(data['heatAbsorbtion'])
-        self.cloudRadiusMode = int(data['cloudRadiusMode'])
-        self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
+        if 'velocity' in data:
+            self.velocity       = int(data['velocity'])
+        if 'ablation' in data:
+            self.ablation       = int(data['ablation'])
+        if 'deposition' in data:
+            self.deposition     = int(data['deposition'])
+        if 'heatAbsorption' in data:
+            self.heatAbsorbtion = int(data['heatAbsorbtion'])
+        if 'cloudRadiusMode' in data:
+            self.cloudRadiusMode = int(data['cloudRadiusMode'])
+        if 'magneticFieldDependenceMode' in data:
+            self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
 
-        self.VpVolNormFactor = data['VpVolNormFactor']
-        self.rclPrescribedConstant = data['rclPrescribedConstant']
-        self.rp              = data['init']['rp']
-        self.vp              = data['init']['vp']
-        self.xp              = data['init']['xp']
+        if 'VpVolNormFactor' in data:
+            self.VpVolNormFactor = data['VpVolNormFactor']
+        if 'rclPrescribedConstant' in data:
+            self.rclPrescribedConstant = data['rclPrescribedConstant']
+        if 'rp' in data:
+            self.rp              = data['init']['rp']
+        if 'vp' in data:
+            self.vp              = data['init']['vp']
+        if 'xp' in data:
+            self.xp              = data['init']['xp']
 
 
     def todict(self):

@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.interpolate
 from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
@@ -59,7 +60,7 @@ class Ions(UnknownQuantity):
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
-        T=None, n=None, r=None, t=None, tritium=False):
+        T=None, n=None, r=None, t=None, tritium=False, hydrogen=False):
 
         """
         Adds a new ion species to the plasma.
@@ -76,9 +77,13 @@ class Ions(UnknownQuantity):
         :param numpy.ndarray r: Radial grid on which the input density and temperature is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
+        :param bool hydrogen:   If ``True``, the ion species is treated as Hydrogen (single proton).
         """
-        if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
-            raise EquationException("The radial grid must be the same for all ion species.")
+        if (self.r is not None) and (r is not None) and (np.any(self.r[:] != r[:])):
+            if self.r.size == 1:
+                self.changeRadialGrid(r)
+            else:
+                raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
             
@@ -100,7 +105,7 @@ class Ions(UnknownQuantity):
             neutral_diffusion_mode=neutral_diffusion_mode, neutral_prescribed_diffusion=neutral_prescribed_diffusion, rNeutralPrescribedDiffusion=rNeutralPrescribedDiffusion, tNeutralPrescribedDiffusion=tNeutralPrescribedDiffusion,           
             charged_advection_mode=charged_advection_mode, charged_prescribed_advection=charged_prescribed_advection, rChargedPrescribedAdvection=rChargedPrescribedAdvection, tChargedPrescribedAdvection=tChargedPrescribedAdvection,
             neutral_advection_mode=neutral_advection_mode, neutral_prescribed_advection=neutral_prescribed_advection, rNeutralPrescribedAdvection=rNeutralPrescribedAdvection, tNeutralPrescribedAdvection=tNeutralPrescribedAdvection,           
-            T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+            T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium, hydrogen=hydrogen)
 
         self.ions.append(ion)
 
@@ -123,6 +128,26 @@ class Ions(UnknownQuantity):
         if neutral_advection_mode==ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
             self.rNeutralPrescribedAdvection = ion.getRNeutralPrescribedAdvection()
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
+
+
+    def changeRadialGrid(self, r):
+        """
+        Change the radial grid used for the ion species.
+        """
+        for ion in self.ions:
+            if ion.r.size == 1:
+                ion.n = ion.n * np.ones(ion.n.shape[:-1] + (r.size,))
+                ion.T = ion.T * np.ones(ion.T.shape[:-1] + (r.size,))
+                ion.r = r
+            else:
+                fn = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                fT = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                ion.n = fn(r)
+                ion.T = fT(r)
+                ion.r = r
+
+        self.r = r
+
 
     def getCharges(self):
         """
@@ -170,6 +195,19 @@ class Ions(UnknownQuantity):
         :param int ionization: Flag indicating which model to use for ionization.
         """
         self.ionization=ionization
+
+
+    def getHydrogenSpecies(self):
+        """
+        Returns a list of names of the ion species which are treated
+        as Hydrogen.
+        """
+        hydr = []
+        for ion in self.ions:
+            if ion.hydrogen:
+                hydr.append(ion.getName())
+
+        return hydr
 
 
     def getTritiumSpecies(self):
@@ -278,9 +316,21 @@ class Ions(UnknownQuantity):
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
-        isotopes     = data['isotopes']
-        types        = data['types']
-        opacity_modes = data['opacity_modes']
+
+        if 'isotopes' in data and len(data['isotopes']) == len(Z):
+            isotopes = data['isotopes']
+        else:
+            isotopes = [0]*len(Z)
+
+        if 'types' in data and len(data['types']) == len(Z):
+            types = data['types']
+        else:
+            types = [0]*len(Z)
+
+        if 'opacity_modes' in data and len(data['opacity_modes']) == len(Z):
+            opacity_modes = data['opacity_modes']
+        else:
+            opacity_modes = self.getOpacityModes()
 
         charged_diffusion_modes = [ION_CHARGED_DIFFUSION_MODE_NONE]*len(Z)
         neutral_diffusion_modes = [ION_NEUTRAL_DIFFUSION_MODE_NONE]*len(Z)
@@ -307,6 +357,11 @@ class Ions(UnknownQuantity):
             tritiumnames = data['tritiumnames'].split(';')[:-1]
         else:
             tritiumnames = []
+
+        if 'hydrogennames' in data:
+            hydrogennames = data['hydrogennames'].split(';')[:-1]
+        else:
+            hydrogennames = []
 
         initial    = None
         prescribed = None
@@ -359,6 +414,7 @@ class Ions(UnknownQuantity):
                 SPIMolarFractionSingleSpecies = SPIMolarFraction[spiidx]
                 spiidx+=1
             tritium = (names[i] in tritiumnames)
+            hydrogen = (names[i] in hydrogennames)
             
             if charged_diffusion_modes[i] == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
                 cpd = charged_prescribed_diffusion['x'][cpdidx:(cpdidx+Z[i])]
@@ -405,7 +461,7 @@ class Ions(UnknownQuantity):
                 neutral_diffusion_mode=neutral_diffusion_modes[i], neutral_prescribed_diffusion = npd, rNeutralPrescribedDiffusion=rnpd, tNeutralPrescribedDiffusion = tnpd,
                 charged_advection_mode=charged_advection_modes[i], charged_prescribed_advection = cpa, rChargedPrescribedAdvection=rcpa, tChargedPrescribedAdvection = tcpa,
                 neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa, rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
-                T=T, n=n, r=r, t=t, tritium=tritium)
+                T=T, n=n, r=r, t=t, tritium=tritium, hydrogen=hydrogen)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
@@ -436,6 +492,7 @@ class Ions(UnknownQuantity):
         neutral_prescribed_advection = None
         names   = ""
 
+        hydrogennames = ""
         tritiumnames = ""
 
         SPIMolarFraction = None
@@ -445,6 +502,8 @@ class Ions(UnknownQuantity):
 
             if ion.tritium:
                 tritiumnames += '{};'.format(ion.getName())
+            elif ion.hydrogen:
+                hydrogennames += '{};'.format(ion.getName())
 
             if ion.getTime() is None:
                 if initial is None:
@@ -505,6 +564,8 @@ class Ions(UnknownQuantity):
 
         if len(tritiumnames) > 0:
             data['tritiumnames'] = tritiumnames
+        if len(hydrogennames) > 0:
+            data['hydrogennames'] = hydrogennames
 
         if initial is not None:
             data['initial'] = {

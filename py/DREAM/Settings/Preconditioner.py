@@ -30,6 +30,7 @@ class Preconditioner:
                 raise DREAMException("'names' setting present, but no 'unknown_scales' setting found.")
 
             names = data['names'].split(';')[:-1]
+            overrides = []
             for i in range(len(names)):
                 escal = data['equation_scales'][i]
                 uscal = data['unknown_scales'][i]

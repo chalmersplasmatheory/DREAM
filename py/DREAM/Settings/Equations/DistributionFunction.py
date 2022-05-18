@@ -269,6 +269,7 @@ class DistributionFunction(UnknownQuantity):
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
+
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -276,8 +277,6 @@ class DistributionFunction(UnknownQuantity):
             self.n0  = data['n0']['x']
             self.rT0 = data['T0']['r']
             self.T0  = data['T0']['x']
-        elif self.grid.enabled:
-            raise EquationException("{}: Unrecognized specification of initial distribution function.".format(self.name))
 
         if 'ripplemode' in data:
             self.ripplemode = int(scal(data['ripplemode']))
@@ -311,7 +310,7 @@ class DistributionFunction(UnknownQuantity):
             # Advection interpolation
             data['adv_interp'] = self.advectionInterpolation.todict()
 
-            if self.init is not None:
+            if self.init:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']
                 data['init']['r'] = self.init['r']

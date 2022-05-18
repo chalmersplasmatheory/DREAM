@@ -25,11 +25,12 @@ const int_t
 EqsysInitializer::EqsysInitializer(
     FVM::UnknownQuantityHandler *unknowns,
     vector<UnknownQuantityEquation*> *unknown_equations,
+	EquationSystem *eqsys,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     enum OptionConstants::momentumgrid_type hottail_type,
     enum OptionConstants::momentumgrid_type runaway_type
 
-) : unknowns(unknowns), unknown_equations(unknown_equations),
+) : unknowns(unknowns), unknown_equations(unknown_equations), eqsys(eqsys),
     fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
     hottail_type(hottail_type), runaway_type(runaway_type) { }
 
@@ -55,11 +56,12 @@ void EqsysInitializer::AddRule(const int_t uqtyId, const enum initrule_t type, i
             this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
         );
 
-    if (type == INITRULE_STEADY_STATE_SOLVE)
+    /*if (type == INITRULE_STEADY_STATE_SOLVE)
         throw NotImplementedException(
             "%s: No support for solving for initial steady state implemented yet.",
             this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
         );
+	*/
 
     this->rules[uqtyId] = new struct initrule(
         uqtyId, type, vector<int_t>(0), fnc
@@ -88,7 +90,17 @@ void EqsysInitializer::Execute(const real_t t0) {
         this->AddRule(COLLQTYHDL_HOTTAIL, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
     if (this->cqhRunaway != nullptr)
         this->AddRule(COLLQTYHDL_RUNAWAY, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
-    this->AddRule(RUNAWAY_FLUID, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_n_tot, id_T_cold, id_ions, id_E_field);
+
+	if (this->unknowns->HasInitialValue(id_E_field))
+		this->AddRule(
+			RUNAWAY_FLUID, INITRULE_EVAL_EQUATION, nullptr,
+			id_n_cold, id_n_tot, id_T_cold, id_ions
+		);
+	else
+		this->AddRule(
+			RUNAWAY_FLUID, INITRULE_EVAL_EQUATION, nullptr,
+			id_n_cold, id_n_tot, id_T_cold, id_ions, id_E_field
+		);
 
     // Build the 'order' list (sort the rules in order of
     // "least" to "most" dependent)
@@ -101,6 +113,9 @@ void EqsysInitializer::Execute(const real_t t0) {
         order.insert(order.end(), tmp.begin(), tmp.end());
     }
 
+	// Vector to store quantities for which a non-linear steady-state
+	// solution should be obtained...
+	vector<len_t> ssQty;
     // Execute the rules in the calculated order
     for (int_t uqtyId : order) {
         struct initrule *rule = this->rules[uqtyId];
@@ -116,6 +131,13 @@ void EqsysInitializer::Execute(const real_t t0) {
                     this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
                 );
         }*/
+
+		// If all equations have been gathered for the next non-linear
+		// solve, it's time to solve the system of equations...
+		if (rule->type != INITRULE_STEADY_STATE_SOLVE && ssQty.size() > 0) {
+			this->NonLinearSolve(t0, ssQty);
+			ssQty.clear();
+		}
 
         // Special object?
         if (uqtyId < 0) {
@@ -151,7 +173,7 @@ void EqsysInitializer::Execute(const real_t t0) {
                     break;
 
                 case INITRULE_STEADY_STATE_SOLVE:
-                    throw NotImplementedException("The 'STEADY_STATE_SOLVE' initialization rule has not been implemented yet.");
+					ssQty.push_back(uqtyId);
                     break;
 
                 default:
@@ -165,6 +187,12 @@ void EqsysInitializer::Execute(const real_t t0) {
                 ionHandler->Rebuild();
         }
     }
+
+	// Non-linear equations to solve before finishing?
+	if (ssQty.size() > 0) {
+		this->NonLinearSolve(t0, ssQty);
+		ssQty.clear();
+	}
 
     // Verfiy that all unknown quantities have now been initialized
     this->VerifyAllInitialized();
@@ -194,10 +222,11 @@ vector<int_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
             // Seeing this rule a second time means we have
             // discovered a circular dependency...
             else if (deprule->marked) {
+				const char *name_from=GetQuantityName(rule->uqtyId),
+						   *name_to=GetQuantityName(deprule->uqtyId);
                 throw EqsysInitializerException(
                     "Unable to resolve circular dependency: %s -> %s.",
-                    this->unknowns->GetUnknown(rule->uqtyId)->GetName().c_str(),
-                    this->unknowns->GetUnknown(deprule->uqtyId)->GetName().c_str()
+					name_from, name_to
                 );
             } else {
                 // This rule has no un-initialized dependencies so we add
@@ -411,6 +440,30 @@ void EqsysInitializer::InitializeFromOutput(
     if (hot_p2 != nullptr) delete [] hot_p2;
     if (re_p1  != nullptr) delete [] re_p1;
     if (re_p2  != nullptr) delete [] re_p2;
+}
+
+/**
+ * Return the name of the specified quantity as a C string.
+ */
+const char *EqsysInitializer::GetQuantityName(
+	const int_t qtyId
+) {
+	if (qtyId >= 0)
+		return this->unknowns->GetUnknown(qtyId)->GetName().c_str();
+	else {
+		switch (qtyId) {
+			case COLLQTYHDL_HOTTAIL: return "CollisionQuantityHandler(hottail)";
+			case COLLQTYHDL_RUNAWAY: return "CollisionQuantityHandler(runawaygrid)";
+			case RUNAWAY_FLUID: return "RunawayFluid";
+
+			default: break;
+		}
+
+		throw EqsysInitializerException(
+			"Unrecognized initialization quantity ID: " INT_T_PRINTF_FMT,
+			qtyId
+		);
+	}
 }
 
 /**

@@ -229,7 +229,8 @@ def load_element(element, year, cache=True, cachedir=None):
     data['Z'] = Z
 
     # Handle hydrogen isotope mass numbers specifically...
-    if element == 'D': data['A'] = 2
+    if element == 'H': data['A'] = 1
+    elif element == 'D': data['A'] = 2
     elif element == 'T': data['A'] = 3
     else: data['A'] = 2*Z
 

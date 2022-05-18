@@ -54,6 +54,12 @@ void LinearTransientTerm::Rebuild(const real_t, const real_t dt, UnknownQuantity
  * rhs: Equation RHS.
  */
 void LinearTransientTerm::SetMatrixElements(Matrix *mat, real_t *rhs) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     const len_t N = grid->GetNCells();
     for (len_t i = 0; i < N; i++)
         mat->SetElement(i, i, weights[i]/this->dt, ADD_VALUES);
@@ -71,6 +77,12 @@ void LinearTransientTerm::SetMatrixElements(Matrix *mat, real_t *rhs) {
  * x:   Previous solution (unused).
  */
 void LinearTransientTerm::SetVectorElements(real_t *vec, const real_t *xnp1) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)

@@ -13,6 +13,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Info.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Save.cpp"
     "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.cpp"
+    "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.nonlinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
@@ -69,6 +70,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSPIDepositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIAblationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIHeatAbsorbtionTerm.cpp"
@@ -221,8 +223,8 @@ endif ()
 # GNU Scientific Library
 find_package(GSL REQUIRED)
 if (GSL_FOUND)
-    if (GSL_VERSION VERSION_LESS 2.0)
-        message(FATAL_ERROR "dream needs GSL >= 2.0")
+    if (GSL_VERSION VERSION_LESS 2.4)
+        message(FATAL_ERROR "dream needs GSL >= 2.4")
     endif()
 
     target_include_directories(dream PUBLIC "${GSL_INCLUDE_DIRS}")

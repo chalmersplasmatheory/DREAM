@@ -246,6 +246,20 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 
         ConstructEquation_f_maxwellian(id_f, eqsys, grid, n0, T0, rescaleMaxwellian);
 
+		// Solving the steady-state FP equation in this way
+		// does not appear to work...
+		/*eqsys->initializer->AddRule(
+			OptionConstants::UQTY_F_HOT,	// TODO: Could also be F_RE...
+			EqsysInitializer::INITRULE_STEADY_STATE_SOLVE,
+			nullptr,
+			id_E_field
+		);*/
+
+		if (HasInitialJtot(eqsys, s))
+			throw SettingsException(
+				"distribution: Cannot prescribe an initial plasma current when running in kinetic mode."
+			);
+
         delete [] T0;
         delete [] n0;
     }
