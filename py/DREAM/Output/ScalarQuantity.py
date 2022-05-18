@@ -50,6 +50,7 @@ class ScalarQuantity(UnknownQuantity):
 
 
     def plot(self, ax=None, show=None, t=None, t_shift = 0, **kwargs):
+
         """
         Generate a plot of the time evolution of this quantity.
 
