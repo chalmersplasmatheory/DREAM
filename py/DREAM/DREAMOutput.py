@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import os
 import DREAM.DREAMIO as DREAMIO
+from .helpers import merge_dicts
 
 from .DREAMSettings import DREAMSettings
 from .Output.EquationSystem import EquationSystem
@@ -22,15 +23,17 @@ from .Settings import Solver as SettingsSolver
 class DREAMOutput:
     
 
-    def __init__(self, filename=None, path="", lazy=True):
+    def __init__(self, filename=None, path="", lazy=True, loadsettings=True):
         """
         Construct a new ``DREAMOutput`` object. If ``filename`` is given, the
         object is read from the (HDF5) file with that name. If ``path`` is also
         given, this is used to locate the group in the file which contains the
         output.
 
-        :param str filename: Name of file to load output from.
-        :param str path:     Path to group in HDF5 file containing the output.
+        :param str filename:      Name of file to load output from.
+        :param str path:          Path to group in HDF5 file containing the output.
+        :param bool lazy:         If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
+        :param bool loadsettings: If ``True``, load the settings stored in the output object.
         """
 
         # Default
@@ -47,7 +50,7 @@ class DREAMOutput:
         self.h5handle = None
 
         if filename is not None:
-            self.load(filename=filename, path=path, lazy=lazy)
+            self.load(filename=filename, path=path, lazy=lazy, loadsettings=loadsettings)
 
 
     def __contains__(self, item):
@@ -84,15 +87,16 @@ class DREAMOutput:
             return None
 
 
-    def load(self, filename, path="", lazy=True):
+    def load(self, filename, path="", lazy=True, loadsettings=True):
         """
         Loads DREAM output from the specified file. If 'path' is
         given, this indicates which group path in the file to load
         the output from.
 
-        :param str filename: Name of file to load output from.
-        :param str path:     Path to subsect of HDF5 file containing DREAM output.
-        :param bool lazy:    If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
+        :param str filename:      Name of file to load output from.
+        :param str path:          Path to subsect of HDF5 file containing DREAM output.
+        :param bool lazy:         If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
+        :param bool loadsettings: If ``True``, load the settings stored in the output object.
         """
         self.filename = filename
 
@@ -124,8 +128,17 @@ class DREAMOutput:
             self.other = OtherQuantityHandler(od['other'], grid=self.grid, output=self)
 
         # Load settings for the run
-        if 'settings' in od:
-            self.settings = DREAMSettings(settings=od['settings'])
+        if 'settings' in od and loadsettings:
+            s = od['settings']
+            if lazy:
+                # Actually read all settings
+                # (yes, we explicitly ignore the lazy loading request since
+                # much of the settings interface has been created without lazy
+                # loading in mind, and since settings are typically *very* small
+                # compared to full-blown DREAM output)
+                s = DREAMIO.unlazy(s)
+
+            self.settings = DREAMSettings(s)
 
         # Solver statistics
         if 'solver' in od:
@@ -134,6 +147,8 @@ class DREAMOutput:
         # Timing information
         if 'timings' in od:
             self.timings = Timings(od['timings'], output=self)
+
+        return od
 
 
     def getFileSize(self):

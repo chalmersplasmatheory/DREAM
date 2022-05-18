@@ -15,9 +15,14 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId, UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode) 
-    : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), 
-      fId(fId), unknowns(u), pThreshold(pThreshold), pMode(pMode) {
+MomentQuantity::MomentQuantity(
+    Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId,
+    UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode,
+    xiIntegralMode xiMode
+) : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), 
+    fId(fId), unknowns(u), pThreshold(pThreshold), pMode(pMode),
+    xiMode(xiMode) {
+
     this->hasThreshold = (pThreshold!=0);
     id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
     if(this->hasThreshold)

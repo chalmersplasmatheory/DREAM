@@ -341,12 +341,14 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
-
-    // Print/save debug info (if requested)
-    this->SaveDebugInfo(this->nTimeStep, this->iteration);
-
-    // Apply preconditioner (if enabled)
-    this->Precondition(this->jacobian, this->petsc_F);
+    // Print/save debug info and apply preconditioner (if enabled)
+    if (this->debugrescaled) {
+        this->Precondition(this->jacobian, this->petsc_F);
+        this->SaveDebugInfoBefore(this->nTimeStep, this->iteration);
+    } else {
+        this->SaveDebugInfoBefore(this->nTimeStep, this->iteration);
+        this->Precondition(this->jacobian, this->petsc_F);
+    }
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
@@ -363,8 +365,14 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
     this->timeKeeper->StopTimer(timerInvert);
 
-    // Undo preconditioner (if enabled)
-    this->UnPrecondition(this->petsc_dx);
+    // Undo preconditioner and save additional debug info (if requested)
+    if (this->debugrescaled) {
+        this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
+        this->UnPrecondition(this->petsc_dx);
+    } else {
+        this->UnPrecondition(this->petsc_dx);
+        this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
+    }
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
@@ -524,12 +532,13 @@ void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
 }
 
 /**
- * Save debugging information for the current iteration.
+ * Save debugging information for the current iteration,
+ * _before_ the new solution has been calculated.
  *
  * iTimeStep:  Current time step index.
  * iIteration: Current iteration index.
  */
-void SolverNonLinear::SaveDebugInfo(
+void SolverNonLinear::SaveDebugInfoBefore(
     len_t iTimeStep, len_t iIteration
 ) {
     if ((this->savetimestep == iTimeStep &&
@@ -575,6 +584,27 @@ void SolverNonLinear::SaveDebugInfo(
             SaveNumericalJacobian(jacname);
         }
 
+        if (this->printjacobianinfo)
+            this->jacobian->PrintInfo();
+    }
+}
+
+/**
+ * Save debugging information for the current iteration,
+ * _after_ the new solution has been calculated.
+ *
+ * iTimeStep:  Current time step index.
+ * iIteration: Current iteration index.
+ */
+void SolverNonLinear::SaveDebugInfoAfter(
+    len_t iTimeStep, len_t iIteration
+) {
+    if ((this->savetimestep == iTimeStep &&
+        (this->saveiteration == iIteration || this->saveiteration == 0)) ||
+         this->savetimestep == 0) {
+
+        string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
+
         if (this->savesolution) {
             string solname = "solution_dx";
             if (this->savetimestep == 0 || this->saveiteration == 0)
@@ -598,15 +628,12 @@ void SolverNonLinear::SaveDebugInfo(
                 outname += suffix;
             outname += ".h5";
 
-            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname);
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname, true);
             outgen->SaveCurrent();
             delete outgen;
         }
-
-        if (this->printjacobianinfo)
-            this->jacobian->PrintInfo();
     }
-}
+}        
 
 /**
  * Enable or disable debug mode.
@@ -627,10 +654,11 @@ void SolverNonLinear::SaveDebugInfo(
  * savesystem:        If true, saves the full equation system, including grid information,
  *                    to a proper DREAMOutput file. However, only the most recently obtained
  *                    solution is saved.
+ * rescaled:          If true, saves the rescaled version of the jacobian/solution/residual.
  */
 void SolverNonLinear::SetDebugMode(
     bool printjacobianinfo, bool savesolution, bool savejacobian, bool savevector,
-    bool savenumjac, int_t timestep, int_t iteration, bool savesystem
+    bool savenumjac, int_t timestep, int_t iteration, bool savesystem, bool rescaled
 ) {
     this->printjacobianinfo = printjacobianinfo;
     this->savejacobian      = savejacobian;
@@ -640,6 +668,7 @@ void SolverNonLinear::SetDebugMode(
     this->savetimestep      = timestep;
     this->saveiteration     = iteration;
     this->savesystem        = savesystem;
+    this->debugrescaled     = rescaled;
 }
 
 

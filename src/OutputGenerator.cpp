@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/OutputGenerator.hpp"
+#include "DREAM/Settings/Settings.hpp"
 
 
 using namespace DREAM;
@@ -12,11 +13,12 @@ using namespace DREAM;
  * Constructor.
  */
 OutputGenerator::OutputGenerator(
-	EquationSystem *eqsys
+	EquationSystem *eqsys, bool savesettings
 ) : scalarGrid(eqsys->GetScalarGrid()), fluidGrid(eqsys->GetFluidGrid()),
     hottailGrid(eqsys->GetHotTailGrid()), runawayGrid(eqsys->GetRunawayGrid()),
     unknowns(eqsys->GetUnknownHandler()), ions(eqsys->GetIonHandler()),
-    oqty(eqsys->GetOtherQuantityHandler()), eqsys(eqsys) { }
+    oqty(eqsys->GetOtherQuantityHandler()), eqsys(eqsys),
+    savesettings(savesettings) { }
 
 OutputGenerator::~OutputGenerator() {}
 
@@ -37,6 +39,10 @@ void OutputGenerator::Save(bool current) {
 
     // Save ion metadata
     this->SaveIonMetaData("ionmeta");
+
+    // Save settings
+    if (this->savesettings)
+        this->SaveSettings("settings");
 
     // Save solver statistics
     this->SaveSolverData("solver");

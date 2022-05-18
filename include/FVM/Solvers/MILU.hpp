@@ -8,9 +8,6 @@
 namespace DREAM::FVM {
 	class MILU : public MatrixInverter {
     private:
-        Vec x;
-
-        PetscScalar *x_data;
         len_t xn;
 	public:
 		MILU(const len_t);

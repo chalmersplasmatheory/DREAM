@@ -44,12 +44,15 @@
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
-
                 // Trapping BC: even if the cell is not ignorable, it may still 
                 // be such that the radial flux should be mirrored 
-                if(!isNegativeTrappedRadial && ( Drr(ir, i, j, drr) || Drr(ir+1, i, j, drr) ) ){
+                
+                // For the Ions in DREAM the transient term is defined such that the 
+                // diffusion coefficients should must be negative to get the correct
+                // sign on the diffusion term, which is why we use abs(Drr) here. 
+                // This should however probably be reworked in a better way...
+                if(!isNegativeTrappedRadial && ( abs(Drr(ir, i, j, drr)) || abs(Drr(ir+1, i, j, drr)) ) ){
                     #define X(K,V) f((K),i,j,(V))
-                    
                     // Phi^(r)_{k-1/2}
                     if (ir > 0) {
                         // XXX: Here, we explicitly assume that the momentum grids are

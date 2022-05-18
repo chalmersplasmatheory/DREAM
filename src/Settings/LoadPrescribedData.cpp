@@ -766,10 +766,14 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
         (_p2=s->GetRealArray(modname + "/" + name + "/xi", 1, &np2, false)) != nullptr) {
 
         momtype = FVM::Interpolator3D::GRID_PXI;
+		s->MarkUsed(modname + "/" + name + "/p");
+		s->MarkUsed(modname + "/" + name + "/xi");
     } else if ((_p1=s->GetRealArray(modname + "/" + name + "/ppar", 1, &np1, false)) != nullptr &&
         (_p2=s->GetRealArray(modname + "/" + name + "/pperp", 1, &np2, false)) != nullptr) {
 
         momtype = FVM::Interpolator3D::GRID_PPARPPERP;
+		s->MarkUsed(modname + "/" + name + "/ppar");
+		s->MarkUsed(modname + "/" + name + "/pperp");
     } else
         throw SettingsException(
             "%s: No momentum grid set for data.",

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from .IonState import IonState
 from .OutputException import OutputException
+from .FluidQuantity import FluidQuantity
 
 
 class IonSpecies:
@@ -138,4 +139,28 @@ class IonSpecies:
             plt.show(block=False)
 
         return ax
-
+        
+    def plotSum(self, Z0 = None, integrate = False, **kwargs):
+        """
+        Plots the spatio-temporal evolution of the sum of the specified charge states of this ion species
+        Z0:         list of charge states to be summed and plotted
+        integrate:  if 'True', plot the volume integral of the specified charge states
+        """
+        if Z0 is None: Z0 = slice(None)
+        states = self.ionstates[Z0]
+        data = None
+        for state in states:
+            if data is None:
+                data = state.data
+            else:
+                data = data + state.data
+                
+        _IonSum = FluidQuantity(name = self.name, data=data, attr=list(), grid=self.grid, output=self.output)
+        if integrate:
+            return _IonSum.plotIntegral(**kwargs)
+        else:
+            return _IonSum.plot(**kwargs)
+        
+        
+        
+        

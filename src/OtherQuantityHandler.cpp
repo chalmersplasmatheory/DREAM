@@ -66,6 +66,8 @@ OtherQuantityHandler::OtherQuantityHandler(
         id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
     if (unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL))
         id_psi_wall = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
+    if (unknowns->HasUnknown(OptionConstants::UQTY_N_RE_NEG))
+        id_n_re_neg = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
 
     if (hottailGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
@@ -492,8 +494,8 @@ void OtherQuantityHandler::DefineQuantities() {
         const real_t *const* Ap = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
         qd->Store(nr_ht, (n1_ht+1)*n2_ht, Ap);
     );
-    DEF_HT_F1("hottail/Ap2", "Net second momentum advection on hot electron grid [m/s]",
-        const real_t *const* Axi = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
+    DEF_HT_F2("hottail/Ap2", "Net second momentum advection on hot electron grid [m/s]",
+        const real_t *const* Axi = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff2();
         qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
     );
     DEF_HT_FR("hottail/Drr", "Net radial diffusion on hot electron grid [m/s]",
@@ -526,6 +528,19 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
+    DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
+        real_t *v = qd->StoreEmpty();
+
+        FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
+        const real_t *nre = unknowns->GetUnknownData(id_n_re);
+        avaPos->SetVectorElements(v, nre);
+
+        if (this->id_n_re_neg) {
+            FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re_neg);
+            const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
+            avaNeg->SetVectorElements(v, nre_neg);
+        }
+    );
 
     // runaway/...
     DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
@@ -570,6 +585,20 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
+    DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
+        real_t *v = qd->StoreEmpty();
+
+        FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
+        const real_t *nre = unknowns->GetUnknownData(id_n_re);
+        avaPos->SetVectorElements(v, nre);
+
+        if (this->id_n_re_neg) {
+            FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re_neg);
+            const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
+            avaNeg->SetVectorElements(v, nre_neg);
+        }
+    );
+
 
     // scalar/..
     DEF_SC("scalar/radialloss_n_re", "Rate of runaway number loss through plasma edge, normalized to R0 [s^-1 m^-1]",

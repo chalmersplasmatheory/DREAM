@@ -258,6 +258,8 @@ Non-linear solver
 +===========================+===========================================================================================================================+
 | ``printjacobianinfo``     | Print information about the jacobian matrix after it has been built.                                                      |
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| ``rescaled``              | Save the rescaled jacobian matrix/residual vector (rescaled before solution to improve condition number).                 |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | ``savejacobian``          | Save the jacobian matrix using the PETSc MATLAB binary viewer.                                                            |
 +---------------------------+---------------------------------------------------------------------------------------------------------------------------+
 | ``savesolution``          | Save the solution vector :math:`\boldsymbol{x}_{i+1}^{(l+1)}-\boldsymbol{x}_i^{(l+1)}` to a ``.mat`` file.                |
@@ -277,7 +279,7 @@ Example usage:
    ...
    ds.solver.setDebug(printjacobianinfo=True, savejacobian=True,
                       savenumericaljacobian=True, saveresidual=True,
-                      savesystem=True, timestep=1, iteration=4)
+                      savesystem=True, rescaled=True, timestep=1, iteration=4)
 
 
 Class documentation

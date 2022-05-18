@@ -23,8 +23,8 @@ namespace DREAM {
         void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
         void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 	public:
-		OutputGeneratorSFile(EquationSystem*, const std::string&);
-		OutputGeneratorSFile(EquationSystem*, SFile*);
+		OutputGeneratorSFile(EquationSystem*, const std::string&, bool savesettings=true);
+		OutputGeneratorSFile(EquationSystem*, SFile*, bool savesettings=true);
         virtual ~OutputGeneratorSFile();
 
         virtual void Save(bool current=false) override;

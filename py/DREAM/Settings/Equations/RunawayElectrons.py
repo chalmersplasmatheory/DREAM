@@ -69,6 +69,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.pCutAvalanche = pCutAvalanche
         self.tritium   = tritium
         self.hottail   = hottail
+        self.negative_re = False
 
         self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.transport = TransportSettings(kinetic=False)
@@ -113,7 +114,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        if compton == False:
+        if compton == False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
             if compton == COMPTON_RATE_ITER_DMS:
@@ -157,6 +158,15 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 self.settings.eqsys.f_hot.enableAnalyticalDistribution()
 
 
+    def setNegativeRunaways(self, negative_re=True):
+        """
+        Introduce a density of runaway electrons with negative pitch,
+        allowing the kinetic avalanche source term to properly account for
+        large-angle collisions with runaways moving in different directions.
+        """
+        self.negative_re = negative_re
+
+
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
         """
@@ -175,7 +185,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Set all options from a dictionary.
         """
         self.avalanche = int(data['avalanche'])
-        self.pCutAvalanche = data['pCutAvalanche']
+
+        if 'pCutAvalanche' in data:
+            self.pCutAvalanche = data['pCutAvalanche']
+
         self.dreicer   = int(data['dreicer'])
         self.Eceff     = int(data['Eceff'])
         self.compton            = int(data['compton']['mode'])
@@ -191,6 +204,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         if 'tritium' in data:
             self.tritium = bool(data['tritium'])
+
+        if 'negative_re' in data:
+            self.negative_re = bool(data['negative_re'])
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
@@ -208,7 +224,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'pCutAvalanche': self.pCutAvalanche,
             'transport': self.transport.todict(),
             'tritium': self.tritium,
-            'hottail': self.hottail
+            'hottail': self.hottail,
+            'negative_re': self.negative_re
         }
         data['compton'] = {
             'mode': self.compton,
@@ -245,6 +262,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
+        if type(self.negative_re) != bool:
+            raise EquationException("n_re: Invalid value assigned to 'negative_re'. Expected bool.")
 
         self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()

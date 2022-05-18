@@ -406,13 +406,14 @@ class GEQDSK:
         for i in range(npsi):
             ptx[i,:], pty[i,:] = self.get_flux_surface(psi_n[i], theta=theta)
 
-        ptBx = self.get_Br(ptx, pty)*0
-        ptBy = self.get_Bz(ptx, pty)*0
+
+        ptBx = self.get_Br(ptx, pty)
+        ptBy = self.get_Bz(ptx, pty)
         ptBPHI = self.get_Btor(ptx, pty)
 
         return {
             'id': 'GEQDSK data',
-            'Rp': np.array([1e10]), 'Zp': np.array([Zp]),
+            'Rp': np.array([Rp]), 'Zp': np.array([Zp]),
             'psi_apRp': psi_apRp,
             'theta': theta,
             'ptx': ptx.T-Rp, 'pty': pty.T-Zp,

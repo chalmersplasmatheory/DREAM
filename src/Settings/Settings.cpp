@@ -110,6 +110,18 @@ void Settings::_DefineSetting(
 }
 
 /**
+ * Remove the definition of the named setting from the settings object.
+ * No check is made to verify that the setting has already been defined,
+ * so if an attempt is made to remove a non-existant setting, an exception
+ * will be thrown.
+ *
+ * name: Name of setting to remove.
+ */
+void Settings::UndefineSetting(const string& name) {
+	settings.erase(name);
+}
+
+/**
  * Returns the setting with the given name, if defined.
  *
  * name:     Name of setting to retrieve.
@@ -150,7 +162,7 @@ T *Settings::_GetArray(
     const len_t nExpectedDims, len_t ndims[],
     enum setting_type type, bool markused
 ) {
-    setting_t *s = _GetSetting(name, type);
+    setting_t *s = _GetSetting(name, type, markused);
 
     if (nExpectedDims != s->ndims)
         throw SettingsException(

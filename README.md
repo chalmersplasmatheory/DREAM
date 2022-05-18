@@ -10,7 +10,7 @@ To compile DREAM, you need to have the following software installed:
 
 - [CMake](https://cmake.org/) >= 3.12
 - A C++17 compatible compiler (such as gcc >= 7.0)
-- [GNU Scientific Library](https://www.gnu.org/software/gsl/) >= 2.0
+- [GNU Scientific Library](https://www.gnu.org/software/gsl/) >= 2.4
 - [HDF5](https://www.hdfgroup.org/)
 - [PETSc](https://www.mcs.anl.gov/petsc)
 - OpenMP
@@ -111,8 +111,8 @@ If you use DREAM in your scientific publications, please cite the
     pages = {108098},
     year = {2021},
     issn = {0010-4655},
-    doi = {https://doi.org/10.1016/j.cpc.2021.108098},
-    url = {https://www.sciencedirect.com/science/article/pii/S0010465521002101},
+    doi = {10.1016/j.cpc.2021.108098},
+    url = {https://doi.org/10.1016/j.cpc.2021.108098},
     author = {Mathias Hoppe and Ola Embreus and Tünde Fülöp}
 }
 ```
