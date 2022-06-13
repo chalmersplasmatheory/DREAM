@@ -1,5 +1,5 @@
 # DREAM
-This directory contains the Disruption Runaway Electron Avoidance Model (DREAM)
+This directory contains the Disruption Runaway Electron Analysis Model (DREAM)
 code. The **online documentation** is available at https://ft.nephy.chalmers.se/dream.
 
 The official DREAM paper has now been published: [doi:10.1016/j.cpc.2021.108098](https://doi.org/10.1016/j.cpc.2021.108098).
