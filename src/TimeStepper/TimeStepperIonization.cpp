@@ -107,6 +107,8 @@ void TimeStepperIonization::ValidateStep() {
 		this->currentTime = this->tMax;
 	else
 		this->currentTime += this->dt;
+	
+	this->currentStep++;
 
 	// Copy current value of n_cold
 	const real_t *n = this->unknowns->GetUnknownDataPrevious(this->id_n_cold);
@@ -118,7 +120,31 @@ void TimeStepperIonization::ValidateStep() {
  * Print the progress of the time stepper.
  */
 void TimeStepperIonization::PrintProgress() {
-	//cout << "t = " << CurrentTime() << "s, dt = " << this->dt << "s" << endl;
-	printf("t = %.3es, dt = %.3es\n", CurrentTime(), this->dt);
+	const len_t PERC_FMT_PREC = 2; // Precision (after decimal point) in percent
+	//                          100 . XX            %
+	const len_t PERC_FMT_LENGTH = 3+1+PERC_FMT_PREC+1;
+	const len_t EDGE_LENGTH = 1;
+	const len_t PROG_LENGTH =
+		PROGRESSBAR_LENGTH - 2*EDGE_LENGTH - PERC_FMT_LENGTH - 1;
+	
+	cout << "\r[";
+	real_t perc     = CurrentTime()/this->tMax;
+	len_t threshold = static_cast<len_t>(perc * PROG_LENGTH);
+
+	for (len_t i = 0; i < PROG_LENGTH; i++) {
+		if (i < threshold)
+			cout << '#';
+		else
+			cout << '-';
+	}
+
+	cout << "] ";
+	printf(
+		"%*.*f%% (step " LEN_T_PRINTF_FMT ", dt = %.5e)",
+		int(4+PERC_FMT_PREC), int(PERC_FMT_PREC),
+		perc*100.0, this->currentStep, this->dt
+	);
+
+	cout << flush;
 }
 

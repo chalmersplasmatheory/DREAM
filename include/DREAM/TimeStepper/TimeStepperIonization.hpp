@@ -14,9 +14,12 @@ namespace DREAM {
 		real_t currentTime=0;
 		real_t tscale0 = 0, dt;
 		len_t id_n_cold;
+		len_t currentStep = 0;
 
 		len_t nr;
 		real_t *timescales, *ncold;
+		
+		const len_t PROGRESSBAR_LENGTH = 80;
 	public:
 		TimeStepperIonization(
 			const real_t tMax, const real_t dt0, const real_t dtMax,
