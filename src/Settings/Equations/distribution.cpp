@@ -255,7 +255,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 			id_E_field
 		);*/
 
-		if (HasInitialJtot(eqsys, s))
+		if (HasInitialJtot(eqsys, s) && !isReducedEquation)
 			throw SettingsException(
 				"distribution: Cannot prescribe an initial plasma current when running in kinetic mode."
 			);
