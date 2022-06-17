@@ -27,6 +27,7 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
+	s->DefineSetting(MODULENAME "/dtmax", "Maximum allowed time step for the adaptive ionization time stepper.", (real_t)0);
     s->DefineSetting(MODULENAME "/nt", "Number of time steps to take", (int_t)0);
     s->DefineSetting(MODULENAME "/nsavesteps", "Number of time steps to save to output (downsampling)", (int_t)0);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
@@ -55,6 +56,10 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
         case OptionConstants::TIMESTEPPER_TYPE_ADAPTIVE:
             ts = ConstructTimeStepper_adaptive(s, u, nontrivials);
             break;
+
+		case OptionConstants::TIMESTEPPER_TYPE_IONIZATION:
+			ts = ConstructTimeStepper_ionization(s, u);
+			break;
 
         default:
             throw SettingsException(
@@ -130,5 +135,22 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     );
 
     return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, cc, checkevery, verbose, conststep);
+}
+
+/**
+ * Construct a TimeStepperIonization object according to the
+ * provided settings.
+ *
+ * s: Settings object specifying how to construct the
+ *    TimeStepperIonization object.
+ */
+TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
+	Settings *s, FVM::UnknownQuantityHandler *u
+) {
+	real_t tmax = s->GetReal(MODULENAME "/tmax");
+	real_t dt = s->GetReal(MODULENAME "/dt");
+	real_t dtmax = s->GetReal(MODULENAME "/dtmax");
+
+	return new TimeStepperIonization(tmax, dt, dtmax, u);
 }
 

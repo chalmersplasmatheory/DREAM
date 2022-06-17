@@ -10,6 +10,7 @@ from . ToleranceSettings import ToleranceSettings
 
 TYPE_CONSTANT = 1
 TYPE_ADAPTIVE = 2
+TYPE_IONIZATION = 3
 
 
 class TimeStepper:
@@ -36,6 +37,8 @@ class TimeStepper:
         self.setConstantStep(constantstep)       
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
+        
+        self.dtmax = None
 
 
     def __contains__(self, item):
@@ -65,7 +68,7 @@ class TimeStepper:
             self.dt = None
             return
 
-        if dt <= 0:
+        if dt < 0 or (dt == 0 and self.type != TYPE_IONIZATION):
             raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
         if self.nt is not None and dt > 0:
             raise DREAMException("TimeStepper: 'dt' may not be set alongside 'nt'.")
@@ -115,14 +118,29 @@ class TimeStepper:
         self.tmax = float(tmax)
 
 
-    def setType(self, ttype):
-        if ttype != TYPE_CONSTANT and ttype != TYPE_ADAPTIVE:
+    def setType(self, ttype, *args, **kwargs):
+        if ttype not in [TYPE_CONSTANT, TYPE_ADAPTIVE, TYPE_IONIZATION]:
             raise DREAMException("TimeStepper: Unrecognized time stepper type specified: {}".format(ttype))
 
-        if ttype == TYPE_ADAPTIVE:
+        if ttype in [TYPE_ADAPTIVE, TYPE_IONIZATION]:
             self.nt = None
 
         self.type = int(ttype)
+        
+        if ttype == TYPE_IONIZATION:
+            self.setIonization(*args, **kwargs)
+    
+
+    def setIonization(self, dt0=0, dtmax=0, tmax=None):
+        """
+        Select and set parameters for the ionization time stepper.
+        """
+        self.type = TYPE_IONIZATION
+        self.dt = dt0
+        self.dtmax = dtmax
+
+        if tmax is not None:
+            self.tmax = tmax
 
 
     def setVerbose(self, verbose=True):
@@ -145,6 +163,7 @@ class TimeStepper:
 
         if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
         if 'dt' in data: self.dt = float(scal(data['dt']))
+        if 'dtmax' in data: self.dtmax = float(scal(data['dtmax']))
         if 'nt' in data: self.nt = int(scal(data['nt']))
         if 'nsavesteps' in data: self.nSaveSteps = int(scal(data['nsavesteps']))
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
@@ -168,6 +187,7 @@ class TimeStepper:
         }
 
         if self.dt is not None: data['dt'] = self.dt
+        if self.dtmax is not None: data['dtmax'] = self.dtmax
 
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
@@ -212,6 +232,13 @@ class TimeStepper:
             elif type(self.constantstep) != bool:
                 raise DREAMException("TimeStepper adaptive: 'constantstep' must be a boolean.")
             self.tolerance.verifySettings()
+        elif self.type == TYPE_IONIZATION:
+            if self.tmax is None or self.tmax <= 0:
+                raise DREAMException("TimeStepper ionization: 'tmax' must be set to a value > 0.")
+            elif self.dt is None or self.dt < 0:
+                raise DREAMException("TimeStepper ionization: 'dt' must be set to a non-negative value.")
+            elif self.dtmax is None or self.dtmax < 0:
+                raise DREAMException("TimeStepper ionization: 'dtmax' must be set to a non-negative value.")
         else:
             raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
 
