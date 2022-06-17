@@ -151,6 +151,9 @@ TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
 	real_t dt = s->GetReal(MODULENAME "/dt");
 	real_t dtmax = s->GetReal(MODULENAME "/dtmax");
 
+	if (dt <= 0)
+		throw SettingsException("TimeStepper ionization: Initial time step 'dt0' must be positive.");
+
 	return new TimeStepperIonization(tmax, dt, dtmax, u);
 }
 

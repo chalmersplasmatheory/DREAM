@@ -16,7 +16,7 @@ namespace DREAM {
 		len_t id_n_cold;
 
 		len_t nr;
-		real_t *timescales;
+		real_t *timescales, *ncold;
 	public:
 		TimeStepperIonization(
 			const real_t tMax, const real_t dt0, const real_t dtMax,
