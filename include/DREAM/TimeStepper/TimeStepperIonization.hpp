@@ -11,6 +11,9 @@ namespace DREAM {
 		real_t tMax;
 		real_t dt0, dtMax;
 
+		real_t automaticstep = 1e-12;
+		real_t safetyfactor = 50;
+
 		real_t currentTime=0;
 		real_t tscale0 = 0, dt;
 		len_t id_n_cold;
@@ -23,7 +26,8 @@ namespace DREAM {
 	public:
 		TimeStepperIonization(
 			const real_t tMax, const real_t dt0, const real_t dtMax,
-			FVM::UnknownQuantityHandler*
+			FVM::UnknownQuantityHandler*, const real_t automaticstep,
+			const real_t safetyfactor
 		);
 		~TimeStepperIonization();
 

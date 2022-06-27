@@ -39,6 +39,8 @@ class TimeStepper:
         self.tolerance.set(reltol=reltol)
         
         self.dtmax = None
+        self.automaticstep = None
+        self.safetyfactor = None
 
 
     def __contains__(self, item):
@@ -131,13 +133,15 @@ class TimeStepper:
             self.setIonization(*args, **kwargs)
     
 
-    def setIonization(self, dt0=0, dtmax=0, tmax=None):
+    def setIonization(self, dt0=0, dtmax=0, tmax=None, automaticstep=1e-12, safetyfactor=50):
         """
         Select and set parameters for the ionization time stepper.
         """
         self.type = TYPE_IONIZATION
         self.dt = dt0
         self.dtmax = dtmax
+        self.automaticstep = automaticstep
+        self.safetyfactor = safetyfactor
 
         if tmax is not None:
             self.tmax = tmax
@@ -161,13 +165,15 @@ class TimeStepper:
         if type(self.type) == np.ndarray: self.type = int(self.type.flatten()[0])
         if type(self.tmax) == np.ndarray: self.tmax = float(self.tmax.flatten()[0])
 
+        if 'automaticstep' in data: self.automaticstep = float(scal(data['automaticstep']))
         if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
+        if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
         if 'dt' in data: self.dt = float(scal(data['dt']))
         if 'dtmax' in data: self.dtmax = float(scal(data['dtmax']))
         if 'nt' in data: self.nt = int(scal(data['nt']))
         if 'nsavesteps' in data: self.nSaveSteps = int(scal(data['nsavesteps']))
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
-        if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
+        if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
         
         self.verifySettings()
@@ -187,16 +193,19 @@ class TimeStepper:
         }
 
         if self.dt is not None: data['dt'] = self.dt
-        if self.dtmax is not None: data['dtmax'] = self.dtmax
 
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
             data['nsavesteps'] = int(self.nSaveSteps)
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
-            data['verbose'] = self.verbose
             data['constantstep'] = self.constantstep
             data['tolerance'] = self.tolerance.todict()
+            data['verbose'] = self.verbose
+        elif self.type == TYPE_IONIZATION:
+            if self.dtmax is not None: data['dtmax'] = self.dtmax
+            data['automaticstep'] = self.automaticstep
+            data['safetyfactor'] = self.safetyfactor
 
         return data
 
