@@ -322,7 +322,7 @@ class RadialGrid:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
 
         
-    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None):
+    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None, **kwargs):
         """
         Visualize an analytic toroidal magnetic field.
         """
@@ -380,11 +380,11 @@ class RadialGrid:
         Z = lambda r, t : r*kappa(r)*np.sin(t)
 
         # Flux surfaces
-        ax.plot(R(rr, tt), Z(rr, tt), color=gray, linewidth=1)
+        ax.plot(R(rr, tt), Z(rr, tt), color=gray, linewidth=1, **kwargs)
         # Limiter
-        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), color=black, linewidth=2)
+        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), color=black, linewidth=2, **kwargs)
         # Wall
-        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2)
+        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2, **kwargs)
         ax.axis('equal')
 
         if np.isinf(self.R0):
