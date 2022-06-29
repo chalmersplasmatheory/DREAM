@@ -369,6 +369,14 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
         );
+	if (tracked_terms->T_cold_coldhot_transfer != nullptr)
+		DEF_FL("fluid/Tcold_coldhot_transfer", "Transfer of energy due to re-definition of cold region [J s^-1 m^-3]",
+			real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
+			real_t *vec = qd->StoreEmpty();
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				vec[ir] = 0;
+			this->tracked_terms->T_cold_coldhot_transfer->SetVectorElements(vec, fhot);
+		);
     
     if (tracked_terms->T_cold_transport != nullptr)
         DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
