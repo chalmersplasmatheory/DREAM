@@ -23,14 +23,16 @@ ColdHotHeatTransferTerm::ColdHotHeatTransferTerm(
 	const len_t nr = kineticGrid->GetNr();
 	const len_t np = kineticGrid->GetMomentumGrid(0)->GetNp1();
 	this->prevThresholdEnvelope = new real_t[nr*np];
+	this->prevThresholdValue = new real_t[nr];
 
-	StoreThresholdEnvelope();
+	StoreThresholdEnvelope(false);
 }
 
 /**
  * Destructor.
  */
 ColdHotHeatTransferTerm::~ColdHotHeatTransferTerm() {
+	delete [] this->prevThresholdValue;
 	delete [] this->prevThresholdEnvelope;
 }
 
@@ -40,13 +42,15 @@ ColdHotHeatTransferTerm::~ColdHotHeatTransferTerm() {
  */
 bool ColdHotHeatTransferTerm::GridRebuilt() {
 	if (this->MomentQuantity::GridRebuilt()) {
+		delete [] this->prevThresholdValue;
 		delete [] this->prevThresholdEnvelope;
 
 		// XXX Here we assume that momentum grids are the same at all radii
 		const len_t nr = fGrid->GetNr();
 		const len_t np = fGrid->GetMomentumGrid(0)->GetNp1();
 		this->prevThresholdEnvelope = new real_t[nr*np];
-		StoreThresholdEnvelope();
+		this->prevThresholdValue = new real_t[nr];
+		StoreThresholdEnvelope(false);
 
 		return true;
 	} else
@@ -88,13 +92,24 @@ void ColdHotHeatTransferTerm::Rebuild(
  * Evaluate and store the threshold envelope value at all momentum
  * grid points (p only, not xi).
  */
-void ColdHotHeatTransferTerm::StoreThresholdEnvelope() {
+void ColdHotHeatTransferTerm::StoreThresholdEnvelope(bool updateIntegrationDirection) {
 	const len_t nr = fGrid->GetNr();
 	const len_t np = fGrid->GetMomentumGrid(0)->GetNp1();
 	for (len_t ir = 0; ir < nr; ir++) {
 		for (len_t i = 0; i < np; i++) {
 			this->prevThresholdEnvelope[ir*np+i] = this->ThresholdEnvelope(ir, i);
 		}
+
+		real_t p0 = this->ThresholdValue(ir);
+
+		if (updateIntegrationDirection) {
+			if (this->prevThresholdValue[ir] > p0)
+				this->pIntMode[ir] = P_INT_MODE_THR2MAX;
+			else
+				this->pIntMode[ir] = P_INT_MODE_ZER2THR;
+		}
+
+		this->prevThresholdValue[ir] = p0;
 	}
 }
 

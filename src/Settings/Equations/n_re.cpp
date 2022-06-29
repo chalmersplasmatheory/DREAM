@@ -218,7 +218,7 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
         new DensityFromDistributionFunction(
             fluidGrid, runawayGrid, id_nre_neg, id_f_re,
             eqsys->GetUnknownHandler(), 0,
-            FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC,
+            FVM::MomentQuantity::P_THRESHOLD_MODE_MC,
             FVM::MomentQuantity::XI_MODE_NEG    // only integrate over negative xi
         )
     );

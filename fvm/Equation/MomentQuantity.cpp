@@ -18,16 +18,16 @@ using namespace DREAM::FVM;
 MomentQuantity::MomentQuantity(
     Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId,
     UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode,
-    xiIntegralMode xiMode
+    xiIntegralMode xiMode, pIntegralMode defaultPMode
 ) : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), 
     fId(fId), unknowns(u), pThreshold(pThreshold), pMode(pMode),
-    xiMode(xiMode) {
+    xiMode(xiMode), defaultPMode(defaultPMode) {
 
     this->hasThreshold = (pThreshold!=0);
     id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
     if(this->hasThreshold)
         AddUnknownForJacobian(u, id_Tcold);
-    this->GridRebuilt();    
+    this->GridRebuilt();
 }
 
 /**
@@ -36,6 +36,7 @@ MomentQuantity::MomentQuantity(
 MomentQuantity::~MomentQuantity() {
     delete [] this->integrand;
     delete [] this->diffIntegrand;
+	delete [] this->pIntMode;
 }
 
 /**
@@ -53,6 +54,10 @@ bool MomentQuantity::GridRebuilt() {
 
         if(GetMaxNumberOfMultiplesJacobian())
             AllocateDiffIntegrand();
+
+		this->pIntMode = new enum pIntegralMode[this->fGrid->GetNr()];
+		for (len_t ir = 0; ir < fGrid->GetNr(); ir++)
+			this->pIntMode[ir] = this->defaultPMode;
 
         return true;
     } else
@@ -119,11 +124,22 @@ real_t EvaluateMinThermalInterpolationEnvelope(len_t i, real_t p0, MomentumGrid 
     }
 }
 
-real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i){
+/**
+ * Evaluate the momentm threshold envelope in the given radius/momentum point.
+ *
+ * ir:         Radial grid index.
+ * i:          Momentum grid index.
+ */
+real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i) {
     if(!hasThreshold)
         return 1;
-    else 
-        return ThresholdEnvelope(i, pThreshold, pMode, fGrid->GetMomentumGrid(ir), unknowns->GetUnknownData(id_Tcold)[ir]);
+    else {
+        real_t v = ThresholdEnvelope(i, pThreshold, pMode, this->pIntMode[ir], fGrid->GetMomentumGrid(ir), unknowns->GetUnknownData(id_Tcold)[ir]);
+		if (this->pIntMode[ir] == P_INT_MODE_THR2MAX)
+			return v;
+		else
+			return 1-v;
+	}
 }
 
 /**
@@ -139,7 +155,10 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i){
  * 
  * XXX: Assumes p-xi grid
  */
-real_t MomentQuantity::ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdMode pMode, MomentumGrid *mg, real_t Tcold){
+real_t MomentQuantity::ThresholdEnvelope(
+	len_t i, real_t pThreshold, pThresholdMode pMode,
+	pIntegralMode pInt, MomentumGrid *mg, real_t Tcold
+) {
     const real_t 
         p   = mg->GetP1(i),
         p_u = mg->GetP1_f(i+1),
@@ -149,64 +168,53 @@ real_t MomentQuantity::ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdM
     // region and the fraction of overlap dpOverlap/dp when
     // the cell straddles the region boundary. 
     switch(pMode){
-        case P_THRESHOLD_MODE_MIN_MC:{
+        case P_THRESHOLD_MODE_MC:{
             real_t fracCellInRegion = 0;
             if(p_l>=pThreshold)
                 fracCellInRegion=1;
             else if(p_u>=pThreshold)
                 fracCellInRegion = (p_u-pThreshold)/(p_u-p_l);
-            return fracCellInRegion;
-        }
-        case P_THRESHOLD_MODE_MIN_THERMAL:{
-            real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
 
-            /*
+			if (pInt == P_INT_MODE_THR2MAX)
+				return fracCellInRegion;
+			else
+				return 1-fracCellInRegion;
+        }
+        case P_THRESHOLD_MODE_THERMAL:{
+			real_t p0 = ThresholdValue(pThreshold, pMode, Tcold);
+
             real_t fracCellInRegion = 0;
             if(p_l>=p0)
                 fracCellInRegion=1;
             else if(p_u>=p0)
                 fracCellInRegion = (p_u-p0)/(p_u-p_l);
-            return fracCellInRegion;
-            */
+
+			if (pInt == P_INT_MODE_THR2MAX)
+				return fracCellInRegion;
+			else
+				return 1-fracCellInRegion;
             /* HIGHER-ORDER METHOD WHICH APPEARS TO BE UNSTABLE -- JACOBIAN ERROR?
             */
-           real_t envelope = 0;            
+			/*
+			real_t envelope = 0;            
             if(p0<=p_l)
                 envelope = 1;
 
             envelope += EvaluateMinThermalInterpolationEnvelope(i, p0, mg);
             return envelope;
+            */
             //s*/
         }
-        case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
+        case P_THRESHOLD_MODE_THERMAL_SMOOTH:{
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, mg);
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
-            real_t thx = std::tanh(x);
-            return .5*( 1 + thx );
-        }
-        case P_THRESHOLD_MODE_MAX_MC:{
-            real_t fracCellInRegion = 0;
-            if(p_u<=pThreshold)
-                fracCellInRegion=1;
-            else if(p_l<pThreshold)
-                fracCellInRegion = (pThreshold-p_l)/(p_u-p_l);
-            return fracCellInRegion;
-        }
-        case P_THRESHOLD_MODE_MAX_THERMAL:{
-            real_t fracCellInRegion = 0;
-            real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV); 
-            if(p_u<=p0)
-                fracCellInRegion=1;
-            else if(p_l<p0)
-                fracCellInRegion = (p0-p_l)/(p_u-p_l);
-            return fracCellInRegion;
-        }
-        case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
-            real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            real_t dp = FindThresholdStep(p0, mg);
-            real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
-            real_t thx = std::tanh(-x);
+			real_t thx;
+			if (pInt == P_INT_MODE_THR2MAX)
+				thx = std::tanh(x);
+			else
+				thx = std::tanh(-x);
+
             return .5*( 1 + thx );
         }
         default:
@@ -216,21 +224,45 @@ real_t MomentQuantity::ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdM
 }
 
 /**
+ * Returns the momentum threshold value used.
+ */
+real_t MomentQuantity::ThresholdValue(len_t ir) {
+    if(!hasThreshold)
+        return 0;
+    else
+        return ThresholdValue(
+			pThreshold, pMode, unknowns->GetUnknownData(id_Tcold)[ir]
+		);
+}
+real_t MomentQuantity::ThresholdValue(
+	real_t pThreshold, pThresholdMode pMode,
+	real_t Tcold
+) {
+	switch (pMode) {
+		case P_THRESHOLD_MODE_MC:
+			return pThreshold;
+		case P_THRESHOLD_MODE_THERMAL:
+		case P_THRESHOLD_MODE_THERMAL_SMOOTH:
+			return pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
+		default:
+			return 0;
+	}
+}
+
+/**
  * Returns the jacobian with respect to Tcold[ir] of the smooth threshold functions
  * XXX: Assumes p-xi grids
  */
-real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
+real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i) {
     if(!this->hasThreshold)
         return 0;
     MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
     const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];        
     const real_t p = mg->GetP1(i);
     switch(pMode){
-        case P_THRESHOLD_MODE_MIN_THERMAL:{
-            const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
-            real_t p0 = pThreshold * pTe;
+        case P_THRESHOLD_MODE_THERMAL:{
+            real_t p0 = ThresholdValue(pThreshold, pMode, Tcold);
 
-            /*
             real_t dp0 = p0/(2*Tcold);
             const real_t   
                 p_u = mg->GetP1_f(i+1),
@@ -238,56 +270,41 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
             real_t fracCellInRegion = 0;
             if(p_l<p0 && p_u>=p0)
                 fracCellInRegion = -dp0/(p_u-p_l);
-            return fracCellInRegion;
-            */
+
+			if (pIntMode[ir] == P_INT_MODE_THR2MAX)
+				return fracCellInRegion;
+			else
+				return -fracCellInRegion;
 
             /* HIGHER-ORDER METHOD WHICH SEEMS TO BE UNSTABLE -- JACOBIAN ERROR?
             */
+			/*
             real_t dedp0;
             EvaluateMinThermalInterpolationEnvelope(i, p0, mg, &dedp0);
             real_t dp0dT = p0 * 0.5/Tcold;
+			// TODO account for direction of integration (P_INT_MODE_???)
             return dp0dT*dedp0;
-            //*/
+            */
         }
-        case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
+        case P_THRESHOLD_MODE_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
-            real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
+            real_t p0 = ThresholdValue(pThreshold, pMode, Tcold);
             real_t dp = FindThresholdStep(p0, mg);
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
             real_t chx = std::cosh(x);
             if(chx>sqrt(std::numeric_limits<real_t>::max()))
                 return 0;
-            else
-                return -p0/(4*Tcold*smoothEnvelopeStepWidth*dp*chx*chx);
-        }
-        case P_THRESHOLD_MODE_MAX_THERMAL:{
-            const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
-            real_t p0 = pThreshold * pTe;
-            real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
-            const real_t   
-                p_u = mg->GetP1_f(i+1),
-                p_l = mg->GetP1_f(i);
-            real_t fracCellInRegion = 0;
-            if(p_l<p0 && p_u>=p0)
-                fracCellInRegion = dp0/(p_u-p_l);
-            return fracCellInRegion;
-        }
-        case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
-            // XXX: assumes p-xi grid
-            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
-            real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            real_t dp = FindThresholdStep(p0, mg);
-            real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
-            real_t chx = std::cosh(x);
-            if(chx>sqrt(std::numeric_limits<real_t>::max()))
-                return 0;
-            else
-                return p0/(4*Tcold*smoothEnvelopeStepWidth*dp*chx*chx);
+            else {
+				real_t v = p0/(4*Tcold*smoothEnvelopeStepWidth*dp*chx*chx);
+				if (pIntMode[ir] == P_INT_MODE_THR2MAX)
+					return -v;
+				else
+					return v;
+			}
         }
         default:
             return 0;
     }
-
 }
 
 /**
@@ -299,8 +316,9 @@ void MomentQuantity::AddDiffEnvelope(){
         MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
         len_t np1 = mg->GetNp1();
         len_t np2 = mg->GetNp2();
+		const real_t sign = (pIntMode[ir]==P_INT_MODE_THR2MAX ? 1.0 : -1.0);
         for(len_t i=0;i<np1;i++){
-            real_t de = DiffThresholdEnvelope(ir,i);
+            real_t de = sign*DiffThresholdEnvelope(ir,i);
             real_t e = ThresholdEnvelope(ir,i);
             if(!(de&&e))
                 continue;

@@ -155,7 +155,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,eqsys,s);
 
     // Post processing handler
-    FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL;
+    FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_THERMAL;
     real_t pThreshold = 0.0;
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
