@@ -16,14 +16,15 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 
-#include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
-#include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
+#include "DREAM/Equations/Fluid/ColdHotHeatTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
-#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
+#include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
@@ -36,6 +37,7 @@ namespace DREAM {
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
             DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
+			DREAM::ColdHotHeatTransferTerm *T_cold_coldhot_transfer=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
             // Radial transport boundary conditions
