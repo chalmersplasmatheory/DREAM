@@ -23,11 +23,9 @@ namespace DREAM {
         TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, const len_t nSaveSteps=0);
         TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, const len_t nSaveSteps=0);
 
-        bool CheckNegative(const std::string&);
         void InitSaveSteps();
 
         virtual real_t CurrentTime() const override;
-        virtual void HandleException(FVM::FVMException&) override;
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
         virtual real_t NextTime() override;
