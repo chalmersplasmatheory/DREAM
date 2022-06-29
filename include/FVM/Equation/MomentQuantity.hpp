@@ -52,6 +52,10 @@ namespace DREAM::FVM {
 
         void AllocateDiffIntegrand();
 
+        real_t ThresholdEnvelope(len_t ir, len_t i);
+        real_t DiffThresholdEnvelope(len_t ir, len_t i);
+        void AddDiffEnvelope();
+
     private:
         real_t pThreshold;
         pThresholdMode pMode;
@@ -62,10 +66,6 @@ namespace DREAM::FVM {
         std::vector<len_t> derivNMultiples;
 
         static constexpr real_t smoothEnvelopeStepWidth = 2; // for use with P_THRESHOLD_MODE 'SMOOTH'
-
-        real_t ThresholdEnvelope(len_t ir, len_t i);
-        real_t DiffThresholdEnvelope(len_t ir, len_t i);
-        void AddDiffEnvelope();
 
     public:
         MomentQuantity(
