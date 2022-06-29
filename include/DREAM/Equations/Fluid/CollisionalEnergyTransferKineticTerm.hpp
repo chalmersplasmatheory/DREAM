@@ -21,7 +21,7 @@ namespace DREAM {
             FVM::Grid*, FVM::Grid*, len_t, len_t,
             CollisionQuantityHandler*,FVM::UnknownQuantityHandler*,  
             enum OptionConstants::momentumgrid_type, real_t scaleFactor = 1.0,
-            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
+            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MC
         );
         virtual ~CollisionalEnergyTransferKineticTerm();
 

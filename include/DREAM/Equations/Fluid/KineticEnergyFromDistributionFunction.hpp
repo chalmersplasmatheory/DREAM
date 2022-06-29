@@ -13,7 +13,7 @@ namespace DREAM {
     public:
         KineticEnergyFromDistributionFunction(
             FVM::Grid*, FVM::Grid*, len_t, len_t, FVM::UnknownQuantityHandler*,
-            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC,
+            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MC,
             real_t scaleFactor = 1.0);
         virtual ~KineticEnergyFromDistributionFunction(){}
 

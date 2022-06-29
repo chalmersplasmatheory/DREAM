@@ -460,7 +460,7 @@ void OtherQuantityHandler::DefineQuantities() {
                 for(len_t i=0; i<n1; i++){
                     real_t envelope = 1;
                     if(hasThreshold) 
-                        envelope = FVM::MomentQuantity::ThresholdEnvelope(i, pThreshold, pMode, mg, unknowns->GetUnknownData(id_Tcold)[ir]);
+                        envelope = FVM::MomentQuantity::ThresholdEnvelope(i, pThreshold, pMode, FVM::MomentQuantity::P_INT_MODE_THR2MAX, mg, unknowns->GetUnknownData(id_Tcold)[ir]);
                     for(len_t j=0; j<n2; j++){
                         real_t kineticEnergy = Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1);
                         this->kineticVectorHot[offset + n1*j + i] = envelope * kineticEnergy * f_hot[offset + n1*j + i];

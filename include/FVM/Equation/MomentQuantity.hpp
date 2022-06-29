@@ -12,12 +12,9 @@ namespace DREAM::FVM {
 
         // Settings for specifying thresholds to the MomentQuantity.
         enum pThresholdMode {
-            P_THRESHOLD_MODE_MIN_MC=1,
-            P_THRESHOLD_MODE_MIN_THERMAL=2,
-            P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH=3,
-            P_THRESHOLD_MODE_MAX_MC=4,
-            P_THRESHOLD_MODE_MAX_THERMAL=5,
-            P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH=6
+            P_THRESHOLD_MODE_MC=1,
+            P_THRESHOLD_MODE_THERMAL=2,
+            P_THRESHOLD_MODE_THERMAL_SMOOTH=3
         };
 
         // Settings for how to integrate over xi
@@ -26,6 +23,13 @@ namespace DREAM::FVM {
             XI_MODE_NEG=2,      // Integrate from xi=-1 to xi=0
             XI_MODE_POS=3       // Integrate from xi=0 to xi=+1
         };
+
+		// Direction of p integration (0 to threshold, or threshold to pMax)
+		enum pIntegralMode {
+			P_INT_MODE_THR2MAX=1,
+			P_INT_MODE_ZER2THR=2
+		};
+
     protected:
         real_t *integrand = nullptr;
         real_t *diffIntegrand = nullptr;
@@ -54,13 +58,18 @@ namespace DREAM::FVM {
 
         real_t ThresholdEnvelope(len_t ir, len_t i);
         real_t DiffThresholdEnvelope(len_t ir, len_t i);
+		real_t ThresholdValue(len_t ir);
         void AddDiffEnvelope();
+
+		pIntegralMode *pIntMode;
 
     private:
         real_t pThreshold;
         pThresholdMode pMode;
         xiIntegralMode xiMode;
         bool hasThreshold;
+
+		pIntegralMode defaultPMode = P_INT_MODE_THR2MAX;
 
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
@@ -70,8 +79,8 @@ namespace DREAM::FVM {
     public:
         MomentQuantity(
             Grid*, Grid*, len_t, len_t, UnknownQuantityHandler*,
-            real_t pThreshold = 0, pThresholdMode pMode = P_THRESHOLD_MODE_MIN_MC,
-            xiIntegralMode xiMode = XI_MODE_ALL
+            real_t pThreshold = 0, pThresholdMode pMode = P_THRESHOLD_MODE_MC,
+            xiIntegralMode xiMode = XI_MODE_ALL, pIntegralMode defaultPMode=P_INT_MODE_THR2MAX
         );
         virtual ~MomentQuantity();
 
@@ -87,7 +96,8 @@ namespace DREAM::FVM {
             return nnz_per_row; 
         }
 
-        static real_t ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdMode, MomentumGrid*, real_t T);
+		static real_t ThresholdValue(real_t pThreshold, pThresholdMode, real_t Tcold);
+        static real_t ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdMode, pIntegralMode, MomentumGrid*, real_t T);
 
         virtual bool GridRebuilt() override;
 

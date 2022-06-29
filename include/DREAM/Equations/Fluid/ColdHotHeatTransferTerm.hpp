@@ -10,6 +10,7 @@ namespace DREAM {
 	private:
 		real_t scaleFactor = 1.0;
 		real_t *prevThresholdEnvelope = nullptr;
+		real_t *prevThresholdValue = nullptr;
 
 	public:
 		ColdHotHeatTransferTerm(
@@ -23,7 +24,7 @@ namespace DREAM {
 		virtual bool GridRebuilt() override;
 		virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
-		void StoreThresholdEnvelope();
+		void StoreThresholdEnvelope(bool updateIntegrationDirection=true);
 	};
 }
 
