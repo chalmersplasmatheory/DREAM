@@ -232,9 +232,11 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 			oqty_terms->T_cold_coldhot_transfer = new ColdHotHeatTransferTerm(
 				fluidGrid, eqsys->GetHotTailGrid(),
 				id_T_cold, id_f_hot, eqsys->GetUnknownHandler(),
-				pThreshold, pMode, -1.0
+				pThreshold, pMode
 			);
 			Op5->AddTerm(oqty_terms->T_cold_coldhot_transfer);
+
+			desc += " - W_transfer";
         }
         oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),

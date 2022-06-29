@@ -19,6 +19,12 @@ ColdHotHeatTransferTerm::ColdHotHeatTransferTerm(
 	pThresholdMode pMode, real_t scaleFactor
 ) : MomentQuantity(fluidGrid, kineticGrid, id_W, id_f, u, pThreshold, pMode),
 	scaleFactor(scaleFactor) {
+
+	const len_t nr = kineticGrid->GetNr();
+	const len_t np = kineticGrid->GetMomentumGrid(0)->GetNp1();
+	this->prevThresholdEnvelope = new real_t[nr*np];
+
+	StoreThresholdEnvelope();
 }
 
 /**
