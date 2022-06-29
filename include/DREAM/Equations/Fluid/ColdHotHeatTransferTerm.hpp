@@ -15,7 +15,8 @@ namespace DREAM {
 		ColdHotHeatTransferTerm(
 			FVM::Grid*, FVM::Grid*, len_t, len_t,
 			FVM::UnknownQuantityHandler*, real_t,
-			FVM::MomentQuantity::pThresholdMode, real_t
+			FVM::MomentQuantity::pThresholdMode,
+			real_t scaleFactor=1.0
 		);
 		virtual ~ColdHotHeatTransferTerm();
 
