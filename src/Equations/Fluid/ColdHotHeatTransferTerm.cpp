@@ -95,6 +95,7 @@ void ColdHotHeatTransferTerm::Rebuild(
 void ColdHotHeatTransferTerm::StoreThresholdEnvelope(bool updateIntegrationDirection) {
 	const len_t nr = fGrid->GetNr();
 	const len_t np = fGrid->GetMomentumGrid(0)->GetNp1();
+	const len_t nx = fGrid->GetMomentumGrid(0)->GetNp2();
 	for (len_t ir = 0; ir < nr; ir++) {
 		for (len_t i = 0; i < np; i++) {
 			this->prevThresholdEnvelope[ir*np+i] = this->ThresholdEnvelope(ir, i);
@@ -105,8 +106,19 @@ void ColdHotHeatTransferTerm::StoreThresholdEnvelope(bool updateIntegrationDirec
 		if (updateIntegrationDirection) {
 			if (this->prevThresholdValue[ir] > p0)
 				this->pIntMode[ir] = P_INT_MODE_THR2MAX;
-			else
+			else {
 				this->pIntMode[ir] = P_INT_MODE_ZER2THR;
+
+				// Also flip sign on the integrand, since we technically
+				// integrate from "thr" to "zero"...
+				len_t offset = ir*np*nx;
+				for (len_t j = 0; j < nx; j++) {
+					for (len_t i = 0; i < np; i++) {
+						len_t ind = offset + j*np + i;
+						this->integrand[ind] = -this->integrand[ind];
+					}
+				}
+			}
 		}
 
 		this->prevThresholdValue[ir] = p0;
