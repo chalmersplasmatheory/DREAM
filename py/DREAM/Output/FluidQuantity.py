@@ -447,8 +447,9 @@ class FluidQuantity(UnknownQuantity):
         time = time*time_scale_factor
 
         if time_derivative:
-            tm = time[:-1]
-            v = np.diff(self.integral(w=w))/np.diff(time/time_scale_factor)
+            integrated_data = self.integral(w=w)
+            tm = time[1:-1]
+            v = (integrated_data[2:]-integrated_data[:-2])/((time[2:]-time[:-2])/time_scale_factor)
         else:
             tm = time
             v = self.integral(w=w)

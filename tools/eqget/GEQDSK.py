@@ -406,6 +406,7 @@ class GEQDSK:
         for i in range(npsi):
             ptx[i,:], pty[i,:] = self.get_flux_surface(psi_n[i], theta=theta)
 
+
         ptBx = self.get_Br(ptx, pty)
         ptBy = self.get_Bz(ptx, pty)
         ptBPHI = self.get_Btor(ptx, pty)
