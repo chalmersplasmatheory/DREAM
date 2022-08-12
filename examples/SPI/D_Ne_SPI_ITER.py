@@ -65,7 +65,6 @@ use_fluid_runaways = True
 
 use_heat_transport=True
 use_f_hot_transport=False
-transport_CQ_only=False
 dBOverB=1e-3/np.sqrt(2)
 
 # Time steps during the various restarts
