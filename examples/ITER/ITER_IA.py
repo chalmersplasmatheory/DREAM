@@ -19,12 +19,14 @@ from scipy.special import kn
 
 sys.path.append('../../py/')
 sys.path.append('../../tools/')
+sys.path.append('../../tools/eqget/')
 
 from DREAM.DREAMSettings import DREAMSettings
 from DREAM.DREAMOutput import DREAMOutput
 from DREAM import runiface
 from ITER_Profile_reader import ITER_Profile_reader
 from transport_coeffs_reader import transport_coeffs_reader
+from GEQDSK import GEQDSK
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.Ions as IonsAll
 import DREAM.Settings.Solver as Solver
@@ -230,8 +232,10 @@ pMax = 3            # maximum momentum in m_e*c
 
 times  = [0]        # times at which parameters are given
 
-# Set up radial grid
+# Set up radial grid from GEQDSK-data
 ds.radialgrid.setType(RGrid.TYPE_NUMERICAL)
+g = GEQDSK(scenario_folder+'/G_'+scenario_name+'_ITER_MR_'+scenario_time+'.TXT')
+g.save_LUKE('ITER_'+scenario_name+'_LUKE.h5')
 ds.radialgrid.setNumerical('ITER_'+scenario_name+'_LUKE.h5', format=RGrid.FILE_FORMAT_LUKE)
 # radius_wall = 2.15  # location of the wall 
 radius_wall = 3  # location of the wall 
