@@ -228,6 +228,12 @@ class IonSpecies:
              raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
                 .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
         return T
+        
+    def shiftTimeTranspCoeffs(self, tShift):
+        self.tChargedPrescribedDiffusion = self.tChargedPrescribedDiffusion - tShift
+        self.tNeutralPrescribedDiffusion = self.tNeutralPrescribedDiffusion - tShift
+        self.tChargedPrescribedAdvection = self.tChargedPrescribedAdvection - tShift
+        self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
 
     def getDensity(self):
         """
