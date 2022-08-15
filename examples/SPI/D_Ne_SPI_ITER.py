@@ -82,7 +82,7 @@ Nt_injection = 1360
 # Nt_injection = 3000  
 
 Tmax_CQ = 17e-3
-Nt_CQ = 10000
+Nt_CQ = 20000
 Tmax_CQ_restart = 129.6e-3
 Nt_CQ_restart = 40000
 
