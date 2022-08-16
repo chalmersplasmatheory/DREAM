@@ -50,6 +50,7 @@ class GEQDSK:
         #    vertices = v[-1]
             
         vertices = self.contour_generator.create_contour(psi_n)
+        vertices = vertices[0]
         
         iClosedContour = None
         for i in range(len(vertices)):
