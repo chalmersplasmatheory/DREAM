@@ -105,8 +105,8 @@ DrrIon = 4e3
 ArIon = -2e3
   
 # TQ onset criterion, see presentation from the ITER meeting 2022-07-22 for further description  
-TQ_onset = 'Late'
-# TQ_onset = 'Early'
+# TQ_onset = 'Late'
+TQ_onset = 'Early'
 # TQ_onset = None # Use this to run a simulation without transport that can be used to determine when the TQ should start
 
 if TQ_onset is None:
@@ -318,6 +318,9 @@ ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=rref, T0=temper
 # Ion transport coefficients will be set later as the SPI settings 
 # and the settings for the ion species corresponding to the SPI is most convenient to set simultaneously
 
+# Convert shatter point to SPI coordinates (needed already here to estimate the time undil the shards reach the q=2 surface if running with TQ_onset = 'Early'
+shatterPoint = np.array([shatterPoint[0] - ds.radialgrid.R0, shatterPoint[1]-float(dataLUKE['Zp'][:]), 0])
+
 if use_nre_transport or use_heat_transport:
     # File to find TQ onset criterion from for late TQ, if any
     if TQ_onset == 'Late':
@@ -340,9 +343,6 @@ if use_nre_transport or use_heat_transport:
 ###########################################
 # Set SPI configuration and ion transport #
 ###########################################
-
-# Convert shatter point to SPI coordinates
-shatterPoint = np.array([shatterPoint[0] - ds.radialgrid.R0, shatterPoint[1]-float(dataLUKE['Zp'][:]), 0])
 
 # Input settings for the first injection stage to the settings object via the helper function 
 # for set up a similar configuration as in Oskar Vallhagens MSc thesis
@@ -395,7 +395,7 @@ ds.other.include('fluid', 'scalar')
 # Files without nShardD specified in the name use nShardD=300 as in the runs used for benchmarking with INDEX
 # Files without NNe specified use NNe = 5e22
 # Files without radius_wall specified use 2.15 m
-filename_ending='ITER_'+scenario_name+'_INDEX_SPI_nShardD'+str(nShardD)+'NNe'+str(NinjD*molarFractionNe)+'abl_ioniz'+str(ds.eqsys.spi.abl_ioniz)+'radius_wall'+str(radius_wall)+'new'
+filename_ending='ITER_'+scenario_name+'_INDEX_SPI_nShardD'+str(nShardD)+'NNe'+str(NinjD*molarFractionNe)+'abl_ioniz'+str(ds.eqsys.spi.abl_ioniz)+'radius_wall'+str(radius_wall)
 if TQ_onset == 'Late':
     #filename_ending = filename_ending+'TQ_onset_from_output'
     filename_ending = filename_ending + 'late_TQ'
