@@ -601,7 +601,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	real_t ra = std::max(0.0, startingGuessR-lengthScale);
 	real_t rb = ra + 2*lengthScale;
 	if(rb>r_f[GetNr()]){
-	    ra -= rb - r_f[GetNr()]; 
+	    ra = std::max(0.0, ra -( rb - r_f[GetNr()])); 
 	    rb -= rb - r_f[GetNr()]; 
 	}
 	real_t rhoa, rhob;

@@ -198,6 +198,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     // Load SPI-related settings
     len_t nZSPInShard;
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition");
+    OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = (enum OptionConstants::eqterm_spi_abl_ioniz_mode)s->GetInteger(MODULENAME_SPI "/abl_ioniz");
     OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger(MODULENAME_SPI "/ablation"); 
     const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME "/SPIMolarFraction", 1, &nZSPInShard);
 
@@ -357,7 +358,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[SPIOffset]>=0){
                 eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction, SPIOffset,1, false, OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT));
+                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction, SPIOffset,1, false, spi_abl_ioniz_mode));
                 SPIOffset+=nShard;
             }else {
             	SPIOffset+=1;
