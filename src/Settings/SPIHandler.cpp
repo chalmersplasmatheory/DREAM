@@ -14,6 +14,7 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/heatAbsorbtion","method to use for calculating the heat absorbtion in the neutral cloud surrounding the pellet shards",(int_t)OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/cloudRadiusMode","method to use for calculating the size of the neutral cloud surrounding the pellet shards",(int_t)OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/magneticFieldDependenceMode","method to use for calculating the magnetic field dependence of the ablation rate",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/abl_ioniz","method to use for calculating the charge state distribution with which the recently ablated material is deposited",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/init/xp", "initial shard positions",0, (real_t*)nullptr);

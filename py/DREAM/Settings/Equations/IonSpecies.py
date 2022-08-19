@@ -66,7 +66,8 @@ class IonSpecies:
         charged_diffusion_mode=ION_CHARGED_DIFFUSION_MODE_NONE, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None,
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
-        neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,        
+        neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
+        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,        
         T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
         """
         Constructor.
@@ -152,6 +153,11 @@ class IonSpecies:
         self.rChargedPrescribedDiffusion = None
         self.tChargedPrescribedDiffusion = None
         if charged_diffusion_mode == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed diffusion coefficients according to this, if nothing else is prescribed
+            if charged_prescribed_diffusion is None and t_transp_expdecay_all_cs is not None:
+                charged_prescribed_diffusion, rChargedPrescribedDiffusion, tChargedPrescribedDiffusion = self.calcTransportCoefficientExpdecayAllChargedStates(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = diffusion_initial_all_cs, cf = diffusion_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
+                
             self.initialize_charged_prescribed_diffusion(charged_prescribed_diffusion = charged_prescribed_diffusion, rChargedPrescribedDiffusion = rChargedPrescribedDiffusion,
                 tChargedPrescribedDiffusion = tChargedPrescribedDiffusion, interpr=interpr, interpt=interpt)
         else:
@@ -161,6 +167,12 @@ class IonSpecies:
         self.rNeutralPrescribedDiffusion = None
         self.tNeutralPrescribedDiffusion = None
         if neutral_diffusion_mode == ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
+        
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed diffusion coefficients according to this, if nothing else is prescribed
+            if neutral_prescribed_diffusion is None and t_transp_expdecay_all_cs is not None:
+                neutral_prescribed_diffusion, rNeutralPrescribedDiffusion, tNeutralPrescribedDiffusion = self.calcTransportCoefficientExpdecaySingleChargeState(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = diffusion_initial_all_cs, cf = diffusion_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
+                
             self.initialize_neutral_prescribed_diffusion(neutral_prescribed_diffusion = neutral_prescribed_diffusion, rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusion,
                 tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusion, interpr=interpr, interpt=interpt)
         else:
@@ -171,6 +183,12 @@ class IonSpecies:
         self.rChargedPrescribedAdvection = None
         self.tChargedPrescribedAdvection = None
         if charged_advection_mode == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+        
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed advection coefficients according to this, if nothing else is prescribed
+            if charged_prescribed_advection is None and t_transp_expdecay_all_cs is not None:
+                charged_prescribed_advection, rChargedPrescribedAdvection, tChargedPrescribedAdvection = self.calcTransportCoefficientExpdecayAllChargedStates(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = advection_initial_all_cs, cf = advection_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
+                
             self.initialize_charged_prescribed_advection(charged_prescribed_advection = charged_prescribed_advection, rChargedPrescribedAdvection = rChargedPrescribedAdvection,
                 tChargedPrescribedAdvection = tChargedPrescribedAdvection, interpr=interpr, interpt=interpt)
         else:
@@ -180,6 +198,12 @@ class IonSpecies:
         self.rNeutralPrescribedAdvection = None
         self.tNeutralPrescribedAdvection = None
         if neutral_advection_mode == ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+        
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed advection coefficients according to this, if nothing else is prescribed
+            if neutral_prescribed_advection is None and t_transp_expdecay_all_cs is not None:
+                neutral_prescribed_advection, rNeutralPrescribedAdvection, tNeutralPrescribedAdvection = self.calcTransportCoefficientExpdecaySingleChargeState(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = advection_initial_all_cs, cf = advection_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
+                
             self.initialize_neutral_prescribed_advection(neutral_prescribed_advection = neutral_prescribed_advection, rNeutralPrescribedAdvection = rNeutralPrescribedAdvection,
                 tNeutralPrescribedAdvection = tNeutralPrescribedAdvection, interpr=interpr, interpt=interpt)
         else:
@@ -810,6 +834,31 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral advection coefficient: {}.".format(self.name, neutral_prescribed_advection.shape))
 
+
+    def calcTransportCoefficientExpdecaySingleChargeState(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
+        if t is None:
+            t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
+        if r is None:
+            r = np.linspace(0,self.settings.radialgrid.a)
+        if np.isscalar(c0):
+            Nr = len(r)
+            c0 = c0*np.ones((1,Nr))
+            
+        if np.isscalar(cf):
+            Nr = len(r)
+            cf = cf*np.ones((1,Nr))     
+                    
+        c_single_charge_state = (cf + np.exp(-(t-t_start)/t_exp)*(c0-cf))*(t>t_start)
+        
+        return c_single_charge_state, r.flatten(), t.flatten()
+
+    def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
+        c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
+        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state)))
+        for i in range(self.Z):
+            cCharged[i,:,:]=c_single_charge_state
+        
+        return cCharged, r, t
 
     
     def verifySettings(self):

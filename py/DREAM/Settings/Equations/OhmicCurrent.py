@@ -85,6 +85,8 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres_times  = _tim
         self.jpres_Ip0 = Ip0
 
+        self.jpres0 = None
+
         self.verifySettingsPrescribedData()
 
 
@@ -98,6 +100,8 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres0 = _data
         self.jpres0_radius = _rad
         self.jpres0_Ip0 = Ip0
+        
+        self.jpres = None
 
         self.verifySettingsPrescribedInitialData()
 

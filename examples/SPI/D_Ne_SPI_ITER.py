@@ -194,10 +194,10 @@ neutral_prescribed_diffusion = 100
 if nShardNe>0:
 	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
 	abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]),   
-	charged_advection_mode = Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED, charged_prescribed_advection =  charged_prescribed_advection,
-    neutral_advection_mode = Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, neutral_prescribed_advection =  neutral_prescribed_advection,
-    charged_diffusion_mode = Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, charged_prescribed_diffusion =  charged_prescribed_diffusion,
-    neutral_diffusion_mode = Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, neutral_prescribed_diffusion =  neutral_prescribed_diffusion)
+	charged_advection_modes = [Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED], charged_prescribed_advections =  [charged_prescribed_advection],
+    neutral_advection_modes = [Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED], neutral_prescribed_advections =  [neutral_prescribed_advection],
+    charged_diffusion_modes = [Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED], charged_prescribed_diffusions =  [charged_prescribed_diffusion],
+    neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion])
     
 ds.eqsys.n_i.setAdvectionInterpolationMethodCharged(ad_int=IonsAll.AD_INTERP_UPWIND,
         ad_jac=IonsAll.AD_INTERP_JACOBIAN_UPWIND, fluxlimiterdamping=1.0)

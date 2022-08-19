@@ -17,6 +17,10 @@ ABLATION_MODE_NEGLECT=1
 ABLATION_MODE_FLUID_NGS=2
 ABLATION_MODE_KINETIC_NGS=3
 
+ABL_IONIZ_MODE_NEUTRAL = 1
+ABL_IONIZ_MODE_SINGLY_IONIZED = 2
+ABL_IONIZ_MODE_SELF_CONSISTENT = 3
+
 DEPOSITION_MODE_NEGLECT=1
 DEPOSITION_MODE_LOCAL=2
 DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE=3
@@ -44,7 +48,7 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT):
+    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
         """
         Constructor.
         
@@ -67,14 +71,15 @@ class SPI(UnknownQuantity):
         """
         super().__init__(settings=settings)
 
-        self.velocity           = int(velocity)
-        self.ablation           = int(ablation)
-        self.deposition         = int(deposition)
-        self.heatAbsorbtion     = int(heatAbsorbtion)
-        self.cloudRadiusMode    = int(cloudRadiusMode)
-        self.VpVolNormFactor    = VpVolNormFactor
-        self.rclPrescribedConstant = rclPrescribedConstant
-        self.magneticFieldDependenceMode = magneticFieldDependenceMode
+        self.velocity                    = int(velocity)
+        self.ablation                    = int(ablation)
+        self.deposition                  = int(deposition)
+        self.heatAbsorbtion              = int(heatAbsorbtion)
+        self.cloudRadiusMode             = int(cloudRadiusMode)
+        self.VpVolNormFactor             = VpVolNormFactor
+        self.rclPrescribedConstant       = rclPrescribedConstant
+        self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
+        self.abl_ioniz                   = int(abl_ioniz)
 
         self.rp       = None
         self.vp       = None
@@ -271,6 +276,7 @@ class SPI(UnknownQuantity):
             neutral_advection_mode = neutral_advection_modes[iZ], neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ], tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ],
             **kwargs)
             
+            
               
         return kp
         
@@ -424,6 +430,14 @@ class SPI(UnknownQuantity):
         magnetic field dependence of the ablation
         """
         self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
+        
+    def setAblIoniz(self, abl_ioniz):
+        """
+        Specifies which model to use for calculating the
+        charge state distribution with which the recently 
+        ablated material is deposited
+        """
+        self.abl_ioniz = int(abl_ioniz)
 
 
     def fromdict(self, data):
@@ -442,16 +456,18 @@ class SPI(UnknownQuantity):
             self.cloudRadiusMode = int(data['cloudRadiusMode'])
         if 'magneticFieldDependenceMode' in data:
             self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
+        if 'abl_ioniz' in data:
+            self.abl_ioniz = int(data['abl_ioniz'])
 
         if 'VpVolNormFactor' in data:
             self.VpVolNormFactor = data['VpVolNormFactor']
         if 'rclPrescribedConstant' in data:
             self.rclPrescribedConstant = data['rclPrescribedConstant']
-        if 'rp' in data:
+        if 'rp' in data['init']:
             self.rp              = data['init']['rp']
-        if 'vp' in data:
+        if 'vp' in data['init']:
             self.vp              = data['init']['vp']
-        if 'xp' in data:
+        if 'xp' in data['init']:
             self.xp              = data['init']['xp']
 
 
@@ -467,6 +483,7 @@ class SPI(UnknownQuantity):
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
+            'abl_ioniz': self.abl_ioniz,
             'VpVolNormFactor': self.VpVolNormFactor,
             'rclPrescribedConstant': self.rclPrescribedConstant
         }
