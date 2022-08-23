@@ -312,13 +312,15 @@ during the nuclear phase.
 
 The following settings are used to control the Compton source mode:
 
-+--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| Option                   | Description                                                                                                                       |
-+==========================+===================================================================================================================================+
-| ``COMPTON_MODE_NEGLECT`` | Do not include Compton scattering in the simulation.                                                                              |
-+--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| ``COMPTON_MODE_FLUID``   | Use the model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
-+--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| Option                    | Description                                                                                                                       |
++===========================+===================================================================================================================================+
+| ``COMPTON_MODE_NEGLECT``  | Do not include Compton scattering in the simulation.                                                                              |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_FLUID``    | Use the model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_ITER_DMS`` | Short-hand for ``COMPTON_MODE_FLUID`` with the ITER DMS photon flux density given by Martin-Solis.                                |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
 
 Example
 *******
@@ -334,6 +336,39 @@ The Compton source can be activated following this example:
    Phi0 = 1e18 # total photon flux in units of m^-2 s^-1, typical of ITER
    ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi0)
 
+If one is simulating ITER specifically, it is possible to instead just do
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+
+   # Equivalent to the above example
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_ITER_DMS)
+
+The photon flux can also be specified as a function of time. In this case, the
+photon flux should be given as a 1D array along with a equally shaped time
+vector:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+
+   Phi0 = 1e18
+   Phi = np.ones((4,)) * Phi0
+   t = np.zeros(Phi.shape)
+
+   t[1] = 5e-3
+   t[2] = 6e-3
+   t[3] = 1e3
+   
+   Phi[2:] /= 1e3
+
+   # Set photon flux density (in units of m^-2 s^-1)
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi, photonFlux_t=t)
 
 
 Hottail
