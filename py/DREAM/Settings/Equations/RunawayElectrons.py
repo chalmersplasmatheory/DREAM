@@ -63,14 +63,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         self.avalanche = avalanche
         self.dreicer   = dreicer
-        self.compton   = compton
-        self.comptonPhotonFlux = comptonPhotonFlux
-        self.comptonPhotonFlux_t = np.array([0])
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
+
+        self.setCompton(compton, comptonPhotonFlux)
 
         self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.transport = TransportSettings(kinetic=False)
@@ -200,12 +199,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
 
-        if type(data['compton']['flux']) == dict:
-            self.comptonPhotonFlux  = data['compton']['flux']['x']
-            self.comptonPhotonFlux_t = data['compton']['flux']['t']
-        else:
-            self.comptonPhotonFlux  = data['compton']['flux']
-            self.comptonPhotonFlux_t = np.array([0.0])
+        if 'flux' in data['compton']:
+            if type(data['compton']['flux']) == dict:
+                self.comptonPhotonFlux  = data['compton']['flux']['x']
+                self.comptonPhotonFlux_t = data['compton']['flux']['t']
+            else:
+                self.comptonPhotonFlux  = data['compton']['flux']
+                self.comptonPhotonFlux_t = np.array([0.0])
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
@@ -239,12 +239,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'negative_re': self.negative_re
         }
         data['compton'] = {
-            'mode': self.compton,
-            'flux': {
+            'mode': self.compton
+        }
+        if self.compton != COMPTON_MODE_NEGLECT:
+            data['compton']['flux'] = {
                 'x': self.comptonPhotonFlux,
                 't': self.comptonPhotonFlux_t
             }
-        }
         data['init'] = {
             'x': self.density,
             'r': self.radius
@@ -279,12 +280,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if type(self.negative_re) != bool:
             raise EquationException("n_re: Invalid value assigned to 'negative_re'. Expected bool.")
 
-        if type(self.comptonPhotonFlux) != np.ndarray:
-            raise EquationException("Invalid type for 'comptonPhotonFlux'. Expected numpy array.")
-        elif type(self.comptonPhotonFlux_t) != np.ndarray:
-            raise EquationException("Invalid type for 'comptonPhotonFlux_t'. Expected number array.")
-        elif self.comptonPhotonFlux.shape != self.comptonPhotonFlux_t.shape:
-            raise EquationException("The shapes of 'comptonPhotonFlux' and 'photonFlux_t' do not match.")
+        if self.compton != COMPTON_MODE_NEGLECT:
+            if type(self.comptonPhotonFlux) != np.ndarray:
+                raise EquationException("Invalid type for 'comptonPhotonFlux'. Expected numpy array.")
+            elif type(self.comptonPhotonFlux_t) != np.ndarray:
+                raise EquationException("Invalid type for 'comptonPhotonFlux_t'. Expected number array.")
+            elif self.comptonPhotonFlux.shape != self.comptonPhotonFlux_t.shape:
+                raise EquationException("The shapes of 'comptonPhotonFlux' and 'photonFlux_t' do not match.")
 
         self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()
