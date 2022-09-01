@@ -31,7 +31,7 @@ def load_quantities(directory, timestep):
     """
     pattern = f'{directory}/debugout_{{}}_{{}}.h5'
 
-    do = DREAMOutput(pattern.format(timestep, 1), loadsettings=False)
+    do = DREAMOutput(pattern.format(timestep, 1), loadsettings=True)
 
     # Load all output objects
     dos = [do]
