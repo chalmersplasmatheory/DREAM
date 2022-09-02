@@ -230,10 +230,14 @@ class IonSpecies:
         return T
         
     def shiftTimeTranspCoeffs(self, tShift):
-        self.tChargedPrescribedDiffusion = self.tChargedPrescribedDiffusion - tShift
-        self.tNeutralPrescribedDiffusion = self.tNeutralPrescribedDiffusion - tShift
-        self.tChargedPrescribedAdvection = self.tChargedPrescribedAdvection - tShift
-        self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
+        if self.tChargedPrescribedDiffusion is not None:
+            self.tChargedPrescribedDiffusion = self.tChargedPrescribedDiffusion - tShift
+        if self.tNeutralPrescribedDiffusion is not None:    
+            self.tNeutralPrescribedDiffusion = self.tNeutralPrescribedDiffusion - tShift
+        if self.tChargedPrescribedAdvection is not None:
+            self.tChargedPrescribedAdvection = self.tChargedPrescribedAdvection - tShift
+        if self.tNeutralPrescribedAdvection is not None:
+            self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
 
     def getDensity(self):
         """
