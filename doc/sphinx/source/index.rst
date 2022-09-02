@@ -42,6 +42,7 @@ Table of contents
    compiling
    kernel/index
    frontend/index
+   atomicdata
    start/index
    todo
 
@@ -70,6 +71,12 @@ Table of contents
    </div>
    <div style="clear:both"></div>
    <div class="admonition note" style="width:49%; float:left">
+     <a href="atomicdata.html">
+       <p class="admonition-title">Atomic data</p>
+     </a>
+     <p>Learn how to add support for more elements</p>
+   </div>
+   <div class="admonition note" style="width:49%; float:right">
      <a href="start/examples/index.html">
        <p class="admonition-title">Examples</p>
      </a>
