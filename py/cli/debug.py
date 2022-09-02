@@ -1,6 +1,5 @@
 #!/usr/bin/python3 -i
 
-#from DREAM import debug_interface
 from DREAM.debug_interface import *
 
 
