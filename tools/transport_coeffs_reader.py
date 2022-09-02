@@ -11,6 +11,7 @@ sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
 from DREAM.DREAMOutput import DREAMOutput
+from DREAM.DREAMException import DREAMException
 import DREAM.Settings.TransportSettings as Transport
 
 ## Elementary charge
@@ -199,16 +200,28 @@ class transport_coeffs_reader:
         rqcrit = np.interp(qcrit, q, rref)
         return (shatterPoint[0] - rqcrit)/abs_vp_mean # NOTE: only valid for an injection close to Z=0!
     
-    def tBeforeOnsetFromQCritAndTcoldFromOutput(q, qcrit, rref, Tcrit, filename):
+    def tBeforeOnsetFromQCritAndTcoldFromOutput(q, qcrit, rref, Tcrit, filenames, folder):
         # Estimates the time of the TQ onset, assuming the TQ starts when the temperature
         # drops below Tcrit somewhere inside the flux surface where q=qcrit.
         # The temperature evolution used for determining this time i taken from the simulation output
         # named 'filename', which should be similar to the current simulation but without a transport-induced TQ
         
-        doObj = DREAMOutput(filename)
+        if type(filenames) == str:
+            filenames = [filenames]
+            
         rcrit = np.interp(qcrit, q, rref)
-        it = np.argwhere(np.any((doObj.eqsys.T_cold.data[:,:]<Tcrit)*(doObj.grid.r<rcrit),1))[0]
-        return doObj.grid.t[it]
+        
+        tBeforeCurrentRestart = 0
+        for filename in filenames:
+            doObj = DREAMOutput(folder+filename.strip())
+            itTQHasStarted = np.any((doObj.eqsys.T_cold.data[:,:]<Tcrit)*(doObj.grid.r<rcrit),1)
+            if np.any(itTQHasStarted):
+                it = np.argwhere(itTQHasStarted)[0]
+                return doObj.grid.t[it] + tBeforeCurrentRestart
+            else:
+                tBeforeCurentRestart = tBeforeCurrentRestart + doObj.grid.t[-1]
+                
+        raise DREAMException('Temperature does not drop below the critical temperature for the TQ onset inside the q=2 flux surface')
         
     def setDrrFromTQTimeScaleBesselApproximation(self, t_duration, a, Trepr, t_duration_over_t_diffusion = 1):
         # Estimate the diffusion coefficients based on a desired TQ duration t_duration. This is done assuming
