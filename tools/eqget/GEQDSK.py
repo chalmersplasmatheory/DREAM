@@ -216,9 +216,17 @@ class GEQDSK:
         """
         if psi_n is None:
             psi_n = self.psi_n
+            jtor = self.Jtor
+        else:
+            jtor = np.interp(psi_n, self.psi_n, self.Jtor)
 
+        R, Z = np.meshgrid(self.R_major(psi_n), self.Z0)
         Btor = self.f_psi(psi_n) / self.R_major(psi_n)
-        return Btor
+        Br = 1/R * self.psi(R, Z, dx=1, grid=False)
+        Bz = 1/R * self.psi(R, Z, dy=1, grid=False)
+        B = np.sqrt(Br**2+Bz**2+Btor**2)
+
+        return jtor * B/Btor
 
 
     def load(self, filename):
