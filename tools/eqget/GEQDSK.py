@@ -10,6 +10,7 @@ from matplotlib._contour import QuadContourGenerator
 import matplotlib.pyplot as plt
 import numpy as np
 import re
+from scipy.constants import mu_0
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline, RectBivariateSpline
 
 
@@ -352,6 +353,8 @@ class GEQDSK:
         self.R_major = InterpolatedUnivariateSpline(psi_n, R_major)
 
         self.R0 = self.R_major(0)
+
+        self.Jtor = self.R_major * self.p_prime(psi_n) + self.ffprime(psi_n) / (self.R_major * mu_0)
 
 
     def plot_flux_surfaces(self, ax=None, nr=10, ntheta=200, fit=True, *args, **kwargs):
