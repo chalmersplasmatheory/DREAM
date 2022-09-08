@@ -210,6 +210,17 @@ class GEQDSK:
         return Btor
 
 
+    def get_Jpar(self, psi_n=None):
+        """
+        Return the parallel current density profile.
+        """
+        if psi_n is None:
+            psi_n = self.psi_n
+
+        Btor = self.f_psi(psi_n) / self.R_major(psi_n)
+        return Btor
+
+
     def load(self, filename):
         """
         Load data from the named GEQDSK file to this object.
@@ -312,6 +323,7 @@ class GEQDSK:
         self.psi_bdry = data['sibdry']
 
         psi_n = np.linspace(0, 1, self.nr)
+        self.psi_n = psi_n
 
         self.f_psi    = InterpolatedUnivariateSpline(psi_n, data["fpol"])
         self.ff_prime = InterpolatedUnivariateSpline(psi_n, data["ffprime"])
@@ -354,7 +366,7 @@ class GEQDSK:
 
         self.R0 = self.R_major(0)
 
-        self.Jtor = self.R_major * self.p_prime(psi_n) + self.ffprime(psi_n) / (self.R_major * mu_0)
+        self.Jtor = self.R_major(psi_n) * self.p_prime(psi_n) + self.ffprime(psi_n) / (self.R_major(psi_n) * mu_0)
 
 
     def plot_flux_surfaces(self, ax=None, nr=10, ntheta=200, fit=True, *args, **kwargs):
