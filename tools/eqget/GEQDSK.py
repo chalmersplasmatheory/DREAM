@@ -39,7 +39,7 @@ class GEQDSK:
                     yield int(m)
 
 
-    def get_flux_surface(self, psi_n, theta=None, closedContourTol = 1e-6):
+    def get_flux_surface(self, psi_n, rmagx=None, theta=None, closedContourTol = 1e-6):
         """
         Trace the flux surface for the given normalized psi.
         """
@@ -51,12 +51,23 @@ class GEQDSK:
         #    vertices = v[-1]
             
         vertices = self.contour_generator.create_contour(psi_n)
-        
+        vertices = vertices[0]
+
         iClosedContour = None
         for i in range(len(vertices)):
-            if len(vertices[i].shape)==2:
+            if vertices[i].ndim == 2:
                 if np.sqrt((vertices[i][0,0]-vertices[i][-1,0])**2 + (vertices[i][0,1]-vertices[i][-1,1])**2)<closedContourTol:
                     iClosedContour = i
+
+                    # Check if magnetic axis is enclosed by contour
+                    if rmagx is not None:
+                        rmin, rmax = np.amin(vertices[i][:,0]), np.amax(vertices[i][:,0])
+                        zmin, zmax = np.amin(vertices[i][:,1]), np.amax(vertices[i][:,1])
+
+                        if (rmin <= rmagx and rmagx <= rmax) and (zmin <= self.Z0 and self.Z0 <= zmax):
+                            break
+                        else:
+                            iClosedContour = None
                 
         if iClosedContour is not None:
             R, Z = vertices[iClosedContour][:,0], vertices[iClosedContour][:,1]
@@ -354,8 +365,12 @@ class GEQDSK:
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)
 
+        self._psin2d = psin2d
+        self._R = R
+        self._Z = Z
+
         for i, i_psiN in enumerate(psi_n[1:]):
-            surface_R, surface_Z = self.get_flux_surface(psi_n=i_psiN)
+            surface_R, surface_Z = self.get_flux_surface(psi_n=i_psiN, rmagx=data['rmagx'])
 
             rho[i+1] = (max(surface_R)-min(surface_R)) / 2
             R_major[i+1] = (max(surface_R)+min(surface_R)) / 2
@@ -374,7 +389,7 @@ class GEQDSK:
 
         self.R0 = self.R_major(0)
 
-        self.Jtor = self.R_major(psi_n) * self.p_prime(psi_n) + self.ffprime(psi_n) / (self.R_major(psi_n) * mu_0)
+        self.Jtor = self.R_major(psi_n) * self.p_prime(psi_n) + self.ff_prime(psi_n) / (self.R_major(psi_n) * mu_0)
 
 
     def plot_flux_surfaces(self, ax=None, nr=10, ntheta=200, fit=True, *args, **kwargs):
