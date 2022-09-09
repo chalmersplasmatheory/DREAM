@@ -860,11 +860,15 @@ class IonSpecies:
                     
         c_single_charge_state = (cf + np.exp(-(t-t_start)/t_exp)*(c0-cf))*(t>t_start)
         
+        # Copy the coefficients for the last time step to avoid an unintended linear extrapolation with an unphysical sign change
+        c_single_charge_state = np.vstack((c_single_charge_state, c_single_charge_state[-1,:])) 
+        t = np.vstack((t, t[-1]+1))
+        
         return c_single_charge_state, r.flatten(), t.flatten()
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
         c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
-        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state)))
+        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state[0,:])))
         for i in range(self.Z):
             cCharged[i,:,:]=c_single_charge_state
         
