@@ -56,7 +56,7 @@ run_CQ=True # Second Ne injection (if any), beginning of the CQ
 
 # Specify number of restarts to do during the CQ
 nCQ_restart_start=2 # Number of CQ restart to start from
-nCQ_restart=0 # How many CQ restarts to run
+nCQ_restart=1 # How many CQ restarts to run
 
 # Temperature and electron distribution settings
 T_selfconsistent    = True
@@ -65,6 +65,7 @@ use_fluid_runaways = True
 
 use_heat_transport=True
 use_f_hot_transport=False
+use_ion_transport = False
 dBOverB=1e-3/np.sqrt(2)
 
 # Time steps during the various restarts
@@ -191,13 +192,17 @@ charged_prescribed_diffusion = 100
 neutral_prescribed_diffusion = 100
 
 if nShardNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
-	abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]),   
-	charged_advection_modes = [Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED], charged_prescribed_advections =  [charged_prescribed_advection],
-    neutral_advection_modes = [Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED], neutral_prescribed_advections =  [neutral_prescribed_advection],
-    charged_diffusion_modes = [Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED], charged_prescribed_diffusions =  [charged_prescribed_diffusion],
-    neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion])
-    
+    if use_ion_transport:
+	    ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
+	    abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]),   
+	    charged_advection_modes = [Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED], charged_prescribed_advections =  [charged_prescribed_advection],
+        neutral_advection_modes = [Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED], neutral_prescribed_advections =  [neutral_prescribed_advection],
+        charged_diffusion_modes = [Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED], charged_prescribed_diffusions =  [charged_prescribed_diffusion],
+        neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion])
+    else:
+	    ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
+	    abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
+        
 ds.eqsys.n_i.setAdvectionInterpolationMethodCharged(ad_int=IonsAll.AD_INTERP_UPWIND,
         ad_jac=IonsAll.AD_INTERP_JACOBIAN_UPWIND, fluxlimiterdamping=1.0)
 
