@@ -85,7 +85,7 @@ class SPI(UnknownQuantity):
         self.vp       = None
         self.xp       = None
         self.t_delay  = None 
-        self.nbrShiftGridCell = None
+        self.nbrShiftGridCell = 0
 
 
     def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None):
