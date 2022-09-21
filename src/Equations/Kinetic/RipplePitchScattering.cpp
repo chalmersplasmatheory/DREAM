@@ -98,7 +98,7 @@ void RipplePitchScattering::CalculateResonantMomentum() {
 
     for (len_t k = 0; k < this->nModes; k++) {
         for (len_t ir = 0; ir < nr; ir++) {
-            const real_t G_R0 = this->grid->GetRadialGrid()->GetBTorG(ir);
+            const real_t G_R0 = std::abs(this->grid->GetRadialGrid()->GetBTorG(ir));
 
             if (INCLUDE_POLOIDAL_FIELD) {
                 throw NotImplementedException(
