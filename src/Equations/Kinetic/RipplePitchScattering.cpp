@@ -169,12 +169,15 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
                             continue;
                         Hmn     = dpBar / (dp[i]*(p_resonance_hi-p_resonance_lo));
                     } else if (mode == OptionConstants::EQTERM_RIPPLE_MODE_GAUSSIAN){
-                        real_t p0 = p_mn[k][ir] / absxi;
-                        real_t deltaP = p0 * sqrt( dB_mn_B[ir]*sqrt(1-absxi*absxi) );
-                        if(deltaP)
-                            Hmn = 1.0 / (absxi*dp[i]) * ( gsl_sf_erf( (p_f[i+1]-p0)/deltaP ) - gsl_sf_erf( (p_f[i]-p0)/deltaP ) );
-                        else if ( p_f[i+1]>p0 && p_f[i]<=p0 )
-                            Hmn = 2.0 / (absxi*dp[i]);
+						if (absxi != 0) {
+							real_t p0 = p_mn[k][ir] / absxi;
+							real_t deltaP = p0 * sqrt( dB_mn_B[ir]*sqrt(1-absxi*absxi) );
+
+							if(deltaP)
+								Hmn = 1.0 / (absxi*dp[i]) * ( gsl_sf_erf( (p_f[i+1]-p0)/deltaP ) - gsl_sf_erf( (p_f[i]-p0)/deltaP ) );
+							else if ( p_f[i+1]>p0 && p_f[i]<=p0 )
+								Hmn = 2.0 / (absxi*dp[i]);
+						}
                     }
                     real_t betapar = ppar/gamma;
                     real_t Dperp   = M_PI/32.0 * e*B/me * betapar * dB_mn_B[ir]*dB_mn_B[ir] * Hmn;
