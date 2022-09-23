@@ -441,6 +441,25 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
         FindBouncePoints(ir, Bmin, theta_Bmin, theta_Bmax, this, xi0, fluxGridType, &theta_b1, &theta_b2,gsl_fsolver,geometryIsSymmetric);
         if(theta_b1==theta_b2)
             return 0;
+
+		// Make sure that the angles are on the interval [-theta_Bmax,theta_Bmax]
+		if (theta_b1 > theta_Bmax)
+			theta_b1 -= 2*M_PI;
+		else if (theta_b1 < -theta_Bmax)
+			theta_b1 += 2*M_PI;
+
+		if (theta_b2 > theta_Bmax)
+			theta_b2 -= 2*M_PI;
+		else if (theta_b2 < -theta_Bmax)
+			theta_b2 += 2*M_PI;
+
+		// If necessary, swap the two angles so that the integration limits
+		// are given in ascending order.
+		if (theta_b1 > theta_b2) {
+			real_t t = theta_b1;
+			theta_b1 = theta_b2;
+			theta_b2 = t;
+		}
     } else { 
         F_eval = BA_FUNC_PASSING;
         theta_b1 = 0;
