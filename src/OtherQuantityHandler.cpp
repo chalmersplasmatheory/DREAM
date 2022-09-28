@@ -54,6 +54,7 @@ OtherQuantityHandler::OtherQuantityHandler(
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+	id_ntot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
@@ -271,7 +272,13 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
-    DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetComptonRunawayRate()););
+    DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]",
+		const real_t *cr = this->REFluid->GetComptonRunawayRate();
+		const real_t *n_tot = this->unknowns->GetUnknownData(this->id_ntot);
+		real_t *v = qd->StoreEmpty();
+		for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+			v[ir] = cr[ir] * n_tot[ir];
+	);
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
     }
