@@ -442,15 +442,15 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
         if(theta_b1==theta_b2)
             return 0;
 
-		// Make sure that the angles are on the interval [-theta_Bmax,theta_Bmax]
+		// Make sure that the angles are on the interval [theta_Bmax-2*pi,theta_Bmax]
 		if (theta_b1 > theta_Bmax)
 			theta_b1 -= 2*M_PI;
-		else if (theta_b1 < -theta_Bmax)
+		else if (theta_b1 < (theta_Bmax-2*M_PI))
 			theta_b1 += 2*M_PI;
 
 		if (theta_b2 > theta_Bmax)
 			theta_b2 -= 2*M_PI;
-		else if (theta_b2 < -theta_Bmax)
+		else if (theta_b2 < (theta_Bmax-2*M_PI))
 			theta_b2 += 2*M_PI;
 
 		// If necessary, swap the two angles so that the integration limits
