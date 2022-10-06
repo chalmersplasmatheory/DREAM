@@ -82,6 +82,14 @@ class transport_coeffs_reader:
         self.interp3d = interp3d
         self.interp1d = interp1d
         self.interp1d_param = interp1d_param
+        
+    def setDrr(self, dsObj, hotTailGridEnabled = True, runawayGridEnabled = False):
+        if hotTailGridEnabled:
+            dsObj.eqsys.f_hot.transport.prescribedAdvection(self.Ar , t=self.t, r=self.r, p=self.p, xi=self.xi)
+            dsObj.eqsys.f_hot.transport.prescribedDiffusion(self.Drr, t=self.t, r=self.r, p=self.p, xi=self.xi)
+        if runawayGridEnabled:
+            dsObj.eqsys.f_re.transport.prescribedAdvection(self.Ar , t=self.t, r=self.r, p=self.p, xi=self.xi)
+            dsObj.eqsys.f_re.transport.prescribedDiffusion(self.Drr, t=self.t, r=self.r, p=self.p, xi=self.xi)
 
     def setSvenssonCoeff(self, dsObj):
         # Add the Svensson transport coefficients
