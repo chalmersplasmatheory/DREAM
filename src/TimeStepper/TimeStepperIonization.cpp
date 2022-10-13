@@ -108,6 +108,19 @@ real_t TimeStepperIonization::NextTime() {
 }
 
 /**
+ * Returns 'true' if the current time step is to be saved to the output file.
+ */
+bool TimeStepperIonization::IsSaveStep() {
+	if (this->minSaveDt == 0)
+		return true;
+	else if (this->lastSaveTime+this->minSaveDt < this->currentTime) {
+		this->lastSaveTime = this->currentTime;
+		return true;
+	} else
+		return false;
+}
+
+/**
  * Validate the most recently taken time step. Currently, we
  * don't do this in this time stepper, but in the future we
  * could implement a check to ensure that the ionization time
