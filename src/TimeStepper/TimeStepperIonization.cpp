@@ -20,9 +20,10 @@ using namespace std;
 TimeStepperIonization::TimeStepperIonization(
 	const real_t tMax, const real_t dt0, const real_t dtMax,
 	FVM::UnknownQuantityHandler *u, const real_t automaticstep,
-	const real_t safetyfactor
+	const real_t safetyfactor, const real_t minSaveDt
 ) : TimeStepper(u), tMax(tMax), dt0(dt0), dtMax(dtMax),
-	automaticstep(automaticstep), safetyfactor(safetyfactor)
+	minSaveDt(minSaveDt), automaticstep(automaticstep),
+	safetyfactor(safetyfactor)
 {
 	if (tMax < dt0)
 		throw TimeStepperException("TimeStepperIonization: Maximum time must be greater than initial time step.");
@@ -113,7 +114,10 @@ real_t TimeStepperIonization::NextTime() {
 bool TimeStepperIonization::IsSaveStep() {
 	if (this->minSaveDt == 0)
 		return true;
-	else if (this->lastSaveTime+this->minSaveDt < this->currentTime) {
+	else if (
+		(this->lastSaveTime+this->minSaveDt) < this->currentTime ||
+		this->tMax <= this->currentTime
+	) {
 		this->lastSaveTime = this->currentTime;
 		return true;
 	} else
