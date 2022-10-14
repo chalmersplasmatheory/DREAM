@@ -516,6 +516,7 @@ class EqBase:
         return {
             'name': 'EQDSK',
             'desc': 'EQDSK',
+            'cocos': self.cocos_number,
             'maxis': np.array([raxis, zaxis]),
             'Br': self.get_Br(R, Z),
             'Bz': self.get_Bz(R, Z),
