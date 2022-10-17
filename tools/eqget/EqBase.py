@@ -482,7 +482,7 @@ class EqBase:
                 dpsi_dx = self.psi.partial_derivative(1, 0)
                 dpsi_dy = self.psi.partial_derivative(0, 1)
 
-                return np.array([dpsi_dx(*x), dpsi_dy(*x)])
+                return np.array([dpsi_dx(*x), dpsi_dy(*x)]).flatten()
         else:
             jac = None
 
