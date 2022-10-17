@@ -85,7 +85,7 @@ class SPI(UnknownQuantity):
         self.vp       = None
         self.xp       = None
         self.t_delay  = None 
-        self.nbrShiftGridCell = 0
+        self.nbrShiftGridCell = None
 
 
     def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None):
@@ -509,6 +509,21 @@ class SPI(UnknownQuantity):
         Returns a Python dictionary containing all settings of
         this SPI object.
         """
+        # If no SPI settings have been given, set everything to zero (to avoid a DREAMIOException)
+        # Before this stage it is usefull to use None to indicate if any SPI settings have been made yet,
+        # to know if there are any previous shards to add the new ones to, so therefore
+        # we don't set this default setting until this stage
+        if self.rp is None:
+            self.rp=np.array([0])
+        if self.vp is None:
+            self.vp=np.array([0,0,0])
+        if self.xp is None:
+            self.xp=np.array([0,0,0])
+        if self.t_delay is None:
+            self.t_delay=np.array([0])
+        if self.nbrShiftGridCell is None:
+            self.nbrShiftGridCell = np.array([0])
+            
         data = {
             'velocity': self.velocity,
             'ablation': self.ablation,
@@ -522,18 +537,6 @@ class SPI(UnknownQuantity):
             'nbrShiftGridCell': self.nbrShiftGridCell
         }
         
-        # If no SPI settings have been given, set everything to zero (to avoid a DREAMIOException)
-        # Before this stage it is usefull to use None to indicate if any SPI settings have been made yet,
-        # to know if there are any previous shards to add the new ones to, so therefore
-        # we don't set this default setting until this stage
-        if self.rp is None:
-            self.rp=np.array([0])
-        if self.vp is None:
-            self.vp=np.array([0,0,0])
-        if self.xp is None:
-            self.xp=np.array([0,0,0])
-        if self.t_delay is None:
-            self.t_delay=np.array([0])
             
         data['init'] = {
                 'rp': self.rp,
