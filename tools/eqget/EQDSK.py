@@ -80,10 +80,10 @@ class EQDSK(EqBase):
         with open(filename, 'r') as f:
             # Load header
             l = f.readline().split()
-            eqdsk['stitle'] = l[0]
-            eqdsk['ind1'] = int(l[1])
-            eqdsk['nx'] = int(l[2])
-            eqdsk['ny'] = int(l[3])
+            eqdsk['stitle'] = ' '.join(l[:-3])
+            eqdsk['ind1'] = int(l[-3])
+            eqdsk['nx'] = int(l[-2])
+            eqdsk['ny'] = int(l[-1])
 
             nr = eqdsk['nx']
             nz = eqdsk['ny']
