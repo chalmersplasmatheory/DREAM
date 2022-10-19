@@ -21,7 +21,7 @@ class EqBase:
         """
         Constructor.
         """
-        self.load(filename, override_psilim=override_psilim)
+        pass
 
 
     def _next_value(self, fh):
@@ -307,13 +307,6 @@ class EqBase:
         theta = np.arctan2(R-self.R0, Z-self.Z0)
 
         return theta, B
-
-
-    def load(self, filename, override_psilim=False):
-        """
-        Load data from the named GEQDSK file to this object.
-        """
-        self.process_data(data, override_psilim=override_psilim)
 
 
     def process_data(self, data, override_psilim=False):
