@@ -160,7 +160,10 @@ namespace DREAM::FVM {
          * values of xi/xi0 and B/Bmin.
          */
         static real_t evaluatePXiMetricOverP2(real_t xiOverXi0, real_t BOverBmin){
-            return 2*M_PI* BOverBmin / xiOverXi0; 
+			if (xiOverXi0 == 0)
+				return 0;
+			else
+				return 2*M_PI* BOverBmin / xiOverXi0; 
         }
 
 
