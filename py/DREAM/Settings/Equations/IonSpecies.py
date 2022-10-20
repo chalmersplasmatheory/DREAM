@@ -849,7 +849,10 @@ class IonSpecies:
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
         if r is None:
-            r = np.linspace(0,self.settings.radialgrid.a)
+            if self.settings.radialgrid.r_f is not None:
+                r = self.settings.radialgrid.r_f
+            else:
+                r = np.linspace(0,self.settings.radialgrid.a)
         if np.isscalar(c0):
             Nr = len(r)
             c0 = c0*np.ones((1,Nr))
