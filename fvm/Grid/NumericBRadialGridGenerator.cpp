@@ -45,7 +45,7 @@ NumericBRadialGridGenerator::NumericBRadialGridGenerator(
 	const len_t ntheta_interp
 ) : RadialGridGenerator(nr) {
 
-    this->rf_provided = new real_t[nr];
+    this->rf_provided = new real_t[nr+1];
     for (len_t i = 0; i < nr+1; i++)
         this->rf_provided[i] = r_f[i];
     
@@ -367,7 +367,7 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
                 "the maximum r available in the numeric magnetic field data, rMax = %.3f.",
                 this->input_r[this->npsi-1]
             );
-        else if (rf_provided[0] >= r_f[GetNr()])
+        else if (rf_provided[0] >= rf_provided[GetNr()])
             throw FVMException("NumericBRadialGrid: The first point on the custom radial grid must be strictly less than the last point.");
 
         for (len_t i = 0; i < GetNr()+1; i++)
