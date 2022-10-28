@@ -494,9 +494,11 @@ class EqBase:
         if len(self.rplas) == 0 or len(self.rlim) == 0:
             raise Exception("Generation of SOFT equilibrium requires a wall and plasma boundary to be specified.")
 
-        rmin, rmax = np.amin(self.rlim), np.amax(self.rlim)
-        zmin, zmax = np.amin(self.zlim), np.amax(self.zlim)
-        #R, Z = np.meshgrid(np.linspace(rmin, rmax, nr), np.linspace(zmin, zmax, nz))
+        rmin = min(np.amin(self.rlim), np.amin(self.rplas))
+        rmax = max(np.amax(self.rlim), np.amax(self.rplas))
+        zmin = min(np.amin(self.zlim), np.amin(self.zplas))
+        zmax = max(np.amax(self.zlim), np.amax(self.zplas))
+
         r, z = np.linspace(rmin, rmax, nr), np.linspace(zmin, zmax, nz)
         R, Z = np.meshgrid(r, z)
 
