@@ -48,7 +48,7 @@ class OtherQuantities:
         'nu_D',
         'runaway/Ar', 'runaway/Ap1', 'runaway/Ap2',
         'runaway/Drr', 'runaway/Dpp', 'runaway/Dpx', 'runaway/Dxp', 'runaway/Dxx',
-        'hottail/timevaryingb_Ap2',
+        'runaway/timevaryingb_Ap2',
         'runaway/lnLambda_ee_f1', 'runaway/lnLambda_ee_f2',
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',

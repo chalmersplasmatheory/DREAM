@@ -556,14 +556,12 @@ void OtherQuantityHandler::DefineQuantities() {
 			const real_t *const* BA = this->tracked_terms->f_hot_timevaryingb->GetBounceAverage();
 			const real_t dB = this->tracked_terms->f_hot_timevaryingb->GetCurrentDbDt();
 			real_t *Axi = qd->StoreEmpty();
-			const real_t *p = hottailGrid->GetMomentumGrid(0)->GetP1();
 
 			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < nr_ht; ir++) {
 				for (len_t j_f = 0; j_f < n2_ht+1; j_f++) {
 					for (len_t i = 0; i < n1_ht; i++) {
-						//Axi[(ir*(n2_ht+1) + j_f)*n1_ht + i] = BA[ir][j_f*n1_ht+i] * p[i]/2 * dB;
-						Axi[(ir*(n2_ht+1) + j_f)*n1_ht + i] = BA[ir][j_f*n1_ht+i] * dB;
+						Axi[(ir*(n2_ht+1) + j_f)*n1_ht + i] = 0.5 * BA[ir][j_f*n1_ht+i] * dB;
 					}
 				}
 			}
@@ -630,8 +628,17 @@ void OtherQuantityHandler::DefineQuantities() {
 	// Pitch angle scattering due to time varying B
 	if (tracked_terms->f_re_timevaryingb != nullptr) {
 		DEF_RE_F2("runaway/timevaryingb_Ap2", "Pitch angle advection due to time-varying B",
-			const real_t *const* Axi = this->tracked_terms->f_re_timevaryingb->GetAdvectionCoeff2();
-			qd->Store(nr_re, n1_re*(n2_re+1), Axi);
+			const real_t *const* BA = this->tracked_terms->f_re_timevaryingb->GetBounceAverage();
+			const real_t dB = this->tracked_terms->f_re_timevaryingb->GetCurrentDbDt();
+			real_t *Axi = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_re; ir++) {
+				for (len_t j_f = 0; j_f < n2_re+1; j_f++) {
+					for (len_t i = 0; i < n1_re; i++) {
+						Axi[(ir*(n2_re+1) + j_f)*n1_re + i] = 0.5 * BA[ir][j_f*n1_re+i] * dB;
+					}
+				}
+			}
 		);
 	}
 
