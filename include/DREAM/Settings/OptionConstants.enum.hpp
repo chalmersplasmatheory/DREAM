@@ -292,6 +292,11 @@ enum eqterm_synchrotron_mode {                      // Synchrotron radiation rea
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included
 };
 
+enum eqterm_timevaryingb_mode {						// Pitch angle advection due to time-varying B...
+	EQTERM_TIMEVARYINGB_MODE_NEGLECT=1,				// neglected
+	EQTERM_TIMEVARYINGB_MODE_INCLUDE=2				// included
+};
+
 enum eqterm_dreicer_mode {
     EQTERM_DREICER_MODE_NONE=1,                     // Disable Dreicer generation
     EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR=2,     // Dreicer based on Connor-Hastie formula (without corrections)

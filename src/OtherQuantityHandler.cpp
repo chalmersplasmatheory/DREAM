@@ -308,6 +308,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetPoloidalModeNumbers()););
         DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetToroidalModeNumbers()););
     }
+
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
     DEF_FL("fluid/pCrit", "Critical momentum for avalanche, compton and tritium (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
@@ -549,6 +550,26 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     );
 
+	// Pitch angle scattering due to time varying B
+	if (tracked_terms->f_hot_timevaryingb != nullptr) {
+		DEF_HT_F2("hottail/timevaryingb_Ap2", "Pitch angle advection due to time-varying B",
+			const real_t *const* BA = this->tracked_terms->f_hot_timevaryingb->GetBounceAverage();
+			const real_t dB = this->tracked_terms->f_hot_timevaryingb->GetCurrentDbDt();
+			real_t *Axi = qd->StoreEmpty();
+			const real_t *p = hottailGrid->GetMomentumGrid(0)->GetP1();
+
+			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+				for (len_t j_f = 0; j_f < n2_ht+1; j_f++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+						//Axi[(ir*(n2_ht+1) + j_f)*n1_ht + i] = BA[ir][j_f*n1_ht+i] * p[i]/2 * dB;
+						Axi[(ir*(n2_ht+1) + j_f)*n1_ht + i] = BA[ir][j_f*n1_ht+i] * dB;
+					}
+				}
+			}
+		);
+	}
+
     // runaway/...
     DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeffR();
@@ -605,6 +626,14 @@ void OtherQuantityHandler::DefineQuantities() {
             avaNeg->SetVectorElements(v, nre_neg);
         }
     );
+
+	// Pitch angle scattering due to time varying B
+	if (tracked_terms->f_re_timevaryingb != nullptr) {
+		DEF_RE_F2("runaway/timevaryingb_Ap2", "Pitch angle advection due to time-varying B",
+			const real_t *const* Axi = this->tracked_terms->f_re_timevaryingb->GetAdvectionCoeff2();
+			qd->Store(nr_re, n1_re*(n2_re+1), Axi);
+		);
+	}
 
 
     // scalar/..
