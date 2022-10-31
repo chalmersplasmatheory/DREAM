@@ -1,13 +1,15 @@
 # This class provides routines for setting the electron transport coefficients (heat transport and runaway transport),
 # either by reading the from a file or by estimating them with some of the available models. 
-# Some functions in this class are modified versions of previous work done by Andreas Sundström
+# Some functions in this class are modified versions of previous work done by Andréas Sundström
 
 import numpy as np
 import sys
 import h5py as h5py
 import os as os
+import pathlib
 
-sys.path.append('../../py/')
+path = str((pathlib.Path(__file__).parent / '../py/').resolve().absolute())
+sys.path.append(path)
 
 from DREAM.DREAMSettings import DREAMSettings
 from DREAM.DREAMOutput import DREAMOutput
@@ -21,69 +23,49 @@ m_e    = 9.1093837e-31   # kg
 m_e_eV = 510.999e3       # eV
 
 
-class transport_coeffs_reader:
+class TransportCoefficientReader:
 
-    ####### Helper functions for setting the Svensson coeffs.#############################
     def __init__(self, filename = None, r_island = 0.0, coeff_scale = 1.0, t_before_onset = None, t_ramp = 1e-4, t_duration = None, Ip = None, interp3d=Transport.INTERP3D_LINEAR,interp1d=Transport.INTERP1D_LINEAR, interp1d_param=None):
-        ############### Load transport coefficients and their coordinates, and amend according to input parameters ##########
         
-        if filename is None:
-            # If no filename is specified, assume that there is no advection
-            # but a homogenious diffusion coefficient with an assumed p-dependence of p/(1+p^2).
-            # By setting an arbitrary diffusion coefficient with this scaling here,
-            # the shift in time of the transport onset is properly taken care of later in this constructor,
-            # and then the magnitude of the diffusion coefficient can simply be rescaled later 
-            # (see for example the setDrrFromTQTimeScaleBesselApproximation-function)
+        
+        self.t = None # Time steps              [s]
+        self.r = None # Radial coordinate       [m]
+        self.xi = None # Pitch-angle coordinate  [1]
+        self.p = None # Momentum coordinate     [m_e*c]
+        self.Ar = None
+        self.Drr = None
+        
+        self.Ip = Ip # Should be provided if one wants to interpolate the transport coefficients in plasma current instead of time
+        
+        self.interp3d = interp3d # Method for interpolating in r-xi-p
+        self.interp1d = interp1d # Method for interpolating in t or Ip
+        self.interp1d_param = interp1d_param # Which "time-variable" (Ip or t) to use
+        
+        if filename is not None:
+            self.loadFile(filename = filename, r_island = r_island, coeff_scale = coeff_scale, t_before_onset = t_before_onset, t_ramp = t_ramp)
+        
+    def loadFile(self, filename, r_island = 0.0, coeff_scale = 1.0, t_before_onset = None, t_ramp = 1e-4):
+        # Load transport coefficients and their coordinates, and amend according to input parameters
+        
+        with h5py.File(filename, 'r') as _f_coeff:
+            self.t  = np.array(_f_coeff['time'])              # Time steps              [s]
+            self.r  = np.array(_f_coeff['radius'])            # Radial coordinate       [m]
+            self.xi = np.array(_f_coeff['pitch'])            # Pitch-angle coordinate  [1]
+            self.p  = np.array(_f_coeff['momentum'])          # Momentum coordinate     [m_e*c]
+            self.Ar  = np.array(_f_coeff['drift'])
+            self.Drr = np.array(_f_coeff['diff'])  
             
-            if t_duration is None:
-                t_coeff = np.array([0])
-            else:
-                t_coeff = np.array([0,t_duration])
-            r_coeff = np.array([0,10])
-            xi_coeff = np.array([-1,1])
-            p_coeff = np.linspace(1e-6,100)
-            
-            p_dep = p_coeff/(1+p_coeff**2)
-            p_dep.reshape(1,1,1,-1)
-            
-            Ar_coeff = np.zeros((len(t_coeff), len(r_coeff), len(xi_coeff), len(p_coeff)))
-            Drr_coeff = np.ones((len(t_coeff), len(r_coeff), len(xi_coeff), len(p_coeff)))*p_dep
-        else:
-            try:
-                _f_coeff  = h5py.File(filename, 'r')
-            except:
-                _f_coeff  = h5py.File(os.path.dirname(__file__)+'/'+filename, 'r')
-
-            t_coeff  = np.array(_f_coeff['time'])              # Time steps              [s]
-            r_coeff  = np.array(_f_coeff['radius'])            # Radial coordinate       [m]
-            xi_coeff = np.array(_f_coeff['pitch'])            # Pitch-angle coordinate  [1]
-            p_coeff  = np.array(_f_coeff['momentum'])          # Momentum coordinate     [m_e*c]
-            Ar_coeff  = np.array(_f_coeff['drift'])
-            Drr_coeff = np.array(_f_coeff['diff'])  
-
-            _f_coeff.close()
-
-        r_coeff, Ar_coeff, Drr_coeff = transport_coeffs_reader.rIslandSvenssonCoeff(t_coeff, r_coeff, xi_coeff, p_coeff, Ar_coeff, Drr_coeff, r_island)
-        t_coeff, Ar_coeff, Drr_coeff = transport_coeffs_reader.tBeforeOnsetSvenssonCoeff(t_coeff, r_coeff, xi_coeff, p_coeff, Ar_coeff, Drr_coeff, t_before_onset, t_ramp)
-        t_coeff, Ar_coeff, Drr_coeff = transport_coeffs_reader.appendZerosSvenssonCoeff(t_coeff, r_coeff, xi_coeff, p_coeff, Ar_coeff, Drr_coeff, t_ramp)
+        self.Ar  *= coeff_scale
+        self.Drr *= coeff_scale
         
-        Ar_coeff  *= coeff_scale
-        Drr_coeff *= coeff_scale
+        # Set islands and time before onset, if any, and append zeros to turn of the transport after the desired duration    
+        self.setRIsland(r_island)
+        self.setTBeforeOnset(t_before_onset, t_ramp)
+        self.appendZeros(t_ramp)
         
-        self.t = t_coeff
-        self.r = r_coeff
-        self.xi = xi_coeff
-        self.p = p_coeff
-        self.Ar = Ar_coeff
-        self.Drr = Drr_coeff
         
-        self.Ip = Ip
-        
-        self.interp3d = interp3d
-        self.interp1d = interp1d
-        self.interp1d_param = interp1d_param
-        
-    def setDrr(self, dsObj, hotTailGridEnabled = True, runawayGridEnabled = False):
+    def setCoeffsKinetic(self, dsObj, hotTailGridEnabled = True, runawayGridEnabled = False):
+        # Set transport coefficients on the kinetic grid
         if hotTailGridEnabled:
             dsObj.eqsys.f_hot.transport.prescribedAdvection(self.Ar , t=self.t, r=self.r, p=self.p, xi=self.xi)
             dsObj.eqsys.f_hot.transport.prescribedDiffusion(self.Drr, t=self.t, r=self.r, p=self.p, xi=self.xi)
@@ -94,7 +76,7 @@ class transport_coeffs_reader:
     def setSvenssonCoeff(self, dsObj):
         # Add the Svensson transport coefficients
         if self.interp1d_param is not None:
-            if self.interp1d_param == Transport.SVENSSON_INTERP1D_PARAM_TIME and self.t_coeff is not None:
+            if self.interp1d_param == Transport.SVENSSON_INTERP1D_PARAM_TIME and self.t is not None:
                 dsObj.eqsys.n_re.transport.setSvenssonInterp1dParam(Transport.SVENSSON_INTERP1D_PARAM_TIME)
                 dsObj.eqsys.n_re.transport.setSvenssonAdvection(self.Ar , t=self.t, r=self.r, p=self.p, xi=self.xi,
                                                                 interp3d=self.interp3d, interp1d=self.interp1d)
@@ -139,60 +121,58 @@ class transport_coeffs_reader:
         dsObj.eqsys.T_cold.transport.setMagneticPerturbation(dBB=dBB,r=self.r, t=self.t)
             
     
-    def rIslandSvenssonCoeff(t_coeff, r_coeff, xi_coeff, p_coeff, Ar_coeff, Drr_coeff, r_island = 0):
+    def setRIsland(self, r_island = 0.0):
         # Helper function which helps putting in islands in the coeffs (or just set a zero transport coeff in the core if not specifiec)
-        if r_coeff[0] != 0:
+        if self.r[0] != 0:
             if r_island > 0.0:
-                r_coeff  = np.insert(r_coeff, 0, [0,r_island])
-                _ins_array = np.zeros((2,t_coeff.size, xi_coeff.size, p_coeff.size))
+                self.r  = np.insert(self.r, 0, [0,self.r])
+                _ins_array = np.zeros((2,self.t.size, self.xi.size, self.p.size))
             else:
-                r_coeff  = np.insert(r_coeff, 0, [0])
-                _ins_array = np.zeros((t_coeff.size, xi_coeff.size, p_coeff.size))
+                self.r  = np.insert(self.r, 0, [0])
+                _ins_array = np.zeros((self.t.size, self.xi.size, self.p.size))
             # Adding in the leading zeros
-            Ar_coeff  = np.insert(Ar_coeff,  0, _ins_array, axis=1)
-            Drr_coeff = np.insert(Drr_coeff, 0, _ins_array, axis=1)
+            self.Ar  = np.insert(self.Ar,  0, _ins_array, axis=1)
+            self.Drr = np.insert(self.Drr, 0, _ins_array, axis=1)
         else:
             if r_island > 0.0:
-                Ar_coeff[:,r_coeff<r_island,:,:]  = 0.0
-                Drr_coeff[:,r_coeff<r_island,:,:] = 0.0
-                r_coeff  = np.insert(r_coeff, np.argmax(r_coeff>r_island), [r_island])
-                _ins_array = np.zeros((t_coeff.size, xi_coeff.size, p_coeff.size))
-                Ar_coeff  = np.insert(Ar_coeff,  0, _ins_array, axis=1)
-                Drr_coeff = np.insert(Drr_coeff, 0, _ins_array, axis=1)
+                self.Ar[:,self.r<r_island,:,:]  = 0.0
+                self.Drr[:,self.r<r_island,:,:] = 0.0
+                self.r  = np.insert(self.r, np.argmax(self.r>r_island), [r_island])
+                _ins_array = np.zeros((self.t.size, self.xi.size, self.p.size))
+                self.Ar  = np.insert(self.Ar,  0, _ins_array, axis=1)
+                self.Drr = np.insert(self.Drr, 0, _ins_array, axis=1)
                 
-        return r_coeff, Ar_coeff, Drr_coeff
                 
-    def tBeforeOnsetSvenssonCoeff(t_coeff, r_coeff, xi_coeff, p_coeff, Ar_coeff, Drr_coeff, t_before_onset = None, t_ramp = 1e-4):
-        # Adds zeros to the transport coefficients for times before the desired onset
+    def setTBeforeOnset(self, t_before_onset = None, t_ramp = 1e-4):
+        # Helper function that adds zeros to the transport coefficients for times before the desired onset
         if t_before_onset is None:
-            t_before_onset = t_coeff[0]
+            t_before_onset = self.t[0]
             
-        t_coeff = t_coeff - t_coeff[0] + t_before_onset + t_ramp
+        self.t = self.t - self.t[0] + t_before_onset + t_ramp
             
         if t_before_onset>t_ramp:
-            t_coeff  = np.insert(t_coeff, 0, [0,t_before_onset])
-            _ins_array = np.zeros((2,r_coeff.size, xi_coeff.size, p_coeff.size))
+            self.t  = np.insert(self.t, 0, [0,t_before_onset])
+            _ins_array = np.zeros((2,self.r.size, self.xi.size, self.p.size))
         else:
-            t_coeff  = np.insert(t_coeff, 0, [0])
-            _ins_array = np.zeros((r_coeff.size, xi_coeff.size, p_coeff.size))
+            self.t  = np.insert(self.t, 0, [0])
+            _ins_array = np.zeros((self.r.size, self.xi.size, self.p.size))
         # Adding in the leading zeros
-        Ar_coeff  = np.insert(Ar_coeff,  0, _ins_array, axis=0)
-        Drr_coeff = np.insert(Drr_coeff, 0, _ins_array, axis=0)
+        self.Ar  = np.insert(self.Ar,  0, _ins_array, axis=0)
+        self.Drr = np.insert(self.Drr, 0, _ins_array, axis=0)
         if t_before_onset>0 and t_before_onset<t_ramp:
             print('WARNING: Time before onset of Svensson transport coefficients is specified but smaller than ramp-up time!')
             
-        return t_coeff, Ar_coeff, Drr_coeff
         
-    def appendZerosSvenssonCoeff(t_coeff, r_coeff, xi_coeff, p_coeff, Ar_coeff, Drr_coeff, t_ramp = 1e-4):
-            
-        t_coeff  = np.append(t_coeff, [t_coeff[-1]+t_ramp, t_coeff[-1]+t_ramp+1])
-        _ins_array = np.zeros((2,r_coeff.size, xi_coeff.size, p_coeff.size))
+    def appendZeros(self, t_ramp = 1e-4):
+        # Helper function that appends two zeros in the time dimension to the transport coefficients, at times t_ramp and t_ramp+1 seconds
+        # Can be used to turn off the transport at a given time, with a linear ramp down of duration t_ramp  , without stopping the simulation
+           
+        self.t  = np.append(self.t, [self.t[-1]+t_ramp, self.t[-1]+t_ramp+1])
+        _ins_array = np.zeros((2,self.r.size, self.xi.size, self.p.size))
 
         # Adding in the appending zeros
-        Ar_coeff  = np.append(Ar_coeff, _ins_array, axis=0)
-        Drr_coeff = np.append(Drr_coeff, _ins_array, axis=0)
-            
-        return t_coeff, Ar_coeff, Drr_coeff
+        self.Ar  = np.append(self.Ar, _ins_array, axis=0)
+        self.Drr = np.append(self.Drr, _ins_array, axis=0)
                 
     
     def shiftTimeSvensson(self, ds_prev, ds_new):
@@ -231,24 +211,42 @@ class transport_coeffs_reader:
                 
         raise DREAMException('Temperature does not drop below the critical temperature for the TQ onset inside the q=2 flux surface')
         
-    def setDrrFromTQTimeScaleBesselApproximation(self, t_duration, a, Trepr, t_duration_over_t_diffusion = 1):
-        # Estimate the diffusion coefficients based on a desired TQ duration t_duration. This is done assuming
-        # that a fix value of the TQ duration and the diffusion time scale, t_duration_over_t_diffusion, gives
+    def setDrrFromTQTimeScaleBesselApproximation(self, t_duration, a, Trepr, t_duration_over_t_diffusion = 1, t_before_onset = None, t_ramp = 1e-4, r_island = 0.0):
+        # Estimate a radially flat diffusion coefficients based on a desired TQ duration t_duration. This is done assuming
+        # that a fix ratio of the TQ duration and the diffusion time scale, t_duration_over_t_diffusion, gives
         # the desired temperature drop during the TQ duration. The diffusion time scale is calculated assuming a
         # bessel mode-like decay with the transport coefficient taken at the representative temperature Trepr.
         # The diffusion coefficient is then assumed to scale with momentum as p/(1+p^2)
+        
+
+        # Set up the grid on which the diffusion coefficients will be specified
+        if t_duration is None:
+            self.t = np.array([0])
+        else:
+            self.t = np.array([0,t_duration])
+        self.r = np.array([0,a+1e-6])
+        self.xi = np.array([-1,1])
+        self.p = np.linspace(1e-6,100)
+        
+        # Assume no advection
+        self.Ar = np.zeros((len(self.t), len(self.r), len(self.xi), len(self.p)))
+
         
         x1 = 2.4 # First zero of the bessel function (whichever it is...)
         vrepr = np.sqrt(2*e*Trepr/m_e) # thermal velocity corresponding to the representative temperature in m/s
         
         # Estimate the diffusion coefficient at the representative temperature
         Drr_vrepr = t_duration_over_t_diffusion * a**2/(t_duration * x1**2)
+         
+        # Set the p-dependent diffusion coefficient
+        p_dep = self.p/(1+self.p**2)
+        p_dep.reshape(1,1,1,-1)
+        self.Drr = Drr_vrepr / vrepr * c * p_dep * np.ones((len(self.t), len(self.r), len(self.xi), len(self.p)))
         
-        # Find time indices where Drr>0 (set in the constructor)
-        it = np.argwhere(self.Drr[:,0,0,0]>0)[0] 
-        
-        # Rescale the diffusion coefficients>0 to give the desired value at the representative temperature
-        self.Drr *= Drr_vrepr / vrepr * c * self.p[0]/(1+self.p[0]**2) / self.Drr[it,0,0,0]
+        # Set islands and time before onset, if any, and append zeros to turn of the transport after the desired duration
+        self.setRIsland(r_island)
+        self.setTBeforeOnset(t_before_onset, t_ramp)
+        self.appendZeros(t_ramp)
         
         
         
