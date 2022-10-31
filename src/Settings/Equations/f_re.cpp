@@ -160,6 +160,7 @@ void SimulationGenerator::ConstructEquation_f_re(
 						//
 						// i.e. unless pmax is set sufficiently high, the
 						// density moment of the discretized f_re
+						// will in general be different from the quantity n_re
 						for (len_t j = 0; j < np2; j++)
 							for (len_t i = 0; i < np1; i++)
 								finit[offset + j*np1 + i] = fRE->evaluateFullDistribution(ir, xi[j], p[i]);
