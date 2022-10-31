@@ -24,6 +24,7 @@ option(COLOR_TERMINAL "Allow colourful output" ON)
 option(DREAM_BUILD_TESTS "Build the test framework" ON)
 option(DREAM_BUILD_PYFACE "Build the DREAM Python interface" OFF)
 option(GIT_SUBMODULE "Check submodules during build" ON)
+option(PETSC_WITH_MPI "If ON, indicates that PETSc was linked with MPI" ON)
 
 # Require position-indepdent code when building PyFace
 cmake_dependent_option(
