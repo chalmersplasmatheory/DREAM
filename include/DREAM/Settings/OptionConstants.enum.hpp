@@ -138,7 +138,8 @@ enum linear_solver {
 /////////////////////////////////////
 enum timestepper_type {
     TIMESTEPPER_TYPE_CONSTANT=1,
-    TIMESTEPPER_TYPE_ADAPTIVE=2
+    TIMESTEPPER_TYPE_ADAPTIVE=2,
+	TIMESTEPPER_TYPE_IONIZATION=3
 };
 
 /////////////////////////////////////
@@ -355,8 +356,9 @@ enum eqterm_spi_cloud_radius_mode {
 };
 
 enum eqterm_spi_abl_ioniz_mode {
-    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
-    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
+    EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL=1,
+    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=2,
+    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=3
 };
 
 enum eqterm_spi_magnetic_field_dependence_mode {

@@ -10,7 +10,7 @@
 Welcome to the documentation for DREAM!
 =======================================
 
-DREAM (for *Disruption and Runaway Electron Avoidance Model*) is a scientific
+DREAM (for *Disruption and Runaway Electron Analysis Model*) is a scientific
 code which solves a system of equations describing the evolution of a tokamak
 plasma during a disruption. The tool is primarily designed for studying the
 evolution of runaway electrons in the disruption.
@@ -42,6 +42,7 @@ Table of contents
    compiling
    kernel/index
    frontend/index
+   atomicdata
    start/index
    todo
 
@@ -70,6 +71,12 @@ Table of contents
    </div>
    <div style="clear:both"></div>
    <div class="admonition note" style="width:49%; float:left">
+     <a href="atomicdata.html">
+       <p class="admonition-title">Atomic data</p>
+     </a>
+     <p>Learn how to add support for more elements</p>
+   </div>
+   <div class="admonition note" style="width:49%; float:right">
      <a href="start/examples/index.html">
        <p class="admonition-title">Examples</p>
      </a>
@@ -79,7 +86,7 @@ Table of contents
 
 Introduction
 ************
-The **Disruption Runaway Electron Avoidance Model** DREAM is designed to
+The **Disruption Runaway Electron Analysis Model** DREAM is designed to
 simulate runaway electron generation during a tokamak disruption.
 
 For users
