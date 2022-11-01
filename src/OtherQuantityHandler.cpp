@@ -558,7 +558,7 @@ void OtherQuantityHandler::DefineQuantities() {
 
 				for (len_t j = 0; j < n2_ht; j++) {
 					for (len_t i = 0; i < n1_ht; i++, idx++) {
-						v[idx] = sqrt(1+p[i]*p[i]) * kineticVectorHot[idx] * Vp[j*n1_ht + i];
+						v[ir] = sqrt(1+p[i]*p[i]) * kineticVectorHot[idx] * Vp[j*n1_ht + i];
 					}
 				}
 			}
@@ -655,7 +655,7 @@ void OtherQuantityHandler::DefineQuantities() {
 
 				for (len_t j = 0; j < n2_re; j++) {
 					for (len_t i = 0; i < n1_re; i++, idx++) {
-						v[idx] = sqrt(1+p[i]*p[i]) * kineticVectorRE[idx] * Vp[j*n1_re + i];
+						v[ir] = sqrt(1+p[i]*p[i]) * kineticVectorRE[idx] * Vp[j*n1_re + i];
 					}
 				}
 			}
