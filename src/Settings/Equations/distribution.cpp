@@ -92,8 +92,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
     FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
-    RipplePitchScattering **ripple_Dxx, TimeVaryingBTerm **timevaryingb,
-	bool rescaleMaxwellian
+    RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
+	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -165,10 +165,10 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Synchrotron losses
     enum OptionConstants::eqterm_synchrotron_mode synchmode =
         (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
-    if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
-        eqn->AddTerm(new SynchrotronTerm(
-            grid, gridtype
-        ));
+    if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE) {
+		*synchrotron = new SynchrotronTerm(grid, gridtype);
+        eqn->AddTerm(*synchrotron);
+	}
 
     // Add transport term
     bool hasTransport = ConstructTransportTerm(

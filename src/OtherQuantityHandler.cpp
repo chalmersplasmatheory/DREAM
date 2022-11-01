@@ -417,32 +417,6 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     }
 
-    /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
-    DEF_FL("fluid/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
-        SlowingDownFrequency *nuS = this->REFluid->GetNuS();
-        CollisionQuantity::collqty_settings settings_free;
-        CollisionQuantity::collqty_settings settings_screened;
-        settings_free.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
-        settings_screened.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-        settings_free.collfreq_mode = settings_screened.collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
-        settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-        settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-        settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
-
-
-        std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
-        {
-            real_t v = Constants::c * p/sqrt(1+p*p);
-            return Constants::me*Constants::c*v*p*(nuS->evaluateAtP(ir,p,&settings_screened) - nuS->evaluateAtP(ir,p,&settings_free));
-        });
-        real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
-        real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
-        real_t *vec = qd->StoreEmpty();
-        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-            vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
-    );
-    */
-
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){
@@ -568,6 +542,29 @@ void OtherQuantityHandler::DefineQuantities() {
 		);
 	}
 
+	// Energy loss due to synchrotron force
+	if (tracked_terms->f_hot_synchrotron != nullptr) {
+		DEF_FL("hottail/synchrotron_loss", "Power lost via synchrotron radiation [W]",
+			const len_t nr_ht = hottailGrid->GetNr();
+			const real_t *f_hot = unknowns->GetUnknownData(id_f_hot);
+			this->tracked_terms->f_hot_synchrotron->SetVectorElements(this->kineticVectorHot, f_hot);
+
+			real_t *v = qd->StoreEmpty();
+			for (len_t ir = 0, idx = 0; ir < nr_ht; ir++) {
+				const real_t *Vp = hottailGrid->GetVp(ir);
+				const real_t *p = hottailGrid->GetMomentumGrid(ir)->GetP1();
+				const len_t n1_ht = hottailGrid->GetMomentumGrid(ir)->GetNp1();
+				const len_t n2_ht = hottailGrid->GetMomentumGrid(ir)->GetNp2();
+
+				for (len_t j = 0; j < n2_ht; j++) {
+					for (len_t i = 0; i < n1_ht; i++, idx++) {
+						v[idx] = sqrt(1+p[i]*p[i]) * kineticVectorHot[idx] * Vp[j*n1_ht + i];
+					}
+				}
+			}
+		);
+	}
+
     // runaway/...
     DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeffR();
@@ -636,6 +633,29 @@ void OtherQuantityHandler::DefineQuantities() {
 				for (len_t j_f = 0; j_f < n2_re+1; j_f++) {
 					for (len_t i = 0; i < n1_re; i++) {
 						Axi[(ir*(n2_re+1) + j_f)*n1_re + i] = 0.5 * BA[ir][j_f*n1_re+i] * dB;
+					}
+				}
+			}
+		);
+	}
+
+	// Energy loss due to synchrotron force
+	if (tracked_terms->f_re_synchrotron != nullptr) {
+		DEF_FL("runaway/synchrotron_loss", "Power lost via synchrotron radiation [W]",
+			const len_t nr_re = runawayGrid->GetNr();
+			const real_t *f_re = unknowns->GetUnknownData(id_f_re);
+			this->tracked_terms->f_re_synchrotron->SetVectorElements(this->kineticVectorRE, f_re);
+
+			real_t *v = qd->StoreEmpty();
+			for (len_t ir = 0, idx = 0; ir < nr_re; ir++) {
+				const real_t *Vp = runawayGrid->GetVp(ir);
+				const real_t *p = runawayGrid->GetMomentumGrid(ir)->GetP1();
+				const len_t n1_re = runawayGrid->GetMomentumGrid(ir)->GetNp1();
+				const len_t n2_re = runawayGrid->GetMomentumGrid(ir)->GetNp2();
+
+				for (len_t j = 0; j < n2_re; j++) {
+					for (len_t i = 0; i < n1_re; i++, idx++) {
+						v[idx] = sqrt(1+p[i]*p[i]) * kineticVectorRE[idx] * Vp[j*n1_re + i];
 					}
 				}
 			}
@@ -748,6 +768,32 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     }
     
+	// Other quantities which are generally expensive to store
+	// and which should therefore require some careful consideration
+	// before using.
+    DEF_FL("expensive/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
+        SlowingDownFrequency *nuS = this->REFluid->GetNuS();
+        CollisionQuantity::collqty_settings settings_free;
+        CollisionQuantity::collqty_settings settings_screened;
+        settings_free.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+        settings_screened.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+        settings_free.collfreq_mode = settings_screened.collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
+        settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+        settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+        settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
+
+        std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
+        {
+            real_t v = Constants::c * p/sqrt(1+p*p);
+            return Constants::me*Constants::c*v*p*(nuS->evaluateAtP(ir,p,&settings_screened) - nuS->evaluateAtP(ir,p,&settings_free));
+        });
+        real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+        real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+        real_t *vec = qd->StoreEmpty();
+        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
+    );
+
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
 

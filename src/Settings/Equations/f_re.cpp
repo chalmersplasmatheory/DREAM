@@ -65,7 +65,8 @@ void SimulationGenerator::ConstructEquation_f_re(
         s, MODULENAME, eqsys, id_f_re, runawayGrid, eqsys->GetRunawayGridType(),
         eqsys->GetRunawayCollisionHandler(), addExternalBC, addInternalBC,
         transport, &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
-        &oqty_terms->f_re_ripple_Dxx, &oqty_terms->f_re_timevaryingb
+        &oqty_terms->f_re_ripple_Dxx, &oqty_terms->f_re_synchrotron,
+		&oqty_terms->f_re_timevaryingb
     );
 
     // Add fluid source terms (and kinetic avalanche, if enabled)

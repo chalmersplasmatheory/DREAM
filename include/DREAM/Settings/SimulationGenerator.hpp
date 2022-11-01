@@ -139,8 +139,8 @@ namespace DREAM {
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
             bool, bool, DREAM::FVM::Operator **transport=nullptr,
             DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
-            DREAM::RipplePitchScattering **rps=nullptr, DREAM::TimeVaryingBTerm **tvbt=nullptr,
-			bool rescaleMaxwellian=false
+            DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
+			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
         );
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         static DREAM::TimeVaryingBTerm *ConstructEquation_f_timevaryingb(Settings*, const std::string&, FVM::Grid*);
