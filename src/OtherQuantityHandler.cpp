@@ -542,29 +542,6 @@ void OtherQuantityHandler::DefineQuantities() {
 		);
 	}
 
-	// Energy loss due to synchrotron force
-	if (tracked_terms->f_hot_synchrotron != nullptr) {
-		DEF_FL("hottail/synchrotron_loss", "Power lost via synchrotron radiation [W]",
-			const len_t nr_ht = hottailGrid->GetNr();
-			const real_t *f_hot = unknowns->GetUnknownData(id_f_hot);
-			this->tracked_terms->f_hot_synchrotron->SetVectorElements(this->kineticVectorHot, f_hot);
-
-			real_t *v = qd->StoreEmpty();
-			for (len_t ir = 0, idx = 0; ir < nr_ht; ir++) {
-				const real_t *Vp = hottailGrid->GetVp(ir);
-				const real_t *p = hottailGrid->GetMomentumGrid(ir)->GetP1();
-				const len_t n1_ht = hottailGrid->GetMomentumGrid(ir)->GetNp1();
-				const len_t n2_ht = hottailGrid->GetMomentumGrid(ir)->GetNp2();
-
-				for (len_t j = 0; j < n2_ht; j++) {
-					for (len_t i = 0; i < n1_ht; i++, idx++) {
-						v[ir] = sqrt(1+p[i]*p[i]) * kineticVectorHot[idx] * Vp[j*n1_ht + i];
-					}
-				}
-			}
-		);
-	}
-
     // runaway/...
     DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeffR();
@@ -638,30 +615,6 @@ void OtherQuantityHandler::DefineQuantities() {
 			}
 		);
 	}
-
-	// Energy loss due to synchrotron force
-	if (tracked_terms->f_re_synchrotron != nullptr) {
-		DEF_FL("runaway/synchrotron_loss", "Power lost via synchrotron radiation [W]",
-			const len_t nr_re = runawayGrid->GetNr();
-			const real_t *f_re = unknowns->GetUnknownData(id_f_re);
-			this->tracked_terms->f_re_synchrotron->SetVectorElements(this->kineticVectorRE, f_re);
-
-			real_t *v = qd->StoreEmpty();
-			for (len_t ir = 0, idx = 0; ir < nr_re; ir++) {
-				const real_t *Vp = runawayGrid->GetVp(ir);
-				const real_t *p = runawayGrid->GetMomentumGrid(ir)->GetP1();
-				const len_t n1_re = runawayGrid->GetMomentumGrid(ir)->GetNp1();
-				const len_t n2_re = runawayGrid->GetMomentumGrid(ir)->GetNp2();
-
-				for (len_t j = 0; j < n2_re; j++) {
-					for (len_t i = 0; i < n1_re; i++, idx++) {
-						v[ir] = sqrt(1+p[i]*p[i]) * kineticVectorRE[idx] * Vp[j*n1_re + i];
-					}
-				}
-			}
-		);
-	}
-
 
     // scalar/..
     DEF_SC("scalar/radialloss_n_re", "Rate of runaway number loss through plasma edge, normalized to R0 [s^-1 m^-1]",
