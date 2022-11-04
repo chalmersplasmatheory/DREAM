@@ -5,9 +5,26 @@ import numpy as np
 from imas import imasdef
 import logging
 import os
+import sys
+sys.path.append (os.environ['DREAMPATH']+'/py')
+import h5py
 
+import DREAM
+from DREAM.DREAMSettings import DREAMSettings
+import DREAM.Settings.Equations.IonSpecies as Ions
+import DREAM.Settings.Equations.ElectricField as ElectricField
+'''
+import DREAM.Settings.Equations.DistributionFunction as DistFunc
+import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.Settings.Solver as Solver
+import DREAM.Settings.CollisionHandler as Collisions
+from DREAM.runiface import runiface
+import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
+import DREAM.Settings.Equations.HotElectronDistribution as FHot
+import DREAM.Settings.Solver as Solver
+'''
 
-def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setUpDream=True):
+def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setUpDream=True, wall_radius=-999):
 	
 	# open shot file
 	dataEntry = imas.DBEntry(imasdef.MDSPLUS_BACKEND, tokamak, int(shot), int(run), user_name=user)
@@ -35,6 +52,10 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 	equilibrium = dataEntry.get_slice('equilibrium', time, imasdef.LINEAR_INTERP)
 	wall = dataEntry.get('wall',0)
 	dataEntry.close()
+	
+	ion_names = []
+	ion_densities = []
+	ion_charges = []
 
 	# load data from core profiles with error handling
 	if len(coreprof.profiles_1d[0].grid.rho_tor) == 0:
@@ -47,6 +68,7 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 
 		if len(coreprof.profiles_1d[0].e_field_parallel) != len(cp_radius):
 			logging.warning('The electric field from core profiles IDS seems to be empty!\n')
+			e_field=-999
 		else:
 			e_field = coreprof.profiles_1d[0].e_field_parallel
 			if log:
@@ -65,7 +87,19 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 			n_e = coreprof.profiles_1d[0].electrons.density
 			if log:
 				logging.info('The electron density from core profiles IDS loaded successfully!\n')
+
+		for i in range(len(coreprof.profiles_1d[0].ion)):
+			
+			if len(coreprof.profiles_1d[0].ion[i].density) != len(cp_radius):
+				logging.warning('An ion density from core profiles IDS seems to be empty!\n')
+			else:
+				ion_names.append(coreprof.profiles_1d[0].ion[i].label)
+				ion_densities.append(coreprof.profiles_1d[0].ion[i].density)
+				ion_charges.append(int(coreprof.profiles_1d[0].ion[i].z_ion))
 				
+				if log:
+					logging.info('An ion density from core profiles IDS loaded successfully!\n')
+	
 	if coreprof.vacuum_toroidal_field.r0 == -9e+40:
 		logging.warning('The major radius of the magnetic axis from core profiles IDS seems to be empty!\n')
 	else:
@@ -103,6 +137,7 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 		if log:
 			logging.info('The plasma current from equilibrium IDS loaded successfully!\n')
 
+	#load wall data with error handling
 	if wall.description_2d[0].vessel.unit[0].annular.resistivity == -9e+40:
 		logging.warning('The the wall resistivity from wall IDS seems to be empty!\n')
 	else:
@@ -110,5 +145,46 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 		if log:
 			logging.info('The major radius of the magnetic axis from core profiles IDS loaded successfully!\n')
 
-	return 'DONE'
 
+	if setUpDream:
+		
+		ds = DREAMSettings()
+
+		if max(cp_radius) > max(eq_radius):
+			ds.radialgrid.setMinorRadius(max(cp_radius))
+			ds.radialgrid.setNr(len(cp_radius))
+		else:
+			ds.radialgrid.setMinorRadius(max(eq_radius))
+			ds.radialgrid.setNr(len(eq_radius))
+			
+		if wall_radius!=-999:
+			ds.radialgrid.setWallRadius(wall_radius)
+		else:
+			raise Exception('If you want to set up a dream settings object, please specify the wall radius!')
+		
+		ds.radialgrid.setMajorRadius(R)
+		ds.radialgrid.setB0(abs(B0))
+		
+		for i in range(len(coreprof.profiles_1d[0].ion)):			
+			ds.eqsys.n_i.addIon(ion_names[i], Z=ion_charges[i], iontype=Ions.IONS_DYNAMIC, Z0=ion_charges[i], n=ion_densities[i], r=cp_radius)
+			
+		ds.eqsys.T_cold.setPrescribedData(T_cold, radius=cp_radius)
+		
+		if e_field!=999:
+			ds.eqsys.E_field.setType(ElectricField.TYPE_SELFCONSISTENT)
+			ds.eqsys.E_field.setInitialProfile(efield=e_field, radius=cp_radius)
+		
+		else:
+			inverse_wall_time = resistivity / (4*np.pi*1e-7*R*np.log(R/wall_radius))
+			if log:
+				logging.info('The iverse wall time is %s 1/s with the given wall radius.\n', inverse_wall_time)
+		
+			ds.eqsys.E_field.setType(ElectricField.TYPE_SELFCONSISTENT)
+			ds.eqsys.E_field.setBoundaryCondition(ElectricField.BC_TYPE_SELFCONSISTENT, inverse_wall_time=inverse_wall_time, R0=R)
+		
+		ds.eqsys.j_ohm.setInitialProfile(j_tor, radius=eq_radius, Ip0=Ip)
+		
+		return ds
+	
+	else:
+		return 'TO DO'
