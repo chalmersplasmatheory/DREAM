@@ -78,6 +78,33 @@ class DistributionFunction(KineticQuantity):
         return self.grid.integrate(j)
 
 
+    def pressure(self, t=None, r=None):
+        """
+        Evaluates the parallel and perpendicular pressure moments of the
+        distribution function according to
+
+          P_||    = mc^2 <p_||^2 / sqrt(1+p^2)>
+          P_\perp = mc^2 <p_\perp^2 / (2*sqrt(1+p^2))>
+
+        where <...> denotes an integral over all of momentum space. The
+        pressure is returned in units of Pa.
+
+        :returns: Tuple consisting of parallel and perpendicular pressures.
+        """
+        p, xi  = self.momentumgrid.p1[:], self.momentumgrid.p2[:]
+        P, XI  = np.meshgrid(p, xi)
+        PPAR2  = (P*XI)**2
+        PPERP2 = P**2*(1-XI**2)
+
+        GAMMA = self.momentumgrid.getGamma()
+        mc2 = scipy.constants.m_e * scipy.constants.c**2
+
+        Ppar = self.moment(PPAR2/GAMMA, t=t, r=r) * mc2
+        Pperp = self.moment(PPERP2/GAMMA, t=t, r=r) * 0.5*mc2
+
+        return Ppar, Pperp
+
+
     def synchrotron(self, model='spectrum', B=3.1, wavelength=700e-9, t=None, r=None):
         """
         Returns the synchrotron radiation emitted by this distribution function
