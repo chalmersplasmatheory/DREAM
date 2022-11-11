@@ -77,7 +77,7 @@ namespace DREAM {
 
         // indices to unknownquantities
         len_t 
-            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Wcold,
+            id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
             id_n_re_neg=0;
 

@@ -63,7 +63,7 @@ bool TimeStepperConstant::IsFinished() {
 
 /**
  * Returns 'true' if the current time step should be saved to
- * the final output. (Currently, we save all time steps)
+ * the final output.
  */
 bool TimeStepperConstant::IsSaveStep() {
     if (this->nSaveSteps == 0)
