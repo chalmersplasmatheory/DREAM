@@ -245,6 +245,8 @@ namespace DREAM {
         static struct dream_4d_data *LoadDataTR2P(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataIonR(const std::string&, Settings*, const std::string& name="data");
         static real_t *LoadDataIonR(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+		static void DefineDataIonT(const std::string&, Settings*, const std::string& name="data");
+		static MultiInterpolator1D *LoadDataIonT(const std::string&, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
         static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
 

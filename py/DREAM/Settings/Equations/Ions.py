@@ -48,12 +48,14 @@ class Ions(UnknownQuantity):
         self.rNeutralPrescribedAdvection = None
         self.tChargedPrescribedAdvection = None
         self.tNeutralPrescribedAdvection = None
+        self.tSourceTerm                 = None
 
         self.ionization = ionization
         self.typeTi = IONS_T_I_NEGLECT
         
         self.advectionInterpolationCharged = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.advectionInterpolationNeutral = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
+
 
     def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT, 
         charged_diffusion_mode=ION_CHARGED_DIFFUSION_MODE_NONE, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None,
@@ -135,6 +137,27 @@ class Ions(UnknownQuantity):
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
 
 
+    def addIonSource(self, species, n=None, t=None, Z0=0):
+        """
+        Add a source term for the specified ion species.
+        """
+        if t is None:
+            t = self.tSourceTerm
+        elif self.tSourceTerm is not None and not np.all(t == self.tSourceTerm):
+            raise EquationException(f"The time grid used for ion sources must be the same for all ion species.")
+            
+        found = False
+        for ion in self.ions:
+            if ion.name == species:
+                ion.initialize_source(n=n, t=t, Z0=Z0)
+                found = True
+
+                self.tSourceTerm = ion.getSourceTime()
+
+        if not found:
+            raise EquationException(f"No ion species with name '{species}' has been added to the simulation. Unable to add source term.")
+
+
     def changeRadialGrid(self, r):
         """
         Change the radial grid used for the ion species.
@@ -161,12 +184,14 @@ class Ions(UnknownQuantity):
         """
         return [ion.getZ() for ion in self.ions]
 
+
     def getIsotopes(self):
         """
         Returns a list of the isotopes of the various ion species
         contained by this object.
         """
         return [ion.getIsotope() for ion in self.ions]
+
 
     def getSPIMolarFraction(self):
         """
@@ -491,6 +516,8 @@ class Ions(UnknownQuantity):
         initial = None
         initialTi = None
         prescribed = None
+        sourceterm = None
+        sourceterm_types = []
         charged_prescribed_diffusion = None
         neutral_prescribed_diffusion = None
         charged_prescribed_advection = None
@@ -510,6 +537,7 @@ class Ions(UnknownQuantity):
             elif ion.hydrogen:
                 hydrogennames += '{};'.format(ion.getName())
 
+            # Set prescribed/initial density
             if ion.getTime() is None:
                 if initial is None:
                     initial = np.copy(ion.getDensity())
@@ -520,6 +548,14 @@ class Ions(UnknownQuantity):
                     prescribed = np.copy(ion.getDensity())
                 else:
                     prescribed = np.concatenate((prescribed, ion.getDensity()))
+
+            # Construct source term
+            sourceterm_types.append(ion.getSourceType())
+            if sourceterm is None:
+                sourceterm = np.copy(ion.getSourceDensity())
+            else:
+                sourceterm = np.concatenate((sourceterm, ion.getSourceDensity()))
+
             if initialTi is None:
                 initialTi = np.copy(ion.getTemperature())
             else:
@@ -611,6 +647,13 @@ class Ions(UnknownQuantity):
                 'r': self.rNeutralPrescribedAdvection,
                 't': self.tNeutralPrescribedAdvection,
                 'x': neutral_prescribed_advection
+            }
+
+        if self.tSourceTerm is not None:
+            data['ion_source_types'] = sourceterm_types
+            data['ion_source'] = {
+                't': self.tSourceTerm,
+                'x': sourceterm
             }
         
         # Flux limiter settings
