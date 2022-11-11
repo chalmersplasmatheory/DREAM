@@ -276,17 +276,17 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                 );
                 [[fallthrough]];
             case OptionConstants::ION_DATA_EQUILIBRIUM:
-                nEquil++;
+                nEquil++;              
                 if(ih->GetZ(iZ)==1 && opacity_mode[iZ]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            eqn->AddTerm(new LyOpaqueDIonRateEquation(
 		                fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),
 		                addFluidIonization, addFluidJacobian, false, amjuel
 		            ));		            
                 }else{
-		            eqn->AddTerm(new IonRateEquation(
-		                fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-		                addFluidIonization, addFluidJacobian, false
-		            ));
+                	    IonRateEquation *ire = new IonRateEquation(fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
+		                addFluidIonization, addFluidJacobian, false);
+		            eqn->AddTerm(ire);
+		            eqsys->AddIonRateEquation(ire);
                 }
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid

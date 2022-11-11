@@ -9,6 +9,7 @@ from . DREAMException import DREAMException
 from . DREAMOutput import DREAMOutput
 from . DREAMSettings import DREAMSettings
 
+from subprocess import TimeoutExpired
 
 DREAMPATH = None
 

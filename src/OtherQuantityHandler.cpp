@@ -46,11 +46,12 @@ OtherQuantityHandler::OtherQuantityHandler(
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
     std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
-    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
+    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms,
+    std::vector<IonRateEquation*> ionRateEquations
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), ionRateEquations(ionRateEquations) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -661,6 +662,75 @@ void OtherQuantityHandler::DefineQuantities() {
             qd->Store(&v);
         );
     }
+    
+    // Diagnostics for ion rate equations
+    const len_t nChargeStates = this->ions->GetNzs();
+    DEF_FL_MUL("fluid/ni_posIonization", nChargeStates, "Positive ionization term in ion rate equation",
+        real_t *v = qd->StoreEmpty();
+        len_t offset = 0;
+        const len_t nr = this->fluidGrid->GetNr();
+        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
+            IonRateEquation *ire = this->ionRateEquations[iz];
+            len_t Z = ire->GetZ();
+		
+            real_t **t = ire->GetPositiveIonizationTerm();
+            for (len_t Z0 = 0; Z0 <= Z; Z0++)
+                for (len_t ir = 0; ir < nr; ir++)
+                    v[offset+Z0*nr+ir] = t[Z0][ir];
+            offset+=(Z+1)*nr;
+        }
+    );
+
+    // Diagnostics for ion rate equations
+    DEF_FL_MUL("fluid/ni_negIonization", nChargeStates, "Negative ionization term in ion rate equation",
+        real_t *v = qd->StoreEmpty();
+        len_t offset = 0;
+        const len_t nr = this->fluidGrid->GetNr();
+        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
+            IonRateEquation *ire = this->ionRateEquations[iz];
+            len_t Z = ire->GetZ();
+
+            real_t **t = ire->GetNegativeIonizationTerm();
+            for (len_t Z0 = 0; Z0 <= Z; Z0++)
+                for (len_t ir = 0; ir < nr; ir++)
+                    v[offset+Z0*nr+ir] = t[Z0][ir];
+            offset+=(Z+1)*nr;
+        }
+    );
+
+    // Diagnostics for ion rate equations
+    DEF_FL_MUL("fluid/ni_posRecombination", nChargeStates, "Positive recombination term in ion rate equation",
+        real_t *v = qd->StoreEmpty();
+        len_t offset = 0;
+        const len_t nr = this->fluidGrid->GetNr();
+        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
+            IonRateEquation *ire = this->ionRateEquations[iz];
+            len_t Z = ire->GetZ();
+
+            real_t **t = ire->GetPositiveRecombinationTerm();
+            for (len_t Z0 = 0; Z0 <= Z; Z0++)
+                for (len_t ir = 0; ir < nr; ir++)
+                    v[offset+Z0*nr+ir] = t[Z0][ir];
+            offset+=(Z+1)*nr;
+        }
+    );
+
+    // Diagnostics for ion rate equations
+    DEF_FL_MUL("fluid/ni_negRecombination", nChargeStates, "Negative recombination term in ion rate equation",
+        real_t *v = qd->StoreEmpty();
+        len_t offset = 0;
+        const len_t nr = this->fluidGrid->GetNr();
+        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
+            IonRateEquation *ire = this->ionRateEquations[iz];
+            len_t Z = ire->GetZ();
+
+            real_t **t = ire->GetNegativeRecombinationTerm();
+            for (len_t Z0 = 0; Z0 <= Z; Z0++)
+                for (len_t ir = 0; ir < nr; ir++)
+                    v[offset+Z0*nr+ir] = t[Z0][ir];
+            offset+=(Z+1)*nr;
+        }
+    );
 
     if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
         this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {

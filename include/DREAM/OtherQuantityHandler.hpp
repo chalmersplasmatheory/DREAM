@@ -23,6 +23,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
@@ -59,7 +60,7 @@ namespace DREAM {
             // Hyperresistive diffusion term
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
         };
-
+    
     protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
@@ -93,6 +94,7 @@ namespace DREAM {
         real_t evaluateMagneticEnergy();
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
+        std::vector<IonRateEquation*> ionRateEquations;
 
     public:
         OtherQuantityHandler(
@@ -100,7 +102,7 @@ namespace DREAM {
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
             std::vector<UnknownQuantityEquation*>*, IonHandler*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
-            struct eqn_terms*
+            struct eqn_terms*, std::vector<IonRateEquation*>
         );
         virtual ~OtherQuantityHandler();
 

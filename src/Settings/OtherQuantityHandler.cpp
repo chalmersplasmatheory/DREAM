@@ -36,7 +36,7 @@ void SimulationGenerator::ConstructOtherQuantityHandler(
         eqsys->GetPostProcessor(), eqsys->GetREFluid(), eqsys->GetUnknownHandler(),
         eqsys->GetEquations(), eqsys->GetIonHandler(), eqsys->GetFluidGrid(),
         eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(), eqsys->GetScalarGrid(),
-        oqty_terms
+        oqty_terms, eqsys->GetIonRateEquations()
     );
 
     const vector<string> other = s->GetStringList(MODULENAME "/include");
