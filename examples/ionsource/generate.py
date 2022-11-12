@@ -29,7 +29,7 @@ ds.eqsys.T_cold.setPrescribedData(T)
 
 # Configure ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=n0)
-ds.eqsys.n_i.addIonSource('D', n=1e19)  # constant Z0=0 source
+ds.eqsys.n_i.addIonSource('D', dNdt=1e19)  # constant Z0=0 source
 
 ds.hottailgrid.setEnabled(False)
 ds.runawaygrid.setEnabled(False)

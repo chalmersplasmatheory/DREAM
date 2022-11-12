@@ -137,9 +137,14 @@ class Ions(UnknownQuantity):
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
 
 
-    def addIonSource(self, species, n=None, t=None, Z0=0):
+    def addIonSource(self, species, dNdt=None, t=None, Z0=0):
         """
         Add a source term for the specified ion species.
+
+        :param species: Name of the ion species to add this source term to.
+        :param dNdt:    Number of particles to add per unit time.
+        :param t:       Time grid associated with ``dNdt`` (if any).
+        :param Z0:      For scalar or 1D ``dNdt``, the charge state for which to add the source term.
         """
         if t is None:
             t = self.tSourceTerm
@@ -149,7 +154,7 @@ class Ions(UnknownQuantity):
         found = False
         for ion in self.ions:
             if ion.name == species:
-                ion.initialize_source(n=n, t=t, Z0=Z0)
+                ion.initialize_source(n=dNdt, t=t, Z0=Z0)
                 found = True
 
                 self.tSourceTerm = ion.getSourceTime()
