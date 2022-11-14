@@ -293,7 +293,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 						addFluidIonization, addFluidJacobian, false
 					);
 		            eqn->AddTerm(ire);
-					oqty_terms->ni_rates.push.back(ire);
+					oqty_terms->ni_rates.push_back(ire);
                 }
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid

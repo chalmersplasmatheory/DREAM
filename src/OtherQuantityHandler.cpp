@@ -46,12 +46,11 @@ OtherQuantityHandler::OtherQuantityHandler(
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
     std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
-    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms,
-    std::vector<IonRateEquation*> ionRateEquations
+    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms), ionRateEquations(ionRateEquations) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -676,8 +675,8 @@ void OtherQuantityHandler::DefineQuantities() {
         real_t *v = qd->StoreEmpty();
         len_t offset = 0;
         const len_t nr = this->fluidGrid->GetNr();
-        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
-            IonRateEquation *ire = this->ionRateEquations[iz];
+        for (len_t iz = 0; iz < this->tracked_terms->ni_rates.size(); iz++) {
+            IonRateEquation *ire = this->tracked_terms->ni_rates[iz];
             len_t Z = ire->GetZ();
 		
             real_t **t = ire->GetPositiveIonizationTerm();
@@ -693,8 +692,8 @@ void OtherQuantityHandler::DefineQuantities() {
         real_t *v = qd->StoreEmpty();
         len_t offset = 0;
         const len_t nr = this->fluidGrid->GetNr();
-        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
-            IonRateEquation *ire = this->ionRateEquations[iz];
+        for (len_t iz = 0; iz < this->tracked_terms->ni_rates.size(); iz++) {
+            IonRateEquation *ire = this->tracked_terms->ni_rates[iz];
             len_t Z = ire->GetZ();
 
             real_t **t = ire->GetNegativeIonizationTerm();
@@ -710,8 +709,8 @@ void OtherQuantityHandler::DefineQuantities() {
         real_t *v = qd->StoreEmpty();
         len_t offset = 0;
         const len_t nr = this->fluidGrid->GetNr();
-        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
-            IonRateEquation *ire = this->ionRateEquations[iz];
+        for (len_t iz = 0; iz < this->tracked_terms->ni_rates.size(); iz++) {
+            IonRateEquation *ire = this->tracked_terms->ni_rates[iz];
             len_t Z = ire->GetZ();
 
             real_t **t = ire->GetPositiveRecombinationTerm();
@@ -727,8 +726,8 @@ void OtherQuantityHandler::DefineQuantities() {
         real_t *v = qd->StoreEmpty();
         len_t offset = 0;
         const len_t nr = this->fluidGrid->GetNr();
-        for (len_t iz = 0; iz < this->ionRateEquations.size(); iz++) {
-            IonRateEquation *ire = this->ionRateEquations[iz];
+        for (len_t iz = 0; iz < this->tracked_terms->ni_rates.size(); iz++) {
+            IonRateEquation *ire = this->tracked_terms->ni_rates[iz];
             len_t Z = ire->GetZ();
 
             real_t **t = ire->GetNegativeRecombinationTerm();
