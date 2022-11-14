@@ -27,7 +27,6 @@ namespace DREAM { class EquationSystem; }
 #include "FVM/UnknownQuantityHandler.hpp"
 //#include "IonHandler.hpp"
 #include "FVM/QuantityData.hpp"
-#include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 
 namespace DREAM {
     class EquationSystem {
@@ -212,10 +211,6 @@ namespace DREAM {
             this->timingStdout = stdout;
             this->timingFile = file;
         }
-        std::vector<IonRateEquation*> ire;
-        void AddIonRateEquation(IonRateEquation*);
-        
-        std::vector<IonRateEquation*> GetIonRateEquations();
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {
