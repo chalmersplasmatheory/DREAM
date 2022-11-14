@@ -101,7 +101,10 @@ len_t SimulationGenerator::GetNumberOfIonSpecies(Settings *s) {
  * Construct the equation governing the evolution of the
  * ion densities for each charge state.
  */
-void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings *s, ADAS *adas, AMJUEL *amjuel) {
+void SimulationGenerator::ConstructEquation_Ions(
+	EquationSystem *eqsys, Settings *s, ADAS *adas, AMJUEL *amjuel,
+	struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
     const real_t t0 = 0;
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -292,15 +295,19 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             case OptionConstants::ION_DATA_EQUILIBRIUM:
                 nEquil++;
                 if(ih->GetZ(iZ)==1 && opacity_mode[iZ]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
-		            eqn->AddTerm(new LyOpaqueDIonRateEquation(
+		            LyOpaqueDIonRateEquation *ire = new LyOpaqueDIonRateEquation(
 		                fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),
 		                addFluidIonization, addFluidJacobian, false, amjuel
-		            ));		            
+					);
+					eqn->AddTerm(ire);		            
+					oqty_terms->ni_rates.push_back(ire);
                 }else{
-		            eqn->AddTerm(new IonRateEquation(
-		                fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-		                addFluidIonization, addFluidJacobian, false
-		            ));
+					IonRateEquation *ire = new IonRateEquation(
+						fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
+						addFluidIonization, addFluidJacobian, false
+					);
+		            eqn->AddTerm(ire);
+					oqty_terms->ni_rates.push_back(ire);
                 }
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid
