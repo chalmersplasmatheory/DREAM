@@ -147,7 +147,7 @@ namespace DREAM {
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
-        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*);
+        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_Ions_abl(EquationSystem*, Settings*, ADAS*, AMJUEL*);
         static void ConstructEquation_Ion_Ni(EquationSystem*, Settings*);
         static void ConstructEquation_T_i(EquationSystem*, Settings*);

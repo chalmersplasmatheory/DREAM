@@ -23,6 +23,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
@@ -66,8 +67,10 @@ namespace DREAM {
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
             // Hyperresistive diffusion term
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
+			// List of ion rate equations for each ion species
+			std::vector<IonRateEquation*> ni_rates;
         };
-
+    
     protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
