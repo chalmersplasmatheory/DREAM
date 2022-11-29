@@ -91,6 +91,24 @@ void IonRateEquation::AllocateRateCoefficients() {
         this->PartialNIon[i] = this->PartialNIon[i-1] + Nr;
         this->PartialTIon[i] = this->PartialTIon[i-1] + Nr;
     }
+    
+    // Diagnostic utilities
+    this->posIonizTerm = new real_t*[(Zion+1)];
+    this->negIonizTerm = new real_t*[(Zion+1)];
+    this->posRecTerm = new real_t*[(Zion+1)];
+    this->negRecTerm = new real_t*[(Zion+1)];
+    
+    this->posIonizTerm[0] = new real_t[Nr*(Zion+1)];
+    this->negIonizTerm[0] = new real_t[Nr*(Zion+1)];
+    this->posRecTerm[0] = new real_t[Nr*(Zion+1)];
+    this->negRecTerm[0] = new real_t[Nr*(Zion+1)];
+    
+    for (len_t i = 1; i <= Zion; i++) {
+    	this->posIonizTerm[i] = this->posIonizTerm[i-1] + Nr;
+        this->negIonizTerm[i] = this->negIonizTerm[i-1] + Nr;
+        this->posRecTerm[i] = this->posRecTerm[i-1] + Nr;
+        this->negRecTerm[i] = this->negRecTerm[i-1] + Nr;
+    }
 }
 
 /**
@@ -110,6 +128,16 @@ void IonRateEquation::DeallocateRateCoefficients() {
     delete [] this->Rec;
     delete [] this->PartialNRec;
     delete [] this->PartialTRec;
+    
+    delete [] this->posIonizTerm[0];
+    delete [] this->negIonizTerm[0];
+    delete [] this->posRecTerm[0];
+    delete [] this->negRecTerm[0];
+    
+    delete [] this->posIonizTerm;
+    delete [] this->negIonizTerm;
+    delete [] this->posRecTerm;
+    delete [] this->negRecTerm;
 }
 
 /**
@@ -150,6 +178,11 @@ void IonRateEquation::Rebuild(
             Ion[Z0][i]         = 0;
             PartialNIon[Z0][i] = 0;
             PartialTIon[Z0][i] = 0;
+            
+            posIonizTerm[Z0][i] = 0;
+            negIonizTerm[Z0][i] = 0;
+            posRecTerm[Z0][i] = 0;
+            negRecTerm[Z0][i] = 0;
         }
     }
     // if not covered by the kinetic ionization model, set fluid ionization rates
@@ -228,13 +261,15 @@ void IonRateEquation::SetCSMatrixElements(
     FVM::Matrix *mat, real_t*, const len_t iIon, const len_t Z0, const len_t rOffset, SetMode sm
 ) {
     bool setIonization = addFluidIonization || (sm==JACOBIAN&&addFluidJacobian);
-    #define NI(J,V) \
+    const real_t *nions = this->unknowns->GetUnknownData(id_ions);
+    #define NI(J,V,DIAG) \
         do { \
             if (std::abs((V)) > 1e-40) { \
                 mat->SetElement(\
                     rOffset+ir, rOffset+ir+(J)*Nr, \
                     (V) \
                 ); \
+                if (sm!=JACOBIAN) this->DIAG ## Term[Z0][ir] += (V)*nions[rOffset+ir+(J)*Nr]; \
             } \
         } while (false)
     #   include "IonRateEquation.set.cpp"
@@ -255,12 +290,11 @@ void IonRateEquation::SetCSVectorElements(
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     bool setIonization = addFluidIonization;
-    #define NI(J,V) \
+    #define NI(J,V,DIAG) \
         do { \
-            if (nions[rOffset+ir+(J)*Nr] > 1 && std::abs((V)) > 1e-40) { \
                 vec[rOffset+ir] += (V) * nions[rOffset+ir+(J)*Nr]; \
-            } \
-        } while (false)
+                this->DIAG ## Term[Z0][ir] += (V) * nions[rOffset+ir+(J)*Nr]; \
+                    } while (false)
     #   include "IonRateEquation.set.cpp"
     #undef NI
 }
