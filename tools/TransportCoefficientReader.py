@@ -248,6 +248,29 @@ class TransportCoefficientReader:
         self.setTBeforeOnset(t_before_onset, t_ramp)
         self.appendZeros(t_ramp)
         
+    def setPrecribedHyperResistivity(ds, Lambda0, Lambda1=0, t_before_onset = None, t_ramp = 1e-4, t_duration = None, t_sim_start = 0, r_island = 0.0, a_minor = None):
+        if a_minor is None:
+            a_minor = ds.radialgrid.a
+        
+        rLambda = np.array([0, a_minor])
+        
+        if t_before_onset is None:
+            if t_duration is None:
+                tLambda = np.array([0])
+                Lambda_t_vec = np.array([Lambda0]).reshape(-1,1)
+            else:
+                tLambda = np.array([0, t_duration, t_ramp+t_duration, t_ramp+t_duration+1])
+                Lambda_t_vec = np.array([Lambda0,Lambda0,Lambda1,Lambda1]).reshape(-1,1)
+        else:
+            if t_duration is None:
+                tLambda = np.array([0,t_before_onset, t_before_onset+t_ramp, t_before_onset+t_ramp+1])
+                Lambda_t_vec = np.array([0,0,Lambda0,Lambda0]).reshape(-1,1)   
+            else:
+                tLambda = np.array([0,t_before_onset, t_before_onset+t_ramp, t_before_onset+t_ramp+t_duration, t_before_onset+2*t_ramp+t_duration, t_before_onset+2*t_ramp+t_duration+1])
+                Lambda_t_vec = np.array([0,0,Lambda0,Lambda0,Lambda1,Lambda1]).reshape(-1,1)        
+
+        Lambda = Lambda_t_vec * np.ones((len(tLambda),len(rLambda)))
+        ds.eqsys.psi_p.setHyperresistivity(Lambda, radius=rLambda, times=tLambda)
         
         
 
