@@ -205,7 +205,7 @@ class TransportCoefficientReader:
             itTQHasStarted = np.any((doObj.eqsys.T_cold.data[:,:]<Tcrit)*(doObj.grid.r<rcrit),1)
             if np.any(itTQHasStarted):
                 it = np.argwhere(itTQHasStarted)[0]
-                return doObj.grid.t[it] + tBeforeCurrentRestart
+                return doObj.grid.t[it][0] + tBeforeCurrentRestart
             else:
                 tBeforeCurentRestart = tBeforeCurrentRestart + doObj.grid.t[-1]
                 
