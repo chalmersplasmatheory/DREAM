@@ -1,4 +1,4 @@
-# Load data from IDS format and save DREAM output to IDS format
+# Functions to load data from IDS format and save DREAM output to IDS format
 
 import imas
 import numpy as np
@@ -6,23 +6,15 @@ from imas import imasdef
 import logging
 import os
 import sys
-sys.path.append (os.environ['DREAMPATH']+'/py')
+#sys.path.append (os.environ['DREAMPATH']+'/py')
 import h5py
 
 import DREAM
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.ElectricField as ElectricField
-'''
-import DREAM.Settings.Equations.DistributionFunction as DistFunc
-import DREAM.Settings.Equations.RunawayElectrons as Runaways
-import DREAM.Settings.Solver as Solver
-import DREAM.Settings.CollisionHandler as Collisions
-from DREAM.runiface import runiface
 import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
-import DREAM.Settings.Equations.HotElectronDistribution as FHot
-import DREAM.Settings.Solver as Solver
-'''
+
 
 def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setUpDream=True, wall_radius=-999):
 	
@@ -157,20 +149,21 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 			ds.radialgrid.setMinorRadius(max(eq_radius))
 			ds.radialgrid.setNr(len(eq_radius))
 			
-		if wall_radius!=-999:
-			ds.radialgrid.setWallRadius(wall_radius)
-		else:
+		if wall_radius == -999:
 			raise Exception('If you want to set up a dream settings object, please specify the wall radius!')
-		
+		else:
+			ds.radialgrid.setWallRadius(wall_radius)
+			
 		ds.radialgrid.setMajorRadius(R)
 		ds.radialgrid.setB0(abs(B0))
 		
 		for i in range(len(coreprof.profiles_1d[0].ion)):			
 			ds.eqsys.n_i.addIon(ion_names[i], Z=ion_charges[i], iontype=Ions.IONS_DYNAMIC, Z0=ion_charges[i], n=ion_densities[i], r=cp_radius)
 			
-		ds.eqsys.T_cold.setPrescribedData(T_cold, radius=cp_radius)
+		ds.eqsys.T_cold.setInitialProfile(T_cold, radius=cp_radius)
+		ds.eqsys.T_cold.setType(Tcold.TYPE_SELFCONSISTENT)
 		
-		if e_field!=999:
+		if e_field!=-999:
 			ds.eqsys.E_field.setType(ElectricField.TYPE_SELFCONSISTENT)
 			ds.eqsys.E_field.setInitialProfile(efield=e_field, radius=cp_radius)
 		
@@ -187,4 +180,5 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setU
 		return ds
 	
 	else:
+		print('return a list? hdf5?')
 		return 'TO DO'
