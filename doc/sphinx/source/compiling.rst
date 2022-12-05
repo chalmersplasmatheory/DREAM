@@ -123,19 +123,21 @@ compatible compiler is used to compile PETSc):
 
 .. code-block:: bash
 
-   $ ./configure --with-debugging=0 --COPTFLAGS="-O3 -march=native -mtune=native" --CXXOPTFLAGS="-O3 -march=native -mtune=native" --FOPTFLAGS="-O3 -march=native -mtune=native"
+   $ ./configure --with-debugging=0 --with-mpi=0 --COPTFLAGS="-O3 -march=native -mtune=native" --CXXOPTFLAGS="-O3 -march=native -mtune=native" --FOPTFLAGS="-O3 -march=native -mtune=native"
 
 Of course, you may need additional flags specific for your system, and if you
 want support for external solver packages (which we highly recommend!) you will
 also need to append the flags described below.
 
 In the suggested line above, the ``--with-debugging=0`` flag disables all debug
-settings in PETSc and allows compilation with optimizations. The
-``--COPTFLAGS``, ``--CXXOPTFLAGS`` and ``--FOPTFLAGS`` specifies additional
-optimization flags to be passed on to the C, C++ and Fortran compilers while
-building PETSc. In this case, we use the highest optimization level (``-O3``)
-and allow the compiler to use CPU instructions specifically for the system that
-PETSc is being compiled on (``-march=native`` and ``-mtune=native``).
+settings in PETSc and allows compilation with optimizations. The flag
+``--with-mpi=0`` disables support for MPI, which is generally used for 
+parallelizing computations but not enabled in DREAM. The ``--COPTFLAGS``,
+``--CXXOPTFLAGS`` and ``--FOPTFLAGS`` specifies additional optimization flags to
+be passed on to the C, C++ and Fortran compilers while building PETSc. In this
+case, we use the highest optimization level (``-O3``) and allow the compiler to
+use CPU instructions specifically for the system that PETSc is being compiled on
+(``-march=native`` and ``-mtune=native``).
 
 .. warning::
 
