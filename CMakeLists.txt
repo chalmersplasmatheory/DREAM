@@ -36,6 +36,7 @@ cmake_dependent_option(
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 include(CheckPETScRequiresMPI)
+check_petsc_requires_mpi(PETSC_WITH_MPI)
 
 # Get git commit hash
 include(GetGitRevisionDescription)

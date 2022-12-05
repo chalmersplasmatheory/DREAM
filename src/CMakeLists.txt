@@ -251,7 +251,6 @@ target_link_libraries(dream PUBLIC softlib)
 #    target_link_libraries(dream PUBLIC "${SOFTLIB_LIBRARIES}")
 #endif()
 
-check_petsc_requires_mpi(PETSC_WITH_MPI)
 # MPI (just as a dependency for PETSc)
 if (PETSC_WITH_MPI)
 	message(STATUS "PETSc was compiled with MPI. Will attempt to find an MPI installation...")
