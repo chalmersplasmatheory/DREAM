@@ -20,8 +20,8 @@ installed on your system:
 - `HDF5 <https://www.hdfgroup.org>`_
 - `PETSc <https://www.mcs.anl.gov/petsc/index.html>`_
 - OpenMP
-- MPI (for PETSc)
 - Python 3 (required for generating ADAS data)
+- MPI (if PETSc requires MPI)
 
 If you are running Linux, these tools are usually available directly in the
 package repository for your Linux distribution. On distributed computers, you
