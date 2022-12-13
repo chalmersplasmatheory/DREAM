@@ -269,6 +269,8 @@ class TransportCoefficientReader:
                 tLambda = np.array([0,t_before_onset, t_before_onset+t_ramp, t_before_onset+t_ramp+t_duration, t_before_onset+2*t_ramp+t_duration, t_before_onset+2*t_ramp+t_duration+1])
                 Lambda_t_vec = np.array([0,0,Lambda0,Lambda0,Lambda1,Lambda1]).reshape(-1,1)        
 
+        tLambda -= t_sim_start
+
         Lambda = Lambda_t_vec * np.ones((len(tLambda),len(rLambda)))
         ds.eqsys.psi_p.setHyperresistivity(Lambda, radius=rLambda, times=tLambda)
         
