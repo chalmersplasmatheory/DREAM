@@ -85,7 +85,7 @@ jobs:
       - name: Build
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: make
+        run: make VERBOSE=YES
 
       # Runs a set of commands using the runners shell
       #- name: Test
