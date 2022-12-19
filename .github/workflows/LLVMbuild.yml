@@ -40,7 +40,7 @@ jobs:
       # Install dependencies
       - name: Install Ubuntu packages
         working-directory: ${{ github.workspace }}
-        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev
+        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev libomp-dev
 
       # Install PETSc
       - name: Install Python packages
