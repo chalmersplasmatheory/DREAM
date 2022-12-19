@@ -29,7 +29,7 @@ option(PETSC_WITH_MPI "If ON, indicates that PETSc was linked with MPI" ON)
 # Require position-indepdent code when building PyFace
 cmake_dependent_option(
     POS_INDP_CODE "Generate position-independent code in static libraries" OFF
-    "DREAM_BUILD_PYFACAE" ON
+    "DREAM_BUILD_PYFACE" ON
 )
 
 # Add CMake modules
