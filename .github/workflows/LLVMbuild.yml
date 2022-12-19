@@ -51,8 +51,8 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         shell: bash
         env:
-          CC: clang
-          CXX: clang++
+          CC: mpicc -cc=clang
+          CXX: mpicxx -cxx=clang++
         #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.10/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
         run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.10/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
       
