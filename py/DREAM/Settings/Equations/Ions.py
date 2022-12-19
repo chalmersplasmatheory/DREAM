@@ -176,6 +176,17 @@ class Ions(UnknownQuantity):
         return [ion.getSPIMolarFraction() for ion in self.ions]
 
 
+    def getIndex(self, species):
+        """
+        Return the index of the ion species with the specified name.
+        """
+        for iIon in range(len(self.ions)):
+            if self.ions[iIon].getName() == species:
+                return iIon
+
+        raise EquationException(f"No species with name '{species}'.")
+
+
     def getIon(self, i=None):
         """
         Returns the ion species with the specified index or name.
