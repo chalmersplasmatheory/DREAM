@@ -192,6 +192,7 @@ set_target_properties(dream PROPERTIES
 )
 
 if (POS_INDP_CODE)
+	message("++ ++ Position-independent code ++ ++")
     # Make code position-independent (required for linking to Python interface)
     set_property(TARGET dream PROPERTY POSITION_INDEPENDENT_CODE YES)
 endif ()
