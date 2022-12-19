@@ -6,6 +6,8 @@ else()
     cmake_policy(VERSION 3.13)
 endif()
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+
 # Ensure that we build in optimized (Release) mode
 # if not explicitly stated otherwise
 if (NOT CMAKE_BUILD_TYPE)
