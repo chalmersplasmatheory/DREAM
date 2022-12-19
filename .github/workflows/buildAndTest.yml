@@ -80,6 +80,11 @@ jobs:
         shell: bash
         #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.8/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
         run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.10/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON -DINTERPROC_OPTIM=OFF
+
+      - name: Examine configuration
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cat CMakeCache.txt
       
       # Compile and link DREAM
       - name: Build
