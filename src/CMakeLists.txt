@@ -213,16 +213,16 @@ if (MATH_LIBRARY)
 endif()
 
 # Interprocedural optimizations
-if (INTERPROC_OPTIM AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-	message("INTERPROCESS OPTIMIZATIONS ENABLED")
-    include(CheckIPOSupported)
-    # Clang does not support IPO (although Clang++ does), so we need
-    # to explicitly check both C and C++ (since Clang is used for linking)
-    check_ipo_supported(RESULT result LANGUAGES C CXX)
-    if (result)
-        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-endif ()
+#if (INTERPROC_OPTIM AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+#	message("INTERPROCESS OPTIMIZATIONS ENABLED")
+#    include(CheckIPOSupported)
+#    # Clang does not support IPO (although Clang++ does), so we need
+#    # to explicitly check both C and C++ (since Clang is used for linking)
+#    check_ipo_supported(RESULT result LANGUAGES C CXX)
+#    if (result)
+#        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+#    endif()
+#endif ()
 
 # GNU Scientific Library
 find_package(GSL REQUIRED)
