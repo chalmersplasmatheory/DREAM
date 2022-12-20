@@ -1,0 +1,272 @@
+\documentclass{notes}
+
+\usepackage{overpic}
+\usepackage{siunitx}
+
+\title{Magnetic moment conservation for electrons in a time-varying magnetic field}
+\author{Mathias Hoppe}
+\date{2022-10-30}
+
+\newcommand{\Bmin}{B_{\mathrm{min}}}
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\Vp}{\mathcal{V}'}
+
+\newcommand{\ppar}{p_\parallel}
+\newcommand{\pperp}{p_\perp}
+
+\begin{document}
+	\maketitle
+
+	Because of the conservation of magnetic moment, when the magnetic field is
+	varied, the electrons' pitch angles will change. The magnetic moment for a
+	relativistic electron is
+	\begin{equation}
+		\mu = \frac{mc^2\pperp^2}{2B},
+	\end{equation}
+	where $m$ denotes the electron rest mass and $\pperp$ is normalized to $mc$.
+	Consequently, for $\mu$ to be conserved, the perpendicular momentum $\pperp$
+	must change when $B$ changes according to
+	\begin{equation}
+		\pperp = \sqrt{\frac{2\mu B}{mc^2}}.
+	\end{equation}
+	Alternatively, since the total momentum $p$ is conserved, we can express
+	this in terms of the pitch:
+	\begin{equation}
+		\xi = \sqrt{1-\frac{2\mu B}{mc^2p^2}}.
+	\end{equation}
+	The time-rate-of-change of $\pperp$ and $\xi$ are therefore
+	\begin{equation}
+		\begin{aligned}
+			\frac{\partial\pperp}{\partial t} &= \frac{\mu}{c\sqrt{2m\mu B}}
+			\frac{\partial B}{\partial t} =
+			\frac{\mu}{mc^2\pperp}\frac{\partial B}{\partial t},\\
+			%
+			p\frac{\partial\left|\xi\right|}{\partial t} &= -\frac{\mu}{c\sqrt{(mcp)^2-2m\mu B}}
+			\frac{\partial B}{\partial t} =
+			-\frac{\mu}{mc^2\left|\ppar\right|}\frac{\partial B}{\partial t}.
+		\end{aligned}
+	\end{equation}
+	These are also the effective forces acting on all particles in the $\pperp$
+	and $\ppar$ directions (normalized to $mc$),
+	\begin{equation}
+		\begin{aligned}
+			F_\perp &= \frac{\partial\pperp}{\partial t} =
+			\frac{\mu}{c\pperp}\frac{\partial B}{\partial t},\\
+			%
+			F_\parallel &= \frac{\partial\left|\ppar\right|}{\partial t} =
+			-\frac{\mu}{c\left|\ppar\right|}\frac{\partial B}{\partial t}.
+		\end{aligned}
+	\end{equation}
+	The parallel force given here explicitly affects the magnitude of the
+	parallel momentum. To correctly account for the sign of the force we can
+	multiply it by $\mathrm{sgn}\,\ppar$, which cancels the modulus in the
+	denominator.
+
+	To consider what would happen to a population of electrons, we need to
+	evaluate the advection coefficients in $(p,\xi)$ corresponding to the force
+	above. The advection coefficient in the direction of a coordinate $z^m$ is
+	generally given by
+	\begin{equation}
+		A^m = \nabla z^m\cdot\bb{F}.
+	\end{equation}
+	For $(p,\xi)$ coordinates, the relevant contravariant basis vectors are
+	\begin{equation}
+		\nabla p = \hat{p},\quad \nabla\xi = -\frac{\sqrt{1-\xi^2}}{p}\hat{\xi},
+	\end{equation}
+	where the unit vectors $\hat{p}$ and $\hat{\xi}$, as well as the unit
+	vectors $\hat{p}_\parallel$ and $\hat{p}_\perp$ which we have implicitly
+	expressed the force in so far, are related via
+	\begin{equation}
+		\begin{aligned}
+			\hat{p}_\parallel &= \hat{z}, \quad &\hat{p} = \sqrt{1-\xi^2}\left(\hat{x}\cos\varphi + \hat{y}\sin\varphi\right),\\
+			\hat{p}_\perp &= \hat{x}\cos\varphi + \hat{y}\sin\varphi, \quad &\hat{\xi} = \xi\left(\hat{x}\cos\varphi + \hat{y}\sin\varphi\right) - \sqrt{1-\xi^2}\hat{z},
+		\end{aligned}
+	\end{equation}
+	with scalar products
+	\begin{equation}
+		\begin{aligned}
+			\hat{p}_\parallel\cdot\hat{p} &= \xi, \quad
+			&\hat{p}_\perp\cdot\hat{p} &= \sqrt{1-\xi^2},\\
+			\hat{p}_\parallel\cdot\hat{\xi} &= -\sqrt{1-\xi^2},\quad
+			&\hat{p}_\perp\cdot\hat{\xi} &= \xi.
+		\end{aligned}
+	\end{equation}
+	The advection coefficients in $(p,\xi)$ are therefore
+	\begin{equation}\label{eq:Fmu}
+		\begin{aligned}
+			A^p &= F_\parallel\left(\hat{p}_\parallel\cdot\hat{p}\right) + F_\perp\left(\hat{p}_\perp\cdot\hat{p}\right) =
+			\frac{\mu}{cp}\frac{\partial B}{\partial t}\left(-\frac{\xi}{\xi} + \frac{\sqrt{1-\xi^2}}{\sqrt{1-\xi^2}}\right) = 0,\\
+			A^\xi &= -\frac{\sqrt{1-\xi^2}}{p}\left[F_\parallel\left(\hat{p}_\parallel\cdot\hat{\xi}\right) + F_\perp\left(\hat{p}_\perp\cdot\hat{\xi}\right)\right] =
+			-\frac{\sqrt{1-\xi^2}}{p}\frac{\mu}{cp}\frac{\partial B}{\partial t}\left(\frac{\pperp}{\ppar} + \frac{\ppar}{\pperp}\right) =\\
+			&= -\frac{1-\xi^2}{\xi}\frac{mc}{2B}\frac{\partial B}{\partial t}.
+		\end{aligned}
+	\end{equation}
+	This shows that, since $A^p=0$, the force conserves total energy and only
+	transfers momentum between the parallel and perpendicular momentum
+	components. When the magnetic field is decreasing, the pitch must increase,
+	leading to smaller pitch angles for the electrons, and vice versa.
+
+	\section*{Numerical estimates}
+	We can estimate the relative importance of the magnetic compression force by
+	comparing it to the main competing advective process, namely the electric
+	field acceleration. The advection coefficient in the $\xi$ direction for the
+	electric field is
+	\begin{equation}
+		A^\xi_E = eE\frac{\sqrt{1-\xi^2}}{p}.
+	\end{equation}
+	The ration between the electric and magnetic compression forces is
+	therefore
+	\begin{equation}
+		\left|\frac{A^\xi_\mu}{A^\xi_E}\right| =
+			\frac{mc}{e}
+			\left|\frac{p\sqrt{1-\xi^2}}{\xi}\frac{\partial B/\partial t}{2EB}\right|
+			\approx
+			\frac{p\sqrt{1-\xi^2}}{587\left|\xi\right|}\left|\frac{\partial B/\partial t}{2EB}\right|
+	\end{equation}
+	For magnetic compression to be negligible we must have
+	$A^\xi_E/A^\xi_\mu\ll 1$. In TCV, typical values for $E$, $B$ and
+	$\partial B/\partial t$ are
+	\begin{equation*}
+		\begin{aligned}
+			E\approx\SI{0.1}{V/m},\\
+			B\approx\SI{1.4}{T},\\
+			\frac{\partial B}{\partial t}\approx\SI{1}{T/s}.
+		\end{aligned}
+	\end{equation*}
+	Furthermore, the runaways contributing to synchrotron emission tend to have
+	$p\approx 50mc$ and $\xi\approx 0.85$, giving
+	\begin{equation}
+		\left|\frac{A^\xi_\mu}{A^\xi_E}\right| \approx
+			0.18,
+	\end{equation}
+	suggesting that the magnetic compression force on the pitch angles should be
+	small compared to the effect of the electric field.
+
+	\section*{Bounce average}
+	To implement the magnetic compression force~\eqref{eq:Fmu} into \DREAM\ we
+	first need to bounce-average it. The bounce average operator is
+	\begin{equation}
+		\left\{\cdots\right\} = \frac{4\pi^2}{\Vp}
+			\oint\dd\theta\,p^2\frac{B}{\Bmin}\frac{\xi_0}{\xi}\mathcal{J},
+	\end{equation}
+	where $\Vp$ is the phase-space jacobian and $\mathcal{J}$ is the
+	configuration space jacobian. Applying this operator to the compression
+	force yields
+	\begin{equation}
+		\begin{aligned}
+			\left\{ A^\xi \right\} =
+				\frac{mc}{2}\left\{\frac{1-\xi^2}{\xi}\frac{1}{B}\frac{\partial B}{\partial t}\right\}
+		\end{aligned}
+	\end{equation}
+	Since, at the time of writing this, \DREAM\ does not support time-evolving
+	magnetic fields, we should replace $B^{-1}(\partial B/\partial t)$ with a
+	parameter which can be straightforwardly specified by the user. Taking
+	$B\approx B_0R_0/R$, where $B_0$ is the magnetic field strength at $R=R_0$,
+	the advection coefficient can be written
+	\begin{equation}
+		\left\{A^\xi\right\}\approx\frac{mc}{2B_0}\frac{\partial B_0}{\partial t}
+		\left\{\frac{1-\xi^2}{\xi}\right\},
+	\end{equation}
+	where the remaining bounce-average has to be evaluated numerically.
+
+	\section*{Effect in TCV}
+	The effect of the magnetic compression force on the average pitch angle of
+	runaway electrons is illustrated in figure~\ref{fig:TCV}.
+	\begin{figure}
+		\centering
+		\begin{overpic}[width=\textwidth]{figs/TCV_avtheta_magcompr.pdf}
+			\put(44,72){(a)}
+			\put(92,72){(b)}
+			\put(44,29){(c)}
+			\put(92,29){(d)}
+		\end{overpic}
+		\caption{
+			Effect on the average pitch angle of the magnetic compression force
+			when the toroidal magnetic field is decreased at three different
+			rates:
+			$\partial B/\partial t=-\SI{1}{T/s}$,
+			$\partial B/\partial t=-\SI{3}{T/s}$, and
+			$\partial B/\partial t=-\SI{6}{T/s}$. Panel (a) shows the absolute
+			change in the average pitch angle $\langle\theta\rangle$, as a
+			function of momentum, while (c) shows the change in
+			$\langle\theta\rangle$ relative to the case without a magnetic
+			field ramp. In panels (b) and (d), the absolute and relative change
+			in average pitch angle at $p=37.5mc$ is shown as a function of time,
+			illustrating that a steady-state in the pitch angle shift is
+			quickly reached. In panels (b) and (d), the vertical dotted line
+			indicates the approximate time at which the first runaway electrons
+			reach the considered momentum.
+		}
+		\label{fig:TCV}
+	\end{figure}
+
+	%\section*{Analytical estimate}
+	%The effect of the magnetic compression in a runaway plateau can be estimated
+	%using the same approach as Aleynikov and Breizman used for calculating the
+	%pitch angle distribution. When pitch angle scattering and electric field
+	%acceleration (and magnetic compression) approximately balance each other,
+	%the kinetic equation can be written
+	%\begin{equation}
+	%	\frac{\partial f}{\partial t} = \frac{\partial}{\partial\xi}\left[
+	%		\left(1-\xi^2\right)\left(
+	%			-\frac{E}{p}f -
+	%			\frac{\sqrt{1-\xi^2}}{\xi}\frac{\beta}{2} f +
+	%			\frac{\nu_D(p)}{2}\frac{\partial f}{\partial\xi}
+	%		\right)
+	%	\right],
+	%\end{equation}
+	%where we introduced $\beta\equiv B_0^{-1}(\partial B_0/\partial t)$ as it
+	%will prove convenient in the later analysis. Taking the steady-state limit,
+	%we first obtain
+	%\begin{equation}
+	%	\begin{gathered}
+	%		-\frac{E}{p}f -
+	%		\frac{\sqrt{1-\xi^2}}{\xi}\frac{\beta}{2} f +
+	%		\frac{\nu_D(p)}{2}\frac{\partial f}{\partial\xi}
+	%		= 0\\
+	%		%
+	%		\Longleftrightarrow\\
+	%		%
+	%		\left(\frac{E}{p} + \frac{\sqrt{1-\xi^2}}{\xi}\frac{\beta}{2}\right)f =
+	%		\frac{\nu_D}{2}\frac{\partial f}{\partial\xi},
+	%	\end{gathered}
+	%\end{equation}
+	%Substituting $a=2E/p\nu_D$ and $b=\beta/(2\nu_D)$,
+	%we can solve this equation through
+	%\begin{equation}
+	%	\begin{gathered}
+	%		\left(a+2b\frac{\sqrt{1-\xi^2}}{\xi}\right)f = \frac{\partial f}{\partial\xi}\\
+	%		%
+	%		\implies\\
+	%		%
+	%		\int_{f(-1)}^{f(\xi)} \frac{\dd f}{f}
+	%		=
+	%		\int_{-1}^\xi\left(a + 2b\frac{\sqrt{1-x^2}}{x}\right)\,\dd x\\
+	%		%
+	%		\implies\\
+	%		%
+	%		\ln\frac{f(\xi)}{f(-1)} =
+	%		\left[a(\xi+1) + 2b\sqrt{1-\xi^2} + b\ln\frac{1-\sqrt{1-\xi^2}}{1+\sqrt{1-\xi^2}}\right]\\
+	%		%
+	%		\implies\\
+	%		%
+	%		%f(\xi) = f(-1)\left|\xi\right|^{2b}\exp\left[ a(\xi+1) + b\left(1-\xi^2\right)\right] =\\
+	%		f(\xi) = f(-1)\left(\frac{1-\sqrt{1-\xi^2}}{1+\sqrt{1-\xi^2}}\right)^b
+	%		\exp\left[a\left(\xi+1\right) + 2b\sqrt{1-\xi^2}\right]
+	%	\end{gathered}
+	%\end{equation}
+	%Gathering terms independent of $\xi$ in the exponent into the pre-factor,
+	%the distribution can finally be written
+	%\begin{equation}\label{eq:fana}
+	%	f(\xi) = f_0\left(\frac{1-\sqrt{1-\xi^2}}{1+\sqrt{1-\xi^2}}\right)^b
+	%	\ee^{a\xi+2b\sqrt{1-\xi^2}}.
+	%\end{equation}
+	%Next, we will estimate how the emitted synchrotron power depends on $\beta$.
+	%The emitted synchrotron power is proportional to $p_\perp^2$, so the total
+	%power emitted by~\eqref{eq:fana} at a given value of momentum is
+	%proportional to
+	%\begin{equation}
+	%	P = \int_{-1}^1\left(1-\xi^2\right)f\left(\xi\right)\,\dd\xi.
+	%\end{equation}
+
+\end{document}
