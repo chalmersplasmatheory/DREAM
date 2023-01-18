@@ -252,7 +252,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     solver_timeKeeper->StopTimer(timerCqh);
 
     solver_timeKeeper->StartTimer(timerREFluid);
-    this->REFluid -> Rebuild();
+    this->REFluid -> Rebuild(t);
     solver_timeKeeper->StopTimer(timerREFluid);
 
     solver_timeKeeper->StartTimer(timerRebuildTerms);
