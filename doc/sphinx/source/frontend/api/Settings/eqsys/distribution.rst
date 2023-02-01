@@ -825,6 +825,90 @@ Alternatively, a bool may be used to enable/disable synchrotron losses:
    #ds.eqsys.f_re.setSynchrotronMode(False)
 
 
+Time-varying magnetic field
+***************************
+Due to the conservation of magnetic moment, a time-varying magnetic field will
+introduce an effective force acting on the electrons which transfers momentum
+from the parallel to the perpendicular direction (or oppositie direction,
+depending on whether the magnetic field increases or decreases). In terms of
+the magnetic moment :math:`\mu=mc^2p_\perp^2/2B`, the normalized momenta are
+
+.. math::
+
+   p_\parallel &= \sqrt{p^2-\left(\frac{2\mu B}{mc^2}\right)^2},\\
+   p_\perp &= \sqrt{\frac{2\mu B}{mc^2}},
+
+from which the resulting advection coefficient can be derived:
+
+.. math::
+   :label: eq_timevarB_advect
+
+   A^\xi = -\frac{mc}{2B}\frac{1-\xi^2}{\xi}\frac{\mathrm{d}B}{\mathrm{d}t}.
+
+Since, at the time of writing (and implementing this term), DREAM does not
+support actual time-varying magnetic fields, this term only emulates the effect
+of having a time-varying magnetic field. As such, we replace
+:math:`\mathrm{d}B/\mathrm{d}t` with the simpler parameter
+:math:`\mathrm{d}B_0/\mathrm{d}t`, which corresponds to the time variation of
+the on-axis magnetic field strength and is exact in cylindrical geometry where
+:math:`B(R)=B_0R_0/R` holds. The bounce-averaged form of
+:eq:`eq_timevarB_advect` can then be written
+
+.. math::
+
+   \left\{ A^\xi \right\} = -\frac{mc}{2B}\frac{\mathrm{d}B_0}{\mathrm{d}t}
+    \left\{\frac{1-\xi^2}{\xi}\right\},
+
+where curly braces denote a bounce-average.
+
+
+.. warning::
+
+   This operator will **not** actually change the magnetic field strength used
+   by DREAM --- it only emulates the effective force felt by electrons due to
+   the time-varying magnetic field.
+
+Example
+-------
+
+.. code-block:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Eqyations.DistributionFunction as DistFunc
+
+   ds = DREAMSettings()
+   ...
+   # On-axis magnetic field strength (T)
+   B0 = 5.2
+   # Time-derivative of magnetic field strength (T/s)
+   dB0dt = 3.0
+
+   ds.eqsys.f_hot.setTimeVaryingB(True)
+   ds.radialgrid.setTimeVaryingB(dB0dt_B0=dB0dt/B0)
+
+Alternatively, the time-derivative can be made to vary in time itself:
+
+.. code-block:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Eqyations.DistributionFunction as DistFunc
+   import numpy as np
+
+   ds = DREAMSettings()
+   ...
+   # Maximum time to give dB/dt for (s)
+   tMax = 2.0
+   # On-axis magnetic field strength (T)
+   B0 = 5.2
+   # Time-derivative of magnetic field strength (T/s)
+   dB0dt = lambda t : 3.0  + 0.5*tMax
+   # Time points to give dB/dt in
+   t = np.linspace(0, tMax)
+
+   ds.eqsys.f_hot.setTimeVaryingB(True)
+   ds.radialgrid.setTimeVaryingB(dB0dt_B0=dB0dt(t)/B0)
+
+
 Analytical distribution
 ***********************
 DREAM supports the option of replacing the numerical kinetic description

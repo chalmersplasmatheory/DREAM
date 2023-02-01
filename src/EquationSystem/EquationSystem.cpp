@@ -244,9 +244,4 @@ void EquationSystem::Solve() {
         this->REFluid->PrintTimings();
     }
 }
-void EquationSystem::AddIonRateEquation(IonRateEquation *IRE) {
-    this->ire.push_back(IRE);
-}
-std::vector<IonRateEquation*> EquationSystem::GetIonRateEquations()
-    { return ire; }
 

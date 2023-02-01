@@ -25,6 +25,8 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
+#include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
@@ -55,10 +57,18 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+			// Pitch angle advection due to time varying B
+			DREAM::TimeVaryingBTerm *f_hot_timevaryingb=nullptr;
+			DREAM::TimeVaryingBTerm *f_re_timevaryingb=nullptr;
+			// Synchrotron loss term
+			DREAM::SynchrotronTerm *f_hot_synchrotron=nullptr;
+			DREAM::SynchrotronTerm *f_re_synchrotron=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
             // Hyperresistive diffusion term
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
+			// List of ion rate equations for each ion species
+			std::vector<IonRateEquation*> ni_rates;
         };
     
     protected:
@@ -94,7 +104,6 @@ namespace DREAM {
         real_t evaluateMagneticEnergy();
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
-        std::vector<IonRateEquation*> ionRateEquations;
 
     public:
         OtherQuantityHandler(
@@ -102,7 +111,7 @@ namespace DREAM {
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
             std::vector<UnknownQuantityEquation*>*, IonHandler*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
-            struct eqn_terms*, std::vector<IonRateEquation*>
+            struct eqn_terms*
         );
         virtual ~OtherQuantityHandler();
 
