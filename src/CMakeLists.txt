@@ -97,6 +97,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RipplePitchScattering.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
@@ -254,6 +255,7 @@ target_link_libraries(dream PUBLIC softlib)
 
 # MPI (just as a dependency for PETSc)
 if (PETSC_WITH_MPI)
+	message(STATUS "PETSc was compiled with MPI. Will attempt to find an MPI installation...")
 	find_package(MPI COMPONENTS CXX)
 	if (MPI_CXX_FOUND)
 		target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
@@ -263,6 +265,8 @@ if (PETSC_WITH_MPI)
 		set_property(TARGET dream PROPERTY LINK_FLAGS ${MPI_CXX_LINK_FLAGS})
 		target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
 	endif (MPI_CXX_FOUND)
+else (PETSC_WITH_MPI)
+	message(STATUS "PETSc does not require MPI.")
 endif (PETSC_WITH_MPI)
 
 # PETSc

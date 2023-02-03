@@ -2,6 +2,8 @@
 #define _DREAM_EQUATIONS_KINETIC_SYNCHROTRON_TERM_HPP
 
 
+namespace DREAM { class SynchrotronTerm; }
+
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
