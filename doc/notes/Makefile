@@ -3,7 +3,7 @@ TEX=latexmk
 TEXF=-pdf -pdflatex="pdflatex" -outdir="pdf"
 BIB=biber
 
-all: adaptive_timestep discretisation dreicer heat-transport psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
+all: adaptive_timestep discretisation dreicer heat-transport magnetic_compression psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
 
 adaptive_timestep: adaptive_timestep.pdf
 
@@ -12,6 +12,8 @@ discretisation: discretisation.pdf
 dreicer: dreicer.pdf
 
 heat-transport: heat-transport.pdf
+
+magnetic_compression: magnetic_compression.pdf
 
 psi0psi1evaluation: psi0psi1evaluation.pdf
 

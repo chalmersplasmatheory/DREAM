@@ -308,6 +308,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetPoloidalModeNumbers()););
         DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetToroidalModeNumbers()););
     }
+
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
     DEF_FL("fluid/pCrit", "Critical momentum for avalanche, compton and tritium (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
@@ -416,32 +417,6 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     }
 
-    /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
-    DEF_FL("fluid/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
-        SlowingDownFrequency *nuS = this->REFluid->GetNuS();
-        CollisionQuantity::collqty_settings settings_free;
-        CollisionQuantity::collqty_settings settings_screened;
-        settings_free.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
-        settings_screened.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-        settings_free.collfreq_mode = settings_screened.collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
-        settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-        settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-        settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
-
-
-        std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
-        {
-            real_t v = Constants::c * p/sqrt(1+p*p);
-            return Constants::me*Constants::c*v*p*(nuS->evaluateAtP(ir,p,&settings_screened) - nuS->evaluateAtP(ir,p,&settings_free));
-        });
-        real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
-        real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
-        real_t *vec = qd->StoreEmpty();
-        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-            vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
-    );
-    */
-
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){
@@ -549,6 +524,24 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     );
 
+	// Pitch angle scattering due to time varying B
+	if (tracked_terms->f_hot_timevaryingb != nullptr) {
+		DEF_HT_F2("hottail/timevaryingb_Ap2", "Pitch angle advection due to time-varying B",
+			const real_t *const* BA = this->tracked_terms->f_hot_timevaryingb->GetBounceAverage();
+			const real_t dB = this->tracked_terms->f_hot_timevaryingb->GetCurrentDbDt();
+			real_t *Axi = qd->StoreEmpty();
+
+			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+				for (len_t j_f = 0; j_f < n2_ht+1; j_f++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+						Axi[(ir*(n2_ht+1) + j_f)*n1_ht + i] = 0.5 * BA[ir][j_f*n1_ht+i] * dB;
+					}
+				}
+			}
+		);
+	}
+
     // runaway/...
     DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeffR();
@@ -606,6 +599,22 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     );
 
+	// Pitch angle scattering due to time varying B
+	if (tracked_terms->f_re_timevaryingb != nullptr) {
+		DEF_RE_F2("runaway/timevaryingb_Ap2", "Pitch angle advection due to time-varying B",
+			const real_t *const* BA = this->tracked_terms->f_re_timevaryingb->GetBounceAverage();
+			const real_t dB = this->tracked_terms->f_re_timevaryingb->GetCurrentDbDt();
+			real_t *Axi = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_re; ir++) {
+				for (len_t j_f = 0; j_f < n2_re+1; j_f++) {
+					for (len_t i = 0; i < n1_re; i++) {
+						Axi[(ir*(n2_re+1) + j_f)*n1_re + i] = 0.5 * BA[ir][j_f*n1_re+i] * dB;
+					}
+				}
+			}
+		);
+	}
 
     // scalar/..
     DEF_SC("scalar/radialloss_n_re", "Rate of runaway number loss through plasma edge, normalized to R0 [s^-1 m^-1]",
@@ -781,6 +790,32 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     }
     
+	// Other quantities which are generally expensive to store
+	// and which should therefore require some careful consideration
+	// before using.
+    DEF_FL("expensive/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
+        SlowingDownFrequency *nuS = this->REFluid->GetNuS();
+        CollisionQuantity::collqty_settings settings_free;
+        CollisionQuantity::collqty_settings settings_screened;
+        settings_free.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+        settings_screened.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+        settings_free.collfreq_mode = settings_screened.collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
+        settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+        settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+        settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
+
+        std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
+        {
+            real_t v = Constants::c * p/sqrt(1+p*p);
+            return Constants::me*Constants::c*v*p*(nuS->evaluateAtP(ir,p,&settings_screened) - nuS->evaluateAtP(ir,p,&settings_free));
+        });
+        real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+        real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+        real_t *vec = qd->StoreEmpty();
+        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
+    );
+
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
 
