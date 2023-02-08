@@ -118,7 +118,12 @@ void SimulationGenerator::ConstructEquation_f_re(
     // but when the hot-tail grid is disabled and an initial n_re profile
     // is prescribed, we would like to make sure that f_re integrates
     // properly to n_re.
-    //if (!eqsys->HasHotTailGrid()) {
+    // This rule is ignored if an initial f_re was specified explicitly.
+    
+    len_t nx[3];
+    if ((!eqsys->HasHotTailGrid()) && (!Op_nRE->IsEmpty()) &&
+        (*(s->GetRealArray(MODULENAME "/init/x", 3, nx, false)) == 0)){
+        
         //const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
         const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 		//const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -187,6 +192,6 @@ void SimulationGenerator::ConstructEquation_f_re(
             // Dependencies
             id_n_re, id_E_field, id_n_i
         );
-    //}
+    }
 }
 
