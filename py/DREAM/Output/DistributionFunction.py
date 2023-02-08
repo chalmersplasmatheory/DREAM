@@ -105,6 +105,75 @@ class DistributionFunction(KineticQuantity):
         return Ppar, Pperp
 
 
+    def partialDensity(self, t=None, r=None, pc=None):
+        """
+        Calculate the density of electrons contained above a momentum ``pc``. If
+        a value for ``pc`` is not explicitly given, it is taken as either the
+        critical momentum ``other.fluid.pCrit`` if available, or as the
+        approximation ``pc = 1/sqrt(E/Ec-1)``.
+
+        The parameter ``pc`` may be a scalar or a fluid quantity, varying in
+        time and space.
+        """
+        if t is None:
+            t = list(range(len(self.time)))
+        elif np.isscalar(t):
+            t = np.array([t])
+
+        if r is None:
+            r = list(range(len(self.grid.r)))
+        elif np.isscalar(t):
+            r = np.array([r])
+
+        if pc is None:
+            if 'fluid' in self.output.other:
+                if 'pCrit' in self.output.other.fluid:
+                    pc = self.output.other.fluid.pCrit[:]
+                elif 'Ecfree' in self.output.other.fluid:
+                    Ec = self.output.other.fluid.Ecfree[:]
+                    E = self.output.eqsys.E_field[1:,:]
+                    pc = 1/np.sqrt(E/Ec - 1)
+
+            if pc is None:
+                T = self.output.eqsys.T_cold[:]
+                n = self.output.eqsys.n_cold[:]
+                E = self.output.eqsys.E_field[:]
+
+                Ec = Formulas.Ec(T=T, n=n)
+                pc = 1/np.sqrt(E/Ec-1)
+
+            if pc.shape[0] == self.grid.t.size-1:
+                ppc = np.zeros((self.grid.t.size, pc.shape[1]))
+                ppc[1:,:] = pc[:]
+                ppc[0,:]  = np.inf
+                pc = ppc
+        elif np.isscalar(pc):
+            pc = pc*np.ones((self.time.size, self.grid.r.size))
+
+        p = self.momentumgrid.p1
+        data = np.zeros((len(t), len(r)))
+        for i in range(len(t)):
+            for j in range(len(r)):
+                F = self.data
+                mask = np.zeros((F.shape[2], F.shape[3]))
+                mask[:,np.where(p >= pc[t[i],r[j]])] = 1
+                data[i,j] = self.moment(mask, t=t[i], r=r[j])
+
+        return data
+
+
+    def runawayRate(self, t=None, r=None, pc=None):
+        """
+        Calculate the runaway rate, with the given definition of critical
+        momentum, as a moment of the distribution function.
+        """
+        n = self.partialDensity(pc=pc)
+        dt = np.diff(self.grid.t)
+        dndt = (np.diff(n, axis=0).T / dt).T
+
+        return dndt
+
+
     def synchrotron(self, model='spectrum', B=3.1, wavelength=700e-9, t=None, r=None):
         """
         Returns the synchrotron radiation emitted by this distribution function
