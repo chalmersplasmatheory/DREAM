@@ -6,6 +6,8 @@ else()
     cmake_policy(VERSION 3.13)
 endif()
 
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
+
 # Ensure that we build in optimized (Release) mode
 # if not explicitly stated otherwise
 if (NOT CMAKE_BUILD_TYPE)
@@ -24,16 +26,20 @@ option(COLOR_TERMINAL "Allow colourful output" ON)
 option(DREAM_BUILD_TESTS "Build the test framework" ON)
 option(DREAM_BUILD_PYFACE "Build the DREAM Python interface" OFF)
 option(GIT_SUBMODULE "Check submodules during build" ON)
-option(PETSC_WITH_MPI "If ON, indicates that PETSc was linked with MPI" ON)
+#option(PETSC_WITH_MPI "If ON, indicates that PETSc was linked with MPI" ON)
+option(INTERPROC_OPTIM "Allow linker to perform interprocedural optimization" ON)
 
 # Require position-indepdent code when building PyFace
 cmake_dependent_option(
     POS_INDP_CODE "Generate position-independent code in static libraries" OFF
-    "DREAM_BUILD_PYFACAE" ON
+    "NOT DREAM_BUILD_PYFACE" ON
 )
 
 # Add CMake modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+include(CheckPETScRequiresMPI)
+check_petsc_requires_mpi(PETSC_WITH_MPI)
 
 # Get git commit hash
 include(GetGitRevisionDescription)

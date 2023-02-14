@@ -87,7 +87,7 @@ class IonSpecies:
 
         for ion in self.ionstates:
             if n is None:
-                n = ion.get(t=t)
+                n = np.copy(ion.get(t=t))
             else:
                 n += ion.get(t=t)
 

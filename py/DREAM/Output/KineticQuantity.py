@@ -287,14 +287,12 @@ class KineticQuantity(UnknownQuantity):
             elif np.ndim(weight) == 3:
                 weight = _weight*weight[np.newaxis,:]
                 
-        q = []
+        q = np.zeros((len(t), len(r)))
         for iT in range(len(t)):
-            qr = []
             for iR in range(len(r)):
-                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[0])
-            q.append(qr)
+                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[0]
         
-        return np.asarray(q)
+        return q
 
 
     def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, **kwargs):

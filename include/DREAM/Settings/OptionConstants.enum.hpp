@@ -59,6 +59,11 @@ enum ion_neutral_advection_mode {
 	ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED=2
 };
 
+enum ion_source_type {
+	ION_SOURCE_NONE=1,
+	ION_SOURCE_PRESCRIBED=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,

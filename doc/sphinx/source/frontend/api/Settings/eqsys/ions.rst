@@ -476,6 +476,82 @@ Kinetic ionization can be activated in a DREAM simulation as follows:
 
 .. _ds-eqsys-ions-tritium:
 
+
+Particle injection
+------------------
+Particles can be injected through the plasma edge at a specified rate. The user
+specifies the *number of particles* per unit time which are to be injected,
+which can either be specified as constant in time or as following a specified
+time evolution. The user can choose to either inject particles of a specific
+charge state, or to inject particles of multiple charge states simultaneously.
+
+Example
+^^^^^^^
+The ion source is enabled via a single line:
+
+.. code-block:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Equations.IonSpecies as Ions
+   import numpy as np
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=5e19)
+   # Enable the ion source for species 'D'
+   ds.eqsys.n_i.addIonSource('D', dNdt=1e19)    # Add 1e19 deuterium atoms per second
+
+The **charge state** of the injected particles is :math:`Z_0=0`, but can be
+modified with the ``Z0`` argument to ``addIonSource()``:
+
+.. code-block:: python
+
+   ...
+   ds.eqsys.n_i.addIonSource('D', dNdt=1e19, Z0=1)  # Add 1e19 deuterium ions per second
+
+The full **time evolution** of the ion source can also be provided:
+
+.. code-block:: python
+
+   ...
+   t = np.linspace(0, 1)
+   dNdt = 5e18 * ((1-t)**2 + 1)
+   ds.eqsys.n_i.addIonSource('D', dNdt=dNdt, t=t, Z0=1)
+
+Finally, particles in **several charge states** may be added simultaneously:
+
+.. code-block:: python
+
+   ...
+   Z = 1
+   t = np.linspace(0, 1)
+   dNdt = np.zeros((Z+1, t.size))
+   # D(Z0=0)
+   dNdt[0,:] = 5e18 * ((1-t)**2 + 1)
+   dNdt[0,:] = 5e18 * (t**2 + 1)
+
+.. note::
+
+   The injection rate specified is the *number of particles* per unit time
+   which is to be injected. This means that the number ``dNdt`` specified equals
+
+   .. math::
+
+      dNdt = \frac{1}{\Delta t}\int
+      \left[ n_i^{(j)}(r,t+\Delta t) - n_i^{(j)}(r,t) \right]V'\,\mathrm{d}r
+
+   i.e. the change in the volume integral of the ion density per unit time.
+   Thus, the unit of ``dNdt`` is simply :math:`\mathrm{s}^{-1}` (or particles
+   per second).
+
+Ion/neutral transport
+---------------------
+
+.. todo::
+
+   Document the ion/neutral transport functionality
+
+
 Tritium
 -------
 Runaway electrons can be generated when tritium decays into helium-3 via the
