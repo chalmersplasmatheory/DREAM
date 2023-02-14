@@ -4,6 +4,7 @@
 #include <utility>
 #include "DREAM/IonHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/Matrix.hpp"
 
 namespace DREAM {
     template<class T>
@@ -15,11 +16,12 @@ namespace DREAM {
         len_t iIon, Zion;
 
     public:
-        IonBoundaryCondition(
+        template<typename ... Args>
+        IonBoundaryCondition<T>(
             FVM::Grid*, IonHandler*, const len_t iIon,
             Args&& ... args
         );
-        virtual ~IonBoundaryCondition();
+        virtual ~IonBoundaryCondition<T>();
 
         /**
          * Implemented in BoundaryCondition and empty here:
@@ -49,7 +51,7 @@ namespace DREAM {
             FVM::Matrix*, real_t*, const len_t iIon,
             const len_t Z0, const len_t rOffset
         ) = 0;
-        virtual void SetCSToMatrixElements(
+        virtual void SetCSMatrixElements(
             FVM::Matrix*, real_t*, const len_t iIon,
             const len_t Z0, const len_t rOffset
         ) = 0;
