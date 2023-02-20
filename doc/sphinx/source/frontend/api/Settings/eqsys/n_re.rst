@@ -817,7 +817,8 @@ coefficient :math:`D_0` is introduced. In each time step, DREAM will then adjust
 :math:`D_0` such that :math:`I_{\rm p}` exactly matches its prescribed value.
 This is particularly useful for simulations of experiments, where the plasma
 current is often accurately known, while the radial transport is generally
-poorly constrained by experimental measurements.
+poorly constrained by experimental measurements. This feature is inspired by a
+similar feature in the kinetic solver LUKE.
 
 Frozen current mode can be enabled on any transportable (particle) quantity by
 calling ``setFrozenCurrentMode()``. The call takes two mandatory parameters:
