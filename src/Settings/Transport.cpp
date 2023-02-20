@@ -203,7 +203,23 @@ void SimulationGenerator::ConstructEquation_D_I(
 	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
 	real_t D_I_max = s->GetReal(path + "/D_I_max");
 
-	enum OptionConstants::solver_type st =
+	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
+	FrozenCurrentCoefficient *fcc =
+		new FrozenCurrentCoefficient(
+			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
+			D_I_max
+		);
+	eqn->AddTerm(fcc);
+
+	eqsys->SetOperator(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I,
+		eqn,
+		"I_p = I_p_presc",
+		true	// Solved externally
+	);
+
+	/*enum OptionConstants::solver_type st =
 		(enum OptionConstants::solver_type)s->GetInteger("solver/type");
 
 	switch (st) {
@@ -258,7 +274,7 @@ void SimulationGenerator::ConstructEquation_D_I(
 				"Unrecognized solver type for frozen current mode: %d.",
 				(int)st
 			);
-	}
+	}*/
 
 	real_t v = 0;
 	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &v);
