@@ -1,0 +1,159 @@
+\documentclass{notes}
+
+\usepackage{hyperref}
+
+\title{Frozen current mode}
+\author{Mathias Hoppe}
+\date{2023-02-14}
+
+\newcommand{\LUKE}{\textsc{Luke}}
+\newcommand{\Vp}{\mathcal{V}'}
+
+\begin{document}
+	\maketitle
+
+	A powerful feature of \LUKE\ is its ability to match a prescribed (often
+	experimentally measured) plasma current by adapting a diffusive radial
+	transport term. For experimental studies, such a term can be very useful
+	to constrain the set of unknowns and extract useful information from
+	experimental measurements. In this document, we describe the implementation
+	of such a feature in \DREAM.
+
+	\tableofcontents
+
+	\section{Background}
+	The unknown quantity which is perhaps least constrained by contemporary
+	experimental measurements is the rate at which fast electrons are expelled
+	from the plasma. Despite this, the fast electron confinement time plays a
+	crucial role in shaping the electron distribution function and limiting the
+	plasma current. In absence of other measurements, we may therefore use the
+	latter to scale the radial transport in order to try to match the
+	experimentally measured plasma current. Assuming diffusive transport, as
+	may be reasonable in the case of turbulent transport, the model transport
+	operator takes the form
+	\begin{equation}\label{eq:transp}
+		\left.\frac{\partial f}{\partial t}\right|_{\rm transp} =
+			\frac{1}{\Vp}\frac{\partial}{\partial r}\left[
+				\Vp D_0h(p,\xi_0)\frac{\partial f}{\partial r}
+			\right],
+	\end{equation}
+	where $h(p,\xi_0)$ is an arbitrary function of momentum. In this work, we
+	will take $h(p,\xi_0)=1$ and $h(p,\xi_0)=\beta_\parallel=v_\parallel/c$.
+
+	The coefficient $D_0$ is unknown and can be constrained by requiring that
+	\begin{equation}\label{eq:Ip}
+		I_{\rm p} = I_{\rm p,presc}.
+	\end{equation}
+
+	\section{Implementation}
+	The frozen current mode should be implemented in the non-linear solver by
+	adding the condition~\eqref{eq:Ip} as the equation for $D_0$. However, doing
+	so results in numerical instabilities which prevent the solver from
+	converging. An alternative approach, which turns out to be stable in
+	practice, is to add a separate iteration step. This can also be applied to
+	the linearly implicit solver, effectively turning it into a non-linear
+	solver.
+
+	The idea of the extra iteration step---here dubbed the ``external
+	iterator''---is to solve a subset of the equation system \emph{after}
+	obtaining an approximation to the solution of the rest of the equation
+	system. This way, the equation for $D_0$ can be formulated in a somewhat
+	more explicit manner, hopefully providing better stability (as is also
+	observed to be the case in practice).
+
+	The algorithm used for constraining $D_0$ using the external iterator can
+	be derived by considering $I_{\rm p}$ in equation~\eqref{eq:Ip} as
+	depending only on $D_0$. Since the dependence on $D_0$ is, in general,
+	complicated and no explicit analytical expression is available, we can
+	employ a secant method to gradually converge towards the exact solution
+	$D_0^\star$:
+	\begin{equation}
+		D_0^{(k+1)} = D_0^{(k)} +
+			\left(D_0^{(k)} - D_0^{(k-1)}\right)
+			\frac{I_{\rm p}^{(k)}-I_{\rm p,presc}}{I_{\rm p}^{(k)}-I_{\rm p}^{(k-1)}}.
+	\end{equation}
+	This method can be used to obtain $k+1\geq 2$. For $k=0$ and $k=1$ we need
+	other estimates. In \DREAM, we take $D_0^{(0)}$ to be equal to the value of
+	$D_0$ in the previous time step. For $D_0^{(1)}$, we either rescale
+	$D_0^{(0)}$ according to how the plasma current changed from iteration 0 to
+	iteration 1 (simple ratio of plasma currents times $D_0^{(0)}$) if
+	$D_0^{(0)} > 0$, or use equation~\eqref{eq:D0app} to obtain an initial guess.
+
+	\section{Analytical estimate}
+	A first approximation to the coefficient $D_0$ can be obtained by assuming
+	that $h(p,\xi_0)\approx 1$ and calculating the change in the plasma current
+	resulting from adding the term~\eqref{eq:transp} to the Fokker--Planck
+	equation. Taking first the current moment of equation~\eqref{eq:transp},
+	we obtain the change in the current density due to the transport
+	\begin{equation}
+		\begin{gathered}
+			\frac{2\pi e}{\left\langle1/R^2\right\rangle}
+			\int
+				v\left\{\frac{\xi}{BR^2}\right\}
+				\left.\frac{\partial f}{\partial t}\right|_{\rm transp}
+				\frac{\Vp}{V'}\,\dd p\dd\xi_0 =
+			\left.\frac{\partial (j_\parallel/B)}{\partial t}\right|_{\rm transp} =\\
+			%
+			=
+			\frac{2\pi e}{\left\langle 1/R^2 \right\rangle V'}
+			\int
+				v\left\{\frac{\xi}{BR^2}\right\}
+				\frac{\partial}{\partial r}\left(
+					\Vp D_0 \frac{\partial f}{\partial r}
+				\right)\,
+				\dd p\dd\xi_0
+			\approx
+				\frac{1}{V'}\frac{\partial}{\partial r}\left[
+					V' D_0 \frac{\partial(j_\parallel/B)}{\partial r}
+				\right],
+		\end{gathered}
+	\end{equation}
+	where in the last step it was assumed that
+	\begin{equation}
+		\frac{\partial}{\partial r}\left(
+			\left\langle \frac{1}{R^2}\right\rangle^{-1}
+			\left\{\frac{\xi}{BR^2}\right\}
+		\right)\approx 0,
+	\end{equation}
+	which is exactly true in the cylindrical limit. The corresponding change
+	to the total plasma current is then
+	\begin{equation}
+		\begin{gathered}
+			\frac{1}{2\pi}\int_0^a V'
+				\left.\frac{\partial(j_\parallel/B)}{\partial t}\right|_{\rm transp}
+				G(r)\left\langle\frac{1}{R^2}\right\rangle\,\dd r
+				=
+				\left.\frac{\dd I_{\rm p}}{\dd t}\right|_{\rm transp}
+				\approx\\
+				%
+				\approx
+				\frac{1}{2\pi}\int_0^a
+					G(r)\left\langle\frac{1}{R^2}\right\rangle
+					\frac{\partial}{\partial r}\left[
+						V' D_0\frac{\partial(j_\parallel/B)}{\partial r}
+					\right]
+				\approx
+				D_0
+				\frac{V'(a)}{2\pi R_0}
+				\left.\frac{\partial j_\parallel}{\partial r}\right|_{r=a},
+		\end{gathered}
+	\end{equation}
+	where the last approximate equality holds true in the cylindrical limit.
+	This can be used to obtain an initial guess for $D_0$ based on the
+	current-rise without transport. From equation~\eqref{eq:Ip} it namely
+	follows that
+	\begin{equation}\label{eq:dIdt}
+		\frac{\dd I_{\rm p}}{\dd t} =
+			\left.\frac{\dd I_{\rm p}}{\dd t}\right|_{\rm transp} +
+			\left.\frac{\dd I_{\rm p}}{\dd t}\right|_{\rm other}
+			= 0.
+	\end{equation}
+	A first approximation can therefore be obtained when $\dd I_{\rm p}/\dd t$
+	at $D_0=0$ is known:
+	\begin{equation}\label{eq:D0app}
+		D_0\approx \frac{2\pi R_0}{V'(a)}
+			\frac{\dd I_{\rm p} / \dd t}
+			{\partial j_\parallel/\partial r}
+	\end{equation}
+
+\end{document}

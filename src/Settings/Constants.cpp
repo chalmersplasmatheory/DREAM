@@ -13,6 +13,7 @@ using namespace DREAM;
 /**
  * NAMES OF UNKNOWN QUANTITIES
  */
+DEF_UQTY(D_I,             "D_I",          "Transport diffusion scaling coefficient in frozen current mode");
 DEF_UQTY(E_FIELD,         "E_field",      "Parallel electric field <E*B>/sqrt(<B^2>) [V/m]");
 DEF_UQTY(F_HOT,           "f_hot",        "Hot electron distribution function [m^-3]");
 DEF_UQTY(F_RE,            "f_re",         "Runaway electron distribution function [m^-3]");
@@ -24,7 +25,6 @@ DEF_UQTY(J_HOT,           "j_hot",        "Hot electron parallel current density
 DEF_UQTY(J_OHM,           "j_ohm",        "Ohmic current density j_||*Bmin/B [A/m^2]");
 DEF_UQTY(J_RE,            "j_re",         "Runaway electron current density j_||*Bmin/B [A/m^2]");
 DEF_UQTY(J_TOT,           "j_tot",        "Total current density j_||*Bmin/B [A/m^2]");
-DEF_UQTY(K_I,             "k_I",          "Transport scaling coefficient in frozen current mode");
 DEF_UQTY(N_ABL,           "n_abl",        "Flux surface averaged density of ablated but not yet equilibrated electrons [m^-3]");
 DEF_UQTY(N_COLD,          "n_cold",       "Cold electron density [m^-3]");
 DEF_UQTY(N_HOT,           "n_hot",        "Hot electron density [m^-3]");

@@ -93,6 +93,9 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     solver->SetConvergenceChecker(LoadToleranceSettings(
         MODULENAME, s, u, solver->GetNonTrivials()
     ));
+	solver->SetExternalIteratorConvergenceChecker(LoadToleranceSettings(
+        MODULENAME, s, u, *eqsys->GetExternallyIteratedUnknowns()
+	));
 
     solver->SetPreconditioner(LoadPreconditionerSettings(
         s, u, solver->GetNonTrivials()
@@ -117,13 +120,14 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
     
+    bool verbose    = s->GetBool(MODULENAME "/verbose");
     bool printdebug = s->GetBool(MODULENAME "/debug/printmatrixinfo");
     bool savematrix = s->GetBool(MODULENAME "/debug/savematrix");
     bool saverhs    = s->GetBool(MODULENAME "/debug/saverhs");
     int_t timestep  = s->GetInteger(MODULENAME "/debug/timestep");
     bool savesystem = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto sli = new SolverLinearlyImplicit(u, eqns, eqsys, linsolv);
+    auto sli = new SolverLinearlyImplicit(u, eqns, eqsys, verbose, linsolv);
     sli->SetDebugMode(printdebug, savematrix, saverhs, timestep, savesystem);
 
     return sli;
