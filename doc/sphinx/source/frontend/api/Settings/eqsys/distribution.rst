@@ -671,6 +671,102 @@ can also be used. In this example, the magnetic perturbation
 positions.
 
 
+Frozen current mode
+-------------------
+In the frozen current mode, a target plasma current :math:`I_{\rm p}` is
+prescribed by the user and an associated diffusive radial transport with
+coefficient :math:`D_0` is introduced. In each time step, DREAM will then adjust
+:math:`D_0` such that :math:`I_{\rm p}` exactly matches its prescribed value.
+This is particularly useful for simulations of experiments, where the plasma
+current is often accurately known, while the radial transport is generally
+poorly constrained by experimental measurements.
+
+Frozen current mode can be enabled on any transportable (particle) quantity by
+calling ``setFrozenCurrentMode()``. The call takes two mandatory parameters:
+(i) the type of transport to model, and (ii) the plasma current target.
+Additionally, two optional parameters may be specified: (iii) the time vector
+corresponding to the prescribed plasma current, if the latter is to vary in
+time, and (iv) the maximum permitted value of :math:`D_0` (default: 1000 m/s^2).
+
+If the prescribed plasma current is higher than what can be achieved with a
+diffusive transport (i.e. if :math:`I_{\rm p}` is below its prescribed value in
+the absence of radial transport), the diffusion coefficient is set to zero and
+the target plasma current is ignored.
+
+List of options
+^^^^^^^^^^^^^^^
+The radial diffusion coefficient used in the frozen current mode is generally
+written on the form
+
+.. math::
+   D_{rr}(r,p,\xi_0) = D_0h(r,p,\xi_0)
+
+where the function :math:`h(r,p,\xi_0)` can take different forms. The following
+forms for :math:`h(r,p,\xi_0)` are currently supported in DREAM:
+
++----------------------------------+-----------------------------------------+
+| Name                             | :math:`h(r,p,\xi_0)`                    |
++==================================+=========================================+
+| ``FROZEN_CURRENT_MODE_DISABLED`` | :math:`0`                               |
++----------------------------------+-----------------------------------------+
+| ``FROZEN_CURRENT_MODE_CONSTANT`` | :math:`1`                               |
++----------------------------------+-----------------------------------------+
+| ``FROZEN_CURRENT_MODE_BETAPAR``  | :math:`\beta_\parallel = v_\parallel/c` |
++----------------------------------+-----------------------------------------+
+
+Example
+^^^^^^^
+The following example illustrates how to use the frozen current mode:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3   # Plasma current target (A)
+   ds.eqsys.f_hot.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip
+   )
+
+If one wishes to prescribe a time-evolving plasma current, the following call
+can be made instead:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   # Time vector
+   t  = np.linspace(0, 2, 40)
+   # Plasma current target (A)
+   Ip = 800e3*np.linspace(0.2, 1, t.size)
+   ds.eqsys.f_hot.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip, Ip_presc_t=t
+   )
+
+In poorly confined plasmas, or situations where strong transport leads to
+unstable simulations, one may want to adjust the maximum diffusion coefficient:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3   # Plasma current target (A)
+   ds.eqsys.f_hot.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip, D_I_max=200
+   )
+
+
 Boundary conditions
 -------------------
 The general transport term requires a boundary condition to specified at the
