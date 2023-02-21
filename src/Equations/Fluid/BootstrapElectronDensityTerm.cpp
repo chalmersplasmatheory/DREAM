@@ -40,9 +40,10 @@ real_t BootstrapElectronDensityTerm::GetPartialCoefficient(
     len_t ir, len_t derivId, len_t index, len_t /* iZ */
 ) {
     real_t dCoefficient = evaluatePartialCoefficientL31(ir, derivId, index)
-    if (!includeIonTemperatures)
-        dCoefficient *= (real_t)(derivId == id_Tcold);
-    else {
+    if (!includeIonTemperatures) {
+        dCoefficient *= Tcold[ir];
+        dCoefficient += coefficientL31[ir] * (real_t)(derivId == id_Tcold);
+    } else {
         dCoefficient *= p[ir] / n[ir];
         switch (derivId) {
             case id_ncold:
@@ -52,7 +53,7 @@ real_t BootstrapElectronDensityTerm::GetPartialCoefficient(
                 dCoefficient += coefficientL31[ir] * ncold[ir] / n[ir];
                 break;
             case id_Ni:
-                dCoefficient -= coefficientL31[ir] / (n[ir] * ni[ir]);
+                dCoefficient -= coefficientL31[ir] / (n[ir] * n[ir]);
                 break;
             case id_Wi:
                 dCoefficient += coefficientL31[ir] * 2. / (3. * n[ir]);

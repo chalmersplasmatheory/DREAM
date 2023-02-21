@@ -21,7 +21,7 @@ using namespace std;
 
 /**
  * Define options for the time stepper.
- * 
+ *
  * s: Settings object to define settings in.
  */
 void SimulationGenerator::DefineOptions_Solver(Settings *s) {
@@ -88,6 +88,8 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
 
     solver->SetSPIHandler(eqsys->GetSPIHandler());
 
+    solver->SetBootstrap(eqsys->GetBootstrap());
+
     solver->SetIonHandler(eqsys->GetIonHandler());
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
@@ -116,7 +118,7 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
-    
+
     bool printdebug = s->GetBool(MODULENAME "/debug/printmatrixinfo");
     bool savematrix = s->GetBool(MODULENAME "/debug/savematrix");
     bool saverhs    = s->GetBool(MODULENAME "/debug/saverhs");
@@ -160,4 +162,3 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
 
     return snl;
 }
-

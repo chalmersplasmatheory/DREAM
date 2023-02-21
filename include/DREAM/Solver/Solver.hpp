@@ -13,6 +13,7 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/MatrixInverter.hpp"
@@ -43,7 +44,7 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
         IonHandler *ionHandler;
-        
+
         // Convergence checker for linear solver (GMRES primarily)
         ConvergenceChecker *convChecker=nullptr;
         DiagonalPreconditioner *diag_prec=nullptr;
@@ -55,6 +56,7 @@ namespace DREAM {
         FVM::MatrixInverter *backupInverter=nullptr;
 
         SPIHandler *SPI;
+        BootstrapCurrent *bootstrap;
 
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
@@ -96,15 +98,17 @@ namespace DREAM {
         }
 
         virtual void SetSPIHandler(SPIHandler *SPI){this->SPI=SPI;}
+        virtual void SetBootstrap(BootstrapCurrent *bootstrap)
+            { this->bootstrap=bootstrap; }
 
-        virtual void SetIonHandler(IonHandler *ih) 
+        virtual void SetIonHandler(IonHandler *ih)
             {this->ionHandler = ih;}
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
 
         void Precondition(FVM::Matrix*, Vec);
         void UnPrecondition(Vec);
-        
+
         virtual void PrintTimings() = 0;
         void PrintTimings_rebuild();
         virtual void SaveTimings(SFile*, const std::string& path="") = 0;

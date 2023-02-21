@@ -1,5 +1,5 @@
 /**
- * Definition of equations relating to j_tot, 
+ * Definition of equations relating to j_tot,
  * representing the total plasma current:
  *  j_tot = j_ohm + j_hot + j_RE
  */
@@ -41,7 +41,7 @@ void SimulationGenerator::ConstructEquation_j_tot(
 ) {
 	enum OptionConstants::uqty_E_field_eqn type =
 		(enum OptionConstants::uqty_E_field_eqn)s->GetInteger("eqsys/E_field/type");
-	
+
 	if (type == OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED_CURRENT)
 		ConstructEquation_j_tot_prescribed(eqsys, s);
 	else
@@ -91,6 +91,7 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
     const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
     const len_t id_j_re  = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
+    const len_t id_j_bs;
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -99,19 +100,37 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
 
-    
+
     eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn3->AddTerm(new FVM::IdentityTerm(fluidGrid));
-    
-    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + j_re");
+
+    std::string desc = "j_tot = j_ohm + j_hot + j_re";
+
+    // bootstrap current
+    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+    if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+
+        FVM::Operator *eqn4 = new FVM::Operator(fluidGrid);
+        eqn4->AddTerm(new FVM::IdentityTerm(fluidGrid));
+
+        id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+        eqsys->SetOperator(id_j_tot, id_j_bs, eqn4);
+
+        desc += " + j_bs";
+    }
+
+    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, desc);
     eqsys->SetOperator(id_j_tot, id_j_ohm, eqn1);
     eqsys->SetOperator(id_j_tot, id_j_hot, eqn2);
     eqsys->SetOperator(id_j_tot, id_j_re,  eqn3);
-    
+
     // Initialization
 	if (HasInitialJtot(eqsys, s)) {
+        if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
+            throw SettingsException("INITIAL JTOT DOES NOT YET WORK TOGETHER WITH BOOTSTRAP! INSTEAD, PRESCRIBE AN INITIAL ELECTRIC FIELD!"); // move to py interface!
+
 		real_t *jtot_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
 
 		// Re-scale to get right plasma current (Ip)?
@@ -128,13 +147,22 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 		eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, jtot_init);
 		delete [] jtot_init;
 	} else {
-		eqsys->initializer->AddRule(
-			id_j_tot,
-			EqsysInitializer::INITRULE_EVAL_EQUATION,
-			nullptr,
-			// Dependencies
-			id_j_ohm, id_j_hot, id_j_re
-		);
+        if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
+    		eqsys->initializer->AddRule(
+    			id_j_tot,
+    			EqsysInitializer::INITRULE_EVAL_EQUATION,
+    			nullptr,
+    			// Dependencies
+    			id_j_ohm, id_j_hot, id_j_re, id_j_bs
+    		);
+        else
+            eqsys->initializer->AddRule(
+                id_j_tot,
+                EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                // Dependencies
+                id_j_ohm, id_j_hot, id_j_re
+            );
 	}
 }
 
@@ -153,7 +181,7 @@ void SimulationGenerator::ConstructEquation_Ip(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::Operator *eqn_Ip1 = new FVM::Operator(scalarGrid);
     FVM::Operator *eqn_Ip2 = new FVM::Operator(scalarGrid);
-    
+
     eqn_Ip1->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqn_Ip2->AddTerm(
 		new TotalPlasmaCurrentFromJTot(
@@ -172,5 +200,3 @@ void SimulationGenerator::ConstructEquation_Ip(
         id_j_tot
     );
 }
-
-

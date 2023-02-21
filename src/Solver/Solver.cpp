@@ -78,7 +78,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         len_t operatorId = 0;
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             const real_t *x = unknowns->GetUnknownData(it->first);
-        
+
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (F_uqnId) / d x_derivId
@@ -274,6 +274,9 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
         this->SPI-> Rebuild(dt);
     }
     solver_timeKeeper->StopTimer(timerSPIHandler);
+
+    if (this->bootstrap != nullptr)
+        this->bootstrap->Rebuild();
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqnId = nontrivial_unknowns[i];
@@ -474,4 +477,3 @@ void Solver::SwitchToMainInverter() {
  * This method should be overridden where needed.
  */
 void Solver::WriteDataSFile(SFile*, const std::string&) {}
-
