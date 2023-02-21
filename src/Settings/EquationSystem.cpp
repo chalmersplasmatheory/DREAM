@@ -24,7 +24,7 @@ using namespace std;
 void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
     s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/n_cold", s);
-    
+
 //    s->DefineSetting(EQUATIONSYSTEM "/T_cold/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
 //    DefineDataRT(EQUATIONSYSTEM "/T_cold", s);
 }
@@ -96,7 +96,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // the equation system, since we need to which unknowns are
     // "non-trivial", i.e. need to show up in the solver matrices,
     // in order to build them)
-    
+
     // Construct the time stepper
     ConstructTimeStepper(eqsys, s);
 
@@ -137,10 +137,9 @@ void SimulationGenerator::ConstructEquations(
         SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
         eqsys->SetSPIHandler(SPI);
     }
-    
+
     // Fluid equations
     ConstructEquation_Ions(eqsys, s, adas, amjuel, oqty_terms);
-
 
     IonHandler *ionHandler = eqsys->GetIonHandler();
     // Construct collision quantity handlers
@@ -153,6 +152,13 @@ void SimulationGenerator::ConstructEquations(
         eqsys->SetRunawayCollisionHandler(cqh);
     }
     ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,eqsys,s);
+
+    // bootstrap current
+    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+    if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+        BootstrapCurrent *bootstrap = new BootstrapCurrent(fluidGrid, unknowns, ionHandler, eqsys->REFluid->GetLnLambda());
+        eqsys->SetBootstrap(bootstrap);
+    }
 
     // Post processing handler
     FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL;
@@ -184,7 +190,10 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
-    
+
+    if (bootstrap_mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL)
+        ConstructEquation_j_bs(eqsys, s);
+
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
 		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
 		ConstructEquation_n_abl(eqsys, s);
@@ -214,11 +223,11 @@ void SimulationGenerator::ConstructEquations(
 
     ConstructEquation_psi_p(eqsys, s);
     ConstructEquation_psi_edge(eqsys, s);
-    
+
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger("eqsys/n_re/hottail");
-    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");    
+    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");
     if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL){
         ConstructEquation_tau_coll(eqsys);
     }
@@ -340,7 +349,7 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_SCL_N(Y_P,nShard);
         DEFU_SCL_N(X_P,3*nShard);
         DEFU_SCL_N(V_P,3*nShard);
-        
+
         if (hottailGrid != nullptr){
         	DEFU_FLD(Q_HOT);
         	DEFU_FLD(W_HOT);
@@ -358,14 +367,14 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_FLD_N(WI_ENER, nIonSpecies);
         DEFU_FLD_N(NI_DENS, nIonSpecies);
     }
-    
+
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
     if (hottailGrid != nullptr){
         DEFU_FLD(S_PARTICLE);
     }
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger("eqsys/n_re/hottail");
-    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");    
+    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");
     if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL){
         DEFU_FLD(TAU_COLL);
     }

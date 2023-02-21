@@ -6,6 +6,7 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
+#include "DREAM/Equations/CollisionQuantity.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
 namespace DREAM {
@@ -15,9 +16,9 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
-        CoulombLogarithm
-            *lnLambdaEE,
-            *lnLambdaII;
+        CoulombLogarithm lnLambda;
+        struct CollisionQuantity::collqty_settings *lnLEE_settings;
+        struct CollisionQuantity::collqty_settings *lnLII_settings;
 
         real_t epsilon; // used for numerical differentiation
 
@@ -44,6 +45,8 @@ namespace DREAM {
 
 
     protected:
+        bool includeIonTemperatures;
+
         real_t
             *ncold,
             *Tcold,
