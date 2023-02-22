@@ -41,7 +41,7 @@ void SimulationGenerator::ConstructEquation_j_bs(
     const len_t id_jbs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
     const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
     const len_t id_Tcold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    const len_t id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENSD);
+    const len_t id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
 
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.));
@@ -49,7 +49,7 @@ void SimulationGenerator::ConstructEquation_j_bs(
 
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     Op2->AddTerm(new BootstrapElectronDensityTerm(fluidGrid, unknowns, bootstrap, ions));
-    eqsys->SetOperator(id_jbs, id_ncold), Op2);
+    eqsys->SetOperator(id_jbs, id_ncold, Op2);
 
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
     Op3->AddTerm(new BootstrapElectronTemperatureTerm(fluidGrid, unknowns, bootstrap, ions));
@@ -59,7 +59,8 @@ void SimulationGenerator::ConstructEquation_j_bs(
     Op4->AddTerm(new BootstrapIonDensityTerm(fluidGrid, unknowns, bootstrap, ions));
     eqsys->SetOperator(id_jbs, id_Ni, Op4);
 
-    if (bootstrap->includeIonTemperatures) {
+    OptionConstants::uqty_T_i_eqn Ti_type = (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi");
+    if(Ti_type == OptionConstants::UQTY_T_I_INCLUDE) {
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);

@@ -91,7 +91,6 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
     const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
     const len_t id_j_re  = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
-    const len_t id_j_bs;
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -115,7 +114,7 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
         FVM::Operator *eqn4 = new FVM::Operator(fluidGrid);
         eqn4->AddTerm(new FVM::IdentityTerm(fluidGrid));
 
-        id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+        const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
         eqsys->SetOperator(id_j_tot, id_j_bs, eqn4);
 
         desc += " + j_bs";
@@ -147,15 +146,16 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 		eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, jtot_init);
 		delete [] jtot_init;
 	} else {
-        if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
-    		eqsys->initializer->AddRule(
-    			id_j_tot,
-    			EqsysInitializer::INITRULE_EVAL_EQUATION,
-    			nullptr,
-    			// Dependencies
-    			id_j_ohm, id_j_hot, id_j_re, id_j_bs
+            if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+    	        const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+                eqsys->initializer->AddRule(
+    		    id_j_tot,
+    		    EqsysInitializer::INITRULE_EVAL_EQUATION,
+    		    nullptr,
+    		    // Dependencies
+    		    id_j_ohm, id_j_hot, id_j_re, id_j_bs
     		);
-        else
+        } else
             eqsys->initializer->AddRule(
                 id_j_tot,
                 EqsysInitializer::INITRULE_EVAL_EQUATION,
