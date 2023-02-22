@@ -32,12 +32,15 @@ namespace DREAM {
         void AllocateDeltaX();
         void DeallocateDeltaX();
 
+	virtual len_t GetNumberOfNonZerosPerRow() const { return 3; } // is this correct?
+
         // helpers
         void SetJacobianElement(len_t, FVM::Matrix*, len_t, len_t, real_t);
         void SetMatrixElement(FVM::Matrix, len_t, real_t);
 
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
-        virtual bool SetJacobianBlock(const len_t, const len_t FVM::Matrix*, const real_t) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) 
+override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
 

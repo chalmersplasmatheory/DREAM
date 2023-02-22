@@ -10,7 +10,7 @@
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
 namespace DREAM {
-    class BootstrapEquationTerm {
+    class BootstrapCurrent {
     private:
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
@@ -82,7 +82,8 @@ namespace DREAM {
 
 
     public:
-        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*);
+        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, 
+CoulombLogarithm*);
         ~BootstrapCurrent();
 
         void

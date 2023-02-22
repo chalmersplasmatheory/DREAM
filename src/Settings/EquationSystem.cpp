@@ -156,7 +156,8 @@ void SimulationGenerator::ConstructEquations(
     // bootstrap current
     enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-        BootstrapCurrent *bootstrap = new BootstrapCurrent(fluidGrid, unknowns, ionHandler, eqsys->REFluid->GetLnLambda());
+        BootstrapCurrent *bootstrap = new BootstrapCurrent(fluidGrid, unknowns, ionHandler, 
+eqsys->GetREFluid()->GetLnLambda());
         eqsys->SetBootstrap(bootstrap);
     }
 

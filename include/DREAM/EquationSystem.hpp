@@ -167,8 +167,8 @@ namespace DREAM {
             this->SPI = SPI;
         }
 
-        void SetBootstrap(BootstrapCurrent *Bootstrap) {
-            this->Bootstrap = Bootstrap;
+        void SetBootstrap(BootstrapCurrent *bootstrap) {
+            this->bootstrap = bootstrap;
         }
 
         void SetAnalyticDists(AnalyticDistributionRE *RE, AnalyticDistributionHottail *HT){
