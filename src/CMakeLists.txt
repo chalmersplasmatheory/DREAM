@@ -33,7 +33,7 @@ set(dream_core
 set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionHottail.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"  
+    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ConnorHastie.cpp"
@@ -43,6 +43,11 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapElectronDensityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapElectronTemperatureTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapEquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapIonDensityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapIonThermalEnergyTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ComptonRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CurrentDensityFromDistributionFunction.cpp"
@@ -99,13 +104,14 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/BootstrapCurrent.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTermHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"  
+    "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
 )
@@ -136,6 +142,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/ions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/ions_abl.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_bs.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_ohm.cpp"
@@ -277,4 +284,3 @@ if (PETSC_FOUND)
     target_link_libraries(dream PUBLIC "${PETSC_LIBRARIES}")
     add_definitions(${PETSC_DEFINITIONS})
 endif()
-
