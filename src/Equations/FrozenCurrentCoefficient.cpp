@@ -40,7 +40,13 @@ void FrozenCurrentCoefficient::Rebuild(
 	real_t Ip = unknowns->GetUnknownData(this->id_I_p)[0];
 	real_t DIk = this->D_I;
 
-	if (this->D_I == 0 && (Ip < Ipresc || Ip == Ip_prev)) {
+	real_t Irat;
+	if (Ipresc != 0)
+		Irat = Ip/Ipresc;
+	else
+		Irat = 2;
+
+	if (this->D_I == 0 && (Irat <= 1)) {
 		this->D_I = 0;
 	} else if (this->D_I == 0) {
 		// Estimate D_I based on formula
@@ -57,9 +63,9 @@ void FrozenCurrentCoefficient::Rebuild(
 
 		this->D_I = 2*M_PI / VpVol * dIpdt / djdr;
 	} else if (this->prevTime != t) {
-		this->D_I *= (Ip/Ipresc);
+		this->D_I *= Irat;
 	} else {
-		this->D_I -= (DIk - this->D_I_prev) * (Ip - Ipresc) / (Ip - Ip_prev);
+		this->D_I -= (DIk - this->D_I_prev) * Ipresc * (Irat - 1) / (Ip - Ip_prev);
 	}
 
 	// Bound lower value to zero
