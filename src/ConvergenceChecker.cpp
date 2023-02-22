@@ -202,14 +202,8 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
  */
 void ConvergenceChecker::SetAbsoluteTolerance(const len_t uqty, const real_t abstol) {
     auto nt = this->nontrivials;
-    if (find(nt.begin(), nt.end(), uqty) == nt.end())
-        throw DREAMException(
-            "Cannot set absolute tolerance for unknown quantity "
-            "'%s' as it is not a non-trivial quantity.",
-            this->unknowns->GetUnknown(uqty)->GetName().c_str()
-        );
-
-    this->absTols[uqty] = abstol;
+    if (find(nt.begin(), nt.end(), uqty) != nt.end())
+		this->absTols[uqty] = abstol;
 }
 
 /**
@@ -236,13 +230,7 @@ void ConvergenceChecker::SetRelativeTolerance(const real_t reltol) {
  */
 void ConvergenceChecker::SetRelativeTolerance(const len_t uqty, const real_t reltol) {
     auto nt = this->nontrivials;
-    if (find(nt.begin(), nt.end(), uqty) == nt.end())
-        throw DREAMException(
-            "Cannot set absolute tolerance for unknown quantity "
-            "'%s' as it is not a non-trivial quantity.",
-            this->unknowns->GetUnknown(uqty)->GetName().c_str()
-        );
-
-    this->relTols[uqty] = reltol;
+    if (find(nt.begin(), nt.end(), uqty) != nt.end())
+		this->relTols[uqty] = reltol;
 }
 
