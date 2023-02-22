@@ -18,6 +18,7 @@ namespace DREAM {
         len_t nZ;
         len_t nzs;
 
+    protected:
         len_t
             id_ncold,
             id_ions,
@@ -31,6 +32,8 @@ namespace DREAM {
 
         void AllocateDeltaX();
         void DeallocateDeltaX();
+
+        void SetUnknown(len_t id_X) { this->id_X = id_X; }
 
         // helpers
         void SetJacobianElement(len_t, FVM::Matrix*, len_t, len_t, real_t);
