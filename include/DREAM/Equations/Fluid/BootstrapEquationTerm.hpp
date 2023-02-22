@@ -18,6 +18,7 @@ namespace DREAM {
         len_t nZ;
         len_t nzs;
 
+    protected:
         len_t
             id_ncold,
             id_ions,
@@ -33,6 +34,8 @@ namespace DREAM {
         void DeallocateDeltaX();
 
 	virtual len_t GetNumberOfNonZerosPerRow() const { return 3; } // is this correct?
+
+        void SetUnknown(len_t id_X) { this->id_X = id_X; }
 
         // helpers
         void SetJacobianElement(len_t, FVM::Matrix*, len_t, len_t, real_t);
