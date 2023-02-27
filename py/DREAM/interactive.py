@@ -37,6 +37,7 @@ def setup_interactive(do, glob):
     glob['grid']  = do.grid
     glob['other'] = do.other
     glob['solver'] = do.solver
+    glob['do'] = do
 
     print('Loaded {} unknowns ({})'.format(len(do.eqsys.keys()), do.getFileSize_s()))
     print(do.grid)

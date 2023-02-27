@@ -66,7 +66,16 @@ void IonSPIDepositionTerm::Rebuild(
 ) {
 
 	len_t Nr=this->grid->GetNr();
-	if(this->isAbl && this->spi_abl_ioniz_mode==OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED){
+	//if(this->isAbl && this->spi_abl_ioniz_mode==OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED){
+	if(this->spi_abl_ioniz_mode==OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL){
+		for(len_t ir=0;ir<Nr;ir++)
+			for(len_t iZ=0;iZ<Zion+1;iZ++)
+				if(iZ==0)
+					weights[ir*(Zion+1)+iZ]=1;
+				else
+					weights[ir*(Zion+1)+iZ]=0;
+	
+	}else if(this->spi_abl_ioniz_mode==OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED){
 		for(len_t ir=0;ir<Nr;ir++)
 			for(len_t iZ=0;iZ<Zion+1;iZ++)
 				if(iZ==1)

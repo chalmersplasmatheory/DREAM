@@ -48,8 +48,8 @@ class MomentumGrid:
 
         self.type = ttype
         if self.type == TYPE_PXI:
-            self.pgrid = PGrid(self.name, np=np, pmax=pmax)
-            self.xigrid = XiGrid(self.name, nxi=nxi)
+            self.pgrid = PGrid(self.name, parent=self, np=np, pmax=pmax)
+            self.xigrid = XiGrid(self.name, parent=self, nxi=nxi)
         elif self.type == TYPE_PPARPPERP:
             raise DREAMException("No support implemented yet for 'ppar/pperp' grids.")
         else:
@@ -83,6 +83,15 @@ class MomentumGrid:
             raise DREAMException("{}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, pmax))
 
         self.pgrid.setPmax(pmax)
+
+
+    def setPmin(self, pmin):
+        """
+        Sets the minimum momentum on the kinetic grid. NOTE: This parameter
+        is only observed IF the runaway grid is the only kinetic grid enabled.
+        """
+        self.pgrid.setPmin(pmin)
+
 
     def setBiuniformGrid(self, psep=None, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None, thetasep=None, nthetasep=None, nthetasep_frac=None):
         """
@@ -191,12 +200,12 @@ class MomentumGrid:
         """
         self.name    = name
         self.enabled = data['enabled']
-        self.type    = data['type']
 
         if self.enabled:
+            self.type    = data['type']
             if self.type == TYPE_PXI:
-                self.pgrid = PGrid(name, data=data)
-                self.xigrid = XiGrid(name, data=data)
+                self.pgrid = PGrid(name, parent=self, data=data)
+                self.xigrid = XiGrid(name, parent=self, data=data)
             elif self.type == TYPE_PPARPPERP:
                 raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
             else:

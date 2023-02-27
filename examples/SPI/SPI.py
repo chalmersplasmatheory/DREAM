@@ -44,7 +44,7 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 
 # time resolution of restarted simulation
 Tmax_restart = 8e-3 # simulation time in seconds
-Nt_restart = 800     # number of time steps
+Nt_restart = 200     # number of time steps
 
 n_D = 2.8e19
 n_D_inj_spi = 1e0
@@ -134,13 +134,13 @@ ds.runawaygrid.setEnabled(False)
 
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
+ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_MKL)
 
 
 ds.other.include('fluid', 'scalar')
 
 filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'Nr'+str(Nr)+'new'
-folder_name='dep_comp/'
+folder_name='output/'
 
 # Save settings to HDF5 file
 ds.save(folder_name+'init_settings'+filename_ending+'.h5')

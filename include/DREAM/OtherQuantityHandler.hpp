@@ -22,7 +22,11 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
+#include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
@@ -53,10 +57,20 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+			// Pitch angle advection due to time varying B
+			DREAM::TimeVaryingBTerm *f_hot_timevaryingb=nullptr;
+			DREAM::TimeVaryingBTerm *f_re_timevaryingb=nullptr;
+			// Synchrotron loss term
+			DREAM::SynchrotronTerm *f_hot_synchrotron=nullptr;
+			DREAM::SynchrotronTerm *f_re_synchrotron=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
+            // Hyperresistive diffusion term
+            DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
+			// List of ion rate equations for each ion species
+			std::vector<IonRateEquation*> ni_rates;
         };
-
+    
     protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
@@ -73,8 +87,9 @@ namespace DREAM {
 
         // indices to unknownquantities
         len_t 
-            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Wcold,
-            id_Eterm, id_jtot, id_psip, id_Ip, id_psi_edge, id_psi_wall;
+            id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
+            id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
+            id_n_re_neg=0;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids 
         real_t *kineticVectorHot; 

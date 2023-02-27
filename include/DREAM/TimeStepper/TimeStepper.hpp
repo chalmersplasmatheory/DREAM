@@ -12,14 +12,15 @@ namespace DREAM {
 
         // Pointer to Solver object used for inverting equation system
         Solver *solver;
-
     public:
         TimeStepper(FVM::UnknownQuantityHandler *u)
             : unknowns(u) {}
         virtual ~TimeStepper() {}
 
+        virtual bool CheckNegative(const std::string&);
+        virtual void HandleException(FVM::FVMException&);
+
         virtual real_t CurrentTime() const = 0;
-        virtual void HandleException(FVM::FVMException&) = 0;
         virtual bool IsFinished() = 0;
         virtual bool IsSaveStep() = 0;
         virtual real_t NextTime() = 0;

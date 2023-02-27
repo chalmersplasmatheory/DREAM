@@ -83,6 +83,20 @@ namespace DREAM {
             return IatR;
         }
 
+		/**
+		 * Returns the total plasma current I_p inside the plasma
+		 * (i.e. same as 'EvaluateIpInsideR()' except with 'ir'
+		 * corresponding to the last flux grid point).
+		 */
+		static real_t EvaluateIp(FVM::RadialGrid *rGrid, const real_t *jtot) {
+			const len_t nr = rGrid->GetNr();
+
+			real_t Ip = 0;
+			for (len_t i = 0; i < nr; i++)
+				Ip += GetIpIntegrand(i, rGrid) * jtot[i];
+
+			return Ip;
+		}
         
     };
 }

@@ -58,7 +58,7 @@ const real_t IonHandler::atomicMassInMu[nIonMass] =
  */
 IonHandler::IonHandler(
     FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
-    vector<string>& names, vector<string>& tritium
+    vector<string>& names, vector<string>& tritium, vector<string>& hydrogen
 ) {
     rGrid = rg;
     unknowns = u;
@@ -70,9 +70,14 @@ IonHandler::IonHandler(
     niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     this->ionNames = names;
+
     this->tritiumNames = tritium;
     this->nTritium = tritium.size();
     this->tritiumIndices = new len_t[nTritium];
+
+	this->hydrogenNames = hydrogen;
+	this->nHydrogen = hydrogen.size();
+	this->hydrogenIndices = new len_t[nHydrogen];
 
     // Find index of tritum ions
     len_t ti = 0;
@@ -85,6 +90,18 @@ IonHandler::IonHandler(
         if (ti != t+1)
             throw FVM::FVMException("Species '%s' declared as tritium, but ion species has not been defined.", tritium[t].c_str());
     }
+	// Find index of hydrogen ions
+	len_t hi = 0;
+	for (len_t h = 0; h < hydrogen.size(); h++) {
+		for (len_t i = 0; i < names.size(); i++)
+			if (hydrogen[h] == names[i]) {
+				this->hydrogenIndices[hi++] = i;
+				break;
+			}
+		if (hi != h+1)
+			throw FVM::FVMException("Species '%s' declared as hydrogen, but ion species has not been defined.", hydrogen[h].c_str());
+	}
+
     Initialize();
 }
 
@@ -94,6 +111,7 @@ IonHandler::IonHandler(
 IonHandler::~IonHandler(){
     DeallocateAll();
     delete [] tritiumIndices;
+	delete [] hydrogenIndices;
 }
 
 
@@ -135,11 +153,16 @@ void IonHandler::Initialize() {
     mi = new real_t[nZ];
     for(len_t iz=0; iz<nZ; iz++){
         if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
-            bool isTritium = false;
+            bool isTritium = false, isHydrogen = false;
             for(len_t it=0; it<nTritium; it++)
                 if(iz==tritiumIndices[it])
                     isTritium = true;
-            mi[iz] = isTritium ? Constants::mT : Constants::mD;
+			for (len_t ih=0; ih<nHydrogen; ih++)
+				if (iz==hydrogenIndices[ih])
+					isHydrogen = true;
+            mi[iz] = isTritium ? Constants::mT : (
+						isHydrogen ? Constants::mH : Constants::mD
+			);
         } else if ( Zs[iz] > nIonMass ) // if heavier species than we store data for, assume simple linear scaling
             mi[iz] = 2.3*Zs[iz] * Constants::mu; 
         else // read from table
@@ -261,6 +284,30 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
 
 
 /**
+ * Calculates the quantity <n Z0^2>_i for the given ion species,
+ * defined as
+ *
+ *   <n Z0^2>_i = sum_j n_i^(j) Z0_j^2
+ *
+ * i.e. essentially the effective charge for ion species i.
+ *
+ * ion: ID of ion species to calculate quantity for.
+ * ir:  Radial index to calculate quantity for.
+ */
+const real_t IonHandler::GetNZ0Z0(const len_t ion, const len_t ir) const {
+	const len_t Z = this->GetZ(ion);
+    const real_t *ni = unknowns->GetUnknownData(niID);
+	const len_t idx = GetIndex(ion, 0);
+
+	real_t nZ2 = 0;
+	for (len_t Z0 = 1; Z0 <= Z; Z0++)
+		nZ2 += ni[(idx+Z0)*nr+ir]*Z0*Z0;
+	
+	return nZ2;
+}
+
+
+/**
  * The inverse of GetIndex(...): takes the ion index and 
  * returns the corresponding iz and Z0
  */
@@ -280,6 +327,19 @@ bool IonHandler::IsTritium(const len_t iIon) const {
             return true;
 
     return false;
+}
+
+
+/**
+ * Checks whether the ion with the given index is a hydrogen
+ * ion species.
+ */
+bool IonHandler::IsHydrogen(const len_t iIon) const {
+	for (len_t i = 0; i < this->nHydrogen; i++)
+		if (iIon == this->hydrogenIndices[i])
+			return true;
+	
+	return false;
 }
 
 

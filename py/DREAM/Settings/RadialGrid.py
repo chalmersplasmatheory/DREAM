@@ -9,6 +9,7 @@ import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
+from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
 
 
 TYPE_CYLINDRICAL = 1
@@ -19,7 +20,7 @@ TYPE_NUMERICAL = 3
 FILE_FORMAT_LUKE = 1
 
 
-class RadialGrid:
+class RadialGrid(PrescribedScalarParameter):
     
 
     def __init__(self, ttype=1):
@@ -56,6 +57,9 @@ class RadialGrid:
         self.ripple_dB_B = None
         self.ripple_r = None
         self.ripple_t = None
+        # Time-varying magnetic field parameter
+        self.dlnB0dt_x = None
+        self.dlnB0dt_t = None
 
         # Numerical magnetic field parameters
         self.num_filename = None
@@ -220,6 +224,8 @@ class RadialGrid:
         :param kappa:  Elongation.
         :param rkappa: Radial grid for elongation.
         """
+        self.setType(TYPE_ANALYTIC_TOROIDAL)
+
         self.setShapeParameter('Delta',   r=rDelta, data=Delta)
         self.setShapeParameter('delta',   r=rdelta, data=delta)
         self.setShapeParameter('GOverR0', r=rG,     data=GOverR0)
@@ -272,6 +278,20 @@ class RadialGrid:
         self.ripple_t = t
 
 
+    def setTimeVaryingB(self, dB0dt_B0, t=0):
+        """
+        Set the time-rate-of-change of the magnetic field strength (for the
+        approximate time varying B compression force operator). Note that the
+        specified parameter should be (1/B0)*(dB0/dt), where B0 is the on-axis
+        magnetic field strength and dB0/dt denotes the absolute
+        time-rate-of-change of B0.
+
+        :param dB0dt_B0: Normalized time-rate-of-change of the on-axis magnetic field strength.
+        :param t: Time vector corresponding to the given time-rate-of-change.
+        """
+        self.dlnB0dt_x, self.dlnB0dt_t = self._setScalarData(data=dB0dt_B0, times=t)
+
+
     def setNumerical(self, filename, format=FILE_FORMAT_LUKE):
         """
         Sets the numerical magnetic field to use for the simulation.
@@ -320,7 +340,7 @@ class RadialGrid:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
 
         
-    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None):
+    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None, **kwargs):
         """
         Visualize an analytic toroidal magnetic field.
         """
@@ -371,18 +391,24 @@ class RadialGrid:
         kappa = lambda r : interppar(r, self.kappa_r, self.kappa)
 
         # Construct flux surfaces
-        R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        if np.isinf(self.R0):
+            R = lambda r, t : Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        else:
+            R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
         Z = lambda r, t : r*kappa(r)*np.sin(t)
 
         # Flux surfaces
-        ax.plot(R(rr, tt), Z(rr, tt), color=gray, linewidth=1)
+        ax.plot(R(rr, tt), Z(rr, tt), color=gray, linewidth=1, **kwargs)
         # Limiter
-        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), color=black, linewidth=2)
+        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), color=black, linewidth=2, **kwargs)
         # Wall
-        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2)
+        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2, **kwargs)
         ax.axis('equal')
 
-        ax.set_xlabel('Major radius $R$ (m)')
+        if np.isinf(self.R0):
+            ax.set_xlabel('Major radius $R-R_0$ (m)')
+        else:
+            ax.set_xlabel('Major radius $R$ (m)')
         ax.set_ylabel('Height $Z$ (m)')
 
         if show:
@@ -449,6 +475,10 @@ class RadialGrid:
             self.ripple_r = data['ripple']['r']
             self.ripple_t = data['ripple']['t']
 
+        if 'dlnB0dt' in data:
+            self.dlnB0dt_x = data['dlnB0dt']['x']
+            self.dlnB0dt_t = data['dlnB0dt']['t']
+
 
     def todict(self, verify=True):
         """
@@ -498,6 +528,12 @@ class RadialGrid:
                 'x': self.ripple_dB_B,
                 'r': self.ripple_r,
                 't': self.ripple_t
+            }
+
+        if self.dlnB0dt_x is not None:
+            data['dlnB0dt'] = {
+                'x': self.dlnB0dt_x,
+                't': self.dlnB0dt_t
             }
 
         return data
@@ -573,6 +609,7 @@ class RadialGrid:
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_t'.")
             elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_t.size, self.ripple_r.size):
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
+
         
     def verifySettingsShapeParameter(self, shapeparam):
         """

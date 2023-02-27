@@ -43,6 +43,7 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     // p/xi grid
     s->DefineSetting(mod + "/np", "Number of distribution grid points in p", (int_t)1);
     s->DefineSetting(mod + "/nxi", "Number of distribution grid points in xi", (int_t)1);
+	s->DefineSetting(mod + "/pmin", "Minimum momentum on the (flux) grid", (real_t)0.0);
     s->DefineSetting(mod + "/pmax", "Maximum momentum on the (flux) grid", (real_t)0.0);
     s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)OptionConstants::PXIGRID_PTYPE_UNIFORM);
     s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)OptionConstants::PXIGRID_XITYPE_UNIFORM);
@@ -158,7 +159,7 @@ FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
     switch (*type) {
         case OptionConstants::MOMENTUMGRID_TYPE_PXI:
             if (hottailGrid == nullptr)
-                pmin = 0;
+                pmin = s->GetReal(RUNAWAYGRID "/pmin");
             else
                 pmin = hottailGrid->GetMomentumGrid(0)->GetP1_f(
                     hottailGrid->GetMomentumGrid(0)->GetNp1()
@@ -212,14 +213,16 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
 
         case OptionConstants::PXIGRID_PTYPE_BIUNIFORM: {
             real_t psep = s->GetReal(mod + "/psep");
-            len_t npSep = s->GetInteger(mod + "/npsep");
-            real_t npSep_frac = s->GetReal(mod + "/npsep_frac");
+            len_t npSep = s->GetInteger(mod + "/npsep", false);
+            real_t npSep_frac = s->GetReal(mod + "/npsep_frac", false);
 
-            if (npSep > 0)
+            if (npSep > 0) {
                 pgg = new FVM::PXiGrid::PBiUniformGridGenerator(np, (len_t)npSep, pmin, psep, pmax);
-            else if (npSep_frac > 0)
+                s->MarkUsed(mod + "/npsep");
+            } else if (npSep_frac > 0) {
                 pgg = new FVM::PXiGrid::PBiUniformGridGenerator(np, (real_t)npSep_frac, pmin, psep, pmax);
-            else
+                s->MarkUsed(mod + "/npsep_frac");
+            } else
                 throw SettingsException("%s: Neither 'npsep' nor 'npsep_frac' have been specified.", mod.c_str());
         } break;
 
@@ -256,14 +259,16 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
 
         case OptionConstants::PXIGRID_XITYPE_BIUNIFORM:{ 
             real_t xisep = s->GetReal(mod + "/xisep");
-            len_t nxiSep = s->GetInteger(mod + "/nxisep");
-            real_t nxiSep_frac = s->GetReal(mod + "/nxisep_frac");
+            len_t nxiSep = s->GetInteger(mod + "/nxisep", false);
+            real_t nxiSep_frac = s->GetReal(mod + "/nxisep_frac", false);
 
-            if (nxiSep > 0)
+            if (nxiSep > 0) {
                 xgg = new FVM::PXiGrid::XiBiUniformGridGenerator(nxi, (len_t)nxiSep, xisep);
-            else if (nxiSep_frac > 0)
+                s->MarkUsed(mod + "/nxisep");
+            } else if (nxiSep_frac > 0) {
                 xgg = new FVM::PXiGrid::XiBiUniformGridGenerator(nxi, (real_t)nxiSep_frac, xisep);
-            else
+                s->MarkUsed(mod + "/nxisep_frac");
+            } else
                 throw SettingsException("%s: Neither 'nxisep' nor 'nxisep_frac' have been specified.", mod.c_str());
         } break;
         
@@ -273,14 +278,16 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
         	
         case OptionConstants::PXIGRID_XITYPE_BIUNIFORM_THETA:{ 
             real_t xisep = s->GetReal(mod + "/xisep");
-            len_t nxiSep = s->GetInteger(mod + "/nxisep");
-            real_t nxiSep_frac = s->GetReal(mod + "/nxisep_frac");
+            len_t nxiSep = s->GetInteger(mod + "/nxisep", false);
+            real_t nxiSep_frac = s->GetReal(mod + "/nxisep_frac", false);
 
-            if (nxiSep > 0)
+            if (nxiSep > 0) {
                 xgg = new FVM::PXiGrid::XiBiUniformThetaGridGenerator(nxi, (len_t)nxiSep, xisep);
-            else if (nxiSep_frac > 0)
+                s->MarkUsed(mod + "/nxisep");
+            } else if (nxiSep_frac > 0) {
                 xgg = new FVM::PXiGrid::XiBiUniformThetaGridGenerator(nxi, (real_t)nxiSep_frac, xisep);
-            else
+                s->MarkUsed(mod + "/nxisep_frac");
+            } else
                 throw SettingsException("%s: Neither 'nxisep' nor 'nxisep_frac' have been specified.", mod.c_str());
         } break;
 	

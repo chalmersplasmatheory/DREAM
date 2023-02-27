@@ -13,6 +13,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Info.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Save.cpp"
     "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.cpp"
+    "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.nonlinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
@@ -23,8 +24,10 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/OtherQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/PostProcessor.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepper.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperAdaptive.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperConstant.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperIonization.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
@@ -55,6 +58,14 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTermHighZ.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedDiffusionStochasticBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralPrescribedAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralPrescribedDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEnergyFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatFluxFromDistributionFunction.cpp"
@@ -62,6 +73,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSPIDepositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIAblationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIHeatAbsorbtionTerm.cpp"
@@ -86,6 +98,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RipplePitchScattering.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
@@ -201,21 +214,22 @@ if (MATH_LIBRARY)
 endif()
 
 # Interprocedural optimizations
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    include(CheckIPOSupported)
-    # Clang does not support IPO (although Clang++ does), so we need
-    # to explicitly check both C and C++ (since Clang is used for linking)
-    check_ipo_supported(RESULT result LANGUAGES C CXX)
-    if (result)
-        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-endif ()
+#if (INTERPROC_OPTIM AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+#	message("INTERPROCESS OPTIMIZATIONS ENABLED")
+#    include(CheckIPOSupported)
+#    # Clang does not support IPO (although Clang++ does), so we need
+#    # to explicitly check both C and C++ (since Clang is used for linking)
+#    check_ipo_supported(RESULT result LANGUAGES C CXX)
+#    if (result)
+#        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+#    endif()
+#endif ()
 
 # GNU Scientific Library
 find_package(GSL REQUIRED)
 if (GSL_FOUND)
-    if (GSL_VERSION VERSION_LESS 2.0)
-        message(FATAL_ERROR "dream needs GSL >= 2.0")
+    if (GSL_VERSION VERSION_LESS 2.4)
+        message(FATAL_ERROR "dream needs GSL >= 2.4")
     endif()
 
     target_include_directories(dream PUBLIC "${GSL_INCLUDE_DIRS}")
@@ -241,13 +255,20 @@ target_link_libraries(dream PUBLIC softlib)
 #endif()
 
 # MPI (just as a dependency for PETSc)
-find_package(MPI COMPONENTS CXX)
-if (MPI_CXX_FOUND)
-    target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
-	set_target_properties(dream PROPERTIES COMPILE_FLAGS "${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS}")
-	set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
-	target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
-endif (MPI_CXX_FOUND)
+if (PETSC_WITH_MPI)
+	message(STATUS "PETSc was compiled with MPI. Will attempt to find an MPI installation...")
+	find_package(MPI COMPONENTS CXX)
+	if (MPI_CXX_FOUND)
+		target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
+		#set_target_properties(dream PROPERTIES COMPILE_FLAGS ${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS})
+		#set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
+		set_property(TARGET dream PROPERTY COMPILE_FLAGS ${MPI_CXX_COMPILE_OPT} ${MPI_CXX_COMPILE_DEFINITIONS})
+		set_property(TARGET dream PROPERTY LINK_FLAGS ${MPI_CXX_LINK_FLAGS})
+		target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
+	endif (MPI_CXX_FOUND)
+else (PETSC_WITH_MPI)
+	message(STATUS "PETSc does not require MPI.")
+endif (PETSC_WITH_MPI)
 
 # PETSc
 find_package(PETSc COMPONENTS CXX REQUIRED)

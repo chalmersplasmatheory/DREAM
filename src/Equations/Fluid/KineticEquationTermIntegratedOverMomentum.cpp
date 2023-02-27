@@ -30,6 +30,10 @@ KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMome
     rebuildOperator(rebuild), scaleFactor(scaleFactor) {
     
     SetName("KineticEquationTermIntegratedOverMomentum");
+    
+    this->CsetJacobian = new Mat[u->GetNUnknowns()];
+    for (len_t i = 0; i < u->GetNUnknowns(); i++)
+        this->CsetJacobian[i] = nullptr;
 
     allocateKineticStorage();
 }
@@ -40,6 +44,11 @@ KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMome
  */
 KineticEquationTermIntegratedOverMomentum::~KineticEquationTermIntegratedOverMomentum(){
     deallocateKineticStorage();
+    MatDestroy(&this->CsetElements);
+    for (len_t i=0; i < unknowns->GetNUnknowns(); i++)
+        MatDestroy(this->CsetJacobian+i);
+        
+    delete [] this->CsetJacobian;
 }
 
 
@@ -150,14 +159,17 @@ void KineticEquationTermIntegratedOverMomentum::SetMatrixElements(FVM::Matrix *m
         rhs[ir] += scaleFactor*fluidVector[ir];
 
     kineticMatrix->Assemble();
-    Mat C;  
-    MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C); // performs matrix multiplication C = A*B
+    // performs matrix multiplication C = A*B
+    if (this->CsetElements == nullptr)
+        MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &this->CsetElements);
+    else
+        MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_REUSE_MATRIX, PETSC_DEFAULT, &this->CsetElements);
 
     // sum over columns: for each column index j, integrate over momentum (i.e. the rows)
     for(PetscInt j=0; j<(PetscInt)NCells; j++){
         for(len_t ir=0; ir<nr; ir++)
             fluidVector[ir] = 0;
-        MatGetValues(C,nr,idxFluid,1,&j,fluidVector);
+        MatGetValues(this->CsetElements,nr,idxFluid,1,&j,fluidVector);
         for(len_t i=0; i<nr; i++)
             mat->SetElement(i,j,scaleFactor*fluidVector[i]);
     }
@@ -172,15 +184,19 @@ bool KineticEquationTermIntegratedOverMomentum::SetJacobianBlock(const len_t /*u
     const real_t *f = unknowns->GetUnknownData(id_f);
     bool contributes = kineticOperator->SetJacobianBlock(id_f, derivId, kineticMatrix, f);
     kineticMatrix->Assemble();
-    Mat C;  
-    MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C); // performs matrix multiplication C = A*B
+    
+    // performs matrix multiplication C = A*B
+    if (this->CsetJacobian[derivId] == nullptr)
+        MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, this->CsetJacobian+derivId);
+    else
+        MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_REUSE_MATRIX, PETSC_DEFAULT, this->CsetJacobian+derivId);
 
     // sum over columns: for each column index j, integrate over momentum (i.e. the rows)
     PetscInt N = unknowns->GetUnknown(derivId)->NumberOfElements();
     for(PetscInt j=0; j<N; j++){
         for(len_t ir=0; ir<nr; ir++)
             fluidVector[ir] = 0;
-        MatGetValues(C,nr,idxFluid,1,&j,fluidVector);
+        MatGetValues(this->CsetJacobian[derivId],nr,idxFluid,1,&j,fluidVector);
         for(len_t i=0; i<nr; i++)
             jac->SetElement(i,j,scaleFactor*fluidVector[i]);
     }

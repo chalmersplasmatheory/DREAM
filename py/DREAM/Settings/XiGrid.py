@@ -14,7 +14,7 @@ TYPE_TRAPPED = 6
 
 
 class XiGrid:
-    def __init__(self, name, ttype=TYPE_UNIFORM, nxi=0, data=None):
+    def __init__(self, name, parent, ttype=TYPE_UNIFORM, nxi=0, data=None):
         """
         Constructor.
 
@@ -28,6 +28,7 @@ class XiGrid:
                  (except 'ttype' should be called 'xigrid')
         """
         self.name = name
+        self.parent = parent
 
         self.nxisep = None
         self.nxisep_frac = None
@@ -145,16 +146,16 @@ class XiGrid:
         if self.type == TYPE_BIUNIFORM:
             self.xisep  = data['xisep']
             if 'nxisep' in data:
-                self.nxisep = data['nxisep']
+                self.nxisep = int(data['nxisep'])
             elif 'nxisep_frac' in data:
-                self.nxisep_frac = data['nxisep_frac']
+                self.nxisep_frac = float(data['nxisep_frac'])
         
         elif self.type == TYPE_BIUNIFORM_THETA:
             self.thetasep  = data['xisep']
             if 'nxisep' in data:
-                self.nthetasep = data['nxisep']
+                self.nthetasep = int(data['nxisep'])
             elif 'nxisep_frac' in data:
-                self.nthetasep_frac = data['nxisep_frac']
+                self.nthetasep_frac = float(data['nxisep_frac'])
         elif self.type == TYPE_CUSTOM:
             self.xi_f = data['xi_f']
         elif self.type == TYPE_TRAPPED:
@@ -212,6 +213,9 @@ class XiGrid:
         """
         Verify that all (mandatory) settings are set and consistent.
         """
+        if not self.parent.enabled:
+            return
+
         if self.type in [TYPE_UNIFORM,TYPE_BIUNIFORM,TYPE_UNIFORM_THETA,TYPE_BIUNIFORM_THETA,TYPE_CUSTOM]:
             if self.nxi is None or self.nxi <= 0:
                 raise DREAMException("XiGrid {}: Invalid value assigned to 'nxi': {}. Must be > 0.".format(self.name, self.nxi))

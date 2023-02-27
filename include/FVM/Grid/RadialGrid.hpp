@@ -112,6 +112,7 @@ namespace DREAM::FVM {
             *psiPrimeRef   = nullptr,
             *psiPrimeRef_f = nullptr,
             *psiToroidal   = nullptr,
+            *psiToroidal_f = nullptr,
             R0;
         
         // Orbit-phase-space Jacobian factors
@@ -170,6 +171,12 @@ namespace DREAM::FVM {
             real_t *r, real_t *r_f,
             real_t *dr, real_t *dr_f
         ) {
+            if (this->r == r &&
+                this->r_f == r_f &&
+                this->dr == dr &&
+                this->dr_f == dr_f)
+                return;
+
             DeallocateGrid();
 
             this->r    = r;
@@ -208,8 +215,8 @@ namespace DREAM::FVM {
             this->VpVol_f = VpVol_f;
         }
 
-        void GetRThetaFromCartesian(real_t *r, real_t *theta, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaFromCartesian(r,theta,x,y,z,lengthScale, startingGuessR);}
-        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta){return this->generator->GetGradRCartesian(gradRCartesian,r,theta);}
+        void GetRThetaPhiFromCartesian(real_t *r, real_t *theta, real_t *phi, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaPhiFromCartesian(r,theta,phi,x,y,z,lengthScale, startingGuessR);}
+        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta, real_t phi){return this->generator->GetGradRCartesian(gradRCartesian,r,theta, phi);}
         real_t FindClosestApproach(real_t x1, real_t y1, real_t z1, real_t x2, real_t y2, real_t z2){
             return this->generator->FindClosestApproach(x1, y1, z1, x2, y2, z2);
         }
@@ -284,6 +291,10 @@ namespace DREAM::FVM {
             { return psiToroidal; }
         const real_t GetToroidalFlux(len_t ir) const 
             { return psiToroidal[ir]; }
+        const real_t *GetToroidalFlux_f() const
+            { return psiToroidal_f; }
+        const real_t GetToroidalFlux_f(len_t ir) const
+            { return psiToroidal_f[ir]; }
         
         /**
          * Getters of flux-surface averaged Jacobian

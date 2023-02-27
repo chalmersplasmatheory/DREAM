@@ -19,10 +19,11 @@ def create_argparser():
 
     parser.add_argument('-l', '--lazy', help="Load the output lazily and only read data on-demand", dest="lazy", action="store_true")
     parser.add_argument('-r', '--read', help="Load the output to memory immediately (no lazy read)", dest="lazy", action="store_false")
+    parser.add_argument('-s', '--no-settings', help="Do not load settings from the output file", dest="settings", action="store_false")
 
     parser.add_argument('output', help="DREAM output file to load", type=str, nargs='?')
 
-    parser.set_defaults(lazy=True, output='output.h5')
+    parser.set_defaults(lazy=True, output='output.h5', settings=True)
 
     return parser.parse_args()
     
@@ -30,7 +31,7 @@ def create_argparser():
 def main():
     args = create_argparser()
 
-    do = DREAMOutput(args.output, lazy=args.lazy)
+    do = DREAMOutput(args.output, lazy=args.lazy, loadsettings=args.settings)
     """
     if len(sys.argv) == 1:
         do = DREAMOutput('output.h5')

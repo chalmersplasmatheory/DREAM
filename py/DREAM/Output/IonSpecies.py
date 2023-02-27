@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from .IonState import IonState
 from .OutputException import OutputException
+from .FluidQuantity import FluidQuantity
 
 
 class IonSpecies:
@@ -23,6 +24,7 @@ class IonSpecies:
         self.grid = grid
         self.output = output
         self.ionstates = list()
+        self.data = data
 
         nt = len(self.grid.t)
         nr = len(self.grid.r)
@@ -75,7 +77,7 @@ class IonSpecies:
     def getName(self): return self.name
 
 
-    def getDensity(self, t=None):
+    def getDensity(self, t=-1):
         """
         Returns the total radial density (summed over all charge
         states) in the given time step.
@@ -85,7 +87,7 @@ class IonSpecies:
 
         for ion in self.ionstates:
             if n is None:
-                n = ion.get(t=t)
+                n = np.copy(ion.get(t=t))
             else:
                 n += ion.get(t=t)
 
@@ -137,4 +139,60 @@ class IonSpecies:
             plt.show(block=False)
 
         return ax
+        
+    def plotSum(self, Z0 = None, integrate = False, **kwargs):
+        """
+        Plots the spatio-temporal evolution of the sum of the specified charge states of this ion species
+        Z0:         list of charge states to be summed and plotted
+        integrate:  if 'True', plot the volume integral of the specified charge states
+        """
+        if Z0 is None: Z0 = slice(None)
+        states = self.ionstates[Z0]
+        data = None
+        for state in states:
+            if data is None:
+                data = state.data
+            else:
+                data = data + state.data
+                
+        _IonSum = FluidQuantity(name = self.name, data=data, attr=list(), grid=self.grid, output=self.output)
+        if integrate:
+            return _IonSum.plotIntegral(**kwargs)
+        else:
+            return _IonSum.plot(**kwargs)
 
+
+    def histogram(self, t=-1, ax=None, show=None, **kwargs):
+        """
+        Create a histogram of the ion charge state densities for this species.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        x = [0]
+        y = [0]
+        labels = ['']
+        for state in self.ionstates:
+            x.append(x[-1]+1)
+            y.append(state.integral(t=t))
+            labels.append(state.getRomanName())
+
+        x = x[1:]
+        y = y[1:]
+        labels = labels[1:]
+
+        ax.bar(x, y, tick_label=labels, **kwargs)
+        lbls = ax.get_xticklabels()
+        plt.setp(lbls, rotation=45)
+
+        if show:
+            plt.show(block=False)
+
+        return ax
+        
+        

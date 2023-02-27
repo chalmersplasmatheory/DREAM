@@ -176,6 +176,88 @@ real_t *SimulationGenerator::InterpolateIonR(
 }
 
 /**
+ * Define options for a "time+ion" 'data' section in the specified module.
+ */
+void SimulationGenerator::DefineDataIonT(
+	const string& modname, Settings *s,
+	const string& name
+) {
+	const len_t ndim[2] = {0};
+
+	s->DefineSetting(modname + "/" + name + "/t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+	s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to se for the time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+	s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 2, ndim, (real_t*)nullptr);
+}
+
+/**
+ * Load data from the 'data' section of the specified module. The data is
+ * expected to depend on time and ion charge state.
+ *
+ * modname: Name of settings module from which to load the data.
+ * s:       Settings object to get data from.
+ * nZ0:     Number of charge states expected.
+ * name:    Name of variable containing the data.
+ */
+MultiInterpolator1D *SimulationGenerator::LoadDataIonT(
+	const string& modname, Settings *s, const len_t nZ0,
+	const string& name
+) {
+	len_t xdims[2], nt;
+    const real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
+
+	if (xdims[0] == 0 || xdims[1] == 0)
+		return nullptr;
+
+    if (nZ0 != xdims[0] || nt != xdims[1])
+        throw SettingsException(
+            "%s: Inconsistent dimensions of data. Data has "
+            LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but "
+            LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " was expected.",
+            (modname+"/"+name).c_str(), xdims[0], xdims[1], nZ0, nt
+        );
+
+    // Check if dataset is empty
+    if (nZ0 == 0 || nt == 0)
+        return nullptr;
+
+    enum OptionConstants::prescribed_data_interp tinterp =
+        (enum OptionConstants::prescribed_data_interp)s->GetInteger(modname + "/" + name + "/tinterp");
+
+    // Select Interpolator1D interpolation method
+    enum FVM::Interpolator1D::interp_method interp1_meth;
+    switch (tinterp) {
+        case OptionConstants::PRESCRIBED_DATA_INTERP_NEAREST:
+            interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
+            interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized interpolation method on time grid: %d.",
+                modname.c_str(), tinterp
+            );
+    }
+
+    // Construct new 'x' and 't' vectors (since Interpolator1D assumes
+    // ownership of the data, and 'Settings' doesn't renounce its,
+    // we allocate separate data for the 'Interpolator1D' object)
+    real_t *new_x = new real_t[nZ0*nt];
+    real_t *new_t = new real_t[nt];
+
+    for (len_t it = 0; it < nt; it++)
+        new_t[it] = t[it];
+
+	for (len_t iZ = 0; iZ < nZ0; iZ++)
+		for (len_t it = 0; it < nt; it++)
+			new_x[iZ*nt + it] = x[iZ*nt + it];
+
+    return new MultiInterpolator1D(
+        nZ0, nt, 1, new_t, new_x, interp1_meth
+    );
+}
+
+/**
  * Define options for a "radius+time+ion" 'data' section in
  * the specified module.
  */
@@ -766,10 +848,14 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
         (_p2=s->GetRealArray(modname + "/" + name + "/xi", 1, &np2, false)) != nullptr) {
 
         momtype = FVM::Interpolator3D::GRID_PXI;
+		s->MarkUsed(modname + "/" + name + "/p");
+		s->MarkUsed(modname + "/" + name + "/xi");
     } else if ((_p1=s->GetRealArray(modname + "/" + name + "/ppar", 1, &np1, false)) != nullptr &&
         (_p2=s->GetRealArray(modname + "/" + name + "/pperp", 1, &np2, false)) != nullptr) {
 
         momtype = FVM::Interpolator3D::GRID_PPARPPERP;
+		s->MarkUsed(modname + "/" + name + "/ppar");
+		s->MarkUsed(modname + "/" + name + "/pperp");
     } else
         throw SettingsException(
             "%s: No momentum grid set for data.",

@@ -49,7 +49,8 @@ class ScalarQuantity(UnknownQuantity):
         return self.data[index]
 
 
-    def plot(self, ax=None, show=None, t=None):
+    def plot(self, ax=None, show=None, t=None, t_shift = 0, **kwargs):
+
         """
         Generate a plot of the time evolution of this quantity.
 
@@ -68,7 +69,7 @@ class ScalarQuantity(UnknownQuantity):
         if t is None:
             t = slice(None)
 
-        ax.plot(self.time[t], self.data[t])
+        ax.plot(self.time[t]+t_shift, self.data[t], **kwargs)
         ax.set_xlabel(r'Time $t$ (s)')
         ax.set_ylabel(r'{}'.format(self.getTeXName()))
 
@@ -84,7 +85,10 @@ class ScalarQuantity(UnknownQuantity):
         
         :param t: Selection of time points to dump.
         """
-        return self.data[t].__str__()
+        if t is not None:
+            return self.data[t].__str__()
+        else:
+            return self.data[:].__str__()
 
 
     def print(self, t=None):

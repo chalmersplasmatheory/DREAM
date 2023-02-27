@@ -13,6 +13,8 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/deposition","method to use for calculating the pellet shard deposition",(int_t)OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/heatAbsorbtion","method to use for calculating the heat absorbtion in the neutral cloud surrounding the pellet shards",(int_t)OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/cloudRadiusMode","method to use for calculating the size of the neutral cloud surrounding the pellet shards",(int_t)OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/magneticFieldDependenceMode","method to use for calculating the magnetic field dependence of the ablation rate",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/abl_ioniz","method to use for calculating the charge state distribution with which the recently ablated material is deposited",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/init/xp", "initial shard positions",0, (real_t*)nullptr);
@@ -28,6 +30,7 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     enum OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME "/deposition");
     enum OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode = (enum OptionConstants::eqterm_spi_heat_absorbtion_mode)s->GetInteger(MODULENAME "/heatAbsorbtion");
     enum OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode = (enum OptionConstants::eqterm_spi_cloud_radius_mode)s->GetInteger(MODULENAME "/cloudRadiusMode");
+    enum OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode = (enum OptionConstants::eqterm_spi_magnetic_field_dependence_mode)s->GetInteger(MODULENAME "/magneticFieldDependenceMode");
 
     len_t nZ;
     len_t nZSPInShard;
@@ -45,6 +48,6 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
         isotopes[i]=(len_t)_isotopes[i];
     }
 
-    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, VpVolNormFactor, rclPrescribedConstant);
+    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, VpVolNormFactor, rclPrescribedConstant);
     return SPI;
 }

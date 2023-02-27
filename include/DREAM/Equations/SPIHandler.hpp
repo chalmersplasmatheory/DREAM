@@ -31,6 +31,7 @@ namespace DREAM{
         len_t spi_deposition_mode;
         len_t spi_heat_absorbtion_mode;
         len_t spi_cloud_radius_mode;
+        len_t spi_magnetic_field_dependence_mode;
         
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
@@ -74,8 +75,10 @@ namespace DREAM{
         real_t *heatAbsorbtionRate=nullptr;
         real_t *rCoordPPrevious=nullptr;
         real_t *thetaCoordPPrevious=nullptr;
+        real_t *phiCoordPPrevious=nullptr;
         real_t *rCoordPNext=nullptr;
         real_t *thetaCoordPNext=nullptr;
+        real_t *phiCoordPNext=nullptr;
         len_t *irp=nullptr;
         real_t *qtot=nullptr;
         real_t *Eeff=nullptr;
@@ -96,6 +99,7 @@ namespace DREAM{
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
+        real_t CalculateBFieldDampingJOREK(len_t ir);
         void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();
 
         real_t rSourceMax; 
@@ -114,7 +118,8 @@ namespace DREAM{
             OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
             OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
-            OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, real_t VpVolNormFactor, real_t rclPrescribedConstant);
+            OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
+            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, real_t VpVolNormFactor, real_t rclPrescribedConstant);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();

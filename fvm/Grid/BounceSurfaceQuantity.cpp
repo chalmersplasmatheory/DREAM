@@ -5,6 +5,7 @@
  */
 
 #include "FVM/Grid/BounceSurfaceQuantity.hpp"
+#include "FVM/Grid/fluxGridType.enum.hpp"
 
 
 using namespace DREAM::FVM;
@@ -183,18 +184,38 @@ const real_t BounceSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, flux
 real_t BounceSurfaceQuantity::ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType){ 
     real_t t1 = Theta_B1(ir,i,j,fluxGridType,grid);
     real_t t2 = Theta_B2(ir,i,j,fluxGridType,grid);
-    return t1 + (t2-t1) * quad_x_ref[it]; 
+
+	real_t tval;
+	if (t1 > t2) {
+		tval = (t1-2*M_PI) + (t2-t1+2*M_PI) * quad_x_ref[it];
+		if (tval < 0)
+			tval += 2*M_PI;
+	} else
+		tval = t1 + (t2-t1) * quad_x_ref[it]; 
+	
+	return tval;
 }
 
 /**
  * Deallocate one bounceData.
  * XXX: assumes same momentum grid at all radii
  */
-void BounceSurfaceQuantity::DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2){
-    for(len_t ir=0; ir<nr; ir++){
-        for(len_t i = 0; i<np1*np2; i++)
-            if(isTrapped[ir][i]) 
-                delete [] data[ir][i];            
+void BounceSurfaceQuantity::DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2, fluxGridType fluxgrid){
+    for(len_t ir=0; ir < nr; ir++){
+        for (len_t j = 0; j < np2; j++)
+            for(len_t i = 0; i < np1; i++) {
+                bool del = false;
+                switch (fluxgrid) {
+                    case FLUXGRIDTYPE_DISTRIBUTION: del = grid->IsTrapped(ir, i, j); break;
+                    case FLUXGRIDTYPE_RADIAL: del = grid->IsTrapped_fr(ir, i, j); break;
+                    case FLUXGRIDTYPE_P1: del = grid->IsTrapped_f1(ir, i, j); break;
+                    case FLUXGRIDTYPE_P2: del = grid->IsTrapped_f2(ir, i, j); break;
+                    default: del = false; break;
+                }
+
+                if (del)
+                    delete [] data[ir][j*np2+i];
+            }
         delete [] data[ir];
     }
     delete [] data;
@@ -206,10 +227,10 @@ void BounceSurfaceQuantity::DeleteData(real_t ***&data, bool **isTrapped, len_t 
 void BounceSurfaceQuantity::DeallocateData(){
     if(bounceData == nullptr)
         return;
-    DeleteData(bounceData,    isTrapped,    nr,   np1[0],   np2[0]);
-    DeleteData(bounceData_fr, isTrapped_fr, nr+1, np1[0],   np2[0]);
-    DeleteData(bounceData_f1, isTrapped_f1, nr,   np1[0]+1, np2[0]);
-    DeleteData(bounceData_f2, isTrapped_f2, nr,   np1[0],   np2[0]+1);
+    DeleteData(bounceData,    nr,   np1[0],   np2[0], FLUXGRIDTYPE_DISTRIBUTION);
+    DeleteData(bounceData_fr, nr+1, np1[0],   np2[0], FLUXGRIDTYPE_RADIAL);
+    DeleteData(bounceData_f1, nr,   np1[0]+1, np2[0], FLUXGRIDTYPE_P1);
+    DeleteData(bounceData_f2, nr,   np1[0],   np2[0]+1, FLUXGRIDTYPE_P2);
     
     trappedAllocated = false;
     passingAllocated = false;

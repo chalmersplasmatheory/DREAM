@@ -39,6 +39,31 @@ enum ion_opacity_mode {
 	OPACITY_MODE_GROUND_STATE_OPAQUE=2
 };
 
+enum ion_charged_diffusion_mode {
+	ION_CHARGED_DIFFUSION_MODE_NONE=1,
+	ION_CHARGED_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_diffusion_mode {
+	ION_NEUTRAL_DIFFUSION_MODE_NONE=1,
+	ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_charged_advection_mode {
+	ION_CHARGED_ADVECTION_MODE_NONE=1,
+	ION_CHARGED_ADVECTION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_advection_mode {
+	ION_NEUTRAL_ADVECTION_MODE_NONE=1,
+	ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED=2
+};
+
+enum ion_source_type {
+	ION_SOURCE_NONE=1,
+	ION_SOURCE_PRESCRIBED=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,
@@ -107,7 +132,8 @@ enum linear_solver {
     LINEAR_SOLVER_LU=1,
     LINEAR_SOLVER_MUMPS=2,
     LINEAR_SOLVER_MKL=3,
-    LINEAR_SOLVER_SUPERLU=4
+    LINEAR_SOLVER_SUPERLU=4,
+    LINEAR_SOLVER_GMRES=5
 };
 
 /////////////////////////////////////
@@ -117,7 +143,8 @@ enum linear_solver {
 /////////////////////////////////////
 enum timestepper_type {
     TIMESTEPPER_TYPE_CONSTANT=1,
-    TIMESTEPPER_TYPE_ADAPTIVE=2
+    TIMESTEPPER_TYPE_ADAPTIVE=2,
+	TIMESTEPPER_TYPE_IONIZATION=3
 };
 
 /////////////////////////////////////
@@ -144,13 +171,15 @@ enum corrected_conductivity {
 enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_PRESCRIBED=1,     // E_field is prescribed by the user
     UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
+	UQTY_E_FIELD_EQN_PRESCRIBED_CURRENT=3,// j_ohm is prescribed by the user
 };
 
 enum uqty_f_re_inittype {
     UQTY_F_RE_INIT_FORWARD=1,           // Put all particles in p=pMin, xi=+/-1 (sign depending on E)
     UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
     UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
-    UQTY_F_RE_INIT_ISOTROPIC=4          // Distribute all particles isotropically in p=pMin
+    UQTY_F_RE_INIT_ISOTROPIC=4,         // Distribute all particles isotropically in p=pMin
+	UQTY_F_RE_INIT_AVALANCHE=5			// Distribute particles according to an analytical avalanche distribution
 };
 
 enum uqty_V_loop_wall_eqn {
@@ -269,6 +298,11 @@ enum eqterm_synchrotron_mode {                      // Synchrotron radiation rea
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included
 };
 
+enum eqterm_timevaryingb_mode {						// Pitch angle advection due to time-varying B...
+	EQTERM_TIMEVARYINGB_MODE_NEGLECT=1,				// neglected
+	EQTERM_TIMEVARYINGB_MODE_INCLUDE=2				// included
+};
+
 enum eqterm_dreicer_mode {
     EQTERM_DREICER_MODE_NONE=1,                     // Disable Dreicer generation
     EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR=2,     // Dreicer based on Connor-Hastie formula (without corrections)
@@ -332,8 +366,14 @@ enum eqterm_spi_cloud_radius_mode {
 };
 
 enum eqterm_spi_abl_ioniz_mode {
-    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
-    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
+    EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL=1,
+    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=2,
+    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=3
+};
+
+enum eqterm_spi_magnetic_field_dependence_mode {
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT=1,
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK=2,
 };
 
 enum eqterm_particle_source_shape {

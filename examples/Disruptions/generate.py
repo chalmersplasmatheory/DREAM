@@ -56,8 +56,8 @@ INCLUDE_FLUID_HOTTAIL = True    # Include fluid generation rates for hot-tail (i
 KINETIC_IONIZATION = True       # Kinetic ionization in non-fluid mode
 SAUTER_CONDUCTIVITY = True      # Use the Sauter conductivity formula
 SOLVER_RELTOL = 2e-6            # Default relative tolerance for Newton solver
-LINEAR_SOLVER = Solver.LINEAR_SOLVER_MKL    # Linear solver to use
-#LINEAR_SOLVER = Solver.LINEAR_SOLVER_LU
+#LINEAR_SOLVER = Solver.LINEAR_SOLVER_MKL    # Linear solver to use
+LINEAR_SOLVER = Solver.LINEAR_SOLVER_LU
 
 EXTENSION = ''
 
@@ -180,6 +180,7 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
     ds.other.include('fluid', 'scalar')
 
     # Calculate conductivity and radial grid
+    ds.save('settings.h5')
     do = DREAM.runiface(ds, quiet=True)
 
 
@@ -347,6 +348,7 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
             # Do not load initial values for these quantities
             # from the previous simulation because...
             ignorelist.append('T_cold')     # ...we want to start this at T=1
+            ignorelist.append('W_cold')
             # ...these are defined differently in MODE_SUPERTHERMAL and
             # MODE_ISOTROPIC and should therefore be recalculated when
             # launching the next simulation

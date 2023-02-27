@@ -79,7 +79,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
         eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
         nullptr,    // transport operator (only used for f_re)
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
-        &oqty_terms->f_hot_ripple_Dxx, rescaleMaxwellian
+        &oqty_terms->f_hot_ripple_Dxx, &oqty_terms->f_hot_synchrotron,
+		&oqty_terms->f_hot_timevaryingb, rescaleMaxwellian
     );
 
     // Add kinetic-kinetic boundary condition if necessary...

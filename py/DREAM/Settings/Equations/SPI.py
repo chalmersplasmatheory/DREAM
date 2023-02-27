@@ -17,6 +17,10 @@ ABLATION_MODE_NEGLECT=1
 ABLATION_MODE_FLUID_NGS=2
 ABLATION_MODE_KINETIC_NGS=3
 
+ABL_IONIZ_MODE_NEUTRAL = 1
+ABL_IONIZ_MODE_SINGLY_IONIZED = 2
+ABL_IONIZ_MODE_SELF_CONSISTENT = 3
+
 DEPOSITION_MODE_NEGLECT=1
 DEPOSITION_MODE_LOCAL=2
 DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE=3
@@ -30,6 +34,9 @@ CLOUD_RADIUS_MODE_NEGLECT=1
 CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT=2
 CLOUD_RADIUS_MODE_SELFCONSISTENT=3
 
+MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT = 1
+MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK = 2
+
 ZMolarMassList=[1,1,10]
 isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
 molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
@@ -41,7 +48,7 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT):
+    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
         """
         Constructor.
         
@@ -60,16 +67,19 @@ class SPI(UnknownQuantity):
         :param int deposition: Model used for the deposition of the ablated material
         :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
         :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
+        :param int magneticFieldDependenceMode: Mode used for calculating the magnetic field dependence of the albation
         """
         super().__init__(settings=settings)
 
-        self.velocity           = velocity
-        self.ablation           = ablation
-        self.deposition         = deposition
-        self.heatAbsorbtion     = heatAbsorbtion
-        self.cloudRadiusMode    = cloudRadiusMode
-        self.VpVolNormFactor    = VpVolNormFactor
-        self.rclPrescribedConstant = rclPrescribedConstant
+        self.velocity                    = int(velocity)
+        self.ablation                    = int(ablation)
+        self.deposition                  = int(deposition)
+        self.heatAbsorbtion              = int(heatAbsorbtion)
+        self.cloudRadiusMode             = int(cloudRadiusMode)
+        self.VpVolNormFactor             = VpVolNormFactor
+        self.rclPrescribedConstant       = rclPrescribedConstant
+        self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
+        self.abl_ioniz                   = int(abl_ioniz)
 
         self.rp       = None
         self.vp       = None
@@ -111,7 +121,12 @@ class SPI(UnknownQuantity):
         cdf=integrate.cumtrapz(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
         return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
-    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, add=True, **kwargs):
+    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
+    charged_advection_modes = None, charged_prescribed_advections = None, rChargedPrescribedAdvections = None, tChargedPrescribedAdvections = None,
+    neutral_advection_modes = None, neutral_prescribed_advections = None, rNeutralPrescribedAdvections = None, tNeutralPrescribedAdvections = None,
+    charged_diffusion_modes = None, charged_prescribed_diffusions = None, rChargedPrescribedDiffusions = None, tChargedPrescribedDiffusions = None,
+    neutral_diffusion_modes = None, neutral_prescribed_diffusions = None, rNeutralPrescribedDiffusions = None, tNeutralPrescribedDiffusions = None,
+    **kwargs):
         """
         sets (or adds) nShard shards with radii distributed accordin to 
         rpDistrParksStatistical(), with the characteristic inverse shard size kp 
@@ -125,6 +140,9 @@ class SPI(UnknownQuantity):
         :param numpy.ndarray molarFractions: Molar fraction with which each ion species contribute
         :param list ionNames: List of names for the ion species to be added and connected 
                   to the ablation of this pellet
+        :param list opacity_modes: List of opacity modes for every ion species the pellet consists of.
+                  If 'None', this argument is omitted when adding the ion species, so that the default 
+                  settings (transparent) is used
         :param bool add: If 'True', add the new pellet shards to the existing ones, otherwise 
              existing shards are cleared
              
@@ -166,7 +184,81 @@ class SPI(UnknownQuantity):
             SPIMolarFractionPrevious=ion.getSPIMolarFraction()
             if SPIMolarFractionPrevious[0]!=-1:
                 ion.setSPIMolarFraction(np.concatenate((SPIMolarFractionPrevious,np.zeros(nShard))))
+            
+        # Fix arrays of settings to have correct shape if None is specified        
+        if opacity_modes is None:
+            opacity_modes = []
+            for iZ in range(len(Zs)):
+                opacity_modes.append(Ions.ION_OPACITY_MODE_TRANSPARENT)
                 
+        if charged_advection_modes is None:
+            charged_advection_modes = []
+            for iZ in range(len(Zs)):
+                charged_advection_modes.append(Ions.ION_CHARGED_ADVECTION_MODE_NONE)
+        if charged_prescribed_advections is None:
+            charged_prescribed_advections = []
+            for iZ in range(len(Zs)):
+                charged_prescribed_advections.append(None)
+        if rChargedPrescribedAdvections is None:
+            rChargedPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                rChargedPrescribedAdvections.append(None)
+        if tChargedPrescribedAdvections is None:
+            tChargedPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                tChargedPrescribedAdvections.append(None)
+                
+        if neutral_advection_modes is None:
+            neutral_advection_modes = []
+            for iZ in range(len(Zs)):
+                neutral_advection_modes.append(Ions.ION_NEUTRAL_ADVECTION_MODE_NONE)
+        if neutral_prescribed_advections is None:
+            neutral_prescribed_advections = []
+            for iZ in range(len(Zs)):
+                neutral_prescribed_advections.append(None)
+        if rNeutralPrescribedAdvections is None:
+            rNeutralPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                rNeutralPrescribedAdvections.append(None)
+        if tNeutralPrescribedAdvections is None:
+            tNeutralPrescribedAdvections = []
+            for iZ in range(len(Zs)):
+                tNeutralPrescribedAdvections.append(None)
+                
+        if charged_diffusion_modes is None:
+            charged_diffusion_modes = []
+            for iZ in range(len(Zs)):
+                charged_diffusion_modes.append(Ions.ION_CHARGED_DIFFUSION_MODE_NONE)
+        if charged_prescribed_diffusions is None:
+            charged_prescribed_diffusions = []
+            for iZ in range(len(Zs)):
+                charged_prescribed_diffusions.append(None)
+        if rChargedPrescribedDiffusions is None:
+            rChargedPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                rChargedPrescribedDiffusions.append(None)
+        if tChargedPrescribedDiffusions is None:
+            tChargedPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                tChargedPrescribedDiffusions.append(None)
+                
+        if neutral_diffusion_modes is None:
+            neutral_diffusion_modes = []
+            for iZ in range(len(Zs)):
+                neutral_diffusion_modes.append(Ions.ION_NEUTRAL_DIFFUSION_MODE_NONE)
+        if neutral_prescribed_diffusions is None:
+            neutral_prescribed_diffusions = []
+            for iZ in range(len(Zs)):
+                neutral_prescribed_diffusions.append(None)
+        if rNeutralPrescribedDiffusions is None:
+            rNeutralPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                rNeutralPrescribedDiffusions.append(None)
+        if tNeutralPrescribedDiffusions is None:
+            tNeutralPrescribedDiffusions = []
+            for iZ in range(len(Zs)):
+                tNeutralPrescribedDiffusions.append(None)
+                                
         # Add an ion species connected to this pellet to the ion settings
         for iZ in range(len(Zs)):
             
@@ -175,8 +267,17 @@ class SPI(UnknownQuantity):
             # to zero for previously set shards
             SPIMolarFraction=np.zeros(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
-            self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
             
+            
+            self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=n, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,
+            charged_diffusion_mode = charged_diffusion_modes[iZ], charged_prescribed_diffusion = charged_prescribed_diffusions[iZ], rChargedPrescribedDiffusion = rChargedPrescribedDiffusions[iZ], tChargedPrescribedDiffusion = tChargedPrescribedDiffusions[iZ],
+            neutral_diffusion_mode = neutral_diffusion_modes[iZ], neutral_prescribed_diffusion = neutral_prescribed_diffusions[iZ], rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusions[iZ], tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusions[iZ],
+            charged_advection_mode = charged_advection_modes[iZ], charged_prescribed_advection = charged_prescribed_advections[iZ], rChargedPrescribedAdvection = rChargedPrescribedAdvections[iZ], tChargedPrescribedAdvection = tChargedPrescribedAdvections[iZ],
+            neutral_advection_mode = neutral_advection_modes[iZ], neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ], tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ],
+            **kwargs)
+            
+            
+              
         return kp
         
     def setShardPositionSinglePoint(self, nShard,shatterPoint,add=True):
@@ -236,7 +337,7 @@ class SPI(UnknownQuantity):
             # becomes f(alpha)=sin(alpha)/(1-cos(alpha_max/2)). We sample from this
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
-            alpha=np.arcsin(np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
+            alpha=np.arccos(1-np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
             
             # The angle in the yz-plane is simply drawn randomly
             phi=2*np.pi*np.random.uniform(size=nShard)
@@ -269,14 +370,14 @@ class SPI(UnknownQuantity):
         else:
             self.vp=vp_init
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,nDim=2, add=True, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,nDim=2, add=True, opacity_modes = None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
         (available at https://hdl.handle.net/20.500.12380/302296)
         """
         
-        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, add, **kwargs)
+        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,nDim,add)
         return kp
@@ -322,23 +423,52 @@ class SPI(UnknownQuantity):
         radius of the the neutral pellet cloud
         """
         self.cloudRadiusMode = int(cloudRadiusMode)
+        
+    def setMagneticFieldDependenceMode(self, magneticFieldDependenceMode):
+        """
+        Specifies which model to use for calculating the
+        magnetic field dependence of the ablation
+        """
+        self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
+        
+    def setAblIoniz(self, abl_ioniz):
+        """
+        Specifies which model to use for calculating the
+        charge state distribution with which the recently 
+        ablated material is deposited
+        """
+        self.abl_ioniz = int(abl_ioniz)
 
 
     def fromdict(self, data):
         """
         Set all options from a dictionary.
         """
-        self.velocity       = data['velocity']
-        self.ablation       = data['ablation']
-        self.deposition     = data['deposition']
-        self.heatAbsorbtion = data['heatAbsorbtion']
-        self.cloudRadiusMode = data['cloudRadiusMode']
+        if 'velocity' in data:
+            self.velocity       = int(data['velocity'])
+        if 'ablation' in data:
+            self.ablation       = int(data['ablation'])
+        if 'deposition' in data:
+            self.deposition     = int(data['deposition'])
+        if 'heatAbsorption' in data:
+            self.heatAbsorbtion = int(data['heatAbsorbtion'])
+        if 'cloudRadiusMode' in data:
+            self.cloudRadiusMode = int(data['cloudRadiusMode'])
+        if 'magneticFieldDependenceMode' in data:
+            self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
+        if 'abl_ioniz' in data:
+            self.abl_ioniz = int(data['abl_ioniz'])
 
-        self.VpVolNormFactor = data['VpVolNormFactor']
-        self.rclPrescribedConstant = data['rclPrescribedConstant']
-        self.rp              = data['init']['rp']
-        self.vp              = data['init']['vp']
-        self.xp              = data['init']['xp']
+        if 'VpVolNormFactor' in data:
+            self.VpVolNormFactor = data['VpVolNormFactor']
+        if 'rclPrescribedConstant' in data:
+            self.rclPrescribedConstant = data['rclPrescribedConstant']
+        if 'rp' in data['init']:
+            self.rp              = data['init']['rp']
+        if 'vp' in data['init']:
+            self.vp              = data['init']['vp']
+        if 'xp' in data['init']:
+            self.xp              = data['init']['xp']
 
 
     def todict(self):
@@ -352,6 +482,8 @@ class SPI(UnknownQuantity):
             'deposition': self.deposition,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
+            'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
+            'abl_ioniz': self.abl_ioniz,
             'VpVolNormFactor': self.VpVolNormFactor,
             'rclPrescribedConstant': self.rclPrescribedConstant
         }

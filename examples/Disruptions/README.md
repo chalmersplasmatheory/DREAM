@@ -63,3 +63,10 @@ To generate data for figures 10 and 11, run the following commands:
 Beware that the superthermal and kinetic simulations can take a significant
 amount of time.
 
+## Notes
+- The ``isotropic`` and ``superthermal`` modes were run with an older version of
+the heat transport model in DREAM. The old model transported heat ``W_cold``
+rather than temperature ``T_cold``. As a result, in this particular case, the
+same diffusion coefficient would therefore yield less transport with the old
+model. When running the example today, the ``isotropic`` and ``superthermal``
+cases result in even faster temperature drops due to the enhanced transport.
