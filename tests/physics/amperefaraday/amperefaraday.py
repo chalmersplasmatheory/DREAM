@@ -13,7 +13,7 @@ import scipy.constants
 import scipy.special
 import sys
 
-#import dreamtests
+import dreamtests
 
 import DREAM
 from DREAM.DREAMOutput import DREAMOutput
@@ -24,6 +24,7 @@ from DREAM.Formulas.PlasmaParameters import evaluateBraamsConductivity
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.ElectricField as Efield
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
+import DREAM.Settings.Equations.OhmicCurrent as JOhm
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
 
@@ -35,8 +36,8 @@ def gensettings(T, Z=1, n=5e19):
     Z:    Effective charge of plasma.
     n:    Electron density.
     """
-    a = 0.5
-    nr = 100
+    a = 0.35
+    nr = 20
 
     ds = DREAMSettings()
 
@@ -52,6 +53,7 @@ def gensettings(T, Z=1, n=5e19):
     ds.eqsys.T_cold.setPrescribedData(T)
     ds.eqsys.n_re.setDreicer(False)
     ds.eqsys.n_re.setAvalanche(False)
+    ds.eqsys.j_ohm.setConductivityMode(JOhm.CONDUCTIVITY_MODE_BRAAMS)
 
     ds.hottailgrid.setEnabled(False)
     ds.runawaygrid.setEnabled(False)
@@ -62,9 +64,10 @@ def gensettings(T, Z=1, n=5e19):
     ds.radialgrid.setNr(nr)
 
     # Expected e-folding time scale is mu0*sigma
-    tMax = scipy.constants.mu_0 * evaluateBraamsConductivity(n, T, Z) / (lmbd[0]/a)**2 * 100
-    ds.timestep.setTmax(tMax)
-    ds.timestep.setNt(100)
+    t0  = scipy.constants.mu_0 * evaluateBraamsConductivity(n, T, Z) / (lmbd[0]/a)**2
+    dt  = 1e-2 * t0
+    ds.timestep.setTmax(10*t0)
+    ds.timestep.setDt(dt)
 
     ds.other.include('fluid/conductivity')
     
@@ -100,7 +103,7 @@ def getInitialElectricField(nr=100, A=0.1):
     return r, E0, lmbd
 
 
-def runTZ(T, Z, full_output=False):
+def runTZ(T, Z):
     """
     Run DREAM for the specified values of temperature and ion charge.
     """
@@ -119,15 +122,11 @@ def runTZ(T, Z, full_output=False):
 
     s      = do.other.fluid.conductivity[:]
     dSigma = np.abs((s - sigma) / s)
+    r = do.grid.r[:]
 
-    plt.plot(t, sigma[:,-1])
-    plt.plot(t, s[:,-1], 'r--')
-    plt.show()
+    do.close()
 
-    if full_output:
-        return do.grid.r, dSigma, sigma, s
-    else:
-        return dSigma
+    return r, dSigma, sigma, s
 
 
 def run(args):
@@ -139,28 +138,30 @@ def run(args):
     success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
-    #T, Z = np.meshgrid([100, 1000, 2000, 5000, 10000], [1, 2, 5, 10, 20, 50])
-    T, Z = np.meshgrid([1000], [1])
+    T, Z = np.meshgrid([1000], [5])
 
     nZ, nT = T.shape
     exp = np.zeros((nZ, nT))
+    sigma_braams = np.zeros((nZ, nT))
     for i in range(0, nZ):
         for j in range(0, nT):
             print('Checking T = {} eV, Z = {:.1f}... '.format(T[i,j], Z[i,j]), end="")
             try:
-                exp[i,j] = runTZ(T[i,j], Z[i,j])
+                r, _, s_calc, s_braams = runTZ(T[i,j], Z[i,j])
+                exp[i,j] = s_calc[-1,0]
+                sigma_braams[i,j] = s_braams[-1,0]
             except Exception as e:
                 print('\x1B[1;31mFAIL\x1B[0m')
                 print(e)
                 exp[i,j] = 0
-                #continue
+                sigma_braams[i,j] = 0
                 return False
 
             # Compare conductivity right away
-            Delta = np.abs(exp[i,j] / CODEsigma[i,j] - 1.0)
+            Delta = np.abs(exp[i,j] / sigma_braams[i,j] - 1.0)
             print("Delta = {:.3f}%".format(Delta*100))
             if Delta > TOLERANCE:
-                dreamtests.print_error("DREAM conductivity deviates from CODE at T = {} eV, Z = {}".format(T[i,j], Z[i,j]))
+                dreamtests.print_error("DREAM conductivity deviates from Braams-Karney at T = {} eV, Z = {}".format(T[i,j], Z[i,j]))
                 success = False
     
     # Save
@@ -174,7 +175,6 @@ def run(args):
         cmap = GeriMap.get()
 
         # Compare conductivities
-        #plt.figure(figsize=(9,6))
         plt.figure(figsize=(5,3))
         legs = []
         legh = []
@@ -182,7 +182,7 @@ def run(args):
         for i in range(0, nT):
             clr = cmap(i/nT)
 
-            h,  = plt.semilogy(Z[:,i], CODEsigma[:,i], color=clr, linewidth=2)
+            h,  = plt.semilogy(Z[:,i], sigma_braams[:,i], color=clr, linewidth=2)
             hN, = plt.semilogy(Z[:,i], sigma[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
 
             if T[0,i] >= 1e3:
@@ -207,21 +207,15 @@ def run(args):
         plt.show()
 
     if success:
-        dreamtests.print_ok("All conductivities match those of CODE.")
+        dreamtests.print_ok("The Ampère-Faraday equation yields the expected solution.")
 
     return success
 
 
 if __name__ == '__main__':
-    r, dsigma, sigma_calc, sigma = runTZ(100, 2, full_output=True)
+    r, dsigma, sigma_calc, sigma = runTZ(100, 2)
 
-    #print('dSigma = {}'.format(dsigma[0]))
-    #print(f'sigma  = {sigma_calc}')
-    #print(f'braams = {sigma}')
-    #plt.plot(r, sigma_calc[-1,:])
-    #plt.plot(r, sigma[-1,:])
     plt.plot(r, sigma[-1,:] / sigma_calc[-1,:])
-    print(sigma[-1,0] / sigma_calc[-1,0])
-    #plt.legend([r'Calculated $\sigma$', r'Braams-Karney $\sigma$'])
+    plt.title(r'$\sigma / \sigma_{\rm calc}$')
     plt.show()
 
