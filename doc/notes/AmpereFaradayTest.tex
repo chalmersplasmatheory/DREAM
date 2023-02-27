@@ -1,0 +1,41 @@
+\documentclass{notes}
+
+\title{Test for the Amp\`ere-Faraday equation}
+\author{Mathias Hoppe}
+
+\begin{document}
+    \maketitle
+
+    \noindent
+    As noted in [Harvey {\em et al}, Nucl.\ Fusion {\bf 59} (2019) 106046], the
+    Amp\`ere-Faraday equation in cylindrical geometry reduces to
+    \begin{equation}
+        \mu_0\frac{\partial j_\Omega}{\partial t} = \frac{1}{r}\frac{\partial}{\partial r}\left(
+            r\frac{\partial E_\parallel}{\partial r}
+        \right).
+    \end{equation}
+    Using Ohm's law $j_\Omega = \sigma E_\parallel$, we can further write this
+    equation as
+    \begin{equation}
+        \mu_0\sigma\frac{\partial E_\parallel}{\partial t} = \frac{1}{r}\frac{\partial}{\partial r}\left(
+            r\frac{\partial E_\parallel}{\partial r}
+        \right),
+    \end{equation}
+    which has a well-known solution in terms of Bessel modes:
+    \begin{equation}
+        E_\parallel(r,t) = \sum_k A_k J_0\left(\lambda_k r\right)
+        \exp\left( -\frac{\lambda_k^2 t}{\mu_0\sigma} \right).
+    \end{equation}
+    Here, $\lambda_k$ is the $k$'th zero of $J_0(x)$ and $A_k$ are coefficients
+    such that
+    \begin{equation}
+        E_\parallel(r,t=0) = \sum_k A_k J_0(\lambda_k r).
+    \end{equation}
+    Given the time evolution of the parallel electric field $E_\parallel$, and
+    assuming that $A_k=0$ except for $k=l$, the conductivity may therefore be
+    calculated from
+    \begin{equation}
+        \sigma = -\frac{\lambda_l^2 t}{\mu_0\log\left(\frac{E_\parallel(t,r)}{A_l J_0(\lambda_lr)}\right)}
+    \end{equation}
+
+\end{document}
