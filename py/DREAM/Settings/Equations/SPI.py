@@ -463,12 +463,13 @@ class SPI(UnknownQuantity):
             self.VpVolNormFactor = data['VpVolNormFactor']
         if 'rclPrescribedConstant' in data:
             self.rclPrescribedConstant = data['rclPrescribedConstant']
-        if 'rp' in data['init']:
-            self.rp              = data['init']['rp']
-        if 'vp' in data['init']:
-            self.vp              = data['init']['vp']
-        if 'xp' in data['init']:
-            self.xp              = data['init']['xp']
+        if 'init' in data:
+            if 'rp' in data['init']:
+                self.rp              = data['init']['rp']
+            if 'vp' in data['init']:
+                self.vp              = data['init']['vp']
+            if 'xp' in data['init']:
+                self.xp              = data['init']['xp']
 
 
     def todict(self):
