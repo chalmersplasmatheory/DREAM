@@ -100,6 +100,8 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     solver->SetPreconditioner(LoadPreconditionerSettings(
         s, u, solver->GetNonTrivials()
     ));
+
+	solver->SetExternalIteratorMaxIterations(s->GetInteger(MODULENAME "/maxiter"));
 }
 
 

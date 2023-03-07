@@ -9,15 +9,26 @@ namespace DREAM {
 	protected:
 		FVM::Grid *fluidGrid = nullptr;
 		FVM::Interpolator1D *I_p_presc=nullptr;
-		len_t id_I_p, id_j_tot;
+		len_t id_D_I, id_I_p, id_j_tot;
 		real_t prevTime=-1;
 
-		// Current estimate of diffusion coefficient
-		real_t D_I = 0, D_I_prev = 0;
+		const int nMaxPoints = 4;
+		int nPoints = 0;
+		// Estimates of diffusion coefficient
+		real_t *D_I, DI_sol;
+		//real_t D_I = 0, D_I_prev = 0;
 		real_t D_I_max = 1e3;
 
 		// Start by not prescribing plasma current
-		real_t Ip, Ip_presc, Ip_prev;
+		real_t Ip_presc;
+		real_t *Ip;
+
+		real_t EstimateSolutionZeroth(FVM::UnknownQuantityHandler*, const real_t, const real_t);
+		real_t EstimateSolutionLinear(const real_t);
+		real_t EstimateSolutionQuadratic(const real_t);
+
+		void ClearSolutions();
+		void PushSolution(const real_t, const real_t);
 
 	public:
 		FrozenCurrentCoefficient(

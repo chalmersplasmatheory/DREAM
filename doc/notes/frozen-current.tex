@@ -67,7 +67,7 @@
 	complicated and no explicit analytical expression is available, we can
 	employ a secant method to gradually converge towards the exact solution
 	$D_0^\star$:
-	\begin{equation}
+	\begin{equation}\label{eq:D0iter1}
 		D_0^{(k+1)} = D_0^{(k)} +
 			\left(D_0^{(k)} - D_0^{(k-1)}\right)
 			\frac{I_{\rm p}^{(k)}-I_{\rm p,presc}}{I_{\rm p}^{(k)}-I_{\rm p}^{(k-1)}}.
@@ -78,6 +78,82 @@
 	$D_0^{(0)}$ according to how the plasma current changed from iteration 0 to
 	iteration 1 (simple ratio of plasma currents times $D_0^{(0)}$) if
 	$D_0^{(0)} > 0$, or use equation~\eqref{eq:D0app} to obtain an initial guess.
+
+	\subsection{Quadratic iteration methods}
+	Alternative methods can be developed to solve for $D_0$. The iterative
+	method~\eqref{eq:D0iter1} assumes that $I_p\propto D_0$, which is true close
+	to $D_0^\star$. When starting further away from $D_0^\star$ though, this
+	method may have difficulties converging.
+
+	The second most straightforward assumption for $I_{\rm p}(D_0)$ is that
+	$I_{\rm p}$ depends quadratically on $D_0$. Taylor-expanding to second-order
+	around the true solution $D_0^\star$, we find
+	\begin{equation}
+		I_{\rm p} - I_{\rm p,presc} \equiv \Delta I_{\rm p} \approx
+			I_{\rm p}'\left(D_0-D_0^\star\right) +
+			\frac{I_{\rm p}''}{2}\left(D_0-D_0^\star\right)^2.
+	\end{equation}
+	This equation can be solved for $D_0^\star$ to find
+	\begin{equation}
+		\begin{aligned}
+			D_{0\pm}^\star &= D_0 + \frac{I_{\rm p}'}{I_{\rm p}''} \pm
+				\sqrt{
+					\left(D_0+\frac{I_{\rm p}'}{I_{\rm p}''}\right)^2
+					+2\frac{\Delta I_{\rm p} - I_{\rm p}'D_0}{I_{\rm p}''}-D_0^2
+				}
+				\\
+				&=
+				D_0 + \frac{I_{\rm p}'}{I_{\rm p}''} \pm
+				\sqrt{
+					\frac{2\Delta I_{\rm p}}{I_{\rm p}''} +
+					\left(\frac{I_{\rm p}'}{I_{\rm p}''}\right)^2
+				}
+				\\
+				&=
+				D_0 + \frac{I_{\rm p}'\pm
+				\sqrt{
+					\left(I_{\rm p}'\right)^2+2I_{\rm p}''\Delta I_{\rm p}
+				}}{I_{\rm p}''}.
+		\end{aligned}
+	\end{equation}
+	The corresponding iteration scheme can thus be written
+	\begin{equation}
+		D_{0\pm}^{(k+1)} =
+			D_0^{(k)} +
+			\frac{I_{\rm p}' \pm
+			\sqrt{
+				\left(I_{\rm p}'\right)^2 +
+				2I_{\rm p}''\Delta I_{\rm p}^{(k)}
+			}}{I_{\rm p}''}
+	\end{equation}
+	Since the exact functional dependence of $I_{\rm p}$ on $D_0$ is not known,
+	we must approximate the derivatives appearing using the knowledge obtained
+	in previous iterations. For $k\geq 2$, we can take
+	\begin{equation}
+		\begin{aligned}
+			\left(I_{\rm p}'\right)^{(k)} &= \frac{I_{\rm p}^{(k)}-I_{\rm p}^{(k-1)}}{D_0^{(k)}-D_0^{(k-1)}},\\
+			%
+			\left(I_{\rm p}''\right)^{(k)} &=
+				\frac{\left(I_{\rm p}'\right)^{(k)}-\left(I_{\rm p}'\right)^{(k-1)}}
+					{D_0^{(k)}-D_0^{(k-1)}} =
+				\\
+				&=
+				\frac{
+					\left(D_0^{(k-1)}-D_0^{(k-2)}\right)I_{\rm p}^{(k)}
+					-\left(D_0^{(k)}-2D_0^{(k-1)}+D_0^{(k-2)}\right)I_{\rm p}^{(k-1)}
+					+\left(D_0^{(k)}-D_0^{(k-1)}\right)I_{\rm p}^{(k-2)}
+				}
+				{\left(D_0^{(k)}-D_0^{(k-1)}\right)^2\left(D_0^{(k-1)}-D_0^{(k-2)}\right)}
+				.
+		\end{aligned}
+	\end{equation}
+	For $I_{\rm p}'$, since we use a standard finite difference, we can only
+	expect an accuracy of at most $\sqrt{\varepsilon}$ in double precision. This
+	means that since $I_{\rm p}''$ is evaluated from approximations of
+	$I_{\rm p}'$, the best accuracy achievable is merely
+	$\sqrt[4]{\varepsilon}\approx 1.22\cdot 10^{-4}$. When attempting to satisfy
+	a relative tolerance less than this, one might therefore want to switch to
+	the linear method (which should also converge rapidly close to the root).
 
 	\section{Analytical estimate}
 	A first approximation to the coefficient $D_0$ can be obtained by assuming
@@ -153,7 +229,67 @@
 	\begin{equation}\label{eq:D0app}
 		D_0\approx \frac{2\pi R_0}{V'(a)}
 			\frac{\dd I_{\rm p} / \dd t}
-			{\partial j_\parallel/\partial r}
+			{\partial j_\parallel/\partial r}.
+	\end{equation}
+
+	\appendix
+
+	\section{Quadratic iteration method}
+	We start from the second-degree equation
+	\begin{equation}
+		\Delta I_{\rm p} = I_{\rm p}'\left(D_0-D_0^\star\right) +
+			\frac{I_{\rm p}''}{2}\left(D_0-D_0^\star\right)^2.
+	\end{equation}
+	First we reorganize this into
+	\begin{equation}
+		\begin{gathered}
+			\Delta I_{\rm p} =
+			I_{\rm p}'\left(D_0-D_0^\star\right) +
+			\frac{I_{\rm p}''}{2}\left[
+				D_0^2+\left(D_0^\star\right)^2 - 2D_0D_0^\star
+			\right]^2
+			=\\
+			%
+			= \frac{I_{\rm p}''}{2}\left(D_0^\star\right)^2 -
+			D_0^\star\left( I_{\rm p}' + I_{\rm p}''D_0 \right) +
+			I_{\rm p}'D_0 + \frac{I_{\rm p}''}{2}D_0^2\\
+			%
+			\Longleftrightarrow\\
+			%
+			\left(D_0^\star\right)^2 - 2D_0^\star\frac{I_{\rm p}'+I_{\rm p}''D_0}{I_{\rm p}''} =
+			2\frac{\Delta I_{\rm p} - I_{\rm p}'D_0 - I_{\rm p}''D_0^2/2}{I_{\rm p}''}\\
+			%
+			\Longleftrightarrow\\
+			%
+			\left(D_0^\star-\frac{I_{\rm p}'+I_{\rm p}''D_0}{I_{\rm p}''}\right)^2
+			- \left(\frac{I_{\rm p}'+I_{\rm p}''D_0}{I_{\rm p}''}\right)^2 =
+			2\frac{\Delta I_{\rm p} - I_{\rm p}'D_0 - I_{\rm p}''D_0^2/2}
+			{I_{\rm p}''}\\
+			%
+			\Longleftrightarrow\\
+			%
+			D_0^\star = D_0 + \frac{I_{\rm p}'}{I_{\rm p}''}\pm
+				\sqrt{
+					D_0^2 +
+					\left(\frac{I_{\rm p}'}{I_{\rm p}''}\right)^2 +
+					\frac{2I_{\rm p}'D_0}{I_{\rm p}''} +
+					2\frac{\Delta I_{\rm p} - I_{\rm p}'D_0 - I_{\rm p}''D_0^2/2}
+					{I_{\rm p}''}
+				}\\
+			%
+			\Longleftrightarrow\\
+			%
+			D_0^\star =
+				D_0 + \frac{I_{\rm p}'}{I_{\rm p}''} \pm
+				\sqrt{
+					\left(\frac{I_{\rm p}'}{I_{\rm p}''}\right)^2 +
+					\frac{2\Delta I_{\rm p}}{I_{\rm p}''}
+				}
+				=
+				D_0 + \frac{I_{\rm p}'\pm\sqrt{
+					\left(I_{\rm p}'\right)^2+2I_{\rm p}''\Delta I_{\rm p}
+				}}{I_{\rm p}''}.
+		\end{gathered}
 	\end{equation}
 
 \end{document}

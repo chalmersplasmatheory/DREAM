@@ -205,7 +205,12 @@ class DREAMSettings:
         the DREAMSettings object is stored.
         """
         data = DREAMIO.LoadHDF5AsDict(filename, path=path, lazy=lazy)
-        self.fromdict(data, filename=filename)
+
+        # Is this an output file (which contains a separate settings object)?
+        if 'settings' in data:
+            self.fromdict(data['settings'], filename=filename)
+        else:
+            self.fromdict(data, filename=filename)
 
 
     def save(self, filename):

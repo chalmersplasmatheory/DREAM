@@ -124,6 +124,7 @@ namespace DREAM {
         void SetConvergenceChecker(ConvergenceChecker*);
         void SetExternalIteratorConvergenceChecker(ConvergenceChecker*);
 		void SetExternalIterator(ExternalIterator*);
+		void SetExternalIteratorMaxIterations(const len_t i) { this->extiter_maxiter = i; }
         void SetPreconditioner(DiagonalPreconditioner*);
         void SelectLinearSolver(const len_t);
 
