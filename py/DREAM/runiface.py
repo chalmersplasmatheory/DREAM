@@ -53,26 +53,26 @@ def runiface_parallel(settings, outfiles, quiet=False, timeout=None, njobs=4):
     global DREAMPATH
     queue = []
     active = []
-    finished = []
+    allTasks = []
     if len(settings) != len(outfiles):
         raise DREAMException("Lengths of settings and outfiles arrays are different!")
     
     for _settings, outfile in zip(settings, outfiles):
         task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH )
         queue.append(task)
+        allTasks.append(task)
     
     while len(queue) > 0 or len(active) > 0:
         for task in active:
-            if task.hasFinished():
+            if task.hasFinished(0.1):
                 active.remove(task)
-                finished.append(task)
         
         while len(queue) > 0 and len(active) < njobs:
             task = queue.pop(0)
             task.run()
             active.append(task)
 
-    return [task.getResult() for task in finished]
+    return [task.getResult() for task in allTasks]
     
 
 locatedream()
