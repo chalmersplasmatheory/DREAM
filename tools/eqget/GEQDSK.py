@@ -396,7 +396,7 @@ class GEQDSK:
         """
         Returns equilibrium data in the LUKE equilibrium format.
         """
-        theta = np.linspace(0, 2*np.pi, ntheta)
+        theta = np.linspace(0, 2*np.pi, ntheta, endpoint = False)
         psi_n = np.linspace(0, 1, npsi+1)[1:]
 
         Rp, Zp = self.R0, self.Z0
@@ -411,6 +411,7 @@ class GEQDSK:
         ptBx = self.get_Br(ptx, pty)
         ptBy = self.get_Bz(ptx, pty)
         ptBPHI = self.get_Btor(ptx, pty)
+        
 
         return {
             'id': 'GEQDSK data',
