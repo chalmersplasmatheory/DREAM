@@ -199,7 +199,7 @@ class TransportCoefficientReader:
             
         rcrit = np.interp(qcrit, q, rref)
         
-        tBeforeCurrentRestart = 0
+        tBeforeCurrentRestart = 0.0
         for filename in filenames:
             doObj = DREAMOutput(folder+filename.strip())
             itTQHasStarted = np.any((doObj.eqsys.T_cold.data[:,:]<Tcrit)*(doObj.grid.r<rcrit),1)
@@ -207,7 +207,7 @@ class TransportCoefficientReader:
                 it = np.argwhere(itTQHasStarted)[0]
                 return doObj.grid.t[it][0] + tBeforeCurrentRestart
             else:
-                tBeforeCurentRestart = tBeforeCurrentRestart + doObj.grid.t[-1]
+                tBeforeCurrentRestart = tBeforeCurrentRestart + doObj.grid.t[-1]
                 
         raise DREAMException('Temperature does not drop below the critical temperature for the TQ onset inside the q=2 flux surface')
         
