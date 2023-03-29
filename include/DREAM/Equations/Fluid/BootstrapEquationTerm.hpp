@@ -5,6 +5,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "DREAM/IonHandler.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 
 namespace DREAM {
     class BootstrapEquationTerm : public FVM::EquationTerm {
@@ -15,10 +16,13 @@ namespace DREAM {
         real_t *deltaX = nullptr; // x_{k+1} - x_{k-1}
 
         len_t id_X; // set in subclass, one of {id_ncold, id_Tcold, id_Ni, id_Wi}.
-        len_t nZ;
         len_t nzs;
 
     protected:
+        BootstrapCurrent *bs;
+
+        len_t nZ;
+        
         len_t
             id_ncold,
             id_ions,
@@ -27,23 +31,22 @@ namespace DREAM {
             id_Wi;
 
     public:
-        BootstrapEquationTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, len_t);
+        BootstrapEquationTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, BootstrapCurrent*, real_t);
         ~BootstrapEquationTerm();
 
         void AllocateDeltaX();
         void DeallocateDeltaX();
 
-	virtual len_t GetNumberOfNonZerosPerRow() const { return 3; } // is this correct?
+	virtual len_t GetNumberOfNonZerosPerRow() const { return 3; }; // is this correct?
 
-        void SetUnknown(len_t id_X) { this->id_X = id_X; }
+        void SetUnknownID(len_t id_X) { this->id_X = id_X; };
 
         // helpers
         void SetJacobianElement(len_t, FVM::Matrix*, len_t, len_t, real_t);
-        void SetMatrixElement(FVM::Matrix, len_t, real_t);
+        void SetMatrixElement(FVM::Matrix*, len_t, real_t);
 
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
-        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) 
-override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
 
