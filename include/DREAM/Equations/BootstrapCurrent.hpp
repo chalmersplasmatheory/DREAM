@@ -1,6 +1,8 @@
 #ifndef _DREAM_EQUATIONS_BOOTSTRAP_CURRENT_HPP
 #define _DREAM_EQUATIONS_BOOTSTRAP_CURRENT_HPP
 
+namespace DREAM { class BootstrapCurrent; }
+
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -16,80 +18,76 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
-        CoulombLogarithm lnLambda;
+        CoulombLogarithm *lnLambda;
         struct CollisionQuantity::collqty_settings *lnLEE_settings;
         struct CollisionQuantity::collqty_settings *lnLII_settings;
 
         real_t epsilon; // used for numerical differentiation
 
-        len_t
-            id_jtot,
-            id_ncold,
-            id_ni,
-            id_Tcold,
-            id_Wi;
+        len_t iZMain;   // main ion species
 
-        real_t
-            *jtot,
-            *niMain,
-            *WiMain;
+        len_t nr;
 
-        real_t *ft=nullptr;              // fraction of trapped particles
-        real_t *qR0=nullptr;             // safety factor normalised to R0
+        len_t id_jtot;
+        len_t id_ncold;
+        len_t id_ions;
+        len_t id_Ni;
+        len_t id_Tcold;
+        len_t id_Wi;
 
-        real_t
-            evaluateElectronCollisionFrequency(len_t, real_t, real_t, real_t),
-            evaluateElectronCollisionFrequency(len_t),
-            evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t),
-            evaluateIonCollisionFrequency(len_t);
+        real_t *jtot;
+        real_t *NiMain;
+        real_t *WiMain;
 
+        real_t *ft=nullptr;             // fraction of trapped particles
+        real_t *qR0=nullptr;            // safety factor normalised to R0
+        real_t *Zeff=nullptr;           // effective ion charge
 
-    protected:
+        real_t evaluateElectronCollisionFrequency(len_t, real_t, real_t, real_t);
+        real_t evaluateElectronCollisionFrequency(len_t);
+        real_t evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t);
+        real_t evaluateIonCollisionFrequency(len_t);
+
+        static real_t evaluateCoefficientL31_internal(real_t, real_t, real_t);
+        static real_t evaluateCoefficientL32_internal(real_t, real_t, real_t);
+        static real_t evaluateCoefficientAlpha_internal(real_t, real_t, real_t);
+
+    public:
         bool includeIonTemperatures;
 
-        real_t
-            *ncold,
-            *Tcold,
-            *ni,
-            *Wi,
-            *p,
-            *n;
+        real_t *ncold;
+        real_t *Tcold;
+        real_t *Ni;
+        real_t *Wi;
+        real_t *p;
+        real_t *n;
 
 
-        real_t
-            *constantPrefactor=nullptr,
-            *coefficientL31=nullptr;
+        real_t *constantPrefactor=nullptr;
+        real_t *coefficientL31=nullptr;
+
+        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*);
+        ~BootstrapCurrent();
+
+        void AllocateQuantities();
+        void DeallocateQuantities();
+        void Rebuild();
 
         /**
          * Coefficients L31, L32 and alpha (as defined in Redl et al. 2021)
          */
-        real_t
-            evaluateCoefficientL31(len_t, real_t, real_t, real_t, real_t),
-            evaluateCoefficientL31(len_t),
-            evaluateCoefficientL32(len_t, real_t, real_t, real_t, real_t),
-            evaluateCoefficientL32(len_t),
-            evaluateCoefficientAlpha(len_t, real_t, real_t),
-            evaluateCoefficientAlpha(len_t);
+        real_t evaluateCoefficientL31(len_t);
+        real_t evaluateCoefficientL32(len_t);
+        real_t evaluateCoefficientAlpha(len_t);
 
         /**
          * Partial derivatives of L31, L32 and alpha.
          */
-        real_t
-            evaluateNumericalDerivative(len_t, len_t, len_t, real_t, std::function<real_t(len_t, real_t, real_t, real_t)>),
-            evaluatePartialCoefficientL31(len_t, len_t, len_t),
-            evaluatePartialCoefficientL32(len_t, len_t, len_t),
-            evaluatePartialCoefficientAlpha(len_t, len_t, len_t);
+        real_t evaluateNumericalDerivative(len_t, len_t, len_t, std::function<real_t(real_t, real_t, real_t)>);
+        real_t evaluatePartialCoefficientL31(len_t, len_t, len_t);
+        real_t evaluatePartialCoefficientL32(len_t, len_t, len_t);
+        real_t evaluatePartialCoefficientAlpha(len_t, len_t, len_t, len_t);
 
-
-    public:
-        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, 
-CoulombLogarithm*);
-        ~BootstrapCurrent();
-
-        void
-            AllocateQuantities(),
-            DeallocateQuantities(),
-            Rebuild();
     };
 }
 

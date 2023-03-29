@@ -10,12 +10,8 @@
 namespace DREAM {
     class BootstrapIonDensityTerm : public BootstrapEquationTerm {
 
-    private:
-        BootstrapCurrent *Bootstrap;
-
     public:
-        BootstrapIonDensityTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, BootstrapCurrent*, 
-IonHandler*, real_t sf=1.);
+        BootstrapIonDensityTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, BootstrapCurrent*, IonHandler*, real_t sf=1.);
 
         virtual real_t GetCoefficient(len_t, len_t) override;
         virtual real_t GetPartialCoefficient(len_t, len_t, len_t, len_t) override;
