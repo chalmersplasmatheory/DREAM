@@ -13,6 +13,7 @@ from .Equations.Ions import Ions
 from .Equations.OhmicCurrent import OhmicCurrent
 from .Equations.RunawayElectrons import RunawayElectrons
 from .Equations.SPI import SPI
+from .Equations.BootstrapCurrent import BootstrapCurrent
 from .Equations.RunawayElectronDistribution import RunawayElectronDistribution
 from .Equations.PoloidalFlux import PoloidalFlux
 from .Equations.EquationException import EquationException
@@ -29,7 +30,7 @@ UNKNOWNS = [
 
 
 class EquationSystem:
-    
+
     def __init__(self, settings):
         """
         Constructor.
@@ -50,6 +51,7 @@ class EquationSystem:
         self.addUnknown('psi_p', PoloidalFlux(settings=settings))
         self.addUnknown('T_cold', ColdElectronTemperature(settings=settings))
         self.addUnknown('spi', SPI(settings=settings))
+        self.addUnknown('j_bs', BootstrapCurrent(settings=settings))
 
 
     def __getitem__(self, name):
@@ -117,5 +119,3 @@ class EquationSystem:
         """
         for u in self.unknowns:
             self[u].verifySettings()
-
-
