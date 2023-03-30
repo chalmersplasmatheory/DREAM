@@ -47,7 +47,7 @@ namespace DREAM {
         static FVM::Grid *ConstructScalarGrid();
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
-        
+
         static SPIHandler *ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s);
 
         static void ConstructRunawayFluid(
@@ -56,7 +56,7 @@ namespace DREAM {
         );
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
-            RunawayFluid*, IonHandler*, AnalyticDistributionHottail*, 
+            RunawayFluid*, IonHandler*, AnalyticDistributionHottail*,
             struct OtherQuantityHandler::eqn_terms*, Settings *s, bool signPositive = true
         );
 
@@ -81,7 +81,7 @@ namespace DREAM {
 
         static void DefineOptions_ADAS(Settings*);
         static void DefineOptions_CollisionQuantityHandler(Settings*);
-        
+
         static void DefineOptions_RunawayFluid(Settings*);
         static void DefineOptions_SPI(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
@@ -95,7 +95,7 @@ namespace DREAM {
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
         static void DefineOptions_Ions_abl(Settings *s);
-	static void DefineOptions_j_bs(Settings*);
+        static void DefineOptions_j_bs(Settings*);
         static void DefineOptions_j_ohm(Settings*);
         static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
@@ -125,7 +125,7 @@ namespace DREAM {
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
-        
+
         // Routines for constructing specific equations
         static void ConstructEquation_E_field(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
@@ -139,7 +139,7 @@ namespace DREAM {
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
             bool, bool, DREAM::FVM::Operator **transport=nullptr,
-            DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
+            DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr,
             DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
 			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
         );
@@ -196,12 +196,12 @@ namespace DREAM {
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl_prescribed(EquationSystem*, Settings*);
-        
+
         static void ConstructEquation_W_cold(EquationSystem*, Settings*);
         static void ConstructEquation_W_abl(EquationSystem*, Settings*);
-        
+
         static void ConstructEquation_W_hot(EquationSystem*, Settings*);
-                
+
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
 
@@ -217,7 +217,7 @@ namespace DREAM {
         );
         template<typename T>
         static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, EquationSystem*, Settings*, const std::string& subname="transport");
-        
+
         static bool ConstructTransportTerm(
             FVM::Operator*, const std::string&, FVM::Grid*,
             enum OptionConstants::momentumgrid_type, EquationSystem*,
