@@ -1,7 +1,8 @@
 # CODE CONDUCTIVITY
 #
 # Calculates the conductivity using the full linearized collision operator in
-# DREAM and compares to the same calculation made with CODE.
+# DREAM and compares an analytical solution to the Ampère-Faraday equation.
+# For a detailed description, see doc/notes/ampere_faraday.tex
 #
 ############################################################################
 
@@ -70,7 +71,7 @@ def gensettings(T, Z=1, n=5e19):
     ds.timestep.setDt(dt)
 
     ds.other.include('fluid/conductivity')
-    
+
     return ds, lmbd
 
 
@@ -93,7 +94,7 @@ def getInitialElectricField(nr=100, A=0.1):
         A = np.array([A])
 
     lmbd = scipy.special.jn_zeros(0, A.size)
-    
+
     r  = np.linspace(0, 1, nr)
     E0 = np.zeros((nr,))
 
@@ -110,8 +111,7 @@ def runTZ(T, Z):
     ds, lmbd = gensettings(T=T, Z=Z)
     do = DREAM.runiface(ds, 'output.h5', quiet=True)
 
-    E0 = do.eqsys.E_field[0,:]
-    exp = do.eqsys.E_field[1:,:] / (E0*scipy.special.j0(lmbd[0]*do.grid.r[:]/ds.radialgrid.a))
+    exp = do.eqsys.E_field[1:,:] / do.eqsys.E_field[0,:]
 
     if len(lmbd) != 1:
         raise Exception("Too many Bessel modes selected for the simulation. This test can only handle one mode.")
@@ -138,38 +138,39 @@ def run(args):
     success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
-    T, Z = np.meshgrid([1000], [5])
+    T, Z = np.meshgrid([100, 1000, 10000], [1, 5, 10])
 
     nZ, nT = T.shape
-    exp = np.zeros((nZ, nT))
+    sigma_calc = np.zeros((nZ, nT))
     sigma_braams = np.zeros((nZ, nT))
     for i in range(0, nZ):
         for j in range(0, nT):
             print('Checking T = {} eV, Z = {:.1f}... '.format(T[i,j], Z[i,j]), end="")
             try:
                 r, _, s_calc, s_braams = runTZ(T[i,j], Z[i,j])
-                exp[i,j] = s_calc[-1,0]
+                sigma_calc[i,j] = s_calc[-1,0]
                 sigma_braams[i,j] = s_braams[-1,0]
             except Exception as e:
                 print('\x1B[1;31mFAIL\x1B[0m')
                 print(e)
-                exp[i,j] = 0
+                sigma_calc[i,j] = 0
                 sigma_braams[i,j] = 0
                 return False
 
             # Compare conductivity right away
-            Delta = np.abs(exp[i,j] / sigma_braams[i,j] - 1.0)
+            Delta = np.abs(sigma_calc[i,j] / sigma_braams[i,j] - 1.0)
             print("Delta = {:.3f}%".format(Delta*100))
             if Delta > TOLERANCE:
                 dreamtests.print_error("DREAM conductivity deviates from Braams-Karney at T = {} eV, Z = {}".format(T[i,j], Z[i,j]))
                 success = False
-    
+
     # Save
     if args['save']:
         with h5py.File('{}/DREAM-conductivities.h5'.format(workdir), 'w') as f:
             f['T'] = T
             f['Z'] = Z
-            f['exp'] = exp
+            f['sigma_braams'] = sigma_braams
+            f['sigma_calc'] = sigma_calc
 
     if args['plot']:
         cmap = GeriMap.get()
@@ -183,7 +184,7 @@ def run(args):
             clr = cmap(i/nT)
 
             h,  = plt.semilogy(Z[:,i], sigma_braams[:,i], color=clr, linewidth=2)
-            hN, = plt.semilogy(Z[:,i], sigma[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
+            hN, = plt.semilogy(Z[:,i], sigma_calc[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
 
             if T[0,i] >= 1e3:
                 s = r'$T = {:.0f}\,\mathrm{{keV}}$'.format(T[0,i]/1e3)
@@ -191,7 +192,7 @@ def run(args):
                 s = r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i])
 
             yfac = 1.2
-            plt.text(Z[-2,i]+4, sigma[-2,i]*yfac, s, color=clr)
+            plt.text(Z[-2,i]+4, sigma_calc[-2,i]*yfac, s, color=clr)
 
             legs.append(s)
             legh.append(h)
@@ -213,9 +214,8 @@ def run(args):
 
 
 if __name__ == '__main__':
-    r, dsigma, sigma_calc, sigma = runTZ(100, 2)
+    r, dsigma, sigma_calc, sigma_braams = runTZ(100, 2)
 
-    plt.plot(r, sigma[-1,:] / sigma_calc[-1,:])
+    plt.plot(r, sigma_braams[-1,:] / sigma_calc[-1,:])
     plt.title(r'$\sigma / \sigma_{\rm calc}$')
     plt.show()
-
