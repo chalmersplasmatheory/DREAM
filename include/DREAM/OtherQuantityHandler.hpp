@@ -24,6 +24,10 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Fluid/BootstrapElectronDensityTerm.hpp"
+#include "DREAM/Equations/Fluid/BootstrapElectronTemperatureTerm.hpp"
+#include "DREAM/Equations/Fluid/BootstrapIonDensityTerm.hpp"
+#include "DREAM/Equations/Fluid/BootstrapIonThermalEnergyTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
@@ -34,7 +38,7 @@ namespace DREAM {
     public:
         struct eqn_terms {
             // Terms in the heat equation:
-            DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr; 
+            DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr;
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
@@ -69,8 +73,13 @@ namespace DREAM {
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
 			// List of ion rate equations for each ion species
 			std::vector<IonRateEquation*> ni_rates;
+            // Bootstrap current terms
+            DREAM::BootstrapElectronDensityTerm *j_bs_n_cold=nullptr;
+            DREAM::BootstrapElectronTemperatureTerm *j_bs_T_cold=nullptr;
+            DREAM::BootstrapIonDensityTerm *j_bs_N_i=nullptr;
+            DREAM::BootstrapIonThermalEnergyTerm *j_bs_W_i=nullptr;
         };
-    
+
     protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
@@ -86,19 +95,19 @@ namespace DREAM {
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
         // indices to unknownquantities
-        len_t 
+        len_t
             id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
             id_n_re_neg=0;
 
-        // helper arrays with enough memory allocated to store the hottail and runaway grids 
-        real_t *kineticVectorHot; 
-        real_t *kineticVectorRE; 
+        // helper arrays with enough memory allocated to store the hottail and runaway grids
+        real_t *kineticVectorHot;
+        real_t *kineticVectorRE;
 
         // helper functions for evaluating other quantities
         real_t integratedKineticBoundaryTerm(
-            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid*, 
-            FVM::BC::BoundaryCondition*, FVM::BC::BoundaryCondition*, 
+            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid*,
+            FVM::BC::BoundaryCondition*, FVM::BC::BoundaryCondition*,
             real_t *kineticVector
         );
         real_t evaluateMagneticEnergy();
