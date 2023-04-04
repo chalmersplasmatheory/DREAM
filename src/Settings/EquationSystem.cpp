@@ -191,9 +191,6 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
 
-    if (bootstrap_mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL)
-        ConstructEquation_j_bs(eqsys, s);
-
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
 		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
 		ConstructEquation_n_abl(eqsys, s);
@@ -209,12 +206,20 @@ void SimulationGenerator::ConstructEquations(
     }
 
     // Add equations for net ion density of each species and its energy density
-    // only if including the cross-species collisional energy transfer
+    // only if including the cross-species collisional energy transfer.
+    // Note: for the bootstrap current, at least the net ion densities are required.
     OptionConstants::uqty_T_i_eqn typeTi = (OptionConstants::uqty_T_i_eqn) s->GetInteger("eqsys/n_i/typeTi");
     if(typeTi == OptionConstants::UQTY_T_I_INCLUDE /* && typeTcold == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT */){
         ConstructEquation_Ion_Ni(eqsys,s);
         ConstructEquation_T_i(eqsys,s);
-    }
+    } else if (eqsys->GetBootstrap() != nullptr)
+        ConstructEquation_Ion_Ni(eqsys,s);
+
+
+    if (eqsys->GetBootstrap() != nullptr)
+        ConstructEquation_j_bs(eqsys, s, oqty_terms);
+
+
     // NOTE: The runaway number may depend explicitly on
     // either f_hot or f_re and must therefore be constructed
     // AFTER the calls to 'ConstructEquation_f_hot()' and
@@ -362,10 +367,17 @@ void SimulationGenerator::ConstructUnknowns(
 		}
     }
 
+    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+    if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
+        DEFU_FLD(J_BS);
+
     if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
         len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WI_ENER, nIonSpecies);
         DEFU_FLD_N(NI_DENS, nIonSpecies);
+    } else if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+        cout << "ion here" << std::endl;
+        DEFU_FLD_N(NI_DENS, GetNumberOfIonSpecies(s));
     }
 
     // Fluid helper quantities
