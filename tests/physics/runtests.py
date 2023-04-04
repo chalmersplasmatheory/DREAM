@@ -21,6 +21,7 @@ except ImportError:
 
 
 # Import test modules
+from amperefaraday import amperefaraday
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
 from code_synchrotron import code_synchrotron
@@ -31,6 +32,7 @@ from ts_adaptive import ts_adaptive
 
 
 TESTS = [
+    'amperefaraday',
     'code_conductivity',
     'code_runaway',
     'code_synchrotron',
