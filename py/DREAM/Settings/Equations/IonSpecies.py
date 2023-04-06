@@ -60,6 +60,10 @@ ION_CHARGED_ADVECTION_MODE_PRESCRIBED = 2
 ION_NEUTRAL_ADVECTION_MODE_NONE = 1
 ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED = 2
 
+# Ion source types
+ION_SOURCE_NONE = 1
+ION_SOURCE_PRESCRIBED = 2
+
 class IonSpecies:
     
     def __init__(self, settings, name, Z, ttype=0, Z0=None, isotope=0, SPIMolarFraction=-1.0, opacity_mode = ION_OPACITY_MODE_TRANSPARENT, 
@@ -115,6 +119,10 @@ class IonSpecies:
             print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
         if name == 'H' and hydrogen == False:
             print("WARNING: Ion species with name 'H' added, but 'hydrogen = False'.")
+
+        self.source_n = np.zeros((self.Z+1, 1))
+        self.source_t = np.array([0])
+        self.source_type = ION_SOURCE_NONE
 
         self.n = None
         self.r = None
@@ -209,6 +217,7 @@ class IonSpecies:
         else:
             self.neutral_advection_mode = neutral_advection_mode
 
+
     def setTemperature(self, T):
         """
         Sets the ion temperature from an input value `T`. 
@@ -230,12 +239,27 @@ class IonSpecies:
         return T
         
 
+
     def getDensity(self):
         """
         Returns the prescribed density array for this ion species.
         """
         return self.n
-        
+
+
+    def getSourceDensity(self):
+        """
+        Returns the (time evolution of the) source term used to seed this
+        ion species with new particles.
+        """
+        return self.source_n
+
+
+    def getSourceType(self):
+        """
+        Returns the type of the source term used.
+        """
+        return self.source_type
         
         
     # Getters for diffusion-related quantities    
@@ -330,6 +354,13 @@ class IonSpecies:
         return self.r
 
 
+    def getSourceTime(self):
+        """
+        Returns the time grid on which the ion source is defined.
+        """
+        return self.source_t
+
+
     def getTime(self):
         """
         Returns the time grid on which the ion densities are defined.
@@ -344,6 +375,7 @@ class IonSpecies:
         """
         return self.ttype
         
+
     def getOpacityMode(self):
         """
         Returns the opacity mode to use for evolving the ion densities
@@ -351,6 +383,7 @@ class IonSpecies:
         """
         return self.opacity_mode
         
+
     def getChargedDiffusionMode(self):
         """
         Returns the charged diffusion mode to use for evolving the ion densities
@@ -358,6 +391,7 @@ class IonSpecies:
         """
         return self.charged_diffusion_mode
         
+
     def getNeutralDiffusionMode(self):
         """
         Returns the neutral diffusion mode to use for evolving the ion densities
@@ -365,6 +399,7 @@ class IonSpecies:
         """
         return self.neutral_diffusion_mode
         
+
     def getChargedAdvectionMode(self):
         """
         Returns the charged advection mode to use for evolving the ion densities
@@ -372,6 +407,7 @@ class IonSpecies:
         """
         return self.charged_advection_mode
         
+
     def getNeutralAdvectionMode(self):
         """
         Returns the neutral advection mode to use for evolving the ion densities
@@ -379,12 +415,14 @@ class IonSpecies:
         """
         return self.neutral_advection_mode
 
+
     def getTemperature(self):
         """
         Returns the initial temperature array to use for evolving
         the ion heat of this species 
         """
         return self.T
+
 
     def getZ(self):
         """
@@ -398,6 +436,7 @@ class IonSpecies:
 
     def getSPIMolarFraction(self): return self.SPIMolarFraction
     
+
     def setSPIMolarFraction(self, SPIMolarFraction):
         if np.isscalar(SPIMolarFraction):
             self.SPIMolarFraction = np.array([SPIMolarFraction])
@@ -656,8 +695,6 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
             
             
-            
-            
     def initialize_charged_prescribed_diffusion(self, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None, interpr=None, interpt=None):
         """
         Prescribes the evolution of the charged diffusion coefficients for this ion species.
@@ -696,6 +733,7 @@ class IonSpecies:
             self.charged_prescribed_diffusion = charged_prescribed_diffusion
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed charged diffusion coefficient: {}.".format(self.name, charged_prescribed_diffusion.shape))
+
 
     def initialize_neutral_prescribed_diffusion(self, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None, interpr=None, interpt=None):
         """
@@ -746,8 +784,6 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral diffusion coefficient: {}.".format(self.name, neutral_prescribed_diffusion.shape))
    
    
-   
-   
     def initialize_charged_prescribed_advection(self, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None, interpr=None, interpt=None):
         """
         Prescribes the evolution of the charged advection coefficients for this ion species.
@@ -786,6 +822,7 @@ class IonSpecies:
             self.charged_prescribed_advection = charged_prescribed_advection
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed charged advection coefficient: {}.".format(self.name, charged_prescribed_advection.shape))
+
 
     def initialize_neutral_prescribed_advection(self, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None, interpr=None, interpt=None):
         """
@@ -836,6 +873,49 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral advection coefficient: {}.".format(self.name, neutral_prescribed_advection.shape))
 
 
+    def initialize_source(self, n, t=None, Z0=0):
+        """
+        Initialize the ion source term associated with this species.
+        """
+        self.source_type = ION_SOURCE_PRESCRIBED
+
+        if n is None:
+            raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")
+
+        # Convert lists to NumPy arrays
+        if type(n) == list:
+            n = np.array(n)
+
+        # Scalar (assume density constant in spacetime)
+        #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+        if np.isscalar(n):
+            self.source_t = np.array([0])
+            self.source_n = np.zeros((self.Z+1,1))
+            self.source_n[Z0,:] = n
+            return
+
+        # Time evolution of neutral atoms
+        if len(n.shape) == 1:
+            if n.size != t.size:
+                raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, by shape(n) != shape(t), {n.shape} != {t.shape}.")
+
+            self.source_t = t
+            self.source_n = np.zeros((self.Z+1, t.size))
+            self.source_n[Z0,:] = n
+        # Time evolution of all charge states
+        elif len(n.shape) == 2:
+            if t is None:
+                raise EquationException(f"ion_species: '{self.name}': Full ion charge state density source prescribed, but no time coordinates given.")
+
+            if self.Z+1 != n.shape[0] or t.size != n.shape[1]:
+                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
+
+            self.source_t = t
+            self.source_n = n
+        else:
+            raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
+
+
     def calcTransportCoefficientExpdecaySingleChargeState(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
@@ -859,6 +939,7 @@ class IonSpecies:
         t = np.vstack((t, t[-1]+1))
         
         return c_single_charge_state, r.flatten(), t.flatten()
+
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
         c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
