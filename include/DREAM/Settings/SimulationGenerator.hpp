@@ -203,6 +203,9 @@ namespace DREAM {
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
+		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, len_t, const real_t*, const real_t*, len_t, real_t*);
+
 
         template<typename T>
         static T *ConstructTransportTerm_internal(

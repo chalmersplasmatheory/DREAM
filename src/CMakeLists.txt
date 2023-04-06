@@ -159,6 +159,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/spi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/IonEquilibrium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"
