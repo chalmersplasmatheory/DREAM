@@ -3,9 +3,11 @@ TEX=latexmk
 TEXF=-pdf -pdflatex="pdflatex" -outdir="pdf"
 BIB=biber
 
-all: adaptive_timestep charge_states discretisation dreicer frozen-current heat-transport magnetic_compression psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
+all: adaptive_timestep ampere_faraday charge_states discretisation dreicer frozen-current heat-transport magnetic_compression psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
 
 adaptive_timestep: adaptive_timestep.pdf
+
+ampere_faraday: ampere_faraday.pdf
 
 charge_states: charge_states.pdf
 

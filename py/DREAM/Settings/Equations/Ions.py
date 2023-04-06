@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.interpolate
+from numpy.matlib import repmat
 from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
@@ -577,7 +578,20 @@ class Ions(UnknownQuantity):
             if sourceterm is None:
                 sourceterm = np.copy(ion.getSourceDensity())
             else:
-                sourceterm = np.concatenate((sourceterm, ion.getSourceDensity()))
+                n1 = sourceterm
+                n2 = ion.getSourceDensity()
+
+                if n1.shape[1] != n2.shape[1]:
+                    if n1.shape[1] == 1:
+                        n1 = repmat(n1[:,0].reshape((n1.shape[0],1)), 1, n2.shape[1])
+                    elif n2.shape[1] == 1:
+                        n2 = repmat(n2[:,0].reshape((n2.shape[0],1)), 1, n1.shape[1])
+                    else:
+                        raise EquationException("All ion sources must be defined in the same time points.")
+
+                print(n1.shape)
+                print(n2.shape)
+                sourceterm = np.concatenate((n1, n2))
 
             if initialTi is None:
                 initialTi = np.copy(ion.getTemperature())
