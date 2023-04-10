@@ -1,14 +1,8 @@
 #!/usr/bin/env python3
 #
-# This example shows how to set up a simple CODE-like runaway
-# scenario in DREAM. The simulation uses a constant temperature,
-# density and electric field, and generates a runaway current
-# through the electric field acceleration, demonstrating Dreicer generation.
+# TIn this test we compare results form runiface and runiface_parallel
+# using basic experiments. First we generate regular results, then parallel ones.
 #
-# Run as
-#
-#   $ ./basic.py
-#   $ ../../build/iface/dreami dream_settings.h5
 #
 # ###################################################################
 
@@ -96,12 +90,19 @@ def run(args):
     number_of_tasks = 10
     ds = [createExperimentData(i) for i in range(number_of_tasks)]
     output = [None] * number_of_tasks
+    regular_results = []
+    for case in ds:
+        result = DREAM.runiface(case, quiet=True)
+        regular_results.append(result)
     try:
-        result = DREAM.runiface_parallel(ds, output, quiet=True)
+        parallel_results = DREAM.runiface_parallel(ds, output, quiet=True, njobs=4)
+        for regular,parallel in zip(regular_results, parallel_results):
+            if regular.eqsys.n_re[-1,0] != parallel.eqsys.n_re[-1,0]:
+                dreamtests.print_error(f"Parallel test failed, results from regular execution don't match the parallel ones.")
+                return False
+            
         dreamtests.print_ok("Parallel test run correctly.")
         return True
-        # for r in result:
-        #     print(r.eqsys.j_ohm[-1,:])
     except DREAMException as error:
         dreamtests.print_error(f"Parallel test failed: {error}")
         return False
