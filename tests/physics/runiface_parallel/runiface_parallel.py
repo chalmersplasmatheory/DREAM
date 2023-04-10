@@ -86,7 +86,7 @@ def createExperimentData(index):
 
     return ds
 
-def run(args):
+def check_results():
     number_of_tasks = 10
     ds = [createExperimentData(i) for i in range(number_of_tasks)]
     output = [None] * number_of_tasks
@@ -106,3 +106,22 @@ def run(args):
     except DREAMException as error:
         dreamtests.print_error(f"Parallel test failed: {error}")
         return False
+
+def check_timeout():
+    ds = [createExperimentData(0)]
+    output = [None]
+    result = False
+
+    try:
+        DREAM.runiface_parallel(ds, output, quiet=True, njobs=4, timeout=0.5)
+    except DREAMException as error:
+        result = "timeout" in str(error)
+
+    if result:
+        dreamtests.print_ok("Timeout test run correctly.") 
+    else:
+        dreamtests.print_error("Timeout test failed.")
+    return result
+
+def run(args):
+    return  check_results() and check_timeout()

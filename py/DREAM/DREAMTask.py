@@ -2,6 +2,7 @@ import os
 import pathlib
 import subprocess
 import tempfile
+import time
 
 from . DREAMException import DREAMException
 from . DREAMOutput import DREAMOutput
@@ -32,9 +33,10 @@ class DREAMTask:
         self.stderr_data = None
         self.DREAMPATH = DREAMPATH
         self.quiet = quiet
-        self.timeout = timeout
+        self.timeout = timeout if timeout is not None else float('inf')
 
     def run(self):
+        self.startTime= time.time()
         if self.p != None: #if process is already created then we can safely od nothing
             return 
         if self.quiet:
@@ -59,9 +61,12 @@ class DREAMTask:
             return False
         except KeyboardInterrupt:
             self.errorOnExit = 2
-        # We still need to implement timeout manually
-        # self.p.kill()
-        # errorOnExit = 3
+
+        # Now we implement timeout manually, by checking start time with current time
+        if time.time() - self.startTime > self.timeout:
+            self.p.kill()
+            self.errorOnExit = 3
+ 
         return True
 
     def getResult(self):
