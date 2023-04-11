@@ -485,16 +485,10 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();
-    real_t *ni = new real_t[ih->GetNzs() * Nr];
+    /*real_t *ni = new real_t[ih->GetNzs() * Nr];
 
     for (len_t i = 0; i < ih->GetNzs() * Nr; i++)
-        ni[i] = 0;
-
-    // Begin by evaluating prescribed densities
-    if (ipp != nullptr) {
-        ipp->Rebuild(t0, 1, nullptr);
-        ipp->Evaluate(ni);
-    }
+        ni[i] = 0;*/
 
 	len_t dims;
 	const int_t *init_equil = s->GetIntegerArray(MODULENAME "/init_equilibrium", 1, &dims);
@@ -511,8 +505,14 @@ void SimulationGenerator::ConstructEquation_Ions(
 	const len_t id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
 	std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_ni =
-		[ih,adas,dynamic_indices,dynamic_densities,initNi,init_equil,Nr,nZ_dynamic,id_T](FVM::UnknownQuantityHandler *u, real_t *ni) {
+		[ih,ipp,t0,adas,dynamic_indices,dynamic_densities,initNi,init_equil,Nr,nZ_dynamic,id_T](FVM::UnknownQuantityHandler *u, real_t *ni) {
 		const real_t *Te = u->GetUnknownData(id_T);
+
+		// Begin by evaluating prescribed densities
+		if (ipp != nullptr) {
+			ipp->Rebuild(t0, 1, nullptr);
+			ipp->Evaluate(ni);
+		}
 
 		// ...and then fill in with the initial dynamic ion values
 		for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
