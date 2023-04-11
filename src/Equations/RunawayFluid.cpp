@@ -40,7 +40,7 @@ RunawayFluid::RunawayFluid(
     OptionConstants::collqty_Eceff_mode Eceff_mode,
     OptionConstants::eqterm_avalanche_mode ava_mode,
     OptionConstants::eqterm_compton_mode compton_mode,
-    real_t compton_photon_flux
+    FVM::Interpolator1D *compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
     unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
@@ -133,7 +133,7 @@ RunawayFluid::~RunawayFluid(){
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
  */
-void RunawayFluid::Rebuild(){
+void RunawayFluid::Rebuild(const real_t t){
     this->timeKeeper->StartTimer(timerTot);
 
     // Macro for running accumulating timers
@@ -164,7 +164,7 @@ void RunawayFluid::Rebuild(){
     TIME(Derived, CalculateDerivedQuantities());
     TIME(EcEff, effectiveCriticalFieldObject->CalculateEffectiveCriticalField(Ec_tot, Ec_free,effectiveCriticalField));
     TIME(PCrit, CalculateCriticalMomentum());
-    TIME(Growthrates, CalculateGrowthRates());
+    TIME(Growthrates, CalculateGrowthRates(t));
 
     this->timeKeeper->StopTimer(timerTot);
 }
@@ -328,7 +328,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  * the critical runaway momentum, which has been generalized to account for 
  * arbitrary inhomogeneous magnetic fields, see DREAM/doc/notes/theory.
  */
-void RunawayFluid::CalculateGrowthRates(){
+void RunawayFluid::CalculateGrowthRates(const real_t t){
     real_t *E      = unknowns->GetUnknownData(id_Eterm);
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
     real_t *n_tot  = unknowns->GetUnknownData(id_ntot); 
@@ -337,9 +337,10 @@ void RunawayFluid::CalculateGrowthRates(){
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
         real_t pc = criticalREMomentum[ir]; 
+		real_t cmptnFlux = compton_photon_flux->Eval(t)[0];
         tritiumRate[ir] = evaluateTritiumRate(pc);
-        comptonRate[ir] = evaluateComptonRate(pc, compton_photon_flux, gsl_ad_w);
-        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,compton_photon_flux, gsl_ad_w);
+        comptonRate[ir] = evaluateComptonRate(pc, cmptnFlux, gsl_ad_w);
+        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc, cmptnFlux, gsl_ad_w);
 
         // Dreicer runaway rate
         bool nnapp = false;
