@@ -72,7 +72,7 @@ def runiface_parallel(settings, outfiles, quiet=False, timeout=None, njobs=4):
             task.run()
             active.append(task)
 
-    return [task.getResult() for task in allTasks]
+    return [task.getResultObject() for task in allTasks]
     
 
 locatedream()

@@ -7,6 +7,7 @@ import time
 from . DREAMException import DREAMException
 from . DREAMOutput import DREAMOutput
 from . DREAMSettings import DREAMSettings
+from . DREAMErrorOutput import DREAMErrorOutput
 from subprocess import TimeoutExpired
 
 class DREAMTask:
@@ -81,4 +82,11 @@ class DREAMTask:
             raise DREAMException("DREAMi simulation was killed due to timeout.")
         else:
             return self.obj
-        
+
+    def getResultObject(self):
+        # Handling errors in this way is easiest in terms of backwards compatibility, but
+        # quite inefficient. We can change it later, if we face performance issues.
+        try:
+            return self.getResult()
+        except DREAMException as error:
+            return DREAMErrorOutput(error, self.stderr_data, self.errorOnExit)

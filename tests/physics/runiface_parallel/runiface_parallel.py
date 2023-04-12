@@ -113,9 +113,10 @@ def check_timeout():
     result = False
 
     try:
-        DREAM.runiface_parallel(ds, output, quiet=True, njobs=4, timeout=0.5)
-    except DREAMException as error:
-        result = "timeout" in str(error)
+        out = DREAM.runiface_parallel(ds, output, quiet=True, njobs=4, timeout=0.5)
+        result = "timeout" in str(out[0].exception) and out[0].errorCode == 3
+    except:
+        result = False
 
     if result:
         dreamtests.print_ok("Timeout test run correctly.") 
