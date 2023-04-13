@@ -387,6 +387,10 @@ void EqsysInitializer::InitializeFromOutput(
             else if (dims[2] == 1)
                 this->__InitTRmult(uqn, t0, tidx, 1, r, data, dims);
 
+			// If this is the ion density, make sure to rebuild the ion handler
+            if (uqn->GetName() == OptionConstants::UQTY_ION_SPECIES) 
+                ionHandler->Rebuild();
+
         // Time + radius + momentum
         } else if (ndims == 4) {
             // Hot-tail
