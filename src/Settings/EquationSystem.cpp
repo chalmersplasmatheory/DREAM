@@ -156,7 +156,11 @@ void SimulationGenerator::ConstructEquations(
     // bootstrap current
     enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-        BootstrapCurrent *bootstrap = new BootstrapCurrent(fluidGrid, unknowns, ionHandler, eqsys->GetREFluid()->GetLnLambda());
+        BootstrapCurrent *bootstrap = new BootstrapCurrent(
+            fluidGrid, unknowns, ionHandler,
+            (enum OptionConstants::eqterm_bootstrap_bc)s->GetInteger("eqsys/j_bs/bc"),
+            eqsys->GetREFluid()->GetLnLambda()
+        );
         eqsys->SetBootstrap(bootstrap);
     }
 
@@ -376,7 +380,6 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_FLD_N(WI_ENER, nIonSpecies);
         DEFU_FLD_N(NI_DENS, nIonSpecies);
     } else if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-        cout << "ion here" << std::endl;
         DEFU_FLD_N(NI_DENS, GetNumberOfIonSpecies(s));
     }
 

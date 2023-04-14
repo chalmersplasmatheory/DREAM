@@ -11,7 +11,10 @@ namespace DREAM {
     class BootstrapIonThermalEnergyTerm : public BootstrapEquationTerm {
 
     public:
-        BootstrapIonThermalEnergyTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, BootstrapCurrent*, IonHandler*, real_t sf=1.);
+        BootstrapIonThermalEnergyTerm(
+            FVM::Grid*, FVM::UnknownQuantityHandler*, BootstrapCurrent*,
+            IonHandler*, OptionConstants::eqterm_bootstrap_bc, real_t sf=1.
+        );
 
         virtual real_t GetCoefficient(len_t, len_t) override;
         virtual real_t GetPartialCoefficient(len_t, len_t, len_t, len_t) override;

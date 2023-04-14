@@ -21,6 +21,7 @@ using namespace DREAM;
 
 void SimulationGenerator::DefineOptions_j_bs(Settings *s){
     s->DefineSetting(MODULENAME "/mode", "Determines which formula to use for the bootstrap current", (int_t)OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/bc", "Determines whether to assume plasma quantities are zero outside the edge", (int_t)OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS);
 }
 
 /**
@@ -38,27 +39,31 @@ void SimulationGenerator::ConstructEquation_j_bs(
     IonHandler *ions = eqsys->GetIonHandler();
     BootstrapCurrent *bootstrap = eqsys->GetBootstrap();
 
+    const len_t id_jtot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
     const len_t id_jbs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
     const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
     const len_t id_Tcold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
     const len_t id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
 
+
+    enum OptionConstants::eqterm_bootstrap_bc bc = (OptionConstants::eqterm_bootstrap_bc)s->GetInteger("eqsys/j_bs/bc");
+
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.));
-    eqsys->SetOperator(id_jbs, id_jbs, Op1, "Sauter-Redl bootstrap");
+    eqsys->SetOperator(id_jbs, id_jbs, Op1, "Redl-Sauter bootstrap");
 
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-    oqty_terms->j_bs_n_cold = new BootstrapElectronDensityTerm(fluidGrid, unknowns, bootstrap, ions);
+    oqty_terms->j_bs_n_cold = new BootstrapElectronDensityTerm(fluidGrid, unknowns, bootstrap, ions, bc);
     Op2->AddTerm( oqty_terms->j_bs_n_cold );
     eqsys->SetOperator(id_jbs, id_ncold, Op2);
 
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
-    oqty_terms->j_bs_T_cold = new BootstrapElectronTemperatureTerm(fluidGrid, unknowns, bootstrap, ions);
+    oqty_terms->j_bs_T_cold = new BootstrapElectronTemperatureTerm(fluidGrid, unknowns, bootstrap, ions, bc);
     Op3->AddTerm( oqty_terms->j_bs_T_cold );
     eqsys->SetOperator(id_jbs, id_Tcold, Op3);
 
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-    oqty_terms->j_bs_N_i = new BootstrapIonDensityTerm(fluidGrid, unknowns, bootstrap, ions);
+    oqty_terms->j_bs_N_i = new BootstrapIonDensityTerm(fluidGrid, unknowns, bootstrap, ions, bc);
     Op4->AddTerm( oqty_terms->j_bs_N_i );
     eqsys->SetOperator(id_jbs, id_Ni, Op4);
 
@@ -67,23 +72,23 @@ void SimulationGenerator::ConstructEquation_j_bs(
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        oqty_terms->j_bs_W_i = new BootstrapIonThermalEnergyTerm(fluidGrid, unknowns, bootstrap, ions);
+        oqty_terms->j_bs_W_i = new BootstrapIonThermalEnergyTerm(fluidGrid, unknowns, bootstrap, ions, bc);
         Op5->AddTerm( oqty_terms->j_bs_W_i );
-        eqsys->SetOperator(id_jbs, id_Wi, Op4);
+        eqsys->SetOperator(id_jbs, id_Wi, Op5);
 
         eqsys->initializer->AddRule(
                 id_jbs,
                 EqsysInitializer::INITRULE_EVAL_EQUATION,
                 nullptr,
-                id_ncold, id_Tcold, id_Ni, id_Wi
+                id_jtot, id_ncold, id_Tcold, id_Ni, id_Wi
         );
     } else
         eqsys->initializer->AddRule(
                 id_jbs,
                 EqsysInitializer::INITRULE_EVAL_EQUATION,
                 nullptr,
-                id_ncold, id_Tcold, id_Ni
+                id_jtot, id_ncold, id_Tcold, id_Ni
         );
 
-    bootstrap->Rebuild();
+    // bootstrap->Rebuild();
 }

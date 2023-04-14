@@ -7,12 +7,14 @@
 
 using namespace DREAM;
 
+
 /**
  * Constructor.
  */
 BootstrapEquationTerm::BootstrapEquationTerm(
-    FVM::Grid* g, FVM::UnknownQuantityHandler* u, IonHandler *ih, BootstrapCurrent *bs, real_t sf
-) : EquationTerm(g), scaleFactor(sf), bs(bs) {
+    FVM::Grid* g, FVM::UnknownQuantityHandler* u, IonHandler *ih,
+    BootstrapCurrent *bs, OptionConstants::eqterm_bootstrap_bc bc, real_t sf
+) : EquationTerm(g), bc(bc), scaleFactor(sf), bs(bs) {
 
     nZ = ih->GetNZ();
     nzs = ih->GetNzs();
@@ -25,6 +27,8 @@ BootstrapEquationTerm::BootstrapEquationTerm(
         id_Wi = u->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
     AllocateDeltaX();
+
+    isInitialized = false;
 }
 
 /**
@@ -51,12 +55,32 @@ void BootstrapEquationTerm::DeallocateDeltaX() {
     delete [] deltaX;
 }
 
+
+void BootstrapEquationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *u) {
+    if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS)
+        rebuildBackwardsBC(u);
+    else if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
+        rebuildZeroBC(u);
+}
 /**
- * Calculate the central differences, with boundary conditions:
- *      X_{-1}   = X_{0}
- *      X_{nr-1} = 0
+ * Calculate the central differences.
+ * This one uses a backward finite difference for the grid point by the plasma edge.
  */
-void BootstrapEquationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler* u) {
+void BootstrapEquationTerm::rebuildBackwardsBC(FVM::UnknownQuantityHandler *u) {
+    real_t *x = u->GetUnknownData(id_X);
+    for (len_t ir = 0; ir < nr; ir++)
+        if ( (id_X == id_Ni) || (id_X == id_Wi) )
+            for (len_t i = ir; i < nr * nZ; i += nr)
+                deltaX[i] = ( (ir == nr - 1) ? 0 : x[i + 1] ) - ( (ir == 0) ? x[i] : x[i - 1] );
+        else
+            deltaX[ir] = ( (ir == nr-1) ? x[ir]  : x[ir + 1] ) - ( (ir == 0) ? x[ir] : x[ir - 1] );
+}
+
+/**
+ * Calculate the central differences.
+ * This one assumes plasma quantities are zero outside of the edge.
+ */
+void BootstrapEquationTerm::rebuildZeroBC(FVM::UnknownQuantityHandler *u) {
     real_t *x = u->GetUnknownData(id_X);
     for (len_t ir = 0; ir < nr; ir++)
         if ( (id_X == id_Ni) || (id_X == id_Wi) )
@@ -66,38 +90,63 @@ void BootstrapEquationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuan
             deltaX[ir] = ( (ir == nr-1) ? 0 : x[ir + 1] ) - ( (ir == 0) ? x[ir] : x[ir - 1] );
 }
 
+
 /**
  * Sets the Jacobian matrix for the specified block in the given matrix.
  */
-bool BootstrapEquationTerm::SetJacobianBlock(
-    const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*
-) {
+bool BootstrapEquationTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*) {
     if (!HasJacobianContribution(derivId))
         return false;
     for (len_t ir = 0; ir < nr; ir++) {
         if (derivId == id_ions)
             for (len_t izs = 0; izs < nzs; izs++) {
                 real_t dC = GetPartialCoefficient(ir, derivId, izs, 0);
-                SetJacobianElement(derivId, jac, ir, nr * izs + ir, dC * deltaX[ir]);
+                setJacobianElement(derivId, jac, ir, nr * izs + ir, dC * deltaX[ir]);
             }
         else
             if ( (derivId == id_Ni) || (derivId == id_Wi) )
                 for (len_t iZ = 0; iZ < nZ; iZ++) {
                     real_t dC = GetPartialCoefficient(ir, derivId, 0, iZ);
-                    SetJacobianElement(derivId, jac, ir, nr * iZ + ir, dC * deltaX[ir]);
+                    setJacobianElement(derivId, jac, ir, nr * iZ + ir, dC * deltaX[ir]);
                 }
             else {
                 real_t dC = GetPartialCoefficient(ir, derivId, 0, 0);
-                SetJacobianElement(derivId, jac, ir, ir, dC * deltaX[ir]);
+                setJacobianElement(derivId, jac, ir, ir, dC * deltaX[ir]);
             }
     }
     return true;
 }
-
+void BootstrapEquationTerm::setJacobianElement(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
+    if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS)
+        setJacobianElementBackwardsBC(derivId, jac, ir, jr, diagonal);
+    else if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
+        setJacobianElementZeroBC(derivId, jac, ir, jr, diagonal);
+}
 /**
- * Helper function. Sets a single Jacobian matrix element.
+ * Helper function.
+ * Sets a single Jacobian matrix element.
+ * This one uses a backward finite difference for the grid point by the plasma edge.
  */
-void BootstrapEquationTerm::SetJacobianElement(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
+void BootstrapEquationTerm::setJacobianElementBackwardsBC(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
+    if (derivId == id_X) {
+        real_t offDiagonal = GetCoefficient(ir, 0);
+        if (ir == 0)
+            diagonal -= offDiagonal;
+        else
+            jac->SetElement(ir, jr - 1, -scaleFactor * offDiagonal);
+        if (ir == nr - 1)
+            diagonal += offDiagonal;
+        else
+            jac->SetElement(ir, jr + 1, scaleFactor * offDiagonal);
+    }
+    jac->SetElement(ir, jr, scaleFactor * diagonal);
+}
+/**
+ * Helper function.
+ * Sets a single Jacobian matrix element.
+ * This one assumes plasma quantities are zero outside of the edge.
+ */
+void BootstrapEquationTerm::setJacobianElementZeroBC(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
     if (derivId == id_X) {
         real_t offDiagonal = GetCoefficient(ir, 0);
         if (ir == 0)
@@ -111,6 +160,7 @@ void BootstrapEquationTerm::SetJacobianElement(len_t derivId, FVM::Matrix *jac, 
 }
 
 
+
 /**
  * Set the linear operator matrix elements corresponding to this term.
  */
@@ -118,16 +168,38 @@ void BootstrapEquationTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /* rhs *
     for (len_t ir = 0; ir < nr; ir++) {
         if ( (id_X == id_Ni) || (id_X == id_Wi) ) {
             for (len_t iZ = 0; iZ < nZ; iZ++)
-                SetMatrixElement(mat, nr * iZ + ir, GetCoefficient(ir, iZ));
+                setMatrixElement(mat, nr * iZ + ir, GetCoefficient(ir, iZ));
         } else
-            SetMatrixElement(mat, ir, GetCoefficient(ir, 0));
+            setMatrixElement(mat, ir, GetCoefficient(ir, 0));
     }
 }
-
+void BootstrapEquationTerm::setMatrixElement(FVM::Matrix *mat, len_t ir, real_t weight) {
+    if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS)
+        setMatrixElementBackwardsBC(mat, ir, weight);
+    else if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
+        setMatrixElementZeroBC(mat, ir, weight);
+}
 /**
- * Helper function. Sets a single linear operator matrix element.
+ * Helper function.
+ * Sets a single linear operator matrix element.
+ * This one uses a backward finite difference for the grid point by the plasma edge.
  */
-void BootstrapEquationTerm::SetMatrixElement(FVM::Matrix *mat, len_t ir, real_t weight) {
+void BootstrapEquationTerm::setMatrixElementBackwardsBC(FVM::Matrix *mat, len_t ir, real_t weight) {
+    if (ir == 0)
+        mat->SetElement(ir, ir, -scaleFactor * weight);
+    else
+        mat->SetElement(ir, ir - 1, -scaleFactor * weight);
+    if (ir == nr - 1)
+        mat->SetElement(ir, ir, scaleFactor * weight);
+    else
+        mat->SetElement(ir, ir + 1, scaleFactor * weight);
+}
+/**
+ * Helper function.
+ * Sets a single linear operator matrix element.
+ * This one assumes plasma quantities are zero outside of the edge.
+ */
+void BootstrapEquationTerm::setMatrixElementZeroBC(FVM::Matrix *mat, len_t ir, real_t weight) {
     if (ir == 0)
         mat->SetElement(ir, ir, -scaleFactor * weight);
     else
@@ -136,10 +208,16 @@ void BootstrapEquationTerm::SetMatrixElement(FVM::Matrix *mat, len_t ir, real_t 
         mat->SetElement(ir, ir + 1, scaleFactor * weight);
 }
 
+
+
 /**
  * Set function vector for this term. For the nonlinear solver.
  */
 void BootstrapEquationTerm::SetVectorElements(real_t *vec, const real_t* /* dt */) {
+    if (!isInitialized) {   // temporary fix. Doesn't work for the nonlinear solver?
+        bs->Rebuild();
+        isInitialized = true;
+    }
     for (len_t ir = 0; ir < nr; ir++) {
         if ( (id_X == id_Ni) || (id_X == id_Wi) ) {
             for (len_t iZ = 0; iZ < nZ; iZ++)

@@ -2,15 +2,21 @@
  * Implementation of a class that calculates and stores quantities related to
  * bootstrap current. For further details on the implementation, see doc/notes/bootstrap.
  */
- #include "DREAM/Equations/BootstrapCurrent.hpp"
- #include "DREAM/DREAMException.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
+#include "DREAM/DREAMException.hpp"
+#include "DREAM/Constants.hpp"
+
+#include <iostream>
 
 using namespace DREAM;
 
  /**
   * Constructor.
   */
-BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih, CoulombLogarithm *lnL) {
+BootstrapCurrent::BootstrapCurrent(
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,
+    OptionConstants::eqterm_bootstrap_bc bc, CoulombLogarithm *lnL
+) {
 
     rGrid = g->GetRadialGrid();
     unknowns = u;
@@ -24,7 +30,8 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     lnLEE_settings->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_THERMAL;
 
     // cube root of a small number used in central difference derivatives
-    epsilon = cbrt(std::numeric_limits<real_t>::epsilon());
+    epsilon_forward = sqrt(std::numeric_limits<real_t>::epsilon());
+    epsilon_central = cbrt(std::numeric_limits<real_t>::epsilon());
 
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -36,10 +43,13 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     if (includeIonTemperatures)
         id_Wi = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
+    nr = rGrid->GetNr();
+
     // Memory allocation
     AllocateQuantities();
 
-    nr = rGrid->GetNr();
+    // Rebuild();
+
 
     // equilibrium constants
     const real_t R0 = rGrid->GetR0();
@@ -50,13 +60,19 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
         const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
         constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
-        if (ir == 0 || ir == nr-1) // boundary cases
-            constantPrefactor[ir] /= 2 * rGrid->GetDr( (ir != 0)*(nr-2) );
-        else
+        if (ir == 0)
+            constantPrefactor[ir] /= 2 * rGrid->GetDr(0);
+        if (ir == nr - 1) {
+                constantPrefactor[ir] /= rGrid->GetDr(nr-2);
+                if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
+                    constantPrefactor[ir] *= .5;
+        } else
             constantPrefactor[ir] /= ( rGrid->GetDr(ir-1) + rGrid->GetDr(ir+1) );
 
+        constantPrefactor[ir] *= Constants::ec;
+
         // calculate fraction of trapped particles
-        ft[ir] = 1 - rGrid->GetEffPassFrac(ir);
+        ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
     }
 
     // locate the main ion index
@@ -87,12 +103,12 @@ void BootstrapCurrent::AllocateQuantities() {
     constantPrefactor = new real_t[nr];
     coefficientL31    = new real_t[nr];
     Zeff              = new real_t[nr];
+    NiMain            = new real_t[nr];
+    WiMain            = new real_t[nr];
     ft                = new real_t[nr];
     qR0               = new real_t[nr];
-    if (includeIonTemperatures) {
-        n = new real_t[nr];
-        p = new real_t[nr];
-    }
+    n                 = new real_t[nr];
+    p                 = new real_t[nr];
 }
 
 /**
@@ -102,12 +118,12 @@ void BootstrapCurrent::DeallocateQuantities() {
     delete [] constantPrefactor;
     delete [] coefficientL31;
     delete [] Zeff;
+    delete [] NiMain;
+    delete [] WiMain;
     delete [] ft;
     delete [] qR0;
-    if (includeIonTemperatures) {
-        delete [] n;
-        delete [] p;
-    }
+    delete [] n;
+    delete [] p;
 }
 
 
@@ -120,7 +136,6 @@ void BootstrapCurrent::Rebuild() {
     Tcold  = unknowns->GetUnknownData(id_Tcold);
     if (includeIonTemperatures)
         Wi = unknowns->GetUnknownData(id_Wi);
-
 
     for (len_t ir = 0; ir < nr; ir++) {
 
@@ -145,7 +160,10 @@ void BootstrapCurrent::Rebuild() {
         p[ir] = ncold[ir] * Tcold[ir];
         for (len_t i = ir; i < nr * ions->GetNZ(); i += nr) {
             n[ir] += Ni[i];
-            p[ir] += Wi[i] * 2. / 3.;
+            if (includeIonTemperatures)
+                p[ir] += Wi[i] * 2. / 3.;
+            else
+                p[ir] += Ni[ir] * Tcold[ir];
         }
     }
 }
@@ -224,7 +242,7 @@ real_t BootstrapCurrent::evaluateCoefficientL32_internal(real_t ft, real_t Zeff,
     // Eq. 13
     real_t F32ee = (.1 + .6 * Zeff) * f32ee * (1. - f32ee * f32ee * f32ee);
     F32ee /= Zeff * (.77 + .63*(1. + pow(Zeff-1., 1.1)));
-    F32ee += .7 / (1. + .2 * Zeff) * f32ee * f32ee * (1. - 1.3 * f32ee + .2 * f32ee * f32ee);
+    F32ee += .7 / (1. + .2 * Zeff) * f32ee * f32ee * (1. - 1.2 * f32ee + .2 * f32ee * f32ee);
     F32ee += 1.3 * f32ee * f32ee * f32ee * f32ee / (1. + .5 * Zeff);
 
     // Eq. 16
@@ -234,7 +252,7 @@ real_t BootstrapCurrent::evaluateCoefficientL32_internal(real_t ft, real_t Zeff,
 
     // Eq. 15
     real_t F32ei = 5.5 * f32ei * f32ei * (1. - .8 * f32ei - .2 * f32ei * f32ei);
-    F32ei /= (1.5 + 2 * Zeff);
+    F32ei /= (1.5 + 2. * Zeff);
     F32ei -= (.4 + 1.93 * Zeff) * f32ei * (1. - f32ei * f32ei * f32ei) / (Zeff * (.8 + .6 * Zeff));
     F32ei -= 1.3 * f32ei * f32ei * f32ei * f32ei / (1. + .5 * Zeff);
 
@@ -320,9 +338,9 @@ real_t BootstrapCurrent::evaluateNumericalDerivative(
     if ( (derivId != id_ncold) && (derivId != id_Tcold) && (derivId != id_ions) )
         return 0;
     real_t nu = evaluateElectronCollisionFrequency(ir);
-    real_t hnu = nu * epsilon;
-    real_t dCdnu = ( coefficient(ft[ir], nu+hnu, Zeff[ir])
-                   - coefficient(ft[ir], nu-hnu, Zeff[ir]) ) / (2 * hnu);
+    real_t hnu = nu * epsilon_central;
+    real_t dCdnu = ( coefficient(ft[ir], Zeff[ir], nu+hnu)
+                   - coefficient(ft[ir], Zeff[ir], nu-hnu) ) / (2 * hnu);
     if (derivId == id_ncold)
         return dCdnu * nu / ncold[ir];
     real_t lnLEE = lnLambda->evaluateLnLambdaT(ir);
@@ -339,9 +357,9 @@ real_t BootstrapCurrent::evaluateNumericalDerivative(
     ions->GetIonIndices(iz, _, Z0);
     real_t dZeffdni = Z0/nfree * (Z0 - ions->GetNZ0Z0(ir)/nfree);
     real_t dlnLEEdni = lnLambda->evaluatePartialAtP(ir, 0, derivId, iz, lnLEE_settings);
-    real_t hZeff = Zeff[ir] * epsilon;
-    real_t dCdZeff = ( coefficient(ft[ir], nu, Zeff[ir]+hZeff)
-                     - coefficient(ft[ir], nu, Zeff[ir]-hZeff) ) / (2 * hZeff);
+    real_t hZeff = Zeff[ir] * epsilon_forward;
+    real_t dCdZeff = ( coefficient(ft[ir], Zeff[ir]+hZeff, nu)
+                     - coefficient(ft[ir], Zeff[ir], nu) ) / hZeff;
 
     return dCdnu * nu * (dZeffdni / Zeff[ir] + dlnLEEdni / lnLEE) + dCdZeff * dZeffdni;
 }
@@ -363,9 +381,9 @@ real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
         return 0;
 
     real_t nu = evaluateIonCollisionFrequency(ir);
-    real_t hnu = nu * epsilon;
-    real_t dAdnu = ( evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir], nu-hnu)
-                       - evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir], nu+hnu) ) / (2*hnu);
+    real_t hnu = nu * epsilon_central;
+    real_t dAdnu = ( evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir], nu+hnu)
+                       - evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir], nu-hnu) ) / (2*hnu);
 
     real_t lnLII = lnLambda->evaluateLnLambdaII(ir);
     if (derivId == id_Tcold) {
@@ -384,9 +402,9 @@ real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
     real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
     real_t dZeffdni = Z0/nfree * (Z0 - ions->GetNZ0Z0(ir)/nfree);
     real_t dlnLIIdni = lnLambda->evaluatePartialAtP(ir, 0, derivId, iz, lnLII_settings);
-    real_t hZeff = Zeff[ir] * epsilon;
-    real_t dAdZeff = ( evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir]-hZeff, nu)
-                         - evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir]+hZeff, nu) ) / (2 * hZeff);
+    real_t hZeff = Zeff[ir] * epsilon_forward;
+    real_t dAdZeff = ( evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir]+hZeff, nu)
+                         - evaluateCoefficientAlpha_internal(ft[ir], Zeff[ir], nu) ) / hZeff;
 
     return dAdnu * nu * (4.* dZeffdni / Zeff[ir] + dlnLIIdni / lnLII) + dAdZeff * dZeffdni;
 }

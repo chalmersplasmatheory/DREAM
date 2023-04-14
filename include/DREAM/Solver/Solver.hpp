@@ -56,7 +56,7 @@ namespace DREAM {
         FVM::MatrixInverter *backupInverter=nullptr;
 
         SPIHandler *SPI;
-        BootstrapCurrent *bootstrap;
+        BootstrapCurrent *bootstrap=nullptr;
 
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/

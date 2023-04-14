@@ -2,6 +2,7 @@
  * Implementation of bootstrap current term driven by the electron density
  * gradient.
  */
+
 #include "DREAM/Equations/Fluid/BootstrapElectronDensityTerm.hpp"
 
 using namespace DREAM;
@@ -10,8 +11,9 @@ using namespace DREAM;
  * Constructor.
  */
 BootstrapElectronDensityTerm::BootstrapElectronDensityTerm(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs, IonHandler *ih, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, sf) {
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs,
+    IonHandler *ih, OptionConstants::eqterm_bootstrap_bc bc, real_t sf
+) : BootstrapEquationTerm(g, u, ih, bs, bc, sf) {
 
     SetUnknownID(id_ncold);
 

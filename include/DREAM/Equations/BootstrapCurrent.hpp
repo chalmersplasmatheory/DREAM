@@ -22,7 +22,9 @@ namespace DREAM {
         struct CollisionQuantity::collqty_settings *lnLEE_settings;
         struct CollisionQuantity::collqty_settings *lnLII_settings;
 
-        real_t epsilon; // used for numerical differentiation
+        // used for numerical differentiation
+        real_t epsilon_central;     // central difference (nu)
+        real_t epsilon_forward;     // forward diffeerence (Zeff)
 
         len_t iZMain;   // main ion species
 
@@ -36,8 +38,8 @@ namespace DREAM {
         len_t id_Wi;
 
         real_t *jtot;
-        real_t *NiMain;
-        real_t *WiMain;
+        real_t *NiMain=nullptr;
+        real_t *WiMain=nullptr;
 
         real_t *ft=nullptr;             // fraction of trapped particles
         real_t *qR0=nullptr;            // safety factor normalised to R0
@@ -66,7 +68,10 @@ namespace DREAM {
         real_t *constantPrefactor=nullptr;
         real_t *coefficientL31=nullptr;
 
-        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*);
+        BootstrapCurrent(
+            FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
+            OptionConstants::eqterm_bootstrap_bc, CoulombLogarithm*
+        );
         ~BootstrapCurrent();
 
         void AllocateQuantities();

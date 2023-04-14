@@ -33,7 +33,7 @@ using namespace std;
 DiagonalPreconditioner::DiagonalPreconditioner(
     FVM::UnknownQuantityHandler *unknowns, const std::vector<len_t> &nontrivials
 ) : uqh(unknowns), nontrivials(nontrivials) {
-    
+
     const len_t N = unknowns->GetLongVectorSize(nontrivials);
 
     VecCreateSeq(MPI_COMM_WORLD, N, &this->iuqn);
@@ -114,7 +114,7 @@ void DiagonalPreconditioner::SetUnknownScale(
             "quantity '%s' as it is not a non-trivial quantity.",
             this->uqh->GetUnknown(uqty)->GetName().c_str()
         );
-    
+
     this->uqn_scales[uqty] = scale;
 }
 
@@ -147,6 +147,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA
         } else if (name == OptionConstants::UQTY_I_P) {
             uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA
+        } else if (name == OptionConstants::UQTY_J_BS) {
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA/m^2
         } else if (name == OptionConstants::UQTY_J_HOT) {
             uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA/m^2
         } else if (name == OptionConstants::UQTY_J_OHM) {
@@ -230,4 +232,3 @@ void DiagonalPreconditioner::RescaleRHSVector(Vec b) {
 void DiagonalPreconditioner::UnscaleUnknownVector(Vec Qx) {
     VecPointwiseMult(Qx, Qx, this->iuqn);
 }
-
