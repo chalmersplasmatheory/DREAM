@@ -115,14 +115,14 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         if 'correctedConductivity' in data:
             self.corrCond = data['correctedConductivity']
 
-        if 'jpres' in data:
+        if 'data' in data:
             self.jpres = data['data']['x']
             self.jpres_radius = data['data']['r']
             self.jpres_times = data['data']['t']
 
             if 'Ip0' in data:
                 self.jpres_Ip0 = data['Ip0']
-        if 'jpres0' in data:
+        if 'init' in data:
             self.jpres0 = data['init']['x']
             self.jpres0_radius = data['init']['r']
 

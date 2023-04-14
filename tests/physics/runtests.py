@@ -21,6 +21,7 @@ except ImportError:
 
 
 # Import test modules
+from amperefaraday import amperefaraday
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
 from code_synchrotron import code_synchrotron
@@ -32,6 +33,7 @@ from runiface_parallel import runiface_parallel
 
 
 TESTS = [
+    'amperefaraday',
     'code_conductivity',
     'code_runaway',
     'code_synchrotron',

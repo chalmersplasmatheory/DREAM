@@ -44,7 +44,8 @@ void SimulationGenerator::DefineOptions_n_re(
     DefineOptions_Transport(MODULENAME, s, false);
 
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
-    s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
+    //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
+	DefineDataT(MODULENAME "/compton", s, "flux");
 
     s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
 
