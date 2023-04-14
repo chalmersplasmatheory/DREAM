@@ -863,7 +863,7 @@ void OtherQuantityHandler::DefineQuantities() {
     }
 
     this->groups["bootstrap"] = {
-        "fluid/L_31", "fluid/L_32", "fluid/alpha"
+        "fluid/j_bs_n_cold", "fluid/j_bs_T_cold", "fluid/j_bs_N_i", "fluid/j_bs_W_i"
     };
 
     this->groups["ripple"] = {

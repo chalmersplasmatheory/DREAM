@@ -10,12 +10,13 @@ using namespace DREAM;
  * Constructor.
  */
 BootstrapIonDensityTerm::BootstrapIonDensityTerm(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs, IonHandler *ih, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, sf) {
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs,
+    IonHandler *ih, OptionConstants::eqterm_bootstrap_bc bc, real_t sf
+) : BootstrapEquationTerm(g, u, ih, bs, bc, sf) {
 
     SetUnknownID(id_Ni);
 
-    SetName("BootstrapElectronDensityTerm");
+    SetName("BootstrapIonDensityTerm");
     AddUnknownForJacobian(u, id_ncold);
     AddUnknownForJacobian(u, id_Tcold);
     AddUnknownForJacobian(u, id_Ni);

@@ -10,8 +10,9 @@ using namespace DREAM;
  * Constructor.
  */
 BootstrapIonThermalEnergyTerm::BootstrapIonThermalEnergyTerm(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs, IonHandler *ih, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, sf) {
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs,
+    IonHandler *ih, OptionConstants::eqterm_bootstrap_bc bc, real_t sf
+) : BootstrapEquationTerm(g, u, ih, bs, bc, sf) {
 
     SetUnknownID(id_Wi);
 

@@ -127,8 +127,8 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 
     // Initialization
 	if (HasInitialJtot(eqsys, s)) {
-        if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
-            throw SettingsException("INITIAL JTOT DOES NOT YET WORK TOGETHER WITH BOOTSTRAP! INSTEAD, PRESCRIBE AN INITIAL ELECTRIC FIELD!"); // move to py interface!
+        // if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
+        //     throw SettingsException("INITIAL JTOT DOES NOT YET WORK TOGETHER WITH BOOTSTRAP! INSTEAD, PRESCRIBE AN INITIAL ELECTRIC FIELD!"); // move to py interface!
 
 		real_t *jtot_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
 
@@ -146,16 +146,16 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 		eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, jtot_init);
 		delete [] jtot_init;
 	} else {
-            if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-    	        const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
-                eqsys->initializer->AddRule(
-    		    id_j_tot,
-    		    EqsysInitializer::INITRULE_EVAL_EQUATION,
-    		    nullptr,
-    		    // Dependencies
-    		    id_j_ohm, id_j_hot, id_j_re, id_j_bs
-    		);
-        } else
+        //     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+    	//         const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+        //         eqsys->initializer->AddRule(
+    	// 	    id_j_tot,
+    	// 	    EqsysInitializer::INITRULE_EVAL_EQUATION,
+    	// 	    nullptr,
+    	// 	    // Dependencies
+    	// 	    id_j_ohm, id_j_hot, id_j_re, id_j_bs
+    	// 	);
+        // } else
             eqsys->initializer->AddRule(
                 id_j_tot,
                 EqsysInitializer::INITRULE_EVAL_EQUATION,
