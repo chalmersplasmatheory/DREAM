@@ -19,7 +19,7 @@ import DREAM.Settings.CollisionHandler as Collisions
 from DREAM.DREAMException import DREAMException
 import DREAM
 
-def createExperimentData(index):
+def createExperimentData(index, time_steps = 20):
     ds = DREAMSettings()
     #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
     ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
@@ -34,7 +34,7 @@ def createExperimentData(index):
     Np   = 300  # number of momentum grid points
     Nxi  = 20   # number of pitch grid points
     tMax = 1e-3 # simulation time in seconds
-    Nt   = 20   # number of time steps
+    Nt   = time_steps   # number of time steps
 
     # Set E_field
     ds.eqsys.E_field.setPrescribedData(E)
@@ -108,7 +108,7 @@ def check_results():
         return False
 
 def check_timeout():
-    ds = [createExperimentData(0)]
+    ds = [createExperimentData(0, 200)]
     output = [None]
     result = False
 
