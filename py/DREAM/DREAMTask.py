@@ -59,15 +59,16 @@ class DREAMTask:
         except TimeoutExpired: 
             # In this case it is expected situation. Process has not completed during specified timeout.
             # We don't need to preserve any state, because documentation says that no stream data will be lost.
+
+            # Now we implement timeout manually, by checking start time with current time
+            if time.time() - self.startTime > self.timeout:
+                self.p.kill()
+                self.errorOnExit = 3
+                return True
             return False
         except KeyboardInterrupt:
             self.errorOnExit = 2
 
-        # Now we implement timeout manually, by checking start time with current time
-        if time.time() - self.startTime > self.timeout:
-            self.p.kill()
-            self.errorOnExit = 3
- 
         return True
 
     def getResult(self):
