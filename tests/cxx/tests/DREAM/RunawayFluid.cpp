@@ -292,13 +292,18 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
     DREAM::AnalyticDistributionRE::dist_mode re_dist_mode = (eceff_mode==DREAM::OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
             DREAM::AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : DREAM::AnalyticDistributionRE::RE_PITCH_DIST_FULL;
     DREAM::AnalyticDistributionRE *distRE =  new DREAM::AnalyticDistributionRE(grid->GetRadialGrid(), unknowns, nuD, cqEc, re_dist_mode, 100*sqrt(std::numeric_limits<real_t>::epsilon()));
+	real_t comptonFlux = 0.0, comptonFlux_t = 0.0;
+	DREAM::FVM::Interpolator1D *comptonFlux_i = new DREAM::FVM::Interpolator1D(
+		1, 1, &comptonFlux_t, &comptonFlux,
+		DREAM::FVM::Interpolator1D::INTERP_NEAREST
+	);
     DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
         grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
         DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
         eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
-        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0
+        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, comptonFlux_i
     );
-    REFluid->Rebuild();
+    REFluid->Rebuild(0);
     return REFluid;
 }
 

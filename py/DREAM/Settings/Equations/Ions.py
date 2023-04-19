@@ -353,6 +353,22 @@ class Ions(UnknownQuantity):
             raise DREAMException("Trying to set invalid ion type for ion species '{}': {}.".format(ion.name, ttype))
 
         ion.ttype = ttype
+
+        
+    def shiftTimeTranspCoeffs(self, tShift):
+        """
+        Shift the time grids for the ion transport coefficients by an amount tShift. This is needed between restarts.
+        
+        :param float tShift: Amount of time the time grids for the ion transport coefficient should be shifted
+        """
+        if self.tChargedPrescribedDiffusion is not None:
+            self.tChargedPrescribedDiffusion = self.tChargedPrescribedDiffusion - tShift
+        if self.tNeutralPrescribedDiffusion is not None:    
+            self.tNeutralPrescribedDiffusion = self.tNeutralPrescribedDiffusion - tShift
+        if self.tChargedPrescribedAdvection is not None:
+            self.tChargedPrescribedAdvection = self.tChargedPrescribedAdvection - tShift
+        if self.tNeutralPrescribedAdvection is not None:
+            self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
     
 
     def fromdict(self, data):

@@ -151,7 +151,7 @@ void EqsysInitializer::Execute(const real_t t0) {
                     break;
 
                 case RUNAWAY_FLUID:
-                    this->runawayFluid->Rebuild();
+                    this->runawayFluid->Rebuild(t0);
                     break;
 
                 default:
