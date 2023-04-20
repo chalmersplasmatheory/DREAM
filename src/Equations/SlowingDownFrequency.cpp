@@ -107,6 +107,7 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t beta2 = p2/(1+p2);
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
 
+
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
     else 
@@ -128,7 +129,6 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     real_t I;
     real_t D_N;
     real_t S_N0;
-    //bool EXTENDED_MEE = 1;
 
     if (Z == Z0){
         return NAN;
@@ -136,8 +136,8 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     if (Z <= MAX_Z){ /* use tabulated data */
         I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0];
     }
-    else    { /* usa extended data from MeanExcitationEnergy_Extended.cpp */
-		if (1){ /*this if can be used to switch to the old version of code*/
+    else    { /* use extended data from MeanExcitationEnergy_Extended.cpp */
+		if (Z <= MAX_Z_EXTENDED){ /*this if can be used to switch to the old version of code*/
 			I = MEAN_EXCITATION_ENERGY_EXTENDED[Z-1][Z-Z0-1];
 		}
 	    else{ /* use the formula instead */
