@@ -35,7 +35,8 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
     """
     dt = '0' if datatype == 'ionization' else '1'
     data = {
-        'encodelist': 'XXT2',           # Hard-coded value
+    	# Part of the input (in comments) is no longer required by NIST website and can cause error
+        #'encodelist': 'XXT2',           # Hard-coded value
         'spectra': ','.join(elements),  # List of elements to retrieve
         'units': '1',                   # Energy units (1 = eV, 0 = cm-1, 2 = Rydberg
         'format': '1',                  # Output format (0 = HTML, 1 = ASCII)
@@ -44,7 +45,7 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
         'ion_charge_out': 'on',         # We also want the ion charge as X data
         'sp_name_out': 'on',            # Spectrum name
         'e_out': dt,                    # 0 = ionization energy, 1 = total binding energy
-        'submit': 'Retrieve+Data'       # Name of button
+        #'submit': 'Retrieve+Data'       # Name of button
     }
 
     fname = 'nist_{}.html'.format(datatype)
