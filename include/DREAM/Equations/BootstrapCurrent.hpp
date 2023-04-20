@@ -42,17 +42,16 @@ namespace DREAM {
         real_t *WiMain=nullptr;
 
         real_t *ft=nullptr;             // fraction of trapped particles
-        real_t *qR0=nullptr;            // safety factor normalised to R0
-        real_t *Zeff=nullptr;           // effective ion charge
+        real_t *qR0=nullptr;            // safety factor multiplied by R0
 
-        real_t evaluateElectronCollisionFrequency(len_t, real_t, real_t, real_t);
+        // real_t evaluateElectronCollisionFrequency(len_t, real_t, real_t, real_t);
         real_t evaluateElectronCollisionFrequency(len_t);
-        real_t evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t);
+        // real_t evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t);
         real_t evaluateIonCollisionFrequency(len_t);
 
-        static real_t evaluateCoefficientL31_internal(real_t, real_t, real_t);
-        static real_t evaluateCoefficientL32_internal(real_t, real_t, real_t);
-        static real_t evaluateCoefficientAlpha_internal(real_t, real_t, real_t);
+        static real_t evaluateCoefficientL31(real_t, real_t, real_t);
+        static real_t evaluateCoefficientL32(real_t, real_t, real_t);
+        static real_t evaluateCoefficientAlpha(real_t, real_t, real_t);
 
     public:
         bool includeIonTemperatures;
@@ -67,6 +66,8 @@ namespace DREAM {
 
         real_t *constantPrefactor=nullptr;
         real_t *coefficientL31=nullptr;
+        real_t *coefficientL32=nullptr;
+        real_t *coefficientAlpha=nullptr;
 
         BootstrapCurrent(
             FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
@@ -77,13 +78,6 @@ namespace DREAM {
         void AllocateQuantities();
         void DeallocateQuantities();
         void Rebuild();
-
-        /**
-         * Coefficients L31, L32 and alpha (as defined in Redl et al. 2021)
-         */
-        real_t evaluateCoefficientL31(len_t);
-        real_t evaluateCoefficientL32(len_t);
-        real_t evaluateCoefficientAlpha(len_t);
 
         /**
          * Partial derivatives of L31, L32 and alpha.

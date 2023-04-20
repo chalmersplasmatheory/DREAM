@@ -33,7 +33,7 @@ BootstrapIonDensityTerm::BootstrapIonDensityTerm(
 real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir, len_t iZ) {
     real_t coefficient = bs->p[ir] / bs->n[ir];
     if (bs->includeIonTemperatures)
-        coefficient -= 2./3. * (1. + bs->evaluateCoefficientAlpha(ir)) * bs->Wi[nr * iZ + ir] / bs->Ni[nr * iZ + ir];
+        coefficient -= 2./3. * ( 1. + bs->coefficientAlpha[ir] ) * bs->Wi[nr * iZ + ir] / bs->Ni[nr * iZ + ir];
     return bs->constantPrefactor[ir] * bs->coefficientL31[ir] * coefficient;
 }
 
@@ -56,13 +56,10 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(
             dCoefficient += bs->coefficientL31[ir] * (bs->Tcold[ir] - bs->p[ir] / bs->n[ir]) / bs->n[ir];
         else if (derivId == id_Tcold)
             dCoefficient += bs->coefficientL31[ir] * bs->ncold[ir] / bs->n[ir];
-        else if (derivId == id_Ni) {
-            real_t alpha = bs->evaluateCoefficientAlpha(ir);
-            dCoefficient += bs->coefficientL31[ir] * ( 1. / (bs->n[ir] * bs->n[ir]) + (1. + alpha) * 2./3. * bs->Wi[i] / (bs->Ni[i] *bs-> Ni[ir]) );
-        } else if (derivId == id_Wi) {
-            real_t alpha = bs->evaluateCoefficientAlpha(ir);
-            dCoefficient += bs->coefficientL31[ir] * 2./3. * ( 1./ bs->n[ir] - (1. + alpha) / bs->Ni[i] );
-        }
+        else if (derivId == id_Ni)
+            dCoefficient += bs->coefficientL31[ir] * ( 1. / (bs->n[ir] * bs->n[ir]) + (1. + bs->coefficientAlpha[ir]) * 2./3. * bs->Wi[i] / (bs->Ni[i] *bs-> Ni[ir]) );
+        else if (derivId == id_Wi)
+            dCoefficient += bs->coefficientL31[ir] * 2./3. * ( 1./ bs->n[ir] - (1. + bs->coefficientAlpha[ir]) / bs->Ni[i] );
     }
     return bs->constantPrefactor[ir] * dCoefficient;
 }
