@@ -14,7 +14,10 @@ class SolverLinear(Solver):
         """
         super().__init__(solverdata, output)
 
-        self.iterations = [int(x) for x in solverdata['iterations'][:]]
+        if 'iterations' in solverdata:
+            self.iterations = [int(x) for x in solverdata['iterations'][:]]
+        else:
+            self.iterations = [1 for _ in range(output.grid.t.size)]
 
 
     def __str__(self):
