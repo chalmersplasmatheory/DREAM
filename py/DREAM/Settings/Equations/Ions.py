@@ -605,8 +605,6 @@ class Ions(UnknownQuantity):
                     else:
                         raise EquationException("All ion sources must be defined in the same time points.")
 
-                print(n1.shape)
-                print(n2.shape)
                 sourceterm = np.concatenate((n1, n2))
 
             if initialTi is None:
