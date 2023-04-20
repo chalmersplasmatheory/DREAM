@@ -30,12 +30,7 @@ BootstrapElectronDensityTerm::BootstrapElectronDensityTerm(
  * Coefficient = A * L31 * p / n
  */
 real_t BootstrapElectronDensityTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
-    real_t coefficient;
-    if (bs->includeIonTemperatures)
-        coefficient = bs->p[ir] / bs->n[ir];
-    else
-        coefficient = bs->Tcold[ir];
-    return bs->constantPrefactor[ir] * bs->coefficientL31[ir] * coefficient;
+    return bs->constantPrefactor[ir] * bs->coefficientL31[ir] * bs->p[ir] / bs->n[ir];
 }
 
 real_t BootstrapElectronDensityTerm::GetPartialCoefficient(

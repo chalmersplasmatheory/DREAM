@@ -31,12 +31,12 @@ BootstrapElectronTemperatureTerm::BootstrapElectronTemperatureTerm(
  *      Coefficient = A * [ (L31 + L32) * ncold + L31 * (1 + alpha) * ionsum(ni) ]
  */
 real_t BootstrapElectronTemperatureTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
-    real_t coefficient = ( bs->coefficientL31[ir] + bs->evaluateCoefficientL32(ir) ) * bs->ncold[ir];
+    real_t coefficient = ( bs->coefficientL31[ir] + bs->coefficientL32[ir] ) * bs->ncold[ir];
     if (!bs->includeIonTemperatures) {
         real_t nitot = 0;
         for (len_t i = ir; i < nr * nZ; i += nr)
             nitot += bs->Ni[i];
-        coefficient += bs->coefficientL31[ir] * (1. + bs->evaluateCoefficientAlpha(ir)) * nitot;
+        coefficient += bs->coefficientL31[ir] * ( 1. + bs->coefficientAlpha[ir] ) * nitot;
     }
     return bs->constantPrefactor[ir] * coefficient;
 }
@@ -56,19 +56,18 @@ real_t BootstrapElectronTemperatureTerm::GetPartialCoefficient(
     real_t dl32 = bs->evaluatePartialCoefficientL32(ir, derivId, iz);
     real_t dCoefficient = (dl31 + dl32) * bs->ncold[ir];
     if (derivId == id_ncold)
-        dCoefficient += bs->coefficientL31[ir] + bs->evaluateCoefficientL32(ir);
+        dCoefficient += bs->coefficientL31[ir] + bs->coefficientL32[ir];
     if (!bs->includeIonTemperatures) {
         real_t nitot = 0;
         for (len_t i = ir; i < nr * nZ; i += nr)
             nitot += bs->Ni[i];
-        real_t alpha = bs->evaluateCoefficientAlpha(ir);
-        dCoefficient += dl31 * (1. + alpha) * nitot;
+        dCoefficient += dl31 * ( 1. + bs->coefficientAlpha[ir] ) * nitot;
 
         real_t dAlpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, iz, iZ);
         dCoefficient += bs->coefficientL31[ir] * dAlpha * nitot;
 
         if (derivId == id_Ni)
-            dCoefficient += bs->coefficientL31[ir] * (1. + alpha);
+            dCoefficient += bs->coefficientL31[ir] * ( 1. + bs->coefficientAlpha[ir] );
     }
     return bs->constantPrefactor[ir] * dCoefficient;
 }

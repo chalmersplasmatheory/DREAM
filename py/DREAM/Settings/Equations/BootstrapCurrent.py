@@ -1,6 +1,5 @@
 # Settings for the Bootstrap current
-#
-# NOTE: move this to e.g. ElectricField/OhmicCurrent??
+#S
 #
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity

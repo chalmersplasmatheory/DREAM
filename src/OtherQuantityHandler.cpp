@@ -469,28 +469,28 @@ void OtherQuantityHandler::DefineQuantities() {
 
     // Bootstrap current terms
     if (tracked_terms->j_bs_n_cold != nullptr)
-        DEF_FL("fluid/j_bs_n_cold", "Thermal electron density contribution to the bootstrap current [A m^-1]",
+        DEF_FL("fluid/j_bs_n_cold", "Thermal electron density contribution to the bootstrap current [A m^-2]",
             real_t *vec = qd->StoreEmpty();
             for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
                 vec[ir] = 0;
             this->tracked_terms->j_bs_n_cold->SetVectorElements(vec, nullptr);
         );
     if (tracked_terms->j_bs_T_cold != nullptr)
-        DEF_FL("fluid/j_bs_T_cold", "Thermal electron temperature contribution to the bootstrap current [A m^-1]",
+        DEF_FL("fluid/j_bs_T_cold", "Thermal electron temperature contribution to the bootstrap current [A m^-2]",
             real_t *vec = qd->StoreEmpty();
             for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
                 vec[ir] = 0;
             this->tracked_terms->j_bs_T_cold->SetVectorElements(vec, nullptr);
         );
     if (tracked_terms->j_bs_N_i != nullptr)
-        DEF_FL("fluid/j_bs_N_i", "Ion density contribution to the bootstrap current [A m^-1]",
+        DEF_FL("fluid/j_bs_N_i", "Ion density contribution to the bootstrap current [A m^-2]",
             real_t *vec = qd->StoreEmpty();
             for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
                 vec[ir] = 0;
             this->tracked_terms->j_bs_N_i->SetVectorElements(vec, nullptr);
         );
     if (tracked_terms->j_bs_W_i != nullptr)
-        DEF_FL("fluid/j_bs_W_i", "Ion thermal energy contribution to the bootstrap current [A m^-1]",
+        DEF_FL("fluid/j_bs_W_i", "Ion thermal energy contribution to the bootstrap current [A m^-2]",
             real_t *vec = qd->StoreEmpty();
             for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
                 vec[ir] = 0;

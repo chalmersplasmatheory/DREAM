@@ -71,7 +71,7 @@ void BootstrapEquationTerm::rebuildBackwardsBC(FVM::UnknownQuantityHandler *u) {
     for (len_t ir = 0; ir < nr; ir++)
         if ( (id_X == id_Ni) || (id_X == id_Wi) )
             for (len_t i = ir; i < nr * nZ; i += nr)
-                deltaX[i] = ( (ir == nr - 1) ? 0 : x[i + 1] ) - ( (ir == 0) ? x[i] : x[i - 1] );
+                deltaX[i] = ( (ir == nr - 1) ? x[i] : x[i + 1] ) - ( (ir == 0) ? x[i] : x[i - 1] );
         else
             deltaX[ir] = ( (ir == nr-1) ? x[ir]  : x[ir + 1] ) - ( (ir == 0) ? x[ir] : x[ir - 1] );
 }
@@ -214,7 +214,7 @@ void BootstrapEquationTerm::setMatrixElementZeroBC(FVM::Matrix *mat, len_t ir, r
  * Set function vector for this term. For the nonlinear solver.
  */
 void BootstrapEquationTerm::SetVectorElements(real_t *vec, const real_t* /* dt */) {
-    if (!isInitialized) {   // temporary fix. Doesn't work for the nonlinear solver?
+    if (!isInitialized) {
         bs->Rebuild();
         isInitialized = true;
     }
