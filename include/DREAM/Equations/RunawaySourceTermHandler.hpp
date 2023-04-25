@@ -9,6 +9,7 @@
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -24,7 +25,7 @@ namespace DREAM {
         DreicerRateTerm *dreicer=nullptr;
         HottailRateTerm *hottail=nullptr;
         // There can be multiple tritium species in the simulation...
-        std::vector<TritiumRateTerm*> tritium;
+        std::vector<FVM::EquationTerm*> tritium;
 
         // Description of equation
         std::string description;        
@@ -45,6 +46,12 @@ namespace DREAM {
         void AddSourceTerm(const std::string& desc, DreicerRateTerm *t) { this->description += desc; this->dreicer = t; }
         void AddSourceTerm(const std::string& desc, HottailRateTerm *t) { this->description += desc; this->hottail = t; }
         void AddSourceTerm(const std::string& desc, TritiumRateTerm *t) {
+            if (this->tritium.empty())
+                this->description += desc;
+
+            this->tritium.push_back(t);
+        }
+        void AddSourceTerm(const std::string& desc, TritiumSource *t){
             if (this->tritium.empty())
                 this->description += desc;
 

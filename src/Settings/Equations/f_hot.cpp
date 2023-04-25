@@ -25,6 +25,8 @@
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/ParticleSourceTerm.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
+#include "DREAM/IO.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
@@ -104,6 +106,18 @@ void SimulationGenerator::ConstructEquation_f_hot(
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
     }
+    
+    // Add tritium source
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
+    if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+
+        FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);
+        Op_tritium->AddTerm(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), -1.0));
+        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
+        eqsys->SetOperator(id_f_hot, id_n_re, Op_tritium);
+    }
 
     // PARTICLE SOURCE TERMS
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
@@ -171,6 +185,39 @@ namespace DREAM {
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
                 weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pLower, pUpper);
+        }
+    };
+}
+
+namespace DREAM {
+    class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
+    private: 
+        static real_t fbeta(real_t p, void *){
+            real_t Tmax = 18.6e3;
+            real_t mc2 = Constants::mc2inEV;
+            real_t alpha = 1.0/137.0;
+            real_t g = sqrt(p*p + 1);
+            real_t fbeta = p * g * (Tmax - mc2 * (g - 1)) * (Tmax - mc2 * (g - 1)) / (1 - exp(-4 * M_PI * alpha * g / p));
+            return fbeta;
+        }
+    public:
+        real_t pLower, pUpper, scaleFactor, source;
+        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {
+                real_t C = 1.218e-7; // Normalization factor, 1.2176392e-7
+                real_t tau_T = 4500*24*60*60;
+                
+                real_t integral;
+                gsl_function F;
+                F.function = &(fbeta);
+                gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, nullptr, nullptr);
+                
+                source = log(2) / tau_T * C * integral;
+            }
+
+        virtual void SetWeights() override {
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * source;
         }
     };
 }
@@ -245,6 +292,28 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             new TotalElectronDensityFromKineticAvalanche(fluidGrid, pCutoff, pMax, unknowns, -1.0)
         );
         desc += " - internal avalanche";
+    }
+    
+    // Add contribution from kinetic tritium source
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
+    if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        
+        real_t pLimTritium = sqrt((18.6e3/Constants::mc2inEV + 1)*(18.6e3/Constants::mc2inEV + 1) - 1);
+        if(pMax < pLimTritium) 
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_TRITIUM_GENERATION_INVALID,
+                "Momentum limit of hot-tail grid (%.2f) is lower than upper "
+                "limit for momentum of tritium beta decay (%.2f), causing the "
+                "tritium generation mechanism to be underestimated.", pMax, pLimTritium
+            );
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pMax, unknowns, -1.0)
+        );
+        desc += " - internal Tritium";
     }
     // Add source terms
     bool signPositive = false;

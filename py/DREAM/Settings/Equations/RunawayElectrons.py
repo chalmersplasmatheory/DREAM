@@ -31,6 +31,9 @@ COMPTON_MODE_KINETIC = 3
 COMPTON_RATE_ITER_DMS = -1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
+TRITIUM_MODE_NEGLECT = 1
+TRITIUM_MODE_FLUID = 2
+TRITIUM_MODE_KINETIC = 3
 
 # Interpolation methods for advection term in transport equation
 AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
@@ -55,7 +58,7 @@ HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED):
         """
         Constructor.
         """
@@ -143,7 +146,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifices whether or not to include runaway generation
         through tritium decay as a source term.
         """
-        self.tritium = tritium
+        print('ye')
+        if tritium == True or tritium == TRITIUM_MODE_FLUID:
+            self.tritium = TRITIUM_MODE_FLUID
+        if tritium == False or tritium == TRITIUM_MODE_NEGLECT:
+            self.tritium = TRITIUM_MODE_NEGLECT
+        self.tritium = int(tritium)
 
 
     def setHottail(self, hottail):
@@ -203,7 +211,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.hottail = int(data['hottail'])
 
         if 'tritium' in data:
-            self.tritium = bool(data['tritium'])
+            self.tritium = int(data['tritium'])
 
         if 'negative_re' in data:
             self.negative_re = bool(data['negative_re'])
@@ -258,8 +266,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
-        if type(self.tritium) != bool:
-            raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
+        if type(self.tritium) != int:
+            raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected integer.")
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
         if type(self.negative_re) != bool:

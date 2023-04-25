@@ -5,6 +5,7 @@
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTermHighZ.hpp"
 #include "DREAM/Equations/Fluid/ExternalAvalancheTerm.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -89,13 +90,20 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(mod + "/compton/mode");
     if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
         rsth->AddSourceTerm(eqnSign + "compton", new ComptonRateTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
-
-    // Add tritium source
-    bool tritium_enabled = s->GetBool(mod + "/tritium");
-    if (tritium_enabled) {
+    
+    // Add tritium source: 
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger(mod + "/tritium");
+    if (tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_FLUID){
         const len_t *ti = ions->GetTritiumIndices();
         for (len_t i = 0; i < ions->GetNTritiumIndices(); i++)
-            rsth->AddSourceTerm(eqnSign + "tritium", new TritiumRateTerm(grid, ions, unknowns, ti[i], REFluid, -1.0));
+            rsth->AddSourceTerm(eqnSign + "fluid tritium", new TritiumRateTerm(grid, ions, unknowns, ti[i], REFluid, -1.0));
+    } else if (tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        if (hottailGrid != nullptr) {
+            for (len_t i = 0; i < ions->GetNTritiumIndices(); i++){
+                rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, -1.0));
+            }
+        } else
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium generation term is used, but the hot-tail grid is disabled. Ignoring tritium source...");
     }
 
     // Add hottail source
