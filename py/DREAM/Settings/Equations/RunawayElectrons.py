@@ -146,7 +146,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifices whether or not to include runaway generation
         through tritium decay as a source term.
         """
-        print('ye')
         if tritium == True or tritium == TRITIUM_MODE_FLUID:
             self.tritium = TRITIUM_MODE_FLUID
         if tritium == False or tritium == TRITIUM_MODE_NEGLECT:
