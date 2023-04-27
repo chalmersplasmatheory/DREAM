@@ -5,18 +5,13 @@
 #include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Constants.hpp"
-
 #include <iostream>
-
 using namespace DREAM;
 
  /**
   * Constructor.
   */
-BootstrapCurrent::BootstrapCurrent(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,
-    OptionConstants::eqterm_bootstrap_bc bc, CoulombLogarithm *lnL
-) {
+BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih, CoulombLogarithm *lnL) {
 
     rGrid = g->GetRadialGrid();
     unknowns = u;
@@ -48,10 +43,9 @@ BootstrapCurrent::BootstrapCurrent(
     // Memory allocation
     AllocateQuantities();
 
-
-
     // equilibrium constants
     const real_t R0 = rGrid->GetR0();
+    // const real_t B0 = rGrid->GetBmin_f(0);
     for (len_t ir = 0; ir < nr; ir++) {
         // calculate the geometric prefactor
         const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
@@ -60,19 +54,18 @@ BootstrapCurrent::BootstrapCurrent(
         const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
         constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
         if (ir == 0)
-            constantPrefactor[ir] /= 2 * rGrid->GetDr(0);
-        else if (ir == nr - 1) {
-                constantPrefactor[ir] /= rGrid->GetDr(ir);
-                if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
-                    constantPrefactor[ir] *= .5;
-        } else
-            constantPrefactor[ir] /= ( rGrid->GetDr(ir) + rGrid->GetDr(ir+1) );
+            constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
+        else if (ir == nr - 1)
+            constantPrefactor[ir] /= rGrid->GetDr_f(ir-1);
+        else
+            constantPrefactor[ir] /= ( rGrid->GetDr_f(ir-1) + rGrid->GetDr_f(ir) );
 
         // convert eV to J by multiplying with the electron charge
         constantPrefactor[ir] *= Constants::ec;
 
         // calculate fraction of trapped particles
         ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
+        // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
     }
 
     // locate the main ion index
@@ -141,7 +134,6 @@ void BootstrapCurrent::Rebuild() {
 
     for (len_t ir = 0; ir < nr; ir++) {
 
-
         NiMain[ir] = Ni[nr * iZMain + ir];  // main ion density (for alpha)
         if (includeIonTemperatures)
             WiMain[ir] = Wi[nr * iZMain + ir] / Constants::ec; // main ion thermal energy (for alpha)
@@ -154,9 +146,9 @@ void BootstrapCurrent::Rebuild() {
         for (len_t i = ir; i < nr * ions->GetNZ(); i += nr) {
             n[ir] += Ni[i];
             if (includeIonTemperatures)
-                p[ir] += Wi[i] * 2. / 3. / Constants::ec;
+                p[ir] += Wi[i] / (1.5 * Constants::ec);
             else
-                p[ir] += Ni[ir] * Tcold[ir];
+                p[ir] += Ni[i] * Tcold[ir];
         }
 
         // calculate safety factor (normalised to R0)
@@ -169,7 +161,7 @@ void BootstrapCurrent::Rebuild() {
         real_t nuI = evaluateIonCollisionFrequency(ir);
 
         // get the effective charge
-        real_t Zeff = ions->GetZeff(ir);
+        real_t Zeff =  1;//ions->GetZeff(ir);
 
         // calculate the bootstrap coefficients
         coefficientL31[ir] = evaluateCoefficientL31(ft[ir], Zeff, nuE);
@@ -186,9 +178,12 @@ void BootstrapCurrent::Rebuild() {
  */
 real_t BootstrapCurrent::evaluateElectronCollisionFrequency(len_t ir) {
     real_t lnLee = lnLambda->evaluateLnLambdaT(ir);
-    real_t eps = rGrid->GetR(ir) / (rGrid->GetR0() + rGrid->GetR(ir));  // aspect ratio = r/(R0+r)
+    // real_t lnLee = 31.3 - log( sqrt(ncold[ir]) / Tcold[ir] );
     real_t Zeff = ions->GetZeff(ir);
+    real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
+
     return 6.921e-18 * ncold[ir] * lnLee * Zeff * qR0[ir] / (eps * sqrt(eps) * Tcold[ir] * Tcold[ir]);
+    // return 0;
 }
 
 /**
@@ -197,13 +192,20 @@ real_t BootstrapCurrent::evaluateElectronCollisionFrequency(len_t ir) {
  * ir:  radial cell grid point.
  */
 real_t BootstrapCurrent::evaluateIonCollisionFrequency(len_t ir) {
-    real_t lnLii = lnLambda->evaluateLnLambdaII(ir); // formula from Wesson
-    real_t eps = rGrid->GetR(ir) / (rGrid->GetR0() + rGrid->GetR(ir));
+    // real_t lnLii = lnLambda->evaluateLnLambdaII(ir); // formula from Wesson
+    real_t TiMain = WiMain[ir] / (1.5 * NiMain[ir]);
     real_t Zeff = ions->GetZeff(ir);
-    real_t Zeff4 = Zeff * Zeff * Zeff * Zeff;
-    real_t ni3 = NiMain[ir] * NiMain[ir] * NiMain[ir];
-    real_t Wi2 = WiMain[ir] * WiMain[ir];
-    return 4.90e-18 * 9. * ni3 * lnLii * Zeff4 * qR0[ir] / (eps * sqrt(eps) * 4. * Wi2 );
+    real_t Zeff2 = Zeff * Zeff;
+    real_t lnLii = 30 - log( Zeff2 * Zeff * sqrt(NiMain[ir] / TiMain) / TiMain );
+    real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
+    // real_t Zeff4 = Zeff * Zeff * Zeff * Zeff;
+    // real_t NiMain3 = NiMain[ir] * NiMain[ir] * NiMain[ir];
+    real_t TiMain2 = TiMain * TiMain;
+    return 4.90e-18  * NiMain[ir] * lnLii * Zeff2 * Zeff2 * qR0[ir] / (eps * sqrt(eps) * TiMain2 );
+
+
+    // return 4.90e-18 * 9. * NiMain3 * lnLii * Zeff2 * Zeff2 * qR0[ir] / (eps * sqrt(eps) * 4. * WiMain[ir] * WiMain[ir]);
+    // return 0;
 }
 
 
@@ -277,7 +279,7 @@ real_t BootstrapCurrent::evaluateCoefficientL32(real_t ft, real_t Zeff, real_t n
 real_t BootstrapCurrent::evaluateCoefficientAlpha(real_t ft, real_t Zeff, real_t nu) {
 
     // Eq. 20
-    real_t alpha0 = - ( .6 + .055 * (Zeff - 1.) ) / ( .53 + .17 * (Zeff - 1.) );
+    real_t alpha0 = - ( .62 + .055 * (Zeff - 1.) ) / ( .53 + .17 * (Zeff - 1.) );
     real_t ft2 = ft * ft;
     alpha0 *= (1. - ft) / (1. - ( .31 - .065 * (Zeff - 1.)) * ft - .25 * ft2);
 
@@ -375,9 +377,8 @@ real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
     len_t ir, len_t derivId, len_t iz, len_t iZ
 ) {
     if ( (derivId != id_Tcold) && (derivId != id_ions) )
-        return 0;
-    if ( ((derivId == id_Ni) || (derivId == id_Wi)) && (iZ != iZMain) ) // no contribution!
-        return 0;
+        if ( !((derivId == id_Ni) || (derivId == id_Wi)) && (iZ == iZMain) ) // no contribution!
+            return 0;
 
     real_t nu = evaluateIonCollisionFrequency(ir);
     real_t Zeff = ions->GetZeff(ir);
@@ -394,7 +395,7 @@ real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
     if (derivId == id_Ni)
         return dAdnu * 3. * nu / NiMain[ir];
     if (derivId == id_Wi)
-        return -dAdnu * 2. * nu / WiMain[ir];
+        return -dAdnu * 2. * Constants::ec * nu / WiMain[ir];
 
     // derivId == id_ions
     len_t _, Z0;

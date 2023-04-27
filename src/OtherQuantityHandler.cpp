@@ -44,12 +44,12 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, BootstrapCurrent* bootstrap,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
-    ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
+    ions(ions), bootstrap(bootstrap), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
     scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
@@ -467,35 +467,35 @@ void OtherQuantityHandler::DefineQuantities() {
     );
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
-    // Bootstrap current terms
-    if (tracked_terms->j_bs_n_cold != nullptr)
-        DEF_FL("fluid/j_bs_n_cold", "Thermal electron density contribution to the bootstrap current [A m^-2]",
+    // Bootstrap current coefficients (Redl-Sauter)
+    DEF_FL("fluid/coefficientL31", "Bootstrap current coefficient L31 (Redl-Sauter 2021).",
+        if (this->bootstrap != nullptr)
+            qd->Store(this->bootstrap->getCoefficientL31());
+    );
+    DEF_FL("fluid/coefficientL32", "Bootstrap current coefficient L32 (Redl-Sauter 2021).",
+        if (this->bootstrap != nullptr)
+            qd->Store(this->bootstrap->getCoefficientL32());
+    );
+    DEF_FL("fluid/coefficientAlpha", "Bootstrap current coefficient alpha (Redl-Sauter 2021).",
+        if (this->bootstrap != nullptr)
+            qd->Store(this->bootstrap->getCoefficientAlpha());
+    );
+    // TEMPORARY - FOR DEBUG OF BOOTSTRAP IMPLEMENTATION
+    DEF_FL("fluid/nuI", "Ion collision frequency.",
+        if (this->bootstrap != nullptr) {
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->j_bs_n_cold->SetVectorElements(vec, nullptr);
-        );
-    if (tracked_terms->j_bs_T_cold != nullptr)
-        DEF_FL("fluid/j_bs_T_cold", "Thermal electron temperature contribution to the bootstrap current [A m^-2]",
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+                vec[ir] = this->bootstrap->evaluateIonCollisionFrequency(ir);
+        }
+    );
+    DEF_FL("fluid/nuE", "Electron collision frequency.",
+        if (this->bootstrap != nullptr) {
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->j_bs_T_cold->SetVectorElements(vec, nullptr);
-        );
-    if (tracked_terms->j_bs_N_i != nullptr)
-        DEF_FL("fluid/j_bs_N_i", "Ion density contribution to the bootstrap current [A m^-2]",
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->j_bs_N_i->SetVectorElements(vec, nullptr);
-        );
-    if (tracked_terms->j_bs_W_i != nullptr)
-        DEF_FL("fluid/j_bs_W_i", "Ion thermal energy contribution to the bootstrap current [A m^-2]",
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->j_bs_W_i->SetVectorElements(vec, nullptr);
-        );
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+                vec[ir] = this->bootstrap->evaluateElectronCollisionFrequency(ir);
+        }
+    );
+    /////
 
     // hottail/...
     DEF_HT_F1("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
@@ -863,7 +863,8 @@ void OtherQuantityHandler::DefineQuantities() {
     }
 
     this->groups["bootstrap"] = {
-        "fluid/j_bs_n_cold", "fluid/j_bs_T_cold", "fluid/j_bs_N_i", "fluid/j_bs_W_i"
+        "fluid/coefficientL31", "fluid/coefficientL32", "fluid/coefficientAlpha",
+        "fluid/nuI", "fluid/nuE"    // temporary
     };
 
     this->groups["ripple"] = {
