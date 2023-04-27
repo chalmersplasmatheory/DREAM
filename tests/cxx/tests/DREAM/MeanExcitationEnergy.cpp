@@ -145,15 +145,17 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
 
     len_t nr = 1;
 
-    const len_t N_IONS = 3;
-    const len_t Z_IONS[N_IONS] = {10,18,36};
-    constexpr int_t N_SPECIES_TO_TEST = 10;
-    const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36,36};
-    const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18,30};
+    const len_t N_IONS = 4;
+    const len_t Z_IONS[N_IONS] = {10,18,36,74};
+    constexpr int_t N_SPECIES_TO_TEST = 15;
+    const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36,36,74,74,74,74,74};
+    const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18,30, 0, 1,18,36,70};
 
     const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {
         //Ne0,       Ne1,         Ne5,         Ar0,         Ar1,         Ar9,         Kr0,         Kr1,         Kr18,        Kr30
-        2.68494e-04, 3.23288e-04, 6.90021e-04, 3.69277e-04, 4.29551e-04, 1.55969e-03, 7.04502e-04, 8.06097e-04, 3.45034e-03, 1.01486e-02
+        //2.68494e-04, 3.23288e-04, 6.90021e-04, 3.69277e-04, 4.29551e-04, 1.55969e-03, 7.04502e-04, 8.06097e-04, 3.45034e-03, 1.01486e-02 - old data
+        //Ne0,       Ne1,         Ne5,         Ar0,         Ar1,         Ar9,         Kr0,         Kr1,         Kr18,        Kr30, W0,          W1,          W18,         W36,         W70
+        2.68494e-04, 3.23288e-04, 6.90021e-04, 3.69277e-04, 4.29551e-04, 1.55969e-03, 6.32307e-04, 6.78386e-04, 2.70936e-03, 1.03055e-02, 1.38489e-03, 1.42907e-03, 2.77065e-03, 5.78085e-03, 5.22714e-02
     };
 
     real_t ION_DENSITY_REF = 1e18; // m-3
@@ -166,9 +168,10 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
     
     real_t delta;
     bool success = true;
-    const real_t TOLERANCE = 1e-4;
+    const real_t TOLERANCE = 2e-4;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         delta = abs(meanExcitationEnergies[is] - TABULATED_MEAN_EXCITATION_ENERGIES[is]) / TABULATED_MEAN_EXCITATION_ENERGIES[is];
+        // cout << delta <<endl;
         success = success & (delta < TOLERANCE);
     }
 

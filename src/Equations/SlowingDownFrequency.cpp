@@ -13,10 +13,20 @@
  * non-relativistic operator following Rosenbluth, Macdonald & Judd, Phys Rev (1957),
  * and is described in doc/notes/theory.pdf Appendix B.
  */
+ 
+ /*
+  * Modified by J. Walkowiak to include external atomic data (Mean Excitation Energy)
+  * 08.2022
+  * 
+  */
+ 
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
 #include <cmath>
+
+//indlude extended table with approximated Mean Excitation Energy
+#include "MeanExcitationEnergy_Extended.cpp"
 
 using namespace DREAM;
 
@@ -97,6 +107,7 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t beta2 = p2/(1+p2);
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
 
+
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
     else 
@@ -124,21 +135,27 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     }
     if (Z <= MAX_Z){ /* use tabulated data */
         I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0];
-    }else{ /* use the formula instead */
-        len_t Ne = Z-Z0;
-        if (Ne <= MAX_NE){
-            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[Ne-1]; 
-            S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
-        }else{
-            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE-1]; 
-            S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
-        }
-        real_t A_N = (1-D_N) * (1-D_N);
-        real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
-        real_t C_N = (Ne*D_N - S_N0) * (Ne*D_N - S_N0);
-
-        I = HYDROGEN_MEAN_EXCITATION_ENERGY * (A_N*Z*Z + B_N*Z + C_N);
     }
+    else  if (Z <= MAX_Z_EXTENDED) /* use extended data from MeanExcitationEnergy_Extended.cpp */
+	  { 
+	        I = MEAN_EXCITATION_ENERGY_EXTENDED[Z-1][Z-Z0-1];
+	  }
+	  else{ /* use the formula instead */ /*this if can be used to switch to the old version of code*/
+	        len_t Ne = Z-Z0;
+	        if (Ne <= MAX_NE) {
+	            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[Ne-1]; 
+	            S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
+	        }
+	        else {
+	            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE-1]; 
+	            S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
+	        }
+	        real_t A_N = (1-D_N) * (1-D_N);
+	        real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
+	        real_t C_N = (Ne*D_N - S_N0) * (Ne*D_N - S_N0);
+	
+	        I = HYDROGEN_MEAN_EXCITATION_ENERGY * (A_N*Z*Z + B_N*Z + C_N);
+	    }
     return I / Constants::mc2inEV;
 }
 

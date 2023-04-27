@@ -44,7 +44,7 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     OptionConstants::collqty_Eceff_mode Eceff_mode    = (enum OptionConstants::collqty_Eceff_mode)   s->GetInteger("eqsys/n_re/Eceff");
     OptionConstants::eqterm_avalanche_mode ava_mode   = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)  s->GetInteger("eqsys/n_re/compton/mode");
-    real_t compton_photon_flux = s->GetReal("eqsys/n_re/compton/flux");
+    FVM::Interpolator1D *compton_photon_flux = LoadDataT("eqsys/n_re/compton", s, "flux");
 
     // Note: these collision quantities will only be used for their evaluateAt(..., inSettings) 
     //       methods inside REFluid, and be called with other settings than 'cq'. 

@@ -237,6 +237,7 @@ class IonSpecies:
              raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
                 .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
         return T
+        
 
 
     def getDensity(self):
@@ -919,7 +920,10 @@ class IonSpecies:
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
         if r is None:
-            r = np.linspace(0,self.settings.radialgrid.a)
+            if self.settings.radialgrid.r_f is not None:
+                r = self.settings.radialgrid.r_f
+            else:
+                r = np.linspace(0,self.settings.radialgrid.a)
         if np.isscalar(c0):
             Nr = len(r)
             c0 = c0*np.ones((1,Nr))
@@ -930,12 +934,16 @@ class IonSpecies:
                     
         c_single_charge_state = (cf + np.exp(-(t-t_start)/t_exp)*(c0-cf))*(t>t_start)
         
+        # Copy the coefficients for the last time step to avoid an unintended linear extrapolation with an unphysical sign change
+        c_single_charge_state = np.vstack((c_single_charge_state, c_single_charge_state[-1,:])) 
+        t = np.vstack((t, t[-1]+1))
+        
         return c_single_charge_state, r.flatten(), t.flatten()
 
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
         c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
-        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state)))
+        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state[0,:])))
         for i in range(self.Z):
             cCharged[i,:,:]=c_single_charge_state
         
