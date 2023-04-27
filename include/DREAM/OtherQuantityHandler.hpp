@@ -12,6 +12,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -24,10 +25,6 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
-#include "DREAM/Equations/Fluid/BootstrapElectronDensityTerm.hpp"
-#include "DREAM/Equations/Fluid/BootstrapElectronTemperatureTerm.hpp"
-#include "DREAM/Equations/Fluid/BootstrapIonDensityTerm.hpp"
-#include "DREAM/Equations/Fluid/BootstrapIonThermalEnergyTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
@@ -73,11 +70,7 @@ namespace DREAM {
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
 			// List of ion rate equations for each ion species
 			std::vector<IonRateEquation*> ni_rates;
-            // Bootstrap current terms
-            DREAM::BootstrapElectronDensityTerm *j_bs_n_cold=nullptr;
-            DREAM::BootstrapElectronTemperatureTerm *j_bs_T_cold=nullptr;
-            DREAM::BootstrapIonDensityTerm *j_bs_N_i=nullptr;
-            DREAM::BootstrapIonThermalEnergyTerm *j_bs_W_i=nullptr;
+
         };
 
     protected:
@@ -92,6 +85,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         IonHandler *ions;
+        BootstrapCurrent *bootstrap;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
         // indices to unknownquantities
@@ -118,7 +112,7 @@ namespace DREAM {
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
-            std::vector<UnknownQuantityEquation*>*, IonHandler*,
+            std::vector<UnknownQuantityEquation*>*, IonHandler*, BootstrapCurrent*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );

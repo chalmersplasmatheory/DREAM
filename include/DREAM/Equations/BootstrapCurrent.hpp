@@ -44,10 +44,16 @@ namespace DREAM {
         real_t *ft=nullptr;             // fraction of trapped particles
         real_t *qR0=nullptr;            // safety factor multiplied by R0
 
+        real_t *constantPrefactor=nullptr;
+
+        real_t *coefficientL31=nullptr;
+        real_t *coefficientL32=nullptr;
+        real_t *coefficientAlpha=nullptr;
+
         // real_t evaluateElectronCollisionFrequency(len_t, real_t, real_t, real_t);
-        real_t evaluateElectronCollisionFrequency(len_t);
+
         // real_t evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t);
-        real_t evaluateIonCollisionFrequency(len_t);
+
 
         static real_t evaluateCoefficientL31(real_t, real_t, real_t);
         static real_t evaluateCoefficientL32(real_t, real_t, real_t);
@@ -63,21 +69,35 @@ namespace DREAM {
         real_t *p;
         real_t *n;
 
-
-        real_t *constantPrefactor=nullptr;
-        real_t *coefficientL31=nullptr;
-        real_t *coefficientL32=nullptr;
-        real_t *coefficientAlpha=nullptr;
-
-        BootstrapCurrent(
-            FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
-            OptionConstants::eqterm_bootstrap_bc, CoulombLogarithm*
-        );
+        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*);
         ~BootstrapCurrent();
 
         void AllocateQuantities();
         void DeallocateQuantities();
         void Rebuild();
+
+        real_t evaluateElectronCollisionFrequency(len_t);
+        real_t evaluateIonCollisionFrequency(len_t);
+
+        const real_t getConstantPrefactor(len_t ir) const
+            { return constantPrefactor[ir]; }
+        const real_t* getConstantPrefactor() const
+            { return constantPrefactor; }
+
+        const real_t getCoefficientL31(len_t ir) const
+            { return coefficientL31[ir]; }
+        const real_t* getCoefficientL31() const
+            { return coefficientL31; }
+
+        const real_t getCoefficientL32(len_t ir) const
+            { return coefficientL32[ir]; }
+        const real_t* getCoefficientL32() const
+            { return coefficientL32; }
+
+        const real_t getCoefficientAlpha(len_t ir) const
+            { return coefficientAlpha[ir]; }
+        const real_t* getCoefficientAlpha() const
+            { return coefficientAlpha; }
 
         /**
          * Partial derivatives of L31, L32 and alpha.

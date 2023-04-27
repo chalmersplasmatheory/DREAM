@@ -12,9 +12,9 @@ using namespace DREAM;
  * Constructor.
  */
 BootstrapIonThermalEnergyTerm::BootstrapIonThermalEnergyTerm(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, BootstrapCurrent *bs,
-    IonHandler *ih, OptionConstants::eqterm_bootstrap_bc bc, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, bc, sf) {
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u,
+    BootstrapCurrent *bs, IonHandler *ih, real_t sf
+) : BootstrapEquationTerm(g, u, ih, bs, sf) {
 
     SetUnknownID(id_Wi);
 
@@ -31,18 +31,27 @@ BootstrapIonThermalEnergyTerm::BootstrapIonThermalEnergyTerm(
  *
  * If not included, ie. Ti = Tcold, then this term is not used!
  *
- * Note, we divide with the electron charge because W_i is already in SI units!
+ * Note, we divide with the electron charge because W_i is given in SI units!
  */
 real_t BootstrapIonThermalEnergyTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
-    return bs->constantPrefactor[ir] * bs->coefficientL31[ir] * 2./3. * ( 1. + bs->coefficientAlpha[ir] ) / Constants::ec;
+
+    real_t pre = bs->getConstantPrefactor(ir);
+    real_t l31 = bs->getCoefficientL31(ir);
+    real_t alpha = bs->getCoefficientAlpha(ir);
+
+    return pre * l31 * 2./3. * ( 1. + alpha ) / Constants::ec;
 }
 
 /**
  * Partial derivative of Coefficient.
  */
 real_t BootstrapIonThermalEnergyTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t index, len_t iZ) {
-    real_t dCoefficient = bs->evaluatePartialCoefficientL31(ir, derivId, index);
-    dCoefficient *= 1. + bs->coefficientAlpha[ir];
-    dCoefficient += bs->coefficientL31[ir] * bs->evaluatePartialCoefficientAlpha(ir, derivId, index, iZ);
-    return bs->constantPrefactor[ir] * 2./3. * dCoefficient;
+
+    real_t pre = bs->getConstantPrefactor(ir);
+    real_t l31 = bs->getCoefficientL31(ir);
+    real_t alpha = bs->getCoefficientAlpha(ir);
+    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, index);
+    real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, index, iZ);
+
+    return pre * 2./3. *  ( dl31 * ( 1. + alpha ) + l31 * dalpha );
 }

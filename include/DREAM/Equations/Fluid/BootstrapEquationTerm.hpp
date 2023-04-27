@@ -11,7 +11,6 @@ namespace DREAM {
     class BootstrapEquationTerm : public FVM::EquationTerm {
 
     private:
-        OptionConstants::eqterm_bootstrap_bc bc;
         real_t scaleFactor;
 
         real_t *deltaX = nullptr; // x_{k+1} - x_{k-1}
@@ -21,19 +20,9 @@ namespace DREAM {
 
         bool isInitialized;
 
-
-
         // helpers
-        void rebuildBackwardsBC(FVM::UnknownQuantityHandler*);
-        void rebuildZeroBC(FVM::UnknownQuantityHandler*);
         void setJacobianElement(len_t, FVM::Matrix*, len_t, len_t, real_t);
-        void setJacobianElementBackwardsBC(len_t, FVM::Matrix*, len_t, len_t, real_t);
-        void setJacobianElementZeroBC(len_t, FVM::Matrix*, len_t, len_t, real_t);
         void setMatrixElement(FVM::Matrix*, len_t, real_t);
-        void setMatrixElementBackwardsBC(FVM::Matrix*, len_t, real_t);
-        void setMatrixElementZeroBC(FVM::Matrix*, len_t, real_t);
-
-
 
     protected:
         BootstrapCurrent *bs;
@@ -50,7 +39,7 @@ namespace DREAM {
     public:
         BootstrapEquationTerm(
             FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
-            BootstrapCurrent*, OptionConstants::eqterm_bootstrap_bc, real_t
+            BootstrapCurrent*, real_t
         );
         ~BootstrapEquationTerm();
 

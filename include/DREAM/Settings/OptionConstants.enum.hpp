@@ -392,11 +392,6 @@ enum eqterm_bootstrap_mode {
     EQTERM_BOOTSTRAP_MODE_REDL = 2,
 };
 
-enum eqterm_bootstrap_bc {
-    EQTERM_BOOTSTRAP_BC_BACKWARDS = 1,              // Use backward difference at edge, using no assumption for quantities outside the plasma
-    EQTERM_BOOTSTRAP_BC_ZERO = 2,                   // Assume n_cold, T_cold, N_i, (W_i) are all zero outside the plasma
-};
-
 // Option for which parameter to do the 1D interpolation (time or plasma current)
 enum svensson_interp1d_param {
     SVENSSON_INTERP1D_TIME=1,

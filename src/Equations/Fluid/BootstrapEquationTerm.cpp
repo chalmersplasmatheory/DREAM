@@ -13,8 +13,8 @@ using namespace DREAM;
  */
 BootstrapEquationTerm::BootstrapEquationTerm(
     FVM::Grid* g, FVM::UnknownQuantityHandler* u, IonHandler *ih,
-    BootstrapCurrent *bs, OptionConstants::eqterm_bootstrap_bc bc, real_t sf
-) : EquationTerm(g), bc(bc), scaleFactor(sf), bs(bs) {
+    BootstrapCurrent *bs, real_t sf
+) : EquationTerm(g), scaleFactor(sf), bs(bs) {
 
     nZ = ih->GetNZ();
     nzs = ih->GetNzs();
@@ -57,37 +57,26 @@ void BootstrapEquationTerm::DeallocateDeltaX() {
 
 
 void BootstrapEquationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *u) {
-    if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS)
-        rebuildBackwardsBC(u);
-    else if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
-        rebuildZeroBC(u);
-}
-/**
- * Calculate the central differences.
- * This one uses a backward finite difference for the grid point by the plasma edge.
- */
-void BootstrapEquationTerm::rebuildBackwardsBC(FVM::UnknownQuantityHandler *u) {
-    real_t *x = u->GetUnknownData(id_X);
-    for (len_t ir = 0; ir < nr; ir++)
-        if ( (id_X == id_Ni) || (id_X == id_Wi) )
-            for (len_t i = ir; i < nr * nZ; i += nr)
-                deltaX[i] = ( (ir == nr - 1) ? x[i] : x[i + 1] ) - ( (ir == 0) ? x[i] : x[i - 1] );
-        else
-            deltaX[ir] = ( (ir == nr-1) ? x[ir]  : x[ir + 1] ) - ( (ir == 0) ? x[ir] : x[ir - 1] );
-}
 
-/**
- * Calculate the central differences.
- * This one assumes plasma quantities are zero outside of the edge.
- */
-void BootstrapEquationTerm::rebuildZeroBC(FVM::UnknownQuantityHandler *u) {
     real_t *x = u->GetUnknownData(id_X);
-    for (len_t ir = 0; ir < nr; ir++)
+
+    // set bc
+    if ( (id_X == id_Ni) || (id_X == id_Wi) )
+        for (len_t i = 0; i < nr * nZ; i += nr) {
+            deltaX[i] = x[i+1] - x[i];
+            deltaX[i+nr-1] = x[i+nr-1]-x[i+nr-2];
+        }
+    else {
+        deltaX[0] = x[1] - x[0];
+        deltaX[nr-1] = x[nr-1] - x[nr-2];
+    }
+
+    for (len_t ir = 1; ir < nr - 1; ir++)
         if ( (id_X == id_Ni) || (id_X == id_Wi) )
-            for (len_t i = ir; i < nr * nZ; i += nr)
-                deltaX[i] = ( (ir == nr - 1) ? 0 : x[i + 1] ) - ( (ir == 0) ? x[i] : x[i - 1] );
+            for (len_t i = ir; i < nr * nZ; i++)
+                deltaX[i] = x[i+1] - x[i-1];
         else
-            deltaX[ir] = ( (ir == nr-1) ? 0 : x[ir + 1] ) - ( (ir == 0) ? x[ir] : x[ir - 1] );
+            deltaX[ir] = x[ir+1] - x[ir-1];
 }
 
 
@@ -116,18 +105,11 @@ bool BootstrapEquationTerm::SetJacobianBlock(const len_t, const len_t derivId, F
     }
     return true;
 }
-void BootstrapEquationTerm::setJacobianElement(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
-    if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS)
-        setJacobianElementBackwardsBC(derivId, jac, ir, jr, diagonal);
-    else if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
-        setJacobianElementZeroBC(derivId, jac, ir, jr, diagonal);
-}
 /**
  * Helper function.
- * Sets a single Jacobian matrix element.
- * This one uses a backward finite difference for the grid point by the plasma edge.
+ * Sets a single Jacobian matrix element, with a backward finite difference for the grid point by the plasma edge.
  */
-void BootstrapEquationTerm::setJacobianElementBackwardsBC(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
+void BootstrapEquationTerm::setJacobianElement(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
     if (derivId == id_X) {
         real_t offDiagonal = GetCoefficient(ir, 0);
         if (ir == 0)
@@ -141,24 +123,6 @@ void BootstrapEquationTerm::setJacobianElementBackwardsBC(len_t derivId, FVM::Ma
     }
     jac->SetElement(ir, jr, scaleFactor * diagonal);
 }
-/**
- * Helper function.
- * Sets a single Jacobian matrix element.
- * This one assumes plasma quantities are zero outside of the edge.
- */
-void BootstrapEquationTerm::setJacobianElementZeroBC(len_t derivId, FVM::Matrix *jac, len_t ir, len_t jr, real_t diagonal) {
-    if (derivId == id_X) {
-        real_t offDiagonal = GetCoefficient(ir, 0);
-        if (ir == 0)
-            diagonal -= offDiagonal;
-        else
-            jac->SetElement(ir, jr - 1, -scaleFactor * offDiagonal);
-        if (ir != nr-1)
-            jac->SetElement(ir, jr + 1, scaleFactor * offDiagonal);
-    }
-    jac->SetElement(ir, jr, scaleFactor * diagonal);
-}
-
 
 
 /**
@@ -173,18 +137,11 @@ void BootstrapEquationTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /* rhs *
             setMatrixElement(mat, ir, GetCoefficient(ir, 0));
     }
 }
-void BootstrapEquationTerm::setMatrixElement(FVM::Matrix *mat, len_t ir, real_t weight) {
-    if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_BACKWARDS)
-        setMatrixElementBackwardsBC(mat, ir, weight);
-    else if (bc == OptionConstants::EQTERM_BOOTSTRAP_BC_ZERO)
-        setMatrixElementZeroBC(mat, ir, weight);
-}
 /**
  * Helper function.
- * Sets a single linear operator matrix element.
- * This one uses a backward finite difference for the grid point by the plasma edge.
+ * Sets a single linear operator matrix element, with a backward finite difference for the grid point by the plasma edge.
  */
-void BootstrapEquationTerm::setMatrixElementBackwardsBC(FVM::Matrix *mat, len_t ir, real_t weight) {
+void BootstrapEquationTerm::setMatrixElement(FVM::Matrix *mat, len_t ir, real_t weight) {
     if (ir == 0)
         mat->SetElement(ir, ir, -scaleFactor * weight);
     else
@@ -194,20 +151,6 @@ void BootstrapEquationTerm::setMatrixElementBackwardsBC(FVM::Matrix *mat, len_t 
     else
         mat->SetElement(ir, ir + 1, scaleFactor * weight);
 }
-/**
- * Helper function.
- * Sets a single linear operator matrix element.
- * This one assumes plasma quantities are zero outside of the edge.
- */
-void BootstrapEquationTerm::setMatrixElementZeroBC(FVM::Matrix *mat, len_t ir, real_t weight) {
-    if (ir == 0)
-        mat->SetElement(ir, ir, -scaleFactor * weight);
-    else
-        mat->SetElement(ir, ir - 1, -scaleFactor * weight);
-    if (ir != nr - 1)
-        mat->SetElement(ir, ir + 1, scaleFactor * weight);
-}
-
 
 
 /**

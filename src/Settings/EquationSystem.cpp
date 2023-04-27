@@ -158,7 +158,6 @@ void SimulationGenerator::ConstructEquations(
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
         BootstrapCurrent *bootstrap = new BootstrapCurrent(
             fluidGrid, unknowns, ionHandler,
-            (enum OptionConstants::eqterm_bootstrap_bc)s->GetInteger("eqsys/j_bs/bc"),
             eqsys->GetREFluid()->GetLnLambda()
         );
         eqsys->SetBootstrap(bootstrap);
@@ -221,7 +220,7 @@ void SimulationGenerator::ConstructEquations(
 
 
     if (eqsys->GetBootstrap() != nullptr)
-        ConstructEquation_j_bs(eqsys, s, oqty_terms);
+        ConstructEquation_j_bs(eqsys, s);
 
 
     // NOTE: The runaway number may depend explicitly on
