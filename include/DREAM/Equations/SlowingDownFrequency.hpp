@@ -10,6 +10,7 @@ namespace DREAM {
         gsl_interp_accel *gsl_acc;
 
         static const len_t  MAX_Z = 18; // tabulated mean excitation energies up to Z = 18
+        static const len_t  MAX_Z_EXTENDED = 86; // extended tabulated mean excitation energies up to Z = 86
         static const len_t  MAX_NE = 14; // tabulated constants for analytic formula up to Ne = 14
         static const real_t MEAN_EXCITATION_ENERGY_DATA[MAX_Z][MAX_Z];
         static const real_t MEAN_EXCITATION_ENERGY_FUNCTION_D[];
