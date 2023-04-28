@@ -108,6 +108,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTermHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Scalar/ConstantSPIVelocityPositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"  
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
@@ -126,7 +127,6 @@ set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/WallCurrentTerms.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/ConstantSPIVelocityTerm.hpp"
-    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/ConstantSPIVelocityPositionTerm.hpp"
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
@@ -159,6 +159,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/spi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/IonEquilibrium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"

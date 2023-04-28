@@ -61,6 +61,11 @@ void SimulationGenerator::DefineOptions_Transport(
 		(int_t)OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_DISABLED
 	);
 	s->DefineSetting(
+		mod + "/" + subname + "/D_I_min",
+		"Minimum value allowed for frozen current diffusion coefficient.",
+		(real_t)0
+	);
+	s->DefineSetting(
 		mod + "/" + subname + "/D_I_max",
 		"Maximum value allowed for frozen current diffusion coefficient.",
 		(real_t)1000
@@ -201,13 +206,14 @@ void SimulationGenerator::ConstructEquation_D_I(
 	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
 	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
+	real_t D_I_min = s->GetReal(path + "/D_I_min");
 	real_t D_I_max = s->GetReal(path + "/D_I_max");
 
 	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
 	FrozenCurrentCoefficient *fcc =
 		new FrozenCurrentCoefficient(
 			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
-			D_I_max
+			D_I_min, D_I_max
 		);
 	eqn->AddTerm(fcc);
 
