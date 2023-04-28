@@ -15,12 +15,13 @@ using namespace DREAM;
  */
 FrozenCurrentCoefficient::FrozenCurrentCoefficient(
 	FVM::Grid *grid, FVM::Grid *fluidGrid, FVM::Interpolator1D *I_p_presc,
-	FVM::UnknownQuantityHandler *unknowns, const real_t D_I_max
+	FVM::UnknownQuantityHandler *unknowns, const real_t D_I_min,
+	const real_t D_I_max
 ) : EquationTerm(grid), fluidGrid(fluidGrid), I_p_presc(I_p_presc),
 	id_D_I(unknowns->GetUnknownID(OptionConstants::UQTY_D_I)),
 	id_I_p(unknowns->GetUnknownID(OptionConstants::UQTY_I_P)),
 	id_j_tot(unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT)),
-	D_I_max(D_I_max) {
+	D_I_min(D_I_min), D_I_max(D_I_max) {
 	
 	this->D_I = new real_t[nMaxPoints];
 	this->Ip = new real_t[nMaxPoints];
@@ -179,9 +180,9 @@ void FrozenCurrentCoefficient::Rebuild(
 			DI = this->EstimateSolutionQuadratic(Ipresc);
 	}
 
-	// Bound lower value to zero
-	if (DI < 0)
-		DI = 0;
+	// Bound lower value
+	if (DI < this->D_I_min)
+		DI = this->D_I_min;
 	// Bound upper value
 	if (DI > this->D_I_max)
 		DI = this->D_I_max;
