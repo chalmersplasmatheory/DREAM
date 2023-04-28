@@ -574,7 +574,7 @@ class IonSpecies:
                 self.r = r
                 self.n = n
             else:
-                raise EquationException("ion_species: '{}': Unrecognized shape of initial density: {}.".format(n.shape).format(self.name))
+                raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of initial density: {n.shape}.")
 
 
     def initialize_equilibrium(self, n=None, r=None, interpr=None):
