@@ -17,6 +17,7 @@ namespace DREAM {
 		// Estimates of diffusion coefficient
 		real_t *D_I, DI_sol;
 		//real_t D_I = 0, D_I_prev = 0;
+		real_t D_I_min = 0;
 		real_t D_I_max = 1e3;
 
 		// Start by not prescribing plasma current
@@ -33,7 +34,8 @@ namespace DREAM {
 	public:
 		FrozenCurrentCoefficient(
 			FVM::Grid*, FVM::Grid*, FVM::Interpolator1D*,
-			FVM::UnknownQuantityHandler*, const real_t D_I_max=1e3
+			FVM::UnknownQuantityHandler*, const real_t D_I_min=0,
+			const real_t D_I_max=1e3
 		);
 		virtual ~FrozenCurrentCoefficient();
 
