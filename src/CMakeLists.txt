@@ -42,8 +42,6 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient_D.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient_I.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
