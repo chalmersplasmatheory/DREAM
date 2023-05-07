@@ -97,11 +97,6 @@ real_t FrozenCurrentCoefficient::EstimateSolutionLinear(
 		this->D_I[0] +
 			(this->D_I[0] - this->D_I[1]) *
 			(Ipresc - this->Ip[0]) / (this->Ip[0] - this->Ip[1]);
-	/*return
-		this->D_I[0] -
-		(this->D_I[0] - this->D_I[1]) *
-		Ipresc * (Irat-1) / (this->Ip[0] - Ip_prev);*/
-	//return DI - (DIk - this->D_I_prev) * Ipresc * (Irat - 1) / (Ip - Ip_prev);
 }
 
 /**

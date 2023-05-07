@@ -9,8 +9,6 @@
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/Equations/FrozenCurrentCoefficient.hpp"
-#include "DREAM/Equations/FrozenCurrentCoefficient_D.hpp"
-#include "DREAM/Equations/FrozenCurrentCoefficient_I.hpp"
 #include "DREAM/Equations/FrozenCurrentTransport.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -224,63 +222,6 @@ void SimulationGenerator::ConstructEquation_D_I(
 		"I_p = I_p_presc",
 		true	// Solved externally
 	);
-
-	/*enum OptionConstants::solver_type st =
-		(enum OptionConstants::solver_type)s->GetInteger("solver/type");
-
-	switch (st) {
-		case OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT: {
-			FVM::Operator *eqn = new FVM::Operator(scalarGrid);
-			FrozenCurrentCoefficient *fcc =
-				new FrozenCurrentCoefficient(
-					scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
-					D_I_max
-				);
-			eqn->AddTerm(fcc);
-
-			eqsys->SetOperator(
-				OptionConstants::UQTY_D_I,
-				OptionConstants::UQTY_D_I,
-				eqn,
-				"I_p = I_p_presc",
-				true	// Solved externally
-			);
-		} break;
-
-		case OptionConstants::SOLVER_TYPE_NONLINEAR: {
-			FVM::Operator *eqnD = new FVM::Operator(scalarGrid);
-			FVM::Operator *eqnI = new FVM::Operator(scalarGrid);
-
-			FrozenCurrentCoefficient_D *fccD =
-				new FrozenCurrentCoefficient_D(
-					scalarGrid, I_p_presc, eqsys->GetUnknownHandler()
-				);
-			FrozenCurrentCoefficient_I *fccI =
-				new FrozenCurrentCoefficient_I(
-					scalarGrid, I_p_presc, eqsys->GetUnknownHandler()
-				);
-			eqnD->AddTerm(fccD);
-			eqnI->AddTerm(fccI);
-
-			eqsys->SetOperator(
-				OptionConstants::UQTY_D_I,
-				OptionConstants::UQTY_D_I,
-				eqnD,
-				"I_p = I_p_presc"
-			);
-			eqsys->SetOperator(
-				OptionConstants::UQTY_D_I,
-				OptionConstants::UQTY_I_P,
-				eqnI
-			);
-		} break;
-		
-		default:
-			throw SettingsException(
-				"Unrecognized solver type for frozen current mode: %d.",
-				(int)st
-			);
-	}*/
 
 	real_t v = 0;
 	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &v);
