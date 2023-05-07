@@ -185,41 +185,51 @@ void DREAM::TransportBC<T>::__SetElements(
 
     // Iterate over every momentum cell...
     const real_t Nm = np1*np2;
-    for (len_t idx = 0; idx < Nm; idx++) {
+    //for (len_t idx = 0; idx < Nm; idx++) {
+	for (len_t j = 0, idx = 0; j < np2; j++) {
+		// If this cell lies in the negative trapped region, it should
+		// be mirrored (and Vp=0), and so we skip this cell.
+		if (this->grid->IsNegativePitchTrappedIgnorableCell(ir, j)) {
+			idx += np1;
+			continue;
+		}
 
-        // Flux (without advection/diffusion coefficient)
-        real_t S_wo_coeff =
-            Vp_fr[idx] / (Vp[idx] * dr);
+		for (len_t i = 0; i < np1; i++, idx++) {
 
-        real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
+			// Flux (without advection/diffusion coefficient)
+			real_t S_wo_coeff =
+				Vp_fr[idx] / (Vp[idx] * dr);
 
-        // Interpolation in radius
-        if (set_mode == JACOBIAN_SET_LOWER)
-            v = 0;
-        else if (set_mode == JACOBIAN_SET_CENTER)
-            v *= 1 - deltaRadialFlux[ir];
-        else if (set_mode == JACOBIAN_SET_UPPER)
-            v *= deltaRadialFlux[ir];
+			real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
 
-        // Select appropriate form for the boundary condition
-        switch (this->type) {
-            case TRANSPORT_BC_F0:
-                f(offset+idx, offset+idx, v);
-                break;
+			// Interpolation in radius
+			if (set_mode == JACOBIAN_SET_LOWER)
+				v = 0;
+			else if (set_mode == JACOBIAN_SET_CENTER)
+				v *= 1 - deltaRadialFlux[ir];
+			else if (set_mode == JACOBIAN_SET_UPPER)
+				v *= deltaRadialFlux[ir];
 
-            case TRANSPORT_BC_DF_CONST: {
-                f(offset+idx, offset+idx, v);
+			// Select appropriate form for the boundary condition
+			switch (this->type) {
+				case TRANSPORT_BC_F0:
+					f(offset+idx, offset+idx, v);
+					break;
 
-                // Set T_{N+1} = T_N + dr_N * (T_N - T_{N-1}) / dr_{N-1}
-                //               = (1+delta)*T_N - delta*T_{N-1}
-                real_t delta = dr / dr1;
-                f(offset+idx, offset+idx, -v*(1+delta));
-                f(offset+idx, offset-Nm+idx, v*delta);
-            } break;
+				case TRANSPORT_BC_DF_CONST: {
+					f(offset+idx, offset+idx, v);
 
-            default:
-                throw DREAMException("Unrecognized transport boundary condition specified: %d.", this->type);
-        }
+					// Set T_{N+1} = T_N + dr_N * (T_N - T_{N-1}) / dr_{N-1}
+					//               = (1+delta)*T_N - delta*T_{N-1}
+					real_t delta = dr / dr1;
+					f(offset+idx, offset+idx, -v*(1+delta));
+					f(offset+idx, offset-Nm+idx, v*delta);
+				} break;
+
+				default:
+					throw DREAMException("Unrecognized transport boundary condition specified: %d.", this->type);
+			}
+		}
     }
 }
 

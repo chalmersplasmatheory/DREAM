@@ -158,6 +158,7 @@ namespace DREAM {
         static void ConstructEquation_n_abl(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_selfconsistent(EquationSystem*, Settings*);
+		static void ConstructEquation_D_I(EquationSystem*, Settings*, const std::string&);
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
@@ -201,6 +202,9 @@ namespace DREAM {
         static void ConstructEquation_W_hot(EquationSystem*, Settings*);
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
+
+		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, len_t, const real_t*, const real_t*, len_t, real_t*);
 
 
         template<typename T>
