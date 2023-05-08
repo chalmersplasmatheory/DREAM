@@ -29,6 +29,7 @@ from DREAM_avalanche import DREAM_avalanche
 from numericmag import numericmag
 from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
+from runiface_parallel import runiface_parallel
 
 
 TESTS = [
@@ -39,7 +40,8 @@ TESTS = [
     'DREAM_avalanche',
     'numericmag',
     'trapping_conductivity',
-    'ts_adaptive'
+    'ts_adaptive',
+    'runiface_parallel'
 ]
 
 

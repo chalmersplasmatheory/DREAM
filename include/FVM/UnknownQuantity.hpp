@@ -60,6 +60,7 @@ namespace DREAM::FVM {
         void SetEquationDescription(const std::string& d) { this->description_eqn = d; }
         void Store(Vec& v, const len_t offs, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
         void Store(const real_t *v, const len_t offs=0, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
+		void RestoreValue() { data->RestoreValue(); }
 
         void SaveSFile(SFile *sf, const std::string& path="", bool saveMeta=false);
         void SaveSFileCurrent(SFile *sf, const std::string& path="", bool saveMeta=false);
