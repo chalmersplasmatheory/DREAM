@@ -41,6 +41,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/DreicerNeuralNetwork.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
@@ -87,6 +88,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SvenssonTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TritiumRateTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
@@ -155,6 +157,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/spi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/IonEquilibrium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"
@@ -177,6 +180,7 @@ set(dream_headers
 )
 
 set(dream_solvers
+    "${PROJECT_SOURCE_DIR}/src/Solver/ExternalIterator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/Solver.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverLinearlyImplicit.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverNonLinear.cpp"

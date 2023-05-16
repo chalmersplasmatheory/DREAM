@@ -23,6 +23,7 @@ class EquationSystem:
 
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
+        'D_I':          ScalarQuantity,
         'E_field':      ElectricField,
         'f_hot':        HotElectronDistributionFunction,
         'f_re':         RunawayElectronDistributionFunction,

@@ -53,11 +53,13 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/hydrogennames", "Names of the hydrogen ion species", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
+	s->DefineSetting(MODULENAME "/init_equilibrium", "Flags indicating whether to initialize species in coronal equilibrium.", 1, dims, (int_t*)nullptr);
 
     s->DefineSetting(MODULENAME "/SPIMolarFraction", "molar fraction of SPI injection (if any)",0, (real_t*)nullptr);
 
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonR(MODULENAME, s, "initialTi");
+	DefineDataIonR(MODULENAME, s, "initialNi");
     DefineDataIonRT(MODULENAME, s, "prescribed");
     DefineDataIonRT(MODULENAME, s, "charged_prescribed_diffusion");
     DefineDataIonRT(MODULENAME, s, "neutral_prescribed_diffusion");
@@ -483,33 +485,69 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();
-    real_t *ni = new real_t[ih->GetNzs() * Nr];
+    /*real_t *ni = new real_t[ih->GetNzs() * Nr];
 
     for (len_t i = 0; i < ih->GetNzs() * Nr; i++)
-        ni[i] = 0;
+        ni[i] = 0;*/
 
-    // Begin by evaluating prescribed densities
-    if (ipp != nullptr) {
-        ipp->Rebuild(t0, 1, nullptr);
-        ipp->Evaluate(ni);
-    }
+	len_t dims;
+	const int_t *init_equil = s->GetIntegerArray(MODULENAME "/init_equilibrium", 1, &dims);
 
-    // ...and then fill in with the initial dynamic ion values
-    for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
-        len_t Z   = ih->GetZ(dynamic_indices[i]);
-        len_t idx = ih->GetIndex(dynamic_indices[i], 0);
+	if (dims != nZ) {
+		throw SettingsException(
+			"Invalid number of values in 'init_equilibrium'. Expected "
+			LEN_T_PRINTF_FMT ", got " LEN_T_PRINTF_FMT,
+			nZ, dims
+		);
+	}
 
-        for (len_t Z0 = 0; Z0 <= Z; Z0++) {
-            for (len_t ir = 0; ir < Nr; ir++)
-                ni[(idx+Z0)*Nr+ir] = dynamic_densities[ionOffset+ir];
-            ionOffset += Nr;
-        }
-    }
+	real_t *initNi = LoadDataIonR(MODULENAME, fluidGrid->GetRadialGrid(), s, nZ, "initialNi");
+	const len_t id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
-    eqsys->SetInitialValue(id_ni, ni, t0);
-    ih->Rebuild();
+	std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_ni =
+		[ih,ipp,t0,adas,dynamic_indices,dynamic_densities,initNi,init_equil,Nr,nZ_dynamic,id_T](FVM::UnknownQuantityHandler *u, real_t *ni) {
+		const real_t *Te = u->GetUnknownData(id_T);
+
+		// Begin by evaluating prescribed densities
+		if (ipp != nullptr) {
+			ipp->Rebuild(t0, 1, nullptr);
+			ipp->Evaluate(ni);
+		}
+
+		// ...and then fill in with the initial dynamic ion values
+		for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
+			len_t Z   = ih->GetZ(dynamic_indices[i]);
+			len_t idx = ih->GetIndex(dynamic_indices[i], 0);
+
+			if (init_equil[dynamic_indices[i]] != 0) {
+				// Initialize according to equilibrium distribution
+				EvaluateIonEquilibrium(ih, adas, dynamic_indices[i], initNi+dynamic_indices[i]*Nr, Te, Nr, ni+idx*Nr);
+			} else {
+				// Initialize as specified
+				for (len_t Z0 = 0; Z0 <= Z; Z0++) {
+					for (len_t ir = 0; ir < Nr; ir++)
+						ni[(idx+Z0)*Nr+ir] = dynamic_densities[ionOffset+ir];
+					ionOffset += Nr;
+				}
+			}
+		}
+
+		delete [] init_equil;
+		delete [] initNi;
+		delete [] dynamic_indices;
+	};
+
+    //eqsys->SetInitialValue(id_ni, ni, t0);
+	eqsys->initializer->AddRule(
+		id_ni,
+		EqsysInitializer::INITRULE_EVAL_FUNCTION,
+		initfunc_ni,
+		// Dependencies...
+		id_T
+	);
+    //ih->Rebuild();
 
     delete [] types;
     delete [] opacity_mode;
-    delete [] dynamic_indices;
 }
+

@@ -494,14 +494,16 @@ class SPI(UnknownQuantity):
             self.rclPrescribedConstant = data['rclPrescribedConstant']
         if 'nbrShiftGridCell' in data:
             self.nbrShiftGridCell = data['nbrShiftGridCell']
-        if 'rp' in data['init']:
-            self.rp              = data['init']['rp']
-        if 'vp' in data['init']:
-            self.vp              = data['init']['vp']
-        if 'xp' in data['init']:
-            self.xp              = data['init']['xp']
-        if 't_delay' in data['init']:
-            self.t_delay         = data['init']['t_delay']
+
+        if 'init' in data:
+            if 'rp' in data['init']:
+                self.rp              = data['init']['rp']
+            if 'vp' in data['init']:
+                self.vp              = data['init']['vp']
+            if 'xp' in data['init']:
+                self.xp              = data['init']['xp']
+            if 't_delay' in data['init']:
+                self.t_delay         = data['init']['t_delay']
 
 
     def todict(self):
