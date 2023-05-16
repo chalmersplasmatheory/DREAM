@@ -13,8 +13,8 @@ using namespace DREAM;
  */
 BootstrapIonThermalEnergyTerm::BootstrapIonThermalEnergyTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u,
-    BootstrapCurrent *bs, IonHandler *ih, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, sf) {
+    BootstrapCurrent *bs, IonHandler *ih, len_t iZ, real_t sf
+) : BootstrapEquationTerm(g, u, ih, bs, iZ, sf) {
 
     SetUnknownID(id_Wi);
 
@@ -33,7 +33,7 @@ BootstrapIonThermalEnergyTerm::BootstrapIonThermalEnergyTerm(
  *
  * Note, we divide with the electron charge because W_i is given in SI units!
  */
-real_t BootstrapIonThermalEnergyTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
+real_t BootstrapIonThermalEnergyTerm::GetCoefficient(len_t ir) {
 
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
@@ -45,13 +45,13 @@ real_t BootstrapIonThermalEnergyTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
 /**
  * Partial derivative of Coefficient.
  */
-real_t BootstrapIonThermalEnergyTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t index, len_t iZ) {
+real_t BootstrapIonThermalEnergyTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t jzs, len_t jZ) {
 
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
     real_t alpha = bs->getCoefficientAlpha(ir);
-    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, index);
-    real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, index, iZ);
+    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
+    real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, jzs, jZ);
 
     return pre * 2./3. *  ( dl31 * ( 1. + alpha ) + l31 * dalpha );
 }

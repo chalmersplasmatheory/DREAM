@@ -16,6 +16,7 @@ namespace DREAM {
         real_t *deltaX = nullptr; // x_{k+1} - x_{k-1}
 
         len_t id_X; // set in subclass, one of {id_ncold, id_Tcold, id_Ni, id_Wi}.
+
         len_t nzs;
 
         bool isInitialized;
@@ -27,6 +28,8 @@ namespace DREAM {
     protected:
         BootstrapCurrent *bs;
 
+        len_t rOffset;
+        len_t iZ;
         len_t nZ;
 
         len_t
@@ -39,7 +42,7 @@ namespace DREAM {
     public:
         BootstrapEquationTerm(
             FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
-            BootstrapCurrent*, real_t
+            BootstrapCurrent*, len_t, real_t
         );
         ~BootstrapEquationTerm();
 
@@ -56,7 +59,7 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const { return 3; }; // is this correct?
 
         // these are required in any subclass of this class
-        virtual real_t GetCoefficient(len_t, len_t) = 0;
+        virtual real_t GetCoefficient(len_t) = 0;
         virtual real_t GetPartialCoefficient(len_t, len_t, len_t, len_t) = 0;
     };
 }

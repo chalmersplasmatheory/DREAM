@@ -23,7 +23,7 @@ using namespace DREAM;
  * Define options for the electric field module.
  */
 void SimulationGenerator::DefineOptions_j_tot(Settings*){
-    //s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
+    // s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
 }
 
 
@@ -76,86 +76,144 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 	FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
 	eqn->AddTerm(pp);
 
-	eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed");
-	// Initial value
-	eqsys->initializer->AddRule(
-		id_j_tot,
-		EqsysInitializer::INITRULE_EVAL_EQUATION
-	);
+    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+    enum OptionConstants::eqterm_bootstrap_init_mode bootstrap_init_mode = (enum OptionConstants::eqterm_bootstrap_init_mode)s->GetInteger("eqsys/j_bs/init_mode");
+
+    // If provided current includes only the Ohmic current and no bootstrap
+    if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+        if (bootstrap_init_mode == OptionConstants::EQTERM_BOOTSTRAP_INIT_MODE_OHMIC) {
+
+            FVM::Operator *eqn_jbs = new FVM::Operator(fluidGrid);
+            eqn_jbs->AddTerm(new FVM::IdentityTerm(fluidGrid));
+
+            const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+            eqsys->SetOperator(id_j_tot, id_j_bs, eqn_jbs);
+            eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed (via j_ohm)");
+
+            // Initial value
+        	eqsys->initializer->AddRule(
+        		id_j_tot,
+        		EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                id_j_bs
+        	);
+        } else {
+            eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed (via j_tot)");
+            // Initial value
+        	eqsys->initializer->AddRule(
+        		id_j_tot,
+        		EqsysInitializer::INITRULE_EVAL_EQUATION
+        	);
+        }
+    } else {
+        eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed");
+        // Initial value
+        eqsys->initializer->AddRule(
+            id_j_tot,
+            EqsysInitializer::INITRULE_EVAL_EQUATION
+        );
+    }
 }
 
 void SimulationGenerator::ConstructEquation_j_tot_consistent(
 	EquationSystem *eqsys, Settings *s
 ) {
-    const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
-    const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
-    const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
-    const len_t id_j_re  = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
-
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-
-    FVM::Operator *eqn0 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
-
-
-    eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-    eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
-    eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
-    eqn3->AddTerm(new FVM::IdentityTerm(fluidGrid));
-
     std::string desc = "j_tot = j_ohm + j_hot + j_re";
+    const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
-    // bootstrap current
+    // Ohmic current density
+    const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
+    FVM::Operator *eqn_ohm = new FVM::Operator(fluidGrid);
+    eqn_ohm->AddTerm(new FVM::IdentityTerm(fluidGrid));
+    eqsys->SetOperator(id_j_tot, id_j_ohm, eqn_ohm);
+
+    // hot electron current density
+    const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
+    FVM::Operator *eqn_hot = new FVM::Operator(fluidGrid);
+    eqn_hot->AddTerm(new FVM::IdentityTerm(fluidGrid));
+    eqsys->SetOperator(id_j_tot, id_j_hot, eqn_hot);
+
+    // runaway electron current density
+    const len_t id_j_re  = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
+    FVM::Operator *eqn_re = new FVM::Operator(fluidGrid);
+    eqn_re->AddTerm(new FVM::IdentityTerm(fluidGrid));
+    eqsys->SetOperator(id_j_tot, id_j_re,  eqn_re);
+
+    // bootstrap current density
     enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
 
-        FVM::Operator *eqn4 = new FVM::Operator(fluidGrid);
-        eqn4->AddTerm(new FVM::IdentityTerm(fluidGrid));
-
         const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
-        eqsys->SetOperator(id_j_tot, id_j_bs, eqn4);
+        FVM::Operator *eqn_bs = new FVM::Operator(fluidGrid);
+        eqn_bs->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        eqsys->SetOperator(id_j_tot, id_j_bs, eqn_bs);
 
         desc += " + j_bs";
     }
 
-    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, desc);
-    eqsys->SetOperator(id_j_tot, id_j_ohm, eqn1);
-    eqsys->SetOperator(id_j_tot, id_j_hot, eqn2);
-    eqsys->SetOperator(id_j_tot, id_j_re,  eqn3);
+    // Total current density
+    FVM::Operator *eqn_tot = new FVM::Operator(fluidGrid);
+    eqn_tot->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+    eqsys->SetOperator(id_j_tot, id_j_tot, eqn_tot, desc);
+
 
     // Initialization
 	if (HasInitialJtot(eqsys, s)) {
-        // if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
-        //     throw SettingsException("INITIAL JTOT DOES NOT YET WORK TOGETHER WITH BOOTSTRAP! INSTEAD, PRESCRIBE AN INITIAL ELECTRIC FIELD!"); // move to py interface!
 
-		real_t *jtot_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+		real_t *johm_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
 
 		// Re-scale to get right plasma current (Ip)?
 		if (s->GetReal("eqsys/j_ohm/Ip0") != 0) {
 			FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
 			const len_t nr = rGrid->GetNr();
 			const real_t Ip0 = s->GetReal("eqsys/j_ohm/Ip0");
-			real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIp(rGrid, jtot_init);
+			real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIp(rGrid, johm_init);
 
 			for (len_t ir = 0; ir < nr; ir++)
-				jtot_init[ir] *= Ip0 / Ipj;
+				johm_init[ir] *= Ip0 / Ipj;
 		}
 
-		eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, jtot_init);
-		delete [] jtot_init;
+        // If provided prescribed current includes only the Ohmic current (bootstrap)
+        enum OptionConstants::eqterm_bootstrap_init_mode bootstrap_init_mode = (enum OptionConstants::eqterm_bootstrap_init_mode)s->GetInteger("eqsys/j_bs/init_mode");
+        if ((bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) &&
+            (bootstrap_init_mode == OptionConstants::EQTERM_BOOTSTRAP_INIT_MODE_OHMIC)) {
+
+            const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+
+            std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_JtotFromJohm =
+    			[id_j_bs, fluidGrid, johm_init](FVM::UnknownQuantityHandler *u, real_t *jtot_init) {
+
+                const real_t *j_bs = u->GetUnknownData(id_j_bs);
+    			const len_t nr = fluidGrid->GetNCells();
+    			for (len_t ir = 0; ir < nr; ir++){
+                    jtot_init[ir] = johm_init[ir] + j_bs[ir];
+                }
+                delete [] johm_init;
+    		};
+    		eqsys->initializer->AddRule(
+    			id_j_tot,
+    			EqsysInitializer::INITRULE_EVAL_FUNCTION,
+    			initfunc_JtotFromJohm,
+    			// Dependencies..
+    			id_j_bs
+    		);
+        } else {
+		      eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, johm_init);
+              delete [] johm_init;
+        }
+
 	} else {
-        //     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-    	//         const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
-        //         eqsys->initializer->AddRule(
-    	// 	    id_j_tot,
-    	// 	    EqsysInitializer::INITRULE_EVAL_EQUATION,
-    	// 	    nullptr,
-    	// 	    // Dependencies
-    	// 	    id_j_ohm, id_j_hot, id_j_re, id_j_bs
-    	// 	);
-        // } else
+        if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+            eqsys->initializer->AddRule(
+    		    id_j_tot,
+    		    EqsysInitializer::INITRULE_EVAL_EQUATION,
+    		    nullptr,
+    		    // Dependencies
+    		    id_j_ohm, id_j_hot, id_j_re,
+                eqsys->GetUnknownID(OptionConstants::UQTY_J_BS)
+    		);
+        } else
             eqsys->initializer->AddRule(
                 id_j_tot,
                 EqsysInitializer::INITRULE_EVAL_EQUATION,

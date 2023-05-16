@@ -14,7 +14,7 @@ using namespace DREAM;
 BootstrapElectronDensityTerm::BootstrapElectronDensityTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     BootstrapCurrent *bs, IonHandler *ih, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, sf) {
+) : BootstrapEquationTerm(g, u, ih, bs, 0, sf) {
 
     SetUnknownID(id_ncold);
 
@@ -30,7 +30,7 @@ BootstrapElectronDensityTerm::BootstrapElectronDensityTerm(
 /**
  * Coefficient = A * L31 * p / n
  */
-real_t BootstrapElectronDensityTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
+real_t BootstrapElectronDensityTerm::GetCoefficient(len_t ir) {
 
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
@@ -38,11 +38,11 @@ real_t BootstrapElectronDensityTerm::GetCoefficient(len_t ir, len_t /* iZ */) {
     return pre * l31 * bs->p[ir] / bs->n[ir];
 }
 
-real_t BootstrapElectronDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t index, len_t /* iZ */) {
+real_t BootstrapElectronDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t jzs, len_t /* jZ */) {
 
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
-    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, index);
+    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
 
     real_t dCoefficient = dl31;
     if (!bs->includeIonTemperatures) {
