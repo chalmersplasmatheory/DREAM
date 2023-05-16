@@ -27,7 +27,6 @@ namespace DREAM {
         real_t epsilon_forward;     // forward diffeerence (Zeff)
 
         len_t iZMain;   // main ion species
-
         len_t nr;
 
         len_t id_jtot;
@@ -54,6 +53,7 @@ namespace DREAM {
 
         // real_t evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t);
 
+        bool firstTime = true;
 
         static real_t evaluateCoefficientL31(real_t, real_t, real_t);
         static real_t evaluateCoefficientL32(real_t, real_t, real_t);

@@ -12,8 +12,8 @@ using namespace DREAM;
  */
 BootstrapIonDensityTerm::BootstrapIonDensityTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u,
-    BootstrapCurrent *bs, IonHandler *ih, real_t sf
-) : BootstrapEquationTerm(g, u, ih, bs, sf) {
+    BootstrapCurrent *bs, IonHandler *ih, len_t iZ, real_t sf
+) : BootstrapEquationTerm(g, u, ih, bs, iZ, sf) {
 
     SetUnknownID(id_Ni);
 
@@ -31,7 +31,7 @@ BootstrapIonDensityTerm::BootstrapIonDensityTerm(
  * If not included, ie. Ti = Tcold, then for each ion:
  *      Coefficient = A * L31 *  p / n
  */
-real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir, len_t iZ) {
+real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir) {
 
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
@@ -39,7 +39,7 @@ real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir, len_t iZ) {
 
     real_t coefficient = bs->p[ir] / bs->n[ir];
     if (bs->includeIonTemperatures)
-        coefficient -= 2./3. * ( 1. + alpha ) * bs->Wi[nr * iZ + ir] / (bs->Ni[nr * iZ + ir] * Constants::ec);
+        coefficient -= 2./3. * ( 1. + alpha ) * bs->Wi[rOffset + ir] / (bs->Ni[rOffset + ir] * Constants::ec);
 
     return pre * l31 * coefficient;
 }
@@ -47,11 +47,11 @@ real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir, len_t iZ) {
 /**
  * Partial derivative of Coefficient.
  */
-real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t index, len_t iZ) {
+real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, len_t jzs, len_t jZ) {
 
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
-    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, index);
+    real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
 
     real_t dCoefficient = dl31;
     if (!bs->includeIonTemperatures) {
@@ -60,19 +60,18 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, l
             dCoefficient += l31;
     } else {
         real_t alpha = bs->getCoefficientAlpha(ir);
-        real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, index, iZ);
+        real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, jzs, jZ);
 
-        len_t i = nr * iZ + ir;
-        dCoefficient *= bs->p[ir] / bs->n[ir] - ( 1. + alpha ) * bs->Wi[i];
-        dCoefficient -= l31 * 2./3. * dalpha * bs->Wi[i] / bs->Ni[i];
+        dCoefficient *= bs->p[ir] / bs->n[ir] - ( 1. + alpha ) * bs->Wi[rOffset + ir];
+        dCoefficient -= l31 * 2./3. * dalpha * bs->Wi[rOffset + ir] / bs->Ni[rOffset + ir];
         if (derivId == id_ncold)
             dCoefficient += l31 * ( bs->Tcold[ir] - bs->p[ir] / bs->n[ir] ) / bs->n[ir];
         else if (derivId == id_Tcold)
             dCoefficient += l31 * bs->ncold[ir] / bs->n[ir];
         else if (derivId == id_Ni)
-            dCoefficient += l31 * ( (1. + alpha ) * bs->Wi[i] / ( 1.5 * bs->Ni[i] * bs-> Ni[i]) - bs->p[ir] / (bs->n[ir] * bs->n[ir]) );
+            dCoefficient += l31 * ( (1. + alpha ) * bs->Wi[rOffset + ir] / ( 1.5 * bs->Ni[rOffset + ir] * bs-> Ni[rOffset + ir]) - bs->p[ir] / (bs->n[ir] * bs->n[ir]) );
         else if (derivId == id_Wi)
-            dCoefficient += l31 * ( 1. + alpha ) / ( 1.5 * bs->Ni[i] * Constants::ec );
+            dCoefficient += l31 * ( 1. + alpha ) / ( 1.5 * bs->Ni[rOffset + ir] * Constants::ec );
     }
     return pre * dCoefficient;
 }

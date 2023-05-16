@@ -18,6 +18,8 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     ions = ih;
     lnLambda = lnL;
 
+    firstTime = true;
+
     // used for partial derivatives of lnLambda
     lnLII_settings = new CollisionQuantity::collqty_settings;
     lnLII_settings->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ION_ION;
@@ -45,14 +47,15 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
 
     // equilibrium constants
     const real_t R0 = rGrid->GetR0();
-    // const real_t B0 = rGrid->GetBmin_f(0);
+    const real_t B0 = rGrid->GetBmin_f(0);
+    std::cout << B0 << std::endl;
     for (len_t ir = 0; ir < nr; ir++) {
         // calculate the geometric prefactor
         const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
         const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
         const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
         const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
-        constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
+        constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef) *B0;
         if (ir == 0)
             constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
         else if (ir == nr - 1)
@@ -66,7 +69,12 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         // calculate fraction of trapped particles
         ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
         // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
-    }
+
+        // // real_t eps = rGrid->GetR(ir) / R0;
+        // qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
+
+
+   }
 
     // locate the main ion index
     bool isFound = false;
@@ -152,22 +160,28 @@ void BootstrapCurrent::Rebuild() {
         }
 
         // calculate safety factor (normalised to R0)
-        // NOTE: since j_bs contributes to j_tot, some iterations are needed at the start of a simulation!
-        real_t Ip = TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
-        qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, Constants::mu0 * Ip));
+        if (firstTime) {
+            // q ~ epsilon * B / Btor (only before jtot is not known)
+            qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
+        } else {}
+            real_t Ip = TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
+            qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, Constants::mu0 * Ip));
+        }
 
         // calculate collision frequencies
         real_t nuE = evaluateElectronCollisionFrequency(ir);
         real_t nuI = evaluateIonCollisionFrequency(ir);
 
         // get the effective charge
-        real_t Zeff =  1;//ions->GetZeff(ir);
+        real_t Zeff =  ions->GetZeff(ir);
 
         // calculate the bootstrap coefficients
         coefficientL31[ir] = evaluateCoefficientL31(ft[ir], Zeff, nuE);
         coefficientL32[ir] = evaluateCoefficientL32(ft[ir], Zeff, nuE);
         coefficientAlpha[ir] = evaluateCoefficientAlpha(ft[ir], Zeff, nuI);
     }
+    if (firstTime)
+        firstTime = false;
 }
 
 
@@ -192,11 +206,11 @@ real_t BootstrapCurrent::evaluateElectronCollisionFrequency(len_t ir) {
  * ir:  radial cell grid point.
  */
 real_t BootstrapCurrent::evaluateIonCollisionFrequency(len_t ir) {
-    // real_t lnLii = lnLambda->evaluateLnLambdaII(ir); // formula from Wesson
+    real_t lnLii = lnLambda->evaluateLnLambdaII(ir); // formula from Wesson
     real_t TiMain = WiMain[ir] / (1.5 * NiMain[ir]);
     real_t Zeff = ions->GetZeff(ir);
     real_t Zeff2 = Zeff * Zeff;
-    real_t lnLii = 30 - log( Zeff2 * Zeff * sqrt(NiMain[ir] / TiMain) / TiMain );
+    // real_t lnLii = 30 - log( Zeff2 * Zeff * sqrt(NiMain[ir] / TiMain) / TiMain );
     real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
     // real_t Zeff4 = Zeff * Zeff * Zeff * Zeff;
     // real_t NiMain3 = NiMain[ir] * NiMain[ir] * NiMain[ir];
@@ -332,7 +346,7 @@ real_t BootstrapCurrent::evaluatePartialCoefficientL32(len_t ir, len_t derivId, 
  *  coefficient:  coefficient function of variables (ir, Zeff, nu) to differentiate.
  */
 real_t BootstrapCurrent::evaluateNumericalDerivative(
-    len_t ir, len_t derivId, len_t iz,
+    len_t ir, len_t derivId, len_t izs,
     std::function<real_t(real_t, real_t, real_t)> coefficient
 ) {
     if ( (derivId != id_ncold) && (derivId != id_Tcold) && (derivId != id_ions) )
@@ -346,7 +360,7 @@ real_t BootstrapCurrent::evaluateNumericalDerivative(
         return dCdnu * nu / ncold[ir];
     real_t lnLEE = lnLambda->evaluateLnLambdaT(ir);
     if (derivId == id_Tcold) {
-        real_t dlnLEEdTcold = lnLambda->evaluatePartialAtP(ir, 0, derivId, iz, lnLEE_settings);
+        real_t dlnLEEdTcold = lnLambda->evaluatePartialAtP(ir, 0, derivId, izs, lnLEE_settings);
         return dCdnu * nu * (dlnLEEdTcold / lnLEE - 2. / Tcold[ir]);
     }
 
@@ -355,9 +369,9 @@ real_t BootstrapCurrent::evaluateNumericalDerivative(
     if(nfree == 0)
         return 0;
     len_t _, Z0;
-    ions->GetIonIndices(iz, _, Z0);
+    ions->GetIonIndices(izs, _, Z0);
     real_t dZeffdni = Z0/nfree * (Z0 - ions->GetNZ0Z0(ir)/nfree);
-    real_t dlnLEEdni = lnLambda->evaluatePartialAtP(ir, 0, derivId, iz, lnLEE_settings);
+    real_t dlnLEEdni = lnLambda->evaluatePartialAtP(ir, 0, derivId, izs, lnLEE_settings);
     real_t hZeff = Zeff * epsilon_forward;
     real_t dCdZeff = ( coefficient(ft[ir], Zeff+hZeff, nu)
                      - coefficient(ft[ir], Zeff, nu) ) / hZeff;
@@ -374,11 +388,12 @@ real_t BootstrapCurrent::evaluateNumericalDerivative(
  *  iZ:       ion species index
  */
 real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
-    len_t ir, len_t derivId, len_t iz, len_t iZ
+    len_t ir, len_t derivId, len_t izs, len_t iZ
 ) {
-    if ( (derivId != id_Tcold) && (derivId != id_ions) )
-        if ( !((derivId == id_Ni) || (derivId == id_Wi)) && (iZ == iZMain) ) // no contribution!
-            return 0;
+    if ( (derivId != id_Tcold) && (derivId != id_ions) && (derivId != id_Ni) && (derivId != id_Wi) )
+        return 0;
+    if ( ((derivId == id_Ni) || (derivId == id_Wi)) && (iZ != iZMain) ) // Only main ion contributes!
+        return 0;
 
     real_t nu = evaluateIonCollisionFrequency(ir);
     real_t Zeff = ions->GetZeff(ir);
@@ -388,7 +403,7 @@ real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
 
     real_t lnLII = lnLambda->evaluateLnLambdaII(ir);
     if (derivId == id_Tcold) {
-        real_t dlnLIIdTcold = lnLambda->evaluatePartialAtP(ir, 0, derivId, iz, lnLII_settings);
+        real_t dlnLIIdTcold = lnLambda->evaluatePartialAtP(ir, 0, derivId, izs, lnLII_settings);
         return dlnLIIdTcold * nu * dAdnu / lnLII;
     }
     // these two only contributes for the main ion, ie. if (iZ == iZMain)
@@ -399,10 +414,10 @@ real_t BootstrapCurrent::evaluatePartialCoefficientAlpha(
 
     // derivId == id_ions
     len_t _, Z0;
-    ions->GetIonIndices(iz, _, Z0);
+    ions->GetIonIndices(izs, _, Z0);
     real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
     real_t dZeffdni = Z0/nfree * (Z0 - ions->GetNZ0Z0(ir)/nfree);
-    real_t dlnLIIdni = lnLambda->evaluatePartialAtP(ir, 0, derivId, iz, lnLII_settings);
+    real_t dlnLIIdni = lnLambda->evaluatePartialAtP(ir, 0, derivId, izs, lnLII_settings);
     real_t hZeff = Zeff * epsilon_forward;
     real_t dAdZeff = ( evaluateCoefficientAlpha(ft[ir], Zeff+hZeff, nu)
                      - evaluateCoefficientAlpha(ft[ir], Zeff, nu) ) / hZeff;
