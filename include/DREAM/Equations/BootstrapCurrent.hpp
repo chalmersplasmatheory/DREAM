@@ -49,11 +49,7 @@ namespace DREAM {
         real_t *coefficientL32=nullptr;
         real_t *coefficientAlpha=nullptr;
 
-        // real_t evaluateElectronCollisionFrequency(len_t, real_t, real_t, real_t);
-
-        // real_t evaluateIonCollisionFrequency(len_t, real_t, real_t, real_t);
-
-        bool firstTime = true;
+        // bool qFromCurrent = false;
 
         static real_t evaluateCoefficientL31(real_t, real_t, real_t);
         static real_t evaluateCoefficientL32(real_t, real_t, real_t);

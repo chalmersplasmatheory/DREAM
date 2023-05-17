@@ -13,6 +13,7 @@
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Interpolator1D.hpp"
+#include "DREAM/NotImplementedException.hpp"
 
 
 using namespace DREAM;
@@ -53,6 +54,13 @@ void SimulationGenerator::ConstructEquation_j_tot(
 void SimulationGenerator::ConstructEquation_j_tot_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
+    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+    enum OptionConstants::eqterm_bootstrap_init_mode bootstrap_init_mode = (enum OptionConstants::eqterm_bootstrap_init_mode)s->GetInteger("eqsys/j_bs/init_mode");
+    if ((bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) &&
+        (bootstrap_init_mode == OptionConstants::EQTERM_BOOTSTRAP_INIT_MODE_OHMIC))
+        throw NotImplementedException("j_bs: Prescribed current mode can currently only be used together with bootstrap if the prescribed current includes both the Ohmic and initial bootstrap current!");
+
+
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
 	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 	FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
@@ -73,54 +81,23 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 	}
 
 	FVM::Interpolator1D *interp = new FVM::Interpolator1D(dd->nt, dd->nr, dd->t, dd->x, dd->interp);
-	FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
+    FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
 	eqn->AddTerm(pp);
 
-    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
-    enum OptionConstants::eqterm_bootstrap_init_mode bootstrap_init_mode = (enum OptionConstants::eqterm_bootstrap_init_mode)s->GetInteger("eqsys/j_bs/init_mode");
-
-    // If provided current includes only the Ohmic current and no bootstrap
-    if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-        if (bootstrap_init_mode == OptionConstants::EQTERM_BOOTSTRAP_INIT_MODE_OHMIC) {
-
-            FVM::Operator *eqn_jbs = new FVM::Operator(fluidGrid);
-            eqn_jbs->AddTerm(new FVM::IdentityTerm(fluidGrid));
-
-            const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
-            eqsys->SetOperator(id_j_tot, id_j_bs, eqn_jbs);
-            eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed (via j_ohm)");
-
-            // Initial value
-        	eqsys->initializer->AddRule(
-        		id_j_tot,
-        		EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                id_j_bs
-        	);
-        } else {
-            eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed (via j_tot)");
-            // Initial value
-        	eqsys->initializer->AddRule(
-        		id_j_tot,
-        		EqsysInitializer::INITRULE_EVAL_EQUATION
-        	);
-        }
-    } else {
-        eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed");
-        // Initial value
-        eqsys->initializer->AddRule(
-            id_j_tot,
-            EqsysInitializer::INITRULE_EVAL_EQUATION
-        );
-    }
+    eqsys->SetOperator(id_j_tot, id_j_tot, eqn, "Prescribed");
+    // Initial value
+    eqsys->initializer->AddRule(
+        id_j_tot,
+        EqsysInitializer::INITRULE_EVAL_EQUATION
+    );
 }
 
 void SimulationGenerator::ConstructEquation_j_tot_consistent(
 	EquationSystem *eqsys, Settings *s
 ) {
-    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-    std::string desc = "j_tot = j_ohm + j_hot + j_re";
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    std::string desc = "j_tot = j_ohm + j_hot + j_re";
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     // Ohmic current density
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
@@ -140,7 +117,7 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     eqn_re->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqsys->SetOperator(id_j_tot, id_j_re,  eqn_re);
 
-    // bootstrap current density
+    // bootstrap current density (optional)
     enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
 
