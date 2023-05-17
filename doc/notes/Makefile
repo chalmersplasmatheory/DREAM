@@ -3,7 +3,9 @@ TEX=latexmk
 TEXF=-pdf -pdflatex="pdflatex" -outdir="pdf"
 BIB=biber
 
-all: adaptive_timestep ampere_faraday discretisation dreicer heat-transport magnetic_compression psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
+all: bootstrap_current badaptive_timestep ampere_faraday discretisation dreicer heat-transport magnetic_compression psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
+
+bootstrap_current: bootstrap_current.pdf
 
 adaptive_timestep: adaptive_timestep.pdf
 
@@ -31,7 +33,7 @@ trappedbc: trappedbc.pdf
 
 %.pdf: %.tex
 	$(TEX) $(TEXF) -use-make $<
-	
+
 clean:
 	rm -f *.fdb_latexmk *.fls
 	rm -rf pdf/*
