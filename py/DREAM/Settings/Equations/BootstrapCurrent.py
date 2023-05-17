@@ -1,29 +1,31 @@
 # Settings for the Bootstrap current
-#S
-#
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
+
+from . PrescribedInitialParameter import PrescribedInitialParameter
 
 BOOTSTRAP_MODE_DISABLED = 1
 BOOTSTRAP_MODE_ENABLED = 2
 
-BOOTSTRAP_BC_BACKWARDS = 1
-BOOTSTRAP_BC_ZERO = 2
-
+BOOTSTRAP_INIT_MODE_OHMIC = 1
+BOOTSTRAP_INIT_MODE_TOTAL = 2
 
 class BootstrapCurrent(UnknownQuantity):
 
-    def __init__(self, settings, mode=BOOTSTRAP_MODE_DISABLED, bc=BOOTSTRAP_BC_BACKWARDS):
+    def __init__(self, settings, mode=BOOTSTRAP_MODE_DISABLED, initMode=BOOTSTRAP_INIT_MODE_OHMIC):
         """
         Constructor.
         """
         super().__init__(settings=settings)
 
+        self.mode = None
+        self.initMode = None
+
         self.setMode(mode)
-        self.setBoundaryCondition(bc)
+        self.setInitMode(initMode)
 
 
-    def setMode(self, mode):
+    def setMode(self, mode, initMode=None):
         """
         Specifies whether to include the bootstrap current as a contribution to the total
         current density. If enabled, this contribution is calculated using the Redl-Sauter
@@ -32,17 +34,24 @@ class BootstrapCurrent(UnknownQuantity):
         if mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_ENABLED]:
             self.mode = mode
         else:
-            raise EquationException("j_bs: Unrecognized bootstrap current mode: {}".format(mode))
+            raise EquationException(f"j_bs: Unrecognized bootstrap current mode: {mode}")
 
-    def setBoundaryCondition(self, bc):
+        if initMode is not None:
+            self.setInitMode(initMode)
+
+
+    def setInitMode(self, initMode):
         """
-        Specifies whether to set the boundary condition using a forward Euler method at the edge,
-        or to assume that densities/temperatures vanish outside the edge and use central difference.
+        Specifies whether the initial/prescribed total current density is given as only the
+        Ohmic current (so the bootstrap current is added to obtain the correct total current)
+        or if it is given as the sum of the Ohmic and bootstrap current (so the bootstrap
+        current is subtracted from the total current when calculating the corresponding electric
+        field).
         """
-        if bc in [BOOTSTRAP_BC_BACKWARDS, BOOTSTRAP_BC_ZERO]:
-            self.bc = bc
+        if initMode in [BOOTSTRAP_INIT_MODE_OHMIC, BOOTSTRAP_INIT_MODE_TOTAL]:
+            self.initMode = initMode
         else:
-            raise EquationException("j_bs: Unrecognized bootstrap current boundary condition: {}".format(mode))
+            raise EquationException(f"j_bs: Unrecognized bootstrap current initialization mode: {initMode}")
 
 
     def fromdict(self, data):
@@ -51,18 +60,21 @@ class BootstrapCurrent(UnknownQuantity):
         """
         if 'mode' in data:
             self.setMode(data['mode'])
-        if 'bc' in data:
-            self.setBoundaryCondition(data['bc'])
+        if 'init_mode' in data:
+            self.setInitMode(data['init_mode'])
+
 
     def todict(self):
         """
         Returns a Python dictionary containing the settings of this BootstrapCurrent object.
         """
-        data = {
-            'mode': self.mode,
-            'bc':   self.bc
-        }
+        data = {'mode': self.mode, 'init_mode': self.initMode}
         return data
 
+
     def verifySettings(self):
-        pass
+        """
+        Verify that the settings concerning the bootstrap current are correctly set.
+        """
+        if self.mode == BOOTSTRAP_MODE_DISABLED and self.initMode == BOOTSTRAP_INIT_MODE_TOTAL:
+            print("WARNING: Bootstrap current is disabled, but its initialization mode was adjusted!")

@@ -392,6 +392,11 @@ enum eqterm_bootstrap_mode {
     EQTERM_BOOTSTRAP_MODE_REDL = 2,
 };
 
+enum eqterm_bootstrap_init_mode {
+    EQTERM_BOOTSTRAP_INIT_MODE_OHMIC = 1, 
+    EQTERM_BOOTSTRAP_INIT_MODE_TOTAL = 2
+};
+
 // Option for which parameter to do the 1D interpolation (time or plasma current)
 enum svensson_interp1d_param {
     SVENSSON_INTERP1D_TIME=1,

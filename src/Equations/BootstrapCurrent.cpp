@@ -8,9 +8,9 @@
 #include <iostream>
 using namespace DREAM;
 
- /**
-  * Constructor.
-  */
+/**
+ * Constructor.
+ */
 BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih, CoulombLogarithm *lnL) {
 
     rGrid = g->GetRadialGrid();
@@ -18,7 +18,6 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     ions = ih;
     lnLambda = lnL;
 
-    firstTime = true;
 
     // used for partial derivatives of lnLambda
     lnLII_settings = new CollisionQuantity::collqty_settings;
@@ -48,14 +47,15 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     // equilibrium constants
     const real_t R0 = rGrid->GetR0();
     const real_t B0 = rGrid->GetBmin_f(0);
-    std::cout << B0 << std::endl;
     for (len_t ir = 0; ir < nr; ir++) {
         // calculate the geometric prefactor
         const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
         const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
         const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
         const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
-        constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef) *B0;
+
+        // OBS. something is off with the above definitions: the following should not include the last factor of B0...
+        constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef)  *B0; // <--- this B0!
         if (ir == 0)
             constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
         else if (ir == nr - 1)
@@ -70,10 +70,9 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
         // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
-        // // real_t eps = rGrid->GetR(ir) / R0;
-        // qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
-
-
+        // this high-aspect ratio approximation for qR0 seems to match better with Redl-Sauter
+        // than calculating it via the total current (also simpler for initialization)
+        qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
    }
 
     // locate the main ion index
@@ -88,9 +87,9 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         throw DREAMException("No hydrogenic ion was found to set as the main ion for calculating the bootstrap current!");
 }
 
- /**
-  * Destructor.
-  */
+/**
+ * Destructor.
+ */
 BootstrapCurrent::~BootstrapCurrent() {
     DeallocateQuantities();
     delete lnLII_settings;
@@ -129,16 +128,23 @@ void BootstrapCurrent::DeallocateQuantities() {
     delete [] p;
 }
 
-
-
+/**
+ * Rebuild bootstrap coefficients and other relevant quantities.
+ */
 void BootstrapCurrent::Rebuild() {
 
-    jtot   = unknowns->GetUnknownData(id_jtot); // dependency neglected in jacobian
+    // jtot   = unknowns->GetUnknownData(id_jtot); // dependency neglected in jacobian
     ncold  = unknowns->GetUnknownData(id_ncold);
     Ni     = unknowns->GetUnknownData(id_Ni);
     Tcold  = unknowns->GetUnknownData(id_Tcold);
     if (includeIonTemperatures)
         Wi = unknowns->GetUnknownData(id_Wi);
+
+    // check for when jtot is initialised, then use it to obtain the safety factor
+    // if (!qFromCurrent)
+    //     for (len_t ir = 0; ir < nr; ir++)
+    //         if (jtot[ir] != 0)
+    //             qFromCurrent = true;
 
     for (len_t ir = 0; ir < nr; ir++) {
 
@@ -159,14 +165,10 @@ void BootstrapCurrent::Rebuild() {
                 p[ir] += Ni[i] * Tcold[ir];
         }
 
-        // calculate safety factor (normalised to R0)
-        if (firstTime) {
-            // q ~ epsilon * B / Btor (only before jtot is not known)
-            qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
-        } else {}
-            real_t Ip = TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
-            qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, Constants::mu0 * Ip));
-        }
+        // if (qFromCurrent) {
+        //     real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
+        //     qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, mu0Ip));
+        // }
 
         // calculate collision frequencies
         real_t nuE = evaluateElectronCollisionFrequency(ir);
@@ -180,8 +182,6 @@ void BootstrapCurrent::Rebuild() {
         coefficientL32[ir] = evaluateCoefficientL32(ft[ir], Zeff, nuE);
         coefficientAlpha[ir] = evaluateCoefficientAlpha(ft[ir], Zeff, nuI);
     }
-    if (firstTime)
-        firstTime = false;
 }
 
 
@@ -192,12 +192,9 @@ void BootstrapCurrent::Rebuild() {
  */
 real_t BootstrapCurrent::evaluateElectronCollisionFrequency(len_t ir) {
     real_t lnLee = lnLambda->evaluateLnLambdaT(ir);
-    // real_t lnLee = 31.3 - log( sqrt(ncold[ir]) / Tcold[ir] );
     real_t Zeff = ions->GetZeff(ir);
     real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
-
     return 6.921e-18 * ncold[ir] * lnLee * Zeff * qR0[ir] / (eps * sqrt(eps) * Tcold[ir] * Tcold[ir]);
-    // return 0;
 }
 
 /**
@@ -208,18 +205,11 @@ real_t BootstrapCurrent::evaluateElectronCollisionFrequency(len_t ir) {
 real_t BootstrapCurrent::evaluateIonCollisionFrequency(len_t ir) {
     real_t lnLii = lnLambda->evaluateLnLambdaII(ir); // formula from Wesson
     real_t TiMain = WiMain[ir] / (1.5 * NiMain[ir]);
-    real_t Zeff = ions->GetZeff(ir);
-    real_t Zeff2 = Zeff * Zeff;
-    // real_t lnLii = 30 - log( Zeff2 * Zeff * sqrt(NiMain[ir] / TiMain) / TiMain );
-    real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
-    // real_t Zeff4 = Zeff * Zeff * Zeff * Zeff;
-    // real_t NiMain3 = NiMain[ir] * NiMain[ir] * NiMain[ir];
     real_t TiMain2 = TiMain * TiMain;
-    return 4.90e-18  * NiMain[ir] * lnLii * Zeff2 * Zeff2 * qR0[ir] / (eps * sqrt(eps) * TiMain2 );
-
-
-    // return 4.90e-18 * 9. * NiMain3 * lnLii * Zeff2 * Zeff2 * qR0[ir] / (eps * sqrt(eps) * 4. * WiMain[ir] * WiMain[ir]);
-    // return 0;
+    real_t Zeff = ions->GetZeff(ir);
+    real_t Zeff4 = Zeff * Zeff * Zeff * Zeff;
+    real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
+    return 4.90e-18  * NiMain[ir] * lnLii * Zeff4 * qR0[ir] / (eps * sqrt(eps) * TiMain2 );
 }
 
 

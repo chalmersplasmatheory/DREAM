@@ -102,7 +102,7 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
 
     // Prescribed initial profile (when evolving E self-consistently)
     DefineDataR(MODULENAME, s, "init");
-    
+
 
     // Type of boundary condition on the wall
     s->DefineSetting(MODULENAME "/bc/type", "Type of boundary condition to use on the wall for self-consistent E-field", (int_t)OptionConstants::UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT);
@@ -110,7 +110,7 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     // Minor radius of the wall, defaults to radius of the plasma.
     s->DefineSetting(MODULENAME "/bc/wall_radius", "Minor radius of the inner wall", (real_t) -1);
 
-    // Inverse wall time, defaults to 0 (infinitely conducting wall, 
+    // Inverse wall time, defaults to 0 (infinitely conducting wall,
     // which is equivalent to prescribing V_loop_wall to 0)
     s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the first wall", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/bc/R0", "Major radius used to evaluate the external inductance for conductivity of the first wall", (real_t) 0.0);
@@ -242,7 +242,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, dtTerm, eqn);
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Vloop);
-    
+
 	// Specify initialization...
 	if (HasInitialEfield(eqsys, s)) {
 		/**
@@ -253,34 +253,67 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 		real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
 		eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
 		delete [] Efield_init;
+
 	} else if (HasInitialJtot(eqsys, s)) {
-		RunawayFluid *REFluid = eqsys->GetREFluid();
 
-		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot =
-			[id_j_tot,REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+        RunawayFluid *REFluid = eqsys->GetREFluid();
 
-			const real_t *j_tot = u->GetUnknownData(id_j_tot);
-			const len_t nr = fluidGrid->GetNCells();
-			for (len_t ir = 0; ir < nr; ir++) {
-				real_t s = REFluid->GetElectricConductivity(ir);
-				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
+        // Remove non-inductive current (assuming no initial runaways?)
+        enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+        if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
 
-				Efield_init[ir] = j_tot[ir]*B / s;
-			}
-		};
+            const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
 
-		// Initialize electric field to dummy value to allow RunawayFluid
-		// to be initialized first...
-		eqsys->SetInitialValue(id_E_field, nullptr);
+            std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot_bs =
+    			[id_j_tot, id_j_bs, REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+    			const real_t *j_tot = u->GetUnknownData(id_j_tot);
+                const real_t *j_bs = u->GetUnknownData(id_j_bs);
+    			const len_t nr = fluidGrid->GetNCells();
+    			for (len_t ir = 0; ir < nr; ir++) {
+    				real_t s = REFluid->GetElectricConductivity(ir);
+    				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
 
-		eqsys->initializer->AddRule(
-			id_E_field,
-			EqsysInitializer::INITRULE_EVAL_FUNCTION,
-			initfunc_EfieldFromJtot,
-			// Dependencies..
-			id_j_tot,
-			EqsysInitializer::RUNAWAY_FLUID
-		);
+    				Efield_init[ir] = (j_tot[ir] - j_bs[ir]) * B / s;
+    			}
+    		};
+            // Initialize electric field to dummy value to allow RunawayFluid
+    		// to be initialized first...
+    		eqsys->SetInitialValue(id_E_field, nullptr);
+    		eqsys->initializer->AddRule(
+    			id_E_field,
+    			EqsysInitializer::INITRULE_EVAL_FUNCTION,
+    			initfunc_EfieldFromJtot_bs,
+    			// Dependencies..
+    			id_j_tot,
+                id_j_bs,
+    			EqsysInitializer::RUNAWAY_FLUID
+    		);
+
+        } else {
+    		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot =
+    			[id_j_tot, REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+    			const real_t *j_tot = u->GetUnknownData(id_j_tot);
+    			const len_t nr = fluidGrid->GetNCells();
+    			for (len_t ir = 0; ir < nr; ir++) {
+    				real_t s = REFluid->GetElectricConductivity(ir);
+    				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
+
+    				Efield_init[ir] = j_tot[ir] * B / s;
+    			}
+    		};
+    		// Initialize electric field to dummy value to allow RunawayFluid
+    		// to be initialized first...
+    		eqsys->SetInitialValue(id_E_field, nullptr);
+    		eqsys->initializer->AddRule(
+    			id_E_field,
+    			EqsysInitializer::INITRULE_EVAL_FUNCTION,
+    			initfunc_EfieldFromJtot,
+    			// Dependencies..
+    			id_j_tot,
+    			EqsysInitializer::RUNAWAY_FLUID
+    		);
+        }
+
 	} else {
 		const string& fromfile = s->GetString("init/fromfile", false);
 
@@ -323,33 +356,66 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed_current(
 	const len_t id_j_re    = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
 	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
-	eqsys->SetOperator(
-		id_E_field, id_E_field, eqnE
-	);
-    eqsys->SetOperator(
-		id_E_field, id_j_tot,
-		eqnj, "E = (j_tot-j_re) / sigma"
-	);
-	eqsys->SetOperator(
-		id_E_field, id_j_re, eqnjre
-	);
+	eqsys->SetOperator(id_E_field, id_E_field, eqnE);
 
-	// Initialize electric field to dummy value to allow RunawayFluid
-	// to be initialized first...
-	eqsys->SetInitialValue(id_E_field, nullptr);
+	eqsys->SetOperator(id_E_field, id_j_re, eqnjre);
 
-    // Initial value
-    eqsys->initializer->AddRule(
-        id_E_field,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-		nullptr,
-		// Dependencies..
-		id_j_tot,
-		id_j_re,
-		EqsysInitializer::RUNAWAY_FLUID
-    );
+
+
+    // If provided prescribed current includes non-inductive currents (assuming no REs?)
+    enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
+    if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
+
+        FVM::Operator *eqnjbs = new FVM::Operator(eqsys->GetFluidGrid());
+        eqnjbs->AddTerm(
+    		new EFieldFromConductivityTerm(
+    			eqsys->GetFluidGrid(), eqsys->GetUnknownHandler(),
+    			eqsys->GetREFluid(), -1.0
+    		)
+    	);
+
+        const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
+        eqsys->SetOperator(id_E_field, id_j_bs, eqnjbs);
+
+        eqsys->SetOperator(id_E_field, id_j_tot, eqnj, "E = (j_tot-j_re-j_bs) / sigma");
+
+        // Initialize electric field to dummy value to allow RunawayFluid
+    	// to be initialized first...
+    	eqsys->SetInitialValue(id_E_field, nullptr);
+
+        // Initial value
+        eqsys->initializer->AddRule(
+            id_E_field,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+    		nullptr,
+    		// Dependencies..
+    		id_j_tot,
+    		id_j_re,
+            id_j_bs,
+    		EqsysInitializer::RUNAWAY_FLUID
+        );
+
+    // If provided prescribed current only includes the Ohmic current
+    } else {
+
+        eqsys->SetOperator(id_E_field, id_j_tot, eqnj, "E = (j_tot-j_re) / sigma");
+
+        // Initialize electric field to dummy value to allow RunawayFluid
+    	// to be initialized first...
+    	eqsys->SetInitialValue(id_E_field, nullptr);
+
+        // Initial value
+        eqsys->initializer->AddRule(
+            id_E_field,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+    		nullptr,
+    		// Dependencies..
+    		id_j_tot,
+    		id_j_re,
+    		EqsysInitializer::RUNAWAY_FLUID
+        );
+    }
 
     // Set boundary condition psi_wall = 0
     ConstructEquation_psi_wall_zero(eqsys,s);
 }
-

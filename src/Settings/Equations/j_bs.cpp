@@ -20,6 +20,7 @@ using namespace DREAM;
 
 void SimulationGenerator::DefineOptions_j_bs(Settings *s){
     s->DefineSetting(MODULENAME "/mode", "Determines which formula to use for the bootstrap current", (int_t)OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/init_mode", "Initialize/prescribe total current or Ohmic current", (int_t)OptionConstants::EQTERM_BOOTSTRAP_INIT_MODE_OHMIC);
 }
 
 /**
@@ -30,13 +31,13 @@ void SimulationGenerator::DefineOptions_j_bs(Settings *s){
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_j_bs(EquationSystem *eqsys, Settings *s) {
-    
+
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     IonHandler *ions = eqsys->GetIonHandler();
     BootstrapCurrent *bootstrap = eqsys->GetBootstrap();
+    const len_t nZ = ions->GetNZ();
 
-    const len_t id_jtot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
     const len_t id_jbs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
     const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
     const len_t id_Tcold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
@@ -57,7 +58,8 @@ void SimulationGenerator::ConstructEquation_j_bs(EquationSystem *eqsys, Settings
     eqsys->SetOperator(id_jbs, id_Tcold, Op3);
 
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-    Op4->AddTerm( new BootstrapIonDensityTerm(fluidGrid, unknowns, bootstrap, ions) );
+    for (len_t iZ = 0; iZ < nZ; iZ++)
+        Op4->AddTerm( new BootstrapIonDensityTerm(fluidGrid, unknowns, bootstrap, ions, iZ) );
     eqsys->SetOperator(id_jbs, id_Ni, Op4);
 
     OptionConstants::uqty_T_i_eqn Ti_type = (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi");
@@ -65,22 +67,28 @@ void SimulationGenerator::ConstructEquation_j_bs(EquationSystem *eqsys, Settings
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( new BootstrapIonThermalEnergyTerm(fluidGrid, unknowns, bootstrap, ions) );
+        for (len_t iZ = 0; iZ < nZ; iZ++)
+            Op5->AddTerm( new BootstrapIonThermalEnergyTerm(fluidGrid, unknowns, bootstrap, ions, iZ) );
         eqsys->SetOperator(id_jbs, id_Wi, Op5);
 
         eqsys->initializer->AddRule(
-                id_jbs,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                id_jtot, id_ncold, id_Tcold, id_Ni, id_Wi
+            id_jbs,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            id_ncold, id_Tcold, id_Ni, id_Wi
         );
     } else
         eqsys->initializer->AddRule(
-                id_jbs,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                id_jtot, id_ncold, id_Tcold, id_Ni
+            id_jbs,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            id_ncold, id_Tcold, id_Ni
         );
+
+    // for testing
+    // real_t *jbs_init = LoadDataR("eqsys/j_bs", fluidGrid->GetRadialGrid(), s, "init");
+    // eqsys->SetInitialValue(OptionConstants::UQTY_J_BS, jbs_init);
+    // delete [] jbs_init;
 
     // bootstrap->Rebuild();
 }
