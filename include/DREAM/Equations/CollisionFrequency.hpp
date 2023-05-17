@@ -35,7 +35,8 @@ namespace DREAM {
         real_t *screenedTerm_fr     = nullptr;
         real_t *screenedTerm_f1     = nullptr;
         real_t *screenedTerm_f2     = nullptr;
-        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
+        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_type collfreq_type) = 0;
+        virtual real_t evaluateStoppingTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
         real_t *ionTerm = nullptr;
         real_t *ionTerm_fr = nullptr;
@@ -54,7 +55,7 @@ namespace DREAM {
         real_t *bremsTerm_fr = nullptr;
         real_t *bremsTerm_f1 = nullptr;
         real_t *bremsTerm_f2 = nullptr;
-        virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) = 0;
+        virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode) = 0;
 
         real_t *ionPartialContribution    = nullptr;
         real_t *ionPartialContribution_fr = nullptr;
@@ -100,6 +101,7 @@ namespace DREAM {
         void setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2);
         void setElectronTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2);
         void setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2);
+        void setStoppingTerm(real_t *&stoppingTerm, const real_t *pIn, len_t np1, len_t np2);
         void setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t np1, len_t np2);
         void setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len_t np1, len_t np2);
 

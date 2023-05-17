@@ -43,7 +43,8 @@ CollisionFrequency::~CollisionFrequency(){
  * the input collqty_settings object.
  */
 real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){ 
-    bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED 
+    || inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK);
     bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
     real_t ntarget = GetNTarget(ir, isNonScreened);
@@ -71,8 +72,15 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
         for(len_t iz = 0; iz<nZ; iz++)
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 ind = ionIndex[iz][Z0];
-                collFreq +=  evaluateScreenedTermAtP(iz,Z0,p,inSettings->collfreq_mode) * ionDensities[ir][ind];
+                collFreq +=  evaluateScreenedTermAtP(iz,Z0,p,inSettings->collfreq_type) * ionDensities[ir][ind];
             }
+    // Add stopping contribution
+	if(isPartiallyScreened)
+	for(len_t iz = 0; iz<nZ; iz++)
+		for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+			ind = ionIndex[iz][Z0];
+			collFreq +=  evaluateStoppingTermAtP(iz,Z0,p,inSettings->collfreq_mode) * ionDensities[ir][ind];
+		}
     collFreq *= preFact;
 
     // Add Bremsstrahlung contribution
@@ -80,7 +88,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
         for(len_t iz = 0; iz<nZ; iz++)
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 ind = ionIndex[iz][Z0];
-                collFreq +=  evaluateBremsstrahlungTermAtP(iz,Z0,p,inSettings->bremsstrahlung_mode,inSettings->collfreq_type) * ionDensities[ir][ind];
+                collFreq +=  evaluateBremsstrahlungTermAtP(iz,Z0,p,inSettings->bremsstrahlung_mode) * ionDensities[ir][ind];
             }
 
     return collFreq;
@@ -429,7 +437,7 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    real_t screenedAtP = evaluateScreenedTermAtP(iz,Z0,pIn[i], collQtySettings->collfreq_mode);
+                    real_t screenedAtP = evaluateScreenedTermAtP(iz,Z0,pIn[i], collQtySettings->collfreq_type);
                     for (len_t j = 0; j<np2; j++)
                         screenedTerm[ind*N + np1*j + i] = screenedAtP;
                 }
@@ -438,7 +446,32 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    screenedTerm[ind*N + pind] = evaluateScreenedTermAtP(iz,Z0,pIn[pind], collQtySettings->collfreq_mode);
+                    screenedTerm[ind*N + pind] = evaluateScreenedTermAtP(iz,Z0,pIn[pind], collQtySettings->collfreq_type);
+                }
+}
+
+
+/**
+ * Calculates and stores the stopping contribution to the collision frequency.
+ */
+void CollisionFrequency::setStoppingTerm(real_t *&stoppingTerm, const real_t *pIn, len_t np1, len_t np2){
+    len_t ind;
+    len_t N = np1*np2;
+    if(isPXiGrid)
+        for(len_t i = 0; i<np1; i++)
+            for(len_t iz = 0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    ind = ionIndex[iz][Z0];
+                    real_t stoppingAtP = evaluateStoppingTermAtP(iz,Z0,pIn[i], collQtySettings->collfreq_mode);
+                    for (len_t j = 0; j<np2; j++)
+                        stoppingTerm[ind*N + np1*j + i] = stoppingAtP;
+                }
+    else
+        for (len_t pind = 0; pind<N; pind++)
+            for(len_t iz = 0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    ind = ionIndex[iz][Z0];
+                    stoppingTerm[ind*N + pind] = evaluateStoppingTermAtP(iz,Z0,pIn[pind], collQtySettings->collfreq_mode);
                 }
 }
 
@@ -455,7 +488,7 @@ void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    real_t bremsAtP = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[i], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                    real_t bremsAtP = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[i], collQtySettings->bremsstrahlung_mode);
                     for (len_t j = 0; j<np2; j++)
                         bremsTerm[ind*N + np1*j + i] = bremsAtP;
                 }
@@ -464,7 +497,7 @@ void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    bremsTerm[ind*N + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[pind], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                    bremsTerm[ind*N + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[pind], collQtySettings->bremsstrahlung_mode);
                 }
     }
 }
@@ -1193,7 +1226,8 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     if( ! ( derivId == id_ncold || derivId == id_ni || derivId == id_Tcold  ) )
         return 0;
 
-    bool isPartiallyScreened = (inSettings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isPartiallyScreened = (inSettings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED 
+    || inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK);
     bool isNonScreened = (inSettings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
 
@@ -1252,13 +1286,15 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     }
     // Add bound-electron contribution
     if(isPartiallyScreened)
-        collFreq += evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
+        collFreq += evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_type);
+	if(isPartiallyScreened)
+		collFreq += evaluateStoppingTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
 
     collFreq *= preFact;
 
     // Add Bremsstrahlung contribution
     if(isBrems)
-        collFreq += evaluateBremsstrahlungTermAtP(iz_in,Z0_in,p,inSettings->bremsstrahlung_mode,inSettings->collfreq_type);
+        collFreq += evaluateBremsstrahlungTermAtP(iz_in,Z0_in,p,inSettings->bremsstrahlung_mode);
 
     return collFreq;
 }
