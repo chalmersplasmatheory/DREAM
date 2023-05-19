@@ -20,7 +20,8 @@ class RunawayElectronDensity(FluidQuantity):
         Plot all runaway rates in the same figure.
         """
         if t is None and r is None:
-            raise OutputException("When plotting all runaway rates, at least one of 'r' and 't' must be specified.")
+            #raise OutputException("When plotting all runaway rates, at least one of 'r' and 't' must be specified.")
+            integrate = True
 
         labels = []
 
@@ -29,7 +30,10 @@ class RunawayElectronDensity(FluidQuantity):
 
         # Plot total runaway rate
         if 'runawayRate' in self.output.other.fluid:
-            ax = self.output.other.fluid.runawayRate.plot(r=r, t=t, ax=ax, show=False)
+            if integrate:
+                ax = self.output.other.fluid.runawayRate.plotIntegral(ax=ax, show=False)
+            else:
+                ax = self.output.other.fluid.runawayRate.plot(r=r, t=t, ax=ax, show=False)
             labels.append('Total')
 
         # Plot avalanche
@@ -47,7 +51,10 @@ class RunawayElectronDensity(FluidQuantity):
             if np.sum(np.abs(q[:])) == 0:
                 continue
 
-            ax = q.plot(r=r, t=t, ax=ax, show=False)
+            if integrate:
+                ax = q.plotIntegral(ax=ax, show=False)
+            else:
+                ax = q.plot(r=r, t=t, ax=ax, show=False)
             labels.append(o[5:].replace(r'_', r'\_'))
 
         plt.ylabel('Runaway rates')
