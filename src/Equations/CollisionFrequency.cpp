@@ -219,6 +219,8 @@ void CollisionFrequency::RebuildConstantTerms(){
         if(isPartiallyScreened){
             setScreenedTerm(screenedTerm,mg->GetP(),np1,np2_store);
             setScreenedTerm(screenedTerm_fr,mg->GetP(),np1,np2_store);
+            setStoppingTerm(stoppingTerm,mg->GetP(),np1,np2_store);
+            setStoppingTerm(stoppingTerm_fr,mg->GetP(),np1,np2_store);
         }
     }
     setPreFactor(preFactor_f1,mg->GetP_f1(),np1+1,np2_store);
@@ -232,6 +234,8 @@ void CollisionFrequency::RebuildConstantTerms(){
     if(isPartiallyScreened){
         setScreenedTerm(screenedTerm_f1,mg->GetP_f1(),np1+1,np2_store);
         setScreenedTerm(screenedTerm_f2,mg->GetP_f2(),np1,np2_store+1);
+        setStoppingTerm(stoppingTerm_f1,mg->GetP_f1(),np1+1,np2_store);
+        setStoppingTerm(stoppingTerm_f2,mg->GetP_f2(),np1,np2_store+1);
     }
     if(isNonlinear)
         calculateIsotropicNonlinearOperatorMatrix();
@@ -245,19 +249,19 @@ void CollisionFrequency::RebuildConstantTerms(){
 void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType){
     if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION){
         SetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,nColdPartialContribution);
-        SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,bremsTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution, ionLnLambdaPartialContribution);
+        SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,stoppingTerm,bremsTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution, ionLnLambdaPartialContribution);
         SetTColdPartialContribution(nColdTerm,ionTerm, preFactor,lnLambdaEE->GetValue(),mg->GetP(), nr,np1,np2,TColdPartialContribution);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_RADIAL){
         SetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr /*+1*/,np1,np2,nColdPartialContribution_fr);
-        SetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,bremsTerm_fr, preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr/*+1*/,np1,np2,ionPartialContribution_fr, ionLnLambdaPartialContribution_fr);
+        SetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,stoppingTerm_fr,bremsTerm_fr, preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr/*+1*/,np1,np2,ionPartialContribution_fr, ionLnLambdaPartialContribution_fr);
         SetTColdPartialContribution(nColdTerm_fr,ionTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),mg->GetP(), nr/*+1*/,np1,np2,TColdPartialContribution_fr);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_P1){
         SetNColdPartialContribution(nColdTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,nColdPartialContribution_f1);
-        SetNiPartialContribution(nColdTerm_f1,ionTerm_f1,screenedTerm_f1,bremsTerm_f1, preFactor_f1,lnLambdaEE->GetValue_f1(),lnLambdaEI->GetValue_f1(),nr,np1+1,np2,ionPartialContribution_f1, ionLnLambdaPartialContribution_f1);
+        SetNiPartialContribution(nColdTerm_f1,ionTerm_f1,screenedTerm_f1,stoppingTerm_f1,bremsTerm_f1, preFactor_f1,lnLambdaEE->GetValue_f1(),lnLambdaEI->GetValue_f1(),nr,np1+1,np2,ionPartialContribution_f1, ionLnLambdaPartialContribution_f1);
         SetTColdPartialContribution(nColdTerm_f1,ionTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),mg->GetP_f1(), nr,np1+1,np2,TColdPartialContribution_f1);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_P2){
         SetNColdPartialContribution(nColdTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,nColdPartialContribution_f2);
-        SetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,bremsTerm_f2, preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,ionPartialContribution_f2, ionLnLambdaPartialContribution_f2);
+        SetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,stoppingTerm_f2,bremsTerm_f2, preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,ionPartialContribution_f2, ionLnLambdaPartialContribution_f2);
         SetTColdPartialContribution(nColdTerm_f2,ionTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),mg->GetP_f2(), nr,np1,np2+1,TColdPartialContribution_f2);
     }
     if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1) )
@@ -696,7 +700,7 @@ real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
 }
 
 
-void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&ionLnLContrib){
+void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *stoppingTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&ionLnLContrib){
     len_t N = nzs*np1*np2*nr;
     if(partQty==nullptr){
         partQty = new real_t[N];
@@ -853,7 +857,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             for(len_t i = 0; i<np1; i++)
                 for(len_t indZ=0; indZ<nzs; indZ++)
                     for(len_t ir = 0; ir<nr; ir++){
-                        real_t tmpQty = preFactor[i]*screenedTerm[indZ*np1*np2_store + i];
+                        real_t tmpQty = preFactor[i]*( screenedTerm[indZ*np1*np2_store + i] + stoppingTerm[indZ*np1*np2_store + i] );
                         len_t rInd = indZ*nr*N + ir*N + i;
                         len_t Nmax = rInd + N;
                         for(len_t j = rInd; j<Nmax; j+=np1)
@@ -863,7 +867,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             for(len_t pind = 0; pind<N; pind++)
                 for(len_t indZ=0; indZ<nzs; indZ++)
                     for(len_t ir = 0; ir<nr; ir++)
-                        partQty[(indZ*nr + ir)*N + pind] += preFactor[pind]*screenedTerm[indZ*N + pind];
+                        partQty[(indZ*nr + ir)*N + pind] += preFactor[pind]*( screenedTerm[indZ*N + pind] + stoppingTerm[indZ*N + pind]);
     }
     
     for(len_t ir=0; ir<nr; ir++){
@@ -1039,6 +1043,8 @@ void CollisionFrequency::AllocatePartialQuantities(){
         if(isPartiallyScreened){
             screenedTerm    = new real_t[nzs*np1*np2_store];
             screenedTerm_fr = new real_t[nzs*np1*np2_store];
+            stoppingTerm	= new real_t[nzs*np1*np2_store];
+            stoppingTerm_fr = new real_t[nzs*np1*np2_store];
         }
         if(isBrems){
             bremsTerm    = new real_t[nzs*np1*np2_store];
@@ -1068,6 +1074,8 @@ void CollisionFrequency::AllocatePartialQuantities(){
     if(isPartiallyScreened){
         screenedTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
         screenedTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
+        stoppingTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
+        stoppingTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
     }
     if(isBrems){
         bremsTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
@@ -1150,6 +1158,14 @@ void CollisionFrequency::DeallocatePartialQuantities(){
     if (screenedTerm_f1 != nullptr){
         delete [] screenedTerm_f1;
         delete [] screenedTerm_f2;
+	}
+    if (stoppingTerm != nullptr){
+        delete [] stoppingTerm;
+        delete [] stoppingTerm_fr;            
+    }
+    if (stoppingTerm_f1 != nullptr){
+        delete [] stoppingTerm_f1;
+        delete [] stoppingTerm_f2;
     }
     if (nColdPartialContribution != nullptr){
         delete [] nColdPartialContribution;

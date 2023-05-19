@@ -36,6 +36,11 @@ namespace DREAM {
         real_t *screenedTerm_f1     = nullptr;
         real_t *screenedTerm_f2     = nullptr;
         virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_type collfreq_type) = 0;
+        
+        real_t *stoppingTerm        = nullptr;
+        real_t *stoppingTerm_fr     = nullptr;
+        real_t *stoppingTerm_f1     = nullptr;
+        real_t *stoppingTerm_f2     = nullptr;
         virtual real_t evaluateStoppingTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
         real_t *ionTerm = nullptr;
@@ -110,7 +115,7 @@ namespace DREAM {
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) = 0;
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&lnLambdaContrib);
+        void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *stoppingTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&lnLambdaContrib);
         void SetTColdPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *preFactor, real_t *const* lnLee, const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution);
         void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
 
