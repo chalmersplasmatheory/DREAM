@@ -18,6 +18,7 @@ namespace DREAM {
             WARNING_INCONSISTENT_RE_TRANSPORT,
             WARNING_TRITIUM_GENERATION_INVALID,
             WARNING_KINETIC_TRITIUM_NO_HOT_GRID,
+            WARNING_KINETIC_COMPTON_NO_HOT_GRID,
 
             // [Must always come last]
             MESSAGE_LAST

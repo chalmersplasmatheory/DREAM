@@ -19,6 +19,7 @@
 #include "DREAM/Equations/Fluid/FreeElectronDensityTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
@@ -107,14 +108,31 @@ void SimulationGenerator::ConstructEquation_f_hot(
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
     }
     
+    // Add Compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if(compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
+
+        FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
+        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), s->GetReal("eqsys/n_re/compton/flux"), -1.0);
+        Op_compton->AddTerm(oqty_terms->comptonSource);
+        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
+        eqsys->SetOperator(id_f_hot, id_n_re, Op_compton);
+    }
+    
     // Add tritium source
     OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
     if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
 
-        FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);
-        Op_tritium->AddTerm(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), -1.0));
+        FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);    
+        len_t nT = eqsys->GetIonHandler()->GetNTritiumIndices();
+        for(len_t iT=0; iT<nT; iT++){
+            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), 0., -1.0));
+            Op_tritium->AddTerm(oqty_terms->tritiumSource[iT]);
+        }
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_tritium);
     }
@@ -190,34 +208,39 @@ namespace DREAM {
 }
 
 namespace DREAM {
-    class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
+    class TotalElectronDensityFromKineticCompton : public FVM::DiagonalQuadraticTerm {
     private: 
-        static real_t fbeta(real_t p, void *){
-            real_t Tmax = 18.6e3;
-            real_t mc2 = Constants::mc2inEV;
-            real_t alpha = 1.0/137.0;
-            real_t g = sqrt(p*p + 1);
-            real_t fbeta = p * g * (Tmax - mc2 * (g - 1)) * (Tmax - mc2 * (g - 1)) / (1 - exp(-4 * M_PI * alpha * g / p));
-            return fbeta;
-        }
+        len_t limit;
+        gsl_integration_workspace * wp;
+        gsl_integration_workspace * wpOut;
     public:
-        real_t pLower, pUpper, scaleFactor, source;
-        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {
-                real_t C = 1.218e-7; // Normalization factor, 1.2176392e-7
-                real_t tau_T = 4500*24*60*60;
-                
-                real_t integral;
-                gsl_function F;
-                F.function = &(fbeta);
-                gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, nullptr, nullptr);
-                
-                source = log(2) / tau_T * C * integral;
+        real_t pLower, pUpper, photonFlux, scaleFactor, source;
+        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t photonFlux, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), photonFlux(photonFlux), scaleFactor(scaleFactor) {
+                this->limit = 1000;
+                this->wp = gsl_integration_workspace_alloc(limit);
+                this->wpOut = gsl_integration_workspace_alloc(limit);
             }
 
         virtual void SetWeights() override {
+            struct DREAM::ComptonSource::intparams params = {this->limit, this->wp};
+            struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut};
             for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * source;
+                weights[i] = scaleFactor * photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
+        }
+    };
+}
+
+namespace DREAM {
+    class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
+    public:
+        real_t pLower, pUpper, scaleFactor, source;
+        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
+
+        virtual void SetWeights() override {
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
         }
     };
 }
@@ -294,6 +317,20 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         desc += " - internal avalanche";
     }
     
+    // Add contribution from kinetic Compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if(compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, s->GetReal("eqsys/n_re/compton/flux"), -1.0)
+        );
+        desc += " - internal Compton";
+    }
+    
     // Add contribution from kinetic tritium source
     OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
     if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
@@ -311,7 +348,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
 
         Op_Nre->AddTerm(
-            new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pMax, unknowns, -1.0)
+            new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, -1.0)
         );
         desc += " - internal Tritium";
     }

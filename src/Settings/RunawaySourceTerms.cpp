@@ -5,6 +5,7 @@
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTermHighZ.hpp"
 #include "DREAM/Equations/Fluid/ExternalAvalancheTerm.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IO.hpp"
@@ -44,16 +45,16 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             else if (runawayGrid != nullptr)
                 pCut = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
 
-            if (grid == runawayGrid) {
-                rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_POSITIVE) );
-                rsth->AddAvalancheNreNeg(new AvalancheSourceRP(grid, unknowns, pCut, +1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_POSITIVE));
-                rsth->AddAvalancheNreNegPos(new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_NEGATIVE));
-            } else if (grid == fluidGrid){
-                if(runawayGrid == nullptr) // match external growth to fluid formula in E~<Eceff limit
-                    rsth->AddSourceTerm(eqnSign + "external avalanche", new ExternalAvalancheTerm(grid, pCut, -2.0, REFluid, unknowns, -1.0)  );
-                else  // use regular external RE growth (RP integrated over p>pCut)
-                    rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
-            }
+                if (grid == runawayGrid) {
+                    rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_POSITIVE) );
+                    rsth->AddAvalancheNreNeg(new AvalancheSourceRP(grid, unknowns, pCut, +1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_POSITIVE));
+                    rsth->AddAvalancheNreNegPos(new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_KINETIC, AvalancheSourceRP::RP_SOURCE_PITCH_NEGATIVE));
+                } else if (grid == fluidGrid){
+                    if(runawayGrid == nullptr) // match external growth to fluid formula in E~<Eceff limit
+                        rsth->AddSourceTerm(eqnSign + "external avalanche", new ExternalAvalancheTerm(grid, pCut, -2.0, REFluid, unknowns, -1.0)  );
+                    else  // use regular external RE growth (RP integrated over p>pCut)
+                        rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
+                }
         } else
             DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic avalanche term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");
     }
@@ -90,6 +91,24 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(mod + "/compton/mode");
     if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
         rsth->AddSourceTerm(eqnSign + "compton", new ComptonRateTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
+    else if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        if (hottailGrid || runawayGrid != nullptr) {
+            real_t pLower;
+            if (hottailGrid != nullptr)
+                pLower = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+            else if (runawayGrid != nullptr)
+                pLower = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
+            
+            if(grid == fluidGrid) {
+                oqty_terms->comptonSource_fluid = new ComptonSource(grid, unknowns, s->GetReal("eqsys/n_re/compton/flux"), pLower, -1.0, ComptonSource::SOURCE_MODE_FLUID, REFluid);
+                rsth->AddSourceTerm(eqnSign + "fluid Compton", oqty_terms->comptonSource_fluid);
+            } else {
+                rsth->AddSourceTerm(eqnSign + "kinetic Compton", new ComptonSource(grid, unknowns, s->GetReal("eqsys/n_re/compton/flux"), -1.0, ComptonSource::SOURCE_MODE_KINETIC));
+            }
+        }
+    } else {
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");
+    }
     
     // Add tritium source: 
     OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger(mod + "/tritium");
@@ -98,12 +117,25 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
         for (len_t i = 0; i < ions->GetNTritiumIndices(); i++)
             rsth->AddSourceTerm(eqnSign + "fluid tritium", new TritiumRateTerm(grid, ions, unknowns, ti[i], REFluid, -1.0));
     } else if (tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
-        if (hottailGrid != nullptr) {
-            for (len_t i = 0; i < ions->GetNTritiumIndices(); i++){
-                rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, -1.0));
+        if (hottailGrid || runawayGrid != nullptr) {
+            real_t pLower;
+            if (hottailGrid != nullptr)
+                pLower = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+            else if (runawayGrid != nullptr)
+                pLower = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
+            
+            if(grid == fluidGrid) {
+                for (len_t i = 0; i < ions->GetNTritiumIndices(); i++){
+                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID));
+                }
+            } else {
+                for (len_t i = 0; i < ions->GetNTritiumIndices(); i++){
+                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, pLower, -1.0, TritiumSource::SOURCE_MODE_KINETIC));
+                }
             }
-        } else
-            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium generation term is used, but the hot-tail grid is disabled. Ignoring tritium source...");
+        }
+    } else {
+        DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");
     }
 
     // Add hottail source

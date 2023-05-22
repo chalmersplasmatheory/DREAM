@@ -29,6 +29,7 @@ COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
 COMPTON_RATE_ITER_DMS = -1
+COMPTON_RATE_ITER_DMS_KINETIC = -2
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
 TRITIUM_MODE_NEGLECT = 1
@@ -123,6 +124,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             if compton == COMPTON_RATE_ITER_DMS:
                 # set fluid compton source and standard ITER flux of 1e18
                 compton = COMPTON_MODE_FLUID
+                if photonFlux is None:
+                    photonFlux = ITER_PHOTON_FLUX_DENSITY
+
+            if compton == COMPTON_RATE_ITER_DMS_KINETIC:
+                # set fluid compton source and standard ITER flux of 1e18
+                compton = COMPTON_MODE_KINETIC
                 if photonFlux is None:
                     photonFlux = ITER_PHOTON_FLUX_DENSITY
             

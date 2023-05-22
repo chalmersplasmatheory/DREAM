@@ -15,42 +15,41 @@ using namespace DREAM;
  * Constructor.
  */
 TritiumSource::TritiumSource(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, IonHandler *ions, real_t scaleFactor
-) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor)
+    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, real_t pc, real_t scaleFactor, SourceMode sm
+) : FluidSourceTerm(kineticGrid, u), pc(pc), scaleFactor(scaleFactor), sourceMode(sm)
 {
     SetName("TritiumSource");
-    this->ions  = ions;
     this->id_nT = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
-       
-    len_t nT = ions->GetNTritiumIndices();
-    sourceVec = new real_t[2 * nT * kineticGrid->GetNCells()];
+    
+    sourceVec = new real_t[2 * kineticGrid->GetNCells()];
     
     source = new real_t[kineticGrid->GetNCells()];
     
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<n1[ir]; i++)
+        for(len_t i=0; i<n1[ir]; i++){
             for(len_t j=0; j<n2[ir]; j++){
                 source[offset + j*n1[ir] + i] = EvaluateSource(ir,i,j);
             }
+        }
         offset += n1[ir]*n2[ir];
     }
 }
 
 bool TritiumSource::GridRebuilt(){
     delete [] sourceVec;
-    len_t nT = ions->GetNTritiumIndices();
-    sourceVec = new real_t[2 * nT * this->grid->GetNCells()];
+    sourceVec = new real_t[2 * this->grid->GetNCells()];
     
     delete [] source;
     source = new real_t[this->grid->GetNCells()];
     
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<n1[ir]; i++)
+        for(len_t i=0; i<n1[ir]; i++){
             for(len_t j=0; j<n2[ir]; j++){
                 source[offset + j*n1[ir] + i] = EvaluateSource(ir,i,j);
             }
+        }
         offset += n1[ir]*n2[ir];
     }
     
@@ -58,30 +57,35 @@ bool TritiumSource::GridRebuilt(){
 }
 
 void TritiumSource::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {
-    len_t nT = ions->GetNTritiumIndices();
-    const len_t *indT = ions->GetTritiumIndices();
-    
-    for(len_t iT = 0; iT < nT; iT++){
-        len_t offset = indT[iT] * nr * n1[nr-1] * n2[nr-1];
-        for(len_t iZ0=0; iZ0<2; iZ0++){
-            for(len_t ir=0; ir<nr; ir++){
-                for(len_t i=0; i<n1[ir]; i++)
-                    for(len_t j=0; j<n2[ir]; j++){
-                        sourceVec[offset + j*n1[ir] + i] = GetSourceFunction(ir,i,j);
-                    }
-                offset += n1[ir]*n2[ir];
+    len_t offset = 0;
+    for(len_t iZ0=0; iZ0<2; iZ0++){
+        for(len_t ir=0; ir<nr; ir++){
+            for(len_t i=0; i<n1[ir]; i++){
+                for(len_t j=0; j<n2[ir]; j++){
+                    sourceVec[offset + j*n1[ir] + i] = GetSourceFunction(ir,i,j);
+                }
             }
-        }        
+            offset += n1[ir]*n2[ir];
+        }
     }
 }
 
-real_t TritiumSource::integrand(real_t p, void *){
+real_t TritiumSource::fbeta(real_t p, void *){
+    real_t C = 1.218e-7; // Normalization factor, 1.2176392e-7
     real_t Tmax = 18.6e3;
     real_t mc2 = Constants::mc2inEV;
+    if (p > sqrt((Tmax/mc2 + 1)*(Tmax/mc2 + 1) - 1)) {
+        return 0;
+    }
     real_t alpha = 1.0/137.0;
     real_t g = sqrt(p*p + 1);
     real_t fbeta = p * g * (Tmax - mc2 * (g - 1)) * (Tmax - mc2 * (g - 1)) / (1 - exp(-4 * M_PI * alpha * g / p));
-    real_t p2fbeta = (p*p) * fbeta;
+    return C*fbeta;
+}
+
+real_t TritiumSource::integrand(real_t p, void *){
+    real_t fb = fbeta(p, nullptr);
+    real_t p2fbeta = (p*p) * fb;
     return p2fbeta;
 }
 
@@ -89,24 +93,33 @@ real_t TritiumSource::integrand(real_t p, void *){
  * Evaluates the constant (only grid dependent) source-shape function S(r,p)
  */
 real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t j) {
-    real_t C = 1.218e-7; // Normalization factor, 1.2176392e-7
+    if(sourceMode == SOURCE_MODE_FLUID)
+        return scaleFactor*EvaluateTotalTritiumNumber(pc);
     real_t tau_T = 4500*24*60*60;
 
     real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
     real_t pp = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
-    real_t dp = pp-pm;
-    real_t pi = (pp+pm)/2.0;
     
-    real_t xim = grid->GetMomentumGrid(ir)->GetP2_f(j);
-    real_t xip = grid->GetMomentumGrid(ir)->GetP2_f(j+1);
-    real_t dxi = xip-xim;
     
-    real_t integral;
-    gsl_function F;
-    F.function = &(TritiumSource::integrand);
-    gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, nullptr, nullptr);
-    
-    return scaleFactor*log(2) / (2.0 * tau_T) * C / (dp * dxi * pi*pi) * integral; 
+    real_t pMax = sqrt((18.6e3/Constants::mc2inEV + 1)*(18.6e3/Constants::mc2inEV + 1) - 1);
+    if(pm < pp && pm < pMax){ 
+        if(pMax < pp)
+            pp = pMax;
+        real_t dp = pp-pm;
+        real_t pi = (pp+pm)/2.0;
+        real_t xim = grid->GetMomentumGrid(ir)->GetP2_f(j);
+        real_t xip = grid->GetMomentumGrid(ir)->GetP2_f(j+1);
+        real_t dxi = xip-xim;
+
+        real_t integral;
+        real_t abserr;
+        len_t neval;
+        gsl_function F;
+        F.function = &(TritiumSource::integrand);
+        gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
+        return scaleFactor*log(2.) / (2.0 * tau_T) / (dp * dxi * pi*pi) * integral;
+    }
+    return 0.;
 }
 
 /**
@@ -135,21 +148,17 @@ real_t TritiumSource::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, cons
  * Set matrix elements.
  */
 void TritiumSource::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
-    len_t nT = ions->GetNTritiumIndices();
-    const len_t *indT = ions->GetTritiumIndices();
-    
-    for(len_t iT = 0; iT < nT; iT++){
-        len_t offset = indT[iT] * nr * n1[nr-1] * n2[nr-1];
-        for(len_t iZ0=0; iZ0<2; iZ0++){
-            for(len_t ir=0; ir<nr; ir++){
-                for(len_t i=0; i<n1[ir]; i++)
-                    for(len_t j=0; j<n2[ir]; j++){
-                        len_t ind = offset + n1[ir]*j + i;
-                        mat->SetElement(ind, ir, sourceVec[ind]);
-                    }
-                offset += n1[ir]*n2[ir];
-            }        
-        }
+    for(len_t iZ0=0; iZ0<2; iZ0++){
+        len_t offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            for(len_t i=0; i<n1[ir]; i++){
+                for(len_t j=0; j<n2[ir]; j++){
+                    len_t ind = offset + n1[ir]*j + i;
+                    mat->SetElement(ind, iZ0*nr + ir, sourceVec[ind]);
+                }
+            }
+            offset += n1[ir]*n2[ir];
+        }        
     }
 }
 
@@ -157,20 +166,16 @@ void TritiumSource::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
  * Set vector elements.
  */
 void TritiumSource::SetVectorElements(real_t *vec, const real_t *x){
-    len_t nT = ions->GetNTritiumIndices();
-    const len_t *indT = ions->GetTritiumIndices();
-    
-    for(len_t iT = 0; iT < nT; iT++){
-        len_t offset = indT[iT] * nr * n1[nr-1] * n2[nr-1];
-        for(len_t iZ0=0; iZ0<2; iZ0++){
-            for(len_t ir=0; ir<nr; ir++){
-                for(len_t i=0; i<n1[ir]; i++)
-                    for(len_t j=0; j<n2[ir]; j++){
-                        len_t ind = offset + n1[ir]*j + i;
-                        vec[ind] += sourceVec[ind]*x[ir];
-                    }
-                offset += n1[ir]*n2[ir];
+    for(len_t iZ0=0; iZ0<2; iZ0++){
+        len_t offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            for(len_t i=0; i<n1[ir]; i++){
+                for(len_t j=0; j<n2[ir]; j++){
+                    len_t ind = offset + n1[ir]*j + i;
+                    vec[ind] += sourceVec[ind]*x[iZ0*nr + ir];
+                }
             }
+            offset += n1[ir]*n2[ir];
         }
     }
 }
@@ -183,4 +188,24 @@ bool TritiumSource::SetJacobianBlock(const len_t , const len_t derivId, FVM::Mat
         return false;
     SetMatrixElements(jac, nullptr);
     return true;
+}
+
+real_t TritiumSource::EvaluateTotalTritiumNumber(real_t pLower, real_t pUpper){
+    real_t pTritiumLim = sqrt((18.6e3/Constants::mc2inEV + 1)*(18.6e3/Constants::mc2inEV + 1) - 1);
+    if (pLower > pTritiumLim)
+        return 0.;
+    
+    if (pUpper > pTritiumLim)
+        pUpper = pTritiumLim;
+    
+    real_t tau_T = 4500*24*60*60;
+                
+    real_t integral;
+    real_t abserr;
+    len_t neval;
+    gsl_function F;
+    F.function = &(fbeta);
+    gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, &abserr, &neval);
+    
+    return log(2.) / tau_T * integral;
 }

@@ -26,7 +26,7 @@ import ASDEXU as Tokamak
 #import ITER as Tokamak
 
 # Output file name pattern ('_XXX.h5' is appended to this)
-PATTERN = 'output/out'
+PATTERN = 'outputKin/out'
 
 # Radial resolution
 NR = 15
@@ -156,7 +156,8 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
     ds.eqsys.T_cold.setPrescribedData(T0, radius=rT)
 
     # Background ion density
-    ds.eqsys.n_i.addIon(name='D', Z=1, Z0=1, iontype=Ions.IONS_DYNAMIC, T=T0, n=Tokamak.ne0*np.ones((rT.size,)), r=rT)
+    ds.eqsys.n_i.addIon(name='D', Z=1, Z0=1, iontype=Ions.IONS_DYNAMIC, T=T0, n=Tokamak.ne0*np.ones((rT.size,))/2, r=rT)
+    ds.eqsys.n_i.addIon(name='T', Z=1, Z0=1, iontype=Ions.IONS_DYNAMIC, T=T0, n=Tokamak.ne0 * np.ones((rT.size,))/2, r=rT, tritium=True)
 
     # Background free electron density from ions
     nfree, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
@@ -324,6 +325,8 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
         # Use fluid avalanche for isotropic...
         if mode == MODE_ISOTROPIC:
             ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_FLUID_HESSLOW)
+            ds1.eqsys.n_re.setTritium(RunawayElectrons.TRITIUM_MODE_KINETIC)
+            ds1.eqsys.n_re.setCompton(RunawayElectrons.COMPTON_RATE_ITER_DMS_KINETIC)
         # ...and kinetic avalanche for superthermal and kinetic...
         else:
             ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_KINETIC, pCutAvalanche = 0.01)
@@ -392,6 +395,10 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
 
     # Start from the state obtained in the init simulation
     ds1.fromOutput(INITFILE, ignore=ignorelist)
+
+    #ds1.other.include('fluid', 'scalar', 'hottail/S_ava', 'hottail/S_compton', 'hottail/S_tritium')
+
+    ds1.save('settingsdebug.h5')
     return ds1
 
 

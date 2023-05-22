@@ -339,6 +339,7 @@ void RunawayFluid::CalculateGrowthRates(){
         real_t pc = criticalREMomentum[ir]; 
         tritiumRate[ir] = evaluateTritiumRate(pc);
         comptonRate[ir] = evaluateComptonRate(pc, compton_photon_flux, gsl_ad_w);
+        
         DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,compton_photon_flux, gsl_ad_w);
 
         // Dreicer runaway rate
