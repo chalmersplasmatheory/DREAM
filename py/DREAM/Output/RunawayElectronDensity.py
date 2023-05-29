@@ -22,6 +22,8 @@ class RunawayElectronDensity(FluidQuantity):
         if t is None and r is None:
             #raise OutputException("When plotting all runaway rates, at least one of 'r' and 't' must be specified.")
             integrate = True
+        else:
+            integrate = False
 
         labels = []
 
