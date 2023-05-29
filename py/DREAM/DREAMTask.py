@@ -51,7 +51,7 @@ class DREAMTask:
         if self.stdout_name != '':
                 self.open_stdout=open(self.stdout_name,'w')
         else :  
-                self.open_stderr=subprocess.PIPE
+                self.open_stdout=subprocess.PIPE
 
         if self.stderr_name != '':
                 self.open_stderr=open(self.stderr_name,'w')

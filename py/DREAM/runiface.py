@@ -61,8 +61,11 @@ def runiface_parallel(settings, outfiles,stdout_list=[],stderr_list=[], quiet=Fa
     if len(settings) != len(outfiles):
         raise DREAMException("Lengths of settings and outfiles arrays are different!")
     
-    for _settings, outfile, stdout_name, stderr_name in zip(settings, outfiles,stdout_list,stderr_list):
-        task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH,stdout_name,stderr_name, nthreads=nthreads)
+    #for _settings, outfile, stdout_name, stderr_name in zip(settings, outfiles,stdout_list,stderr_list):
+    for i in range(len(settings)):
+        so = '' if len(stdout_list)==0 else stdout_list[i]
+        se = '' if len(stderr_list)==0 else stderr_list[i]
+        task = DREAMTask(settings[i], outfiles[i], quiet, timeout, DREAMPATH, so, se, nthreads=nthreads)
            
         queue.append(task)
         allTasks.append(task)
