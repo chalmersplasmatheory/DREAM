@@ -17,7 +17,7 @@ DREAMPATH = None
 
 def locatedream():
     global DREAMPATH
-
+    print("locatedream called")
     try:
         DREAMPATH = os.environ['DREAMPATH']
 
@@ -28,7 +28,7 @@ def locatedream():
 
     if DREAMPATH is None:
         DREAMPATH = (pathlib.Path(__file__).parent / '..' / '..').resolve().absolute()
-
+        print(DREAMPATH)
         if not os.path.isfile('{}/build/iface/dreami'.format(DREAMPATH)):
             #raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
             print("WARNING: Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
@@ -43,22 +43,24 @@ def runiface(settings, outfile=None, quiet=False, timeout=None):
     outfile:  Name of file to write output to (default: 'output.h5')
     """
     global DREAMPATH
-    task = DREAMTask(settings, outfile, quiet, timeout, DREAMPATH )
+    task = DREAMTask(settings, outfile, quiet, timeout, DREAMPATH=DREAMPATH )
     task.run()
     while not task.hasFinished():
         pass
     return task.getResult()
 
-def runiface_parallel(settings, outfiles, quiet=False, timeout=None, njobs=4):
+def runiface_parallel(settings, outfiles,stdout_list=[],stderr_list=[], quiet=False, timeout=None, njobs=4):
     global DREAMPATH
     queue = []
     active = []
     allTasks = []
+    
     if len(settings) != len(outfiles):
         raise DREAMException("Lengths of settings and outfiles arrays are different!")
     
-    for _settings, outfile in zip(settings, outfiles):
-        task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH )
+    for _settings, outfile, stdout_name, stderr_name in zip(settings, outfiles,stdout_list,stderr_list):
+        task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH,stdout_name,stderr_name)
+           
         queue.append(task)
         allTasks.append(task)
     
