@@ -33,23 +33,26 @@ def locatedream():
             #raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
             print("WARNING: Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
 
-def runiface(settings, outfile=None, quiet=False, timeout=None):
+def runiface(settings, outfile=None, quiet=False, timeout=None, nthreads=None):
     """
     Run 'dreami' with the specified settings (which may be either
     a 'DREAMSettings' object or the name of a file containing the
     settings).
 
-    settings: 'DREAMSettings' object or name of file containing settings.
-    outfile:  Name of file to write output to (default: 'output.h5')
+    :param settings: ``DREAMSettings`` object or name of file containing settings.
+    :param outfile:  Name of file to write output to (default: 'output.h5')
+    :param quiet:    If ``True``, suppresses output to stdout/stderr. (default: ``False``)
+    :param timeout:  Time (in seconds) after which process should be killed. If ``None``, no time limit is imposed.
+    :param nthreads: Number of OpenMP threads to allow at most (only relevant for the MKL linear solver).
     """
     global DREAMPATH
-    task = DREAMTask(settings, outfile, quiet, timeout, DREAMPATH=DREAMPATH )
+    task = DREAMTask(settings, outfile, quiet, timeout, DREAMPATH=DREAMPATH, nthreads=nthreads)
     task.run()
     while not task.hasFinished():
         pass
     return task.getResult()
 
-def runiface_parallel(settings, outfiles,stdout_list=[],stderr_list=[], quiet=False, timeout=None, njobs=4):
+def runiface_parallel(settings, outfiles,stdout_list=[],stderr_list=[], quiet=False, timeout=None, njobs=4, nthreads=None):
     global DREAMPATH
     queue = []
     active = []
@@ -59,7 +62,7 @@ def runiface_parallel(settings, outfiles,stdout_list=[],stderr_list=[], quiet=Fa
         raise DREAMException("Lengths of settings and outfiles arrays are different!")
     
     for _settings, outfile, stdout_name, stderr_name in zip(settings, outfiles,stdout_list,stderr_list):
-        task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH,stdout_name,stderr_name)
+        task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH,stdout_name,stderr_name, nthreads=nthreads)
            
         queue.append(task)
         allTasks.append(task)

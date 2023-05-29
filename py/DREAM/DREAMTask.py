@@ -11,7 +11,7 @@ from . DREAMErrorOutput import DREAMErrorOutput
 from subprocess import TimeoutExpired
 
 class DREAMTask:
-    def __init__(self, settings, outfile=None,quiet=False, timeout=None, DREAMPATH=None,stdout_name='',stderr_name=''):
+    def __init__(self, settings, outfile=None, quiet=False, timeout=None, DREAMPATH=None, stdout_name='', stderr_name='', nthreads=None):
         self.deleteOutput = False
         if outfile is None:
             self.deleteOutput = True
@@ -36,6 +36,7 @@ class DREAMTask:
         self.DREAMPATH = DREAMPATH
         self.quiet = quiet
         self.timeout = timeout if timeout is not None else float('inf')
+        self.nthreads = nthreads
         
         self.stdout_name =stdout_name   
         self.stderr_name =stderr_name  #new
@@ -56,11 +57,16 @@ class DREAMTask:
                 self.open_stderr=open(self.stderr_name,'w')
         else :  
                 self.open_stderr=subprocess.PIPE
+
+        env = None
+        if self.nthreads is not None:
+            env = os.environ.copy()
+            env['OMP_NUM_THREADS'] = self.nthreads
            
         if self.quiet: 
-            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=self.open_stderr, stdout=self.open_stdout)
+            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=self.open_stderr, stdout=self.open_stdout, env=env)
         else:
-            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=self.open_stderr)
+            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=self.open_stderr, env=env)
 
     def hasFinished(self, timeout=1):
         try:
