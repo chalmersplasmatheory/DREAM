@@ -6,7 +6,7 @@
 USERHOME=$(eval echo ~$USER)
 
 if [ -z "$PETSC_DIR" ]; then
-	export PETSC_DIR="$USERHOME/petsc"
+	export PETSC_DIR="/opt/petsc"
 fi
 if [ -z "$PETSC_ARCH" ]; then
 	export PETSC_ARCH=arch-linux-c-opt
