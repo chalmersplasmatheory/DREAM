@@ -17,7 +17,6 @@ DREAMPATH = None
 
 def locatedream():
     global DREAMPATH
-    print("locatedream called")
     try:
         DREAMPATH = os.environ['DREAMPATH']
 
@@ -28,7 +27,6 @@ def locatedream():
 
     if DREAMPATH is None:
         DREAMPATH = (pathlib.Path(__file__).parent / '..' / '..').resolve().absolute()
-        print(DREAMPATH)
         if not os.path.isfile('{}/build/iface/dreami'.format(DREAMPATH)):
             #raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
             print("WARNING: Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
