@@ -12,7 +12,6 @@ namespace DREAM {
 
         // Pointer to Solver object used for inverting equation system
         Solver *solver;
-
     public:
         TimeStepper(FVM::UnknownQuantityHandler *u)
             : unknowns(u) {}

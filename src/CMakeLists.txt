@@ -41,6 +41,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/DreicerNeuralNetwork.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ColdHotHeatTransferTerm.cpp"
@@ -66,6 +67,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralAdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralPrescribedDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEnergyFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatFluxFromDistributionFunction.cpp"
@@ -87,6 +89,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SvenssonTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TritiumRateTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
@@ -98,11 +101,13 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RipplePitchScattering.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTermHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Scalar/ConstantSPIVelocityPositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"  
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
@@ -121,7 +126,6 @@ set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/WallCurrentTerms.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/ConstantSPIVelocityTerm.hpp"
-    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/ConstantSPIVelocityPositionTerm.hpp"
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
@@ -154,6 +158,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/spi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/IonEquilibrium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"
@@ -176,6 +181,7 @@ set(dream_headers
 )
 
 set(dream_solvers
+    "${PROJECT_SOURCE_DIR}/src/Solver/ExternalIterator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/Solver.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverLinearlyImplicit.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverNonLinear.cpp"
@@ -213,15 +219,16 @@ if (MATH_LIBRARY)
 endif()
 
 # Interprocedural optimizations
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    include(CheckIPOSupported)
-    # Clang does not support IPO (although Clang++ does), so we need
-    # to explicitly check both C and C++ (since Clang is used for linking)
-    check_ipo_supported(RESULT result LANGUAGES C CXX)
-    if (result)
-        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-endif ()
+#if (INTERPROC_OPTIM AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+#	message("INTERPROCESS OPTIMIZATIONS ENABLED")
+#    include(CheckIPOSupported)
+#    # Clang does not support IPO (although Clang++ does), so we need
+#    # to explicitly check both C and C++ (since Clang is used for linking)
+#    check_ipo_supported(RESULT result LANGUAGES C CXX)
+#    if (result)
+#        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+#    endif()
+#endif ()
 
 # GNU Scientific Library
 find_package(GSL REQUIRED)
@@ -253,13 +260,20 @@ target_link_libraries(dream PUBLIC softlib)
 #endif()
 
 # MPI (just as a dependency for PETSc)
-find_package(MPI COMPONENTS CXX)
-if (MPI_CXX_FOUND)
-    target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
-	set_target_properties(dream PROPERTIES COMPILE_FLAGS "${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS}")
-	set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
-	target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
-endif (MPI_CXX_FOUND)
+if (PETSC_WITH_MPI)
+	message(STATUS "PETSc was compiled with MPI. Will attempt to find an MPI installation...")
+	find_package(MPI COMPONENTS CXX)
+	if (MPI_CXX_FOUND)
+		target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
+		#set_target_properties(dream PROPERTIES COMPILE_FLAGS ${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS})
+		#set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
+		set_property(TARGET dream PROPERTY COMPILE_FLAGS ${MPI_CXX_COMPILE_OPT} ${MPI_CXX_COMPILE_DEFINITIONS})
+		set_property(TARGET dream PROPERTY LINK_FLAGS ${MPI_CXX_LINK_FLAGS})
+		target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
+	endif (MPI_CXX_FOUND)
+else (PETSC_WITH_MPI)
+	message(STATUS "PETSc does not require MPI.")
+endif (PETSC_WITH_MPI)
 
 # PETSc
 find_package(PETSc COMPONENTS CXX REQUIRED)

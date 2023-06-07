@@ -139,7 +139,7 @@ void SimulationGenerator::ConstructEquations(
     }
     
     // Fluid equations
-    ConstructEquation_Ions(eqsys, s, adas, amjuel);
+    ConstructEquation_Ions(eqsys, s, adas, amjuel, oqty_terms);
 
 
     IonHandler *ionHandler = eqsys->GetIonHandler();
