@@ -40,7 +40,7 @@ jobs:
       # Install dependencies
       - name: Install Ubuntu packages
         working-directory: ${{ github.workspace }}
-        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev
+        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev libomp-dev
 
       # Install PETSc
       - name: Install Python packages
@@ -51,14 +51,19 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         shell: bash
         env:
-          CC: clang
-          CXX: clang++
-        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.8/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
-        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.8/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+          CC: mpicc -cc=clang
+          CXX: mpicxx -cxx=clang++
+        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.10/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.10/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+      
+      - name: Examine configuration
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cat CMakeCache.txt
       
       # Compile and link DREAM
       - name: Build
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: make
+        run: make VERBOSE=YES
 

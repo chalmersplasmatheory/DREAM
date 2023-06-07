@@ -34,6 +34,9 @@ RIPPLE_MODE_NEGLECT = 1
 RIPPLE_MODE_BOX = 2
 RIPPLE_MODE_GAUSSIAN = 3
 
+TIME_VARYING_B_MODE_NEGLECT = 1
+TIME_VARYING_B_MODE_INCLUDE = 2
+
 DISTRIBUTION_MODE_NUMERICAL = 1
 DISTRIBUTION_MODE_ANALYTICAL = 2
 
@@ -61,6 +64,7 @@ class DistributionFunction(UnknownQuantity):
         self.mode = mode
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
+        self.timevaryingbmode = TIME_VARYING_B_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
         self.fullIonJacobian = True
 
@@ -233,6 +237,18 @@ class DistributionFunction(UnknownQuantity):
             self.ripplemode = int(mode)
 
 
+    def setTimeVaryingB(self, mode):
+        """
+        Enables/disable the time-varying magnetic field strength operator.
+
+        :param int mode: Flag indicating whether or not to include the time-varying magnetic field operator.
+        """
+        if type(mode) == bool:
+            self.timevaryingbmode = TIME_VARYING_B_MODE_INCLUDE if mode else TIME_VARYING_B_MODE_NEGLECT
+        else:
+            self.timevaryingbmode = int(mode)
+
+
     def setSynchrotronMode(self, mode):
         """
         Sets the type of synchrotron losses to have (either enabled or disabled).
@@ -281,6 +297,9 @@ class DistributionFunction(UnknownQuantity):
         if 'ripplemode' in data:
             self.ripplemode = int(scal(data['ripplemode']))
 
+        if 'timevaryingbmode' in data:
+            self.timevaryingbmode = int(scal(data['timevaryingbmode']))
+
         if 'synchrotronmode' in data:
             self.synchrotronmode = data['synchrotronmode']
             if type(self.synchrotronmode) != int:
@@ -327,6 +346,7 @@ class DistributionFunction(UnknownQuantity):
             
             data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
+            data['timevaryingbmode'] = self.timevaryingbmode
             data['transport'] = self.transport.todict()
             data['fullIonJacobian'] = self.fullIonJacobian
 
@@ -364,7 +384,7 @@ class DistributionFunction(UnknownQuantity):
             else:
                 opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_BOX, RIPPLE_MODE_GAUSSIAN]
                 if self.ripplemode not in opt:
-                    raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
+                    raise EquationException("{}: Invalid option for ripple mode: {}.".format(self.name, self.ripplemode))
  
             if type(self.synchrotronmode) == bool:
                 self.setSynchrotronMode(self.synchrotronmode)
@@ -373,7 +393,16 @@ class DistributionFunction(UnknownQuantity):
             else:
                 opt = [SYNCHROTRON_MODE_NEGLECT, SYNCHROTRON_MODE_INCLUDE]
                 if self.synchrotronmode not in opt:
-                    raise EquationException("{}: Invalid option for synchrotron mode.".format(self.name, self.synchrotronmode))
+                    raise EquationException("{}: Invalid option for synchrotron mode: {}".format(self.name, self.synchrotronmode))
+
+            if type(self.timevaryingbmode) == bool:
+                self.setTimeVaryingBMode(self.timevaryingbmode)
+            elif type(self.timevaryingbmode) != int:
+                raise EquationException(f"{self.name}: Invalid type of time-varying B mode option: {self.timevaryingbmode}.")
+            else:
+                opt = [TIME_VARYING_B_MODE_NEGLECT, TIME_VARYING_B_MODE_INCLUDE]
+                if self.timevaryingbmode not in opt:
+                    raise EquationException(f"{self.name}: Invalid option for time-varying B mode: {self.timevaryingbmode}.")
 
             self.transport.verifySettings()
         elif self.mode != DISTRIBUTION_MODE_NUMERICAL:

@@ -9,6 +9,7 @@ TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
 TRANSPORT_RECHESTER_ROSENBLUTH = 3
 TRANSPORT_SVENSSON = 4
+TRANSPORT_FROZEN_CURRENT = 5
 
 INTERP3D_NEAREST = 0
 INTERP3D_LINEAR  = 1
@@ -18,6 +19,10 @@ INTERP1D_LINEAR  = 1
 
 SVENSSON_INTERP1D_PARAM_TIME = 1
 SVENSSON_INTERP1D_PARAM_IP   = 2
+
+FROZEN_CURRENT_MODE_DISABLED = 1
+FROZEN_CURRENT_MODE_CONSTANT = 2
+FROZEN_CURRENT_MODE_BETAPAR = 3
 
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
@@ -87,6 +92,13 @@ class TransportSettings:
         self.dBB   = None
         self.dBB_t = None
         self.dBB_r = None
+
+        # Frozen current mode transport
+        self.frozen_current_mode = FROZEN_CURRENT_MODE_DISABLED
+        self.frozen_current_Ip_presc = None
+        self.frozen_current_Ip_presc_t = None
+        self.frozen_current_D_I_min = 0
+        self.frozen_current_D_I_max = 1000
 
         self.boundarycondition = BC_CONSERVATIVE
 
@@ -265,6 +277,28 @@ class TransportSettings:
         self.dBB   = dBB
 
 
+    def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000):
+        """
+        Enable the frozen current mode and specify the target plasma current.
+        """
+        self.type = TRANSPORT_FROZEN_CURRENT
+        self.frozen_current_mode = mode
+
+        if np.isscalar(Ip_presc) or Ip_presc.ndim == 0:
+            Ip_presc = np.array([Ip_presc])
+            Ip_presc_t = np.array([0])
+        if not isinstance(Ip_presc_t, np.ndarray):
+            Ip_presc_t = np.array([Ip_presc_t])
+
+        if Ip_presc_t.ndim != 1:
+            Ip_presc_t = np.reshape(Ip_presc_t, (Ip_presc_t.size,))
+            
+        self.frozen_current_Ip_presc = Ip_presc
+        self.frozen_current_Ip_presc_t = Ip_presc_t
+        self.frozen_current_D_I_min = D_I_min
+        self.frozen_current_D_I_max = D_I_max
+
+
     def setBoundaryCondition(self, bc):
         """
         Set the boundary condition to use for the transport.
@@ -398,6 +432,16 @@ class TransportSettings:
             self.dBB_r = data['dBB']['r']
             self.dBB_t = data['dBB']['t']
 
+        if 'frozen_current_mode' in data:
+            self.frozen_current_mode = int(data['frozen_current_mode'])
+        if 'D_I_min' in data:
+            self.frozen_current_D_I_min = float(data['D_I_min'])
+        if 'D_I_max' in data:
+            self.frozen_current_D_I_max = float(data['D_I_max'])
+        if 'I_p_presc' in data:
+            self.frozen_current_Ip_presc = data['I_p_presc']['x']
+            self.frozen_current_Ip_presc_t = data['I_p_presc']['t']
+
 
     def todict(self):
         """
@@ -493,6 +537,15 @@ class TransportSettings:
                 't': self.dBB_t
             }
 
+        data['frozen_current_mode'] = self.frozen_current_mode
+        data['D_I_min'] = self.frozen_current_D_I_min
+        data['D_I_max'] = self.frozen_current_D_I_max
+        if self.frozen_current_Ip_presc is not None:
+            data['I_p_presc'] = {
+                'x': self.frozen_current_Ip_presc,
+                't': self.frozen_current_Ip_presc_t
+            }
+
         return data
 
 
@@ -517,6 +570,9 @@ class TransportSettings:
             self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
             self.verifySettingsRechesterRosenbluth()
+            self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_FROZEN_CURRENT:
+            self.verifyFrozenCurrent()
             self.verifyBoundaryCondition()
         else:
             raise TransportException("Unrecognized transport type: {}".format(self.type))
@@ -586,6 +642,19 @@ class TransportSettings:
         elif self.dBB_r.ndim != 1 or self.dBB_r.size != self.dBB.shape[1]:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
 
+
+    def verifyFrozenCurrent(self):
+        """
+        Verify consistency of the frozen current mode settings.
+        """
+        if self.frozen_current_mode not in [FROZEN_CURRENT_MODE_DISABLED,FROZEN_CURRENT_MODE_CONSTANT,FROZEN_CURRENT_MODE_BETAPAR]:
+            raise TransportException(f"Frozen current mode: Invalid type of transport operator: {self.frozen_current_mode}.")
+        elif self.frozen_current_Ip_presc.ndim != 1:
+            raise TransportException(f"Frozen current mode: Invalid dimensions of prescribed plasma current: {self.frozen_current_Ip_presc.shape}.")
+        elif self.frozen_current_Ip_presc_t.ndim != 1:
+            raise TransportException(f"Frozen current mode: Invalid dimensions of prescribed plasma current timebase: {self.frozen_current_Ip_presc_t.shape}.")
+        elif self.frozen_current_Ip_presc.shape[0] != self.frozen_current_Ip_presc_t.shape[0]:
+            raise TransportException(f"Frozen current mode: Dimension mismatch in prescribed plasma current and its time vector: {self.frozen_current_Ip_presc.shape[0]} =/= {self.frozen_current_Ip_presc_t.shape[0]}.")
 
 
 class TransportException(DREAMException):

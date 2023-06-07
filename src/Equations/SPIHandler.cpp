@@ -39,7 +39,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
     OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
     OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
-    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01){
+    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, len_t *nbrShiftGridCell = nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
@@ -150,6 +150,10 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 			NGSConstantFactor[ip]=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda[ip]*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
 	}
 	delete [] pelletDeuteriumFraction;
+	
+	// Set number of grid cells to shift the deposition for every shard
+	for(len_t ip=0;ip<nShard;ip++)
+	    this->nbrShiftGridCell[ip] = nbrShiftGridCell[ip];
 }
 
 /**
@@ -187,6 +191,7 @@ void SPIHandler::AllocateQuantities(){
     pelletDensity = new real_t[nShard];
     lambda = new real_t[nShard];
     NGSConstantFactor = new real_t[nShard];
+    nbrShiftGridCell = new len_t[nShard];
 }
 
 /**
@@ -215,6 +220,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] pelletDensity;
     delete [] lambda;
     delete [] NGSConstantFactor;
+    delete [] nbrShiftGridCell;
 }
 
 /**
@@ -317,6 +323,19 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate deposition (if any)
     if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
+        
+        // Shift the deposition profile
+        for(len_t ip=0;ip<nShard;ip++){
+            if(rCoordPNext[ip]>rCoordPPrevious[ip]){
+                for(len_t ir=0;ir<nr-1;ir++){
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+nbrShiftGridCell[ip])*nShard+ip];
+                }
+            }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
+                for(len_t ir=nr-1;ir>0;ir--){
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                }
+            }
+        }
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);

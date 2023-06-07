@@ -43,6 +43,7 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     // p/xi grid
     s->DefineSetting(mod + "/np", "Number of distribution grid points in p", (int_t)1);
     s->DefineSetting(mod + "/nxi", "Number of distribution grid points in xi", (int_t)1);
+	s->DefineSetting(mod + "/pmin", "Minimum momentum on the (flux) grid", (real_t)0.0);
     s->DefineSetting(mod + "/pmax", "Maximum momentum on the (flux) grid", (real_t)0.0);
     s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)OptionConstants::PXIGRID_PTYPE_UNIFORM);
     s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)OptionConstants::PXIGRID_XITYPE_UNIFORM);
@@ -158,7 +159,7 @@ FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
     switch (*type) {
         case OptionConstants::MOMENTUMGRID_TYPE_PXI:
             if (hottailGrid == nullptr)
-                pmin = 0;
+                pmin = s->GetReal(RUNAWAYGRID "/pmin");
             else
                 pmin = hottailGrid->GetMomentumGrid(0)->GetP1_f(
                     hottailGrid->GetMomentumGrid(0)->GetNp1()

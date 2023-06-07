@@ -45,10 +45,12 @@ namespace DREAM {
         IonHandler *ionHandler=nullptr;
         Solver *solver=nullptr;
         TimeStepper *timestepper=nullptr;
+		ExternalIterator *extiter=nullptr;
 
         FVM::UnknownQuantityHandler unknowns;
         std::vector<UnknownQuantityEquation*> unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
+		std::vector<len_t> external_unknowns;
 
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
@@ -112,6 +114,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
         IonHandler *GetIonHandler() { return this->ionHandler; }
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
+		std::vector<len_t> *GetExternallyIteratedUnknowns() { return &external_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
 
@@ -133,15 +136,15 @@ namespace DREAM {
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="");
+        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
         //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when
         // performance is not a concern
-        void SetOperator(len_t blockrow, const std::string&, FVM::Operator*, const std::string& desc="");
-        void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="");
-        void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="");
+        void SetOperator(len_t blockrow, const std::string&, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
 
         void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh) {
             this->cqh_hottail = cqh;
@@ -204,6 +207,7 @@ namespace DREAM {
 
         void Solve();
         // Info routines
+		void PrintExternallyIteratedUnknowns();
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();
 

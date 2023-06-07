@@ -93,7 +93,10 @@ real_t AMJUEL::getRecLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
         	lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnRecAMJUEL+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
+                if(lnTi==0){
+		    if(i==1)
+    		        derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                }else if(i>0)
                     derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
                     
                 lnnj*=lnn;
@@ -193,7 +196,10 @@ real_t AMJUEL::getRecRadLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
             lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnRecRadAMJUEL+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
+                if(lnTi==0){
+		    if(i==1)
+    		        derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                }else if(i>0)
                     derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
                     
                 lnnj*=lnn;
@@ -293,7 +299,10 @@ real_t AMJUEL::getIonizLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
             lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnIonizAMJUEL+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
+                if(lnTi==0){
+		    if(i==1)
+    		        derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                }else if(i>0)
                     derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
                     
                 lnnj*=lnn;
@@ -395,7 +404,10 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
             lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
+		if(lnTi==0){
+		    if(i==1)
+    		        derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                }else if(i>0)
                     derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
                     
                 lnnj*=lnn;

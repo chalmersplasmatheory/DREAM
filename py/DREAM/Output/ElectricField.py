@@ -38,7 +38,7 @@ class ElectricField(FluidQuantity):
         return self.output.other.fluid[field].get(r=r, t=t)
 
 
-    def maxEnergy(self, t=-1):
+    def maxEnergy(self, t=-1, fromt=0):
         r"""
         Evaluates the maximum attainable runaway kinetic energy (in normalized
         units) at time ``t``. This energy is obtained by integrating the
@@ -55,11 +55,11 @@ class ElectricField(FluidQuantity):
 
         :param int t: Index of time to calculate transferred momentum until.
         """
-        p = self.maxMomentum(t=t)
+        p = self.maxMomentum(t=t, fromt=fromt)
         return np.sqrt(p**2 + 1)-1
 
 
-    def maxMomentum(self, t=-1):
+    def maxMomentum(self, t=-1, fromt=0):
         r"""
         Evaluates the maximum attainable runaway momentum (in normalized units)
         at time ``t``. This momentum is obtained by integrating the equation of
@@ -76,7 +76,7 @@ class ElectricField(FluidQuantity):
         :param int t: Index of time to calculate transferred momentum until.
         """
         if np.isscalar(t):
-            p = np.trapz(self[:t], self.grid.t[:t], axis=0)
+            p = np.trapz(self[fromt:t], self.grid.t[fromt:t], axis=0)
         else:
             p = []
             t = np.asarray(t)
@@ -85,7 +85,7 @@ class ElectricField(FluidQuantity):
                 raise OutputException("Unrecognized dimensions of time index: {}.".format(t.ndim))
 
             for time in t:
-                p.append(np.trapz(self[:time], self.grid.t[:time], axis=0))
+                p.append(np.trapz(self[fromt:time], self.grid.t[fromt:time], axis=0))
 
             p = np.array(p)
 

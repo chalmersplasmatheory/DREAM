@@ -16,6 +16,7 @@ namespace DREAM { class RunawayFluid; }
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
+#include "FVM/Interpolator1D.hpp"
 #include "FVM/TimeKeeper.hpp"
 
 namespace DREAM {
@@ -52,7 +53,7 @@ namespace DREAM {
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
         OptionConstants::eqterm_compton_mode compton_mode;
-        real_t compton_photon_flux;
+        FVM::Interpolator1D *compton_photon_flux;
 
         len_t id_ncold;
         len_t id_ntot;
@@ -101,7 +102,7 @@ namespace DREAM {
         
         void CalculateDerivedQuantities();
         void CalculateCriticalMomentum();
-        void CalculateGrowthRates();
+        void CalculateGrowthRates(const real_t t);
 
         static void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, void *par);
 
@@ -138,7 +139,7 @@ namespace DREAM {
             OptionConstants::collqty_Eceff_mode,
             OptionConstants::eqterm_avalanche_mode,
             OptionConstants::eqterm_compton_mode,
-            real_t compton_flux
+            FVM::Interpolator1D *compton_flux
         );
         ~RunawayFluid();
 
@@ -155,7 +156,7 @@ namespace DREAM {
         static real_t evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc);
 
 
-        void Rebuild();
+        void Rebuild(const real_t);
         void GridRebuilt();
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}

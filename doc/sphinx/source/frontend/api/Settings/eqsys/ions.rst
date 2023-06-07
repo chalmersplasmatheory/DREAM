@@ -299,6 +299,51 @@ All ion and electron initial temperatures are taken to be uniform in radius.
    ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
 
+Start from coronal equilibrium
+------------------------------
+Coronal equilibrium refers to a distribution of charge states of an ion species
+such that ionization and recombination exactly balance for all charge states.
+It can be shown (see ``doc/notes``) that the density :math:`n_i^{(l)}` of
+species :math:`i` in charge state `l` is given by
+
+.. math::
+
+   n_i^{(l)} = n_i\left(
+       1 + 
+       \sum_{j=0}^{l-1}\prod_{k=j+1}^l \frac{R_i^{(k)}}{I_i^{(k-1)}} +
+       \sum_{j=l+1}^Z\prod_{k=l}^{j-1} \frac{I_i^{(k)}}{R_i^{(k+1)}}
+   \right)^{-1},
+
+where :math:`n_i=\sum_l n_i^{(l)}`.
+
+DREAM simulations can be launched with ions in coronal equilibrium initially.
+This is specified via a flag ``init_equil=True`` to the ``addIon()`` call, along
+with the desired species density :math:`n_i`. The code will then automatically
+evaluate the equilibrium state at startup, iterating until :math:`n_{\rm free}`
+(upon which the ionization/recombination rates depend).
+
+Example
+^^^^^^^
+To initiate one ion species in coronal equilibrium, the following syntax is used:
+
+.. code-block:: python
+
+   import numpy as np
+   import DREAM.Settings.Equations.IonSpecies as Ions
+   import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
+
+   ds = DREAMSettings()
+
+   ...
+
+   ds.eqsys.n_i.addIon(name='D',  Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
+   ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC, n=1e19, init_equil=True)
+
+.. note::
+
+   Initialization in coronal equilibrium is only possible for dynamically
+   evolved ion species.
+
 Atomic data
 -----------
 Various types of atomic data are downloaded from ADAS and NIST during the
@@ -475,6 +520,82 @@ Kinetic ionization can be activated in a DREAM simulation as follows:
 
 
 .. _ds-eqsys-ions-tritium:
+
+
+Particle injection
+------------------
+Particles can be injected through the plasma edge at a specified rate. The user
+specifies the *number of particles* per unit time which are to be injected,
+which can either be specified as constant in time or as following a specified
+time evolution. The user can choose to either inject particles of a specific
+charge state, or to inject particles of multiple charge states simultaneously.
+
+Example
+^^^^^^^
+The ion source is enabled via a single line:
+
+.. code-block:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Equations.IonSpecies as Ions
+   import numpy as np
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=5e19)
+   # Enable the ion source for species 'D'
+   ds.eqsys.n_i.addIonSource('D', dNdt=1e19)    # Add 1e19 deuterium atoms per second
+
+The **charge state** of the injected particles is :math:`Z_0=0`, but can be
+modified with the ``Z0`` argument to ``addIonSource()``:
+
+.. code-block:: python
+
+   ...
+   ds.eqsys.n_i.addIonSource('D', dNdt=1e19, Z0=1)  # Add 1e19 deuterium ions per second
+
+The full **time evolution** of the ion source can also be provided:
+
+.. code-block:: python
+
+   ...
+   t = np.linspace(0, 1)
+   dNdt = 5e18 * ((1-t)**2 + 1)
+   ds.eqsys.n_i.addIonSource('D', dNdt=dNdt, t=t, Z0=1)
+
+Finally, particles in **several charge states** may be added simultaneously:
+
+.. code-block:: python
+
+   ...
+   Z = 1
+   t = np.linspace(0, 1)
+   dNdt = np.zeros((Z+1, t.size))
+   # D(Z0=0)
+   dNdt[0,:] = 5e18 * ((1-t)**2 + 1)
+   dNdt[0,:] = 5e18 * (t**2 + 1)
+
+.. note::
+
+   The injection rate specified is the *number of particles* per unit time
+   which is to be injected. This means that the number ``dNdt`` specified equals
+
+   .. math::
+
+      dNdt = \frac{1}{\Delta t}\int
+      \left[ n_i^{(j)}(r,t+\Delta t) - n_i^{(j)}(r,t) \right]V'\,\mathrm{d}r
+
+   i.e. the change in the volume integral of the ion density per unit time.
+   Thus, the unit of ``dNdt`` is simply :math:`\mathrm{s}^{-1}` (or particles
+   per second).
+
+Ion/neutral transport
+---------------------
+
+.. todo::
+
+   Document the ion/neutral transport functionality
+
 
 Tritium
 -------

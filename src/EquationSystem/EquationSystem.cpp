@@ -82,13 +82,14 @@ void EquationSystem::ProcessSystem(const real_t t0) {
             DREAM::IO::PrintError("No equation has been declared for unknown '%s'", unknowns.GetUnknown(i)->GetName().c_str());
             unknownMissing = true;
         } else {
-            if (!unknown_equations[i]->IsPredetermined()) {
+			if (unknown_equations[i]->IsSolvedExternally()) {
+				external_unknowns.push_back(i);
+            } else if (!unknown_equations[i]->IsPredetermined()) {
                 nontrivial_unknowns.push_back(i);
                 totsize += unknowns[i]->NumberOfElements();
             }
         }
     }
-
 
     // Initialize from output...
     if (this->initializerFile != "") 
@@ -96,6 +97,12 @@ void EquationSystem::ProcessSystem(const real_t t0) {
             this->initializerFile, this->currentTime, this->initializerFileIndex,
             this->ionHandler, this->initializerFileIgnore
         );
+	
+	// Set external iterator
+	this->extiter = new ExternalIterator(
+		&this->unknowns, &this->unknown_equations
+	);
+	this->extiter->Initialize(this->external_unknowns);
     
     // Set initial values
     this->initializer->Execute(t0);
@@ -109,7 +116,10 @@ void EquationSystem::ProcessSystem(const real_t t0) {
 /**
  * Set one equation of the specified unknown.
  */
-void EquationSystem::SetOperator(const len_t blockrow, const len_t blockcol, FVM::Operator *op, const std::string& desc) {
+void EquationSystem::SetOperator(
+	const len_t blockrow, const len_t blockcol, FVM::Operator *op,
+	const std::string& desc, const bool solvedExternally
+) {
     // Verify that the list is sufficiently large
     if (unknown_equations.size() < blockrow+1)
         unknown_equations.resize(unknowns.Size(), nullptr);
@@ -125,20 +135,23 @@ void EquationSystem::SetOperator(const len_t blockrow, const len_t blockcol, FVM
         unknown_equations[blockrow]->SetDescription(desc);
         unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
     }
+
+	if (solvedExternally)
+		unknown_equations[blockrow]->SetExternallySolved(true);
 }
 
 /**
  * Same as 'SetEquation(len_t, len_t, Equation*)', but specifies
  * the unknowns by name rather than by index.
  */
-void EquationSystem::SetOperator(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc) {
-    SetOperator(blockrow, GetUnknownID(blockcol), op, desc);
+void EquationSystem::SetOperator(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperator(blockrow, GetUnknownID(blockcol), op, desc, solvedExternally);
 }
-void EquationSystem::SetOperator(const std::string& blockrow, len_t blockcol, FVM::Operator *op, const std::string& desc) {
-    SetOperator(GetUnknownID(blockrow), blockcol, op, desc);
+void EquationSystem::SetOperator(const std::string& blockrow, len_t blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperator(GetUnknownID(blockrow), blockcol, op, desc, solvedExternally);
 }
-void EquationSystem::SetOperator(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc) {
-    SetOperator(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc);
+void EquationSystem::SetOperator(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperator(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc, solvedExternally);
 }
 
 /**
@@ -169,6 +182,9 @@ void EquationSystem::SetSolver(Solver *solver) {
 
     this->solver = solver;
     this->solver->Initialize(this->matrix_size, this->nontrivial_unknowns);
+
+	if (this->extiter != nullptr)
+		this->solver->SetExternalIterator(this->extiter);
 }
 
 /**
@@ -180,9 +196,8 @@ void EquationSystem::Solve() {
     this->timestepper->SetSolver(solver);
 
     this->PrintNonTrivialUnknowns();
+	this->PrintExternallyIteratedUnknowns();
     this->PrintTrivialUnknowns();
-
-    // TODO Set initial state (or ensure that it has been set?)
 
     // Set initial guess in solver
     const real_t *guess = unknowns.GetLongVector(this->nontrivial_unknowns);

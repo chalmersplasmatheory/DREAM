@@ -52,8 +52,11 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 # Set simulation parameters #
 #############################
 
-n_D = 41e20 # deuterium density
-n_Z = 0.08e20 # Impurity density
+#n_D = 41e20 # deuterium density
+#n_Z = 0.08e20 # Impurity density
+
+n_D = 1e20 # deuterium density
+n_Z = 0.1e20 # Impurity density
 
 J=1.69e6 # Current density (For caculation of ohmic heating)
 

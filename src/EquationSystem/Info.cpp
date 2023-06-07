@@ -13,6 +13,31 @@ using namespace DREAM;
 using namespace std;
 
 /**
+ * Prints a list of the externally iterated unknowns appearing in
+ * the equation system.
+ */
+void EquationSystem::PrintExternallyIteratedUnknowns() {
+	if (this->external_unknowns.size() == 0)
+		return;
+	
+	IO::PrintInfo("LIST OF EXTERNALLY ITERATED UNKNOWNS");
+    IO::PrintInfo("ID   NAME          # ELEMENTS   DESCRIPTION");
+
+	for (len_t uqnId : external_unknowns) {
+		FVM::UnknownQuantity *uq = unknowns[uqnId];
+		UnknownQuantityEquation *eq = unknown_equations[uqnId];
+
+		IO::PrintInfo(
+			"%3" LEN_T_PRINTF_FMT_PART "  %-12s  %10" LEN_T_PRINTF_FMT_PART "   (%s)",
+			uqnId, uq->GetName().c_str(), uq->NumberOfElements(),
+			eq->GetDescription().c_str()
+		);
+	}
+
+	IO::PrintInfo();
+}
+
+/**
  * Prints a list of the non-trivial unknowns appearing in
  * the equation system.
  */

@@ -35,6 +35,9 @@ class AvalancheGrowthRate(OtherFluidQuantity):
         ut = self._renormalizeTimeIndexForUnknown(t)
 
         n_re = self.output.eqsys.n_re.get(r=r, t=ut)
-        return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re)
+        if t is None and r is None:
+            return self.plotIntegral(ax=ax, show=show, w=n_re)
+        else:
+            return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re)
 
 

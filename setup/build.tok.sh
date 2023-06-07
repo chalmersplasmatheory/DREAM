@@ -13,7 +13,7 @@
 #
 # -------
 # Written by Mathias Hoppe (2021-04-01)
-# 
+#
 # CHANGELOG
 #
 # 2021-08-09
@@ -33,11 +33,10 @@ function install_petsc {
 	make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
 }
 function install_dream {
-	cd "$DREAM_DIR" && rm -rf build && mkdir build && cd build &&
+	cd "$DREAMPATH" && rm -rf build && mkdir build && cd build &&
 	cmake .. -DPETSC_EXECUTABLE_RUNS=YES &&
 	make -j8
 }
 
 install_petsc
 install_dream
-

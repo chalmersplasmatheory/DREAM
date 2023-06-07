@@ -31,6 +31,8 @@ class PGrid:
         self.npsep_frac = None
         self.psep  = None
         self.p_f = None
+        self.pmin = 0
+
         if data is not None:
             self.fromdict(data)
         else:
@@ -48,6 +50,7 @@ class PGrid:
     ####################
     def getNp(self): return self.np
     def getPmax(self): return self.pmax
+    def getPmin(self): return self.pmin
     def getType(self): return self.type
 
 
@@ -65,6 +68,14 @@ class PGrid:
             raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, pmax))
 
         self.pmax = float(pmax)
+
+
+    def setPmin(self, pmin):
+        if pmin < 0:
+            raise DREAMException("PGrid {}: Invalid value assigned to 'pmin': {}. Must be >= 0.".format(self.name, pmin))
+
+        self.pmin = float(pmin)
+
 
     def setBiuniform(self, psep, npsep = None, npsep_frac = None):
         self.type = TYPE_BIUNIFORM
@@ -109,6 +120,8 @@ class PGrid:
             print("*WARNING* PGrid: Prescibing custom momentum grid overrides 'pmax'.")
         self.pmax = float(p_f[-1])        
 
+        if self.pmin is not None:
+            print("*WARNING* PGrid: Prescribing custom momentum grid overrides 'pmin'.")
 
 
     def setType(self, ttype):
@@ -128,6 +141,9 @@ class PGrid:
         self.type = data['pgrid']
         self.np   = data['np']
         self.pmax = data['pmax']
+
+        if 'pmin' in data:
+            self.pmin = data['pmin']
 
         if self.type == TYPE_BIUNIFORM:
             if 'npsep' in data:
@@ -155,6 +171,7 @@ class PGrid:
             'pgrid': self.type, 
             'np': self.np,
             'pmax': self.pmax,
+            'pmin': self.pmin
         }
         if self.type == TYPE_BIUNIFORM:
             if self.npsep is not None:
@@ -180,6 +197,8 @@ class PGrid:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, self.np))
             elif self.pmax is None or self.pmax <= 0:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, self.pmax))
+            elif self.pmin is None or self.pmin < 0:
+                raise DREAMException("PGrid {}: Invalid value assigned to 'pmin': {}. Must be >= 0.".format(self.name, self.pmin))
         else:
             raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
         if self.type == TYPE_BIUNIFORM:

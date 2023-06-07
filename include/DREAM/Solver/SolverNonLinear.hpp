@@ -22,7 +22,6 @@ namespace DREAM {
 
 		len_t maxiter=100;
 		real_t reltol=1e-6;
-		bool verbose=false;
 
 		len_t iteration=0, nTimeStep=0;
 		real_t t, dt;
@@ -70,7 +69,6 @@ namespace DREAM {
 		len_t GetIteration() const { return this->iteration; }
 		len_t MaxIter() const { return this->maxiter; }
 		real_t RelTol() const { return this->reltol; }
-		bool Verbose() const  { return this->verbose; }
 
 		// Setters
 		void SetIteration(const len_t i) { this->iteration = i; }

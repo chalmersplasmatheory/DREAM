@@ -169,6 +169,14 @@ void QuantityData::RollbackSaveStep() {
 }
 
 /**
+ * Restore solution to the value of the previous time step.
+ */
+void QuantityData::RestoreValue() {
+	for (len_t i = 0; i < this->nElements; i++)
+		this->data[i] = this->olddata[0][i];
+}
+
+/**
  * Store data from the given PETSc vector into the temporary
  * data store of this 'QuantityData' object.
  *

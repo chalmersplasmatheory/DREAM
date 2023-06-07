@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.interpolate
+from numpy.matlib import repmat
 from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
@@ -48,6 +49,7 @@ class Ions(UnknownQuantity):
         self.rNeutralPrescribedAdvection = None
         self.tChargedPrescribedAdvection = None
         self.tNeutralPrescribedAdvection = None
+        self.tSourceTerm                 = None
 
         self.ionization = ionization
         self.typeTi = IONS_T_I_NEGLECT
@@ -55,12 +57,14 @@ class Ions(UnknownQuantity):
         self.advectionInterpolationCharged = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.advectionInterpolationNeutral = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
 
+
     def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT, 
         charged_diffusion_mode=ION_CHARGED_DIFFUSION_MODE_NONE, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None,
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
-        T=None, n=None, r=None, t=None, tritium=False, hydrogen=False):
+        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None, 
+        init_equil=False, T=None, n=None, r=None, t=None, tritium=False, hydrogen=False):
 
         """
         Adds a new ion species to the plasma.
@@ -104,8 +108,12 @@ class Ions(UnknownQuantity):
             charged_diffusion_mode=charged_diffusion_mode, charged_prescribed_diffusion=charged_prescribed_diffusion, rChargedPrescribedDiffusion=rChargedPrescribedDiffusion, tChargedPrescribedDiffusion=tChargedPrescribedDiffusion,
             neutral_diffusion_mode=neutral_diffusion_mode, neutral_prescribed_diffusion=neutral_prescribed_diffusion, rNeutralPrescribedDiffusion=rNeutralPrescribedDiffusion, tNeutralPrescribedDiffusion=tNeutralPrescribedDiffusion,           
             charged_advection_mode=charged_advection_mode, charged_prescribed_advection=charged_prescribed_advection, rChargedPrescribedAdvection=rChargedPrescribedAdvection, tChargedPrescribedAdvection=tChargedPrescribedAdvection,
-            neutral_advection_mode=neutral_advection_mode, neutral_prescribed_advection=neutral_prescribed_advection, rNeutralPrescribedAdvection=rNeutralPrescribedAdvection, tNeutralPrescribedAdvection=tNeutralPrescribedAdvection,           
-            T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium, hydrogen=hydrogen)
+            neutral_advection_mode=neutral_advection_mode, neutral_prescribed_advection=neutral_prescribed_advection, rNeutralPrescribedAdvection=rNeutralPrescribedAdvection, tNeutralPrescribedAdvection=tNeutralPrescribedAdvection,
+            t_transp_expdecay_all_cs = t_transp_expdecay_all_cs, t_transp_start_expdecay_all_cs = t_transp_start_expdecay_all_cs,
+            diffusion_initial_all_cs = diffusion_initial_all_cs, diffusion_final_all_cs = diffusion_final_all_cs, 
+            advection_initial_all_cs = advection_initial_all_cs, advection_final_all_cs = advection_final_all_cs, 
+            r_expdecay_all_cs = r_expdecay_all_cs, t_expdecay_all_cs = t_expdecay_all_cs,            
+            init_equil=init_equil, T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium, hydrogen=hydrogen)
 
         self.ions.append(ion)
 
@@ -128,6 +136,32 @@ class Ions(UnknownQuantity):
         if neutral_advection_mode==ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
             self.rNeutralPrescribedAdvection = ion.getRNeutralPrescribedAdvection()
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
+
+
+    def addIonSource(self, species, dNdt=None, t=None, Z0=0):
+        """
+        Add a source term for the specified ion species.
+
+        :param species: Name of the ion species to add this source term to.
+        :param dNdt:    Number of particles to add per unit time.
+        :param t:       Time grid associated with ``dNdt`` (if any).
+        :param Z0:      For scalar or 1D ``dNdt``, the charge state for which to add the source term.
+        """
+        if t is None:
+            t = self.tSourceTerm
+        elif self.tSourceTerm is not None and not np.all(t == self.tSourceTerm):
+            raise EquationException(f"The time grid used for ion sources must be the same for all ion species.")
+            
+        found = False
+        for ion in self.ions:
+            if ion.name == species:
+                ion.initialize_source(n=dNdt, t=t, Z0=Z0)
+                found = True
+
+                self.tSourceTerm = ion.getSourceTime()
+
+        if not found:
+            raise EquationException(f"No ion species with name '{species}' has been added to the simulation. Unable to add source term.")
 
 
     def changeRadialGrid(self, r):
@@ -156,6 +190,7 @@ class Ions(UnknownQuantity):
         """
         return [ion.getZ() for ion in self.ions]
 
+
     def getIsotopes(self):
         """
         Returns a list of the isotopes of the various ion species
@@ -163,12 +198,24 @@ class Ions(UnknownQuantity):
         """
         return [ion.getIsotope() for ion in self.ions]
 
+
     def getSPIMolarFraction(self):
         """
         Returns a list of the SPI molar fractions of the various ion species
         contained by this object.
         """
         return [ion.getSPIMolarFraction() for ion in self.ions]
+
+
+    def getIndex(self, species):
+        """
+        Return the index of the ion species with the specified name.
+        """
+        for iIon in range(len(self.ions)):
+            if self.ions[iIon].getName() == species:
+                return iIon
+
+        raise EquationException(f"No species with name '{species}'.")
 
 
     def getIon(self, i=None):
@@ -306,6 +353,22 @@ class Ions(UnknownQuantity):
             raise DREAMException("Trying to set invalid ion type for ion species '{}': {}.".format(ion.name, ttype))
 
         ion.ttype = ttype
+
+        
+    def shiftTimeTranspCoeffs(self, tShift):
+        """
+        Shift the time grids for the ion transport coefficients by an amount tShift. This is needed between restarts.
+        
+        :param float tShift: Amount of time the time grids for the ion transport coefficient should be shifted
+        """
+        if self.tChargedPrescribedDiffusion is not None:
+            self.tChargedPrescribedDiffusion = self.tChargedPrescribedDiffusion - tShift
+        if self.tNeutralPrescribedDiffusion is not None:    
+            self.tNeutralPrescribedDiffusion = self.tNeutralPrescribedDiffusion - tShift
+        if self.tChargedPrescribedAdvection is not None:
+            self.tChargedPrescribedAdvection = self.tChargedPrescribedAdvection - tShift
+        if self.tNeutralPrescribedAdvection is not None:
+            self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
     
 
     def fromdict(self, data):
@@ -486,11 +549,15 @@ class Ions(UnknownQuantity):
         initial = None
         initialTi = None
         prescribed = None
+        sourceterm = None
+        sourceterm_types = []
         charged_prescribed_diffusion = None
         neutral_prescribed_diffusion = None
         charged_prescribed_advection = None
         neutral_prescribed_advection = None
         names   = ""
+        init_equil = []
+        initialNi = []
 
         hydrogennames = ""
         tritiumnames = ""
@@ -505,20 +572,47 @@ class Ions(UnknownQuantity):
             elif ion.hydrogen:
                 hydrogennames += '{};'.format(ion.getName())
 
-            if ion.getTime() is None:
+            # Set prescribed/initial density
+            init_equil.append(1 if ion.initializeToEquilibrium() else 0)
+            if ion.ttype != IONS_PRESCRIBED:
+                ni = ion.getDensity()
+                if ni is None:
+                    ni = np.zeros((ion.Z+1, self.r.size))
+
                 if initial is None:
-                    initial = np.copy(ion.getDensity())
+                    initial = np.copy(ni)
                 else:
-                    initial = np.concatenate((initial, ion.getDensity()))
+                    initial = np.concatenate((initial, ni))
             else:
                 if prescribed is None:
                     prescribed = np.copy(ion.getDensity())
                 else:
                     prescribed = np.concatenate((prescribed, ion.getDensity()))
+
+            # Construct source term
+            sourceterm_types.append(ion.getSourceType())
+            if sourceterm is None:
+                sourceterm = np.copy(ion.getSourceDensity())
+            else:
+                n1 = sourceterm
+                n2 = ion.getSourceDensity()
+
+                if n1.shape[1] != n2.shape[1]:
+                    if n1.shape[1] == 1:
+                        n1 = repmat(n1[:,0].reshape((n1.shape[0],1)), 1, n2.shape[1])
+                    elif n2.shape[1] == 1:
+                        n2 = repmat(n2[:,0].reshape((n2.shape[0],1)), 1, n1.shape[1])
+                    else:
+                        raise EquationException("All ion sources must be defined in the same time points.")
+
+                sourceterm = np.concatenate((n1, n2))
+
             if initialTi is None:
                 initialTi = np.copy(ion.getTemperature())
             else:
                 initialTi = np.concatenate((initialTi, ion.getTemperature()))
+
+            initialNi.append(ion.getInitialSpeciesDensity())
                 
             if SPIMolarFraction is None:
                 SPIMolarFraction = np.copy(ion.getSPIMolarFraction())
@@ -567,7 +661,12 @@ class Ions(UnknownQuantity):
         if len(hydrogennames) > 0:
             data['hydrogennames'] = hydrogennames
 
-        if initial is not None:
+        if initial is not None and len(initial) > 0:
+            for i in range(len(initial)):
+                if initial[i] is None:
+                    initial[i] = np.zeros((self.Z+1, self.r.size,))
+            initial = np.array(initial)
+
             data['initial'] = {
                 'r': self.r,
                 'x': initial
@@ -607,6 +706,13 @@ class Ions(UnknownQuantity):
                 't': self.tNeutralPrescribedAdvection,
                 'x': neutral_prescribed_advection
             }
+
+        if self.tSourceTerm is not None:
+            data['ion_source_types'] = sourceterm_types
+            data['ion_source'] = {
+                't': self.tSourceTerm,
+                'x': sourceterm
+            }
         
         # Flux limiter settings
         data['adv_interp_charged'] = self.advectionInterpolationCharged.todict()
@@ -618,6 +724,18 @@ class Ions(UnknownQuantity):
         }
         data['ionization'] = self.ionization
         data['typeTi'] = self.typeTi
+        
+        # Initial equilibrium
+        for i in range(len(initialNi)):
+            if initialNi[i] is None:
+                initialNi[i] = np.zeros((self.r.size,))
+        initialNi = np.array(initialNi)
+
+        data['init_equilibrium'] = init_equil
+        data['initialNi'] = {
+            'r': self.r,
+            'x': initialNi
+        }
 
         return data
             

@@ -45,7 +45,7 @@ NumericBRadialGridGenerator::NumericBRadialGridGenerator(
 	const len_t ntheta_interp
 ) : RadialGridGenerator(nr) {
 
-    this->rf_provided = new real_t[nr];
+    this->rf_provided = new real_t[nr+1];
     for (len_t i = 0; i < nr+1; i++)
         this->rf_provided[i] = r_f[i];
     
@@ -359,15 +359,15 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
         for (len_t i = 0; i < GetNr()+1; i++)
             r_f[i] = rMin + i*dr[0];
     } else {
-        if (r_f[0] < 0)
+        if (rf_provided[0] < 0)
             throw FVMException("NumericBRadialGrid: First point on custom radial grid is less than zero.");
-        else if (r_f[GetNr()] > this->input_r[this->npsi-1])
+        else if (rf_provided[GetNr()] > this->input_r[this->npsi-1])
             throw FVMException(
                 "NumericBRadialGrid: Last point on custom radial grid may not be greater than "
                 "the maximum r available in the numeric magnetic field data, rMax = %.3f.",
                 this->input_r[this->npsi-1]
             );
-        else if (r_f[0] >= r_f[GetNr()])
+        else if (rf_provided[0] >= rf_provided[GetNr()])
             throw FVMException("NumericBRadialGrid: The first point on the custom radial grid must be strictly less than the last point.");
 
         for (len_t i = 0; i < GetNr()+1; i++)
@@ -568,6 +568,15 @@ real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t thet
 void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *theta, real_t *phi,
     real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR
 ) {
+
+    // If x+Rp<0, the cartesian coordinates are clearly outside the radial grid
+    // and we therefore immediately return an arbitrary value outside the radial grid
+    if (x+Rp<0){
+        *theta = 0;
+        *phi = 0;
+        *r=this->r_f[GetNr()]+1e-2;
+        return;
+    }
     // Major radius coordinate
     real_t  R = hypot(x+Rp, z);
 
@@ -601,7 +610,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	real_t ra = std::max(0.0, startingGuessR-lengthScale);
 	real_t rb = ra + 2*lengthScale;
 	if(rb>r_f[GetNr()]){
-	    ra -= rb - r_f[GetNr()]; 
+	    ra = std::max(0.0, ra -( rb - r_f[GetNr()])); 
 	    rb -= rb - r_f[GetNr()]; 
 	}
 	real_t rhoa, rhob;

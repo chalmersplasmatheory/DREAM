@@ -22,7 +22,7 @@ class TimeStepper:
         self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0):
         """
         Set properties of the time stepper.
         """
@@ -32,6 +32,7 @@ class TimeStepper:
         self.setTmax(tmax)
         self.setDt(dt)
         self.setNt(nt)
+        self.setMinSaveTimestep(minsavedt)
         self.setNumberOfSaveSteps(nSaveSteps)
         self.setVerbose(verbose)
         self.setConstantStep(constantstep)       
@@ -76,6 +77,14 @@ class TimeStepper:
             raise DREAMException("TimeStepper: 'dt' may not be set alongside 'nt'.")
             
         self.dt = float(dt)
+
+
+    def setMinSaveTimestep(self, dt):
+        """
+        For the adapative ionization-based time stepper, sets the minimum
+        time which must elapse between two saved time steps.
+        """
+        self.minsavedt = dt
 
 
     def setNt(self, nt):
@@ -170,6 +179,7 @@ class TimeStepper:
         if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
         if 'dt' in data: self.dt = float(scal(data['dt']))
         if 'dtmax' in data: self.dtmax = float(scal(data['dtmax']))
+        if 'minsavedt' in data: self.minsavedt = float(scal(data['minsavedt']))
         if 'nt' in data: self.nt = int(scal(data['nt']))
         if 'nsavesteps' in data: self.nSaveSteps = int(scal(data['nsavesteps']))
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
@@ -206,6 +216,7 @@ class TimeStepper:
             if self.dtmax is not None: data['dtmax'] = self.dtmax
             data['automaticstep'] = self.automaticstep
             data['safetyfactor'] = self.safetyfactor
+            data['minsavedt'] = self.minsavedt
 
         return data
 
@@ -248,6 +259,8 @@ class TimeStepper:
                 raise DREAMException("TimeStepper ionization: 'dt' must be set to a non-negative value.")
             elif self.dtmax is None or self.dtmax < 0:
                 raise DREAMException("TimeStepper ionization: 'dtmax' must be set to a non-negative value.")
+            elif self.minsavedt < 0:
+                raise DREAMException("TimeStepper ionization: 'minsavedt' must be non-negative.")
         else:
             raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
 

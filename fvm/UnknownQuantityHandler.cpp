@@ -267,6 +267,15 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, const real_t *v, bool may
 }
 
 /**
+ * Restore the values of all unknown quantities to that of the previous
+ * time step.
+ */
+void UnknownQuantityHandler::RestoreSolution(vector<len_t> &unk) {
+	for (len_t uqnId : unk)
+		unknowns[uqnId]->RestoreValue();
+}
+
+/**
  * Sets all unknown quantities from the given long vector.
  *
  * vec: Long vector containing data for _all_ unknown quantities.

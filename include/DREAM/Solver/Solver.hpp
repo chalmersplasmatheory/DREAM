@@ -11,6 +11,7 @@
 #include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Solver/ExternalIterator.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -36,6 +37,12 @@ namespace DREAM {
         // not appear in the matrix)
         len_t matrix_size;
 
+		// Whether or not to provide verbose output
+		bool verbose = false;
+
+		// Maximum number of iterations allowed for the external iterator
+		len_t extiter_maxiter = 20;
+
         // Flag indicating which linear solver to use
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
         enum OptionConstants::linear_solver backupSolver = OptionConstants::LINEAR_SOLVER_NONE;
@@ -45,9 +52,10 @@ namespace DREAM {
         IonHandler *ionHandler;
         
         // Convergence checker for linear solver (GMRES primarily)
-        ConvergenceChecker *convChecker=nullptr;
+        ConvergenceChecker *convChecker=nullptr, *eConvChecker=nullptr;
         DiagonalPreconditioner *diag_prec=nullptr;
         FVM::MatrixInverter *inverter=nullptr;
+		ExternalIterator *extiter=nullptr;
 
         // Main matrix inverter to use
         FVM::MatrixInverter *mainInverter=nullptr;
@@ -66,6 +74,7 @@ namespace DREAM {
     public:
         Solver(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+			const bool verbose=false,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE
         );
@@ -104,6 +113,7 @@ namespace DREAM {
 
         void Precondition(FVM::Matrix*, Vec);
         void UnPrecondition(Vec);
+		bool Verbose() const  { return this->verbose; }
         
         virtual void PrintTimings() = 0;
         void PrintTimings_rebuild();
@@ -112,6 +122,9 @@ namespace DREAM {
 
         FVM::MatrixInverter *ConstructLinearSolver(const len_t, enum OptionConstants::linear_solver);
         void SetConvergenceChecker(ConvergenceChecker*);
+        void SetExternalIteratorConvergenceChecker(ConvergenceChecker*);
+		void SetExternalIterator(ExternalIterator*);
+		void SetExternalIteratorMaxIterations(const len_t i) { this->extiter_maxiter = i; }
         void SetPreconditioner(DiagonalPreconditioner*);
         void SelectLinearSolver(const len_t);
 

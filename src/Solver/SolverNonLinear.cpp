@@ -26,8 +26,8 @@ SolverNonLinear::SolverNonLinear(
     enum OptionConstants::linear_solver bk,
 	const int_t maxiter, const real_t reltol,
 	bool verbose
-) : Solver(unknowns, unknown_equations, ls, bk), eqsys(eqsys),
-	maxiter(maxiter), reltol(reltol), verbose(verbose) {
+) : Solver(unknowns, unknown_equations, verbose, ls, bk), eqsys(eqsys),
+	maxiter(maxiter), reltol(reltol) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -260,26 +260,34 @@ void SolverNonLinear::_InternalSolve() {
 	// Take Newton steps
 	len_t iter = 0;
 	const real_t *x, *dx;
+	bool extiter_conv = (this->extiter == nullptr);
 	do {
-		iter++;
-		this->SetIteration(iter);
+		do {
+			iter++;
+			this->SetIteration(iter);
 
 REDO_ITER:
-		dx = this->TakeNewtonStep();
-        // Solution rejected (solver likely switched)
-        if (dx == nullptr) {
-            if (iter < this->MaxIter())
-                goto REDO_ITER;
-            else
-                throw SolverException("Maximum number of iterations reached while dx=nullptr.");
-        }
+			dx = this->TakeNewtonStep();
+			// Solution rejected (solver likely switched)
+			if (dx == nullptr) {
+				if (iter < this->MaxIter())
+					goto REDO_ITER;
+				else
+					throw SolverException("Maximum number of iterations reached while dx=nullptr.");
+			}
 
-		x  = UpdateSolution(dx);
+			x  = UpdateSolution(dx);
 
-		// TODO backtracking...
-		
-		AcceptSolution();
-	} while (!IsConverged(x, dx));
+			// TODO backtracking...
+			
+			AcceptSolution();
+		} while (!IsConverged(x, dx));
+
+		// External iterator
+		if (this->extiter != nullptr)
+			extiter_conv = this->extiter->Solve(t, dt);
+
+	} while (!extiter_conv);
 }
 
 /**
