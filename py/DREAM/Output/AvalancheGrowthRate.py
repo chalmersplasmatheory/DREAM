@@ -35,6 +35,30 @@ class AvalancheGrowthRate(OtherFluidQuantity):
         ut = self._renormalizeTimeIndexForUnknown(t)
 
         n_re = self.output.eqsys.n_re.get(r=r, t=ut)
-        return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re)
+        if t is None and r is None:
+            return self.plotIntegral(ax=ax, show=show, w=n_re)
+        else:
+            return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re)
+            
+    
+    def getRunawayRate(self, r=None, t=None, ax=None, show=True):
+        """
+        Calculates the runaway rate corresponding to this growth rate (i.e.
+        GammaAva*n_re).
+        """
+        ut = self._renormalizeTimeIndexForUnknown(t)
 
+        n_re = self.output.eqsys.n_re.get(r=r, t=ut)
+        return self.data*n_re
+        
+        
+    def getRunawayRateIntegral(self, r=None, t=None, ax=None, show=True):
+        """
+        Calculates the runaway rate corresponding to this growth rate (i.e.
+        GammaAva*n_re).
+        """
+        ut = self._renormalizeTimeIndexForUnknown(t)
 
+        n_re = self.output.eqsys.n_re.get(r=r, t=ut)
+        return self.integral(w=n_re)
+        
