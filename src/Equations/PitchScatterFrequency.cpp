@@ -111,10 +111,11 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     // Evaluates PT_opt model from Walkowiak paper https://doi.org/10.1063/5.0075859
     if (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK)
         return gEquation(Z, Z0, p);
-        
-    /* If this function is called, it should always return some option. 
-     * But you get warning during compilation, but I think it is safer this way. 
-     */
+    
+    // If this function is called, it should always return some option. 
+    throw NotImplementedException("ScreenedTerm requested but the method is not specified. This should never happen, so pleas check the code.");
+    return gEquation(Z, Z0, p);
+       
 }
 
 
