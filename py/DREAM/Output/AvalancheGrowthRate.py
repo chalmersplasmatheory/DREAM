@@ -39,8 +39,8 @@ class AvalancheGrowthRate(OtherFluidQuantity):
             return self.plotIntegral(ax=ax, show=show, w=n_re)
         else:
             return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re)
-            
-    
+
+              
     def getRunawayRate(self, r=None, t=None, ax=None, show=True):
         """
         Calculates the runaway rate corresponding to this growth rate (i.e.
