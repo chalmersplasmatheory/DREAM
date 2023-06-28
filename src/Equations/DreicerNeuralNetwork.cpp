@@ -40,7 +40,7 @@ const real_t DreicerNeuralNetwork::W1[20*8]  = {-0.0300745, -0.0492966, -0.02593
 /**
  * Constructor.
  */
-DreicerNeuralNetwork::DreicerNeuralNetwork(RunawayFluid *rf)
+DreicerNeuralNetwork::DreicerNeuralNetwork(RunawayFluid *rf, bool extrapolation)
     : REFluid(rf) {}
 
 
@@ -86,7 +86,7 @@ real_t DreicerNeuralNetwork::RunawayRate(
     real_t logTheta = log(T/Constants::mc2inEV);
     
     return nn_fix(fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
-            logNfree, free_tot, nfree, tauEE, true);
+            logNfree, free_tot, nfree, tauEE);
 }
 
 /**
@@ -99,22 +99,27 @@ real_t DreicerNeuralNetwork::RunawayRate(
 real_t DreicerNeuralNetwork::nn_fix(
     const real_t EDD, const real_t logTheta, const real_t Zeff,
     const real_t Zeff0, const real_t Z0Z, const real_t Z0_Z, const real_t logNfree, 
-    const real_t nfree_ntot, const real_t nfree, const real_t tauEE, bool use_fix
+    const real_t nfree_ntot, const real_t nfree, const real_t tauEE
 ) {
     real_t boundary = 0.015;
-    real_t dE = 0.0001;
-    if(use_fix == true & EDD < boundary){
+    if(this->extrapolation == true && EDD < boundary){
+        real_t epsilon = std::numeric_limits<double>::epsilon();
+        real_t dE = sqrt(epsilon)*boundary;
+
         real_t gamma = 4.0/(3.0*M_SQRTPI) * RunawayRate_derived_params(
             boundary, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
             logNfree, nfree_ntot);
-        real_t gamma_dE = 4.0/(3.0*M_SQRTPI) * RunawayRate_derived_params(
+        real_t gamma_high = 4.0/(3.0*M_SQRTPI) * RunawayRate_derived_params(
             boundary+dE, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+            logNfree, nfree_ntot);
+        real_t gamma_low = 4.0/(3.0*M_SQRTPI) * RunawayRate_derived_params(
+            boundary-dE, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
             logNfree, nfree_ntot);
 
         real_t A = log(gamma);
-        real_t B = (log(gamma_dE) - log(gamma))/dE;
+        real_t B = (gamma_high - gamma_low)/(2*dE);
 
-        real_t b = B/A * boundary;
+        real_t b = B/A * boundary/gamma;
         real_t a = A/(pow(boundary, b));
         
         real_t rr = (nfree/tauEE)*exp(a * pow(EDD, b));
