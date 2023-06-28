@@ -9,7 +9,8 @@
  */
 
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
-
+#include "FVM/config.h"
+#include <iostream>
 
 using namespace DREAM;
 
@@ -41,6 +42,7 @@ const real_t DreicerNeuralNetwork::W1[20*8]  = {-0.0300745, -0.0492966, -0.02593
  */
 DreicerNeuralNetwork::DreicerNeuralNetwork(RunawayFluid *rf)
     : REFluid(rf) {}
+
 
 /**
  * Returns 'true' if the neural network can be applied to the
@@ -82,13 +84,48 @@ real_t DreicerNeuralNetwork::RunawayRate(
     real_t logNfree = log(nfree);
     real_t free_tot = nfree / ntot;
     real_t logTheta = log(T/Constants::mc2inEV);
+    
+    return nn_fix(fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+            logNfree, free_tot, nfree, tauEE, true);
+}
 
-    real_t rr = RunawayRate_derived_params(
-        fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
-        logNfree, free_tot
-    );
+/**
+*Extrapolating the result from the NN such that it can be used for small E/ED(The
+*NN has not been trained for those values). Parameters are explained in the 
+*RunawayRate_derived_params function.
+*use_fix :  If enabled the return value will be an extrapolation of the form
+*exp(a * x^b)
+*/
+real_t DreicerNeuralNetwork::nn_fix(
+    const real_t EDD, const real_t logTheta, const real_t Zeff,
+    const real_t Zeff0, const real_t Z0Z, const real_t Z0_Z, const real_t logNfree, 
+    const real_t nfree_ntot, const real_t nfree, const real_t tauEE, bool use_fix
+) {
+    real_t boundary = 0.015;
+    real_t dE = 0.0001;
+    if(use_fix == true & EDD < boundary){
+        real_t gamma = 4.0/(3.0*M_SQRTPI) * RunawayRate_derived_params(
+            boundary, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+            logNfree, nfree_ntot);
+        real_t gamma_dE = 4.0/(3.0*M_SQRTPI) * RunawayRate_derived_params(
+            boundary+dE, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+            logNfree, nfree_ntot);
 
-    return 4.0/(3.0*M_SQRTPI)*(nfree/tauEE) * rr;
+        real_t A = log(gamma);
+        real_t B = (log(gamma_dE) - log(gamma))/dE;
+
+        real_t b = B/A * boundary;
+        real_t a = A/(pow(boundary, b));
+        
+        real_t rr = (nfree/tauEE)*exp(a * pow(EDD, b));
+        return rr;
+    }
+    else{
+        real_t rr = RunawayRate_derived_params(
+        EDD, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+        logNfree, nfree_ntot);
+        return 4.0/(3.0*M_SQRTPI)*(nfree/tauEE) * rr;
+    }
 }
 
 /**
