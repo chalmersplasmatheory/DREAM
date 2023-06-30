@@ -37,7 +37,7 @@ namespace DREAM {
         real_t tPrev = -1.0;
         real_t dt;
         const real_t RELTOL_FOR_INT = 1e-7;
-        const real_t ABSTOL_FOR_INT = 0;
+        const real_t ABSTOL_FOR_INT = 1e-250;
         
         void Deallocate();
         

@@ -187,13 +187,12 @@ real_t HottailRateTermLowZ::evaluate_Epar(struct ParamStruct * intparams){
 real_t HottailRateTermLowZ::integralf0(real_t Epar_ir, struct ParamStruct * intparams){ 
     
     real_t result, error;
+    len_t ir = intparams->ir;
+    real_t lowerlimit = sqrt((intparams->Ec[ir]) / Epar_ir);
     
     gsl_function Func;
     Func.function = &evaluate_f0;
     Func.params = intparams;
-    
-    len_t ir = intparams->ir;
-    real_t lowerlimit = sqrt((intparams->Ec[ir]) / Epar_ir);
     
     gsl_integration_qagiu(&Func, lowerlimit, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
     
@@ -270,13 +269,14 @@ real_t HottailRateTermLowZ::dBoxIntdu(struct dGammadu_Params * pars){
 
     real_t result;
     if (pars->id_unknown == id_tau) { //f0 only depends on tau
-        
+    
         real_t error;
         gsl_function Func;
         Func.function = &totalIntegrandFor_dBoxIntdu;
         Func.params = pars;
         
         gsl_integration_qagiu(&Func, 0, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
+        
     } else {
         result = 0;
     }
@@ -299,6 +299,7 @@ real_t HottailRateTermLowZ::Intdf0du(struct dGammadu_Params * pars){
         Func.params = pars;
         
         gsl_integration_qagiu(&Func, pars->lowlim, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
+    
     } else {
         result = 0;
     }
