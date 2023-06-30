@@ -136,7 +136,7 @@ real_t HottailRateTermLowZ::evaluate_f0(real_t p, void *par){
 * Evaluates other part of integrand for E_parallell at momentum p
 */
 real_t HottailRateTermLowZ::partialIntegrandForEpar(real_t p){
-    real_t partialIntegrand = (6*pow(p, 5) + 4*pow(p, 7)) / pow(1+p*p, 2);
+    real_t partialIntegrand = (6*p*p*p*p*p + 4*p*p*p*p*p*p*p) / ((1+p*p)*(1+p*p));
     return partialIntegrand;
 }
 
