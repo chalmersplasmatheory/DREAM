@@ -88,14 +88,14 @@ real_t ComptonSource::innerIntegrand(real_t Eg, void * params){
     real_t dsdO = r_e*r_e / 2.0 * 1.0 / (Eg*Eg) * (Eg / (Eg + 1. - g) + (Eg + 1. - g) / Eg - 1 + cost*cost); // * (Eg - g)*(Eg - g) 
     //real_t dsdp = 1. / ((Eg - g)*(Eg - g)); 
     
-    return GgEg * dsdO * mc2; // mc2 from E/mc^2 --> E
+    return GgEg * dsdO;
 }
 
 real_t ComptonSource::integratedPhotonEnergySpectrum(real_t p, void * params){
     if(p == std::numeric_limits<real_t>::infinity())
         return 0;
     real_t g = sqrt(p*p + 1.);
-    real_t E0 = (g-1)/2 + sqrt((g-1)*(g-1)/4+(g-1)/2);
+    real_t E0 = (g-1.)/2. + sqrt((g-1.)*(g-1.)/4.+(g-1.)/2.);
     //real_t Emax = inf;
     struct intparams* iparams = reinterpret_cast<struct intparams*>(params);
     

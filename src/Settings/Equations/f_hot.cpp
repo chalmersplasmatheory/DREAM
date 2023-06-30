@@ -115,7 +115,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
             throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
 
         FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
-        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), s->GetReal("eqsys/n_re/compton/flux"), -1.0);
+        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), s->GetReal("eqsys/n_re/compton/flux"), hottailGrid->GetMomentumGrid(0)->GetP1_f(0), -1.0);
         Op_compton->AddTerm(oqty_terms->comptonSource);
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_compton);
