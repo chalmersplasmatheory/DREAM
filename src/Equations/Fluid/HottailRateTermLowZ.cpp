@@ -1,6 +1,8 @@
 /**
  * Implementation of equation term representing the runaway generation rate
- * due to hottail when using an analytic distribution function
+ * due to hottail when using an analytic distribution function. The generation
+ * rate is calculated according to section 4.1 of Ida Svenningsson's MSc thesis
+ * (https://hdl.handle.net/20.500.12380/300899).
  */
 
 #include "DREAM/Equations/Fluid/HottailRateTermLowZ.hpp"
@@ -23,13 +25,12 @@ HottailRateTermLowZ::HottailRateTermLowZ(
 {
     SetName("HottailRateTermLowZ");
 
-    //AddUnknownForJacobian(unknowns,id_Efield);
     AddUnknownForJacobian(unknowns,id_ncold);
     AddUnknownForJacobian(unknowns,id_tau);
     AddUnknownForJacobian(unknowns,id_ni); //Also affects Zeff, now we neglect this contribution. 
     AddUnknownForJacobian(unknowns,id_Tcold);
     
-    this->w = gsl_integration_workspace_alloc(1000);
+    this->w = gsl_integration_workspace_alloc(nGslIntervals);
     this->rGrid = grid->GetRadialGrid();
     
     this->GridRebuilt();
@@ -136,7 +137,10 @@ real_t HottailRateTermLowZ::evaluate_f0(real_t p, void *par){
 * Evaluates other part of integrand for E_parallell at momentum p
 */
 real_t HottailRateTermLowZ::partialIntegrandForEpar(real_t p){
-    real_t partialIntegrand = (6*p*p*p*p*p + 4*p*p*p*p*p*p*p) / ((1+p*p)*(1+p*p));
+    real_t p2 = p*p; 
+    // p^5 = p2*p2*p
+    // p^7 = p2*p2*p2*p
+    real_t partialIntegrand = (6*p2*p2*p + 4*p2*p2*p2*p) / ((1+p2)*(1+p2));
     return partialIntegrand;
 }
 
@@ -159,7 +163,7 @@ real_t HottailRateTermLowZ::integralEpar(struct ParamStruct * intparams){
     Func.function = &totalIntegrandForEpar;
     Func.params = intparams;
     
-    gsl_integration_qagiu(&Func, 0, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
+    gsl_integration_qagiu(&Func, 0, ABSTOL_FOR_INT, RELTOL_FOR_INT, nGslIntervals, w, &result, &error);
     
     return result;
 }
@@ -194,7 +198,7 @@ real_t HottailRateTermLowZ::integralf0(real_t Epar_ir, struct ParamStruct * intp
     Func.function = &evaluate_f0;
     Func.params = intparams;
     
-    gsl_integration_qagiu(&Func, lowerlimit, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
+    gsl_integration_qagiu(&Func, lowerlimit, ABSTOL_FOR_INT, RELTOL_FOR_INT, nGslIntervals, w, &result, &error);
     
     return result;
 }
@@ -255,7 +259,7 @@ real_t HottailRateTermLowZ::df0dtau(real_t p, void *par){
 }
 
 /**
-* Integrand for the derivative (wrt tau) of the integral in the formula for Epar, needed in d/du (Ec/Epar²) and other expressions
+* Integrand for the derivative (wrt tau) of the integral in the formula for Epar, needed in d/du (Ec/Epar^2) and other expressions
 */
 real_t HottailRateTermLowZ::totalIntegrandFor_dBoxIntdu(real_t p, void *par){
     real_t totalIntegrand = df0dtau(p, par)*partialIntegrandForEpar(p);
@@ -263,7 +267,7 @@ real_t HottailRateTermLowZ::totalIntegrandFor_dBoxIntdu(real_t p, void *par){
 }
 
 /**
-* Derivative (wrt tau) of the integral in the formula for Epar, needed in d/du (Ec/Epar²) and other expressions
+* Derivative (wrt tau) of the integral in the formula for Epar, needed in d/du (Ec/Epar^2) and other expressions
 */
 real_t HottailRateTermLowZ::dBoxIntdu(struct dGammadu_Params * pars){
 
@@ -275,7 +279,7 @@ real_t HottailRateTermLowZ::dBoxIntdu(struct dGammadu_Params * pars){
         Func.function = &totalIntegrandFor_dBoxIntdu;
         Func.params = pars;
         
-        gsl_integration_qagiu(&Func, 0, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
+        gsl_integration_qagiu(&Func, 0, ABSTOL_FOR_INT, RELTOL_FOR_INT, nGslIntervals, w, &result, &error);
         
     } else {
         result = 0;
@@ -298,7 +302,7 @@ real_t HottailRateTermLowZ::Intdf0du(struct dGammadu_Params * pars){
         Func.function = &df0dtau;
         Func.params = pars;
         
-        gsl_integration_qagiu(&Func, pars->lowlim, ABSTOL_FOR_INT, RELTOL_FOR_INT, 1000, w, &result, &error);
+        gsl_integration_qagiu(&Func, pars->lowlim, ABSTOL_FOR_INT, RELTOL_FOR_INT, nGslIntervals, w, &result, &error);
     
     } else {
         result = 0;
@@ -345,7 +349,7 @@ real_t HottailRateTermLowZ::dGammadu(len_t ir, len_t id_unknown, len_t n){
     // Derivative of denominator ("Box") in expression for Epar wrt unknown u at radial point ir
     real_t dBox_du = dEc_du * sp_cond + dSpCond_du * Ec + integPrefactor * dBoxIntdu(derpar);
     
-    // Deriv. of Ec/Epar² 
+    // Deriv. of Ec/Epar^2 
     real_t dEcOverEparSq_du = Box*Box* dInvOfEc_du / (j0*j0) + 2*Box* dBox_du / (j0*j0*Ec);
     // Deriv. of Epar
     real_t dEpar_du = j0*dEc_du / Box - Ec*j0*dBox_du / (Box*Box);
@@ -411,12 +415,14 @@ bool HottailRateTermLowZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t d
  * Deallocator
  */
 void HottailRateTermLowZ::Deallocate(){
-    if(Epar_prev != nullptr)
+    if(Epar_prev != nullptr){
         delete [] Epar_prev;
         delete [] params;
         delete [] integraloff0inGamma;
-    if(Epar != nullptr)
+    }
+    if(Epar != nullptr){
         delete [] Epar;
+    }
 }
 
 
