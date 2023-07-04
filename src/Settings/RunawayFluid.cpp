@@ -3,7 +3,7 @@
  */
 
 #include "DREAM/Settings/SimulationGenerator.hpp"
-
+#include <iostream>
 
 using namespace DREAM;
 using namespace std;
@@ -67,8 +67,11 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
         distHT = new AnalyticDistributionHottail(rGrid, unknowns, n0, T0, ht_dist_mode);
     }
     
+    bool extrapolateDreicer = s->GetBool("eqsys/n_re/extrapolateDreicer");
+    std::cout << extrapolateDreicer << std::endl;
     RunawayFluid *REF = new RunawayFluid(
-        g, unknowns, nuS, nuD, lnLEE, lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
+        g, unknowns, nuS, nuD, lnLEE, extrapolateDreicer, 
+        lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
         cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux
     );
     distRE->SetREFluid(REF);

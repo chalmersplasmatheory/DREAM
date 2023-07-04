@@ -40,7 +40,7 @@ const real_t DreicerNeuralNetwork::W1[20*8]  = {-0.0300745, -0.0492966, -0.02593
 /**
  * Constructor.
  */
-DreicerNeuralNetwork::DreicerNeuralNetwork(RunawayFluid *rf, bool extrapolation)
+DreicerNeuralNetwork::DreicerNeuralNetwork(RunawayFluid *rf)
     : REFluid(rf) {}
 
 
@@ -84,9 +84,10 @@ real_t DreicerNeuralNetwork::RunawayRate(
     real_t logNfree = log(nfree);
     real_t free_tot = nfree / ntot;
     real_t logTheta = log(T/Constants::mc2inEV);
+    bool dreicerfix = REFluid->GetextrapolateDreicer();
     
     return nn_fix(fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
-            logNfree, free_tot, nfree, tauEE);
+            logNfree, free_tot, nfree, tauEE, dreicerfix);
 }
 
 /**
@@ -99,10 +100,10 @@ real_t DreicerNeuralNetwork::RunawayRate(
 real_t DreicerNeuralNetwork::nn_fix(
     const real_t EDD, const real_t logTheta, const real_t Zeff,
     const real_t Zeff0, const real_t Z0Z, const real_t Z0_Z, const real_t logNfree, 
-    const real_t nfree_ntot, const real_t nfree, const real_t tauEE
+    const real_t nfree_ntot, const real_t nfree, const real_t tauEE, bool dreicerfix
 ) {
     real_t boundary = 0.015;
-    if(this->extrapolation == true && EDD < boundary){
+    if(dreicerfix && EDD < boundary){
         real_t epsilon = std::numeric_limits<double>::epsilon();
         real_t dE = sqrt(epsilon)*boundary;
 

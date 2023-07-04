@@ -10,7 +10,6 @@ namespace DREAM {
     class DreicerNeuralNetwork {
     private:
         RunawayFluid *REFluid;
-        bool extrapolation = true;
 
         // DATA
         static const real_t input_std[8], input_mean[8];
@@ -25,7 +24,7 @@ namespace DREAM {
         );
 
     public:
-        DreicerNeuralNetwork(RunawayFluid*, bool extrapolation=true);
+        DreicerNeuralNetwork(RunawayFluid*);
 
         real_t RunawayRate(const len_t, const real_t, const real_t, const real_t);
         real_t RunawayRate_derived_params(
@@ -37,7 +36,7 @@ namespace DREAM {
             const real_t EDD, const real_t logTheta, 
             const real_t Zeff, const real_t Zeff0, const real_t Z0Z, 
             const real_t Z0_Z, const real_t logNfree, const real_t nfree_ntot,
-            const real_t nfree, const real_t tauEE); 
+            const real_t nfree, const real_t tauEE, bool dreicerfix); 
 
         bool IsApplicable(const real_t);
     };

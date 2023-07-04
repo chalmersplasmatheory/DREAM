@@ -68,6 +68,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
+        self.extrapolateDreicer = True
 
         self.setCompton(compton, comptonPhotonFlux)
 
@@ -169,7 +170,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         large-angle collisions with runaways moving in different directions.
         """
         self.negative_re = negative_re
-
+        
+    def setextrapolateDreicer(self, extrapolateDreicer=False):
+        """
+        Extrapolates the result from the neural network for small electric fields
+        such that the Dreicer generation rate is continuous and has continuous derivative.
+        """
+        self.extrapolateDreicer = extrapolateDreicer
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
@@ -218,6 +225,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         if 'negative_re' in data:
             self.negative_re = bool(data['negative_re'])
+        
+        if 'extrapolateDreicer' in data:
+            self.extrapolateDreicer = bool(data['extrapolateDreicer'])
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
@@ -236,7 +246,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
-            'negative_re': self.negative_re
+            'negative_re': self.negative_re,
+            'extrapolateDreicer': self.extrapolateDreicer
         }
         data['compton'] = {
             'mode': self.compton
@@ -279,6 +290,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
         if type(self.negative_re) != bool:
             raise EquationException("n_re: Invalid value assigned to 'negative_re'. Expected bool.")
+        if type(self.extrapolateDreicer) != bool:
+            raise EquationException("n_re: Invalid value assigned to 'extrapolateDreicer'. Expected bool.")
 
         if self.compton != COMPTON_MODE_NEGLECT:
             if type(self.comptonPhotonFlux) != np.ndarray:
