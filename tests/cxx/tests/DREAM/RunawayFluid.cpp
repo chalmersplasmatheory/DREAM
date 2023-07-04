@@ -297,8 +297,9 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
 		1, 1, &comptonFlux_t, &comptonFlux,
 		DREAM::FVM::Interpolator1D::INTERP_NEAREST
 	);
+    bool extrapolateDreicer = true;
     DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
-        grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
+        grid, unknowns, nuS, nuD,lnLEE, extrapolateDreicer, lnLEI, ionHandler, distRE, cqPc, cqEc,
         DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
         eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
         DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, comptonFlux_i
