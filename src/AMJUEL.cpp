@@ -510,7 +510,7 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
             len_t i=0;
         	lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
-                lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj
                 lnnj*=lnn;
             }
             lnTi*=lnT;

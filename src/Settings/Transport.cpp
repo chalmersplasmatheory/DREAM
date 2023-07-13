@@ -8,6 +8,8 @@
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
+#include "DREAM/Equations/FrozenCurrentCoefficient.hpp"
+#include "DREAM/Equations/FrozenCurrentTransport.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -44,12 +46,29 @@ void SimulationGenerator::DefineOptions_Transport(
         "Which parameter (time or plasma current) to use in the 1D interpolation.",
                      (int_t) OptionConstants::svensson_interp1d_param::SVENSSON_INTERP1D_TIME);
     
-
     // Boundary condition
     s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
 
     // Rechester-Rosenbluth diffusion
     DefineDataRT(mod + "/" + subname, s, "dBB");
+
+	// Frozen current mode
+	s->DefineSetting(
+		mod + "/" + subname + "/frozen_current_mode",
+		"Type of transport operator to use in the frozen current mode.",
+		(int_t)OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_DISABLED
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/D_I_min",
+		"Minimum value allowed for frozen current diffusion coefficient.",
+		(real_t)0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/D_I_max",
+		"Maximum value allowed for frozen current diffusion coefficient.",
+		(real_t)1000
+	);
+	DefineDataT(mod + "/" + subname, s, "I_p_presc");
 }
 
 /**
@@ -163,6 +182,49 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     delete data4D;
 
     return t;
+}
+
+/**
+ * Construct the equation for the frozen current coefficient 'D_I'.
+ */
+void SimulationGenerator::ConstructEquation_D_I(
+	EquationSystem *eqsys, Settings *s, const string& path
+) {
+	if (eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_D_I))
+		return;
+
+	// Define unknown quantity
+	eqsys->SetUnknown(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I_DESC,
+		eqsys->GetScalarGrid()
+	);
+
+	FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
+	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+
+	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
+	real_t D_I_min = s->GetReal(path + "/D_I_min");
+	real_t D_I_max = s->GetReal(path + "/D_I_max");
+
+	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
+	FrozenCurrentCoefficient *fcc =
+		new FrozenCurrentCoefficient(
+			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
+			D_I_min, D_I_max
+		);
+	eqn->AddTerm(fcc);
+
+	eqsys->SetOperator(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I,
+		eqn,
+		"I_p = I_p_presc",
+		true	// Solved externally
+	);
+
+	real_t v = 0;
+	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &v);
 }
 
 /**
@@ -372,6 +434,53 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
 
+	// Frozen current mode?
+	if (
+		s->GetInteger(path + "/frozen_current_mode", false) !=
+		OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_DISABLED
+	) {
+		enum OptionConstants::eqterm_frozen_current_mode mode =
+			(enum OptionConstants::eqterm_frozen_current_mode)
+				s->GetInteger(path + "/frozen_current_mode");
+
+		enum FrozenCurrentTransport::TransportMode ts;
+		switch (mode) {
+			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_CONSTANT:
+				ts = FrozenCurrentTransport::TRANSPORT_MODE_CONSTANT;
+				break;
+
+			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_BETAPAR:
+				ts = FrozenCurrentTransport::TRANSPORT_MODE_BETAPAR;
+				break;
+
+			default:
+				throw SettingsException(
+					"Frozen current transport: Unrecognized transport mode: %d.",
+					mode
+				);
+		}
+
+		// Add D_I to system of equations
+		ConstructEquation_D_I(eqsys, s, path);
+
+		// Add transport operator
+		if (!heat) {
+			FrozenCurrentTransport *fct = new FrozenCurrentTransport(
+				grid, eqsys->GetUnknownHandler(), ts
+			);
+			oprtr->AddTerm(fct);
+
+			// Add boundary condition
+			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+				bc, fct, oprtr, path, grid
+			);
+		} else {
+			// TODO Heat transport
+			throw SettingsException(
+				"Heat transport in frozen current mode not yet implemented."
+			);
+		}
+	}
     
     return hasNonTrivialTransport;
 }

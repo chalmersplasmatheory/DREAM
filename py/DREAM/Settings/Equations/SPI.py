@@ -48,7 +48,7 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
+    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
         """
         Constructor.
         
@@ -84,9 +84,11 @@ class SPI(UnknownQuantity):
         self.rp       = None
         self.vp       = None
         self.xp       = None
+        self.t_delay  = None 
+        self.nbrShiftGridCell = None
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None):
 
         if rp is not None:
             if np.isscalar(rp):
@@ -102,6 +104,16 @@ class SPI(UnknownQuantity):
             if np.isscalar(xp):
                 self.xp = np.asarray([xp])
             else: self.xp = np.asarray(xp)
+            
+        if t_delay is not None:
+            if np.isscalar(t_delay):
+                self.t_delay = np.asarray([t_delay])
+            else: self.t_delay = np.asarray(t_delay)
+            
+        if nbrShiftGridCell is not None:
+            if np.isscalar(nbrShiftGridCell):
+                self.nbrShiftGridCell = np.asarray([nbrShiftGridCell])
+            else: self.nbrShiftGridCell = np.asarray(nbrShiftGridCell)
         
     def rpDistrParksStatistical(self,rp,kp):
         """
@@ -295,7 +307,7 @@ class SPI(UnknownQuantity):
         else:
             self.xp=np.tile(shatterPoint,nShard)
             
-    def setShardVelocitiesUniform(self, nShard,abs_vp_mean,abs_vp_diff,alpha_max,nDim=2,add=True, shards=None):
+    def setShardVelocitiesUniform(self, nShard,abs_vp_mean,abs_vp_diff,alpha_max, t_delay = 0, nDim=2,add=True, shards=None):
         """
         Sets self.vp to a vector storing the (x,y,z)-components of nShard shard velosities,
         assuming a uniform velocity distribution over a nDim-dimensional cone whose axis
@@ -315,6 +327,9 @@ class SPI(UnknownQuantity):
         if shards is not None:
         	nShard=len(self.vp[shards])
         	add=False
+        	
+        if np.isscalar(t_delay): 
+            t_delay = t_delay*np.ones(nShard)
         
         # Sample magnitude of velocities
         abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*np.random.uniform(size=nShard)))
@@ -352,6 +367,7 @@ class SPI(UnknownQuantity):
             
         if add and self.vp is not None:
             self.vp=np.concatenate((self.vp,vp_init))
+            self.t_delay=np.concatenate((self.t_delay,t_delay))
         elif shards is not None:
         	# Pick out the components of the stored shard velocities...
         	vpx=self.vp[0::3]
@@ -363,14 +379,17 @@ class SPI(UnknownQuantity):
         	vpy[shards]=vp_init[1::3]
         	vpz[shards]=vp_init[2::3]
         	
-        	# ...and finallyset the stored velocities to the updated ones
+        	# ...and finally set the stored velocities to the updated ones
         	self.vp[0::3]=vpx
         	self.vp[1::3]=vpy
         	self.vp[2::3]=vpz
+        	
+        	self.t_delay[shards] = t_delay
         else:
             self.vp=vp_init
+            self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,nDim=2, add=True, opacity_modes = None, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
@@ -379,7 +398,13 @@ class SPI(UnknownQuantity):
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
-        self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,nDim,add)
+        self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,t_delay,nDim,add)
+        
+        if self.nbrShiftGridCell is None:
+            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard)
+        else:
+            self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard)))
+            
         return kp
         
     def setVpVolNormFactor(self,VpVolNormFactor):
@@ -387,6 +412,9 @@ class SPI(UnknownQuantity):
 
     def setRclPrescribedConstant(self,rclPrescribedConstant):
         self.rclPrescribedConstant=rclPrescribedConstant
+        
+    def shiftTimeDelay(self, tShift):
+        self.t_delay = self.t_delay - tShift
 
 
     def setVelocity(self, velocity):
@@ -458,17 +486,24 @@ class SPI(UnknownQuantity):
             self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
         if 'abl_ioniz' in data:
             self.abl_ioniz = int(data['abl_ioniz'])
+            
 
         if 'VpVolNormFactor' in data:
             self.VpVolNormFactor = data['VpVolNormFactor']
         if 'rclPrescribedConstant' in data:
             self.rclPrescribedConstant = data['rclPrescribedConstant']
-        if 'rp' in data['init']:
-            self.rp              = data['init']['rp']
-        if 'vp' in data['init']:
-            self.vp              = data['init']['vp']
-        if 'xp' in data['init']:
-            self.xp              = data['init']['xp']
+        if 'nbrShiftGridCell' in data:
+            self.nbrShiftGridCell = data['nbrShiftGridCell']
+
+        if 'init' in data:
+            if 'rp' in data['init']:
+                self.rp              = data['init']['rp']
+            if 'vp' in data['init']:
+                self.vp              = data['init']['vp']
+            if 'xp' in data['init']:
+                self.xp              = data['init']['xp']
+            if 't_delay' in data['init']:
+                self.t_delay         = data['init']['t_delay']
 
 
     def todict(self):
@@ -476,18 +511,6 @@ class SPI(UnknownQuantity):
         Returns a Python dictionary containing all settings of
         this SPI object.
         """
-        data = {
-            'velocity': self.velocity,
-            'ablation': self.ablation,
-            'deposition': self.deposition,
-            'heatAbsorbtion': self.heatAbsorbtion,
-            'cloudRadiusMode': self.cloudRadiusMode,
-            'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
-            'abl_ioniz': self.abl_ioniz,
-            'VpVolNormFactor': self.VpVolNormFactor,
-            'rclPrescribedConstant': self.rclPrescribedConstant
-        }
-        
         # If no SPI settings have been given, set everything to zero (to avoid a DREAMIOException)
         # Before this stage it is usefull to use None to indicate if any SPI settings have been made yet,
         # to know if there are any previous shards to add the new ones to, so therefore
@@ -498,11 +521,30 @@ class SPI(UnknownQuantity):
             self.vp=np.array([0,0,0])
         if self.xp is None:
             self.xp=np.array([0,0,0])
+        if self.t_delay is None:
+            self.t_delay=np.array([0])
+        if self.nbrShiftGridCell is None:
+            self.nbrShiftGridCell = np.array([0])
+            
+        data = {
+            'velocity': self.velocity,
+            'ablation': self.ablation,
+            'deposition': self.deposition,
+            'heatAbsorbtion': self.heatAbsorbtion,
+            'cloudRadiusMode': self.cloudRadiusMode,
+            'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
+            'abl_ioniz': self.abl_ioniz,
+            'VpVolNormFactor': self.VpVolNormFactor,
+            'rclPrescribedConstant': self.rclPrescribedConstant,
+            'nbrShiftGridCell': self.nbrShiftGridCell
+        }
+        
             
         data['init'] = {
                 'rp': self.rp,
                 'vp': self.vp,
-                'xp': self.xp
+                'xp': self.xp,
+                't_delay': self.t_delay
         }
 
         return data
