@@ -114,9 +114,6 @@ class UnknownQuantity:
                         qty = x
                         break
 
-                print('Closest ancestor: {}'.format(type(qty)))
-
-
             otherName = other.name
         else:
             raise OutputException("Unsupported type of operand: {}".format(type(other)))

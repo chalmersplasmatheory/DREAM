@@ -20,5 +20,36 @@ def getRelativisticMaxwellJuttnerDistribution(p,T,n):
     expTerm = np.exp(-gMinus1/Theta)
 
     return n * expTerm / tK2exp
-    
+
+
+def getAvalancheDistribution(p, xi, E, Z, nre=1, logLambda=15):
+    """
+    Evaluates the analytical avalanche distribution function according to
+    equation (2.17) of [Embreus et al, J. Plasma Phys. 84 (2018)].
+
+    :param p:         Momentum grid on which to evaluate the distribution.
+    :param xi:        Pitch grid on which to evaluate the distribution.
+    :param E:         Electric field strength (normalized to the Connor-Hastie field, Ec).
+    :param Z:         Plasma total charge (= 1/ne_tot * sum_i ni * Zi^2)
+    :param nre:       Runaway electron density.
+    :param logLambda: Coulomb logarithm.
+    """
+    if p.ndim == 1:
+        P, XI = np.meshgrid(p, xi)
+    else:
+        P, XI = p, xi
+
+    c = scipy.constants.c
+    m_e = scipy.constants.m_e
+
+    g = np.sqrt(1+P**2)
+    A = (E+1) / (Z+1) * g
+    cZ = np.sqrt(5+Z)
+    g0 = cZ*logLambda
+
+    pf = m_e*c * nre * A / (2*np.pi*m_e*c*g0*P**2) / (1-np.exp(-2*A))
+    f = pf * np.exp(-g/g0 - A*(1-XI))
+
+    return f
+
 
