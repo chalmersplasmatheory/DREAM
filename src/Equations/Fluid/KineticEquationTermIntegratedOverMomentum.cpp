@@ -30,12 +30,6 @@ KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMome
     rebuildOperator(rebuild), scaleFactor(scaleFactor) {
     
     SetName("KineticEquationTermIntegratedOverMomentum");
-    
-    this->CsetJacobian = new Mat[u->GetNUnknowns()];
-    for (len_t i = 0; i < u->GetNUnknowns(); i++)
-        this->CsetJacobian[i] = nullptr;
-
-    allocateKineticStorage();
 }
 
 
@@ -51,6 +45,17 @@ KineticEquationTermIntegratedOverMomentum::~KineticEquationTermIntegratedOverMom
     delete [] this->CsetJacobian;
 }
 
+
+/**
+ * Allocate memory for this term.
+ */
+void KineticEquationTermIntegratedOverMomentum::Allocate() {
+    this->CsetJacobian = new Mat[this->unknowns->GetNUnknowns()];
+    for (len_t i = 0; i < this->unknowns->GetNUnknowns(); i++)
+        this->CsetJacobian[i] = nullptr;
+
+    allocateKineticStorage();
+}
 
 /**
  * Allocate and initialize grid quantities
@@ -127,6 +132,9 @@ bool KineticEquationTermIntegratedOverMomentum::GridRebuilt(){
 void KineticEquationTermIntegratedOverMomentum::Rebuild(
     const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqn
 ) {
+	if (this->CsetJacobian == nullptr)
+		this->Allocate();
+
     if (this->rebuildOperator)
         this->kineticOperator->RebuildTerms(t, dt, uqn);
 }
