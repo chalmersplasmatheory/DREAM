@@ -22,11 +22,11 @@ namespace DREAM { class RunawayFluid; }
 namespace DREAM {
     class RunawayFluid {
     private:
-        const real_t constPreFactor = 
+        const real_t constPreFactor =
             4*M_PI*Constants::r0*Constants::r0*Constants::c;
         static const real_t tritiumHalfLife;
         static const real_t tritiumDecayEnergyEV;
-        
+
         FVM::RadialGrid *rGrid;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
@@ -35,7 +35,7 @@ namespace DREAM {
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
-        AnalyticDistributionRE *analyticRE;      // analytic distribution of runaway electrons 
+        AnalyticDistributionRE *analyticRE;      // analytic distribution of runaway electrons
 
         CollisionQuantity::collqty_settings *collSettingsForPc;
         CollisionQuantity::collqty_settings *collSettingsForEc;
@@ -71,22 +71,26 @@ namespace DREAM {
         real_t *Ec_tot=nullptr;                  // Connor-Hastie field with free+bound
         real_t *tauEERel=nullptr;                // Relativistic electron collision time
         real_t *tauEETh=nullptr;                 // Thermal electron collision time
-        
+
         real_t *EDreic=nullptr;                  // Dreicer field
-        real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star 
+        real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star
         real_t *criticalREMomentumInvSq=nullptr; // Inverse square p_star
         real_t *pc_COMPLETESCREENING = nullptr;
         real_t *pc_NOSCREENING = nullptr;
         real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
         real_t *dreicerRunawayRate=nullptr;      // (dnRE/dt)_Dreicer = gamma_Dreicer
+        real_t *nuSnuDTerm=nullptr;
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
 
-        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
-        
+        real_t *criticalREMomentumInvSqDivedByEMinusEceff=nullptr;
+        real_t *avalancheGrowthRateDividedByEMinEceff=nullptr;
+
+        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr;
+
         FVM::TimeKeeper *timeKeeper;
         len_t
             timerTot,
@@ -99,7 +103,7 @@ namespace DREAM {
 
         void AllocateQuantities();
         void DeallocateQuantities();
-        
+
         void CalculateDerivedQuantities();
         void CalculateCriticalMomentum();
         void CalculateGrowthRates(const real_t t);
@@ -108,19 +112,19 @@ namespace DREAM {
 
         real_t BounceAverageFunc(len_t ir, std::function<real_t(real_t,real_t)> Func);
 
-        
+
         static real_t pStarFunction(real_t, void *);
         static real_t pStarFunctionAlt(real_t, void *);
         real_t evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, real_t *nuSHat_COMPSCREEN);
         real_t evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
         real_t evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
-        
+
         static const len_t  conductivityLenT;
         static const len_t  conductivityLenZ;
         static const real_t conductivityBraams[];
-        static const real_t conductivityTmc2[];   // list of T/mc2 
-        static const real_t conductivityX[];      // where X = 1/(1+Zeff) 
-        
+        static const real_t conductivityTmc2[];   // list of T/mc2
+        static const real_t conductivityX[];      // where X = 1/(1+Zeff)
+
         gsl_interp2d *gsl_cond;
         gsl_interp_accel *gsl_xacc;
         gsl_interp_accel *gsl_yacc;
@@ -130,7 +134,7 @@ namespace DREAM {
     protected:
     public:
         RunawayFluid(
-            FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
+            FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS,
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
             CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
             CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
@@ -162,7 +166,7 @@ namespace DREAM {
             {return effectiveCriticalField[ir];}
         const real_t* GetEffectiveCriticalField() const
             {return effectiveCriticalField;}
-        
+
         const real_t GetElectricConductivity(len_t ir) const
             {return electricConductivity[ir];}
         const real_t* GetElectricConductivity() const
@@ -172,28 +176,28 @@ namespace DREAM {
             {return EDreic[ir];}
         const real_t* GetDreicerElectricField() const
             {return EDreic;}
-        
+
         const real_t GetConnorHastieField_COMPLETESCREENING(len_t ir) const
             {return Ec_free[ir];}
         const real_t* GetConnorHastieField_COMPLETESCREENING() const
             {return Ec_free;}
-        
+
         const real_t GetConnorHastieField_NOSCREENING(len_t ir) const
             {return Ec_tot[ir];}
         const real_t* GetConnorHastieField_NOSCREENING() const
             {return Ec_tot;}
-        
+
         const real_t GetElectronCollisionTimeRelativistic(len_t ir) const
             {return tauEERel[ir];}
         const real_t* GetElectronCollisionTimeRelativistic() const
             {return tauEERel;}
-        
+
         const real_t GetElectronCollisionTimeThermal(len_t ir) const
             {return tauEETh[ir];}
         const real_t* GetElectronCollisionTimeThermal() const
             {return tauEETh;}
-        
-        
+
+
 
         const real_t GetAvalancheGrowthRate(len_t ir) const
             {return avalancheGrowthRate[ir];}
@@ -204,12 +208,12 @@ namespace DREAM {
             { return dreicerRunawayRate[ir]; }
         const real_t *GetDreicerRunawayRate() const
             { return dreicerRunawayRate; }
-        
+
         const real_t GetTritiumRunawayRate(len_t ir) const
             {return tritiumRate[ir];}
         const real_t* GetTritiumRunawayRate() const
             {return tritiumRate;}
-        
+
         const real_t GetComptonRunawayRate(len_t ir) const
             {return comptonRate[ir];}
         const real_t* GetComptonRunawayRate() const
@@ -219,7 +223,12 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
-        
+
+        const real_t GetAvalancheGrowthRateDividedByEMinEceff(len_t ir) const
+            {return avalancheGrowthRateDividedByEMinEceff[ir];}
+        const real_t* GetAvalancheGrowthRateDividedByEMinEceff() const
+            {return avalancheGrowthRateDividedByEMinEceff;}
+
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
         IonHandler *GetIonHandler() { return this->ions; }
@@ -238,7 +247,7 @@ namespace DREAM {
         real_t evaluateBraamsElectricConductivity(len_t ir);
         real_t evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff);
 
-        real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n); 
+        real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n);
         real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless);
         real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n);
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
@@ -253,7 +262,3 @@ namespace DREAM {
 
 
 #endif/*_DREAM_EQUATIONS_RUNAWAY_FLUID_HPP*/
-
-    
-
-

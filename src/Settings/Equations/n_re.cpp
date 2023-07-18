@@ -58,7 +58,7 @@ void SimulationGenerator::DefineOptions_n_re(
 
 /**
  * Construct the equation for the runaway electron density, 'n_re'.
- * It is given by the particle flux escaping the hot-tail grid, 
+ * It is given by the particle flux escaping the hot-tail grid,
  * plus any other runaway sources that are enabled.
  */
 void SimulationGenerator::ConstructEquation_n_re(
@@ -84,7 +84,7 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Operator *Op_n_i = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
-    std::string desc_sources = ""; 
+    std::string desc_sources = "";
 
     // Add flux from hot tail grid
     if (hottailGrid) {
@@ -151,7 +151,7 @@ void SimulationGenerator::ConstructEquation_n_re(
                 "is radially transported, no transport should be applied to "
                 "'n_re' as this is handled automatically."
             );
-        
+
         desc_sources += " + transport";
 
         // Also enable flux limiters
@@ -202,7 +202,7 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
-    
+
     if (runawayGrid == nullptr)
         throw SettingsException(
             "n_re: Density of negative runaways requires the runaway kinetic grid to be used."
@@ -210,7 +210,7 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
 
     const len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
     const len_t id_nre_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
-    
+
     FVM::Operator *Op_nREn     = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_nREn_fre = new FVM::Operator(fluidGrid);
 
@@ -229,4 +229,3 @@ void SimulationGenerator::ConstructEquation_n_re_neg(
     // Initialize n_re_neg to zero
     eqsys->SetInitialValue(id_nre_neg, nullptr);
 }
-

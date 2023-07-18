@@ -4,33 +4,29 @@
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
     class AvalancheCurrentDensityFromAnalyticalDistributionFunction : public FVM::DiagonalComplexTerm {
     private:
+        RunawayFluid *REFluid;
         const real_t scaleFactor;
 
-        len_t id_ncold;
-        len_t id_ntot;
+
         len_t id_Efield;
 
-        /**
-        * Parameter struct containing integrand parameters which is passed to a GSL function.
-        */
-        struct integrandHesslowParams {
-            real_t ncold;
-            real_t ntot;
-            real_t lnLambda;
-            real_t pceff;
-            real_t nuDnuS;
-        };
+
+
+
         struct integrandRosenbluthPutvinskiParams {
-            
+
         };
 
 
-        void InitializeGSLWorkspace();
-        void DeallocateGSL();
+        static real_t integrandHesslow(real_t, void*);
+        // static real_t integrandRosenbluthPutvinski(real_t, void*);
+        real_t evaluateAvalancheRunawaysMeanVelocity(len_t);
+
 
     protected:
 
@@ -42,7 +38,7 @@ namespace DREAM {
 
     public:
         AvalancheCurrentDensityFromAnalyticalDistributionFunction(
-            FVM::Grid*, FVM::UnknownQuantityHandler*, real_t scaleFactor=1.0);
+            FVM::Grid*, FVM::UnknownQuantityHandler*, RunawayFluid*, real_t scaleFactor=1.0);
         ~AvalancheCurrentDensityFromAnalyticalDistributionFunction();
     };
 }

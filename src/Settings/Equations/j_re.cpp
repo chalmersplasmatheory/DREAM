@@ -1,11 +1,13 @@
 /**
- * Definition of equations relating to j_re (the radial profile 
+ * Definition of equations relating to j_re (the radial profile
  * of parallel current density j_|| / (B/B_min) of runaway electrons).
  */
 
+#include "DREAM/NotImplementedException.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
+#include "DREAM/Equations/Fluid/AvalancheCurrentDensityFromAnalyticalDistributionFunction.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -15,9 +17,13 @@ using namespace DREAM;
 
 #define MODULENAME "eqsys/j_re"
 
+void SimulationGenerator::DefineOptions_j_re(Settings *s) {
+    s->DefineSetting(MODULENAME "/fluid_mode", "Model to use for calculating the runaway (mean) speed.", (int_t) OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT);
+}
+
 /**
  * Implementation of an equation term representing the fluid runaway current
- * as a function of n_re. Here assumes that all runaways move at the  
+ * as a function of n_re. Here assumes that all runaways move at the
  * speed of light in the direction of the electric field. Since n_re is the
  * flux-surface averaged density but `j_re` represents j_||re / (B/Bmin),
  * there is a geometric factor of 1/<B/Bmin> in the formula.
@@ -54,13 +60,13 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_j_re(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     len_t id_j_re = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
     len_t id_n_re = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
-
+    len_t id_n_tot = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
 
     // Identity part
     FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
@@ -69,10 +75,13 @@ void SimulationGenerator::ConstructEquation_j_re(
 
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
+
     // if runawayGrid is enabled, take moment of f_re, otherwise e*c*n_re
     // TODO: if integral(f_re) significantly deviates from n_re, warn that
     // the RE current is not well resolved?
     if (runawayGrid) {
+
+
         len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
         eqn->AddTerm(new CurrentDensityFromDistributionFunction(
             fluidGrid, runawayGrid, id_j_re, id_f_re, eqsys->GetUnknownHandler()
@@ -90,16 +99,39 @@ void SimulationGenerator::ConstructEquation_j_re(
 
     // Otherwise, we set it to zero...
     } else {
-        //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
-        eqn->AddTerm(new RunawayFluidCurrentTerm(fluidGrid, eqsys->GetUnknownHandler()));
-        eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*c*n_re");
-        // Set initialization method
-        eqsys->initializer->AddRule(
-            id_j_re,
-            EqsysInitializer::INITRULE_EVAL_EQUATION,
-            nullptr,
-            id_n_re
-        );
+
+        enum OptionConstants::eqterm_fluid_runaway_current_mode fm =
+            (enum OptionConstants::eqterm_fluid_runaway_current_mode)s->GetInteger(MODULENAME "/fluid_mode");
+
+        if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT) {
+
+            //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
+            eqn->AddTerm(new RunawayFluidCurrentTerm(fluidGrid, eqsys->GetUnknownHandler()));
+            eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*c*n_re");
+            // Set initialization method
+            eqsys->initializer->AddRule(
+                id_j_re,
+                EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                id_n_re
+            );
+        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_MOMENT) {
+
+            eqn->AddTerm(new AvalancheCurrentDensityFromAnalyticalDistributionFunction(
+                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()
+            ));
+            eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*u_re*n_re");
+            // Set initialization method
+            eqsys->initializer->AddRule(
+                id_j_re,
+                EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                id_n_re, id_n_tot,
+                EqsysInitializer::RUNAWAY_FLUID
+            );
+
+        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_ROSENBLUTH_PUTVINSKI_MOMENT)
+            throw NotImplementedException("The RE fluid speed based on the Rosenbluth-Putvinski avalanche distribution function is not yet implemented!");
     }
 
 }
