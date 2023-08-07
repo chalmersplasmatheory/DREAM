@@ -48,7 +48,7 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
+    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shift = 0, T = 0, T0 = 0, delta_y = 0, Rm = 0):
         """
         Constructor.
         
@@ -80,6 +80,11 @@ class SPI(UnknownQuantity):
         self.rclPrescribedConstant       = rclPrescribedConstant
         self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
         self.abl_ioniz                   = int(abl_ioniz)
+        self.shift                       = int(shift)
+        self.T                           = T
+        self.T0                          = T0
+        self.delta_y                     = delta_y
+        self.Rm                          = Rm
 
         self.rp       = None
         self.vp       = None
@@ -437,7 +442,19 @@ class SPI(UnknownQuantity):
         deposition of ablated material.
         """
         self.deposition = int(deposition)
-
+        
+    def setShift(self, shift, T, T0, delta_y, Rm):
+        """
+        Specifies which model to use for calculating the 
+        shift. Currently there only exists two (on/1 and off/0).
+        T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the major radius of the magnetic axis.
+        """
+        self.shift = int(shift)
+        self.T = T
+        self.T0 = T0
+        self.delta_y = delta_y
+        self.Rm = Rm
+        
     def setHeatAbsorbtion(self, heatAbsorbtion):
         """
         Specifies which model to use for calculating the
@@ -478,6 +495,16 @@ class SPI(UnknownQuantity):
             self.ablation       = int(data['ablation'])
         if 'deposition' in data:
             self.deposition     = int(data['deposition'])
+        if 'shift' in data:
+            self.shift          = int(data['shift'])
+        if 'T' in data:
+            self.T              = data['T']
+        if 'T0' in data:
+            self.T0             = data['T0']
+        if 'delta_y' in data:
+            self.delta_y        = data['delta_y']
+        if 'Rm' in data:
+            self.Rm             = data['Rm']
         if 'heatAbsorption' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
@@ -530,6 +557,11 @@ class SPI(UnknownQuantity):
             'velocity': self.velocity,
             'ablation': self.ablation,
             'deposition': self.deposition,
+            'shift': self.shift,
+            'T': self.T,
+            'T0': self.T0,
+            'delta_y': self.delta_y,
+            'Rm': self.Rm,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
@@ -560,6 +592,16 @@ class SPI(UnknownQuantity):
             raise EquationException("spi: Invalid value assigned to 'ablation'. Expected integer.")
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
+#        if type(self.shift) != int:
+#            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
+#        if all(isinstance(element, (float, int)) for element in self.T):
+#            raise EquationException("spi: Invalid value assigned to 'T'. Expected float or integer.")
+#        if type(self.T0) != float or int:
+#            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float or integer.")
+#        if type(self.delta_y) != float or int:
+#            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float or integer.")
+#        if type(self.Rm) != float or int:
+#            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float or integer.")
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 

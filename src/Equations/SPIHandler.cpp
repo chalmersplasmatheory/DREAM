@@ -5,6 +5,10 @@
 #include <iomanip>
 #include <cmath>
 #include "DREAM/Equations/SPIHandler.hpp"
+#include <complex>
+//#include <gsl/gsl_sf_expint.h>
+//#include <gsl/gsl_complex_math.h>
+//#include <gsl/gsl_complex.h>
 
 using namespace DREAM;
 using namespace std;
@@ -30,6 +34,29 @@ const real_t T0=2000.0;// eV
 const real_t n0=1e20;// m^{-3}
 const real_t r0=0.002;// m
 
+const real_t qe = Constants::ec;//1.60217662e-19;// C
+const real_t mD = Constants::mD;//3.3435837724e-27;// kg
+const real_t mH = Constants::mH;//1.67262192369e-27;// kg
+const real_t me = Constants::me;//9.10938356e-31;// kg
+const real_t eps0 = Constants::eps0;
+
+//Variables related to computing the drift
+//specials
+real_t T, sigma;
+//time parameters
+real_t t_acc, t_pol, t_pe, t_exp;
+//normalization
+real_t t_polp, t_pep, t_expp;
+//normalization constans
+real_t n0NGS, T0NGS, rp0NGS, q0NGS, E0NGS;
+//other
+real_t q; //semi complete
+real_t ZavgD; //semi complete
+real_t ZavgNe; //semi complete
+real_t Dr, rp, v0, n_e, n_i, Zavg0, gamma_e, gamma_i, mNe, r;
+real_t X, Ein, Zeff_bg, B, Te, Zavg, CST, CST0, qin, G, n_0, a0, t_detach, Lc, n, v_lab, lnLambda, Reff;
+real_t* result, pelletDeuteriumFraction, pelletNeonFraction;
+
 /**
  * Constructor
  */
@@ -39,16 +66,19 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
     OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
     OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
-    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, len_t *nbrShiftGridCell = nullptr){
+    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
+    OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
+    const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, len_t *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
     this->unknowns=u;
     this->VpVolNormFactor=VpVolNormFactor;
-    
+
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
-	
+    Dr = this->rGrid->GetDr(0);
+
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
 	// the size of the flux surfaces. The corresponding factor correcting the 
@@ -64,6 +94,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->spi_heat_absorbtion_mode=spi_heat_absorbtion_mode;
     this->spi_cloud_radius_mode=spi_cloud_radius_mode;
     this->spi_magnetic_field_dependence_mode=spi_magnetic_field_dependence_mode;
+    this->spi_shift_mode=spi_shift_mode;
 
     // Set prescribed cloud radius (if any)
     if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT){
@@ -91,6 +122,13 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Memory allocation
     AllocateQuantities();
     
+    for(len_t ip=0; ip<nShard; ip++){
+        T[ip]=T_temp[ip];   
+    }
+    this->T_0=T_0;
+    this->delta_y=delta_y;
+    this->Rm=Rm;
+    
     // Initialize rCoordPrevious to the radial coordinate at the plasma edge 
     // to use as a starting guess if rCoord must be solved for numerically
     for(len_t ip=0;ip<nShard;ip++)
@@ -99,7 +137,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Calculate pellet molar mass, molar volume and density
     real_t molarMass=0;
     real_t solidDensity=0;
-    real_t *pelletDeuteriumFraction=new real_t[nShard];
     for(len_t ip=0;ip<nShard;ip++){
         pelletMolarMass[ip]=0;
         pelletMolarVolume[ip]=0;
@@ -125,6 +162,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 		        if(Z[iZ]==1 && isotopes[iZ]==2){
 		            pelletDeuteriumFraction[ip]+=molarFraction[offset+ip];
 		        }
+                if(Z[iZ]==10){
+		            pelletNeonFraction[ip]+=molarFraction[offset+ip];
+		        }
             }
             offset+=nShard;
         }else {
@@ -149,7 +189,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 		else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS)
 			NGSConstantFactor[ip]=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda[ip]*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
 	}
-	delete [] pelletDeuteriumFraction;
 	
 	// Set number of grid cells to shift the deposition for every shard
 	for(len_t ip=0;ip<nShard;ip++)
@@ -192,6 +231,9 @@ void SPIHandler::AllocateQuantities(){
     lambda = new real_t[nShard];
     NGSConstantFactor = new real_t[nShard];
     nbrShiftGridCell = new len_t[nShard];
+    T = new real_t[nShard];
+    pelletDeuteriumFraction=new real_t[nShard];
+    pelletNeonFraction=new real_t[nShard];
 }
 
 /**
@@ -221,12 +263,173 @@ void SPIHandler::DeallocateQuantities(){
     delete [] lambda;
     delete [] NGSConstantFactor;
     delete [] nbrShiftGridCell;
+    delete [] T;
+    delete [] pelletDeuteriumFraction;
+    delete [] pelletNeonFraction;
 }
 
 /**
  * Rebuild this object
  * dt: current time step duration
  */
+
+
+//real_t E_i(real_t z) {
+//    real_t result;
+//    gsl_sf_expint_Ei(z, &result);
+//    return result;
+//}
+
+
+//std::complex<real_t> E_i(std::complex<real_t> x){
+//    std::complex<real_t> result;
+//    //mkl_z_expint(1, &x, &result)
+//    return std::exp(-x) * std::log(1 + 1/x);
+//}
+
+real_t SPIHandler::delta_r_limit(int ip){
+    return v_lab * t_acc + M_PI*n*T[ip]*Reff*q/(B*B*CST);
+}
+
+std::complex<real_t> SPIHandler::E_i(std::complex<real_t> z, int terms=2000){
+    std::complex<real_t> i(0, 1);
+    std::complex<real_t> gamma(0.57721566490, 0);
+    std::complex<real_t> floor = i * M_PI * (std::floor((std::arg(z) + M_PI)/(2*M_PI)));
+
+    std::complex<real_t> term = z;
+    std::complex<real_t> sum = z;
+    for (int ix = 2; ix < terms + 1; ix++){
+        term *= z *(ix - 1)/(ix * ix);
+        sum += term;
+    }
+    return gamma + std::log(z)- floor + sum;
+}
+
+std::complex<real_t> SPIHandler::epsilon_i(std::complex<real_t> z){
+    std::complex<real_t> i(0, 1);
+    std::complex<real_t> conjugate = std::conj(z);
+    return -0.5 * i * (E_i(z) - E_i(conjugate));
+}
+
+real_t SPIHandler::t_bis_function(real_t t_prim){
+    return t_prim + t_expp;
+}
+
+real_t SPIHandler::epsilon_small(real_t t_prim){
+    std::complex<real_t> i(0, 1);
+    real_t t_bis = t_bis_function(t_prim);
+    real_t term1 = std::real(exp(-t_expp) * epsilon_i((1 + i/t_polp) * t_bis));
+    real_t numerator = exp(t_prim) * (sin(t_bis/t_polp) - 1/t_polp * cos(t_bis/t_polp));
+    real_t denominator =  t_pep * (1 + 1/(t_polp * t_polp));
+    real_t term2 = numerator/denominator;
+    return term1 - term2;
+}
+
+real_t SPIHandler::primitive_second_row(real_t t_prim){
+    std::complex<real_t> i(0, 1);
+    real_t t_bis = t_bis_function(t_prim);
+    std::complex<real_t> term1 = exp(t_bis) * epsilon_i(i * t_bis/t_polp);
+    std::complex<real_t> term2 = epsilon_i((1 + i/t_polp)*t_bis);
+    real_t result = std::real(exp(-t_prim-t_expp)*(term1 - term2));
+    return result;
+}
+
+real_t SPIHandler::primitive_third_row(real_t t_prim){
+    real_t t_bis = t_bis_function(t_prim);
+    real_t term1 = t_polp * cos(t_bis/t_polp);
+    real_t term2 = sin(t_bis/t_polp);
+    return term1 + term2;
+}
+
+real_t SPIHandler::first_row(){
+    real_t term1 = epsilon_small(t_pep) * exp(-t_pep);
+    real_t term2 = epsilon_small(0);
+    return term1 - term2;
+}
+
+real_t SPIHandler::second_row(){
+    real_t term1 = primitive_second_row(t_pep);
+    real_t term2 = primitive_second_row(0);
+    return term1 - term2;
+}
+
+real_t SPIHandler::third_row(){
+    real_t factor = 1/t_pep * 1/(1 + 1/(t_polp*t_polp));
+    real_t term1 = primitive_third_row(t_pep);
+    real_t term2 = primitive_third_row(0);
+    return factor * (term1 - term2);
+}
+
+real_t SPIHandler::delta_r(int ip){
+    real_t first = first_row();
+    real_t second = second_row();
+    real_t third = third_row();
+    real_t term1 = v_lab * t_acc;
+    real_t factor = (1+Zavg)*2*qe*T[ip]*q/(CST*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip]))*t_acc;
+    return term1 + factor * (first + second + third);
+}
+
+void SPIHandler::assign_time_parameters(int ip){
+    t_acc = n/(1+Zavg)*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip])*Reff/(B*B);
+    t_pol = q*Rm/CST;
+    t_pe = qe*T[ip]*n/(2*CST*(n_i+n_e)*qe*Te);
+    t_exp = Lc/(2*CST);
+    t_polp = t_pol/t_acc;
+    t_pep = t_pe/t_acc;
+    t_expp = t_exp/t_acc;
+    //std::cout<<"t_acc "<<t_acc<<std::endl;
+    //std::cout<<"t_exp "<<t_exp<<std::endl;
+}
+
+void SPIHandler::assign_misc_parameters(int ip){
+    //normalization constans
+    n0NGS = 1e20;
+    T0NGS = 2e3;
+    rp0NGS = 2e-3;
+    q0NGS = n0NGS*sqrt(2 * T0NGS * T0NGS * T0NGS/(M_PI * me));
+    E0NGS = 2*T0NGS;
+    //other
+    v0 = fabs(vp[3*ip]);
+    n_e = ncold[irp[ip]];
+    n_i = n_e;
+    q = 1; //semi complete
+    ZavgD = 1;//semi complete
+    ZavgNe = 2;//semi complete
+    Zavg0 = 1;
+    gamma_e = 1;
+    gamma_i = 3;
+    mNe = 10 * mH;
+    Zeff_bg = 1;//Unclear if finished
+    X = 0.5*pelletDeuteriumFraction[ip]/(0.5*pelletDeuteriumFraction[ip]+pelletNeonFraction[ip]);
+    rp = 0.002;//complete?
+    r = this->rGrid->GetMinorRadius();
+}
+
+void SPIHandler::compute_parameters(int ip){
+    B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
+    Te = Tcold[irp[ip]];
+    std::cout<<Te<<std::endl;
+    Zavg = ZavgD*pelletDeuteriumFraction[ip] + ZavgNe*pelletNeonFraction[ip];
+    CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
+    CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
+    qin = n_e * sqrt(2*Te*Te*Te/(M_PI*me));
+    Ein = 2 * Te;
+    G = (27.0837 + tan(1.48709*X))*1e-3*pow(qin/q0NGS,1.0/3.0)*pow(Ein/E0NGS, 7.0/6.0)*pow(rp/rp0NGS, 4.0/3.0); //Ypdot[ip]
+    n_0 = (1 + Zavg)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
+    a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
+    t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
+    Lc = 2 * CST0*t_detach;
+    n = n_0 * Lc;
+    v_lab = a0 * t_detach;
+    //if (Te==0){
+    //    lnLambda=1e-40;
+    //}else{
+        lnLambda = 14.9 - 0.3*log(n_e*1e-20)+log(Te*1e-3);//eqsys->GetREFluid()->GetLnLambda()->GetLnLambdaT();
+    //}
+    sigma = 16*M_PI*M_PI*eps0*eps0*qe*sqrt(qe)*Te*sqrt(Te)/(4*sqrt(2*M_PI)/3/1.96*Zeff_bg*qe*qe*sqrt(me)*lnLambda);//rf->GetEffectiveCriticalField(irp[ip]);
+    Reff = -2*M_PI*M_PI*Rm*r/(sigma*delta_y*delta_y*delta_y*log((delta_y/(r*M_PI))));
+}
+
 void SPIHandler::Rebuild(real_t dt){
 
     // Collect current data, and for some variables data from the previous time step
@@ -320,10 +523,29 @@ void SPIHandler::Rebuild(real_t dt){
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
         CalculateRCld();
 
+    result = new real_t[nShard];
+    for(len_t ip = 0; ip < nShard; ip++){
+        assign_misc_parameters(ip);
+        assign_time_parameters(ip);
+        compute_parameters(ip);
+        result[ip] = delta_r(ip);
+    }
     // Calculate deposition (if any)
-    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
-        CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-        
+    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE){
+        for(len_t ip=0;ip<nShard;ip++)
+            nbrShiftGridCell[ip]=0;
+
+        if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
+            CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
+        }
+        else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE){
+            for(len_t ip=0;ip<nShard;ip++){
+                if (!std::isnan(result[ip]) && !isinf(result[ip])){
+                    //nbrShiftGridCell[ip]+=std::round(result[ip]/Dr);
+                    //std::cout<<nShard<<std::endl;
+                }
+            }
+        }
         // Shift the deposition profile
         for(len_t ip=0;ip<nShard;ip++){
             if(rCoordPNext[ip]>rCoordPPrevious[ip]){

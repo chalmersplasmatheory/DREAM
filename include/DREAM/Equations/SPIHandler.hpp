@@ -6,6 +6,7 @@
 
 namespace DREAM { class SPIHandler; }
 #include <iostream>
+#include <complex>
 
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
@@ -15,6 +16,8 @@ namespace DREAM { class SPIHandler; }
 #include "DREAM/Constants.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/NotImplementedException.hpp"
+#include "DREAM/Constants.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM{
     class SPIHandler{
@@ -32,6 +35,14 @@ namespace DREAM{
         len_t spi_heat_absorbtion_mode;
         len_t spi_cloud_radius_mode;
         len_t spi_magnetic_field_dependence_mode;
+        len_t spi_shift_mode;
+
+        real_t *T = nullptr;
+        real_t *pelletDeuteriumFraction=nullptr;
+        real_t *pelletNeonFraction=nullptr;
+        real_t T_0;
+        real_t delta_y;
+        real_t Rm;
         
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
@@ -98,6 +109,49 @@ namespace DREAM{
         static const len_t isotopesSolidDensityList[];
         static const real_t solidDensityList[];
 
+        real_t t_acc;
+        real_t t_pol;
+        real_t t_pe;
+        real_t t_exp;
+        real_t t_polp;
+        real_t t_pep;
+        real_t t_expp;
+        real_t v0;
+        real_t n_e;
+        real_t sigma;
+        real_t n0NGS;
+        real_t T0NGS;
+        real_t rp0NGS;
+        real_t q0NGS;
+        real_t E0NGS;
+        real_t q;
+        real_t ZavgD;
+        real_t ZavgNe;
+        real_t Zavg0;
+        real_t gamma_e;
+        real_t gamma_i;
+        real_t mNe;
+        real_t r;
+        real_t B;
+        real_t Te;
+        real_t Zavg;
+        real_t CST;
+        real_t CST0;
+        real_t qin;
+        real_t G;
+        real_t n_0;
+        real_t a0;
+        real_t t_detach;
+        real_t Lc;
+        real_t n;
+        real_t v_lab;
+        real_t lnLambda;
+        real_t Reff;
+        real_t X;
+        real_t Ein;
+        real_t rp;
+        real_t Dr;
+
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
         real_t CalculateBFieldDampingJOREK(len_t ir);
@@ -120,10 +174,28 @@ namespace DREAM{
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
             OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
-            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
+            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, 
+            OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
+            const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm,
+            real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();
+
+        real_t delta_r_limit(int ip);
+        std::complex<real_t> E_i(std::complex<real_t> z, int terms);
+        std::complex<real_t> epsilon_i(std::complex<real_t> z);
+        real_t t_bis_function(real_t t_prim);
+        real_t epsilon_small(real_t t_prim);
+        real_t primitive_second_row(real_t t_prim);
+        real_t primitive_third_row(real_t t_prim);
+        real_t first_row();
+        real_t second_row();
+        real_t third_row();
+        real_t delta_r(int ip);
+        void assign_time_parameters(int ip);
+        void assign_misc_parameters(int ip);
+        void compute_parameters(int ip);
 
         void Rebuild(real_t dt);
 
