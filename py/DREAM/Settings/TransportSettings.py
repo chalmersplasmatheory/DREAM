@@ -398,7 +398,7 @@ class TransportSettings:
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
         if 'pstar' in data:
-            self.pstar = data['pstar']
+            self.pstar = float(data['pstar'])
             
         if 'interp1d_param' in data:
             self.interp1d_param = data['interp1d_param']
