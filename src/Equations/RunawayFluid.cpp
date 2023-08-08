@@ -42,8 +42,7 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_compton_mode compton_mode,
     FVM::Interpolator1D *compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), extrapolateDreicer(extrapolateDreicer),
-    lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), analyticRE(distRE), 
+    lnLambdaEI(lnLei), unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
     cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
     ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)

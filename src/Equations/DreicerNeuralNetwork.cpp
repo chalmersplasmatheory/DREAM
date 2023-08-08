@@ -10,7 +10,6 @@
 
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "FVM/config.h"
-#include <iostream>
 
 using namespace DREAM;
 
