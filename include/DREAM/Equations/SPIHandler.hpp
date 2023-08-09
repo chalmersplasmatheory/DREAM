@@ -119,9 +119,6 @@ namespace DREAM{
         real_t v0;
         real_t n_e;
         real_t sigma;
-        real_t n0NGS;
-        real_t T0NGS;
-        real_t rp0NGS;
         real_t q0NGS;
         real_t E0NGS;
         real_t q;
@@ -149,8 +146,10 @@ namespace DREAM{
         real_t Reff;
         real_t X;
         real_t Ein;
-        real_t rp;
+        real_t* rp=nullptr;
+        real_t* rpdot=nullptr;
         real_t Dr;
+        real_t a;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
@@ -174,7 +173,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
             OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
-            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, 
+            OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
             const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm,
             real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
@@ -182,6 +181,10 @@ namespace DREAM{
         void AllocateQuantities();
         void DeallocateQuantities();
 
+        void Yp_to_rp_conversion();
+        real_t integrand_cos(real_t x);
+        real_t integrand_sin(real_t x);
+        real_t epsilon_i_temp(real_t b);
         real_t delta_r_limit(int ip);
         std::complex<real_t> E_i(std::complex<real_t> z, int terms);
         std::complex<real_t> epsilon_i(std::complex<real_t> z);

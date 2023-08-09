@@ -6,6 +6,7 @@
 #include <cmath>
 #include "DREAM/Equations/SPIHandler.hpp"
 #include <complex>
+#include <gsl/gsl_integration.h>
 //#include <gsl/gsl_sf_expint.h>
 //#include <gsl/gsl_complex_math.h>
 //#include <gsl/gsl_complex.h>
@@ -48,14 +49,14 @@ real_t t_acc, t_pol, t_pe, t_exp;
 //normalization
 real_t t_polp, t_pep, t_expp;
 //normalization constans
-real_t n0NGS, T0NGS, rp0NGS, q0NGS, E0NGS;
+real_t q0NGS, E0NGS;
 //other
 real_t q; //semi complete
 real_t ZavgD; //semi complete
 real_t ZavgNe; //semi complete
-real_t Dr, rp, v0, n_e, n_i, Zavg0, gamma_e, gamma_i, mNe, r;
+real_t Dr, v0, n_e, n_i, Zavg0, gamma_e, gamma_i, mNe, r, a;
 real_t X, Ein, Zeff_bg, B, Te, Zavg, CST, CST0, qin, G, n_0, a0, t_detach, Lc, n, v_lab, lnLambda, Reff;
-real_t* result, pelletDeuteriumFraction, pelletNeonFraction;
+real_t* shift_r, rp, rpdot, pelletDeuteriumFraction, pelletNeonFraction;
 
 /**
  * Constructor
@@ -234,6 +235,8 @@ void SPIHandler::AllocateQuantities(){
     T = new real_t[nShard];
     pelletDeuteriumFraction=new real_t[nShard];
     pelletNeonFraction=new real_t[nShard];
+    rp=new real_t[nShard];
+    rpdot=new real_t[nShard];
 }
 
 /**
@@ -266,6 +269,8 @@ void SPIHandler::DeallocateQuantities(){
     delete [] T;
     delete [] pelletDeuteriumFraction;
     delete [] pelletNeonFraction;
+    delete [] rp;
+    delete [] rpdot;
 }
 
 /**
@@ -287,8 +292,54 @@ void SPIHandler::DeallocateQuantities(){
 //    return std::exp(-x) * std::log(1 + 1/x);
 //}
 
+void SPIHandler::Yp_to_rp_conversion(){
+    real_t temp;
+    for(len_t ip=0; ip<nShard; ip++){
+        rp[ip] = (!isnan(temp) && !isinf(temp) && pow(YpPrevious[ip], 3.0/5.0) > 0) ? pow(YpPrevious[ip], 3.0/5.0) : 0;
+        temp = 3.0/5.0 * pow(rp[ip], -2.0/3.0) * Ypdot[ip];
+        rpdot[ip] = (!isnan(temp) && !isinf(temp) && temp <= 0) ? temp : 0;
+    }
+
+}
+real_t SPIHandler::integrand_cos(real_t x){
+    return a*cos(x)/(a*a+x*x);
+}
+real_t SPIHandler::integrand_sin(real_t x){
+    return x*sin(x)/(a*a+x*x);
+}
+real_t SPIHandler::epsilon_i_temp(real_t b){
+    gsl_integration_workspace *workspace_cos = gsl_integration_workspace_alloc(1000);
+    gsl_integration_workspace *workspace_sin = gsl_integration_workspace_alloc(1000);
+    gsl_function F1;
+    gsl_function F2;
+    F1.function = [](real_t x, void* params) -> real_t {
+        SPIHandler* spi = static_cast<SPIHandler*>(params);
+        return spi->integrand_cos(x);
+    };
+    F2.function = [](real_t x, void* params) -> real_t {
+        SPIHandler* spi = static_cast<SPIHandler*>(params);
+        return spi->integrand_sin(x);
+    };
+    F1.params = nullptr;
+    F2.params = nullptr;
+
+    real_t sum_cos, sum_sin, error_cos, error_sin;
+    if (b>0){
+        gsl_integration_qags(&F1, 0, b, 0, 1e-7, 1000, workspace_cos, &sum_cos, &error_cos);
+        gsl_integration_qags(&F2, 0, b, 0, 1e-7, 1000, workspace_sin, &sum_sin, &error_sin);
+    }else{
+        gsl_integration_qags(&F1, b, 0, 0, 1e-7, 1000, workspace_cos, &sum_cos, &error_cos);
+        gsl_integration_qags(&F2, b, 0, 0, 1e-7, 1000, workspace_sin, &sum_sin, &error_sin);
+        sum_cos = -sum_cos;
+        sum_sin = -sum_sin;
+    }
+    gsl_integration_workspace_free(workspace_cos);
+    gsl_integration_workspace_free(workspace_sin);
+    return exp(a)*(sum_cos+sum_sin);
+}
+
 real_t SPIHandler::delta_r_limit(int ip){
-    return v_lab * t_acc + M_PI*n*T[ip]*Reff*q/(B*B*CST);
+    return v_lab*t_acc + M_PI*n*T[ip]*Reff*q/(B*B*CST);
 }
 
 std::complex<real_t> SPIHandler::E_i(std::complex<real_t> z, int terms=2000){
@@ -329,6 +380,10 @@ real_t SPIHandler::primitive_second_row(real_t t_prim){
     std::complex<real_t> i(0, 1);
     real_t t_bis = t_bis_function(t_prim);
     std::complex<real_t> term1 = exp(t_bis) * epsilon_i(i * t_bis/t_polp);
+    std::cout<<"complex "<<term1<<std::endl;
+    a=0;
+    std::cout<<t_bis/t_polp<<std::endl;
+    std::cout<<exp(t_bis) * epsilon_i_temp(t_bis/t_polp)<<std::endl;
     std::complex<real_t> term2 = epsilon_i((1 + i/t_polp)*t_bis);
     real_t result = std::real(exp(-t_prim-t_expp)*(term1 - term2));
     return result;
@@ -377,17 +432,12 @@ void SPIHandler::assign_time_parameters(int ip){
     t_polp = t_pol/t_acc;
     t_pep = t_pe/t_acc;
     t_expp = t_exp/t_acc;
-    //std::cout<<"t_acc "<<t_acc<<std::endl;
-    //std::cout<<"t_exp "<<t_exp<<std::endl;
 }
 
 void SPIHandler::assign_misc_parameters(int ip){
     //normalization constans
-    n0NGS = 1e20;
-    T0NGS = 2e3;
-    rp0NGS = 2e-3;
-    q0NGS = n0NGS*sqrt(2 * T0NGS * T0NGS * T0NGS/(M_PI * me));
-    E0NGS = 2*T0NGS;
+    q0NGS = n0*sqrt(2 * T0 * T0 * T0/(M_PI * me));
+    E0NGS = 2*T0;
     //other
     v0 = fabs(vp[3*ip]);
     n_e = ncold[irp[ip]];
@@ -401,31 +451,26 @@ void SPIHandler::assign_misc_parameters(int ip){
     mNe = 10 * mH;
     Zeff_bg = 1;//Unclear if finished
     X = 0.5*pelletDeuteriumFraction[ip]/(0.5*pelletDeuteriumFraction[ip]+pelletNeonFraction[ip]);
-    rp = 0.002;//complete?
     r = this->rGrid->GetMinorRadius();
 }
 
 void SPIHandler::compute_parameters(int ip){
+    depositionRate = CalculateDepositionRate(pelletDeuteriumFraction);
     B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
     Te = Tcold[irp[ip]];
-    std::cout<<Te<<std::endl;
     Zavg = ZavgD*pelletDeuteriumFraction[ip] + ZavgNe*pelletNeonFraction[ip];
     CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     qin = n_e * sqrt(2*Te*Te*Te/(M_PI*me));
     Ein = 2 * Te;
-    G = (27.0837 + tan(1.48709*X))*1e-3*pow(qin/q0NGS,1.0/3.0)*pow(Ein/E0NGS, 7.0/6.0)*pow(rp/rp0NGS, 4.0/3.0); //Ypdot[ip]
+    G = 4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip];//(27.0837 + tan(1.48709*X))*1e-3*pow(qin/q0NGS,1.0/3.0)*pow(Ein/E0NGS, 7.0/6.0)*pow(rp[ip]/r0, 4.0/3.0)
     n_0 = (1 + Zavg)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
     a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
     t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
     Lc = 2 * CST0*t_detach;
     n = n_0 * Lc;
     v_lab = a0 * t_detach;
-    //if (Te==0){
-    //    lnLambda=1e-40;
-    //}else{
-        lnLambda = 14.9 - 0.3*log(n_e*1e-20)+log(Te*1e-3);//eqsys->GetREFluid()->GetLnLambda()->GetLnLambdaT();
-    //}
+    lnLambda = 14.9 - 0.3*log(n_e*1e-20)+log(Te*1e-3);//eqsys->GetREFluid()->GetLnLambda()->GetLnLambdaT();
     sigma = 16*M_PI*M_PI*eps0*eps0*qe*sqrt(qe)*Te*sqrt(Te)/(4*sqrt(2*M_PI)/3/1.96*Zeff_bg*qe*qe*sqrt(me)*lnLambda);//rf->GetEffectiveCriticalField(irp[ip]);
     Reff = -2*M_PI*M_PI*Rm*r/(sigma*delta_y*delta_y*delta_y*log((delta_y/(r*M_PI))));
 }
@@ -523,12 +568,17 @@ void SPIHandler::Rebuild(real_t dt){
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
         CalculateRCld();
 
-    result = new real_t[nShard];
+    shift_r = new real_t[nShard];
+    Yp_to_rp_conversion();
     for(len_t ip = 0; ip < nShard; ip++){
-        assign_misc_parameters(ip);
-        assign_time_parameters(ip);
-        compute_parameters(ip);
-        result[ip] = delta_r(ip);
+        if (irp[ip] < nr){
+            assign_misc_parameters(ip);
+            compute_parameters(ip);
+            assign_time_parameters(ip);
+            shift_r[ip] = delta_r(ip);
+            //std::cout<<"shift"<<shift_r[ip]<<std::endl;
+            //n*T[ip]*Reff*q/(B*B*CST);
+        }
     }
     // Calculate deposition (if any)
     if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE){
@@ -540,9 +590,11 @@ void SPIHandler::Rebuild(real_t dt){
         }
         else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE){
             for(len_t ip=0;ip<nShard;ip++){
-                if (!std::isnan(result[ip]) && !isinf(result[ip])){
-                    //nbrShiftGridCell[ip]+=std::round(result[ip]/Dr);
-                    //std::cout<<nShard<<std::endl;
+                if (YpPrevious[ip]>0 && irp[ip]<nr){
+                    nbrShiftGridCell[ip]+=std::round(shift_r[ip]/Dr);
+                    //std::cout<<"shift "<<shift_r[ip]<<std::endl;
+                    //std::cout<<"rp "<<rp[ip]<<std::endl;
+                    //std::cout<<"xp "<<xp[ip]<<std::endl;
                 }
             }
         }
