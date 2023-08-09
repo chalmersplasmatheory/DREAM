@@ -206,6 +206,7 @@ class Solver:
 
         data['preconditioner'] = self.preconditioner.todict()
 
+        data['tolerance'] = self.tolerance.todict()
         if self.type == LINEAR_IMPLICIT:
             data['debug'] = {
                 'printmatrixinfo': self.debug_printmatrixinfo,
@@ -215,7 +216,6 @@ class Solver:
                 'timestep': self.debug_timestep
             }
         elif self.type == NONLINEAR:
-            data['tolerance'] = self.tolerance.todict()
             data['debug'] = {
                 'printjacobianinfo': self.debug_printjacobianinfo,
                 'savejacobian': self.debug_savejacobian,

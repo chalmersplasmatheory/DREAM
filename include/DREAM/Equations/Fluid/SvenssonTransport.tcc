@@ -391,7 +391,7 @@ const len_t DREAM::SvenssonTransport<T>::CountNp(
 ) {
     len_t np_count=0;
     
-    if(np1In) {
+    if(np1In == 0) {
         np_count=1;
     } else {
         for (len_t i1 = 0; i1 < np1In; i1++) {

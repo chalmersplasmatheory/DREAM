@@ -141,17 +141,17 @@ arguments:
 If the time stepper should automatically determine the initial time step, the
 method takes the following arguments (should be given as keyword arguments):
 
-+-------------------+------------------------------+-------------------------------------------------------------------------------------+
-| Option            | Default value                | Description                                                                         |
-+===================+==============================+=====================================================================================+
-| ``automaticstep`` | :math:`10^{-12}\,\mathrm{s}` | Time step used first to estimate the initial ionization time scale.                 |
-+-------------------+------------------------------+-------------------------------------------------------------------------------------+
-| ``dtmax``         | None                         | Maximum time step allowed.                                                          |
-+-------------------+------------------------------+-------------------------------------------------------------------------------------+
-| ``safetyfactor``  | 50                           | Factor giving the relation between the ionization time scale and initial time step. |
-+-------------------+------------------------------+-------------------------------------------------------------------------------------+
-| ``tmax``          | Final time of simulation.    | Final time of simulation.                                                           |
-+-------------------+------------------------------+-------------------------------------------------------------------------------------+
++-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Option            | Default value                | Description                                                                                                                                                |
++===================+==============================+============================================================================================================================================================+
+| ``automaticstep`` | :math:`10^{-12}\,\mathrm{s}` | Time step used first to estimate the initial ionization time scale.                                                                                        |
++-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``dtmax``         | None                         | Maximum time step allowed.                                                                                                                                 |
++-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``safetyfactor``  | 50                           | Factor giving the relation between the ionization time scale and initial time step. ``dt = dt0 / safetyfactor``, where ``dt0`` is the estimated time step. |
++-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``tmax``          | Final time of simulation.    | Final time of simulation.                                                                                                                                  |
++-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Limit number of saved steps
 ***************************
@@ -163,12 +163,12 @@ saved steps. The user thus specifies the minimum time duration
 :math:`\Delta t_{\mathrm{save}}` between two saved time steps. This is done
 using the ``setMinSaveTimestep()`` function:
 
-```python
-ds = DREAMSettings()
-...
-ds.timestep.setIonization(dt0=1e-10, dtmax=1e-5, tmax=0.003)
-ds.timestep.setMinSaveTimestep(1e-6)
-```
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.timestep.setIonization(dt0=1e-10, dtmax=1e-5, tmax=0.003)
+   ds.timestep.setMinSaveTimestep(1e-6)
 
 Examples
 ********
