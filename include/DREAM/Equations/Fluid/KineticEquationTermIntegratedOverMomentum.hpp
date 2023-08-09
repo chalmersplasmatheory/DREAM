@@ -20,7 +20,7 @@ namespace DREAM {
         PetscScalar *kineticVector;      // vector of size id_f
         PetscScalar *fluidVector;        // vector of size nr 
         
-        Mat CsetElements=nullptr, *CsetJacobian;
+        Mat CsetElements=nullptr, *CsetJacobian=nullptr;
 
         PetscInt *idxFluid;
         len_t NCells;
@@ -39,6 +39,7 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const override {return 1;};
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
 
+		virtual void Allocate();
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
         virtual bool GridRebuilt() override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;

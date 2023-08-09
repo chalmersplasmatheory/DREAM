@@ -60,6 +60,10 @@ ION_CHARGED_ADVECTION_MODE_PRESCRIBED = 2
 ION_NEUTRAL_ADVECTION_MODE_NONE = 1
 ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED = 2
 
+# Ion source types
+ION_SOURCE_NONE = 1
+ION_SOURCE_PRESCRIBED = 2
+
 class IonSpecies:
     
     def __init__(self, settings, name, Z, ttype=0, Z0=None, isotope=0, SPIMolarFraction=-1.0, opacity_mode = ION_OPACITY_MODE_TRANSPARENT, 
@@ -68,7 +72,7 @@ class IonSpecies:
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
         t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,        
-        T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
+        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
         """
         Constructor.
 
@@ -80,7 +84,8 @@ class IonSpecies:
         :param int Z0:                 Charge state to populate with given density.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
-        :param T:                      Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
+        :param bool init_equil:        Initialize ion species in coronal equilibrium.
+        :param float T:                Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
         :param numpy.ndarray interpr:  Radial grid onto which ion densities should be interpolated.
@@ -103,6 +108,8 @@ class IonSpecies:
         self.neutral_diffusion_mode = None
         self.charged_advection_mode = None
         self.neutral_advection_mode = None
+        self.init_equil = init_equil
+        self.initialNi = None
 
         self.setSPIMolarFraction(SPIMolarFraction)
 
@@ -116,19 +123,29 @@ class IonSpecies:
         if name == 'H' and hydrogen == False:
             print("WARNING: Ion species with name 'H' added, but 'hydrogen = False'.")
 
+        self.source_n = np.zeros((self.Z+1, 1))
+        self.source_t = np.array([0])
+        self.source_type = ION_SOURCE_NONE
+
         self.n = None
         self.r = None
         self.t = None
         if ttype == IONS_PRESCRIBED:
+            if init_equil:
+                raise EquationException(f"ion_species: '{name}': Cannot initialize species in coronal equilibrium when density is prescribed.")
+
             if Z0 is not None:
                 self.initialize_prescribed_charge_state(Z0=Z0, n=n, r=r, t=t, interpr=interpr, interpt=interpt)
             else:
                 self.initialize_prescribed(n=n, r=r, t=t)
         elif ttype == IONS_DYNAMIC:
             if Z0 is not None:
+                if init_equil:
+                    raise EquationException(f"ion_species: '{name}': Cannot initialize species in coronal equilibrium when density for specific charge state is specified.")
+
                 self.initialize_dynamic_charge_state(Z0=Z0, n=n, r=r, interpr=interpr)
             else:
-                self.initialize_dynamic(n=n, r=r)
+                self.initialize_dynamic(n=n, r=r, init_equil=init_equil, interpr=interpr)
         elif ttype == IONS_EQUILIBRIUM:
             self.initialize_equilibrium(n=n, r=r, Z0=Z0)
         elif Z0 is not None:
@@ -209,6 +226,7 @@ class IonSpecies:
         else:
             self.neutral_advection_mode = neutral_advection_mode
 
+
     def setTemperature(self, T):
         """
         Sets the ion temperature from an input value `T`. 
@@ -228,13 +246,37 @@ class IonSpecies:
              raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
                 .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
         return T
+        
+
+
+    def initializeToEquilibrium(self):
+        """
+        Returns a flag indicating whether or not this ion species should
+        be initialized according to coronal equilibrium.
+        """
+        return self.init_equil
+
 
     def getDensity(self):
         """
         Returns the prescribed density array for this ion species.
         """
         return self.n
-        
+
+
+    def getSourceDensity(self):
+        """
+        Returns the (time evolution of the) source term used to seed this
+        ion species with new particles.
+        """
+        return self.source_n
+
+
+    def getSourceType(self):
+        """
+        Returns the type of the source term used.
+        """
+        return self.source_type
         
         
     # Getters for diffusion-related quantities    
@@ -329,6 +371,13 @@ class IonSpecies:
         return self.r
 
 
+    def getSourceTime(self):
+        """
+        Returns the time grid on which the ion source is defined.
+        """
+        return self.source_t
+
+
     def getTime(self):
         """
         Returns the time grid on which the ion densities are defined.
@@ -343,6 +392,7 @@ class IonSpecies:
         """
         return self.ttype
         
+
     def getOpacityMode(self):
         """
         Returns the opacity mode to use for evolving the ion densities
@@ -350,6 +400,7 @@ class IonSpecies:
         """
         return self.opacity_mode
         
+
     def getChargedDiffusionMode(self):
         """
         Returns the charged diffusion mode to use for evolving the ion densities
@@ -357,6 +408,7 @@ class IonSpecies:
         """
         return self.charged_diffusion_mode
         
+
     def getNeutralDiffusionMode(self):
         """
         Returns the neutral diffusion mode to use for evolving the ion densities
@@ -364,6 +416,7 @@ class IonSpecies:
         """
         return self.neutral_diffusion_mode
         
+
     def getChargedAdvectionMode(self):
         """
         Returns the charged advection mode to use for evolving the ion densities
@@ -371,6 +424,15 @@ class IonSpecies:
         """
         return self.charged_advection_mode
         
+
+    def getInitialSpeciesDensity(self):
+        """
+        Returns the initial density of all charge states combined (used
+        when initializing the species in coronal equilibrium).
+        """
+        return self.initialNi
+
+
     def getNeutralAdvectionMode(self):
         """
         Returns the neutral advection mode to use for evolving the ion densities
@@ -378,12 +440,14 @@ class IonSpecies:
         """
         return self.neutral_advection_mode
 
+
     def getTemperature(self):
         """
         Returns the initial temperature array to use for evolving
         the ion heat of this species 
         """
         return self.T
+
 
     def getZ(self):
         """
@@ -397,6 +461,7 @@ class IonSpecies:
 
     def getSPIMolarFraction(self): return self.SPIMolarFraction
     
+
     def setSPIMolarFraction(self, SPIMolarFraction):
         if np.isscalar(SPIMolarFraction):
             self.SPIMolarFraction = np.array([SPIMolarFraction])
@@ -461,7 +526,7 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
 
-    def initialize_dynamic(self, n=None, r=None):
+    def initialize_dynamic(self, n=None, r=None, init_equil=False, interpr=None):
         """
         Evolve ions according to the ion rate equation in DREAM.
         """
@@ -474,24 +539,42 @@ class IonSpecies:
         if type(n) == list:
             n = np.array(n)
 
-        # Scalar (assume density constant in spacetime)
-        if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-            raise EquationException("ion_species: '{}': Initial density must be two dimensional (charge states x radius).".format(self.name))
+        if init_equil:
+            # If scalar...
+            if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+                r = interpr if interpr is not None else np.array([0])
+                N = np.zeros((r.size,))
+                N[:] = n
+            else:
+                N = n
 
-        if r is None:
-            raise EquationException("ion_species: '{}': Non-scalar initial ion density prescribed, but no radial coordinates given.".format(self.name))
+            if N.ndim != 1:
+                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of initial density.")
+            if r.size != N.size:
+                raise EquationException(f"ion_species: '{self.name}': Invalid size of initial species density. n.size != r.size.")
 
-        # Radial profiles for all charge states 
-        if len(n.shape) == 2:
-            if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
-                raise EquationException("ion_species: '{}': Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
-                    .format(self.name, n.shape[0], n.shape[1], self.Z+1, r.size))
-
-            self.t = None
             self.r = r
-            self.n = n
+            self.initialNi = N
+            self.init_equil = True
         else:
-            raise EquationException("ion_species: '{}': Unrecognized shape of initial density: {}.".format(n.shape).format(self.name))
+            # Scalar (assume density constant in spacetime)
+            if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+                raise EquationException("ion_species: '{}': Initial density must be two dimensional (charge states x radius).".format(self.name))
+
+            if r is None:
+                raise EquationException("ion_species: '{}': Non-scalar initial ion density prescribed, but no radial coordinates given.".format(self.name))
+
+            # Radial profiles for all charge states 
+            if len(n.shape) == 2:
+                if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
+                    raise EquationException("ion_species: '{}': Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
+                        .format(self.name, n.shape[0], n.shape[1], self.Z+1, r.size))
+
+                self.t = None
+                self.r = r
+                self.n = n
+            else:
+                raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of initial density: {n.shape}.")
 
 
     def initialize_equilibrium(self, n=None, r=None, interpr=None):
@@ -534,21 +617,21 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of initial density: {}.".format(self.name, n.shape))
 
 
-    def initialize_dynamic_neutral(self, n=None, r=None, interpr=None):
+    def initialize_dynamic_neutral(self, n=None, r=None, interpr=None, init_equil=False):
         """
         Evolve the ions dynamically, initializing them all as neutrals.
         """
-        self.initialize_dynamic_charge_state(0, n=n, r=r, interpr=interpr)
+        self.initialize_dynamic_charge_state(0, n=n, r=r, interpr=interpr, init_equil=init_equil)
 
 
-    def initialize_dynamic_fully_ionized(self, n=None, r=None, interpr=None):
+    def initialize_dynamic_fully_ionized(self, n=None, r=None, interpr=None, init_equil=False):
         """
         Evolve the ions dynamically, initializing them all as fully ionized.
         """
-        self.initialize_dynamic_charge_state(self.Z, n=n, r=r, interpr=interpr)
+        self.initialize_dynamic_charge_state(self.Z, n=n, r=r, interpr=interpr, init_equil=init_equil)
 
 
-    def initialize_dynamic_charge_state(self, Z0, n=None, r=None, interpr=None):
+    def initialize_dynamic_charge_state(self, Z0, n=None, r=None, interpr=None, init_equil=False):
         """
         Evolve the ions dynamically, initializing them all to reside in the specified charge state Z0.
         """
@@ -568,7 +651,7 @@ class IonSpecies:
             N = np.zeros((self.Z+1,r.size))
             N[Z0,:] = n
 
-            self.initialize_dynamic(n=N, r=r)
+            self.initialize_dynamic(n=N, r=r, init_equil=init_equil)
             return
 
         if r is None:
@@ -582,7 +665,7 @@ class IonSpecies:
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
-            self.initialize_dynamic(n=N, r=r)
+            self.initialize_dynamic(n=N, r=r, init_equil=init_equil)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
@@ -655,8 +738,6 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
             
             
-            
-            
     def initialize_charged_prescribed_diffusion(self, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None, interpr=None, interpt=None):
         """
         Prescribes the evolution of the charged diffusion coefficients for this ion species.
@@ -695,6 +776,7 @@ class IonSpecies:
             self.charged_prescribed_diffusion = charged_prescribed_diffusion
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed charged diffusion coefficient: {}.".format(self.name, charged_prescribed_diffusion.shape))
+
 
     def initialize_neutral_prescribed_diffusion(self, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None, interpr=None, interpt=None):
         """
@@ -745,8 +827,6 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral diffusion coefficient: {}.".format(self.name, neutral_prescribed_diffusion.shape))
    
    
-   
-   
     def initialize_charged_prescribed_advection(self, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None, interpr=None, interpt=None):
         """
         Prescribes the evolution of the charged advection coefficients for this ion species.
@@ -785,6 +865,7 @@ class IonSpecies:
             self.charged_prescribed_advection = charged_prescribed_advection
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed charged advection coefficient: {}.".format(self.name, charged_prescribed_advection.shape))
+
 
     def initialize_neutral_prescribed_advection(self, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None, interpr=None, interpt=None):
         """
@@ -835,11 +916,57 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral advection coefficient: {}.".format(self.name, neutral_prescribed_advection.shape))
 
 
+    def initialize_source(self, n, t=None, Z0=0):
+        """
+        Initialize the ion source term associated with this species.
+        """
+        self.source_type = ION_SOURCE_PRESCRIBED
+
+        if n is None:
+            raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")
+
+        # Convert lists to NumPy arrays
+        if type(n) == list:
+            n = np.array(n)
+
+        # Scalar (assume density constant in spacetime)
+        #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+        if np.isscalar(n):
+            self.source_t = np.array([0])
+            self.source_n = np.zeros((self.Z+1,1))
+            self.source_n[Z0,:] = n
+            return
+
+        # Time evolution of neutral atoms
+        if len(n.shape) == 1:
+            if n.size != t.size:
+                raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, by shape(n) != shape(t), {n.shape} != {t.shape}.")
+
+            self.source_t = t
+            self.source_n = np.zeros((self.Z+1, t.size))
+            self.source_n[Z0,:] = n
+        # Time evolution of all charge states
+        elif len(n.shape) == 2:
+            if t is None:
+                raise EquationException(f"ion_species: '{self.name}': Full ion charge state density source prescribed, but no time coordinates given.")
+
+            if self.Z+1 != n.shape[0] or t.size != n.shape[1]:
+                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
+
+            self.source_t = t
+            self.source_n = n
+        else:
+            raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
+
+
     def calcTransportCoefficientExpdecaySingleChargeState(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
         if r is None:
-            r = np.linspace(0,self.settings.radialgrid.a)
+            if self.settings.radialgrid.r_f is not None:
+                r = self.settings.radialgrid.r_f
+            else:
+                r = np.linspace(0,self.settings.radialgrid.a)
         if np.isscalar(c0):
             Nr = len(r)
             c0 = c0*np.ones((1,Nr))
@@ -850,11 +977,16 @@ class IonSpecies:
                     
         c_single_charge_state = (cf + np.exp(-(t-t_start)/t_exp)*(c0-cf))*(t>t_start)
         
+        # Copy the coefficients for the last time step to avoid an unintended linear extrapolation with an unphysical sign change
+        c_single_charge_state = np.vstack((c_single_charge_state, c_single_charge_state[-1,:])) 
+        t = np.vstack((t, t[-1]+1))
+        
         return c_single_charge_state, r.flatten(), t.flatten()
+
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
         c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
-        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state)))
+        cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state[0,:])))
         for i in range(self.Z):
             cCharged[i,:,:]=c_single_charge_state
         
@@ -883,8 +1015,12 @@ class IonSpecies:
         elif self.ttype == IONS_EQUILIBRIUM or self.ttype == IONS_DYNAMIC:
             if (self.r is None) or (self.r.ndim != 1):
                 raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
-            elif (self.n is None) or (self.n.shape != (self.Z+1, self.r.size)):
-                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}. Expected {}x{}."
-                    .format(self.name, self.n.shape[0], self.n.shape[1], self.Z+1, self.r.size))
+            if not self.init_equil:
+                if (self.n is None) or (self.n.shape != (self.Z+1, self.r.size)):
+                    raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}. Expected {}x{}."
+                        .format(self.name, self.n.shape[0], self.n.shape[1], self.Z+1, self.r.size))
+            else:
+                if (self.initialNi is None) or (self.initialNi.ndim != 1 or self.initialNi.size != self.r.size):
+                    raise EquationException(f"ion_species: '{self.name}': Invalid dimension for initial species density: {self.initialNi.shape}. Expected: {self.r.shape}.")
 
 
