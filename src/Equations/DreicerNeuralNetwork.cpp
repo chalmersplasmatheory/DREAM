@@ -121,9 +121,12 @@ real_t DreicerNeuralNetwork::nn_fix(
 
         real_t b = B/A * boundary/gamma;
         real_t a = A/(pow(boundary, b));
-        
-        real_t rr = (nfree/tauEE)*exp(a * pow(EDD, b));
-        return rr;
+        if (EDD==0)
+            return 0;
+        else{
+            real_t rr = (nfree/tauEE)*exp(a * pow(EDD, b));
+            return rr;
+        }
     }
     else{
         real_t rr = RunawayRate_derived_params(
