@@ -219,8 +219,15 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
 
                 // Helper variable for the integrand prefactor.
                 // Factor 0.5 comes from trapz integration method
-                real_t w_factor = 0.5 * w / (1.0 - exp( -2.0 * w ) );
-
+                // It can happen that tau_f<0 due to an inaccurate 
+                // extrapolation to the last flux grid point. 
+                // In that case take limiting case where tau_f->0
+                if(tau_f<0 && ir==nr_f-1){
+                    real_t w_factor = 0.25;
+                } else {
+                    real_t w_factor = 0.5 * w / (1.0 - exp( -2.0 * w ) );
+                }
+                
                 // The relevant indices are: (ir*nxi+j)*np+i and the same with j+1.
                 len_t ind = offset*nxi + i;
                 // Variables containing the integrands
