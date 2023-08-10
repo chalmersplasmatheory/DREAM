@@ -59,7 +59,7 @@ RunawayFluid *rf;
 /**
  * Constructor
  */
-SPIHandler::SPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
+SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
     OptionConstants::eqterm_spi_velocity_mode spi_velocity_mode,
     OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
@@ -77,7 +77,7 @@ SPIHandler::SPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHand
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
     Dr = this->rGrid->GetDr(0);
-    rf = REF;
+    rf = this->rf;
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
 	// the size of the flux surfaces. The corresponding factor correcting the 
@@ -320,10 +320,6 @@ real_t SPIHandler::epsilon_i(real_t a, real_t b){
     return exp(a)*sum;
 }
 
-real_t SPIHandler::delta_r_limit(int ip){
-    return v_lab*t_acc + M_PI*n*T[ip]*Reff*q*qe/(B*B*CST);
-}
-
 real_t SPIHandler::t_bis_function(real_t t_prim){
     return t_prim + t_expp;
 }
@@ -426,8 +422,8 @@ void SPIHandler::compute_parameters(int ip){
     Lc = 2 * CST0*t_detach;
     n = n_0 * Lc;
     v_lab = a0 * t_detach;
-    //lnLambda = //14.9 - 0.3*log(n_e*1e-20)+log(Te*1e-3);//eqsys->GetREFluid()->GetLnLambda()->GetLnLambdaT();
-    sigma = rf->GetElectricConductivity(ip);//16*M_PI*M_PI*eps0*eps0*qe*sqrt(qe)*Te*sqrt(Te)/(4*sqrt(2*M_PI)/3/1.96*Zeff_bg*qe*qe*sqrt(me)*lnLambda);
+    sigma = rf->evaluateSauterElectricConductivity(irp[ip], Te, Zeff_bg, n_e, true);
+    std::cout<<sigma<<std::endl;
     Reff = -2*M_PI*M_PI*Rm*r/(sigma*delta_y*delta_y*delta_y*log((delta_y/(r*M_PI))));
 }
 
@@ -546,11 +542,6 @@ void SPIHandler::Rebuild(real_t dt){
             for(len_t ip=0;ip<nShard;ip++){
                 if (YpPrevious[ip]>0 && irp[ip]<nr){
                     nbrShiftGridCell[ip]+=std::round(shift_r[ip]/Dr);
-                    //std::cout<<"shift "<<shift_r[ip]<<std::endl;
-                    //std::cout<<"rounded shift "<<std::round(shift_r[ip]/Dr)<<std::endl;
-                    //std::cout<<"rp "<<rp[ip]<<std::endl;
-                    //std::cout<<"xp "<<xp[ip]<<std::endl;
-                    //std::cout<<"ir "<<irp[ip]<<std::endl;
                 }
             }
         }

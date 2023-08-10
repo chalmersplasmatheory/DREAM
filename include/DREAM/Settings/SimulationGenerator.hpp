@@ -48,7 +48,7 @@ namespace DREAM {
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
         
-        static SPIHandler *ConstructSPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s);
+        static SPIHandler *ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s);
 
         static void ConstructRunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih,

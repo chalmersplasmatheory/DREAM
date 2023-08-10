@@ -32,7 +32,7 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/nbrShiftGridCell", "Number of grid cells to shift the deposition", 0, (int_t*)nullptr);
 }
 
-SPIHandler *SimulationGenerator::ConstructSPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s){
+SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s){
     enum OptionConstants::eqterm_spi_velocity_mode spi_velocity_mode= (enum OptionConstants::eqterm_spi_velocity_mode)s->GetInteger(MODULENAME "/velocity");
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger(MODULENAME "/ablation");
     enum OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME "/deposition");
@@ -68,6 +68,6 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(RunawayFluid *REF, FVM::Gri
     for (len_t i = 0; i < nShard; i++)
         nbrShiftGridCell[i] = (len_t)_nbrShiftGridCell[i];
 
-    SPIHandler *SPI=new SPIHandler(REF, g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
+    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
     return SPI;
 }

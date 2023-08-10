@@ -18,6 +18,7 @@ namespace DREAM { class SPIHandler; }
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/EqsysInitializer.hpp"
 
 namespace DREAM{
     class SPIHandler{
@@ -149,7 +150,8 @@ namespace DREAM{
         real_t* rp=nullptr;
         real_t* rpdot=nullptr;
         real_t Dr;
-        RunawayFluid *rf;
+        RunawayFluid *rf = nullptr;
+        EqsysInitializer *initializer=nullptr;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
@@ -167,7 +169,7 @@ namespace DREAM{
         real_t CalculateLambda(real_t X);
 
     public:
-        SPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
+        SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
             OptionConstants::eqterm_spi_velocity_mode spi_velocity_mode,
             OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
@@ -187,7 +189,6 @@ namespace DREAM{
         static real_t integrand(real_t x, void * params);
         static real_t integrand_sin(real_t x, void * params);
         real_t epsilon_i(real_t a, real_t b);
-        real_t delta_r_limit(int ip);
         real_t t_bis_function(real_t t_prim);
         real_t epsilon_small(real_t t_prim);
         real_t primitive_second_row(real_t t_prim);
@@ -199,6 +200,10 @@ namespace DREAM{
         void assign_time_parameters(int ip);
         void assign_misc_parameters(int ip);
         void compute_parameters(int ip);
+        
+        void SetREFluid(RunawayFluid *REF) {
+            this->rf = REF;
+        }
 
         void Rebuild(real_t dt);
 
