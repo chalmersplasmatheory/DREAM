@@ -225,6 +225,7 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
                 real_t w_factor;
                 if(tau_f<0 && ir==nr_f-1){
                     w_factor = 0.25;
+                    w = 0.0;
                 } else {
                     w_factor = 0.5 * w / (1.0 - exp( -2.0 * w ) );
                 }
