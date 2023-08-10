@@ -272,7 +272,6 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
-    DEF_FL("fluid/Epar_hottail", "Parallel electric field [V/m]", qd->Store(tracked_terms->n_re_hottail_rate->GetElectricField()););
     DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]",
 		const real_t *cr = this->REFluid->GetComptonRunawayRate();
 		const real_t *n_tot = this->unknowns->GetUnknownData(this->id_ntot);
@@ -282,6 +281,7 @@ void OtherQuantityHandler::DefineQuantities() {
 	);
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+        DEF_FL("fluid/Epar_hottail", "Parallel electric field [V/m]", qd->Store(tracked_terms->n_re_hottail_rate->GetElectricField()););
     }
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
