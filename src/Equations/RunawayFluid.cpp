@@ -628,6 +628,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
             criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
+
+		// Store effective critical momentum
+		this->pStar[ir] = pStar;
+		// Store product of collision frequencies
+		this->nusnuDatPStar[ir] = nuSnuDTerm;
     }
 }
     
@@ -656,13 +661,15 @@ void RunawayFluid::AllocateQuantities(){
     tauEETh  = new real_t[nr];
     EDreic   = new real_t[nr];
 
-    effectiveCriticalField  = new real_t[nr]; 
-    criticalREMomentum      = new real_t[nr];
-    criticalREMomentumInvSq = new real_t[nr];
-    pc_COMPLETESCREENING    = new real_t[nr];
-    pc_NOSCREENING          = new real_t[nr];
-    avalancheGrowthRate     = new real_t[nr];
-    dreicerRunawayRate      = new real_t[nr];
+    effectiveCriticalField    = new real_t[nr]; 
+    criticalREMomentum        = new real_t[nr];
+    criticalREMomentumInvSq   = new real_t[nr];
+    pc_COMPLETESCREENING      = new real_t[nr];
+    pc_NOSCREENING            = new real_t[nr];
+    avalancheGrowthRate       = new real_t[nr];
+    dreicerRunawayRate        = new real_t[nr];
+	pStar                     = new real_t[nr];
+	nusnuDatPStar             = new real_t[nr];
 
     tritiumRate = new real_t[nr];
     comptonRate = new real_t[nr];
@@ -692,6 +699,8 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
+		delete [] pStar;
+		delete [] nusnuDatPStar;
     }
 }
 
