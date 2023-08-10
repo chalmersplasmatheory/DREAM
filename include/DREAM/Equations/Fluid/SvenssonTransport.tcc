@@ -222,10 +222,11 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
                 // It can happen that tau_f<0 due to an inaccurate 
                 // extrapolation to the last flux grid point. 
                 // In that case take limiting case where tau_f->0
+                real_t w_factor;
                 if(tau_f<0 && ir==nr_f-1){
-                    real_t w_factor = 0.25;
+                    w_factor = 0.25;
                 } else {
-                    real_t w_factor = 0.5 * w / (1.0 - exp( -2.0 * w ) );
+                    w_factor = 0.5 * w / (1.0 - exp( -2.0 * w ) );
                 }
                 
                 // The relevant indices are: (ir*nxi+j)*np+i and the same with j+1.
