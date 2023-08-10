@@ -149,7 +149,7 @@ namespace DREAM{
         real_t* rp=nullptr;
         real_t* rpdot=nullptr;
         real_t Dr;
-        real_t a;
+        RunawayFluid *rf;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
@@ -167,7 +167,7 @@ namespace DREAM{
         real_t CalculateLambda(real_t X);
 
     public:
-        SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
+        SPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
             OptionConstants::eqterm_spi_velocity_mode spi_velocity_mode,
             OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
@@ -181,13 +181,13 @@ namespace DREAM{
         void AllocateQuantities();
         void DeallocateQuantities();
 
+        struct integrand_struct {real_t a;};
+
         void Yp_to_rp_conversion();
-        real_t integrand_cos(real_t x);
-        real_t integrand_sin(real_t x);
-        real_t epsilon_i_temp(real_t b);
+        static real_t integrand(real_t x, void * params);
+        static real_t integrand_sin(real_t x, void * params);
+        real_t epsilon_i(real_t a, real_t b);
         real_t delta_r_limit(int ip);
-        std::complex<real_t> E_i(std::complex<real_t> z, int terms);
-        std::complex<real_t> epsilon_i(std::complex<real_t> z);
         real_t t_bis_function(real_t t_prim);
         real_t epsilon_small(real_t t_prim);
         real_t primitive_second_row(real_t t_prim);

@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <cmath>
 #include "DREAM/Equations/SPIHandler.hpp"
-#include <complex>
 #include <gsl/gsl_integration.h>
 //#include <gsl/gsl_sf_expint.h>
 //#include <gsl/gsl_complex_math.h>
@@ -42,8 +41,6 @@ const real_t me = Constants::me;//9.10938356e-31;// kg
 const real_t eps0 = Constants::eps0;
 
 //Variables related to computing the drift
-//specials
-real_t T, sigma;
 //time parameters
 real_t t_acc, t_pol, t_pe, t_exp;
 //normalization
@@ -54,14 +51,15 @@ real_t q0NGS, E0NGS;
 real_t q; //semi complete
 real_t ZavgD; //semi complete
 real_t ZavgNe; //semi complete
-real_t Dr, v0, n_e, n_i, Zavg0, gamma_e, gamma_i, mNe, r, a;
-real_t X, Ein, Zeff_bg, B, Te, Zavg, CST, CST0, qin, G, n_0, a0, t_detach, Lc, n, v_lab, lnLambda, Reff;
+real_t Dr, v0, n_e, n_i, Zavg0, gamma_e, gamma_i, mNe, r, T, sigma;
+real_t X, Ein, Zeff_bg, B, Te, Zavg, CST, CST0, qin, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
 real_t* shift_r, rp, rpdot, pelletDeuteriumFraction, pelletNeonFraction;
+RunawayFluid *rf;
 
 /**
  * Constructor
  */
-SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
+SPIHandler::SPIHandler(RunawayFluid *REF, FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
     OptionConstants::eqterm_spi_velocity_mode spi_velocity_mode,
     OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
@@ -79,7 +77,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
     Dr = this->rGrid->GetDr(0);
-
+    rf = REF;
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
 	// the size of the flux surfaces. The corresponding factor correcting the 
@@ -277,21 +275,6 @@ void SPIHandler::DeallocateQuantities(){
  * Rebuild this object
  * dt: current time step duration
  */
-
-
-//real_t E_i(real_t z) {
-//    real_t result;
-//    gsl_sf_expint_Ei(z, &result);
-//    return result;
-//}
-
-
-//std::complex<real_t> E_i(std::complex<real_t> x){
-//    std::complex<real_t> result;
-//    //mkl_z_expint(1, &x, &result)
-//    return std::exp(-x) * std::log(1 + 1/x);
-//}
-
 void SPIHandler::Yp_to_rp_conversion(){
     real_t temp;
     for(len_t ip=0; ip<nShard; ip++){
@@ -301,91 +284,64 @@ void SPIHandler::Yp_to_rp_conversion(){
     }
 
 }
-real_t SPIHandler::integrand_cos(real_t x){
-    return a*cos(x)/(a*a+x*x);
+real_t SPIHandler::integrand(real_t x, void *p){
+    struct integrand_struct *params = (struct integrand_struct *)p;
+    return (params->a*cos(x) + x*sin(x))/(params->a*params->a+x*x);
 }
-real_t SPIHandler::integrand_sin(real_t x){
-    return x*sin(x)/(a*a+x*x);
+real_t SPIHandler::integrand_sin(real_t x, void *p){
+    if (x==0)
+        return 1;
+    else
+        return sin(x)/x;
 }
-real_t SPIHandler::epsilon_i_temp(real_t b){
-    gsl_integration_workspace *workspace_cos = gsl_integration_workspace_alloc(1000);
-    gsl_integration_workspace *workspace_sin = gsl_integration_workspace_alloc(1000);
-    gsl_function F1;
-    gsl_function F2;
-    F1.function = [](real_t x, void* params) -> real_t {
-        SPIHandler* spi = static_cast<SPIHandler*>(params);
-        return spi->integrand_cos(x);
-    };
-    F2.function = [](real_t x, void* params) -> real_t {
-        SPIHandler* spi = static_cast<SPIHandler*>(params);
-        return spi->integrand_sin(x);
-    };
-    F1.params = nullptr;
-    F2.params = nullptr;
-
-    real_t sum_cos, sum_sin, error_cos, error_sin;
-    if (b>0){
-        gsl_integration_qags(&F1, 0, b, 0, 1e-7, 1000, workspace_cos, &sum_cos, &error_cos);
-        gsl_integration_qags(&F2, 0, b, 0, 1e-7, 1000, workspace_sin, &sum_sin, &error_sin);
+//Be aware of the fact that the epsilon_i returns the wrong answer when a=0. 
+//But when the subtraction is made at primitive_second_row() the output is correct.
+//One way of fixing his is to let the sin integral go from b to inf(1000*b) and 
+//that integral is hard to solve numerically
+real_t SPIHandler::epsilon_i(real_t a, real_t b){
+    gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(1000);
+    gsl_function F;
+    integrand_struct paramstruct = {a};
+    if (a==0){
+        F.function = &integrand_sin;
     }else{
-        gsl_integration_qags(&F1, b, 0, 0, 1e-7, 1000, workspace_cos, &sum_cos, &error_cos);
-        gsl_integration_qags(&F2, b, 0, 0, 1e-7, 1000, workspace_sin, &sum_sin, &error_sin);
-        sum_cos = -sum_cos;
-        sum_sin = -sum_sin;
+        F.function = &integrand;
     }
-    gsl_integration_workspace_free(workspace_cos);
-    gsl_integration_workspace_free(workspace_sin);
-    return exp(a)*(sum_cos+sum_sin);
+    F.params = &paramstruct;
+
+    real_t sum, error;
+    if (b>0){
+        gsl_integration_qags(&F, 0, b, 0, 1e-7, 1000, workspace, &sum, &error);
+    }else{
+        gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
+        sum = -sum;
+    }
+    gsl_integration_workspace_free(workspace);
+    return exp(a)*sum;
 }
 
 real_t SPIHandler::delta_r_limit(int ip){
-    return v_lab*t_acc + M_PI*n*T[ip]*Reff*q/(B*B*CST);
-}
-
-std::complex<real_t> SPIHandler::E_i(std::complex<real_t> z, int terms=2000){
-    std::complex<real_t> i(0, 1);
-    std::complex<real_t> gamma(0.57721566490, 0);
-    std::complex<real_t> floor = i * M_PI * (std::floor((std::arg(z) + M_PI)/(2*M_PI)));
-
-    std::complex<real_t> term = z;
-    std::complex<real_t> sum = z;
-    for (int ix = 2; ix < terms + 1; ix++){
-        term *= z *(ix - 1)/(ix * ix);
-        sum += term;
-    }
-    return gamma + std::log(z)- floor + sum;
-}
-
-std::complex<real_t> SPIHandler::epsilon_i(std::complex<real_t> z){
-    std::complex<real_t> i(0, 1);
-    std::complex<real_t> conjugate = std::conj(z);
-    return -0.5 * i * (E_i(z) - E_i(conjugate));
+    return v_lab*t_acc + M_PI*n*T[ip]*Reff*q*qe/(B*B*CST);
 }
 
 real_t SPIHandler::t_bis_function(real_t t_prim){
     return t_prim + t_expp;
 }
 
-real_t SPIHandler::epsilon_small(real_t t_prim){
-    std::complex<real_t> i(0, 1);
+real_t SPIHandler::epsilon_small(real_t t_prim){//- at cos in article
     real_t t_bis = t_bis_function(t_prim);
-    real_t term1 = std::real(exp(-t_expp) * epsilon_i((1 + i/t_polp) * t_bis));
-    real_t numerator = exp(t_prim) * (sin(t_bis/t_polp) - 1/t_polp * cos(t_bis/t_polp));
+    real_t term1 = exp(-t_expp) * epsilon_i(t_bis, t_bis/t_polp);
+    real_t numerator = exp(t_prim) * (sin(t_bis/t_polp) + 1/t_polp * cos(t_bis/t_polp));
     real_t denominator =  t_pep * (1 + 1/(t_polp * t_polp));
     real_t term2 = numerator/denominator;
     return term1 - term2;
 }
 
 real_t SPIHandler::primitive_second_row(real_t t_prim){
-    std::complex<real_t> i(0, 1);
     real_t t_bis = t_bis_function(t_prim);
-    std::complex<real_t> term1 = exp(t_bis) * epsilon_i(i * t_bis/t_polp);
-    std::cout<<"complex "<<term1<<std::endl;
-    a=0;
-    std::cout<<t_bis/t_polp<<std::endl;
-    std::cout<<exp(t_bis) * epsilon_i_temp(t_bis/t_polp)<<std::endl;
-    std::complex<real_t> term2 = epsilon_i((1 + i/t_polp)*t_bis);
-    real_t result = std::real(exp(-t_prim-t_expp)*(term1 - term2));
+    real_t term1 = exp(t_bis) * epsilon_i(0, t_bis/t_polp);
+    real_t term2 = epsilon_i(t_bis, t_bis/t_polp);
+    real_t result = exp(-t_prim-t_expp)*(term1 - term2);
     return result;
 }
 
@@ -463,15 +419,15 @@ void SPIHandler::compute_parameters(int ip){
     CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     qin = n_e * sqrt(2*Te*Te*Te/(M_PI*me));
     Ein = 2 * Te;
-    G = 4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip];//(27.0837 + tan(1.48709*X))*1e-3*pow(qin/q0NGS,1.0/3.0)*pow(Ein/E0NGS, 7.0/6.0)*pow(rp[ip]/r0, 4.0/3.0)
+    G = fabs(4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip]);//(27.0837 + tan(1.48709*X))*1e-3*pow(qin/q0NGS,1.0/3.0)*pow(Ein/E0NGS, 7.0/6.0)*pow(rp[ip]/r0, 4.0/3.0)
     n_0 = (1 + Zavg)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
     a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
     t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
     Lc = 2 * CST0*t_detach;
     n = n_0 * Lc;
     v_lab = a0 * t_detach;
-    lnLambda = 14.9 - 0.3*log(n_e*1e-20)+log(Te*1e-3);//eqsys->GetREFluid()->GetLnLambda()->GetLnLambdaT();
-    sigma = 16*M_PI*M_PI*eps0*eps0*qe*sqrt(qe)*Te*sqrt(Te)/(4*sqrt(2*M_PI)/3/1.96*Zeff_bg*qe*qe*sqrt(me)*lnLambda);//rf->GetEffectiveCriticalField(irp[ip]);
+    //lnLambda = //14.9 - 0.3*log(n_e*1e-20)+log(Te*1e-3);//eqsys->GetREFluid()->GetLnLambda()->GetLnLambdaT();
+    sigma = rf->GetElectricConductivity(ip);//16*M_PI*M_PI*eps0*eps0*qe*sqrt(qe)*Te*sqrt(Te)/(4*sqrt(2*M_PI)/3/1.96*Zeff_bg*qe*qe*sqrt(me)*lnLambda);
     Reff = -2*M_PI*M_PI*Rm*r/(sigma*delta_y*delta_y*delta_y*log((delta_y/(r*M_PI))));
 }
 
@@ -576,8 +532,6 @@ void SPIHandler::Rebuild(real_t dt){
             compute_parameters(ip);
             assign_time_parameters(ip);
             shift_r[ip] = delta_r(ip);
-            //std::cout<<"shift"<<shift_r[ip]<<std::endl;
-            //n*T[ip]*Reff*q/(B*B*CST);
         }
     }
     // Calculate deposition (if any)
@@ -593,8 +547,10 @@ void SPIHandler::Rebuild(real_t dt){
                 if (YpPrevious[ip]>0 && irp[ip]<nr){
                     nbrShiftGridCell[ip]+=std::round(shift_r[ip]/Dr);
                     //std::cout<<"shift "<<shift_r[ip]<<std::endl;
+                    //std::cout<<"rounded shift "<<std::round(shift_r[ip]/Dr)<<std::endl;
                     //std::cout<<"rp "<<rp[ip]<<std::endl;
                     //std::cout<<"xp "<<xp[ip]<<std::endl;
+                    //std::cout<<"ir "<<irp[ip]<<std::endl;
                 }
             }
         }

@@ -131,12 +131,8 @@ void SimulationGenerator::ConstructEquations(
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
-    SPIHandler* SPI;
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
-    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
-        SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
-        eqsys->SetSPIHandler(SPI);
-    }
+    SPIHandler* SPI;
     
     // Fluid equations
     ConstructEquation_Ions(eqsys, s, adas, amjuel, oqty_terms);
@@ -153,7 +149,11 @@ void SimulationGenerator::ConstructEquations(
         eqsys->SetRunawayCollisionHandler(cqh);
     }
     ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,eqsys,s);
-    eqsys->SetREFluid(eqsys->GetREFluid());
+    //SPI->SetREFluid(eqsys->GetREFluid());
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        SPI = ConstructSPIHandler(eqsys->GetREFluid(), fluidGrid, unknowns, s);
+        eqsys->SetSPIHandler(SPI);
+    }
     // Post processing handler
     FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL;
     real_t pThreshold = 0.0;
