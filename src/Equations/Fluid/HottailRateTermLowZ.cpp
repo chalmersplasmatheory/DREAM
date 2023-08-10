@@ -203,6 +203,12 @@ real_t HottailRateTermLowZ::integralf0(real_t Epar_ir, struct ParamStruct * intp
     return result;
 }
 
+/**
+* Return E-field
+*/
+const real_t* HottailRateTermLowZ::GetElectricField(){
+    return this->Epar;
+}
 
 
 /**************************************************************/
