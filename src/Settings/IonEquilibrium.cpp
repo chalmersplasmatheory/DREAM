@@ -25,6 +25,23 @@ void SimulationGenerator::EvaluateADASRates(
 	}
 }
 
+#if !defined(NDEBUG) && defined(__linux__)
+/**
+ * Helper function to check if the product of two floating-point values will
+ * over/underflow. This is required when compiling DREAM in debug mode, since
+ * floating-point exceptions are then enabled, preventing the desired "inf"
+ * to be produced at overflow (or 0 at underflow).
+ */
+bool OUFLOW(real_t x1, real_t x2) {
+	if (x2 > 1) {
+		return (std::abs(x1) > std::numeric_limits<real_t>::max() / std::abs(x2));
+	} else if (x2 < 1) {
+		return (std::abs(x1) > std::numeric_limits<real_t>::min() / std::abs(x2));
+	} else // x2 == 1
+		return false;
+}
+#endif
+
 /**
  * Initialize the ion densities for the specified species according to
  * coronal equilibrium.
@@ -64,8 +81,14 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 				if (l > 0) {
 					for (len_t j = 0; j < l; j++) {
 						real_t p = 1;
-						for (len_t k = j+1; k <= l; k++)
+						for (len_t k = j+1; k <= l; k++) {
+#if !defined(NDEBUG) && defined(__linux__)
+							if (OUFLOW(p, R[k]/I[k-1]))
+								break;
+#endif
 							p *= R[k] / I[k-1];
+						}
+
 						s += p;
 					}
 				}
@@ -73,8 +96,14 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 				if (l < Z) {
 					for (len_t j = l+1; j <= Z; j++) {
 						real_t p = 1;
-						for (len_t k = l; k < j; k++)
+						for (len_t k = l; k < j; k++) {
+#if !defined(NDEBUG) && defined(__linux__)
+							if (OUFLOW(p, I[k]/R[k+1]))
+								break;
+#endif
 							p *= I[k] / R[k+1];
+						}
+
 						s += p;
 					}
 				}
