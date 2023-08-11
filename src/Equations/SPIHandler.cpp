@@ -38,23 +38,25 @@ const real_t qe = Constants::ec;//1.60217662e-19;// C
 const real_t mD = Constants::mD;//3.3435837724e-27;// kg
 const real_t mH = Constants::mH;//1.67262192369e-27;// kg
 const real_t me = Constants::me;//9.10938356e-31;// kg
-const real_t eps0 = Constants::eps0;
+const real_t mNe = 10 * mH;//kg
+const real_t eps0 = Constants::eps0;// F/m
+const real_t ZavgD = 1;//Semi complete
+const real_t ZavgNe = 2;//Semi complete
+const real_t Zavg0 = 1;
+const real_t gamma_e = 1;//Adiabatic constant of electrons
+const real_t gamma_i = 3;//Adiabatic constant of ions
 
 //Variables related to computing the drift
-//time parameters
+//Time parameters
 real_t t_acc, t_pol, t_pe, t_exp;
-//normalization
+//Normalized time parameters
 real_t t_polp, t_pep, t_expp;
-//normalization constans
-real_t q0NGS, E0NGS;
-//other
-real_t q; //semi complete
-real_t ZavgD; //semi complete
-real_t ZavgNe; //semi complete
-real_t Dr, v0, n_e, n_i, Zavg0, gamma_e, gamma_i, mNe, r, T, sigma;
-real_t X, Ein, Zeff_bg, B, Te, Zavg, CST, CST0, qin, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
-real_t* shift_r, rp, rpdot, pelletDeuteriumFraction, pelletNeonFraction;
-RunawayFluid *rf;
+//Parameters which are independent of time and shard
+real_t r, q, Zavg, Dr;
+//Parameters which are computed elsewhere in DREAM
+real_t v0, n_e, n_i, Te, B;
+//Parameter which are derived
+real_t sigma, CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
 
 /**
  * Constructor
@@ -78,6 +80,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	real_t R0 = this->rGrid->GetR0();
     Dr = this->rGrid->GetDr(0);
     rf = this->rf;
+    r = this->rGrid->GetMinorRadius();
+    q = 1; //semi complete
+
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
 	// the size of the flux surfaces. The corresponding factor correcting the 
@@ -122,7 +127,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     AllocateQuantities();
     
     for(len_t ip=0; ip<nShard; ip++){
-        T[ip]=T_temp[ip];   
+        T[ip]=T_temp[ip];  
     }
     this->T_0=T_0;
     this->delta_y=delta_y;
@@ -235,6 +240,7 @@ void SPIHandler::AllocateQuantities(){
     pelletNeonFraction=new real_t[nShard];
     rp=new real_t[nShard];
     rpdot=new real_t[nShard];
+    shift_r=new real_t[nShard];
 }
 
 /**
@@ -269,43 +275,109 @@ void SPIHandler::DeallocateQuantities(){
     delete [] pelletNeonFraction;
     delete [] rp;
     delete [] rpdot;
+    delete [] shift_r;
 }
-
 /**
- * Rebuild this object
- * dt: current time step duration
+ * Calculates the radius and ablation of each shard
  */
-void SPIHandler::Yp_to_rp_conversion(){
+void SPIHandler::Yp_Conversion(){
     real_t temp;
     for(len_t ip=0; ip<nShard; ip++){
         rp[ip] = (!isnan(temp) && !isinf(temp) && pow(YpPrevious[ip], 3.0/5.0) > 0) ? pow(YpPrevious[ip], 3.0/5.0) : 0;
         temp = 3.0/5.0 * pow(rp[ip], -2.0/3.0) * Ypdot[ip];
         rpdot[ip] = (!isnan(temp) && !isinf(temp) && temp <= 0) ? temp : 0;
     }
-
 }
-real_t SPIHandler::integrand(real_t x, void *p){
+/**
+ * Below are functions needed to compute the drift displacement of an ionised cloud
+ * succeeding the pellet injection. The analytical model is derived in doi:10.1017/S0022377823000466
+ */
+
+ // Stores data about the surroundings of a shard
+void SPIHandler::Assign_Shard_Specific_Parameters(int ip){
+    v0 = fabs(vp[3*ip]);
+    n_e = ncold[irp[ip]];
+    n_i = n_e;
+    B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
+    Te = Tcold[irp[ip]];
+}
+
+/**
+ * Computes relevant quantities for the drift displacement of a shard
+ * Zavg    : Total average charge inside the cloud
+ * CST     : Sound speed inside the cloud during the majority of the drift
+ * CST0    : Sound speed inside the cloud directly after the neutral phase
+ * G       : Mass ablation rate
+ * n_0     : Density directly after the neutral phase
+ * a0      : Initial cloud acceleration
+ * t_detach: Time it takes to move away from the pellet (shard)
+ * Lc      : Initial length
+ * n       : Line integrated density
+ * v_lab   : Initial radial drift velocity in the lab frame
+ * sigma   : Background plasma conductivity
+ * Reff    : Effective resistance to ohmic currents exiting the cloud parallell to the field lines
+ */
+void SPIHandler::Assign_Computation_Parameters(int ip){
+    Zavg = ZavgD*pelletDeuteriumFraction[ip] + ZavgNe*pelletNeonFraction[ip];
+    CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
+    CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
+    G = fabs(4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip]);
+    n_0 = (1 + Zavg)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
+    a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
+    t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
+    Lc = 2 * CST0*t_detach;
+    n = n_0 * Lc; 
+    v_lab = a0 * t_detach;
+    sigma = rf->GetElectricConductivity(irp[ip]);
+    Reff = -2*M_PI*M_PI*Rm*r/(sigma*delta_y*delta_y*delta_y*log((delta_y/(r*M_PI))));
+}
+
+/**
+ * Computes the characteristic quantities of time for a shard
+ * t_acc : Acceleration time scale
+ * t_pol : Poloidal rotation time scale
+ * t_pe  : Pressure equilibration time scale
+ * t_exp : Expansion time scale
+ * t_polp: Normalized t_pol
+ * t_pep : Normalized t_pe
+ * t_expp: Normalized t_exp
+ */
+void SPIHandler::Assign_Time_Parameters(int ip){
+    t_acc = n/(1+Zavg)*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip])*Reff/(B*B);
+    t_pol = q*Rm/CST;
+    t_pe = qe*T[ip]*n/(2*CST*(n_i+n_e)*qe*Te);
+    t_exp = Lc/(2*CST);
+    t_polp = t_pol/t_acc;
+    t_pep = t_pe/t_acc;
+    t_expp = t_exp/t_acc;
+}
+
+
+real_t SPIHandler::Integrand(real_t x, void *p){
     struct integrand_struct *params = (struct integrand_struct *)p;
     return (params->a*cos(x) + x*sin(x))/(params->a*params->a+x*x);
 }
-real_t SPIHandler::integrand_sin(real_t x, void *p){
+real_t SPIHandler::Integrand_Sin(real_t x, void *p){
     if (x==0)
         return 1;
     else
         return sin(x)/x;
 }
-//Be aware of the fact that the epsilon_i returns the wrong answer when a=0. 
-//But when the subtraction is made at primitive_second_row() the output is correct.
-//One way of fixing his is to let the sin integral go from b to inf(1000*b) and 
-//that integral is hard to solve numerically
-real_t SPIHandler::epsilon_i(real_t a, real_t b){
+/**
+ * Function to evaluate equation (A3) in doi:10.1017/S0022377823000466
+ * Be aware of the fact that the Epsilon_i returns the wrong answer when a=0. 
+ * But when the subtraction is made at Primitive_Second_Row() the output is correct.
+ * One way of fixing his is to let the sin integral go from b to inf(1000*b) and 
+ * that integral is hard to solve numerically
+ */
+real_t SPIHandler::Epsilon_i(real_t a, real_t b){
     gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(1000);
     gsl_function F;
     integrand_struct paramstruct = {a};
     if (a==0){
-        F.function = &integrand_sin;
+        F.function = &Integrand_Sin;
     }else{
-        F.function = &integrand;
+        F.function = &Integrand;
     }
     F.params = &paramstruct;
 
@@ -320,113 +392,70 @@ real_t SPIHandler::epsilon_i(real_t a, real_t b){
     return exp(a)*sum;
 }
 
-real_t SPIHandler::t_bis_function(real_t t_prim){
+real_t SPIHandler::Bis_Function(real_t t_prim){
     return t_prim + t_expp;
 }
 
-real_t SPIHandler::epsilon_small(real_t t_prim){//- at cos in article
-    real_t t_bis = t_bis_function(t_prim);
-    real_t term1 = exp(-t_expp) * epsilon_i(t_bis, t_bis/t_polp);
+//Function to evaluate two of the terms in equation (A4) 
+real_t SPIHandler::Primitive_First_Row(real_t t_prim){//- at cos in article
+    real_t t_bis = Bis_Function(t_prim);
+    real_t term1 = exp(-t_expp) * Epsilon_i(t_bis, t_bis/t_polp);
     real_t numerator = exp(t_prim) * (sin(t_bis/t_polp) + 1/t_polp * cos(t_bis/t_polp));
     real_t denominator =  t_pep * (1 + 1/(t_polp * t_polp));
     real_t term2 = numerator/denominator;
     return term1 - term2;
 }
 
-real_t SPIHandler::primitive_second_row(real_t t_prim){
-    real_t t_bis = t_bis_function(t_prim);
-    real_t term1 = exp(t_bis) * epsilon_i(0, t_bis/t_polp);
-    real_t term2 = epsilon_i(t_bis, t_bis/t_polp);
+// Function to evaluate two of the terms in equation (A4) 
+real_t SPIHandler::Primitive_Second_Row(real_t t_prim){
+    real_t t_bis = Bis_Function(t_prim);
+    real_t term1 = exp(t_bis) * Epsilon_i(0, t_bis/t_polp);
+    real_t term2 = Epsilon_i(t_bis, t_bis/t_polp);
     real_t result = exp(-t_prim-t_expp)*(term1 - term2);
     return result;
 }
 
-real_t SPIHandler::primitive_third_row(real_t t_prim){
-    real_t t_bis = t_bis_function(t_prim);
+// Function to evaluate two of the terms in equation (A4) 
+real_t SPIHandler::Primitive_Third_Row(real_t t_prim){
+    real_t t_bis = Bis_Function(t_prim);
     real_t term1 = t_polp * cos(t_bis/t_polp);
     real_t term2 = sin(t_bis/t_polp);
     return term1 + term2;
 }
 
-real_t SPIHandler::first_row(){
-    real_t term1 = epsilon_small(t_pep) * exp(-t_pep);
-    real_t term2 = epsilon_small(0);
+real_t SPIHandler::First_Row(){
+    real_t term1 = Primitive_First_Row(t_pep) * exp(-t_pep);
+    real_t term2 = Primitive_First_Row(0);
     return term1 - term2;
 }
 
-real_t SPIHandler::second_row(){
-    real_t term1 = primitive_second_row(t_pep);
-    real_t term2 = primitive_second_row(0);
+real_t SPIHandler::Second_Row(){
+    real_t term1 = Primitive_Second_Row(t_pep);
+    real_t term2 = Primitive_Second_Row(0);
     return term1 - term2;
 }
 
-real_t SPIHandler::third_row(){
+real_t SPIHandler::Third_Row(){
     real_t factor = 1/t_pep * 1/(1 + 1/(t_polp*t_polp));
-    real_t term1 = primitive_third_row(t_pep);
-    real_t term2 = primitive_third_row(0);
+    real_t term1 = Primitive_Third_Row(t_pep);
+    real_t term2 = Primitive_Third_Row(0);
     return factor * (term1 - term2);
 }
 
-real_t SPIHandler::delta_r(int ip){
-    real_t first = first_row();
-    real_t second = second_row();
-    real_t third = third_row();
+// Function to collect all terms to evaluate equation A4
+real_t SPIHandler::Delta_r(int ip){
+    real_t first = First_Row();
+    real_t second = Second_Row();
+    real_t third = Third_Row();
     real_t term1 = v_lab * t_acc;
     real_t factor = (1+Zavg)*2*qe*T[ip]*q/(CST*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip]))*t_acc;
     return term1 + factor * (first + second + third);
 }
 
-void SPIHandler::assign_time_parameters(int ip){
-    t_acc = n/(1+Zavg)*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip])*Reff/(B*B);
-    t_pol = q*Rm/CST;
-    t_pe = qe*T[ip]*n/(2*CST*(n_i+n_e)*qe*Te);
-    t_exp = Lc/(2*CST);
-    t_polp = t_pol/t_acc;
-    t_pep = t_pe/t_acc;
-    t_expp = t_exp/t_acc;
-}
-
-void SPIHandler::assign_misc_parameters(int ip){
-    //normalization constans
-    q0NGS = n0*sqrt(2 * T0 * T0 * T0/(M_PI * me));
-    E0NGS = 2*T0;
-    //other
-    v0 = fabs(vp[3*ip]);
-    n_e = ncold[irp[ip]];
-    n_i = n_e;
-    q = 1; //semi complete
-    ZavgD = 1;//semi complete
-    ZavgNe = 2;//semi complete
-    Zavg0 = 1;
-    gamma_e = 1;
-    gamma_i = 3;
-    mNe = 10 * mH;
-    Zeff_bg = 1;//Unclear if finished
-    X = 0.5*pelletDeuteriumFraction[ip]/(0.5*pelletDeuteriumFraction[ip]+pelletNeonFraction[ip]);
-    r = this->rGrid->GetMinorRadius();
-}
-
-void SPIHandler::compute_parameters(int ip){
-    depositionRate = CalculateDepositionRate(pelletDeuteriumFraction);
-    B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
-    Te = Tcold[irp[ip]];
-    Zavg = ZavgD*pelletDeuteriumFraction[ip] + ZavgNe*pelletNeonFraction[ip];
-    CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
-    CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
-    qin = n_e * sqrt(2*Te*Te*Te/(M_PI*me));
-    Ein = 2 * Te;
-    G = fabs(4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip]);//(27.0837 + tan(1.48709*X))*1e-3*pow(qin/q0NGS,1.0/3.0)*pow(Ein/E0NGS, 7.0/6.0)*pow(rp[ip]/r0, 4.0/3.0)
-    n_0 = (1 + Zavg)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
-    a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
-    t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
-    Lc = 2 * CST0*t_detach;
-    n = n_0 * Lc;
-    v_lab = a0 * t_detach;
-    sigma = rf->evaluateSauterElectricConductivity(irp[ip], Te, Zeff_bg, n_e, true);
-    std::cout<<sigma<<std::endl;
-    Reff = -2*M_PI*M_PI*Rm*r/(sigma*delta_y*delta_y*delta_y*log((delta_y/(r*M_PI))));
-}
-
+/**
+ * Rebuild this object
+ * dt: current time step duration
+ */
 void SPIHandler::Rebuild(real_t dt){
 
     // Collect current data, and for some variables data from the previous time step
@@ -520,27 +549,21 @@ void SPIHandler::Rebuild(real_t dt){
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
         CalculateRCld();
 
-    shift_r = new real_t[nShard];
-    Yp_to_rp_conversion();
-    for(len_t ip = 0; ip < nShard; ip++){
-        if (irp[ip] < nr){
-            assign_misc_parameters(ip);
-            compute_parameters(ip);
-            assign_time_parameters(ip);
-            shift_r[ip] = delta_r(ip);
-        }
-    }
     // Calculate deposition (if any)
-    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE){
-        for(len_t ip=0;ip<nShard;ip++)
-            nbrShiftGridCell[ip]=0;
+    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
 
         if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
             CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
         }
-        else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE){
+        // Calculate drift (if any)
+        else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+            Yp_Conversion();
             for(len_t ip=0;ip<nShard;ip++){
                 if (YpPrevious[ip]>0 && irp[ip]<nr){
+                    Assign_Shard_Specific_Parameters(ip);
+                    Assign_Computation_Parameters(ip);
+                    Assign_Time_Parameters(ip);
+                    shift_r[ip] = Delta_r(ip);
                     nbrShiftGridCell[ip]+=std::round(shift_r[ip]/Dr);
                 }
             }

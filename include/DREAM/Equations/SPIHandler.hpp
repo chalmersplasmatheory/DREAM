@@ -18,7 +18,6 @@ namespace DREAM { class SPIHandler; }
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
-#include "DREAM/EqsysInitializer.hpp"
 
 namespace DREAM{
     class SPIHandler{
@@ -26,6 +25,7 @@ namespace DREAM{
         //FVM::ScalarGrid *sGrid;
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
+        RunawayFluid *rf = nullptr;
         len_t nShard;
         len_t nr;
         real_t dt;
@@ -37,13 +37,6 @@ namespace DREAM{
         len_t spi_cloud_radius_mode;
         len_t spi_magnetic_field_dependence_mode;
         len_t spi_shift_mode;
-
-        real_t *T = nullptr;
-        real_t *pelletDeuteriumFraction=nullptr;
-        real_t *pelletNeonFraction=nullptr;
-        real_t T_0;
-        real_t delta_y;
-        real_t Rm;
         
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
@@ -110,48 +103,18 @@ namespace DREAM{
         static const len_t isotopesSolidDensityList[];
         static const real_t solidDensityList[];
 
-        real_t t_acc;
-        real_t t_pol;
-        real_t t_pe;
-        real_t t_exp;
-        real_t t_polp;
-        real_t t_pep;
-        real_t t_expp;
-        real_t v0;
-        real_t n_e;
-        real_t sigma;
-        real_t q0NGS;
-        real_t E0NGS;
-        real_t q;
-        real_t ZavgD;
-        real_t ZavgNe;
-        real_t Zavg0;
-        real_t gamma_e;
-        real_t gamma_i;
-        real_t mNe;
-        real_t r;
-        real_t B;
-        real_t Te;
-        real_t Zavg;
-        real_t CST;
-        real_t CST0;
-        real_t qin;
-        real_t G;
-        real_t n_0;
-        real_t a0;
-        real_t t_detach;
-        real_t Lc;
-        real_t n;
-        real_t v_lab;
-        real_t lnLambda;
-        real_t Reff;
-        real_t X;
-        real_t Ein;
+        //Parameters for the shift calculation
+        real_t *T=nullptr;
+        real_t *pelletDeuteriumFraction=nullptr;
+        real_t *pelletNeonFraction=nullptr;
         real_t* rp=nullptr;
         real_t* rpdot=nullptr;
-        real_t Dr;
-        RunawayFluid *rf = nullptr;
-        EqsysInitializer *initializer=nullptr;
+        real_t* shift_r=nullptr;
+        real_t T_0, delta_y, Rm;
+        real_t t_acc, t_pol, t_pe, t_exp, t_polp, t_pep, t_expp;
+        real_t r, q, Zavg, Dr;
+        real_t v0, n_e, n_i, Te, B;
+        real_t sigma, CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
@@ -184,22 +147,22 @@ namespace DREAM{
         void DeallocateQuantities();
 
         struct integrand_struct {real_t a;};
-
-        void Yp_to_rp_conversion();
-        static real_t integrand(real_t x, void * params);
-        static real_t integrand_sin(real_t x, void * params);
-        real_t epsilon_i(real_t a, real_t b);
-        real_t t_bis_function(real_t t_prim);
-        real_t epsilon_small(real_t t_prim);
-        real_t primitive_second_row(real_t t_prim);
-        real_t primitive_third_row(real_t t_prim);
-        real_t first_row();
-        real_t second_row();
-        real_t third_row();
-        real_t delta_r(int ip);
-        void assign_time_parameters(int ip);
-        void assign_misc_parameters(int ip);
-        void compute_parameters(int ip);
+        // Functions for the drift calculation
+        void Yp_Conversion();
+        void Assign_Shard_Specific_Parameters(int ip);
+        void Assign_Computation_Parameters(int ip);
+        void Assign_Time_Parameters(int ip);
+        static real_t Integrand(real_t x, void * params);
+        static real_t Integrand_Sin(real_t x, void * params);
+        real_t Epsilon_i(real_t a, real_t b);
+        real_t Bis_Function(real_t t_prim);
+        real_t Primitive_First_Row(real_t t_prim);
+        real_t Primitive_Second_Row(real_t t_prim);
+        real_t Primitive_Third_Row(real_t t_prim);
+        real_t First_Row();
+        real_t Second_Row();
+        real_t Third_Row();
+        real_t Delta_r(int ip);
         
         void SetREFluid(RunawayFluid *REF) {
             this->rf = REF;

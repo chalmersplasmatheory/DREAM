@@ -37,6 +37,9 @@ CLOUD_RADIUS_MODE_SELFCONSISTENT=3
 MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT = 1
 MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK = 2
 
+EQTERM_SPI_SHIFT_MODE_NEGLECT=1
+EQTERM_SPI_SHIFT_MODE_ANALYTICAL=2
+
 ZMolarMassList=[1,1,10]
 isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
 molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
@@ -48,7 +51,8 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shift = 0, T = 0, T0 = 0, delta_y = 0, Rm = 0):
+    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
+EQTERM_SPI_SHIFT_MODE_ANALYTICAL, T = 0, T0 = 0, delta_y = 0, Rm = 0):
         """
         Constructor.
         
@@ -68,6 +72,7 @@ class SPI(UnknownQuantity):
         :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
         :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
         :param int magneticFieldDependenceMode: Mode used for calculating the magnetic field dependence of the albation
+        :param int shiftMode: Mode used for determining the cloud drift from doi:10.1017/S0022377823000466
         """
         super().__init__(settings=settings)
 
@@ -80,7 +85,7 @@ class SPI(UnknownQuantity):
         self.rclPrescribedConstant       = rclPrescribedConstant
         self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
         self.abl_ioniz                   = int(abl_ioniz)
-        self.shift                       = int(shift)
+        self.shift                       = int(shiftMode)
         self.T                           = T
         self.T0                          = T0
         self.delta_y                     = delta_y
@@ -592,16 +597,16 @@ class SPI(UnknownQuantity):
             raise EquationException("spi: Invalid value assigned to 'ablation'. Expected integer.")
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
-#        if type(self.shift) != int:
-#            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
-#        if all(isinstance(element, (float, int)) for element in self.T):
-#            raise EquationException("spi: Invalid value assigned to 'T'. Expected float or integer.")
-#        if type(self.T0) != float or int:
-#            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float or integer.")
-#        if type(self.delta_y) != float or int:
-#            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float or integer.")
-#        if type(self.Rm) != float or int:
-#            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float or integer.")
+        if type(self.shift) != int:
+            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
+        if not all(isinstance(element, (float, int)) for element in self.T):
+            raise EquationException("spi: Invalid value assigned to 'T'. Expected float.")
+        if type(self.T0) != float and type(self.T0) != int:
+            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float or integer.")
+        if type(self.delta_y) != float:
+            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected integer.")
+        if type(self.Rm) != float and type(self.Rm) != int:
+            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected integer.")
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 

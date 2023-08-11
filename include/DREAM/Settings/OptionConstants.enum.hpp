@@ -360,7 +360,8 @@ enum eqterm_spi_deposition_mode {
 };
 
 enum eqterm_spi_shift_mode {
-    EQTERM_SPI_SHIFT_MODE=1
+    EQTERM_SPI_SHIFT_MODE_NEGLECT=1,
+    EQTERM_SPI_SHIFT_MODE_ANALYTICAL=2
 };
 
 enum eqterm_spi_heat_absorbtion_mode {
