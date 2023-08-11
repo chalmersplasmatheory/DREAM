@@ -14,8 +14,8 @@ using namespace DREAM;
  */
 HottailRateTermLowZ::HottailRateTermLowZ(           
     FVM::Grid *grid, AnalyticDistributionHottail *dist, FVM::UnknownQuantityHandler *unknowns,
-    IonHandler *ionHandler, CoulombLogarithm *lnL, RunawayFluid *runawayFluid, real_t sf
-) : HottailRateTerm(grid, dist, unknowns,sf), lnL(lnL), ionHandler(ionHandler), runawayFluid(runawayFluid),  
+    IonHandler *ionHandler, CoulombLogarithm *lnL, RunawayFluid *runawayFluid, const real_t* T_final, real_t sf
+) : HottailRateTerm(grid, dist, unknowns,sf), lnL(lnL), ionHandler(ionHandler), runawayFluid(runawayFluid), T_final(T_final), 
     id_ncold(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD)),
     id_Efield(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)), // Used for constant, not in jacobian.
     id_tau(unknowns->GetUnknownID(OptionConstants::UQTY_TAU_COLL)),
@@ -92,7 +92,6 @@ void HottailRateTermLowZ::Rebuild(const real_t t, const real_t dt, FVM::UnknownQ
     if(newTimeStep)
         tPrev = t;
     
-    params->sp_cond = runawayFluid->GetElectricConductivity();
     params->Zeff = ionHandler->GetZeff(); 
     params->ncold = u->GetUnknownData(id_ncold);
     params->tau = u->GetUnknownData(id_tau);
@@ -103,6 +102,7 @@ void HottailRateTermLowZ::Rebuild(const real_t t, const real_t dt, FVM::UnknownQ
         params->ir = ir;
         params->lnL[ir] = lnL->evaluateAtP(ir,0); 
         params->Ec[ir] = 4*M_PI*(params->ncold[ir])*(params->lnL[ir])*Constants::r0*Constants::r0*Constants::c*Constants::c*Constants::me / Constants::ec; 
+        params->sp_cond[ir] = runawayFluid->evaluateBraamsElectricConductivity(ir, T_final[ir], params->Zeff[ir]);
         
         if(newTimeStep)
             Epar_prev[ir] = Epar[ir];
@@ -244,9 +244,9 @@ real_t HottailRateTermLowZ::dSpConddu(struct dGammadu_Params * pars){
 
     real_t res;
     if (pars->id_unknown == id_ni) {
-        res = runawayFluid->evaluatePartialContributionConductivity(pars->ir, pars->id_unknown, pars->n);
+        res = runawayFluid->evaluatePartialContributionBraamsConductivity(pars->ir, pars->id_unknown, pars->n);
     } else {
-        res = runawayFluid->evaluatePartialContributionConductivity(pars->ir, pars->id_unknown, 0 /*n not used*/);
+        res = 0;
     }
     return res;
 }
@@ -336,8 +336,8 @@ real_t HottailRateTermLowZ::dGammadu(len_t ir, len_t id_unknown, len_t n){
     derpar->n = n;
     
     real_t Ec = 4*M_PI* derpar->ncold * derpar->lnL *Constants::r0*Constants::r0*Constants::c*Constants::c*Constants::me / Constants::ec;
-    real_t sp_cond = runawayFluid->GetElectricConductivity(ir);
     real_t Zeff = ionHandler->GetZeff(ir);
+    real_t sp_cond = runawayFluid->evaluateBraamsElectricConductivity(ir, T_final[ir], Zeff);
     real_t integPrefactor =  Constants::ec*Constants::c / (3*(1+Zeff));
     real_t j0 = unknowns->GetUnknownInitialData(id_johm)[ir];
     

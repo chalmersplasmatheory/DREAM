@@ -11,7 +11,7 @@
 namespace DREAM {
     class HottailRateTermLowZ : public HottailRateTerm {
     private:
-        struct ParamStruct {len_t ir; const real_t* ncold; const real_t* sp_cond; const real_t* tau; real_t* lnL; const real_t* j0; const real_t* Zeff; real_t* Ec; AnalyticDistributionHottail *dist; FVM::RadialGrid *rGrid;}; 
+        struct ParamStruct {len_t ir; const real_t* ncold; real_t* sp_cond; const real_t* tau; real_t* lnL; const real_t* j0; const real_t* Zeff; real_t* Ec; AnalyticDistributionHottail *dist; FVM::RadialGrid *rGrid;}; 
         
         struct dGammadu_Params {len_t ir; len_t id_unknown; real_t tau; real_t lnL; real_t ncold; AnalyticDistributionHottail *dist; real_t lowlim; len_t n;};
 
@@ -19,6 +19,7 @@ namespace DREAM {
         IonHandler *ionHandler;
         RunawayFluid *runawayFluid;
         FVM::RadialGrid *rGrid;
+        const real_t* T_final;
         const len_t 
             id_ncold,
             id_Efield,
@@ -61,7 +62,7 @@ namespace DREAM {
     public:
         HottailRateTermLowZ(
             FVM::Grid*, AnalyticDistributionHottail*, FVM::UnknownQuantityHandler*,
-            IonHandler*, CoulombLogarithm*, RunawayFluid*, real_t scaleFactor=1.0
+            IonHandler*, CoulombLogarithm*, RunawayFluid*, const real_t*, real_t scaleFactor=1.0
         );
         ~HottailRateTermLowZ();
         

@@ -53,6 +53,8 @@ void SimulationGenerator::DefineOptions_n_re(
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
+    // Prescribed initial profile
+    DefineDataR(MODULENAME, s, "Tfinal");
 
 }
 
