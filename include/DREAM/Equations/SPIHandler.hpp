@@ -112,7 +112,7 @@ namespace DREAM{
         real_t* shift_r=nullptr;
         real_t T_0, delta_y, Rm;
         real_t t_acc, t_pol, t_pe, t_exp, t_polp, t_pep, t_expp;
-        real_t r, q, Zavg, Dr;
+        real_t q, Zavg, Dr;
         real_t v0, n_e, n_i, Te, B;
         real_t sigma, CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
 
@@ -148,21 +148,21 @@ namespace DREAM{
 
         struct integrand_struct {real_t a;};
         // Functions for the drift calculation
-        void Yp_Conversion();
-        void Assign_Shard_Specific_Parameters(int ip);
-        void Assign_Computation_Parameters(int ip);
-        void Assign_Time_Parameters(int ip);
+        void YpConversion();
+        void AssignShardSpecificParameters(int ip);
+        void AssignComputationParameters(int ip);
+        void AssignTimeParameters(int ip);
         static real_t Integrand(real_t x, void * params);
-        static real_t Integrand_Sin(real_t x, void * params);
-        real_t Epsilon_i(real_t a, real_t b);
-        real_t Bis_Function(real_t t_prim);
-        real_t Primitive_First_Row(real_t t_prim);
-        real_t Primitive_Second_Row(real_t t_prim);
-        real_t Primitive_Third_Row(real_t t_prim);
-        real_t First_Row();
-        real_t Second_Row();
-        real_t Third_Row();
-        real_t Delta_r(int ip);
+        static real_t IntegrandSin(real_t x, void * params);
+        real_t Epsiloni(real_t a, real_t b);
+        real_t BisFunction(real_t t_prim);
+        real_t PrimitiveFirstRow(real_t t_prim);
+        real_t PrimitiveSecondRow(real_t t_prim);
+        real_t PrimitiveThirdRow(real_t t_prim);
+        real_t FirstRow();
+        real_t SecondRow();
+        real_t ThirdRow();
+        real_t Deltar(int ip);
         
         void SetREFluid(RunawayFluid *REF) {
             this->rf = REF;

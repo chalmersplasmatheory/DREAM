@@ -52,7 +52,7 @@ class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-EQTERM_SPI_SHIFT_MODE_ANALYTICAL, T = 0, T0 = 0, delta_y = 0, Rm = 0):
+EQTERM_SPI_SHIFT_MODE_NEGLECT, T = np.array([0]), T0 = 0, delta_y = 0, Rm = 0):
         """
         Constructor.
         
@@ -86,10 +86,10 @@ EQTERM_SPI_SHIFT_MODE_ANALYTICAL, T = 0, T0 = 0, delta_y = 0, Rm = 0):
         self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
         self.abl_ioniz                   = int(abl_ioniz)
         self.shift                       = int(shiftMode)
-        self.T                           = T
-        self.T0                          = T0
-        self.delta_y                     = delta_y
-        self.Rm                          = Rm
+        self.T                           = T.astype(float)
+        self.T0                          = float(T0)
+        self.delta_y                     = float(delta_y)
+        self.Rm                          = float(Rm)
 
         self.rp       = None
         self.vp       = None
@@ -597,16 +597,18 @@ EQTERM_SPI_SHIFT_MODE_ANALYTICAL, T = 0, T0 = 0, delta_y = 0, Rm = 0):
             raise EquationException("spi: Invalid value assigned to 'ablation'. Expected integer.")
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
-        if type(self.shift) != int:
-            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
-        if not all(isinstance(element, (float, int)) for element in self.T):
-            raise EquationException("spi: Invalid value assigned to 'T'. Expected float.")
-        if type(self.T0) != float and type(self.T0) != int:
-            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float or integer.")
-        if type(self.delta_y) != float:
-            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected integer.")
-        if type(self.Rm) != float and type(self.Rm) != int:
-            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected integer.")
+#        if type(self.shift) != int:
+#            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
+#        if not all(element>=0 for element in self.T):
+#            raise EquationException("spi: Invalid value assigned to 'T'. Expected float.")
+#        if type(self.T0) != float and type(self.T0) != int:
+#            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float.")
+#        if type(self.delta_y) != float and type(self.delta_y) != int:
+#            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float.")
+#        if type(self.Rm) != float and type(self.Rm) != int:
+#            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float.")
+        if self.deposition==DEPOSITION_MODE_NEGLECT and self.shift==EQTERM_SPI_SHIFT_MODE_NEGLECT:
+            raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 

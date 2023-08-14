@@ -68,7 +68,6 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     }
     
     bool extrapolateDreicer = s->GetBool("eqsys/n_re/extrapolateDreicer");
-    std::cout << extrapolateDreicer << std::endl;
     RunawayFluid *REF = new RunawayFluid(
         g, unknowns, nuS, nuD, lnLEE, extrapolateDreicer, 
         lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
