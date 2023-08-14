@@ -171,7 +171,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.negative_re = negative_re
         
-    def setextrapolateDreicer(self, extrapolateDreicer=False):
+    def setExtrapolateDreicer(self, extrapolateDreicer=False):
         """
         Extrapolates the result from the neural network for small electric fields
         such that the Dreicer generation rate is continuous and has continuous derivative.
@@ -227,7 +227,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.negative_re = bool(data['negative_re'])
         
         if 'extrapolateDreicer' in data:
-            self.extrapolateDreicer = bool(data['extrapolateDreicer'])
+            self.ExtrapolateDreicer = bool(data['extrapolateDreicer'])
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])

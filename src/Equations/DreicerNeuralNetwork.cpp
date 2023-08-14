@@ -83,9 +83,9 @@ real_t DreicerNeuralNetwork::RunawayRate(
     real_t logNfree = log(nfree);
     real_t free_tot = nfree / ntot;
     real_t logTheta = log(T/Constants::mc2inEV);
-    bool dreicerfix = REFluid->GetextrapolateDreicer();
+    bool dreicerfix = REFluid->GetExtrapolateDreicer();
     
-    return nn_fix(fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+    return NNFix(fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
             logNfree, free_tot, nfree, tauEE, dreicerfix);
 }
 
@@ -96,7 +96,7 @@ real_t DreicerNeuralNetwork::RunawayRate(
 *use_fix :  If enabled the return value will be an extrapolation of the form
 *exp(a * x^b)
 */
-real_t DreicerNeuralNetwork::nn_fix(
+real_t DreicerNeuralNetwork::NNFix(
     const real_t EDD, const real_t logTheta, const real_t Zeff,
     const real_t Zeff0, const real_t Z0Z, const real_t Z0_Z, const real_t logNfree, 
     const real_t nfree_ntot, const real_t nfree, const real_t tauEE, bool dreicerfix

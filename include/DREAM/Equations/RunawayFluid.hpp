@@ -160,7 +160,7 @@ namespace DREAM {
 
         void Rebuild(const real_t);
         void GridRebuilt();
-        bool GetextrapolateDreicer()
+        bool GetExtrapolateDreicer()
             {return extrapolateDreicer;}
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}
