@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
+#include "DREAM/Equations/Kinetic/PrescribedKineticParameter.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
@@ -63,6 +64,9 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Kinetic transport model
     DefineOptions_Transport(mod, s, true);
+
+	// Prescribed distribution
+	DefineDataTR2P(mod, s, "f_prescribed");
 
     // Approximate jacobian settings
     s->DefineSetting(mod + "/fullIonJacobian", "Enables/disables the ion jacobian.", (bool) true);
@@ -334,6 +338,23 @@ TimeVaryingBTerm *SimulationGenerator::ConstructEquation_f_timevaryingb(
 	TimeVaryingBTerm *tvbt = new TimeVaryingBTerm(grid, dlnB0dt);
 
 	return tvbt;
+}
+
+/**
+ * Construct an equation for f where it is prescribed in time.
+ */
+void SimulationGenerator::ConstructEquation_f_prescribed(
+	const len_t id_f, EquationSystem *eqsys, FVM::Grid *grid,
+	Settings *s, const std::string& mod
+) {
+	FVM::Operator *op = new FVM::Operator(grid);
+
+	struct dream_4d_data *data = LoadDataTR2P(
+		mod, s, "f_prescribed"
+	);
+
+	op->AddTerm(new PrescribedKineticParameter(grid, data));
+    eqsys->SetOperator(id_f, id_f, op, "Prescribed");
 }
 
 /**
