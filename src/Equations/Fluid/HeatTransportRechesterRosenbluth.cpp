@@ -90,7 +90,7 @@ void HeatTransportRechesterRosenbluth::Rebuild(
         
         const real_t B_Bmin = rg->GetFSA_B_f(ir);
         const real_t xiT0   = rg->GetXi0TrappedBoundary_fr(ir);
-        const real_t qR0 = 1.0;       // TODO (safety factor)
+        const real_t qR0 = rg->GetR0();       // TODO (safety factor)
 
         real_t D = PREFAC * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0*xiT0); // mc2;
         this->dD[ir] = D;
@@ -128,7 +128,7 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
             n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
         }
         real_t Theta = T / mc2;
-        const real_t qR0 = 1.0; // TODO: safety factor with j_tot jacobian
+        const real_t qR0 = this->grid->GetRadialGrid()->GetR0(); // TODO: safety factor with j_tot jacobian
 
         if (derivId == this->id_n_cold)
             dDrr(ir, 0, 0) = qR0 * this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);

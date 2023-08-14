@@ -12,7 +12,8 @@ module purge
 
 # Load required modules
 module load cmake/3.17.3
-module load gcc/11.2.0
+#module load gcc/11.2.0
+module load intel/2021.3.0
 
 module load gsl/2.5
 export LIB=/home/software/gsl/2.5/lib:${LD_LIBRARY_PATH}
