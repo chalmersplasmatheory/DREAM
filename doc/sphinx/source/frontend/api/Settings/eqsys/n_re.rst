@@ -373,12 +373,16 @@ vector:
 
 Hottail
 ^^^^^^^
-A fluid model for hottail generation is implemented based on the Master's thesis 
-of `Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`_.
-DREAM mainly utilizes the theory of Section 4.2 in the thesis, using the same 
-approximations as used in 'ISOTROPIC' (Nxi=1) kinetic mode. 
+Two fluid models for hottail generation are implemented based on the Master's
+thesis of
+`Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`_.
+DREAM mainly utilizes the theory of Sections 4.1 and 4.2 in the thesis, using
+the same approximations as used in the 'ISOTROPIC' (Nxi=1) kinetic mode. 
 
-The hottail runaway generation rate is given by
+Alternative critical momentum model (recommended)
+*************************************************
+In the first model, denoted ``HOTTAIL_MODE_ANALYTIC_ALT_PC`` in the code, the
+hottail runaway generation rate is given by
 
 .. math::
 
@@ -401,25 +405,77 @@ We have taken the non-relativistic limit of the equation, and neglected screenin
 corrections which requires a high effective charge in order to be accurate (typically
 satisfied during the thermal quench with high-Z material injection). 
 
+.. note::
+
+   This model follows closely the derivation of the model originally derived
+   by `Smith and Verwichte (2008) <https://doi.org/10.1063/1.2949692>`_.
+
+
+Low-Z limit -- simple critical momentum
+***************************************
+An alternative model, utilizing a simpler critical momentum
+:math:`p_{\rm c}=\sqrt{E/E_{\rm c}-1}`, has also been implemented. The runaway
+rate is derived under almost the same assumptions as above, but with a somewhat
+relaxed restriction on the effective charge :math:`Z_{\rm eff}`, eventually
+yielding
+
+.. math::
+
+   \frac{\partial n_{\rm re}}{\partial t} = 4\pi\frac{E_{\rm c}}{E_\parallel^2}
+   \frac{\partial E_\parallel}{\partial t}
+   \int_{\sqrt{E_{\rm c}/E_\parallel}}^\infty f_0(t,p)\,\mathrm{d} p.
+
+Note that for the runaway rate to be positive definite,
+:math:`\partial E_\parallel/\partial t > 0`, and this is ensured in the model
+by explicitly giving an expression for the electric field as a function of
+time. **This model therefore does not depend on the usual electric field
+calculated by DREAM.** Assuming that the thermal quench is so fast that the
+total plasma current does not have time to change, one can derive the following
+time evolution for the electric field:
+
+.. math::
+
+   E_\parallel(t) = E_{\rm c}j_0\left[
+       \sigma_{\rm final} E_{\rm c} +
+       \frac{4\pi}{3}\frac{ec}{1+Z_{\rm eff}}\int_0^\infty
+       \frac{6p^5 + 4p^7}{\left(1+p^2\right)^2} f_0(t,p)\,\mathrm{d}p
+   \right]
+
+where the conductivity :math:`\sigma_{\rm final}=\sigma(T=T_{\rm final})`.
+It is therefore necessary to specify a final temperature to the model.
+
+.. warning::
+
+   While this model is derived under a relaxed assumption on the plasma
+   effective charge, it contains additinal assumptions on the plasma current
+   and electric field evolution which makes it unsuitable in most real-world
+   simulations. We therefore recommend that users opt for the more user-friendly
+   ``HOTTAIL_MODE_ANALYTIC_ALT_PC`` model. For truly accurate hot-tail
+   simulations, kinetic calculations should be employed.
+
+Options
+*******
 The distribution function :math:`f_0` is taken as the analytical hot electron 
-distribution described in :ref:`HotElectronDistribution<ds-eqsys-fhot>`.
+distribution described in :ref:`HotElectronDistribution<ds-eqsys-fhot>` in both
+models described above.
 
 The following hot tail settings are supported:
 
-+----------------------------------+------------------------------------------------------------------+
-| Option                           | Description                                                      |
-+==================================+==================================================================+
-| ``HOTTAIL_MODE_DISABLED``        | Do **not** include hottail generation in the simulation.         |
-+----------------------------------+------------------------------------------------------------------+
-| ``HOTTAIL_MODE_ANALYTIC``        | TODO (the low-Z limit, Section 4.1.3 in Svenningsson's thesis)   |
-+----------------------------------+------------------------------------------------------------------+
-| ``HOTTAIL_MODE_ANALYTIC_ALT_PC`` | The high-Z limit from Section 4.2 in Svenningsson's thesis       |
-+----------------------------------+------------------------------------------------------------------+
++----------------------------------+---------------------------------------------------------------------------+
+| Option                           | Description                                                               |
++==================================+===========================================================================+
+| ``HOTTAIL_MODE_DISABLED``        | Do **not** include hottail generation in the simulation.                  |
++----------------------------------+---------------------------------------------------------------------------+
+| ``HOTTAIL_MODE_ANALYTIC``        | Model valid in the low-Z limit from Section 4.1 in Svenningsson's thesis. |
++----------------------------------+---------------------------------------------------------------------------+
+| ``HOTTAIL_MODE_ANALYTIC_ALT_PC`` | The high-Z limit from Section 4.2 in Svenningsson's thesis.               |
++----------------------------------+---------------------------------------------------------------------------+
 
 
 Example
 *******
-The hottail generation can be activated if and only if ``f_hot`` is in ``analytical`` mode.
+The hottail generation can be activated if and only if ``f_hot`` is in
+``analytical`` mode.
 
 .. code-block:: python 
 
@@ -434,6 +490,26 @@ The hottail generation can be activated if and only if ``f_hot`` is in ``analyti
 
    ds.eqsys.n_re.setHottail(Runaways.HOTTAIL_MODE_ANALYTIC_ALT_PC)
 
+To use the ``HOTTAIL_MODE_ANALYTIC`` model (not recommended), an additional
+call to ``setHottailFinalTemperature()``, specifying the final temperature
+assumed in the model, is required:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+
+   # Set f_hot mode to analytical and provide initial profiles 
+   ds.hottailgrid.setEnabled(False)
+   # rn, n0, rT, T0 = ...  get profiles of density and temperature
+   ds.eqsys.f_hot.setInitialProfiles(rn0=rn, n0=n0, rT0=rT, T0=T0)
+
+   ds.eqsys.n_re.setHottail(Runaways.HOTTAIL_MODE_ANALYTIC)
+   ds.eqsys.n_re.setHottailFinalTemperature(T_final=20)
+
+   # ...alternatively, a radial profile may be specified
+   #ds.eqsys.n_re.setHottailFinalTemperature(T_final=T_final, radius=T_final_r)
 
 
 Effective critical electric field
