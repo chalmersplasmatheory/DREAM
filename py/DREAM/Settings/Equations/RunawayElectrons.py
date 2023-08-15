@@ -77,6 +77,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.density = None
         self.radius  = None
         self.setInitialProfile(density=density, radius=radius)
+        
+        self.hottail_T_final = 0
+        self.hottail_T_final_r  = 0
 
 
     def setInitialProfile(self, density, radius=0):
@@ -84,6 +87,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         self.density = _data
         self.radius  = _rad
+        self.verifySettingsPrescribedInitialData()
+
+
+    def setHottailFinalTemperature(self, T_final, radius=0):
+        _data, _rad = self._setInitialData(data=T_final, radius=radius)
+
+        self.hottail_T_final = _data
+        self.hottail_T_final_r  = _rad
         self.verifySettingsPrescribedInitialData()
 
 
@@ -198,6 +209,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.compton            = int(data['compton']['mode'])
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+        self.hottail_T_final   = data['Tfinal']['x']
+        self.hottail_T_final_r    = data['Tfinal']['r']
 
         if 'flux' in data['compton']:
             if type(data['compton']['flux']) == dict:
@@ -249,6 +262,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         data['init'] = {
             'x': self.density,
             'r': self.radius
+        }
+        data['Tfinal'] = {
+            'x': self.hottail_T_final,
+            'r': self.hottail_T_final_r
         }
 
         # Flux limiter settings

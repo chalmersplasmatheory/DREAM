@@ -114,7 +114,6 @@ void HottailRateTermLowZ::Rebuild(const real_t t, const real_t dt, FVM::UnknownQ
         real_t integral_f0 = integralf0(Epar[ir], params);
         integraloff0inGamma[ir] = integral_f0; // Save for jacobian to not need to calc again
         gamma[ir] = dotEpar* integral_f0* (params->Ec[ir]) / (Epar[ir]*Epar[ir]); // factor 4pi built into def. of f0 --> no 4pi here
-
     }
 }
 
