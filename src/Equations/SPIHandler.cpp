@@ -51,9 +51,9 @@ real_t t_polp, t_pep, t_expp;
 //Parameters which are independent of time and shard
 real_t q, Zavg, Dr;
 //Parameters which are computed elsewhere in DREAM
-real_t v0, n_e, n_i, Te, B;
+real_t v0, n_e, n_i, Te, B, sigma;
 //Parameter which are derived
-real_t sigma, CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
+real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
 
 /**
  * Constructor
@@ -293,9 +293,10 @@ void SPIHandler::YpConversion(){
 void SPIHandler::AssignShardSpecificParameters(int ip){
     v0 = fabs(vp[3*ip]);
     n_e = ncold[irp[ip]];
-    n_i = n_e;
-    B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
     Te = Tcold[irp[ip]];
+    B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
+    sigma = rf->GetElectricConductivity(irp[ip]);
+    n_i = n_e;
 }
 
 /**
@@ -324,7 +325,6 @@ void SPIHandler::AssignComputationParameters(int ip){
     Lc = 2 * CST0*t_detach;
     n = n_0 * Lc; 
     v_lab = a0 * t_detach;
-    sigma = rf->GetElectricConductivity(irp[ip]);
     Reff = -2*M_PI*M_PI*Rm*this->rGrid->GetMinorRadius()/(sigma*delta_y*delta_y*delta_y*log((delta_y/(this->rGrid->GetMinorRadius()*M_PI))));
 }
 
@@ -351,7 +351,7 @@ void SPIHandler::AssignTimeParameters(int ip){
 
 real_t SPIHandler::Integrand(real_t x, void *p){
     struct integrand_struct *params = (struct integrand_struct *)p;
-    return (params->a*cos(x) + x*sin(x))/(params->a*params->a+x*x);
+    return (params->a*cos(x) + x*sin(x))/((params->a)*(params->a)+x*x);
 }
 real_t SPIHandler::IntegrandSin(real_t x, void *p){
     if (x==0)
@@ -384,8 +384,11 @@ real_t SPIHandler::Epsiloni(real_t a, real_t b){
         gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
         sum = -sum;
     }
+    if (a==0)
+        sum = sum+M_PI*0.5;
     gsl_integration_workspace_free(workspace);
-    return exp(a)*sum;
+    return sum;
+
 }
 
 real_t SPIHandler::BisFunction(real_t t_prim){
@@ -395,8 +398,8 @@ real_t SPIHandler::BisFunction(real_t t_prim){
 //Function to evaluate two of the terms in equation (A4) 
 real_t SPIHandler::PrimitiveFirstRow(real_t t_prim){//- at cos in article
     real_t t_bis = BisFunction(t_prim);
-    real_t term1 = exp(-t_expp) * Epsiloni(t_bis, t_bis/t_polp);
-    real_t numerator = exp(t_prim) * (sin(t_bis/t_polp) + 1/t_polp * cos(t_bis/t_polp));
+    real_t term1 = Epsiloni(t_bis, t_bis/t_polp);
+    real_t numerator = (sin(t_bis/t_polp) + 1/t_polp * cos(t_bis/t_polp));
     real_t denominator =  t_pep * (1 + 1/(t_polp * t_polp));
     real_t term2 = numerator/denominator;
     return term1 - term2;
@@ -405,9 +408,9 @@ real_t SPIHandler::PrimitiveFirstRow(real_t t_prim){//- at cos in article
 // Function to evaluate two of the terms in equation (A4) 
 real_t SPIHandler::PrimitiveSecondRow(real_t t_prim){
     real_t t_bis = BisFunction(t_prim);
-    real_t term1 = exp(t_bis) * Epsiloni(0, t_bis/t_polp);
+    real_t term1 = Epsiloni(0, t_bis/t_polp);
     real_t term2 = Epsiloni(t_bis, t_bis/t_polp);
-    real_t result = exp(-t_prim-t_expp)*(term1 - term2);
+    real_t result = term1 - term2;
     return result;
 }
 
@@ -420,7 +423,7 @@ real_t SPIHandler::PrimitiveThirdRow(real_t t_prim){
 }
 
 real_t SPIHandler::FirstRow(){
-    real_t term1 = PrimitiveFirstRow(t_pep) * exp(-t_pep);
+    real_t term1 = PrimitiveFirstRow(t_pep);
     real_t term2 = PrimitiveFirstRow(0);
     return term1 - term2;
 }
@@ -445,8 +448,6 @@ real_t SPIHandler::Deltar(int ip){
     real_t third = ThirdRow();
     real_t term1 = v_lab * t_acc;
     real_t factor = (1+Zavg)*2*qe*T[ip]*q/(CST*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip]))*t_acc;
-    std::cout<<"third "<<third<<std::endl;
-    std::cout<<"third "<<third<<std::endl;
     return term1 + factor * (first + second + third);
 }
 
@@ -476,6 +477,10 @@ void SPIHandler::Rebuild(real_t dt){
     // We use YpPrevious>0 as condition to keep the pellet terms active, 
     // to avoid making the functions discontinuous within a single time step
     YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
+    TcoldPrevious=unknowns->GetUnknownDataPrevious(id_Tcold);
+    vpPrevious=unknowns->GetUnknownDataPrevious(id_vp);
+    ncoldPrevious=unknowns->GetUnknownDataPrevious(id_ncold);
+
 
     // We need the time step to calculate the transient factor in the deposition rate
     this->dt=dt;
@@ -549,34 +554,30 @@ void SPIHandler::Rebuild(real_t dt){
 
     // Calculate deposition (if any)
     if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
-
-        if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
-            CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-            
-            // Calculate drift (if any)
-            if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
-                YpConversion();
-                for(len_t ip=0;ip<nShard;ip++){
-                    if (YpPrevious[ip]>0 && irp[ip]<nr){
-                        AssignShardSpecificParameters(ip);
-                        AssignComputationParameters(ip);
-                        AssignTimeParameters(ip);
-                        shift_r[ip] = Deltar(ip)/5;
-                        nbrShiftGridCell[ip]=std::round(shift_r[ip]/Dr);
-                        std::cout<<"delta_r"<<shift_r[ip]<<std::endl;
-                    }
+        CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
+        
+        // Calculate drift (if any)
+        if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+            YpConversion();
+            for(len_t ip=0;ip<nShard;ip++){
+                if (YpPrevious[ip]>0 && irp[ip]<nr){
+                    AssignShardSpecificParameters(ip);
+                    AssignComputationParameters(ip);
+                    AssignTimeParameters(ip);
+                    shift_r[ip] = Deltar(ip);
+                    nbrShiftGridCell[ip]=std::round(shift_r[ip]/Dr);
                 }
             }
-            // Shift the deposition profile
-            for(len_t ip=0;ip<nShard;ip++){
-                if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                    for(len_t ir=0;ir<nr-1;ir++){
-                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+nbrShiftGridCell[ip])*nShard+ip];
-                    }
-                }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
-                    for(len_t ir=nr-1;ir>0;ir--){
-                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
-                    }
+        }
+        // Shift the deposition profile
+        for(len_t ip=0;ip<nShard;ip++){
+            if(rCoordPNext[ip]>rCoordPPrevious[ip]){
+                for(len_t ir=0;ir<nr-1;ir++){
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+nbrShiftGridCell[ip])*nShard+ip];
+                }
+            }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
+                for(len_t ir=nr-1;ir>0;ir--){
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }
         }

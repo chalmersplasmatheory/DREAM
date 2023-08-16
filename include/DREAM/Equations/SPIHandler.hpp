@@ -71,6 +71,10 @@ namespace DREAM{
         real_t *Whot;
         real_t *qhot;
         real_t *ntot;
+        real_t *TcoldPrevious;
+        real_t *vpPrevious;
+        real_t *ncoldPrevious;
+
 
         real_t *Ypdot=nullptr;
         real_t *rCld=nullptr;
@@ -113,8 +117,8 @@ namespace DREAM{
         real_t T_0, delta_y, Rm;
         real_t t_acc, t_pol, t_pe, t_exp, t_polp, t_pep, t_expp;
         real_t q, Zavg, Dr;
-        real_t v0, n_e, n_i, Te, B;
-        real_t sigma, CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
+        real_t v0, n_e, n_i, Te, B, sigma;
+        real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
