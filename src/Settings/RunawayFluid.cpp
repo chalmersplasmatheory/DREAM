@@ -3,7 +3,6 @@
  */
 
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include <iostream>
 
 using namespace DREAM;
 using namespace std;
