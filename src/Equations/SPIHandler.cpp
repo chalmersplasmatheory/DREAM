@@ -37,8 +37,8 @@ const real_t mH = Constants::mH;//1.67262192369e-27;// kg
 const real_t me = Constants::me;//9.10938356e-31;// kg
 const real_t mNe = 10 * mH;//kg
 const real_t eps0 = Constants::eps0;// F/m
-const real_t ZavgD = 1;//Semi complete
-const real_t ZavgNe = 2;//Semi complete
+const real_t ZavgD = 1;//TODO
+const real_t ZavgNe = 2;//TODO
 const real_t Zavg0 = 1;
 const real_t gamma_e = 1;//Adiabatic constant of electrons
 const real_t gamma_i = 3;//Adiabatic constant of ions
@@ -77,7 +77,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	real_t R0 = this->rGrid->GetR0();
     Dr = this->rGrid->GetDr(0);
     rf = this->rf;
-    q = 1; //semi complete
+    q = 1; //TODO
 
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
@@ -279,7 +279,7 @@ void SPIHandler::DeallocateQuantities(){
 void SPIHandler::YpConversion(){
     real_t temp;
     for(len_t ip=0; ip<nShard; ip++){
-        rp[ip] = (!isnan(temp) && !isinf(temp) && pow(YpPrevious[ip], 3.0/5.0) > 0) ? pow(YpPrevious[ip], 3.0/5.0) : 0;
+        rp[ip] = (!isnan(temp) && !isinf(temp) && pow(Yp[ip], 3.0/5.0) > 0) ? pow(Yp[ip], 3.0/5.0) : 0;
         temp = 3.0/5.0 * pow(rp[ip], -2.0/3.0) * Ypdot[ip];
         rpdot[ip] = (!isnan(temp) && !isinf(temp) && temp <= 0) ? temp : 0;
     }
@@ -311,7 +311,6 @@ void SPIHandler::AssignShardSpecificParameters(int ip){
  * Lc      : Initial length
  * n       : Line integrated density
  * v_lab   : Initial radial drift velocity in the lab frame
- * sigma   : Background plasma conductivity
  * Reff    : Effective resistance to ohmic currents exiting the cloud parallell to the field lines
  */
 void SPIHandler::AssignComputationParameters(int ip){
@@ -477,10 +476,6 @@ void SPIHandler::Rebuild(real_t dt){
     // We use YpPrevious>0 as condition to keep the pellet terms active, 
     // to avoid making the functions discontinuous within a single time step
     YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
-    TcoldPrevious=unknowns->GetUnknownDataPrevious(id_Tcold);
-    vpPrevious=unknowns->GetUnknownDataPrevious(id_vp);
-    ncoldPrevious=unknowns->GetUnknownDataPrevious(id_ncold);
-
 
     // We need the time step to calculate the transient factor in the deposition rate
     this->dt=dt;

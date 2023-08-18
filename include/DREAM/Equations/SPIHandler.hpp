@@ -71,9 +71,6 @@ namespace DREAM{
         real_t *Whot;
         real_t *qhot;
         real_t *ntot;
-        real_t *TcoldPrevious;
-        real_t *vpPrevious;
-        real_t *ncoldPrevious;
 
 
         real_t *Ypdot=nullptr;

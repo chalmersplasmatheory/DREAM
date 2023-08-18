@@ -51,7 +51,6 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     real_t VpVolNormFactor = s->GetReal(MODULENAME "/VpVolNormFactor");
     real_t rclPrescribedConstant = s->GetReal(MODULENAME "/rclPrescribedConstant");
     const int_t *_nbrShiftGridCell  = s->GetIntegerArray(MODULENAME "/nbrShiftGridCell", 1, &nShard);
-    const real_t *T = s->GetRealArray(MODULENAME "/T", 1, &nShard);
     real_t T0 = s->GetReal(MODULENAME "/T0");
     real_t delta_y = s->GetReal(MODULENAME "/delta_y");
     real_t Rm = s->GetReal(MODULENAME "/Rm");
@@ -67,6 +66,13 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     len_t *nbrShiftGridCell = new len_t[nShard];
     for (len_t i = 0; i < nShard; i++)
         nbrShiftGridCell[i] = (len_t)_nbrShiftGridCell[i];
+
+    real_t *T = new real_t[nShard];
+    if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+        const real_t *_T = s->GetRealArray(MODULENAME "/T", 1, &nShard);
+        for (len_t i = 0; i < nShard; i++)
+            T[i] = (real_t)_T[i];
+    }
 
     SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
     return SPI;
