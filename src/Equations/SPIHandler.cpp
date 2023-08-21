@@ -279,7 +279,7 @@ void SPIHandler::DeallocateQuantities(){
 void SPIHandler::YpConversion(){
     real_t temp;
     for(len_t ip=0; ip<nShard; ip++){
-        rp[ip] = (!isnan(temp) && !isinf(temp) && pow(Yp[ip], 3.0/5.0) > 0) ? pow(Yp[ip], 3.0/5.0) : 0;
+        rp[ip] = (!isnan(YpPrevious[ip]) && !isinf(YpPrevious[ip]) && pow(YpPrevious[ip], 3.0/5.0) > 0) ? pow(YpPrevious[ip], 3.0/5.0) : 0;
         temp = 3.0/5.0 * pow(rp[ip], -2.0/3.0) * Ypdot[ip];
         rpdot[ip] = (!isnan(temp) && !isinf(temp) && temp <= 0) ? temp : 0;
     }
@@ -292,8 +292,8 @@ void SPIHandler::YpConversion(){
  // Stores data about the surroundings of a shard
 void SPIHandler::AssignShardSpecificParameters(int ip){
     v0 = fabs(vp[3*ip]);
-    n_e = ncold[irp[ip]];
-    Te = Tcold[irp[ip]];
+    n_e = ncoldPrevious[irp[ip]];
+    Te = TcoldPrevious[irp[ip]];
     B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
     sigma = rf->GetElectricConductivity(irp[ip]);
     n_i = n_e;
@@ -476,6 +476,8 @@ void SPIHandler::Rebuild(real_t dt){
     // We use YpPrevious>0 as condition to keep the pellet terms active, 
     // to avoid making the functions discontinuous within a single time step
     YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
+    ncoldPrevious=unknowns->GetUnknownDataPrevious(id_ncold);
+    TcoldPrevious=unknowns->GetUnknownDataPrevious(id_Tcold);
 
     // We need the time step to calculate the transient factor in the deposition rate
     this->dt=dt;
@@ -560,6 +562,8 @@ void SPIHandler::Rebuild(real_t dt){
                     AssignComputationParameters(ip);
                     AssignTimeParameters(ip);
                     shift_r[ip] = Deltar(ip);
+                    if(shift_r[ip] + xp[ip]>nr*Dr)
+                        shift_r[ip] = nr*Dr-xp[ip];
                     nbrShiftGridCell[ip]=std::round(shift_r[ip]/Dr);
                 }
             }

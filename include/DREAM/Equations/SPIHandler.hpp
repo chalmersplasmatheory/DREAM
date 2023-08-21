@@ -94,6 +94,8 @@ namespace DREAM{
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
         len_t *nbrShiftGridCell=nullptr;
+        real_t *ncoldPrevious=nullptr;
+        real_t *TcoldPrevious=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
