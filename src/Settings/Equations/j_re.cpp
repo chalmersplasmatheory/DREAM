@@ -12,13 +12,14 @@
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
+#include <iostream>
 
 using namespace DREAM;
 
-#define MODULENAME "eqsys/j_re"
+#define MODULENAME "eqsys/n_re"
 
 void SimulationGenerator::DefineOptions_j_re(Settings *s) {
-    s->DefineSetting(MODULENAME "/fluid_mode", "Model to use for calculating the runaway (mean) speed.", (int_t) OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT);
+    s->DefineSetting(MODULENAME "/avalanche_speed", "Model to use for calculating the runaway (mean) speed.", (int_t) OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT);
 }
 
 /**
@@ -101,7 +102,7 @@ void SimulationGenerator::ConstructEquation_j_re(
     } else {
 
         enum OptionConstants::eqterm_fluid_runaway_current_mode fm =
-            (enum OptionConstants::eqterm_fluid_runaway_current_mode)s->GetInteger(MODULENAME "/fluid_mode");
+            (enum OptionConstants::eqterm_fluid_runaway_current_mode)s->GetInteger(MODULENAME "/avalanche_speed");
 
         if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT) {
 
@@ -115,8 +116,7 @@ void SimulationGenerator::ConstructEquation_j_re(
                 nullptr,
                 id_n_re
             );
-        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_MOMENT) {
-
+        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_SVENSSON_MOMENT) {
             eqn->AddTerm(new AvalancheCurrentDensityFromAnalyticalDistributionFunction(
                 fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()
             ));

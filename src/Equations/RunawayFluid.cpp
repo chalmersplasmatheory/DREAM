@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include <iostream>
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
@@ -578,6 +579,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
     real_t nuSHat_COMPSCREEN;
     real_t nuSnuDTerm;
     real_t *E_term = unknowns->GetUnknownData(id_Eterm);
+    real_t *n_cold = unknowns->GetUnknownData(id_ncold);
     for(len_t ir=0; ir<this->nr; ir++){
         /**
          * The normalized electric field E is to be used in the determination of
@@ -606,7 +608,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
         gsl_func.params = &pStar_params;
 
 
-        if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
+        if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW) {
+            // || fluid_speed_mode == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_SVENSSON_MOMENT){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
 
@@ -625,7 +628,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
 
         // used for Hesslow-Svensson integral for runaway mean speed
-        criticalREMomentumInvSqDivedByEMinusEceff[ir] = sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
+        criticalREMomentumInvSqDivedByEMinusEceff[ir] = sqrt(effectivePassingFraction) / ( sqrt(nuSnuDTerm));
 
 
         // also store pc for use in other source functions, but which for E<Eceff is set to inf.

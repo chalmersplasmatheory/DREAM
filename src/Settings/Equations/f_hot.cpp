@@ -99,6 +99,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        std::cout << "pCutoff = " << pCutoff << std::endl;
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
@@ -109,7 +110,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
 
     bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
-    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode)s->GetInteger(MODULENAME "/particleSource"); 
+    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode)s->GetInteger(MODULENAME "/particleSource");
     OptionConstants::eqterm_particle_source_shape pSourceShape  = (OptionConstants::eqterm_particle_source_shape)s->GetInteger(MODULENAME "/particleSourceShape");
     // Enable particle source term ?
     if(collfreqModeFull){
@@ -124,7 +125,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
             case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_DELTA:
                 shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
                 break;
-            
+
             default:
                 throw SettingsException("Unrecognized particle source term shape: %d.", pSourceShape);
         }
@@ -154,7 +155,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     for(len_t ir=0; ir<fluidGrid->GetNr();ir++)
         initZero[ir] = 0;
     eqsys->SetInitialValue(id_Sp, initZero);
-    delete [] initZero;   
+    delete [] initZero;
 }
 
 /**
@@ -165,7 +166,7 @@ namespace DREAM {
     class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
     public:
         real_t pLower, pUpper, scaleFactor;
-        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0)
             : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
 
         virtual void SetWeights() override {
@@ -211,7 +212,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-    
+
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     const len_t id_nre = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
@@ -228,11 +229,11 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     Op_Sp->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
 
     // FREE ELECTRON TERM
-    Op_Ni->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
+    Op_Ni->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));
     eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
 
     // N_RE SOURCES
-    
+
     // Add contribution from kinetic avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
@@ -258,7 +259,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
     bool hasNreTransport = ConstructTransportTerm(
         Op_Nre, "eqsys/n_re", fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys,s, false, false,
         &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
     );
@@ -273,7 +274,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     // Add transport term
     bool hasFHotTerm = ConstructTransportTerm(
         Op_fhot_tmp, "eqsys/f_hot", eqsys->GetHotTailGrid(),
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys,s, true, false,
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc
     );
@@ -288,7 +289,3 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
     eqsys->SetOperator(id_Sp, id_Sp, Op_Sp, desc);
 }
-
-
-
-
