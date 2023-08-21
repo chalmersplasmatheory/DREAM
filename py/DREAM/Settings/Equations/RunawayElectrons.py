@@ -25,9 +25,13 @@ AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
 AVALANCHE_MODE_KINETIC = 4
 
+AVALANCHE_SPEED_OF_LIGHT = 1
+AVALANCHE_SPEED_HESSLOW_SVENSSON = 2
+AVALANCHE_SPEED_ROSENBLUTH_PUTVINSKI= 3
+
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
-COMPTON_MODE_KINETIC = 3 
+COMPTON_MODE_KINETIC = 3
 COMPTON_RATE_ITER_DMS = -1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
@@ -37,14 +41,14 @@ AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
 AD_INTERP_UPWIND   = AdvectionInterpolation.AD_INTERP_UPWIND
 AD_INTERP_UPWIND_2ND_ORDER = AdvectionInterpolation.AD_INTERP_UPWIND_2ND_ORDER
 AD_INTERP_DOWNWIND = AdvectionInterpolation.AD_INTERP_DOWNWIND
-AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK 
-AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART 
-AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL 
-AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE 
-AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF  
+AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK
+AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART
+AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL
+AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE
+AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF
 
 AD_INTERP_JACOBIAN_LINEAR = AdvectionInterpolation.AD_INTERP_JACOBIAN_LINEAR
-AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL  
+AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL
 AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
 
 
@@ -52,10 +56,14 @@ HOTTAIL_MODE_DISABLED = 1
 HOTTAIL_MODE_ANALYTIC = 2 # not yet implemented
 HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
+FLUID_SPEED_MODE_SPEED_OF_LIGHT = 1
+FLUID_SPEED_MODE_HESSLOW_SVENSSON = 2
+FLUID_SPEED_MODE_ROSENBLUTH_PUTVINSKI = 3
+
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED, avalanche_speed=AVALANCHE_SPEED_OF_LIGHT):
         """
         Constructor.
         """
@@ -68,6 +76,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
+        self.avalanche_speed = avalanche_speed
 
         self.setCompton(compton, comptonPhotonFlux)
 
@@ -97,7 +106,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.avalanche = int(avalanche)
             self.pCutAvalanche = pCutAvalanche
 
-
     def setDreicer(self, dreicer):
         """
         Specifies which model to use for calculating the
@@ -123,7 +131,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 if photonFlux is None:
                     photonFlux = np.array([ITER_PHOTON_FLUX_DENSITY])
                     photonFlux_t = np.array([0])
-            
+
             if photonFlux is None:
                 raise EquationException("n_re: Compton photon flux must be set.")
             elif type(photonFlux) == int or type(photonFlux) == float or type(photonFlux) == np.float64:
@@ -170,13 +178,22 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.negative_re = negative_re
 
+    def setAvalancheFluidSpeed(self, avalanche_speed=AVALANCHE_SPEED_OF_LIGHT):
+        """
+        In fluid mode, sets the average speed of the runaway electron when calculating j_re.
+        """
+        if avalanche_speed is None:
+            self.avalanche_speed = AVALANCHE_SPEED_OF_LIGHT
+        else:
+            self.avalanche_speed = int(avalanche_speed)
+
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
         """
         Sets the interpolation method that is used in the advection terms of
         the transport equation.
-        
+
         :param int ad_int:               Interpolation method to use for the radial coordinate.
         :param int ad_jac:               Jacobian interpolation mode to use for the radial coordinate.
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
@@ -219,6 +236,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if 'negative_re' in data:
             self.negative_re = bool(data['negative_re'])
 
+        if 'avalanche_speed' in data:
+            self.avalanche_speed = int(data['avalanche_speed'])
+
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
 
@@ -236,7 +256,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
-            'negative_re': self.negative_re
+            'negative_re': self.negative_re,
+            'avalanche_speed': self.avalanche_speed
         }
         data['compton'] = {
             'mode': self.compton
@@ -279,6 +300,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
         if type(self.negative_re) != bool:
             raise EquationException("n_re: Invalid value assigned to 'negative_re'. Expected bool.")
+        if type(self.avalanche_speed) != int:
+            raise EquationException("n_re: Invalid value assigned to 'avalanche_speed'. Expected integer.")
 
         if self.compton != COMPTON_MODE_NEGLECT:
             if type(self.comptonPhotonFlux) != np.ndarray:
@@ -288,11 +311,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             elif self.comptonPhotonFlux.shape != self.comptonPhotonFlux_t.shape:
                 raise EquationException("The shapes of 'comptonPhotonFlux' and 'photonFlux_t' do not match.")
 
+
+
         self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()
 
 
     def verifySettingsPrescribedInitialData(self):
         self._verifySettingsPrescribedInitialData('n_re', data=self.density, radius=self.radius)
-
-

@@ -15,26 +15,26 @@ using namespace DREAM;
 RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler(
     FVM::Grid *grid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid, FVM::Grid *fluidGrid,
     FVM::UnknownQuantityHandler *unknowns, RunawayFluid *REFluid,
-    IonHandler *ions, AnalyticDistributionHottail *distHT, 
+    IonHandler *ions, AnalyticDistributionHottail *distHT,
     struct OtherQuantityHandler::eqn_terms *oqty_terms, Settings *s, bool signPositive
 ) {
     const std::string &mod = "eqsys/n_re";
 
     std::string eqnSign = signPositive ? " + " : " - ";
-    
-    
+
+
 
     RunawaySourceTermHandler *rsth = new RunawaySourceTermHandler();
 
-    // Add avalanche growth rate: 
+    // Add avalanche growth rate:
     //  - fluid mode, use analytical growth rate formula,
-    //  - kinetic mode, add those knockons which are created for p>pMax 
+    //  - kinetic mode, add those knockons which are created for p>pMax
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(mod + "/avalanche");
     // Add avalanche growth rate
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
-        rsth->AddSourceTerm(eqnSign + "n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
+    // if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
+        // rsth->AddSourceTerm(eqnSign + "n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
 
-    else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         if (hottailGrid || runawayGrid != nullptr) {
             // XXX: assume same momentum grid at all radii
             real_t pCut;
@@ -58,7 +58,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     }
 
     // Add Dreicer runaway rate
-    enum OptionConstants::eqterm_dreicer_mode dm = 
+    enum OptionConstants::eqterm_dreicer_mode dm =
         (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger(mod + "/dreicer");
     switch (dm) {
         case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR:
@@ -102,12 +102,11 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger(mod + "/hottail");
     if(distHT!=nullptr && hottail_mode == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){
         oqty_terms->n_re_hottail_rate = new HottailRateTermHighZ(
-            grid, distHT, unknowns, ions, 
+            grid, distHT, unknowns, ions,
             REFluid->GetLnLambda(), -1.0
         );
         rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
     }
-    
+
     return rsth;
 }
-
