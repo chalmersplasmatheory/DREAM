@@ -10,36 +10,25 @@ namespace DREAM {
     class AvalancheCurrentDensityFromAnalyticalDistributionFunction : public FVM::DiagonalComplexTerm {
     private:
         RunawayFluid *REFluid;
-        OptionConstants::eqterm_fluid_runaway_current_mode *fm;
         const real_t scaleFactor;
 
-
         len_t id_Efield;
+        real_t *Efield;
 
+        static real_t integrand(real_t, void*);
+        real_t evaluateMeanSpeed(len_t);
 
-
-
-
-
-        static real_t integrandHesslow(real_t, void*);
-        // static real_t integrandRosenbluthPutvinski(real_t, void*);
-        real_t evaluateAvalancheRunawaysMeanVelocity(len_t);
-
-
-    protected:
-
-        gsl_integration_workspace *gsl_w0 = nullptr;
-        gsl_integration_workspace *gsl_w1 = nullptr;
+        gsl_integration_workspace *gsl_w;
         int GSL_WORKSPACE_SIZE = 1000;
         int QAG_KEY = GSL_INTEG_GAUSS31;
 
+    protected:
         virtual void SetWeights() override;
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
     public:
         AvalancheCurrentDensityFromAnalyticalDistributionFunction(
-            FVM::Grid*, FVM::UnknownQuantityHandler*, RunawayFluid*,
-            /*OptionConstants::eqterm_fluid_runaway_current_mode*,*/ real_t scaleFactor=1.0);
+            FVM::Grid*, FVM::UnknownQuantityHandler*, RunawayFluid*,real_t scaleFactor=1.0);
         ~AvalancheCurrentDensityFromAnalyticalDistributionFunction();
     };
 }

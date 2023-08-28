@@ -86,9 +86,6 @@ namespace DREAM {
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
 
-        real_t *criticalREMomentumInvSqDivedByEMinusEceff=nullptr;
-        real_t *avalancheGrowthRateDividedByEMinEceff=nullptr;
-
         EffectiveCriticalField *effectiveCriticalFieldObject = nullptr;
 
         FVM::TimeKeeper *timeKeeper;
@@ -223,11 +220,6 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
-
-        const real_t GetAvalancheGrowthRateDividedByEMinEceff(len_t ir) const
-            {return avalancheGrowthRateDividedByEMinEceff[ir];}
-        const real_t* GetAvalancheGrowthRateDividedByEMinEceff() const
-            {return avalancheGrowthRateDividedByEMinEceff;}
 
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }

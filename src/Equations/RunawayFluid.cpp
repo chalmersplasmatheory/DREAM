@@ -337,7 +337,6 @@ void RunawayFluid::CalculateGrowthRates(const real_t t){
 
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
-        avalancheGrowthRateDividedByEMinEceff[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSqDivedByEMinusEceff[ir];
         real_t pc = criticalREMomentum[ir];
 		real_t cmptnFlux = compton_photon_flux->Eval(t)[0];
         tritiumRate[ir] = evaluateTritiumRate(pc);
@@ -627,10 +626,6 @@ void RunawayFluid::CalculateCriticalMomentum(){
         // note that it is allowed to be negative for E<Eceff
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
 
-        // used for Hesslow-Svensson integral for runaway mean speed
-        criticalREMomentumInvSqDivedByEMinusEceff[ir] = sqrt(effectivePassingFraction) / ( sqrt(nuSnuDTerm));
-
-
         // also store pc for use in other source functions, but which for E<Eceff is set to inf.
         if (EMinusEceff<=0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
@@ -677,9 +672,6 @@ void RunawayFluid::AllocateQuantities(){
     DComptonRateDpc = new real_t[nr];
 
     electricConductivity = new real_t[nr];
-
-    criticalREMomentumInvSqDivedByEMinusEceff = new real_t[nr];
-    avalancheGrowthRateDividedByEMinEceff     = new real_t[nr];
 }
 
 /**
