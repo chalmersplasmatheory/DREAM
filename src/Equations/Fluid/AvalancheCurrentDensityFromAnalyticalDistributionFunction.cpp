@@ -2,126 +2,85 @@
 #include <iostream>
 using namespace DREAM;
 
-/*
- * Constructor
+/**
+ * Constructor.
  */
 AvalancheCurrentDensityFromAnalyticalDistributionFunction::AvalancheCurrentDensityFromAnalyticalDistributionFunction(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, RunawayFluid *rf,/* OptionConstants::eqterm_fluid_runaway_current_mode *fm,*/ real_t sf
-) : FVM::DiagonalComplexTerm(g,u), REFluid(rf), /*fm(fm),*/ scaleFactor(sf) {
-
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, RunawayFluid *rf, real_t sf
+) : FVM::DiagonalComplexTerm(g,u), REFluid(rf), scaleFactor(sf) {
     id_Efield = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-
-    // old_u_re = new real_t[nr];
-
-    gsl_w0 = gsl_integration_workspace_alloc(GSL_WORKSPACE_SIZE);
-
-    // for 2d integrals, use double integration
-    // if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_ROSENBLUTH_PUTVINSKI_MOMENT)
-        // gsl_w1 = gsl_integration_workspace_alloc(GSL_WORKSPACE_SIZE);
+    gsl_w = gsl_integration_workspace_alloc(GSL_WORKSPACE_SIZE);
 }
 
+/**
+ * Destructor.
+ */
 AvalancheCurrentDensityFromAnalyticalDistributionFunction::~AvalancheCurrentDensityFromAnalyticalDistributionFunction() {
-
-    // delete [] old_u_re;
-
-    gsl_integration_workspace_free(gsl_w0);
-    if (gsl_w1 != nullptr)
-        gsl_integration_workspace_free(gsl_w1);
+    gsl_integration_workspace_free(gsl_w);
 }
 
+/**
+ * Set the weights of this term.
+ */
 void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetWeights() {
-    real_t *efield = unknowns->GetUnknownData(id_Efield);
-    // real_t *eceff  = REFluid->GetEffectiveCriticalField();
+    Efield = unknowns->GetUnknownData(id_Efield);
     const real_t *FSA_B = this->grid->GetRadialGrid()->GetFSA_B();
-
     for(len_t ir=0; ir<nr; ir++){
-        real_t sgn = (efield[ir] > 0) - (efield[ir] < 0);
-
-        real_t u_re = evaluateAvalancheRunawaysMeanVelocity(ir);
-        // if (fabs(efield[ir]) > eceff[ir])
-        //     u_re *= evaluateAvalancheRunawaysMeanVelocity(ir);
-        std::cout << u_re << std::endl;
+        real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
+        real_t u_re = evaluateMeanSpeed(ir);
         weights[ir] = scaleFactor * sgn * Constants::c * Constants::ec * u_re / FSA_B[ir];
     }
 }
 
+/**
+ * Set the weights for the Jacobian matrix of this term.
+ */
 void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetDiffWeights(len_t , len_t ) {
     // weights for Jacobian
 }
 
 
 /**
-* Parameter struct containing integrand parameters which is passed to a GSL function.
+* Parameter struct used for the evaluation of mean RE speed integral.
 */
-struct integrandHesslowParams {
-    real_t pceff;
-    real_t gammaTilde;
-    real_t tauRel;
+struct integrandParams {
+    len_t ir;
+    real_t Efield;
+    RunawayFluid *REFluid;
 };
 
-real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrandHesslow(real_t w, void *params) {
-    struct integrandHesslowParams *p = (struct integrandHesslowParams *)params;
+/**
+ * Returns the integrand appearing in the evaluation of the mean RE speed.
+ */
+real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrand(real_t w, void *params) {
+    struct integrandParams *p = (struct integrandParams *)params;
+
+    RunawayFluid *rf = p->REFluid;
+    real_t EMinusEceff = (fabs(p->Efield) - rf->GetEffectiveCriticalField(p->ir)) * Constants::ec / (Constants::me * Constants::c);
+    real_t beta = rf->GetAvalancheGrowthRate(p->ir) / EMinusEceff;
+
     real_t mw = 1 - w;  // check if zero?
-    real_t pmw = (p->pceff) + w / mw;
-    real_t gt = (p->gammaTilde) * (p->tauRel);
-    return gt * pmw / ( mw * mw * sqrt(1 + pmw * pmw) ) * exp( - gt * w / mw );
-    // return gt / ( mw * mw ) * exp( - gt * w / mw );
+    real_t pmw = rf->GetEffectiveCriticalRunawayMomentum(p->ir) + w / mw;
+    return beta * pmw / ( mw * mw * sqrt(1 + pmw * pmw) ) * exp( - beta * w / mw );
 }
 
+/**
+ * Calculates the mean RE speed assuming an analytical RE distribution function, based on Eq. (4.2) in Svensson et al. (JPP 2020).
+ */
+real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::evaluateMeanSpeed(len_t ir) {
 
-// struct integrandRosenbluthPutvinskiParams {
-//     real_t efield;
-//     real_t ecrit;
-//     real_t zeff;
-// };
-
-// real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrandRosenbluthPutvinski(real_t w, void *params) {
-//     struct integrandRosenbluthPutvinskiParams *p = (struct integrandRosenbluthPutvinskiParams *)params;
-//
-//     return 0;
-// }
-//
-// struct integrandRosenbluthPutvinski_innerParams {
-//     real_t w;
-//     real_t efield;
-//     real_t ecrit;
-//     real_t zeff;
-// };
-
-
-// real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrandRosenbluthPutvinski_inner(real_t z, void *params) {
-//     return 0;
-// }
-
-
-real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::evaluateAvalancheRunawaysMeanVelocity(len_t ir) {
-    // some if statement...
-
-    // struct integrandRosenbluthPutvinskiParams params = {
-    //     nullptr,
-    //     // unknowns->GetUnknownData(id_Efield);
-    //     REFluid->GetConnorHastieField_COMPLETESCREENING(ir),
-    // };
-
-    // hesslow
-
-    real_t pceff = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
-    if (std::isinf(pceff)) {
+    if (std::isinf(REFluid->GetEffectiveCriticalRunawayMomentum(ir)))
         return 1;
-    }
 
-    struct integrandHesslowParams params = {
-        pceff,
-        REFluid->GetAvalancheGrowthRateDividedByEMinEceff(ir),
-        REFluid->GetElectronCollisionTimeRelativistic(ir)
-    };
+    gsl_function gsl_func;
+    gsl_func.function = &(AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrand);
 
-    gsl_function F;
-    F.function = &(AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrandHesslow);
-    F.params = &params;
+    struct integrandParams params = {ir, Efield[ir], REFluid};
+    gsl_func.params = &params;
+
     real_t integral, error;
+    real_t epsabs = 0, epsrel = 1e-8, lim = gsl_w->limit;
+    gsl_integration_qag(&gsl_func, 0, 1, epsabs, epsrel, lim, QAG_KEY, gsl_w, &integral, &error);
 
-    real_t epsabs = 0, epsrel = 1e-8, lim = gsl_w0->limit;
-    gsl_integration_qag(&F, 0, 1, epsabs, epsrel, lim, QAG_KEY, gsl_w0, &integral, &error);
     return integral;
 }
