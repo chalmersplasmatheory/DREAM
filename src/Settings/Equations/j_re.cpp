@@ -7,7 +7,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
-#include "DREAM/Equations/Fluid/AvalancheCurrentDensityFromAnalyticalDistributionFunction.hpp"
+#include "DREAM/Equations/Fluid/RunawayCurrentDensityFromAnalyticalDistributionFunction.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -116,8 +116,8 @@ void SimulationGenerator::ConstructEquation_j_re(
                 nullptr,
                 id_n_re
             );
-        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_SVENSSON_MOMENT) {
-            eqn->AddTerm(new AvalancheCurrentDensityFromAnalyticalDistributionFunction(
+        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_ANALYTICAL_DISTRIBUTION) {
+            eqn->AddTerm(new RunawayCurrentDensityFromAnalyticalDistributionFunction(
                 fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()
             ));
             eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*u_re*n_re");

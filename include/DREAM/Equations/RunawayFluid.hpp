@@ -79,7 +79,6 @@ namespace DREAM {
         real_t *pc_NOSCREENING = nullptr;
         real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
         real_t *dreicerRunawayRate=nullptr;      // (dnRE/dt)_Dreicer = gamma_Dreicer
-        real_t *nuSnuDTerm=nullptr;
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)

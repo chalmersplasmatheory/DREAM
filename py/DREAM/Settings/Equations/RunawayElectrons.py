@@ -25,10 +25,6 @@ AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
 AVALANCHE_MODE_KINETIC = 4
 
-AVALANCHE_SPEED_OF_LIGHT = 1
-AVALANCHE_SPEED_HESSLOW_SVENSSON = 2
-AVALANCHE_SPEED_ROSENBLUTH_PUTVINSKI= 3
-
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3
@@ -57,13 +53,21 @@ HOTTAIL_MODE_ANALYTIC = 2 # not yet implemented
 HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
 FLUID_SPEED_MODE_SPEED_OF_LIGHT = 1
-FLUID_SPEED_MODE_HESSLOW_SVENSSON = 2
-FLUID_SPEED_MODE_ROSENBLUTH_PUTVINSKI = 3
+FLUID_SPEED_MODE_ANALYTICAL_DIST = 2
 
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED, avalanche_speed=AVALANCHE_SPEED_OF_LIGHT):
+    def __init__(self, settings, density=0, radius=0,
+        avalanche=AVALANCHE_MODE_NEGLECT,
+        dreicer=DREICER_RATE_DISABLED,
+        compton=COMPTON_MODE_NEGLECT,
+        Eceff=COLLQTY_ECEFF_MODE_FULL,
+        pCutAvalanche=0,
+        comptonPhotonFlux=0,
+        tritium=False,
+        hottail=HOTTAIL_MODE_DISABLED,
+        fluid_speed=FLUID_SPEED_MODE_SPEED_OF_LIGHT):
         """
         Constructor.
         """
@@ -76,7 +80,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
-        self.avalanche_speed = avalanche_speed
+        self.fluid_speed = fluid_speed
 
         self.setCompton(compton, comptonPhotonFlux)
 
@@ -178,14 +182,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.negative_re = negative_re
 
-    def setAvalancheFluidSpeed(self, avalanche_speed=AVALANCHE_SPEED_OF_LIGHT):
+    def setFluidSpeed(self, fluid_speed=FLUID_SPEED_MODE_SPEED_OF_LIGHT):
         """
-        In fluid mode, sets the average speed of the runaway electron when calculating j_re.
+        Sets the mean speed of the runaway electron when calculating j_re
+        in fluid mode. Either simply assume that they travel at the speed of
+        light (default), or use an analytical RE distribution to approximate
+        the mean RE speed via its first moment integral.
         """
-        if avalanche_speed is None:
-            self.avalanche_speed = AVALANCHE_SPEED_OF_LIGHT
-        else:
-            self.avalanche_speed = int(avalanche_speed)
+        self.fluid_speed = int(fluid_speed)
 
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
@@ -236,8 +240,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if 'negative_re' in data:
             self.negative_re = bool(data['negative_re'])
 
-        if 'avalanche_speed' in data:
-            self.avalanche_speed = int(data['avalanche_speed'])
+        if 'fluid_speed' in data:
+            self.fluid_speed = int(data['fluid_speed'])
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
@@ -257,7 +261,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'tritium': self.tritium,
             'hottail': self.hottail,
             'negative_re': self.negative_re,
-            'avalanche_speed': self.avalanche_speed
+            'fluid_speed': self.fluid_speed
         }
         data['compton'] = {
             'mode': self.compton
@@ -300,8 +304,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
         if type(self.negative_re) != bool:
             raise EquationException("n_re: Invalid value assigned to 'negative_re'. Expected bool.")
-        if type(self.avalanche_speed) != int:
-            raise EquationException("n_re: Invalid value assigned to 'avalanche_speed'. Expected integer.")
+        if type(self.fluid_speed) != int:
+            raise EquationException("n_re: Invalid value assigned to 'fluid_speed'. Expected integer.")
 
         if self.compton != COMPTON_MODE_NEGLECT:
             if type(self.comptonPhotonFlux) != np.ndarray:
