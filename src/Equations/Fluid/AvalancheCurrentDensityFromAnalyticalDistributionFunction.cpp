@@ -8,8 +8,14 @@ using namespace DREAM;
 AvalancheCurrentDensityFromAnalyticalDistributionFunction::AvalancheCurrentDensityFromAnalyticalDistributionFunction(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, RunawayFluid *rf, real_t sf
 ) : FVM::DiagonalComplexTerm(g,u), REFluid(rf), scaleFactor(sf) {
+
     id_Efield = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    id_ntot   = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+
     gsl_w = gsl_integration_workspace_alloc(GSL_WORKSPACE_SIZE);
+
+    AddUnknownForJacobian(unknowns, id_Efield);
+    AddUnknownForJacobian(unknowns, id_ntot);
 }
 
 /**
@@ -17,6 +23,8 @@ AvalancheCurrentDensityFromAnalyticalDistributionFunction::AvalancheCurrentDensi
  */
 AvalancheCurrentDensityFromAnalyticalDistributionFunction::~AvalancheCurrentDensityFromAnalyticalDistributionFunction() {
     gsl_integration_workspace_free(gsl_w);
+    if (dPCrit != nullptr)
+        delete [] dPCrit;
 }
 
 /**
@@ -24,30 +32,42 @@ AvalancheCurrentDensityFromAnalyticalDistributionFunction::~AvalancheCurrentDens
  */
 void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetWeights() {
     Efield = unknowns->GetUnknownData(id_Efield);
-    const real_t *FSA_B = this->grid->GetRadialGrid()->GetFSA_B();
-    for(len_t ir=0; ir<nr; ir++){
+    for(len_t ir=0; ir < nr; ir++){
         real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
         real_t u_re = evaluateMeanSpeed(ir);
-        weights[ir] = scaleFactor * sgn * Constants::c * Constants::ec * u_re / FSA_B[ir];
+        const real_t FSA_B = this->grid->GetRadialGrid()->GetFSA_B(ir);
+        weights[ir] = scaleFactor * sgn * constPreFactor * u_re / FSA_B;
     }
 }
 
 /**
- * Set the weights for the Jacobian matrix of this term.
+ * Set the weights for the weight Jacobian matrix of this term.
+ *
+ * Assumes that the only dependence of u_re to any unknown quantities is in the lower
+ * integral boundary p = pCrit is captured via the approximation pCrit ~ 1/sqrt{E - Eceff},
+ * with Eceff ~ ntot.
  */
-void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetDiffWeights(len_t , len_t ) {
-    // weights for Jacobian
+void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetDiffWeights(len_t derivId, len_t /*nMultiples*/ ) {
+    if ( !((derivId == id_Efield) || (derivId == id_ntot)) ) {
+        for (len_t ir = 0; ir < nr; ir++)
+            diffWeights[ir] = 0;
+    } else {
+        if (dPCrit == nullptr)
+            dPCrit = new real_t[nr];
+
+        REFluid->evaluatePartialContributionCriticalREMomentum(dPCrit, derivId);
+        struct integrandParams params;
+        for (len_t ir = 0; ir < nr; ir++) {
+            if (dPCrit[ir] == 0)
+                diffWeights[ir] = 0;
+            else {
+                params = {ir, Efield[ir], REFluid};
+                const real_t FSA_B = grid->GetRadialGrid()->GetFSA_B(ir);
+                diffWeights[ir] = - scaleFactor * constPreFactor * integrand(0, &params) * dPCrit[ir] / FSA_B;  // Leibniz integral rule
+            }
+        }
+    }
 }
-
-
-/**
-* Parameter struct used for the evaluation of mean RE speed integral.
-*/
-struct integrandParams {
-    len_t ir;
-    real_t Efield;
-    RunawayFluid *REFluid;
-};
 
 /**
  * Returns the integrand appearing in the evaluation of the mean RE speed.

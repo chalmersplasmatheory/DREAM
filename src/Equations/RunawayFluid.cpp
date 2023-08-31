@@ -695,9 +695,6 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
-
-        delete [] criticalREMomentumInvSqDivedByEMinusEceff;
-        delete [] avalancheGrowthRateDividedByEMinEceff;
     }
 }
 
@@ -908,6 +905,36 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
     } else
         for(len_t ir = 0; ir<nr; ir++)
             dGamma[ir] = 0;
+}
+
+/**
+ * Calculation of the partial derivative of the effective critical RE momentum
+ * with respect to unknown quantities. So far approximate expression
+ * assuming the E-field dependence is captured via the 1/sqrt{E-Eceff} coefficient
+ * and density via Eceff ~ n_tot.
+ *
+ * This method is used for the evaluation of partial derivatives of the mean
+ * RE speed (u_re).
+ */
+void RunawayFluid::evaluatePartialContributionCriticalREMomentum(real_t *pPCrit, len_t derivId) {
+    if ( !((derivId == id_Eterm) || (derivId == id_ntot)) ) {
+        for(len_t ir = 0; ir<nr; ir++)
+            pPCrit[ir] = 0;
+    } else if (derivId == id_Eterm) {
+        for (len_t ir = 0; ir<nr; ir++) {
+            if (std::isinf(criticalREMomentum[ir]))
+                pPCrit[ir] = 0;
+            else
+                pPCrit[ir] = - .5 * ((Eterm[ir]>0) - (Eterm[ir]<0)) * criticalREMomentum[ir] / ( fabs(Eterm[ir]) - effectiveCriticalField[ir] );
+        }
+    } else { /* id_ntot */
+        for (len_t ir = 0; ir<nr; ir++) {
+            if (std::isinf(criticalREMomentum[ir]))
+                pPCrit[ir] = 0;
+            else
+                pPCrit[ir] = .5 * effectiveCriticalField[ir] / ntot[ir] * criticalREMomentum[ir] / ( fabs(Eterm[ir]) - effectiveCriticalField[ir] );
+        }
+    }
 }
 
 /**

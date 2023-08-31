@@ -244,7 +244,7 @@ namespace DREAM {
         real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n);
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);
-
+        void evaluatePartialContributionCriticalREMomentum(real_t *pPCrit, len_t derivId);
 
         void PrintTimings();
         void SaveTimings(SFile*, const std::string& path="");
