@@ -1,11 +1,11 @@
-#include "DREAM/Equations/Fluid/AvalancheCurrentDensityFromAnalyticalDistributionFunction.hpp"
+#include "DREAM/Equations/Fluid/RunawayCurrentDensityFromAnalyticalDistributionFunction.hpp"
 #include <iostream>
 using namespace DREAM;
 
 /**
  * Constructor.
  */
-AvalancheCurrentDensityFromAnalyticalDistributionFunction::AvalancheCurrentDensityFromAnalyticalDistributionFunction(
+RunawayCurrentDensityFromAnalyticalDistributionFunction::RunawayCurrentDensityFromAnalyticalDistributionFunction(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, RunawayFluid *rf, real_t sf
 ) : FVM::DiagonalComplexTerm(g,u), REFluid(rf), scaleFactor(sf) {
 
@@ -21,7 +21,7 @@ AvalancheCurrentDensityFromAnalyticalDistributionFunction::AvalancheCurrentDensi
 /**
  * Destructor.
  */
-AvalancheCurrentDensityFromAnalyticalDistributionFunction::~AvalancheCurrentDensityFromAnalyticalDistributionFunction() {
+RunawayCurrentDensityFromAnalyticalDistributionFunction::~RunawayCurrentDensityFromAnalyticalDistributionFunction() {
     gsl_integration_workspace_free(gsl_w);
     if (dPCrit != nullptr)
         delete [] dPCrit;
@@ -30,7 +30,7 @@ AvalancheCurrentDensityFromAnalyticalDistributionFunction::~AvalancheCurrentDens
 /**
  * Set the weights of this term.
  */
-void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetWeights() {
+void RunawayCurrentDensityFromAnalyticalDistributionFunction::SetWeights() {
     Efield = unknowns->GetUnknownData(id_Efield);
     for(len_t ir=0; ir < nr; ir++){
         real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
@@ -47,7 +47,7 @@ void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetWeights() {
  * integral boundary p = pCrit is captured via the approximation pCrit ~ 1/sqrt{E - Eceff},
  * with Eceff ~ ntot.
  */
-void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetDiffWeights(len_t derivId, len_t /*nMultiples*/ ) {
+void RunawayCurrentDensityFromAnalyticalDistributionFunction::SetDiffWeights(len_t derivId, len_t /*nMultiples*/ ) {
     if ( !((derivId == id_Efield) || (derivId == id_ntot)) ) {
         for (len_t ir = 0; ir < nr; ir++)
             diffWeights[ir] = 0;
@@ -72,7 +72,7 @@ void AvalancheCurrentDensityFromAnalyticalDistributionFunction::SetDiffWeights(l
 /**
  * Returns the integrand appearing in the evaluation of the mean RE speed.
  */
-real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrand(real_t w, void *params) {
+real_t RunawayCurrentDensityFromAnalyticalDistributionFunction::integrand(real_t w, void *params) {
     struct integrandParams *p = (struct integrandParams *)params;
 
     RunawayFluid *rf = p->REFluid;
@@ -87,13 +87,13 @@ real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrand(real
 /**
  * Calculates the mean RE speed assuming an analytical RE distribution function, based on Eq. (4.2) in Svensson et al. (JPP 2020).
  */
-real_t AvalancheCurrentDensityFromAnalyticalDistributionFunction::evaluateMeanSpeed(len_t ir) {
+real_t RunawayCurrentDensityFromAnalyticalDistributionFunction::evaluateMeanSpeed(len_t ir) {
 
     if (std::isinf(REFluid->GetEffectiveCriticalRunawayMomentum(ir)))
         return 1;
 
     gsl_function gsl_func;
-    gsl_func.function = &(AvalancheCurrentDensityFromAnalyticalDistributionFunction::integrand);
+    gsl_func.function = &(RunawayCurrentDensityFromAnalyticalDistributionFunction::integrand);
 
     struct integrandParams params = {ir, Efield[ir], REFluid};
     gsl_func.params = &params;

@@ -1,5 +1,5 @@
-#ifndef _DREAM_EQUATION_FLUID_AVALANCHE_CURRENT_DENSITY_FROM_ANALYTICAL_DISTRIBUTION_FUNCTION_HPP
-#define _DREAM_EQUATION_FLUID_AVALANCHE_CURRENT_DENSITY_FROM_ANALYTICAL_DISTRIBUTION_FUNCTION_HPP
+#ifndef _DREAM_EQUATION_FLUID_RUNAWAY_CURRENT_DENSITY_FROM_ANALYTICAL_DISTRIBUTION_FUNCTION_HPP
+#define _DREAM_EQUATION_FLUID_RUNAWAY_CURRENT_DENSITY_FROM_ANALYTICAL_DISTRIBUTION_FUNCTION_HPP
 
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -7,7 +7,7 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
-    class AvalancheCurrentDensityFromAnalyticalDistributionFunction : public FVM::DiagonalComplexTerm {
+    class RunawayCurrentDensityFromAnalyticalDistributionFunction : public FVM::DiagonalComplexTerm {
     private:
         RunawayFluid *REFluid;
         const real_t scaleFactor;
@@ -39,11 +39,11 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
     public:
-        AvalancheCurrentDensityFromAnalyticalDistributionFunction(
+        RunawayCurrentDensityFromAnalyticalDistributionFunction(
             FVM::Grid*, FVM::UnknownQuantityHandler*, RunawayFluid*,real_t scaleFactor=1.0);
-        ~AvalancheCurrentDensityFromAnalyticalDistributionFunction();
+        ~RunawayCurrentDensityFromAnalyticalDistributionFunction();
     };
 }
 
 
-#endif /*_DREAM_EQUATION_FLUID_AVALANCHE_CURRENT_DENSITY_FROM_ANALYTICAL_DISTRIBUTION_FUNCTION_HPP*/
+#endif /*_DREAM_EQUATION_FLUID_RUNAWAY_CURRENT_DENSITY_FROM_ANALYTICAL_DISTRIBUTION_FUNCTION_HPP*/

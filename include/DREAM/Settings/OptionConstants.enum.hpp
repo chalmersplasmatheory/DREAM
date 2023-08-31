@@ -395,8 +395,7 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
 
 enum eqterm_fluid_runaway_current_mode {
     EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT = 1,
-    EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_SVENSSON_MOMENT = 2,
-    EQTERM_FLUID_RUNAWAY_CURRENT_MODE_ROSENBLUTH_PUTVINSKI_MOMENT = 3,
+    EQTERM_FLUID_RUNAWAY_CURRENT_MODE_ANALYTICAL_DISTRIBUTION = 2,
 };
 
 // Option for which parameter to do the 1D interpolation (time or plasma current)

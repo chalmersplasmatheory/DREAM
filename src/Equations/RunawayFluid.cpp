@@ -608,7 +608,6 @@ void RunawayFluid::CalculateCriticalMomentum(){
 
 
         if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW) {
-            // || fluid_speed_mode == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_HESSLOW_SVENSSON_MOMENT){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
 
