@@ -12,8 +12,18 @@ namespace DREAM {
         RunawayFluid *REFluid;
         const real_t scaleFactor;
 
+        const real_t constPreFactor = Constants::c * Constants::ec;
+
         len_t id_Efield;
+        len_t id_ntot;
+        len_t id_ncold;
         real_t *Efield;
+
+        struct integrandParams {
+            len_t ir;
+            real_t Efield;
+            RunawayFluid *REFluid;
+        };
 
         static real_t integrand(real_t, void*);
         real_t evaluateMeanSpeed(len_t);
@@ -21,6 +31,8 @@ namespace DREAM {
         gsl_integration_workspace *gsl_w;
         int GSL_WORKSPACE_SIZE = 1000;
         int QAG_KEY = GSL_INTEG_GAUSS31;
+
+        real_t *dPCrit = nullptr;
 
     protected:
         virtual void SetWeights() override;
