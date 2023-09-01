@@ -327,6 +327,8 @@ void OtherQuantityHandler::DefineQuantities() {
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/pCritHottail", "Critical momentum for hottail (in units of mc)", qd->Store(tracked_terms->n_re_hottail_rate->GetHottailCriticalMomentum()););
     }
+	DEF_FL("fluid/pStar", "Effective critical momentum in Hesslow theory", qd->Store(this->REFluid->GetPStar()););
+	DEF_FL("fluid/nusnuDatPStar", "Slowing-down times deflection frequency for electrons, evaluated at pStar", qd->Store(this->REFluid->GetNusNuDatPStar()););
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt [s^-1 m^-3]", qd->Store(this->postProcessor->GetRunawayRate()););
     DEF_FL("fluid/qR0", "Safety factor multiplied by major radius R0 [m]",
         real_t *vec = qd->StoreEmpty();

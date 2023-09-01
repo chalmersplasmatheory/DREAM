@@ -16,6 +16,7 @@ namespace DREAM { class RunawayFluid; }
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
+#include "FVM/Interpolator1D.hpp"
 #include "FVM/TimeKeeper.hpp"
 
 namespace DREAM {
@@ -30,6 +31,7 @@ namespace DREAM {
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         CoulombLogarithm *lnLambdaEE;
+        bool extrapolateDreicer;
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
@@ -52,7 +54,7 @@ namespace DREAM {
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
         OptionConstants::eqterm_compton_mode compton_mode;
-        real_t compton_photon_flux;
+        FVM::Interpolator1D *compton_photon_flux;
 
         len_t id_ncold;
         len_t id_ntot;
@@ -83,6 +85,8 @@ namespace DREAM {
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
+		real_t *pStar=nullptr;					 // Effective critical momentum pStar
+		real_t *nusnuDatPStar=nullptr;			 // normalized nu_s*nu_D evaluated at pStar
 
         EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
         
@@ -101,7 +105,7 @@ namespace DREAM {
         
         void CalculateDerivedQuantities();
         void CalculateCriticalMomentum();
-        void CalculateGrowthRates();
+        void CalculateGrowthRates(const real_t t);
 
         static void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, void *par);
 
@@ -131,6 +135,7 @@ namespace DREAM {
         RunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
+            bool extrapolateDreicer,
             CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
             CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
             OptionConstants::conductivity_mode cond_mode,
@@ -138,7 +143,7 @@ namespace DREAM {
             OptionConstants::collqty_Eceff_mode,
             OptionConstants::eqterm_avalanche_mode,
             OptionConstants::eqterm_compton_mode,
-            real_t compton_flux
+            FVM::Interpolator1D *compton_flux
         );
         ~RunawayFluid();
 
@@ -155,8 +160,10 @@ namespace DREAM {
         static real_t evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc);
 
 
-        void Rebuild();
+        void Rebuild(const real_t);
         void GridRebuilt();
+        bool GetExtrapolateDreicer()
+            {return extrapolateDreicer;}
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}
         const real_t* GetEffectiveCriticalField() const
@@ -218,6 +225,16 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
+
+		const real_t GetPStar(len_t ir) const
+			{return pStar[ir];}
+		const real_t *GetPStar() const
+			{return pStar;}
+
+		const real_t GetNusNuDatPStar(len_t ir) const
+			{return nusnuDatPStar[ir];}
+		const real_t *GetNusNuDatPStar() const
+			{return nusnuDatPStar;}
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }

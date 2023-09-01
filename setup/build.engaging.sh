@@ -13,7 +13,15 @@ function install_petsc {
 
 	cd "$PETSC_DIR"
 
-	./configure PETSC_ARCH=$PETSC_ARCH --with-mpi=0 --download-fblaslapack=1 --download-make
+	# Load MKL
+	module load intel/2021.3.0
+
+	#./configure PETSC_ARCH=$PETSC_ARCH --with-mpi=0 --download-fblaslapack=1 --download-make
+	./configure PETSC_ARCH=$PETSC_ARCH --with-mpi=0 --download-make \
+		--with-mkl_pardiso=1 \
+		--with-mkl_pardiso-dir=/home/software/intel/2021.3.0/mkl/latest \
+		--with-blaslapack-dir=/home/software/intel/2021.3.0/mkl/latest \
+		CC=$CC CXX=$CXX F77=$F77
 	make
 }
 

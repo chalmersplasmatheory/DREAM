@@ -78,7 +78,7 @@ class DREAMSettings:
                         if not keepignore:
                             self.clearIgnore()
             elif type(filename) == DREAMSettings:
-                self.fromdict(filename.todict())
+                self.fromdict(filename.todict(verify=False))
 
                 if chain:
                     self.fromOutput(filename.output.filename)
@@ -166,6 +166,14 @@ class DREAMSettings:
         self.init['eqsysignore'] = []
 
 
+    def setIgnore(self, ignorelist):
+        """
+        Set the list of quantities to ignore when initializing from an output
+        file.
+        """
+        self.init['eqsysignore'] = ignorelist
+
+
     def fromOutput(self, filename, relpath=False, ignore=list(), timeindex=-1):
         """
         Specify that the simulation should be initialized from the
@@ -241,7 +249,7 @@ class DREAMSettings:
 
         if 'timeindex' in self.init:
             data['init']['filetimeindex'] = self.init['timeindex']
-        if 'fromfile' in self.init:
+        if 'fromfile' in self.init and self.init['fromfile'] != '':
             data['init']['fromfile'] = self.init['fromfile']
 
         return data

@@ -54,7 +54,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
     s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
     s->DefineSetting(MODULENAME "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
-
+	
     s->DefineSetting(MODULENAME "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
 }
 
@@ -68,6 +68,24 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
  */
 void SimulationGenerator::ConstructEquation_f_hot(
     EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
+	enum OptionConstants::uqty_distribution_mode mode =
+		(enum OptionConstants::uqty_distribution_mode)
+			s->GetInteger(MODULENAME "/mode");
+	
+	if (mode == OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED)
+		ConstructEquation_f_hot_prescribed(
+			eqsys, s
+		);
+	else
+		ConstructEquation_f_hot_kineq(
+			eqsys, s, oqty_terms
+		);
+}
+
+void SimulationGenerator::ConstructEquation_f_hot_kineq(
+    EquationSystem *eqsys, Settings *s,
+	struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -187,6 +205,33 @@ void SimulationGenerator::ConstructEquation_f_hot(
         initZero[ir] = 0;
     eqsys->SetInitialValue(id_Sp, initZero);
     delete [] initZero;   
+}
+
+/**
+ * Prescribe f_hot in time.
+ */
+void SimulationGenerator::ConstructEquation_f_hot_prescribed(
+    EquationSystem *eqsys, Settings *s
+) {
+	/**
+	 * In order to implement prescribed mode for f_hot, we should make
+	 * sure that all moments can be calculated appropriately for it
+	 * (e.g. j_ohm, n_cold, n_hot etc.)
+	 */
+	throw DREAMException(
+		"Prescribed mode is not available for 'f_hot' yet."
+	);
+		
+    len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+
+	ConstructEquation_f_prescribed(
+		id_f_hot, eqsys, hottailGrid, s, MODULENAME
+	);
+
+	eqsys->initializer->AddRule(
+		id_f_hot, EqsysInitializer::INITRULE_EVAL_EQUATION
+	);
 }
 
 /**

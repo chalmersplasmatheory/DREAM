@@ -97,6 +97,7 @@ class TransportSettings:
         self.frozen_current_mode = FROZEN_CURRENT_MODE_DISABLED
         self.frozen_current_Ip_presc = None
         self.frozen_current_Ip_presc_t = None
+        self.frozen_current_D_I_min = 0
         self.frozen_current_D_I_max = 1000
 
         self.boundarycondition = BC_CONSERVATIVE
@@ -276,22 +277,25 @@ class TransportSettings:
         self.dBB   = dBB
 
 
-    def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_max=1000):
+    def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000):
         """
         Enable the frozen current mode and specify the target plasma current.
         """
         self.type = TRANSPORT_FROZEN_CURRENT
         self.frozen_current_mode = mode
 
-        if np.isscalar(Ip_presc):
+        if np.isscalar(Ip_presc) or Ip_presc.ndim == 0:
             Ip_presc = np.array([Ip_presc])
             Ip_presc_t = np.array([0])
+        if not isinstance(Ip_presc_t, np.ndarray):
+            Ip_presc_t = np.array([Ip_presc_t])
 
         if Ip_presc_t.ndim != 1:
             Ip_presc_t = np.reshape(Ip_presc_t, (Ip_presc_t.size,))
             
         self.frozen_current_Ip_presc = Ip_presc
         self.frozen_current_Ip_presc_t = Ip_presc_t
+        self.frozen_current_D_I_min = D_I_min
         self.frozen_current_D_I_max = D_I_max
 
 
@@ -394,7 +398,7 @@ class TransportSettings:
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
         if 'pstar' in data:
-            self.pstar = data['pstar']
+            self.pstar = float(data['pstar'])
             
         if 'interp1d_param' in data:
             self.interp1d_param = data['interp1d_param']
@@ -430,6 +434,8 @@ class TransportSettings:
 
         if 'frozen_current_mode' in data:
             self.frozen_current_mode = int(data['frozen_current_mode'])
+        if 'D_I_min' in data:
+            self.frozen_current_D_I_min = float(data['D_I_min'])
         if 'D_I_max' in data:
             self.frozen_current_D_I_max = float(data['D_I_max'])
         if 'I_p_presc' in data:
@@ -532,6 +538,7 @@ class TransportSettings:
             }
 
         data['frozen_current_mode'] = self.frozen_current_mode
+        data['D_I_min'] = self.frozen_current_D_I_min
         data['D_I_max'] = self.frozen_current_D_I_max
         if self.frozen_current_Ip_presc is not None:
             data['I_p_presc'] = {

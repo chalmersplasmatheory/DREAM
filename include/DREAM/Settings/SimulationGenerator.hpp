@@ -132,8 +132,12 @@ namespace DREAM {
         static void ConstructEquation_E_field_prescribed_current(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_f_hot_kineq(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_f_hot_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
         static void ConstructEquation_f_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);
+        static void ConstructEquation_f_re_kineq(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);
+        static void ConstructEquation_f_re_prescribed(EquationSystem*, Settings*);
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
@@ -142,6 +146,7 @@ namespace DREAM {
             DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
 			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
         );
+		static void ConstructEquation_f_prescribed(const len_t, EquationSystem*, FVM::Grid*, Settings*, const std::string&);
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         static DREAM::TimeVaryingBTerm *ConstructEquation_f_timevaryingb(Settings*, const std::string&, FVM::Grid*);
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
@@ -202,6 +207,9 @@ namespace DREAM {
         static void ConstructEquation_W_hot(EquationSystem*, Settings*);
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
+
+		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, len_t, const real_t*, const real_t*, len_t, real_t*);
 
 
         template<typename T>

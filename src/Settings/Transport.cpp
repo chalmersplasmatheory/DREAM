@@ -9,8 +9,6 @@
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/Equations/FrozenCurrentCoefficient.hpp"
-#include "DREAM/Equations/FrozenCurrentCoefficient_D.hpp"
-#include "DREAM/Equations/FrozenCurrentCoefficient_I.hpp"
 #include "DREAM/Equations/FrozenCurrentTransport.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -59,6 +57,11 @@ void SimulationGenerator::DefineOptions_Transport(
 		mod + "/" + subname + "/frozen_current_mode",
 		"Type of transport operator to use in the frozen current mode.",
 		(int_t)OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_DISABLED
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/D_I_min",
+		"Minimum value allowed for frozen current diffusion coefficient.",
+		(real_t)0
 	);
 	s->DefineSetting(
 		mod + "/" + subname + "/D_I_max",
@@ -201,13 +204,14 @@ void SimulationGenerator::ConstructEquation_D_I(
 	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
 	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
+	real_t D_I_min = s->GetReal(path + "/D_I_min");
 	real_t D_I_max = s->GetReal(path + "/D_I_max");
 
 	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
 	FrozenCurrentCoefficient *fcc =
 		new FrozenCurrentCoefficient(
 			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
-			D_I_max
+			D_I_min, D_I_max
 		);
 	eqn->AddTerm(fcc);
 
@@ -218,63 +222,6 @@ void SimulationGenerator::ConstructEquation_D_I(
 		"I_p = I_p_presc",
 		true	// Solved externally
 	);
-
-	/*enum OptionConstants::solver_type st =
-		(enum OptionConstants::solver_type)s->GetInteger("solver/type");
-
-	switch (st) {
-		case OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT: {
-			FVM::Operator *eqn = new FVM::Operator(scalarGrid);
-			FrozenCurrentCoefficient *fcc =
-				new FrozenCurrentCoefficient(
-					scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
-					D_I_max
-				);
-			eqn->AddTerm(fcc);
-
-			eqsys->SetOperator(
-				OptionConstants::UQTY_D_I,
-				OptionConstants::UQTY_D_I,
-				eqn,
-				"I_p = I_p_presc",
-				true	// Solved externally
-			);
-		} break;
-
-		case OptionConstants::SOLVER_TYPE_NONLINEAR: {
-			FVM::Operator *eqnD = new FVM::Operator(scalarGrid);
-			FVM::Operator *eqnI = new FVM::Operator(scalarGrid);
-
-			FrozenCurrentCoefficient_D *fccD =
-				new FrozenCurrentCoefficient_D(
-					scalarGrid, I_p_presc, eqsys->GetUnknownHandler()
-				);
-			FrozenCurrentCoefficient_I *fccI =
-				new FrozenCurrentCoefficient_I(
-					scalarGrid, I_p_presc, eqsys->GetUnknownHandler()
-				);
-			eqnD->AddTerm(fccD);
-			eqnI->AddTerm(fccI);
-
-			eqsys->SetOperator(
-				OptionConstants::UQTY_D_I,
-				OptionConstants::UQTY_D_I,
-				eqnD,
-				"I_p = I_p_presc"
-			);
-			eqsys->SetOperator(
-				OptionConstants::UQTY_D_I,
-				OptionConstants::UQTY_I_P,
-				eqnI
-			);
-		} break;
-		
-		default:
-			throw SettingsException(
-				"Unrecognized solver type for frozen current mode: %d.",
-				(int)st
-			);
-	}*/
 
 	real_t v = 0;
 	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &v);
@@ -453,9 +400,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
-        ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-            bc, tt, oprtr, path, grid
+		TransportAdvectiveBC *abc =
+			ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+				bc, tt, oprtr, path, grid
             );
+
+        // Store B.C. for OtherQuantityHandler
+        if (advective_bc != nullptr)
+            *advective_bc = abc;
     }
     
     if (hasCoeff("s_drr", 4)) {
@@ -476,14 +428,25 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt_ar);
 
         // Add boundary condition...
-        ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-            bc, tt_drr, oprtr, path, grid
-            );
+        TransportDiffusiveBC *dbc =
+			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+				bc, tt_drr, oprtr, path, grid
+			);
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
+
         if ( not hasSvenssonA ){
             // Add boundary condition...
-            ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-                bc, tt_ar, oprtr, path, grid
+			TransportAdvectiveBC *abc =
+				ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+					bc, tt_ar, oprtr, path, grid
                 );
+
+			// Store B.C. for OtherQuantityHandler
+			if (advective_bc != nullptr)
+				*advective_bc = abc;
         }
     }
 
@@ -524,9 +487,14 @@ bool SimulationGenerator::ConstructTransportTerm(
 			oprtr->AddTerm(fct);
 
 			// Add boundary condition
-			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-				bc, fct, oprtr, path, grid
-			);
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, fct, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
 		} else {
 			// TODO Heat transport
 			throw SettingsException(
