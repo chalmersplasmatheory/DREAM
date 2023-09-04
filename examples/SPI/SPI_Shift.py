@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 #
-# This script shows how to set up an D/Ne SPI scenario in an ITER-like setting.
+# This script shows how to set up an D/Ne SPI scenario in an ITER-like setting with the addition
+# of the drift model derived by Oskar Vallhagen in doi:10.1017/S0022377823000466.
 # The injection can either be separated into one stage with pure D and one stage with pure NE,
-# or be made as a single stage injection with a similar total amount of particles.
+# or be made as a single stage injection with a similar total amount of particles. This file is almost
+# identical to D_Ne_SPI_ITER.py.
 #
 ################################################################################################ 
 
