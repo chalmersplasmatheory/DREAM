@@ -191,7 +191,7 @@ elif np.isinf(R0_set) and ds.radialgrid.type == RGrid.TYPE_ANALYTIC_TOROIDAL:
 ds.eqsys.spi.setVelocity(SPI.VELOCITY_MODE_PRESCRIBED) # Constant prescribed velocities
 ds.eqsys.spi.setAblation(SPI.ABLATION_MODE_FLUID_NGS) # Parks NGS formula based on T_cold
 ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL) # Delta function deposition kernel
-ds.eqsys.spi.setShift(SPI.SHIFT_MODE_ANALYTICAL, T=5*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125, Rm=R0)#To disable the shift write SPI.SHIFT_MODE_NEGLECT
+ds.eqsys.spi.setShift(SPI.SHIFT_MODE_NEGLECT, T=5*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125, Rm=R0)#To disable the shift write SPI.SHIFT_MODE_NEGLECT
 
 ds.eqsys.spi.setHeatAbsorbtion(SPI.HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS) # Remove all heat flowing through a disc 
 #                                                                            of radius rcl from background plasma.
