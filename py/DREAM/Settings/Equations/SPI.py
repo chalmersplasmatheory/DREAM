@@ -601,7 +601,7 @@ SHIFT_MODE_NEGLECT, T = np.array([0]), T0 = 0, delta_y = 0, Rm = 0):
             raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
         if not all(element>=0 for element in self.T):
             raise EquationException("spi: Invalid value assigned to 'T'. Expected float.")
-        if len(self.T)!=len(self.rp):
+        if len(self.T)!=len(self.rp) and self.shift==SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid size assigned to either 'T' or 'rp'.")
         if type(self.T0) != float and type(self.T0) != int:
             raise EquationException("spi: Invalid value assigned to 'T0'. Expected float.")
