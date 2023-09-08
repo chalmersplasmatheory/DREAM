@@ -24,7 +24,7 @@ import DREAM.Settings.Solver as Solver
 
 # physical parameters
 TEMPERATURE = 1e2
-ELECTRIC_FIELD = 100
+ELECTRIC_FIELD = 10
 MAGNETIC_FIELD = 5.25
 
 
@@ -55,7 +55,7 @@ def generate_settings(nD, nNe):
     ds.timestep.setNt(1)
 
     ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_FLUID_HESSLOW)
-    ds.eqsys.n_re.setAvalancheFluidSpeed(Runaways.AVALANCHE_SPEED_HESSLOW_SVENSSON)
+    ds.eqsys.n_re.setFluidSpeed(Runaways.FLUID_SPEED_MODE_ANALYTICAL_DIST)
     ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_FULL)
     ds.eqsys.n_re.setInitialProfile(1e10)
 
@@ -89,12 +89,13 @@ def getSpeed(do):
     """
     jre = do.eqsys.j_re.data[-1,:]
     nre = do.eqsys.n_re.data[-1,:]
+    # print(jre)
     return  jre / (nre * sc.e * sc.c)
 
 
 if __name__ == '__main__':
 
-    nscans = 40
+    nscans = 50
     nD_arr = np.logspace(17.6, 22, nscans)
     nNe_arr = np.logspace(17.6, 22, nscans)
 
@@ -103,10 +104,18 @@ if __name__ == '__main__':
         ds = generate_settings(nD, nNe_arr)
         do = DREAM.runiface(ds, quiet=True)
         speeds[:,ns] = getSpeed(do)
+        # print(speeds)
 
     ax = plt.axes()
-    cp = ax.contourf(nD_arr, nNe_arr, speeds, cmap='jet', levels=np.linspace(.82, 1, 40))
+    cp = ax.contourf(nD_arr, nNe_arr, speeds, cmap='jet', levels=np.linspace(.82, 1, 50))
     cb = plt.colorbar(mappable=cp, ax=ax)
     ax.set_yscale('log')
     ax.set_xscale('log')
+
+    cb.ax.set_ylabel(r"$u_{\rm re} / c$")
+    ax.set_xlabel(r"$\log_{10}\left(n_{D(+1)}\,[{\rm m}^{-3}]\right)$")
+    ax.set_ylabel(r"$\log_{10}\left(n_{Ne(+1)}\,[{\rm m}^{-3}]\right)$")
+    ax.set_title(fr"$E_\parallel={ELECTRIC_FIELD}\,\rm V/m$")
+
+    plt.tight_layout()
     plt.show()
