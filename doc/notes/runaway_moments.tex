@@ -1,0 +1,153 @@
+\documentclass{notes}
+
+\usepackage{hyperref}
+\usepackage{mathtools}
+\usepackage{physics}
+
+\title{Runaway moments}
+\author{Peter Halldestam}
+\date{2023-08-25}
+
+\newcommand{\jre}{j_{\rm re}}
+\newcommand{\nre}{n_{\rm re}}
+\newcommand{\fre}{f_{\rm re}}
+\newcommand{\ure}{u_{\rm re}}
+
+\newcommand{\pc}{p_{\rm c}}
+\newcommand{\Zeff}{Z_{\rm eff}}
+\newcommand{\lnL}{\ln\Lambda}
+\newcommand{\E}{E_\parallel}
+\newcommand{\Ec}{E_{\rm c}}
+\newcommand{\gava}{\gamma_{\rm r}}
+\newcommand{\trel}{\tau_{\rm r}}
+\newcommand{\nuS}{\bar{\nu}_{\rm s}}
+\newcommand{\nuD}{\bar{\nu}_{\rm D}}
+
+\newcommand{\ntot}{n_{\rm tot}}
+\newcommand{\me}{m_{\rm e}}
+\renewcommand{\ne}{n_{\rm e}}
+
+\DeclareMathOperator{\sign}{sgn}
+
+\begin{document}
+	\maketitle
+
+	\noindent
+	In \DREAM's fluid mode, it is assumed that runaway electron all travel at the speed of light $c$.
+	A plasma with a density $\nre$ of runaways thus carries an electrical current of $\jre=ec\nre$.
+	Such an approximation is used as the electron distribution function is not resolved for, and the current density can thus not be obtained from calculating the usual first order moment integral
+	\begin{equation}
+		\label{eq:first-moment}
+		\jre(r, t)=ec\int_{\pc}^\infty\dd{p}\frac{p}{\sqrt{1+p^2}}\fre(p, r, t)\eqqcolon ec\nre(r, t)\ure(r, t).
+	\end{equation}
+	An idea, however, is to use an analytical distribution function describing the runaway electrons in some simplified manner and calculate the corresponding current density.
+	In the MSc thesis of Benjamin Buchholz, titled ``Calculation of the runaway electron current in tokamak disruptions'', a few such calculations are presented.
+
+	\section{Avalanche current density}
+	\textcolor{red}{background}
+
+	\subsection{The \textit{Rosenbluth-Putvinski} model}
+	This won't be implemented for now.
+	\textcolor{red}{cite Tünde Fülöp: DOI 10.1063/1.2208327}
+
+	% \begin{equation}
+	% 	\label{eq:RP-distribution}
+	% 	\fre(p_\parallel, p_\perp, t)
+	% 	=\frac{\nre\tilde{E}}{\pi c_{\Zeff} \lnL}\frac{1}{p_\parallel}
+	% 	\exp\left(\frac{2(\hat{E}-1)}{c_{\Zeff}\lnL}\frac{t}{\trel}-\frac{p_\parallel}{c_{\Zeff}\lnL}-\tilde{E}\frac{p_\perp^2}{p_\parallel}\right)
+	% \end{equation}
+	% where
+	% \begin{equation}
+	% 	\hat{E}=\frac{\E}{E_{\rm c}},\qquad\tilde{E}=\frac{\hat{E}-1}{2(\Zeff+1)},\qquad c_{\Zeff}=\sqrt{\frac{3(\Zeff+5)}{\pi}}.
+	% \end{equation}
+	% Relativistic collision time
+	% \begin{equation}
+	% 	\trel=\frac{4\pi\varepsilon_0^2\me^2c^3}{\ne e^4\lnL}
+	% \end{equation}
+
+	\subsection{The \textit{Hesslow} model}
+	\textcolor{red}{cite Pontus Svensson: DOI 10.1017/S0022377820001592}
+
+	\begin{equation}
+		\label{eq:Hesslow-distribution}
+		\fre(p, r, t)
+		=\nre(r, t)\frac{\gava\trel}{\E-\Ec} e^{-\gava\trel(p-\pc)/(\E-\Ec)}
+	\end{equation}
+	Using this analytical expression to approximate the RE distribution, the following integral for the RE current density is obtained
+	\begin{align}
+		\label{eq:Hesslow-current}
+		\jre
+		&= ec\nre\int_{\pc}^\infty\dd{p}\frac{p}{\sqrt{1+p^2}} \frac{\gava\trel}{\E-\Ec} e^{-\gava\trel(p-\pc)/(\E-\Ec)}\\
+		% &=ec\nre\int_{\pc}^\infty\dd{p}\frac{p}{\sqrt{1+p^2}} \frac{\ntot/\ne}{\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}} \\&\hspace{4cm}\times\exp\left\{-\frac{\ntot/\ne}{\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}}(p-\pc)\right\}\\
+		&=ec\nre\int_{\pc}^\infty\dd{p}\,\frac{p}{\sqrt{1+p^2}}\beta e^{-\beta(p-\pc)}\\
+		&=ec\nre\int_{\pc}^\infty\dd{p}\,F(p, r, t)
+		=ec\nre\ure.
+	\end{align}
+	where we have defined the coefficient.
+	\begin{equation}
+		\beta=\frac{\ntot/\ne}{\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}}.
+	\end{equation}
+	To be able to use the Newton solver, we need to set up a Jacobian matrix concerning this calculation, for which the elements corresponds to taking partial derivatives of $\jre$ with respect to other unknowns that are treated in the simulation.
+	To this end, we consider partial derivatives of $\ure$ using the Leibniz integral rule.
+	Assuming $F\to0$ as $p\to\infty$, we get
+	\begin{equation}
+			\label{eq:pdv_uqty}
+			\pdv{\ure}{X}
+			=-F(\pc)\pdv{\pc}{X} + \int_{\pc}^\infty\dd{p}\,\pdv{F}{X},
+	\end{equation}
+	where $X$ denotes an unknown quantity.
+	The relevant unknowns that we consider are $X\in\{\E, \ntot, \ne\}$.
+	% Assuming for the critical momentum
+	% \begin{equation}
+	% 	\pc\sim\sqrt{\frac{\ntot}{\E-\Ec}},\quad{\rm for}\:\E>\Ec,
+	% \end{equation}
+	% we obtain the following partial derivative for the electric field
+
+	First, we consider the partial derivative with respect to the electric field.
+	We neglect any dependence of any unknowns in $\beta$, effectively treating it as a constant coefficient, and thus for the last term in Eq.~\eqref{eq:pdv_uqty} we make the following approximation
+	\begin{align}
+		\pdv{F}{\E}
+		&=\frac{F(p)}{\beta}\pdv{\beta}{\E}-F(p)(p-\pc)\pdv{\beta}{\E} + F(p)\beta\pdv{\pc}{\E}
+		\approx F(p)\beta\pdv{\pc}{\E}.
+	\end{align}
+	Integrating this yields a term proportional to $\ure$.
+	Assuming a critical momentum
+	\begin{equation}
+		\pc\sim\sqrt{\frac{\ntot}{\E-\Ec}},\quad{\rm for}\:\abs{\E}>\Ec,
+	\end{equation}
+	we get the following approximation of this partial derivative
+	\begin{align}
+		\label{eq:pdv_E}
+		\pdv{\ure}{\E}
+		\approx-F(\pc)\pdv{\pc}{\E}+\int_{\pc}^\infty\dd{p}\,F(p)\beta\pdv{\pc}{\E}
+		=\frac{1}{2}\frac{\sign(\E)\pc}{\abs{\E}-\Ec}\left(F(\pc)-\beta\ure\right).
+	\end{align}
+	This is implemented for \DREAM's Newton solver.
+
+	Similarly, for the total electron density $\ntot$, we further assume that $\Ec\sim\ntot$.
+	In doing so, we get the following
+	\begin{align}
+		\pdv{\ure}{\ntot}
+		&=-F(\pc)\pdv{\pc}{\ntot}+\int_{\pc}^\infty\dd{p}\,\pdv{F}{\ntot}\\
+		&\approx-F(\pc)\frac{\pc}{2\ntot}\left(1+\frac{{\E}}{\E-\Ec}\right)+\frac{\ure}{\ntot}.
+	\end{align}
+	In the last equation, we used the following approximation
+	\begin{align}
+		\int_{\pc}^\infty\dd{p}\,\pdv{F}{\ntot}
+		&=\int_{\pc}^\infty\dd{p}\,\left(\frac{1}{\ntot}-\frac{p-\pc}{\ne\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}}\right)F(p)\\
+		&=\frac{\ure}{\ntot}+\frac{1}{\ne\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}}\int_{\pc}^\infty\dd{p}\,(p-\pc)F(p).
+		\approx\frac{\ure}{\ntot}
+	\end{align}
+	Hopefully, this neglected integral is reasonably small. \textcolor{red}{If not, we may need to evaluate some of these integrals\dots}
+
+	Finally, for the free electron density $\ne$, we've got
+	\begin{align}
+		\pdv{\ure}{\ne}
+		&=\int_{\pc}^\infty\dd{p}\,\left[-\frac{1}{\ne}+\frac{\ntot(p-\pc)}{\ne^2\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}}\right]F(p)\\
+		&=-\frac{\ure}{\ne}+\frac{\ntot}{\ne^2\lnL\sqrt{4+\nuS(p_*)\nuD(p_*)}}\int_{\pc}^\infty\dd{p}\,(p-\pc)F(p)
+		\approx-\frac{\ure}{\ne}
+	\end{align}
+
+
+
+\end{document}

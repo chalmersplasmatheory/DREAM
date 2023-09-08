@@ -19,7 +19,7 @@ using namespace DREAM;
 #define MODULENAME "eqsys/n_re"
 
 void SimulationGenerator::DefineOptions_j_re(Settings *s) {
-    s->DefineSetting(MODULENAME "/avalanche_speed", "Model to use for calculating the runaway (mean) speed.", (int_t) OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT);
+    s->DefineSetting(MODULENAME "/fluid_speed", "Model to use for calculating the runaway (mean) speed.", (int_t) OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT);
 }
 
 /**
@@ -102,7 +102,7 @@ void SimulationGenerator::ConstructEquation_j_re(
     } else {
 
         enum OptionConstants::eqterm_fluid_runaway_current_mode fm =
-            (enum OptionConstants::eqterm_fluid_runaway_current_mode)s->GetInteger(MODULENAME "/avalanche_speed");
+            (enum OptionConstants::eqterm_fluid_runaway_current_mode)s->GetInteger(MODULENAME "/fluid_speed");
 
         if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_SPEED_OF_LIGHT) {
 
@@ -129,9 +129,6 @@ void SimulationGenerator::ConstructEquation_j_re(
                 id_n_re, id_n_tot,
                 EqsysInitializer::RUNAWAY_FLUID
             );
-
-        } else if (fm == OptionConstants::EQTERM_FLUID_RUNAWAY_CURRENT_MODE_ROSENBLUTH_PUTVINSKI_MOMENT)
-            throw NotImplementedException("The RE fluid speed based on the Rosenbluth-Putvinski avalanche distribution function is not yet implemented!");
+        }
     }
-
 }

@@ -17,21 +17,24 @@ namespace DREAM {
         len_t id_Efield;
         len_t id_ntot;
         len_t id_ncold;
+
         real_t *Efield;
+        const real_t *FSA_B;
 
         struct integrandParams {
-            len_t ir;
-            real_t Efield;
-            RunawayFluid *REFluid;
+            real_t beta;
+            real_t pCrit;
         };
 
         static real_t integrand(real_t, void*);
-        real_t evaluateMeanSpeed(len_t);
+        void evaluateMeanSpeed();
 
         gsl_integration_workspace *gsl_w;
         int GSL_WORKSPACE_SIZE = 1000;
         int QAG_KEY = GSL_INTEG_GAUSS31;
 
+        real_t *u_re = nullptr;
+        real_t *beta = nullptr;
         real_t *dPCrit = nullptr;
 
     protected:
