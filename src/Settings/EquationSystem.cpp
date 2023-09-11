@@ -153,7 +153,9 @@ void SimulationGenerator::ConstructEquations(
         eqsys->SetRunawayCollisionHandler(cqh);
     }
     ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,eqsys,s);
-    SPI->SetREFluid(eqsys->GetREFluid());
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        SPI->SetREFluid(eqsys->GetREFluid());
+    }
     // Post processing handler
     FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL;
     real_t pThreshold = 0.0;
