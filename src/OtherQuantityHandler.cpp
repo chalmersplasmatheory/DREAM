@@ -279,7 +279,7 @@ void OtherQuantityHandler::DefineQuantities() {
 
 			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
-				S_C[ir] = this->tracked_terms->comptonSource->GetSourceFunction(ir,0,0) * ncold[ir];
+				S_C[ir] = this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ncold[ir];
 			}
 	    );
     } else {

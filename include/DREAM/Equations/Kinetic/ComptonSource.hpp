@@ -16,9 +16,9 @@ namespace DREAM {
         };
     private:
         len_t id_ne, id_Eterm, id_ntot;
-        //real_t *sourceVec = nullptr;
         
         real_t *source;
+        FVM::Interpolator1D *comptonPhotonFlux;
         real_t photonFlux, pLower;
         real_t pc, scaleFactor;
         
@@ -40,18 +40,14 @@ namespace DREAM {
             len_t limit; 
             gsl_integration_workspace * wp;
         };
-        ComptonSource(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, real_t=0., SourceMode sm = SOURCE_MODE_KINETIC, RunawayFluid* REFluid=nullptr);
+        ComptonSource(FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Interpolator1D*, real_t=0., real_t=0., SourceMode sm = SOURCE_MODE_KINETIC, RunawayFluid* REFluid=nullptr);
         
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
 
         real_t EvaluateSource(len_t ir, len_t i, len_t j);
         static real_t EvaluateTotalComptonNumber(real_t pLower, intparams * params, intparams * paramsOut, real_t pUpper=std::numeric_limits<real_t>::infinity());
         
-        //virtual bool GridRebuilt() override;
-        //virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
-        //virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
-        //virtual void SetVectorElements(real_t*, const real_t*) override;
-        //virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x) override;
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }
 

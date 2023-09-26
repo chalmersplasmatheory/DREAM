@@ -135,7 +135,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 if photonFlux is None:
                     photonFlux = np.array([ITER_PHOTON_FLUX_DENSITY])
                     photonFlux_t = np.array([0])
-            
+
             if photonFlux is None:
                 raise EquationException("n_re: Compton photon flux must be set.")
             elif type(photonFlux) == int or type(photonFlux) == float or type(photonFlux) == np.float64:

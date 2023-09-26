@@ -21,6 +21,7 @@ namespace DREAM {
         
         real_t *source;
         real_t pc, scaleFactor;
+        len_t indT;
         
         SourceMode sourceMode;
 	
@@ -30,7 +31,7 @@ namespace DREAM {
         
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
     public:
-        TritiumSource(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, SourceMode sm = SOURCE_MODE_KINETIC);
+        TritiumSource(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, len_t, real_t, real_t, SourceMode sm = SOURCE_MODE_KINETIC);
         
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
         

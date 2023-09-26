@@ -133,10 +133,10 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
             throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
 
         FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
-        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), s->GetReal("eqsys/n_re/compton/flux"), hottailGrid->GetMomentumGrid(0)->GetP1_f(0), -1.0);
+        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0)), -1.0);
         Op_compton->AddTerm(oqty_terms->comptonSource);
-        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
-        eqsys->SetOperator(id_f_hot, id_n_re, Op_compton);
+        len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
+        eqsys->SetOperator(id_f_hot, id_n_tot, Op_compton);
     }
     
     // Add tritium source
@@ -146,13 +146,13 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
             throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
 
         FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);    
-        len_t nT = eqsys->GetIonHandler()->GetNTritiumIndices();
-        for(len_t iT=0; iT<nT; iT++){
-            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), 0., -1.0));
+        const len_t *ti = eqsys->GetIonHandler()->GetTritiumIndices();
+        for(len_t iT=0; iT<eqsys->GetIonHandler()->GetNTritiumIndices(); iT++){
+            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
             Op_tritium->AddTerm(oqty_terms->tritiumSource[iT]);
         }
-        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
-        eqsys->SetOperator(id_f_hot, id_n_re, Op_tritium);
+        len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+        eqsys->SetOperator(id_f_hot, id_n_i, Op_tritium);
     }
 
     // PARTICLE SOURCE TERMS
@@ -260,18 +260,23 @@ namespace DREAM {
         gsl_integration_workspace * wpOut;
     public:
         real_t pLower, pUpper, photonFlux, scaleFactor, source;
-        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t photonFlux, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), photonFlux(photonFlux), scaleFactor(scaleFactor) {
+        FVM::Interpolator1D *comptonPhotonFlux;
+        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor), comptonPhotonFlux(comptonPhotonFlux) {
                 this->limit = 1000;
                 this->wp = gsl_integration_workspace_alloc(limit);
                 this->wpOut = gsl_integration_workspace_alloc(limit);
             }
-
+        
+        virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) override {
+            this->photonFlux = this->comptonPhotonFlux->Eval(t)[0];
+            this->DiagonalQuadraticTerm::Rebuild(0,0,nullptr);
+        }
         virtual void SetWeights() override {
             struct DREAM::ComptonSource::intparams params = {this->limit, this->wp};
             struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut};
             for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
+                weights[i] = scaleFactor * this->photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
         }
     };
 }
@@ -371,7 +376,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
 
         Op_Nre->AddTerm(
-            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, s->GetReal("eqsys/n_re/compton/flux"), -1.0)
+            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), -1.0)
         );
         desc += " - internal Compton";
     }

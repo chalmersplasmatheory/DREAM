@@ -7,7 +7,6 @@
 
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Constants.hpp"
-//#include <gsl/gsl_integration.h> // ??
 
 using namespace DREAM;
 
@@ -15,11 +14,13 @@ using namespace DREAM;
  * Constructor.
  */
 TritiumSource::TritiumSource(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, real_t pc, real_t scaleFactor, SourceMode sm
+    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, IonHandler *ions, len_t iIon, real_t pc, real_t scaleFactor, SourceMode sm
 ) : FluidSourceTerm(kineticGrid, u), pc(pc), scaleFactor(scaleFactor), sourceMode(sm)
 {
     SetName("TritiumSource");
-    this->id_nT = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+    this->id_nT = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    
+    this->indT = ions->GetIndex(iIon, 0);
     
     sourceVec = new real_t[2 * kineticGrid->GetNCells()];
     
@@ -70,7 +71,7 @@ void TritiumSource::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHand
     }
 }
 
-real_t TritiumSource::fbeta(real_t p, void *){
+real_t TritiumSource::integrand(real_t p, void *){
     real_t C = 1.218e-7; // Normalization factor, 1.2176392e-7
     real_t Tmax = 18.6e3;
     real_t mc2 = Constants::mc2inEV;
@@ -83,16 +84,10 @@ real_t TritiumSource::fbeta(real_t p, void *){
     return C*fbeta;
 }
 
-real_t TritiumSource::integrand(real_t p, void *){
-    real_t fb = fbeta(p, nullptr);
-    real_t p2fbeta = (p*p) * fb;
-    return p2fbeta;
-}
-
 /**
  * Evaluates the constant (only grid dependent) source-shape function S(r,p)
  */
-real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t j) {
+real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
     if(sourceMode == SOURCE_MODE_FLUID)
         return scaleFactor*EvaluateTotalTritiumNumber(pc);
     real_t tau_T = 4500*24*60*60;
@@ -107,9 +102,6 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t j) {
             pp = pMax;
         real_t dp = pp-pm;
         real_t pi = (pp+pm)/2.0;
-        real_t xim = grid->GetMomentumGrid(ir)->GetP2_f(j);
-        real_t xip = grid->GetMomentumGrid(ir)->GetP2_f(j+1);
-        real_t dxi = xip-xim;
 
         real_t integral;
         real_t abserr;
@@ -117,7 +109,7 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t j) {
         gsl_function F;
         F.function = &(TritiumSource::integrand);
         gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
-        return scaleFactor*log(2.) / (2.0 * tau_T) / (dp * dxi * pi*pi) * integral;
+        return scaleFactor*log(2.) / (2.0 * tau_T) * 1 / (2. * M_PI) / (dp * pi*pi) * integral;
     }
     return 0.;
 }
@@ -154,7 +146,7 @@ void TritiumSource::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
             for(len_t i=0; i<n1[ir]; i++){
                 for(len_t j=0; j<n2[ir]; j++){
                     len_t ind = offset + n1[ir]*j + i;
-                    mat->SetElement(ind, iZ0*nr + ir, sourceVec[ind]);
+                    mat->SetElement(ind, (iZ0 + indT)*nr + ir, sourceVec[ind]);
                 }
             }
             offset += n1[ir]*n2[ir];
@@ -167,12 +159,12 @@ void TritiumSource::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
  */
 void TritiumSource::SetVectorElements(real_t *vec, const real_t *x){
     for(len_t iZ0=0; iZ0<2; iZ0++){
-        len_t offset = 0;
+        len_t offset = 0; 
         for(len_t ir=0; ir<nr; ir++){
             for(len_t i=0; i<n1[ir]; i++){
                 for(len_t j=0; j<n2[ir]; j++){
                     len_t ind = offset + n1[ir]*j + i;
-                    vec[ind] += sourceVec[ind]*x[iZ0*nr + ir];
+                    vec[ind] += sourceVec[ind]*x[(iZ0 + indT)*nr + ir];
                 }
             }
             offset += n1[ir]*n2[ir];
@@ -204,7 +196,7 @@ real_t TritiumSource::EvaluateTotalTritiumNumber(real_t pLower, real_t pUpper){
     real_t abserr;
     len_t neval;
     gsl_function F;
-    F.function = &(fbeta);
+    F.function = &(integrand);
     gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, &abserr, &neval);
     
     return log(2.) / tau_T * integral;
