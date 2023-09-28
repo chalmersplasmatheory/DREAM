@@ -21,12 +21,13 @@ import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
+
 sys.path.append('../../tools/imas/')
 
 import imas_wrapper as iw
 
 
-ds = iw.readInIDS(64614, 9999, 'tcv', log=True, setUpDream=True, wall_radius=0.25)
+ds = iw.readInIDSSlice(64614, 9999, 'tcv', log=True, setUpDream=True, wall_radius=0.25)
 
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e19)
 
@@ -55,6 +56,7 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.timestep.setTmax(1.0e-5)
 ds.timestep.setNt(400)
 
+ds.other.include('fluid')
+
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
-
