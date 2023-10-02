@@ -58,6 +58,7 @@ class OtherQuantities:
         'runaway/nu_par_f1', 'runaway/nu_par_f2',
         'runaway/S_ava', 'runaway/synchrotron_loss',
         'scalar',
+        'scalar/ablationDrift',
         'scalar/E_mag',
         'scalar/L_i',
         'scalar/L_i_flux',

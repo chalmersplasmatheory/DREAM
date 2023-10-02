@@ -66,7 +66,8 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
     OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
     OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-    const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, len_t *nbrShiftGridCell=nullptr){
+    const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, 
+    len_t *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
@@ -191,8 +192,10 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	}
 	
 	// Set number of grid cells to shift the deposition for every shard
-	for(len_t ip=0;ip<nShard;ip++)
+	for(len_t ip=0;ip<nShard;ip++){
 	    this->nbrShiftGridCell[ip] = nbrShiftGridCell[ip];
+        this->drift[ip] = drift[ip];
+    }
 }
 
 /**
@@ -237,6 +240,7 @@ void SPIHandler::AllocateQuantities(){
     rp=new real_t[nShard];
     rpdot=new real_t[nShard];
     shift_r=new real_t[nShard];
+    drift=new real_t[nShard];
 }
 
 /**
@@ -272,6 +276,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] rp;
     delete [] rpdot;
     delete [] shift_r;
+    delete [] drift;
 }
 /**
  * Calculates the radius and ablation of each shard
@@ -565,6 +570,7 @@ void SPIHandler::Rebuild(real_t dt){
                     if(shift_r[ip] + xp[ip]>nr*Dr)
                         shift_r[ip] = nr*Dr-xp[ip];
                     nbrShiftGridCell[ip]=std::round(shift_r[ip]/Dr);
+                    drift[ip] = nbrShiftGridCell[ip] * Dr;
                 }
             }
         }

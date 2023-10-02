@@ -94,6 +94,7 @@ namespace DREAM{
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
         len_t *nbrShiftGridCell=nullptr;
+        real_t *drift=nullptr;
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;
 
@@ -167,9 +168,11 @@ namespace DREAM{
         real_t ThirdRow();
         real_t Deltar(int ip);
         
-        void SetREFluid(RunawayFluid *REF) {
-            this->rf = REF;
-        }
+        void SetREFluid(RunawayFluid *REF) 
+        { this->rf = REF; }
+
+        real_t* GetDrift()
+        { return this->drift; }
 
         void Rebuild(real_t dt);
 

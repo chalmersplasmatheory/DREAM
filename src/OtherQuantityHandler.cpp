@@ -31,6 +31,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 
 
 using namespace DREAM;
@@ -46,11 +47,11 @@ OtherQuantityHandler::OtherQuantityHandler(
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
     std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
-    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
+    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms, SPIHandler *SPI
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -60,6 +61,7 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
+    id_Yp    = unknowns->GetUnknownID(OptionConstants::UQTY_Y_P);
 
     if (unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX))
         id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
@@ -235,6 +237,9 @@ void OtherQuantityHandler::DefineQuantities() {
     // Define on scalar grid
     #define DEF_SC(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+    #define DEF_SC_MUL(NAME, DESC, MUL, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+    
 
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
@@ -755,6 +760,12 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
             real_t v = evaluateMagneticEnergy();
             qd->Store(&v);
+        );
+        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",unknowns->GetUnknown(id_Yp)->NumberOfMultiples(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<unknowns->GetUnknown(id_Yp)->NumberOfMultiples();ip++)
+                v[ip] = t[ip];
         );
         DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
             const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];

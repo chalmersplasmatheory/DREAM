@@ -15,6 +15,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
@@ -89,7 +90,7 @@ namespace DREAM {
         len_t 
             id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
-            id_n_re_neg=0;
+            id_n_re_neg=0, id_Yp;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids 
         real_t *kineticVectorHot; 
@@ -104,6 +105,7 @@ namespace DREAM {
         real_t evaluateMagneticEnergy();
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
+        SPIHandler *SPI;
 
     public:
         OtherQuantityHandler(
@@ -111,7 +113,7 @@ namespace DREAM {
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
             std::vector<UnknownQuantityEquation*>*, IonHandler*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
-            struct eqn_terms*
+            struct eqn_terms*, SPIHandler*
         );
         virtual ~OtherQuantityHandler();
 
