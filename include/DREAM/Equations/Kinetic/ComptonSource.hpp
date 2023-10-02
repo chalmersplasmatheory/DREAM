@@ -32,6 +32,7 @@ namespace DREAM {
     protected:
         static real_t integrand(real_t, void * );
         static real_t innerIntegrand(real_t, void * );
+        static real_t fluidIntegrand(real_t, void * );
         static real_t integratedPhotonEnergySpectrum(real_t , void * );
         
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;

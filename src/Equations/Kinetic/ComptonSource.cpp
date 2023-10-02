@@ -61,6 +61,25 @@ real_t ComptonSource::innerIntegrand(real_t Eg, void * params){
     return GgEg * dsdO;
 }
 
+real_t ComptonSource::fluidIntegrand(real_t Eg, void * params){
+    real_t r_e = Constants::r0;
+    real_t mc2 = Constants::mc2inEV;
+    real_t integratedComptonSpectrum = 5.8844; // Integral of the photon flux spectrum over all Eg (in units of mc2).
+    
+    real_t z = (log(mc2 * Eg/1e6) + 1.2)/0.8;
+    real_t GgEg = 1. / integratedComptonSpectrum * exp(- exp(-z) - z + 1.); // * photonFlux (in EvaluateSoure)
+    
+    real_t p = *(real_t *) params;
+    real_t g = sqrt(p*p + 1.);
+    real_t cost = 1. - 1. / Eg * (g - 1.) / (Eg + 1. - g);
+    real_t term1 = (Eg*Eg - 2. * Eg - 2.) / (Eg*Eg*Eg) * log((1. + 2. * Eg) / (1. + Eg * (1. - cost)));
+    real_t term2 = 1. / (2. * Eg) * (1. / ((1. + Eg * (1. - cost)) * (1. + Eg * (1. - cost))) - 1. / ((1. + 2. * Eg) * (1. + 2. * Eg)));
+    real_t term3 = - 1. / (Eg*Eg*Eg) * (1 - Eg - (1. + 2. * Eg) / (1. + Eg * (1. - cost)) - Eg * cost);
+    real_t sigma = M_PI * r_e*r_e * (term1 + term2 + term3);
+    
+    return GgEg * sigma;
+}
+
 real_t ComptonSource::integrand(real_t p, void * params){
     if(p == std::numeric_limits<real_t>::infinity())
         return 0.;
@@ -103,7 +122,7 @@ real_t ComptonSource::EvaluateSource(len_t ir, len_t i, len_t) {
     F.params = &params;
     
     gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
-    return scaleFactor * this->photonFlux / (2 *dp * pi*pi) * integral;
+    return scaleFactor * this->photonFlux / (2 * dp * pi*pi) * integral;
 }
 
 /**
@@ -118,7 +137,7 @@ real_t ComptonSource::GetSourceFunction(len_t ir, len_t i, len_t j){
             return 0.;
         if (pc < pLower)
             pc = pLower;
-        return scaleFactor * M_PI * this->photonFlux * EvaluateTotalComptonNumber(pc, &params, &paramsOut);
+        return scaleFactor * this->photonFlux * EvaluateTotalComptonNumber(pc, &params, &paramsOut);
     }
     
     len_t offset = 0;
@@ -167,13 +186,18 @@ real_t ComptonSource::EvaluateTotalComptonNumber(real_t pLower, intparams * para
     real_t abserr;
     len_t neval;
     gsl_function F;
-    F.function = &(integrand);
-    F.params = params;
     if(pUpper == std::numeric_limits<real_t>::infinity()) {
+        F.function = &(fluidIntegrand);
+        F.params = &pLower;
+        real_t g = sqrt(pLower*pLower + 1.);
+        real_t E0 = (g-1.)/2. + sqrt((g-1.)*(g-1.)/4.+(g-1.)/2.);
         struct intparams *iparamsOut = reinterpret_cast<struct intparams*>(paramsOut);
-        gsl_integration_qagiu(&F, pLower, 0., 1e-8, iparamsOut->limit, iparamsOut->wp, &integral, &abserr);
+        gsl_integration_qagiu(&F, E0, 0., 1e-8, iparamsOut->limit, iparamsOut->wp, &integral, &abserr);
+        return integral;
     } else {
+        F.function = &(integrand);
+        F.params = params;
         gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, &abserr, &neval);
+        return 2. * M_PI * integral;
     }
-    return 2. * integral;
 }

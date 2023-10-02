@@ -274,12 +274,12 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
     if(tracked_terms->comptonSource_fluid != nullptr){
         DEF_FL("fluid/gammaCompton", "Compton runaway rate to n_re [s^-1 m^-3]",
-		    const real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+		    const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
 			real_t *S_C = qd->StoreEmpty();
 
 			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
-				S_C[ir] = this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ncold[ir];
+				S_C[ir] = this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
 			}
 	    );
     } else {
@@ -540,14 +540,14 @@ void OtherQuantityHandler::DefineQuantities() {
     
 	if (tracked_terms->comptonSource != nullptr) {
 		DEF_HT("hottail/S_compton", "Compton scattering source term [s^-1 m^-3]",
-			const real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
 			real_t *S_C = qd->StoreEmpty();
 
 			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < nr_ht; ir++) {
 				for (len_t j = 0; j < n2_ht; j++) {
 					for (len_t i = 0; i < n1_ht; i++) {
-						S_C[(ir*(n2_ht) + j)*n1_ht + i] = this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ncold[ir];
+						S_C[(ir*(n2_ht) + j)*n1_ht + i] = this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ntot[ir];
 					}
 				}
 			}

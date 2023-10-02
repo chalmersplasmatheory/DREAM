@@ -109,7 +109,7 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
         gsl_function F;
         F.function = &(TritiumSource::integrand);
         gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
-        return scaleFactor*log(2.) / (2.0 * tau_T) * 1 / (2. * M_PI) / (dp * pi*pi) * integral;
+        return scaleFactor*log(2.) / (4.0 * M_PI * tau_T * dp * pi*pi) * integral;
     }
     return 0.;
 }
