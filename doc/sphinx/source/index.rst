@@ -44,6 +44,7 @@ Table of contents
    frontend/index
    atomicdata
    start/index
+   imas/index
    todo
 
 .. raw:: html
@@ -81,6 +82,12 @@ Table of contents
        <p class="admonition-title">Examples</p>
      </a>
      <p>View examples of DREAM simulations</p>
+   </div>
+   <div class="admonition note" style="width:49%; float:left">
+     <a href="imas/index.html">
+       <p class="admonition-title">IMAS interface</p>
+     </a>
+     <p>See the details of the IMAS interfacing</p>
    </div>
    <div style="clear:both"></div>
 
