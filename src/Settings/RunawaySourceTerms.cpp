@@ -106,9 +106,9 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             } else {
                 rsth->AddSourceTerm(eqnSign + "kinetic Compton", new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), pLower, -1.0, ComptonSource::SOURCE_MODE_KINETIC));
             }
-        }
-    } else {
+        } else {
             DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid is disabled. Ignoring Compton source...");
+        }
     }
     
     // Add tritium source: 
