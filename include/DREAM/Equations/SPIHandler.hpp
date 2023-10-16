@@ -6,7 +6,6 @@
 
 namespace DREAM { class SPIHandler; }
 #include <iostream>
-#include <complex>
 
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
@@ -71,6 +70,7 @@ namespace DREAM{
         real_t *Whot;
         real_t *qhot;
         real_t *ntot;
+        real_t *ni;
 
 
         real_t *Ypdot=nullptr;
@@ -94,9 +94,10 @@ namespace DREAM{
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
         len_t *nbrShiftGridCell=nullptr;
-        real_t *drift=nullptr;
+        real_t *shift_store=nullptr;
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;
+        real_t *YpdotPrevious=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
@@ -114,14 +115,17 @@ namespace DREAM{
         real_t* rp=nullptr;
         real_t* rpdot=nullptr;
         real_t* shift_r=nullptr;
-        real_t T_0, delta_y, Rm;
+        real_t T_0, delta_y, Rm, Zavg0, ZavgD, ZavgNe;
         real_t t_acc, t_pol, t_pe, t_exp, t_polp, t_pep, t_expp;
         real_t q, Zavg, Dr;
         real_t v0, n_e, n_i, Te, B, sigma;
         real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
+        len_t NZ;
 
         void CalculateYpdotNGSParksTSDW();
+        void CalculateYpdotPreviousNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
+        void CalculateYpdotPreviousNGSParksTSDWKinetic();
         real_t CalculateBFieldDampingJOREK(len_t ir);
         void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();
 
@@ -132,6 +136,7 @@ namespace DREAM{
         real_t CalculateRDotDepositionLocal(len_t ir);
 
         void CalculateIrp();
+        len_t CalculateDriftIrp(len_t ip, real_t shift);
         void CalculateRCld();
         real_t CalculateLambda(real_t X);
 
@@ -144,7 +149,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-            const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm,
+            const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm, real_t Zavg0, real_t ZavgD, real_t ZavgNe, 
             real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
@@ -152,7 +157,7 @@ namespace DREAM{
 
         struct integrand_struct {real_t a;};
         // Functions for the drift calculation
-        void YpConversion();
+        void YpConversion(len_t ip);
         void AssignShardSpecificParameters(int ip);
         void AssignComputationParameters(int ip);
         void AssignTimeParameters(int ip);
@@ -172,7 +177,7 @@ namespace DREAM{
         { this->rf = REF; }
 
         real_t* GetDrift()
-        { return this->drift; }
+        { return this->shift_store; }
 
         void Rebuild(real_t dt);
 

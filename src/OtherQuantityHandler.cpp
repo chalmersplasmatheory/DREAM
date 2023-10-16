@@ -761,12 +761,6 @@ void OtherQuantityHandler::DefineQuantities() {
             real_t v = evaluateMagneticEnergy();
             qd->Store(&v);
         );
-        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",unknowns->GetUnknown(id_Yp)->NumberOfMultiples(),
-            real_t *v = qd->StoreEmpty();
-            real_t *t = SPI->GetDrift();
-            for(len_t ip=0;ip<unknowns->GetUnknown(id_Yp)->NumberOfMultiples();ip++)
-                v[ip] = t[ip];
-        );
         DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
             const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
             real_t v;
@@ -827,6 +821,13 @@ void OtherQuantityHandler::DefineQuantities() {
         real_t *vec = qd->StoreEmpty();
         for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
+    );
+    
+    DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",unknowns->GetUnknown(id_Yp)->NumberOfMultiples(),
+        real_t *v = qd->StoreEmpty();
+        real_t *t = SPI->GetDrift();
+        for(len_t ip=0;ip<unknowns->GetUnknown(id_Yp)->NumberOfMultiples();ip++)
+            v[ip] = t[ip];
     );
 
     // Declare groups of parameters (for registering

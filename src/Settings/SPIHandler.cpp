@@ -20,6 +20,9 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/T0","Cloud temperature directly after the netral phase", (real_t)0);
     s->DefineSetting(MODULENAME "/delta_y","Cloud half-width during the drift", (real_t)0);
     s->DefineSetting(MODULENAME "/Rm","Major radius", (real_t)0);
+    s->DefineSetting(MODULENAME "/Zavg0","Average charge of background ions", (real_t)0);
+    s->DefineSetting(MODULENAME "/ZavgD","Average charge of the deuterium ions", (real_t)0);
+    s->DefineSetting(MODULENAME "/ZavgNe","Average charge of the neon ions", (real_t)0);
 
 
     s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
@@ -54,6 +57,9 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     real_t T0 = s->GetReal(MODULENAME "/T0");
     real_t delta_y = s->GetReal(MODULENAME "/delta_y");
     real_t Rm = s->GetReal(MODULENAME "/Rm");
+    real_t Zavg0 = s->GetReal(MODULENAME "/Zavg0");
+    real_t ZavgD = s->GetReal(MODULENAME "/ZavgD");
+    real_t ZavgNe = s->GetReal(MODULENAME "/ZavgNe");
 
     // Data type conversion
     len_t *Z = new len_t[nZ];
@@ -74,6 +80,6 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
             T[i] = (real_t)_T[i];
     }
 
-    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
+    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, Zavg0, ZavgD, ZavgNe, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
     return SPI;
 }
