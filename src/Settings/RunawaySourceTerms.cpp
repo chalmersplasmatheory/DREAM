@@ -107,7 +107,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                 rsth->AddSourceTerm(eqnSign + "kinetic Compton", new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), pLower, -1.0, ComptonSource::SOURCE_MODE_KINETIC));
             }
         } else {
-            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid is disabled. Ignoring Compton source...");
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_COMPTON_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid is disabled. Ignoring Compton source...");
         }
     }
     
@@ -135,10 +135,10 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                     rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, ti[i], pLower, -1.0, TritiumSource::SOURCE_MODE_KINETIC));
                 }
             }
+        } else {
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail grid is disabled. Ignoring tritium source...");
         }
-    } else {
-        DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");
-    }
+    } 
 
     // Add hottail source
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger(mod + "/hottail");

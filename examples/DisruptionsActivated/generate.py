@@ -156,7 +156,8 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
     ds.eqsys.T_cold.setPrescribedData(T0, radius=rT)
 
     # Background ion density
-    ds.eqsys.n_i.addIon(name='D', Z=1, Z0=1, iontype=Ions.IONS_DYNAMIC, T=T0, n=Tokamak.ne0*np.ones((rT.size,)), r=rT)
+    ds.eqsys.n_i.addIon(name='D', Z=1, Z0=1, iontype=Ions.IONS_DYNAMIC, T=T0, n=Tokamak.ne0*np.ones((rT.size,))/2, r=rT)
+    ds.eqsys.n_i.addIon(name='T', Z=1, Z0=1, iontype=Ions.IONS_DYNAMIC, T=T0, n=Tokamak.ne0 * np.ones((rT.size,))/2, r=rT, tritium=True)
 
     # Background free electron density from ions
     nfree, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
@@ -315,6 +316,8 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
         # Enable desired runaway generation rates
         ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_FLUID_HESSLOW)
         ds1.eqsys.n_re.setDreicer(RunawayElectrons.DREICER_RATE_NEURAL_NETWORK)
+        ds1.eqsys.n_re.setTritium(RunawayElectrons.TRITIUM_MODE)
+        ds1.eqsys.n_re.setCompton(RunawayElectrons.COMPTON_RATE_ITER_DMS)
         if INCLUDE_FLUID_HOTTAIL:
             ds1.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree, rT0=rT, T0=T0)
             ds1.eqsys.n_re.setHottail(RunawayElectrons.HOTTAIL_MODE_ANALYTIC_ALT_PC)
@@ -322,6 +325,8 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
         #ds1.eqsys.f_re.enableAnalyticalDistribution()
     else:
         # Use fluid avalanche for isotropic...
+        ds1.eqsys.n_re.setTritium(RunawayElectrons.TRITIUM_MODE_KINETIC)
+        ds1.eqsys.n_re.setCompton(RunawayElectrons.COMPTON_RATE_ITER_DMS_KINETIC)
         if mode == MODE_ISOTROPIC:
             ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_FLUID_HESSLOW)
         # ...and kinetic avalanche for superthermal and kinetic...
@@ -392,6 +397,11 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
 
     # Start from the state obtained in the init simulation
     ds1.fromOutput(INITFILE, ignore=ignorelist)
+
+    if not fluid:
+        ds1.other.include('fluid', 'scalar', 'hottail/S_ava', 'hottail/S_compton', 'hottail/S_tritium')
+
+    ds1.save('settingsdebug.h5')
     return ds1
 
 

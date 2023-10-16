@@ -37,6 +37,10 @@ TritiumSource::TritiumSource(
     }
 }
 
+/**
+ * Called whenever the grid is rebuilt (such as when the magnetic
+ * field changes).
+ */
 bool TritiumSource::GridRebuilt(){
     delete [] sourceVec;
     sourceVec = new real_t[2 * this->grid->GetNCells()];
@@ -57,6 +61,9 @@ bool TritiumSource::GridRebuilt(){
     return true;    
 }
 
+/**
+ * Sets the source for a given time (source is constant in time)
+ */
 void TritiumSource::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {
     len_t offset = 0;
     for(len_t iZ0=0; iZ0<2; iZ0++){
@@ -71,14 +78,19 @@ void TritiumSource::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHand
     }
 }
 
+/**
+ * Integrand of integral over energy from beta decay, used to evaluate the number of electrons generated at 
+ * each cell on the hot-tail grid. Derived from eq (21) of "Formation and termination of runaway beams in 
+ * ITER disruptions" by M. Solis (2017),
+ */
 real_t TritiumSource::integrand(real_t p, void *){
-    real_t C = 1.218e-7; // Normalization factor, 1.2176392e-7
+    real_t C = 1.2176458e-7; // Normalization factor
     real_t Tmax = 18.6e3;
     real_t mc2 = Constants::mc2inEV;
     if (p > sqrt((Tmax/mc2 + 1)*(Tmax/mc2 + 1) - 1)) {
         return 0;
     }
-    real_t alpha = 1.0/137.0;
+    real_t alpha = 1./137.;
     real_t g = sqrt(p*p + 1);
     real_t fbeta = p * g * (Tmax - mc2 * (g - 1)) * (Tmax - mc2 * (g - 1)) / (1 - exp(-4 * M_PI * alpha * g / p));
     return C*fbeta;
@@ -90,7 +102,7 @@ real_t TritiumSource::integrand(real_t p, void *){
 real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
     if(sourceMode == SOURCE_MODE_FLUID)
         return scaleFactor*EvaluateTotalTritiumNumber(pc);
-    real_t tau_T = 4500*24*60*60;
+    real_t tau_T = 3.888e8; // 4500 days, in seconds
 
     real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
     real_t pp = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
@@ -101,7 +113,7 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
         if(pMax < pp)
             pp = pMax;
         real_t dp = pp-pm;
-        real_t pi = (pp+pm)/2.0;
+        real_t pi = (pp+pm)/2;
 
         real_t integral;
         real_t abserr;
@@ -109,7 +121,7 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
         gsl_function F;
         F.function = &(TritiumSource::integrand);
         gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
-        return scaleFactor*log(2.) / (4.0 * M_PI * tau_T * dp * pi*pi) * integral;
+        return scaleFactor*log(2) / (4 * M_PI * tau_T * dp * pi*pi) * integral;
     }
     return 0.;
 }
@@ -199,5 +211,5 @@ real_t TritiumSource::EvaluateTotalTritiumNumber(real_t pLower, real_t pUpper){
     F.function = &(integrand);
     gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, &abserr, &neval);
     
-    return log(2.) / tau_T * integral;
+    return log(2) / tau_T * integral;
 }
