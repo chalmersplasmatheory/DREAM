@@ -13,6 +13,10 @@ using namespace DREAM;
 /**
  * Constructor.
  */
+ 
+const real_t ComptonSource::integratedComptonSpectrum = 5.8844190260298;
+
+
 ComptonSource::ComptonSource(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, real_t pLower, real_t scaleFactor, SourceMode sm, RunawayFluid *REFluid
 ) : FluidSourceTerm(kineticGrid, u), comptonPhotonFlux(comptonPhotonFlux), pLower(pLower), scaleFactor(scaleFactor), sourceMode(sm), REFluid(REFluid)
@@ -30,6 +34,8 @@ ComptonSource::ComptonSource(
     
     len_t offset = 0;
     this->photonFlux = this->comptonPhotonFlux->Eval(0)[0];
+    
+    
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i=0; i<n1[ir]; i++){
             for(len_t j=0; j<n2[ir]; j++){
@@ -58,7 +64,7 @@ real_t ComptonSource::innerIntegrand(real_t Eg, void * params){
     real_t mc2 = Constants::mc2inEV;
     
     real_t z = (log(mc2 * Eg/1e6) + 1.2)/0.8;
-    real_t GgEg = 1 / this->integratedComptonSpectrum * exp(- exp(-z) - z + 1); // * photonFlux (in EvaluateSoure)
+    real_t GgEg = 1 / integratedComptonSpectrum * exp(- exp(-z) - z + 1); // * photonFlux (in EvaluateSoure)
     
     real_t p = *(real_t *) params;
     real_t g = sqrt(p*p + 1);
@@ -78,7 +84,7 @@ real_t ComptonSource::fluidIntegrand(real_t Eg, void * params){
     real_t mc2 = Constants::mc2inEV;
     
     real_t z = (log(mc2 * Eg/1e6) + 1.2)/0.8;
-    real_t GgEg = 1 / this->integratedComptonSpectrum * exp(- exp(-z) - z + 1); // * photonFlux (in EvaluateSoure)
+    real_t GgEg = 1 / integratedComptonSpectrum * exp(- exp(-z) - z + 1); // * photonFlux (in EvaluateSoure)
     
     real_t p = *(real_t *) params;
     real_t g = sqrt(p*p + 1);

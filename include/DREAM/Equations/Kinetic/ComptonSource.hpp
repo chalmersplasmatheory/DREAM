@@ -21,7 +21,7 @@ namespace DREAM {
         FVM::Interpolator1D *comptonPhotonFlux;
         real_t photonFlux, pLower;
         real_t pc, scaleFactor;
-        const real_t integratedComptonSpectrum = 5.8844190260298; // Integral of the photon flux spectrum over all Eg (in units of mc2).
+        static const real_t integratedComptonSpectrum; // Integral of the photon flux spectrum over all Eg (in units of mc2).
         
         len_t limit;
         gsl_integration_workspace * wp;
