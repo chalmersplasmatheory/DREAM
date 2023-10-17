@@ -11,6 +11,8 @@
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -48,7 +50,7 @@ void SimulationGenerator::DefineOptions_n_re(
     //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 	DefineDataT(MODULENAME "/compton", s, "flux");
 
-    s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
+    s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
 
