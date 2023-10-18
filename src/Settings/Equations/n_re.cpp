@@ -118,10 +118,12 @@ void SimulationGenerator::ConstructEquation_n_re(
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+			FVM::BC::PXiExternalLoss *xloss = new FVM::BC::PXiExternalLoss(
 				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
-			));
+			);
+
+			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
         desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);

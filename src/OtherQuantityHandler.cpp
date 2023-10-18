@@ -301,6 +301,17 @@ void OtherQuantityHandler::DefineQuantities() {
             v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
 
+	if (tracked_terms->n_re_f_hot_flux != nullptr) {
+		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to n_re [s^-1 m^-3]",
+			const real_t *f_hot = this->unknowns->GetUnknownData(this->id_f_hot);
+			real_t *v = qd->StoreEmpty();
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = 0;
+
+			tracked_terms->n_re_f_hot_flux->AddToVectorElements(v, f_hot);
+		);
+	}
+
     // Magnetic ripple resonant momentum
     if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
         len_t nModes = tracked_terms->f_hot_ripple_Dxx->GetNumberOfModes();
