@@ -122,6 +122,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			);
+			oqty_terms->n_re_f_hot_flux = xloss;
 
 			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
