@@ -44,21 +44,24 @@ The physical quantities are taken from the IDS fields:
 +------------------------------------------------------+---------------------------------------------------------------+
 
 The wall radius is a user specified quantity which must be specified when calling the IDS read in function. The wall radius and wall resistivity are used to calculate the inverse wall time for the boundary condition of the electric field equation in case a DREAM settings object is initialized.
-The radial grid used to initialize the DREAM settings object is the mid-plane outer radius. This is acquired by taking the poloidal flux coordinates from the 2D equilibrium IDS on the outer mid-plane. The core profiles radial grid as a function of core profiles poloidal flux is then interpolated onto the outer mid-plane flux to make sure the correct radial grid is used. The plasma profiles located in the core profiles IDS are the interpolated onto the new radial grid in DREAM.
+The radial coordinate used to initialize the DREAM settings object is the mid-plane outer radius. This is acquired by taking the poloidal flux coordinates from the 2D equilibrium IDS on the outer mid-plane. The core profiles radial grid as a function of core profiles poloidal flux is then interpolated onto the outer mid-plane flux to make sure the correct radial grid is used. The plasma profiles located in the core profiles IDS are then interpolated onto the new radial grid in DREAM.
 
 .. code-block:: python
 
    def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setUpDream=True, wall_radius=-999):
    
-The readInIDSSlice function takes a single time slice from the IDS databaseand loads in the data as an initial condition for a DREAM simulation. The shot and run numbers of the input IDS has to be specified as well as the user from whose IMAS database the shot file will used. The time can also be specified from the user, otherwise it will load in the earliest time point, where all the required IDS fields are filled. Logging of the IDS loading can be requested. This creates a log file, informing on which of the required fields are loaded successfully.
+The ``readInIDSSlice()`` function takes a single time slice from the IDS database and loads in the data as an initial condition for a DREAM simulation. The shot and run numbers of the input IDS has to be specified as well as the user from whose IMAS database the shot file will used. The time can also be specified by the user, otherwise the earliest time point for which all the required IDS fields are filled will be loaded. Logging of the IDS loading can be requested. This creates a log file, informing on which of the required fields are loaded successfully.
 
-The setUpDREAM option can be used to initialize a DREAM settings object as an output from the function. The object initializes a DREAM run with the initial conditions for the physical quantities set from the IDS and the temperature and electric field calculated self-consistently. A few other settings might be required to be set independently from the IDS read in function. A simple example on how to use IDS-s with DREAM can be found in the examples folder in the DREAM repository (examples/imas). This is a python file which creates a dream_settings.h5 file which can be used to run DREAM with the necessary input. The execution of the example file requires the imas python module to be installed. The input generation from IDS-s and running DREAM with the settings file are independent and can be run separately.
+The ``setUpDREAM()`` option can be used to initialize a DREAM settings object as an output from the function. The object initializes a DREAM run with the initial conditions for the physical quantities set from the IDS and the temperature and electric field calculated self-consistently. A few other settings might be required to be set independently from the IDS read in function. A simple example on how to use IDS's with DREAM can be found in the examples directory in the DREAM repository (``examples/imas``). This is a Python script which creates a ``dream_settings.h5`` file which can be used to run DREAM with the necessary input. The execution of the example file requires the ``imas`` Python module to be installed. The input generation from IDS's is conducted independently from running DREAM with the settings file, and can be run separately.
 
-The option not to create a DREAM settings object currently is not implemented, the read in data could be saved in python lists or dictionaries.
+The option not to create a DREAM settings object is currently not implemented, the loaded data could be saved in Python lists or dictionaries.
 
 .. code-block:: python
 
    def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True, wall_radius=-999):
 
-The readInIDS fuction works similarly to the time slice function, with the difference of loading the full IDS fields specified in Table 1, instead of a single time slice. A DREAM settings object is initialized with prescribed quantities if setUpDream is used. 
-A simple example on how to use IDS-s with DREAM can be found in the examples folder in the DREAM repository (examples/imas_prescribed).
+The ``readInIDS`` fuction works similarly to the time slice function, with the difference of loading the full IDS fields specified in Table 1, instead of a single time slice. A ``DREAMSettings`` object is initialized with prescribed quantities if ``setUpDream()`` is used. 
+
+.. note::
+
+   A simple example on how to use IDS's with DREAM can be found in the examples folder in the DREAM repository (``examples/imas_prescribed``).
