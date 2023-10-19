@@ -1,0 +1,106 @@
+\documentclass{notes}
+
+\usepackage{hyperref}
+
+\author{Mathias Hoppe}
+\title{On the charge state distribution of ions}
+\date{2023-04-05}
+
+\begin{document}
+	\maketitle
+
+	The rate-of-change of the density of ion species $i$ in charge state $j$ is
+	given by
+	\begin{equation}\label{eq:ionrate}
+		\frac{\dd n_i^{(j)}}{\dd t} =
+			I_i^{(j-1)}n_en_i^{(j-1)} -
+			I_i^{(j)}n_en_i^{(j)} +
+			R_i^{(j+1)}n_en_i^{(j+1)} -
+			R_i^{(j)}n_en_i^{(j)},
+	\end{equation}
+	where $I_i^{(j)}$ denotes the rate of ionization of species $i$ from charge
+	state $j\to j+1$, and $R_i^{(j)}$ denotes the rate of recombination of
+	species $i$ from charge state $j\to j-1$. This equation approaches a steady
+	state in the limit $t\to\infty$. Setting the time derivative to zero, we can
+	solve equation~\eqref{eq:ionrate} for each $j$:
+	\begin{equation}\label{eq:sbs}
+		\begin{aligned}
+			j=0:\qquad & R_i^{(1)}n_i^{(1)} = I_i^{(0)}n_i^{(0)},\\
+			0<j<Z:\qquad & I_i^{(j-1)}n_i^{(j-1)} - I_i^{(j)}n_i^{(j)} +
+				R_i^{(j+1)}n_i^{(j+1)} - R_i^{(j)}n_i^{(j)} = 0,\\
+			j=Z:\qquad & I_i^{(Z-1)}n_i^{(Z-1)} = R_i^{(Z)}n_i^{(Z)}.
+		\end{aligned}
+	\end{equation}
+	Considering the case $j=1$ separately, we find that by substituting the
+	equation for $j=0$ into this equation, the $R_i^{(j)}n_i^{(j)}$ term is
+	cancelled and we are left with
+	\begin{equation}
+		j=1:\qquad I_i^{(1)}n_i^{(1)} = R_i^{(2)}n_i^{(2)}.
+	\end{equation}
+	The same can be repeated for all $j$, so that we eventually end up with
+	$Z$ equations (since the equations for $j=Z-1$ and $j=Z$ turn out identical)
+	of the form
+	\begin{equation}\label{eq:ni}
+		n_i^{(j+1)} =
+		\frac{I_i^{(j)}}{R_i^{(j+1)}}n_i^{(j)}.
+	\end{equation}
+	By untangling the recursion, we can also express all charge state densities
+	in terms of one of the densities as
+	\begin{equation}
+		n_i^{(j)} =
+		\begin{cases}
+			n_i^{(l)}\prod_{k=j+1}^l
+				\frac{R_i^{(k)}}{I_i^{(k-1)}},
+				&\quad j < l,\\
+			%
+			n_i^{(l)}\prod_{k=l}^{j-1}
+				\frac{I_i^{(k)}}{R_i^{(k+1)}},
+				&\quad j > l.
+		\end{cases}
+	\end{equation}
+	Knowing the total number of ions, $n_i$, in the system, we can constrain
+	$n_i^{(l)}$ via
+	\begin{equation}
+		\sum_{j=0}^Z n_i^{(j)} = n_i
+		%
+		\quad\Longleftrightarrow\quad
+		%
+		n_i^{(l)} +
+		n_i^{(l)}\sum_{j=0}^{l-1}\prod_{k=j+1}^l\frac{R_i^{(k)}}{I_i^{(k-1)}} +
+		n_i^{(l)}\sum_{j=l+1}^Z\prod_{k=l}^{j-1}\frac{I_i^{(k)}}{R_i^{(k+1)}} =
+		n_i,
+	\end{equation}
+	which then yields
+	\begin{equation}
+		n_i^{(l)} = n_i\left(
+			1+
+			\sum_{j=0}^{l-1}\prod_{k=j+1}^{l}\frac{R_i^{(k)}}{I_i^{(k-1)}} +
+			\sum_{j=l+1}^Z\prod_{k=l}^{j-1}\frac{I_i^{(k)}}{R_i^{(k+1)}}
+		\right)^{-1}.
+	\end{equation}
+
+	\section*{Fast-electron impact ionization}
+	When fast-electron impact ionization is accounted for, the ionization terms
+	of equation~\eqref{eq:ionrate} are modified according to
+	\begin{equation}
+		I_i^{(j)}n_e \to I_i^{(j)}n_e + \mathcal{I}_i^{(j)},
+	\end{equation}
+	where $\mathcal{I}_i^{(j)}=\langle\sigma_i^{(j)}v\rangle$ and
+	$\sigma_i^{(j)}$ is the cross-section for ionization by a fast electron from
+	charge state $j\to j+1$. From this, the new form of equation~\eqref{eq:sbs}
+	becomes
+	\begin{equation}
+		\begin{aligned}
+			j=0:\qquad & R_i^{(1)}n_i^{(1)} = I_i^{(0)}n_i^{(0)}n_e + \mathcal{I}_i^{(0)}n_i^{(0)},\\
+			0<j<Z:\qquad & \left(I_i^{(j-1)}n_i^{(j-1)} - I_i^{(j)}n_i^{(j)}\right)n_e +
+				\mathcal{I}_i^{(j-1)}n_i^{(j-1)}-\\
+				&-\mathcal{I}_i^{(j)}n_i^{(j)} +
+				\left(R_i^{(j+1)}n_i^{(j+1)} - R_i^{(j)}n_i^{(j)}\right)n_e = 0,\\
+			j=Z:\qquad & I_i^{(Z-1)}n_i^{(Z-1)}n_e + \mathcal{I}_i^{(Z-1)}n_i^{(Z-1)} = R_i^{(Z)}n_i^{(Z)}n_e.
+		\end{aligned}
+	\end{equation}
+	Since $n_e$ is constrained by quasi-neutrality and multiplies ion densities
+	above, this system of equation is---in contrast to the
+	system~\eqref{eq:sbs}---non-linear and must be solved iteratively.
+
+\end{document}
