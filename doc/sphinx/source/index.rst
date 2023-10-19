@@ -83,6 +83,7 @@ Table of contents
      </a>
      <p>View examples of DREAM simulations</p>
    </div>
+   <div style="clear:both"></div>
    <div class="admonition note" style="width:49%; float:left">
      <a href="imas/index.html">
        <p class="admonition-title">IMAS interface</p>
