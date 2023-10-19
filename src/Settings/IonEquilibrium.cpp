@@ -36,7 +36,7 @@ bool OUFLOW(real_t x1, real_t x2) {
 	if (x2 > 1) {
 		return (std::abs(x1) > std::numeric_limits<real_t>::max() / std::abs(x2));
 	} else if (x2 < 1) {
-		return (std::abs(x1) > std::numeric_limits<real_t>::min() / std::abs(x2));
+		return (std::abs(x1) < std::numeric_limits<real_t>::min() / std::abs(x2));
 	} else // x2 == 1
 		return false;
 }
