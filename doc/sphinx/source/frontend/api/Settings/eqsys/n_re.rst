@@ -312,13 +312,15 @@ during the nuclear phase.
 
 The following settings are used to control the Compton source mode:
 
-+--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| Option                   | Description                                                                                                                       |
-+==========================+===================================================================================================================================+
-| ``COMPTON_MODE_NEGLECT`` | Do not include Compton scattering in the simulation.                                                                              |
-+--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| ``COMPTON_MODE_FLUID``   | Use the model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
-+--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| Option                    | Description                                                                                                                       |
++===========================+===================================================================================================================================+
+| ``COMPTON_MODE_NEGLECT``  | Do not include Compton scattering in the simulation.                                                                              |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_FLUID``    | Use the model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_ITER_DMS`` | Short-hand for ``COMPTON_MODE_FLUID`` with the ITER DMS photon flux density given by Martin-Solis.                                |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
 
 Example
 *******
@@ -334,6 +336,39 @@ The Compton source can be activated following this example:
    Phi0 = 1e18 # total photon flux in units of m^-2 s^-1, typical of ITER
    ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi0)
 
+If one is simulating ITER specifically, it is possible to instead just do
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+
+   # Equivalent to the above example
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_ITER_DMS)
+
+The photon flux can also be specified as a function of time. In this case, the
+photon flux should be given as a 1D array along with a equally shaped time
+vector:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+
+   Phi0 = 1e18
+   Phi = np.ones((4,)) * Phi0
+   t = np.zeros(Phi.shape)
+
+   t[1] = 5e-3
+   t[2] = 6e-3
+   t[3] = 1e3
+   
+   Phi[2:] /= 1e3
+
+   # Set photon flux density (in units of m^-2 s^-1)
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi, photonFlux_t=t)
 
 
 Hottail
@@ -807,6 +842,105 @@ plasma current, rather than time, in the following way:
 
    # Specify lower momentum boundary (in units of mc)
    ds.eqsys.n_re.transport.setSvenssonPstar(pstar=0.3)
+
+
+Frozen current mode
+^^^^^^^^^^^^^^^^^^^
+In the frozen current mode, a target plasma current :math:`I_{\rm p}` is
+prescribed by the user and an associated diffusive radial transport with
+coefficient :math:`D_0` is introduced. In each time step, DREAM will then adjust
+:math:`D_0` such that :math:`I_{\rm p}` exactly matches its prescribed value.
+This is particularly useful for simulations of experiments, where the plasma
+current is often accurately known, while the radial transport is generally
+poorly constrained by experimental measurements. This feature is inspired by a
+similar feature in the kinetic solver LUKE.
+
+Frozen current mode can be enabled on any transportable (particle) quantity by
+calling ``setFrozenCurrentMode()``. The call takes two mandatory parameters:
+(i) the type of transport to model, and (ii) the plasma current target.
+Additionally, two optional parameters may be specified: (iii) the time vector
+corresponding to the prescribed plasma current, if the latter is to vary in
+time, and (iv) the maximum permitted value of :math:`D_0` (default: 1000 m/s^2).
+
+If the prescribed plasma current is higher than what can be achieved with a
+diffusive transport (i.e. if :math:`I_{\rm p}` is below its prescribed value in
+the absence of radial transport), the diffusion coefficient is set to zero and
+the target plasma current is ignored.
+
+List of options
+***************
+The radial diffusion coefficient used in the frozen current mode is generally
+written on the form
+
+.. math::
+   D_{rr}(r,p,\xi_0) = D_0h(r,p,\xi_0)
+
+where the function :math:`h(r,p,\xi_0)` can take different forms. The following
+forms for :math:`h(r,p,\xi_0)` are currently supported in DREAM:
+
++----------------------------------+-----------------------------------------+
+| Name                             | :math:`h(r,p,\xi_0)`                    |
++==================================+=========================================+
+| ``FROZEN_CURRENT_MODE_DISABLED`` | :math:`0`                               |
++----------------------------------+-----------------------------------------+
+| ``FROZEN_CURRENT_MODE_CONSTANT`` | :math:`1`                               |
++----------------------------------+-----------------------------------------+
+| ``FROZEN_CURRENT_MODE_BETAPAR``  | :math:`\beta_\parallel = v_\parallel/c` |
++----------------------------------+-----------------------------------------+
+
+Example
+*******
+The following example illustrates how to use the frozen current mode:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3   # Plasma current target (A)
+   ds.eqsys.n_re.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip
+   )
+
+If one wishes to prescribe a time-evolving plasma current, the following call
+can be made instead:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   # Time vector
+   t  = np.linspace(0, 2, 40)
+   # Plasma current target (A)
+   Ip = 800e3*np.linspace(0.2, 1, t.size)
+   ds.eqsys.n_re.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip, Ip_presc_t=t
+   )
+
+In poorly confined plasmas, or situations where strong transport leads to
+unstable simulations, one may want to adjust the maximum diffusion coefficient:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3   # Plasma current target (A)
+   ds.eqsys.n_re.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip, D_I_max=200
+   )
+
+
 
 
 Class documentation

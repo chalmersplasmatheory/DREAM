@@ -87,6 +87,7 @@ namespace DREAM{
         real_t *pelletDensity=nullptr;
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
+        len_t *nbrShiftGridCell=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
@@ -119,7 +120,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
             OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
-            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, real_t VpVolNormFactor, real_t rclPrescribedConstant);
+            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();

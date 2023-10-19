@@ -10,10 +10,11 @@
  * Constructor.
  */
 template<class T>
+template<typename ... Args>
 IonBoundaryCondition<T>::IonBoundaryCondition(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     Args&& ... args
-) : T(g, std::forward<Args>(args)), ions(ihdl), iIon(iIon) {
+) : T(g, std::forward<Args>(args) ...), ions(ihdl), iIon(iIon) {
 
     this->Zion = this->ions->GetZ(iIon);
 }
@@ -66,7 +67,7 @@ bool IonBoundaryCondition<T>::SetJacobianBlock(
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
         contributes |=
-            this->SetCSToJacobianBlock(uqtyId, derivId, jac, x, iIon, Z0, idx*nr);
+            this->SetCSJacobianBlock(uqtyId, derivId, jac, x, iIon, Z0, idx*nr);
 
     return contributes;
 }

@@ -28,6 +28,9 @@ namespace DREAM {
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerMatrix, timerInvert;
 
+		// Iterations of external iterator
+		std::vector<len_t> extiter_nIterations;
+		
         // Debug settings
         bool printmatrixinfo = false, savematrix = false, saverhs = false, savesystem = false;
         len_t savetimestep = 0;
@@ -38,7 +41,7 @@ namespace DREAM {
     public:
         SolverLinearlyImplicit(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
-            EquationSystem*,
+            EquationSystem*, const bool verbose=false,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU
         );
         virtual ~SolverLinearlyImplicit();

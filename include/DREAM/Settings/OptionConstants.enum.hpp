@@ -59,6 +59,11 @@ enum ion_neutral_advection_mode {
 	ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED=2
 };
 
+enum ion_source_type {
+	ION_SOURCE_NONE=1,
+	ION_SOURCE_PRESCRIBED=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,
@@ -173,7 +178,8 @@ enum uqty_f_re_inittype {
     UQTY_F_RE_INIT_FORWARD=1,           // Put all particles in p=pMin, xi=+/-1 (sign depending on E)
     UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
     UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
-    UQTY_F_RE_INIT_ISOTROPIC=4          // Distribute all particles isotropically in p=pMin
+    UQTY_F_RE_INIT_ISOTROPIC=4,         // Distribute all particles isotropically in p=pMin
+	UQTY_F_RE_INIT_AVALANCHE=5			// Distribute particles according to an analytical avalanche distribution
 };
 
 enum uqty_V_loop_wall_eqn {
@@ -204,7 +210,8 @@ enum uqty_T_i_eqn {
 
 enum uqty_distribution_mode {
     UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
-    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2    // distribution modelled with analytical distribution function
+    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2,   // distribution modelled with analytical distribution function
+	UQTY_DISTRIBUTION_MODE_PRESCRIBED=3    // distribution is prescribed in time from user input
 };
 
 enum uqty_f_hot_dist_mode {                     // Model used for analytic hottail distribution
@@ -292,6 +299,11 @@ enum eqterm_synchrotron_mode {                      // Synchrotron radiation rea
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included
 };
 
+enum eqterm_timevaryingb_mode {						// Pitch angle advection due to time-varying B...
+	EQTERM_TIMEVARYINGB_MODE_NEGLECT=1,				// neglected
+	EQTERM_TIMEVARYINGB_MODE_INCLUDE=2				// included
+};
+
 enum eqterm_dreicer_mode {
     EQTERM_DREICER_MODE_NONE=1,                     // Disable Dreicer generation
     EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR=2,     // Dreicer based on Connor-Hastie formula (without corrections)
@@ -303,6 +315,12 @@ enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_NEGLECT=1,                  // No Compton source
     EQTERM_COMPTON_MODE_FLUID=2,                    // Fluid Compton generation rate
     EQTERM_COMPTON_MODE_KINETIC=3,                  // Kinetic Compton source
+};
+
+enum eqterm_frozen_current_mode {
+	EQTERM_FROZEN_CURRENT_MODE_DISABLED=1,			// Disable the frozen current mode transport
+	EQTERM_FROZEN_CURRENT_MODE_CONSTANT=2,			// Assume momentum-independent radial transport
+	EQTERM_FROZEN_CURRENT_MODE_BETAPAR=3			// Assume v_|| scaling of radial transport
 };
 
 enum eqterm_transport_bc {
@@ -374,6 +392,12 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
+};
+
+enum eqterm_tritium_mode {                        // Tritium generation is...
+    EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
+    EQTERM_TRITIUM_MODE_FLUID = 2,                // Fluid tritium generation rate
+    EQTERM_TRITIUM_MODE_KINETIC = 3               // Kinetic tritium generation rate
 };
 
 

@@ -6,7 +6,10 @@
 #
 
 import h5py
-from matplotlib._contour import QuadContourGenerator
+try:
+    from matplotlib._contour import QuadContourGenerator as ContourGenerator
+except ModuleNotFoundError:
+    from contourpy import Mpl2014ContourGenerator as ContourGenerator
 import matplotlib.pyplot as plt
 import numpy as np
 import re
@@ -50,6 +53,7 @@ class GEQDSK:
         #    vertices = v[-1]
             
         vertices = self.contour_generator.create_contour(psi_n)
+        vertices = vertices[0]
         
         iClosedContour = None
         for i in range(len(vertices)):
@@ -328,7 +332,7 @@ class GEQDSK:
         psi2d = np.transpose(self.psi(self.R, self.Z))
         psin2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
         R, Z = np.meshgrid(self.R, self.Z)
-        self.contour_generator = QuadContourGenerator(R, Z, psin2d, None, True, 0)
+        self.contour_generator = ContourGenerator(R, Z, psin2d, None, True, 0)
 
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)
@@ -395,7 +399,7 @@ class GEQDSK:
         """
         Returns equilibrium data in the LUKE equilibrium format.
         """
-        theta = np.linspace(0, 2*np.pi, ntheta)
+        theta = np.linspace(0, 2*np.pi, ntheta, endpoint = False)
         psi_n = np.linspace(0, 1, npsi+1)[1:]
 
         Rp, Zp = self.R0, self.Z0
@@ -410,6 +414,7 @@ class GEQDSK:
         ptBx = self.get_Br(ptx, pty)
         ptBy = self.get_Bz(ptx, pty)
         ptBPHI = self.get_Btor(ptx, pty)
+        
 
         return {
             'id': 'GEQDSK data',

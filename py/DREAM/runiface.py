@@ -8,8 +8,10 @@ import tempfile
 from . DREAMException import DREAMException
 from . DREAMOutput import DREAMOutput
 from . DREAMSettings import DREAMSettings
+from . DREAMTask import DREAMTask
 from subprocess import TimeoutExpired
 
+from subprocess import TimeoutExpired
 
 DREAMPATH = None
 
@@ -31,7 +33,6 @@ def locatedream():
             #raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
             print("WARNING: Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
 
-
 def runiface(settings, outfile=None, quiet=False, timeout=None):
     """
     Run 'dreami' with the specified settings (which may be either
@@ -42,57 +43,37 @@ def runiface(settings, outfile=None, quiet=False, timeout=None):
     outfile:  Name of file to write output to (default: 'output.h5')
     """
     global DREAMPATH
+    task = DREAMTask(settings, outfile, quiet, timeout, DREAMPATH )
+    task.run()
+    while not task.hasFinished():
+        pass
+    return task.getResult()
 
-    deleteOutput = False
-    if outfile is None:
-        deleteOutput = True
-        outfile = next(tempfile._get_candidate_names())+'.h5'
+def runiface_parallel(settings, outfiles, quiet=False, timeout=None, njobs=4):
+    global DREAMPATH
+    queue = []
+    active = []
+    allTasks = []
+    if len(settings) != len(outfiles):
+        raise DREAMException("Lengths of settings and outfiles arrays are different!")
+    
+    for _settings, outfile in zip(settings, outfiles):
+        task = DREAMTask(_settings, outfile, quiet, timeout, DREAMPATH )
+        queue.append(task)
+        allTasks.append(task)
+    
+    while len(queue) > 0 or len(active) > 0:
+        for task in active:
+            if task.hasFinished(0.1):
+                active.remove(task)
+        
+        while len(queue) > 0 and len(active) < njobs:
+            task = queue.pop(0)
+            task.run()
+            active.append(task)
 
-    infile = None
-    if isinstance(settings, DREAMSettings):
-        infile = next(tempfile._get_candidate_names())+'.h5'
-        settings.output.setFilename(outfile)
-        settings.save(infile)
-    else:
-        infile = settings
-
-    errorOnExit = 0
-    p = None
-    obj = None
-    stderr_data = None
-    try:
-        if quiet:
-            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        else:
-            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile], stderr=subprocess.PIPE)
-
-        try:
-            stderr_data = p.communicate(timeout=timeout)[1].decode('utf-8')
-
-            if p.returncode != 0:
-                errorOnExit = 1
-            else:
-                obj = DREAMOutput(outfile)
-
-                if deleteOutput:
-                    os.remove(outfile)
-        except TimeoutExpired:
-            p.kill()
-            errorOnExit = 3
-    except KeyboardInterrupt:
-        errorOnExit = 2
-    finally:
-        os.remove(infile)
-
-    if errorOnExit == 1:
-        print(stderr_data)
-        raise DREAMException("DREAMi exited with a non-zero exit code: {}".format(p.returncode))
-    elif errorOnExit == 2:
-        raise DREAMException("DREAMi simulation was cancelled by the user.")
-    elif errorOnExit == 3:
-        raise DREAMException("DREAMi simulation was killed due to timeout.")
-    else:
-        return obj
+    return [task.getResultObject() for task in allTasks]
+    
 
 locatedream()
 
