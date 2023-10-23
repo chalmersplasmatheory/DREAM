@@ -84,13 +84,13 @@ void TritiumSource::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHand
  * ITER disruptions" by M. Solis (2017),
  */
 real_t TritiumSource::integrand(real_t p, void *){
-    real_t C = 1.2174246e-7; // Normalization factor
+    real_t C = 1.2174246e-7; // Normalization factor 
     real_t Tmax = 18.6e3;
     real_t mc2 = Constants::mc2inEV;
     if (p > sqrt((Tmax/mc2 + 1)*(Tmax/mc2 + 1) - 1)) {
         return 0;
     }
-    real_t alpha = 1./137.035999084;
+    real_t alpha = Constants::alpha;
     real_t g = sqrt(p*p + 1);
     real_t fbeta = p * g * (Tmax - mc2 * (g - 1)) * (Tmax - mc2 * (g - 1)) / (1 - exp(-4 * M_PI * alpha * g / p));
     return C*fbeta;
