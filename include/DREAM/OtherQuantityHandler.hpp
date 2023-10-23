@@ -30,6 +30,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -69,6 +70,8 @@ namespace DREAM {
 			// Synchrotron loss term
 			DREAM::SynchrotronTerm *f_hot_synchrotron=nullptr;
 			DREAM::SynchrotronTerm *f_re_synchrotron=nullptr;
+			// Flux of RE from hottail grid
+			DREAM::FVM::BC::PXiExternalLoss *n_re_f_hot_flux=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
             // Hyperresistive diffusion term
