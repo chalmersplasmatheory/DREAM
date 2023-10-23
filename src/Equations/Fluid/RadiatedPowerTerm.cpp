@@ -96,7 +96,10 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 
             	if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){//Ly-opaque deuterium radiation from AMJUEL
 		            // Radiated power term
-		            Li = amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);// includes both line radiation and ionization potential energy difference
+		            // includes both line radiation and ionization potential energy difference
+		            // This term should be strictly larger than only the contribution from the ionization potential energy difference alone, 
+		            // i.e. the ionization rate*ionization energy, which the AMJUEL fit sometimes can give, so we manually enforce this lower limit
+		            Li = std::max(Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0), amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]));
 		            
 		            // The AMJUEL coefficients for recombination radiation do not contain bremsstrahlung,
 		            // but are on the other hand adjusted for repeated excitation/deexcitation and three-body recombination
