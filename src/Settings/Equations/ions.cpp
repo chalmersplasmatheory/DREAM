@@ -320,25 +320,31 @@ void SimulationGenerator::ConstructEquation_Ions(
                         real_t pThreshold = 0.0;
                         if(collfreqModeIsFull)
                             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
-                        Op_kiniz->AddTerm(new IonKineticIonizationTerm(
-                            fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
-                            ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
-                            pThreshold, pMode
-                        ));
+						IonKineticIonizationTerm *ikit =
+							new IonKineticIonizationTerm(
+								fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
+								ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
+								pThreshold, pMode
+							);
+						oqty_terms->f_hot_kin_rates.push_back(ikit);
+                        Op_kiniz->AddTerm(ikit);
                     }
                     // TODO: always include RE ionization (as long as HasRunawayGrid), but
                     //       consider using a simple jacobian (assume Ion_re ~ n_re)
                     if(eqsys->HasRunawayGrid()) {
                         if(Op_kiniz_re == nullptr)
                             Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
-                        Op_kiniz_re->AddTerm(new IonKineticIonizationTerm(
-                            fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
-                            ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
-                        )); 
+						IonKineticIonizationTerm *ikit =
+							new IonKineticIonizationTerm(
+								fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
+								ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
+							); 
+						oqty_terms->f_re_kin_rates.push_back(ikit);
+						Op_kiniz_re->AddTerm(ikit);
                     }
                 }
                 break;
