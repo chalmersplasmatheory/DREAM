@@ -520,24 +520,46 @@ void SimulationGenerator::ConstructEquation_Ions(
 			ipp->Evaluate(ni);
 		}
 
-		// ...and then fill in with the initial dynamic ion values
+		// Then we initialize dynamic ions with prescribed initial densities
+		std::vector<len_t> eq_ions;
+		std::vector<real_t*> vecni;
 		for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
-			len_t Z   = ih->GetZ(dynamic_indices[i]);
+			len_t Z = ih->GetZ(dynamic_indices[i]);
 			len_t idx = ih->GetIndex(dynamic_indices[i], 0);
 
-			if (init_equil[dynamic_indices[i]] != 0) {
-				// Initialize according to equilibrium distribution
-				EvaluateIonEquilibrium(ih, adas, dynamic_indices[i], initNi+dynamic_indices[i]*Nr, Te, Nr, ni+idx*Nr);
-			} else {
-				// Initialize as specified
+			if (init_equil[dynamic_indices[i]] == 0) {
 				for (len_t Z0 = 0; Z0 <= Z; Z0++) {
 					for (len_t ir = 0; ir < Nr; ir++)
 						ni[(idx+Z0)*Nr+ir] = dynamic_densities[ionOffset+ir];
 					ionOffset += Nr;
 				}
+			} else {
+				eq_ions.push_back(i);
+				vecni.push_back(ni+idx*Nr);
 			}
 		}
 
+		// Evaluate background free electron density
+		real_t *nfree0 = new real_t[Nr];
+		for (len_t ir = 0; ir < Nr; ir++)
+			nfree0[ir] = 0;
+
+		for (len_t iZ = 0, ionOffset = 0; iZ < ih->GetNZ(); iZ++) {
+			// Skip equilibrium ions
+			if (init_equil[iZ] != 0)
+				continue;
+
+			for (len_t Z0 = 1; Z0 <= ih->GetZ(iZ); Z0++, ionOffset++) {
+				for (len_t ir = 0; ir < Nr; ir++) {
+					nfree0[ir] += Z0 * ni[ionOffset*Nr + ir];
+				}
+			}
+		}
+
+		// Finally, we initialize dynamic ions in equilibrium
+		EvaluateIonEquilibrium(ih, adas, eq_ions, nfree0, initNi, Te, Nr, vecni);
+
+		delete [] nfree0;
 		delete [] init_equil;
 		delete [] initNi;
 		delete [] dynamic_indices;

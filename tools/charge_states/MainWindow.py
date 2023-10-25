@@ -6,7 +6,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
 
 from ADAS import data, rates
-import ionrate
+import ionrateeq
 from ui import MainWindow_design
 
 
@@ -73,7 +73,7 @@ class MainWindow(QtWidgets.QMainWindow):
             acd = rates.get_rate(el, 'acd')
             scd = rates.get_rate(el, 'scd')
 
-            n = ionrate.solve_all(ni=1, ne=ne, Te=Te, acd=acd, scd=scd)
+            n = ionrateeq.solve_all(ni=1, ne=ne, Te=Te, acd=acd, scd=scd)
             Z = list(range(n.size))
             self.ax.clear()
             hbars = self.ax.bar(Z, n*100)
