@@ -17,6 +17,11 @@ real_t AMJUEL::getRecLyOpaque(len_t Z0, real_t n, real_t T){
     if(Z0==1){
         real_t lnRecAMJUEL=0;
         
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
+        
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
         real_t lnTi=1.0;
@@ -48,6 +53,11 @@ real_t AMJUEL::getRecLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
     if(Z0==1){
         real_t lnRecAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -98,6 +108,11 @@ real_t AMJUEL::getRecLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
     if(Z0==1){
         real_t lnRecAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -151,6 +166,11 @@ real_t AMJUEL::getRecRadLyOpaque(len_t Z0, real_t n, real_t T){
     if(Z0==1){
         real_t lnRecRadAMJUEL=0;
         
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
+        
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
         real_t lnTi=1.0;
@@ -182,6 +202,11 @@ real_t AMJUEL::getRecRadLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
     if(Z0==1){
         real_t lnRecRadAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -232,6 +257,11 @@ real_t AMJUEL::getRecRadLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
     if(Z0==1){
         real_t lnRecRadAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -284,6 +314,11 @@ real_t AMJUEL::getIonizLyOpaque(len_t Z0, real_t n, real_t T){
     if(Z0==0){
         real_t lnIonizAMJUEL=0;
         
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
+        
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
         real_t lnTi=1.0;
@@ -315,6 +350,11 @@ real_t AMJUEL::getIonizLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
     if(Z0==0){
         real_t lnIonizAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -365,6 +405,11 @@ real_t AMJUEL::getIonizLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
     if(Z0==0){
         real_t lnIonizAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -419,6 +464,11 @@ real_t AMJUEL::getIonizLossLyOpaque(len_t Z0, real_t n, real_t T){
     if(Z0==0){
         real_t lnIonizLossAMJUEL=0;
         
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
+        
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
         real_t lnTi=1.0;
@@ -438,6 +488,7 @@ real_t AMJUEL::getIonizLossLyOpaque(len_t Z0, real_t n, real_t T){
     }        			
 }
 
+
 /**
  * Derivative of the Lyman-opaque ionization loss coefficient
  * with respect to the background electron density
@@ -450,6 +501,11 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
     if(Z0==0){
         real_t lnIonizLossAMJUEL=0;
         real_t derivFactor=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -501,6 +557,11 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
         real_t lnIonizLossAMJUEL=0;
         real_t derivFactor=0;
         
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
+        
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
         real_t lnTi=1.0;
@@ -536,6 +597,43 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
             }
         }
         return Constants::ec*derivFactor*exp(lnIonizLossAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
+    }else{
+        return 0;
+    }        			
+}
+
+/**
+ * Lyman-opaque ionization loss per ionization event, including both the potential energy difference 
+ * and line radiation during one effective ionization event (which can include several
+ * excitation-deexcitation events before the ion/atom is eventually ionized) [W/ionization]
+ *
+ * Z0: Charge state (either 0 or 1 as these rates only applies to hydrogen isotopes).
+ * n:  Background electron density.
+ * T:  Background electron temperature.
+ */
+real_t AMJUEL::getIonizLossPerEventLyOpaque(len_t Z0, real_t n, real_t T){
+    if(Z0==0){
+        real_t lnIonizLossPerEventAMJUEL=0;
+        
+        if(n>1e22)
+          n=1e22;
+        else if(n<1e14)
+          n=1e14;
+        
+        real_t lnT=log(T);
+        real_t lnn=log(n/1e14);
+        real_t lnTi=1.0;
+        real_t lnnj=1.0;
+        
+        for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            lnnj=1.0;
+            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                lnIonizLossPerEventAMJUEL+=ionizLossPerEventLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                lnnj*=lnn;
+            }
+            lnTi*=lnT;
+        }
+        return Constants::ec*exp(lnIonizLossPerEventAMJUEL);
     }else{
         return 0;
     }        			
