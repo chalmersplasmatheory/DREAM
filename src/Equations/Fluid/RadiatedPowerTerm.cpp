@@ -283,8 +283,6 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
 				        if(Z0>0){       // Recombination gain
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
-				            if(includePRB)
-				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
                         
                         real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
@@ -349,6 +347,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
 				        if(Z0>0){       // Recombination gain
 				            dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+				            if(includePRB)
+				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);				            
 			            }
 
                         real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
