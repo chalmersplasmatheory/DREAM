@@ -192,7 +192,11 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                Li =  amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);
+		            
+		                // Account for that we are enforcing the ionization losses to be strictly larger than only 
+		                // the contribution from the ionization potential energy difference alone
+		                Li =  std::max(Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0), amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]));
+		                
 	                    Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
 				        
 				        Bi = 0;
@@ -263,7 +267,15 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                dLi =  amjuel->getIonizLossLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+		            
+		                // Account for that we are enforcing the ionization losses to be strictly larger than only 
+		                // the contribution from the ionization potential energy difference alone		            
+		                real_t dWi = Constants::ec*nist->GetIonizationEnergy(Zs[iz],Z0);
+		                if(amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*dWi>amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]))
+		                    dLi = amjuel->getIonizLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i])*dWi;
+		                else
+		                    dLi =  amjuel->getIonizLossLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+		                    
 	                    dLi += amjuel->getRecRadLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
 				        
 				        dBi = 0;
@@ -321,13 +333,21 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                dLi =  amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+		            
+		                // Account for that we are enforcing the ionization losses to be strictly larger than only 
+		                // the contribution from the ionization potential energy difference alone		            
+		                real_t dWi = Constants::ec*nist->GetIonizationEnergy(Zs[iz],Z0);
+		                if(amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*dWi>amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]))
+		                    dLi = amjuel->getIonizLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i])*dWi;
+		                else
+		                    dLi = amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+		                    
 		                dLi += amjuel->getRecRadLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 				        
 				        dBi = 0;
 				        // Binding energy rate term
 				        if(Z0>0){       // Recombination gain
-				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
+				            dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 			            }
 
