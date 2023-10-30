@@ -272,13 +272,25 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
-    DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]",
-		const real_t *cr = this->REFluid->GetComptonRunawayRate();
-		const real_t *n_tot = this->unknowns->GetUnknownData(this->id_ntot);
-		real_t *v = qd->StoreEmpty();
-		for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
-			v[ir] = cr[ir] * n_tot[ir];
-	);
+    if(tracked_terms->comptonSource_fluid != nullptr){
+        DEF_FL("fluid/gammaCompton", "Compton runaway rate to n_re [s^-1 m^-3]",
+		    const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *S_C = qd->StoreEmpty();
+
+			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
+				S_C[ir] = this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
+			}
+	    );
+    } else {
+        DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]",
+		    const real_t *cr = this->REFluid->GetComptonRunawayRate();
+		    const real_t *n_tot = this->unknowns->GetUnknownData(this->id_ntot);
+		    real_t *v = qd->StoreEmpty();
+		    for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+			    v[ir] = cr[ir] * n_tot[ir];
+	    );
+    }
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
     }
@@ -288,6 +300,17 @@ void OtherQuantityHandler::DefineQuantities() {
         for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
             v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
+
+	if (tracked_terms->n_re_f_hot_flux != nullptr) {
+		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to n_re [s^-1 m^-3]",
+			const real_t *f_hot = this->unknowns->GetUnknownData(this->id_f_hot);
+			real_t *v = qd->StoreEmpty();
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = 0;
+
+			tracked_terms->n_re_f_hot_flux->AddToVectorElements(v, f_hot);
+		);
+	}
 
     // Magnetic ripple resonant momentum
     if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
@@ -525,6 +548,40 @@ void OtherQuantityHandler::DefineQuantities() {
             avaNeg->SetVectorElements(v, nre_neg);
         }
     );
+    
+	if (tracked_terms->comptonSource != nullptr) {
+		DEF_HT("hottail/S_compton", "Compton scattering source term [s^-1 m^-3]",
+			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *S_C = qd->StoreEmpty();
+
+			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+				for (len_t j = 0; j < n2_ht; j++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+						S_C[(ir*(n2_ht) + j)*n1_ht + i] = this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ntot[ir];
+					}
+				}
+			}
+		);
+	}
+    if (!tracked_terms->tritiumSource.empty()) {
+		DEF_HT("hottail/S_tritium", "Tritium decay source term [s^-1 m^-3]",
+			real_t *S_T = qd->StoreEmpty();
+
+			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+				for (len_t j = 0; j < n2_ht; j++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+					    len_t nT = this->ions->GetNTritiumIndices();
+                        S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
+                        for(len_t iT=0; iT<nT; iT++){
+                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += this->tracked_terms->tritiumSource[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTritiumDensity(ir);
+                        }
+					}
+				}
+			}
+		);
+	}
 
 	// Pitch angle scattering due to time varying B
 	if (tracked_terms->f_hot_timevaryingb != nullptr) {

@@ -19,12 +19,15 @@
 #include "DREAM/Equations/Fluid/FreeElectronDensityTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/ParticleSourceTerm.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
+#include "DREAM/IO.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
@@ -121,6 +124,35 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
+    }
+    
+    // Add Compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if(compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
+
+        FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
+        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0)), -1.0);
+        Op_compton->AddTerm(oqty_terms->comptonSource);
+        len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
+        eqsys->SetOperator(id_f_hot, id_n_tot, Op_compton);
+    }
+    
+    // Add tritium source
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
+    if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+
+        FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);    
+        const len_t *ti = eqsys->GetIonHandler()->GetTritiumIndices();
+        for(len_t iT=0; iT<eqsys->GetIonHandler()->GetNTritiumIndices(); iT++){
+            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
+            Op_tritium->AddTerm(oqty_terms->tritiumSource[iT]);
+        }
+        len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+        eqsys->SetOperator(id_f_hot, id_n_i, Op_tritium);
     }
 
     // PARTICLE SOURCE TERMS
@@ -220,6 +252,49 @@ namespace DREAM {
     };
 }
 
+namespace DREAM {
+    class TotalElectronDensityFromKineticCompton : public FVM::DiagonalQuadraticTerm {
+    private: 
+        len_t limit;
+        gsl_integration_workspace * wp;
+        gsl_integration_workspace * wpOut;
+    public:
+        real_t pLower, pUpper, photonFlux, scaleFactor, source;
+        FVM::Interpolator1D *comptonPhotonFlux;
+        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor), comptonPhotonFlux(comptonPhotonFlux) {
+                this->limit = 1000;
+                this->wp = gsl_integration_workspace_alloc(limit);
+                this->wpOut = gsl_integration_workspace_alloc(limit);
+            }
+        
+        virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) override {
+            this->photonFlux = this->comptonPhotonFlux->Eval(t)[0];
+            this->DiagonalQuadraticTerm::Rebuild(0,0,nullptr);
+        }
+        virtual void SetWeights() override {
+            struct DREAM::ComptonSource::intparams params = {this->limit, this->wp};
+            struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut};
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * this->photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
+        }
+    };
+}
+
+namespace DREAM {
+    class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
+    public:
+        real_t pLower, pUpper, scaleFactor, source;
+        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
+
+        virtual void SetWeights() override {
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
+        }
+    };
+}
+
 /**
  * Build the equation for S_particle, which contains the rate at which the total local free electron density changes
  * (i.e. by ionization, transport of hot electrons, runaway sources).
@@ -290,6 +365,42 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             new TotalElectronDensityFromKineticAvalanche(fluidGrid, pCutoff, pMax, unknowns, -1.0)
         );
         desc += " - internal avalanche";
+    }
+    
+    // Add contribution from kinetic Compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if(compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), -1.0)
+        );
+        desc += " - internal Compton";
+    }
+    
+    // Add contribution from kinetic tritium source
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
+    if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        
+        real_t pLimTritium = sqrt((18.6e3/Constants::mc2inEV + 1)*(18.6e3/Constants::mc2inEV + 1) - 1);
+        if(pMax < pLimTritium) 
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_TRITIUM_GENERATION_INVALID,
+                "Momentum limit of hot-tail grid (%.2f) is lower than upper "
+                "limit for momentum of tritium beta decay (%.2f), causing the "
+                "tritium generation mechanism to be underestimated.", pMax, pLimTritium
+            );
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, -1.0)
+        );
+        desc += " - internal Tritium";
     }
     // Add source terms
     bool signPositive = false;

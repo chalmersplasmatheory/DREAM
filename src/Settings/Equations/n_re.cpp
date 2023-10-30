@@ -11,6 +11,8 @@
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -48,7 +50,7 @@ void SimulationGenerator::DefineOptions_n_re(
     //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 	DefineDataT(MODULENAME "/compton", s, "flux");
 
-    s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
+    s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
 
@@ -116,10 +118,13 @@ void SimulationGenerator::ConstructEquation_n_re(
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+			FVM::BC::PXiExternalLoss *xloss = new FVM::BC::PXiExternalLoss(
 				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
-			));
+			);
+			oqty_terms->n_re_f_hot_flux = xloss;
+
+			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
         desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
