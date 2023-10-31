@@ -31,6 +31,7 @@ namespace DREAM {
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         CoulombLogarithm *lnLambdaEE;
+        bool extrapolateDreicer;
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
@@ -84,6 +85,8 @@ namespace DREAM {
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
+		real_t *pStar=nullptr;					 // Effective critical momentum pStar
+		real_t *nusnuDatPStar=nullptr;			 // normalized nu_s*nu_D evaluated at pStar
 
         EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
         
@@ -132,6 +135,7 @@ namespace DREAM {
         RunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
+            bool extrapolateDreicer,
             CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
             CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
             OptionConstants::conductivity_mode cond_mode,
@@ -158,6 +162,8 @@ namespace DREAM {
 
         void Rebuild(const real_t);
         void GridRebuilt();
+        bool GetExtrapolateDreicer()
+            {return extrapolateDreicer;}
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}
         const real_t* GetEffectiveCriticalField() const
@@ -219,6 +225,16 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
+
+		const real_t GetPStar(len_t ir) const
+			{return pStar[ir];}
+		const real_t *GetPStar() const
+			{return pStar;}
+
+		const real_t GetNusNuDatPStar(len_t ir) const
+			{return nusnuDatPStar[ir];}
+		const real_t *GetNusNuDatPStar() const
+			{return nusnuDatPStar;}
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }

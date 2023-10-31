@@ -31,7 +31,7 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
  */
 RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
+    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, bool extrapolateDreicer,
     CoulombLogarithm *lnLei, IonHandler *ions, AnalyticDistributionRE *distRE,
     CollisionQuantity::collqty_settings *cqsetForPc,
     CollisionQuantity::collqty_settings *cqsetForEc,
@@ -41,12 +41,12 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_avalanche_mode ava_mode,
     OptionConstants::eqterm_compton_mode compton_mode,
     FVM::Interpolator1D *compton_photon_flux
-) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), analyticRE(distRE), 
+) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), extrapolateDreicer(extrapolateDreicer),
+    lnLambdaEI(lnLei), unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
     cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
     ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
- {
+{
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
 
@@ -421,7 +421,7 @@ real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
 }
 
 // Integral of the photon flux spectrum over all Eg (in units of mc2).
-const real_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844;
+const real_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844190260298;
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
  */
@@ -628,6 +628,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
             criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
+
+		// Store effective critical momentum
+		this->pStar[ir] = pStar;
+		// Store product of collision frequencies
+		this->nusnuDatPStar[ir] = nuSnuDTerm;
     }
 }
     
@@ -656,13 +661,15 @@ void RunawayFluid::AllocateQuantities(){
     tauEETh  = new real_t[nr];
     EDreic   = new real_t[nr];
 
-    effectiveCriticalField  = new real_t[nr]; 
-    criticalREMomentum      = new real_t[nr];
-    criticalREMomentumInvSq = new real_t[nr];
-    pc_COMPLETESCREENING    = new real_t[nr];
-    pc_NOSCREENING          = new real_t[nr];
-    avalancheGrowthRate     = new real_t[nr];
-    dreicerRunawayRate      = new real_t[nr];
+    effectiveCriticalField    = new real_t[nr]; 
+    criticalREMomentum        = new real_t[nr];
+    criticalREMomentumInvSq   = new real_t[nr];
+    pc_COMPLETESCREENING      = new real_t[nr];
+    pc_NOSCREENING            = new real_t[nr];
+    avalancheGrowthRate       = new real_t[nr];
+    dreicerRunawayRate        = new real_t[nr];
+	pStar                     = new real_t[nr];
+	nusnuDatPStar             = new real_t[nr];
 
     tritiumRate = new real_t[nr];
     comptonRate = new real_t[nr];
@@ -692,6 +699,8 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
+		delete [] pStar;
+		delete [] nusnuDatPStar;
     }
 }
 

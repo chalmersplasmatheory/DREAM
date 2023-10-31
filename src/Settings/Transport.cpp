@@ -400,9 +400,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
-        ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-            bc, tt, oprtr, path, grid
+		TransportAdvectiveBC *abc =
+			ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+				bc, tt, oprtr, path, grid
             );
+
+        // Store B.C. for OtherQuantityHandler
+        if (advective_bc != nullptr)
+            *advective_bc = abc;
     }
     
     if (hasCoeff("s_drr", 4)) {
@@ -423,14 +428,25 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt_ar);
 
         // Add boundary condition...
-        ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-            bc, tt_drr, oprtr, path, grid
-            );
+        TransportDiffusiveBC *dbc =
+			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+				bc, tt_drr, oprtr, path, grid
+			);
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
+
         if ( not hasSvenssonA ){
             // Add boundary condition...
-            ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-                bc, tt_ar, oprtr, path, grid
+			TransportAdvectiveBC *abc =
+				ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+					bc, tt_ar, oprtr, path, grid
                 );
+
+			// Store B.C. for OtherQuantityHandler
+			if (advective_bc != nullptr)
+				*advective_bc = abc;
         }
     }
 
@@ -471,9 +487,14 @@ bool SimulationGenerator::ConstructTransportTerm(
 			oprtr->AddTerm(fct);
 
 			// Add boundary condition
-			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-				bc, fct, oprtr, path, grid
-			);
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, fct, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
 		} else {
 			// TODO Heat transport
 			throw SettingsException(

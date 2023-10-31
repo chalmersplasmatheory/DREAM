@@ -479,7 +479,10 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     real_t bounceIntegral, error; 
 
     real_t epsabs = 0, epsrel = 1e-3, lim = gsl_adaptive->limit; 
-    if(params.integrateQAWS)
+	// For xi0, theta_b1=theta_b2 and the integral goes to zero
+	if (theta_b1 == theta_b2)
+		bounceIntegral = 0;
+    else if(params.integrateQAWS)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     else
         gsl_integration_qag(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&bounceIntegral,&error);
