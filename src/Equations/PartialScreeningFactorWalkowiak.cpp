@@ -4,6 +4,17 @@
 
 using namespace std;
 
+/* g(p) function needed for partial screening, as described in Hesslow
+ * https://doi.org/10.48550/arXiv.1807.05036
+ * g(p) is calculated by function gEquation for given ion (Z, Z0) and p
+ * using Pratt-Tseng modified model (PT_opt) as described in Walkowiak Eq. 25
+ * https://doi.org/10.1063/5.0075859
+ * 
+ * Thanks for M. Wilczyński for implementing this into C++
+ * 
+ * Walkowiak 2023
+ * 
+ * */
 
 real_t aiCoefficient(int_t i, int_t Z, int_t N) {
     real_t c[4][5] = {
