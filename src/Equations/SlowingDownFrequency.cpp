@@ -96,7 +96,7 @@ SlowingDownFrequency::~SlowingDownFrequency(){
  * Modification: Moved the -beta^2 contribution inside the interpolation term in order
  * to preserve positivity of the contribution.
  */
-real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
+real_t SlowingDownFrequency::evaluateStoppingTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
     real_t NBound = Z - Z0;
     if (!NBound)
@@ -196,7 +196,7 @@ real_t bremsIntegrand(real_t x, void*){
  * Evaluates the bremsstrahlung stopping power formula. Using the non-screened 
  * formula given as (4BN) in H W Koch and J W Motz, Rev Mod Phys 31, 920 (1959).
  */
-real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*/, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type /*collfreq_type*/){
+real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*/, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode){
     if(brems_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER)
         return 0;
     else if(p==0)
@@ -311,7 +311,7 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
         for(len_t iz = 0; iz<nZ; iz++)
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 len_t ind = ionIndex[iz][Z0];
-                p3nuS0 += evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
+                p3nuS0 += evaluateStoppingTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
             }
     p3nuS0 *= preFactor;
     return p3nuS0;
@@ -357,7 +357,7 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
                 for(len_t iz=0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         len_t indZ = ionIndex[iz][Z0];
-                        dP3nuS[indZ*nr + ir] += preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
+                        dP3nuS[indZ*nr + ir] += preFactor * evaluateStoppingTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
                     }
         }
     else if(derivId == id_Tcold) 

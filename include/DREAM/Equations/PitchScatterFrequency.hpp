@@ -15,11 +15,13 @@ namespace DREAM {
 
         void calculateIsotropicNonlinearOperatorMatrix() override;
 
+		// virtual real_t gEquation(int_t Z, int_t Z0, real_t p) override;
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateDDTElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
-        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode) override;
+        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_type) override;
         virtual real_t evaluateIonTermAtP(len_t iz, len_t Z0, real_t p) override;
-        virtual real_t evaluateBremsstrahlungTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/, OptionConstants::eqterm_bremsstrahlung_mode /*brems_mode*/, OptionConstants::collqty_collfreq_type /*collfreq_type*/) override {return 0;}
+        virtual real_t evaluateStoppingTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/, OptionConstants::collqty_collfreq_mode) override {return 0;};
+        virtual real_t evaluateBremsstrahlungTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/, OptionConstants::eqterm_bremsstrahlung_mode /*brems_mode*/) override {return 0;}
     protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
