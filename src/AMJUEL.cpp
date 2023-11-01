@@ -54,10 +54,6 @@ real_t AMJUEL::getRecLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnRecAMJUEL=0;
         real_t derivFactor=0;
         
-        if(n>1e22)
-          n=1e22;
-        else if(n<1e14)
-          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -203,10 +199,6 @@ real_t AMJUEL::getRecRadLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnRecRadAMJUEL=0;
         real_t derivFactor=0;
         
-        if(n>1e22)
-          n=1e22;
-        else if(n<1e14)
-          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -351,10 +343,6 @@ real_t AMJUEL::getIonizLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnIonizAMJUEL=0;
         real_t derivFactor=0;
         
-        if(n>1e22)
-          n=1e22;
-        else if(n<1e14)
-          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
@@ -502,10 +490,6 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnIonizLossAMJUEL=0;
         real_t derivFactor=0;
         
-        if(n>1e22)
-          n=1e22;
-        else if(n<1e14)
-          n=1e14;
         
         real_t lnT=log(T);
         real_t lnn=log(n/1e14);
