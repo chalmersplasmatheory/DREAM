@@ -9,6 +9,7 @@
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -23,6 +24,7 @@ namespace DREAM {
         ComptonRateTerm *compton=nullptr;
         DreicerRateTerm *dreicer=nullptr;
         HottailRateTerm *hottail=nullptr;
+        LCFSLossRateTerm *lcfs_loss=nullptr;
         // There can be multiple tritium species in the simulation...
         std::vector<TritiumRateTerm*> tritium;
 
@@ -44,6 +46,7 @@ namespace DREAM {
         void AddSourceTerm(const std::string& desc, ComptonRateTerm *t) { this->description += desc; this->compton = t; }
         void AddSourceTerm(const std::string& desc, DreicerRateTerm *t) { this->description += desc; this->dreicer = t; }
         void AddSourceTerm(const std::string& desc, HottailRateTerm *t) { this->description += desc; this->hottail = t; }
+        void AddSourceTerm(const std::string& desc, LCFSLossRateTerm *t) { this->description += desc; this->lcfs_loss = t; }
         void AddSourceTerm(const std::string& desc, TritiumRateTerm *t) {
             if (this->tritium.empty())
                 this->description += desc;

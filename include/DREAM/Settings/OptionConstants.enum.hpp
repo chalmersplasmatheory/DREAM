@@ -394,6 +394,12 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
 
+enum eqterm_lcfs_loss_mode {                        // Loss term
+    EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
+    EQTERM_LCFS_LOSS_MODE_FLUID = 2,
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3
+};
+
 
 // Option for which parameter to do the 1D interpolation (time or plasma current)
 enum svensson_interp1d_param {

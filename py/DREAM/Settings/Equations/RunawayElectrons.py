@@ -52,10 +52,15 @@ HOTTAIL_MODE_DISABLED = 1
 HOTTAIL_MODE_ANALYTIC = 2 # not yet implemented
 HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
+# Loss term
+LCFS_LOSS_MODE_DISABLED = 1
+LCFS_LOSS_MODE_FLUID = 2
+LCFS_LOSS_MODE_KINETIC = 3
+
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED): # Loss term
         """
         Constructor.
         """
@@ -80,6 +85,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         
         self.hottail_T_final = 0
         self.hottail_T_final_r  = 0
+        
+        # Loss term
+        self.lcfs_loss = lcfs_loss
+        self.lcfs_t_loss = 0
+        self.lcfs_t_loss_r = 0
+        self.lcfs_user_input_psi = 0
+        self.lcfs_psi_edge_t0 = 0
 
 
     def setInitialProfile(self, density, radius=0):
@@ -96,6 +108,43 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.hottail_T_final = _data
         self.hottail_T_final_r  = _rad
         self.verifySettingsPrescribedInitialData()
+        
+    
+    # Loss term    
+    def setLCFSLoss(self, lcfs_loss):
+        """
+        Specifies which model to use for calculating the
+        LCFS loss term.
+        """
+        if lcfs_loss == False:
+            self.lcfs_loss = LCFS_LOSS_MODE_DISABLED
+        else:
+            self.lcfs_loss = int(lcfs_loss)
+    
+    
+    # Loss term
+    def setLCFSLossTime(self, t_loss, radius=0):
+        """
+        Sets the timescale constant t_loss for the
+        LCFS loss term. 
+        """
+        _data, _rad = self._setInitialData(data=t_loss, radius=radius)
+
+        self.lcfs_t_loss = _data
+        self.lcfs_t_loss_r  = _rad
+        self.verifySettingsPrescribedInitialData()
+        
+        
+    def setLCFSLossPsiEdget0(self, psi_edge_t0, user_input_active=1):
+        """
+        Sets the value of psi_p at the plasma edge at
+        t = 0, used to determine the LCFS radial point.
+        Use in restarts to keep the value from the first
+        simulation. user_input_active should be 1 (default)
+        or set to 0 to manually switch off the user input.
+        """
+        self.lcfs_user_input_psi = int(user_input_active)
+        self.lcfs_psi_edge_t0 = psi_edge_t0
 
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
@@ -211,6 +260,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.radius    = data['init']['r']
         self.hottail_T_final   = data['Tfinal']['x']
         self.hottail_T_final_r    = data['Tfinal']['r']
+        # Loss term
+        self.lcfs_loss     = int(data['lcfs_loss'])
+        self.lcfs_user_input_psi     = int(data['lcfs_user_input_psi'])
+        self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
+        self.lcfs_t_loss   = data['lcfs_t_loss']['x']
+        self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
 
         if 'flux' in data['compton']:
             if type(data['compton']['flux']) == dict:
@@ -234,6 +289,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
+            
 
 
     def todict(self):
@@ -249,7 +305,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
-            'negative_re': self.negative_re
+            'negative_re': self.negative_re,
+            'lcfs_loss': self.lcfs_loss, # Loss term
+            'lcfs_user_input_psi': self.lcfs_user_input_psi,
+            'lcfs_psi_edge_t0': self.lcfs_psi_edge_t0
         }
         data['compton'] = {
             'mode': self.compton
@@ -266,6 +325,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         data['Tfinal'] = {
             'x': self.hottail_T_final,
             'r': self.hottail_T_final_r
+        }
+        # Loss term
+        data['lcfs_t_loss'] = {
+            'x': self.lcfs_t_loss,
+            'r': self.lcfs_t_loss_r
         }
 
         # Flux limiter settings

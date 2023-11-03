@@ -289,6 +289,16 @@ void OtherQuantityHandler::DefineQuantities() {
         for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
             v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
+    if(tracked_terms->lcfsLossRate_fluid != nullptr){
+        DEF_FL("fluid/gammaLCFSLoss", "LCFS runaway loss rate (weights * n_re) [s^-1 m^-3]", 
+            real_t *v = qd->StoreEmpty();
+            const real_t *gLCFS = tracked_terms->lcfsLossRate_fluid->GetLCFSLossWeights();
+            real_t *nRE = this->unknowns->GetUnknownData(id_n_re);
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++){
+                v[ir] = gLCFS[ir] * nRE[ir];
+            }
+        );
+    }
 
     // Magnetic ripple resonant momentum
     if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
