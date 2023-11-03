@@ -31,6 +31,7 @@ namespace DREAM {
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         CoulombLogarithm *lnLambdaEE;
+        bool extrapolateDreicer;
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
@@ -134,6 +135,7 @@ namespace DREAM {
         RunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
+            bool extrapolateDreicer,
             CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
             CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
             OptionConstants::conductivity_mode cond_mode,
@@ -160,6 +162,8 @@ namespace DREAM {
 
         void Rebuild(const real_t);
         void GridRebuilt();
+        bool GetExtrapolateDreicer()
+            {return extrapolateDreicer;}
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}
         const real_t* GetEffectiveCriticalField() const
