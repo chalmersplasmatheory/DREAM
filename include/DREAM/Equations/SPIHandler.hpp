@@ -94,6 +94,7 @@ namespace DREAM{
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
         int *nbrShiftGridCell=nullptr;
+        int *nbrShiftGridCellPrescribed=nullptr;
         real_t *shift_store=nullptr;
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;

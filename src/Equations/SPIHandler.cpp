@@ -191,9 +191,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 			NGSConstantFactor[ip]=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda[ip]*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
 	}
 	
-	// Set number of grid cells to shift the deposition for every shard
-	for(len_t ip=0;ip<nShard;ip++){
-	    this->nbrShiftGridCell[ip] = nbrShiftGridCell[ip];
+	// Set the presdcribed number of grid cells to shift the deposition for every shard
+    for(len_t ip=0;ip<nShard;ip++){
+        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
         this->shift_store[ip] = shift_store[ip];
     }
 }
@@ -234,6 +234,7 @@ void SPIHandler::AllocateQuantities(){
     lambda = new real_t[nShard];
     NGSConstantFactor = new real_t[nShard];
     nbrShiftGridCell = new int[nShard];
+    nbrShiftGridCellPrescribed = new int[nShard];
     T = new real_t[nShard];
     pelletDeuteriumFraction=new real_t[nShard];
     pelletNeonFraction=new real_t[nShard];
@@ -271,6 +272,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] lambda;
     delete [] NGSConstantFactor;
     delete [] nbrShiftGridCell;
+    delete [] nbrShiftGridCellPrescribed;
     delete [] T;
     delete [] pelletDeuteriumFraction;
     delete [] pelletNeonFraction;
@@ -590,20 +592,34 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
                     }
                 }
             }
+        } else if(nbrShiftGridCellPrescribed!=nullptr){// Prescribed drift (in terms of grid cells)
+            for(len_t ip=0;ip<nShard;ip++){
+                if(rCoordPNext[ip]>rCoordPPrevious[ip]){
+                    nbrShiftGridCell[ip] = std::abs((int)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int)irp[ip];
+                    
+                    //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
+                    if((int)irp[ip]-nbrShiftGridCellPrescribed[ip]<0)
+                        nbrShiftGridCell--;    
+                }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
+                    nbrShiftGridCell[ip] = nbrShiftGridCellPrescribed[ip];
+                }
+            }
         }
         // Shift the deposition profile
         for(len_t ip=0;ip<nShard;ip++){
             if(nbrShiftGridCell[ip]<0){
-                for(len_t ir=-nbrShiftGridCell[ip];ir<nr;ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir+nbrShiftGridCell[ip])*nShard+ip];
+                for(len_t ir=0;ir<nr;ir++){
                     if((int)ir>(int)nr+nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
+                    else
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }else if(nbrShiftGridCell[ip]>0){
-                for(len_t ir=nr-nbrShiftGridCell[ip];ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                for(int ir=nr-1;ir>=0;ir--){
                     if((int)ir<nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
+                    else
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }
         }
@@ -816,11 +832,11 @@ void SPIHandler::CalculateIrp(){
 int SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
     int temp = 0;
     for(len_t ir=0; ir<nr;ir++){
-        if(abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir) && rCoordPNext[ip]>rCoordPPrevious[ip]){
-            temp = (int)irp[ip] - (int)ir;
+        if(rCoordPNext[ip]>rCoordPPrevious[ip] && abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir)){
+            temp = (int)ir - (int)irp[ip];
             break;
         }else if(rCoordPNext[ip] + shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip] + shift>rGrid->GetR_f(ir)){
-            temp = (int)irp[ip] - (int)ir;
+            temp = (int)ir - (int)irp[ip];
             break;
         }
     }
