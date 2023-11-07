@@ -46,7 +46,7 @@ real_t t_acc, t_pol, t_pe, t_exp;
 //Normalized time parameters
 real_t t_polp, t_pep, t_expp;
 //Parameters which are independent of time and shard
-real_t q, Zavg, Dr;
+real_t q, Zavg;
 //Parameters which are computed elsewhere in DREAM
 real_t v0, n_e, n_i, Te, B, sigma;
 //Parameter which are derived
@@ -63,8 +63,8 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
     OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
     OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-    const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t Zavg0, real_t ZavgD, real_t ZavgNe,
-    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, len_t *nbrShiftGridCell=nullptr){
+    const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t ZavgD, real_t ZavgNe,
+    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, int *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
@@ -73,7 +73,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
-    Dr = this->rGrid->GetDr(0);
     rf = this->rf;
     q = 1; //TODO
 
@@ -127,7 +126,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->T_0=T_0;
     this->delta_y=delta_y;
     this->Rm=Rm;
-    this->Zavg0=Zavg0;
     this->ZavgD=ZavgD;
     this->ZavgNe=ZavgNe;
     this->NZ=NZ;
@@ -235,7 +233,7 @@ void SPIHandler::AllocateQuantities(){
     pelletDensity = new real_t[nShard];
     lambda = new real_t[nShard];
     NGSConstantFactor = new real_t[nShard];
-    nbrShiftGridCell = new len_t[nShard];
+    nbrShiftGridCell = new int[nShard];
     T = new real_t[nShard];
     pelletDeuteriumFraction=new real_t[nShard];
     pelletNeonFraction=new real_t[nShard];
@@ -283,8 +281,8 @@ void SPIHandler::DeallocateQuantities(){
     delete [] YpdotPrevious;
 }
 /**
- * Calculates the radius and ablation of each shard
- */
+* Calculates the radius and ablation of each shard
+*/
 void SPIHandler::YpConversion(len_t ip){
     rp[ip] = pow(YpPrevious[ip], 3.0/5.0);
     rpdot[ip] = 3.0/5.0 * pow(rp[ip], -2.0/3.0) * YpdotPrevious[ip];
@@ -300,12 +298,11 @@ void SPIHandler::AssignShardSpecificParameters(int ip){
     n_e = ncoldPrevious[irp[ip]];
     Te = TcoldPrevious[irp[ip]];
     B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
-    sigma = rf->evaluateSauterElectricConductivity(irp[ip], Te, Zavg0, n_e, true);
+    sigma = rf->evaluateSauterElectricConductivity(irp[ip], Te, rf->GetIonHandler()->GetZeffPrevious(irp[ip]), n_e, true);
     n_i = 0;
     for(len_t iZ=0;iZ<NZ;iZ++){
         n_i += rf->GetIonHandler()->GetTotalIonDensity(irp[ip], iZ);
     }
-    //rf->GetIonHandler()->GetZeff(irp[ip])
 }
 
 /**
@@ -327,13 +324,13 @@ void SPIHandler::AssignComputationParameters(int ip){
     CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     G = -4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip];
-    n_0 = (1 + Zavg0)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
-    a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
+    n_0 = (1 + rf->GetIonHandler()->GetZeffPrevious(irp[ip]))*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
+    a0 = ((1 + rf->GetIonHandler()->GetZeffPrevious(irp[ip]))*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
     t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
     Lc = 2 * CST0*t_detach;
     n = n_0 * Lc; 
     v_lab = a0 * t_detach;
-    Reff = -2*M_PI*M_PI*Rm*this->rGrid->GetMinorRadius()/(sigma*delta_y*delta_y*delta_y*log((delta_y/(this->rGrid->GetMinorRadius()*M_PI))));
+    Reff = -2*M_PI*M_PI*Rm*this->rGrid->GetMinorRadius()/(sigma*delta_y*delta_y*delta_y*log(delta_y/(this->rGrid->GetMinorRadius()*M_PI)));
 }
 
 /**
@@ -398,6 +395,7 @@ real_t SPIHandler::Epsiloni(real_t a, real_t b){
     return sum;
 
 }
+
 
 real_t SPIHandler::BisFunction(real_t t_prim){
     return t_prim + t_expp;
@@ -578,23 +576,22 @@ void SPIHandler::Rebuild(real_t dt){
                     AssignTimeParameters(ip);
                     shift_r[ip] = Deltar(ip);
                     nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);
-                    shift_store[ip] = nbrShiftGridCell[ip] * Dr;
-                    //std::cout<<nbrShiftGridCell[ip]<<std::endl;
+                    shift_store[ip] = nbrShiftGridCell[ip] * rGrid->GetDr(irp[ip]);
                 }
             }
         }
         // Shift the deposition profile
         for(len_t ip=0;ip<nShard;ip++){
-            if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                for(len_t ir=0;ir<nr-nbrShiftGridCell[ip];ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+nbrShiftGridCell[ip])*nShard+ip];
-                    if(ir>nbrShiftGridCell[ip])
+            if(nbrShiftGridCell[ip]<0){
+                for(len_t ir=-nbrShiftGridCell[ip];ir<nr;ir++){
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir+nbrShiftGridCell[ip])*nShard+ip];
+                    if((int)ir>(int)nr+nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                 }
-            }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
+            }else if(nbrShiftGridCell[ip]>0){
                 for(len_t ir=nr-nbrShiftGridCell[ip];ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
-                    if(ir<nbrShiftGridCell[ip])
+                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                    if((int)ir<nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                 }
             }
@@ -820,11 +817,14 @@ void SPIHandler::CalculateIrp(){
     }
 }
 
-len_t SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
-    len_t temp = nr;
+int SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
+    int temp = 0;
     for(len_t ir=0; ir<nr;ir++){
-        if(rCoordPNext[ip] - shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip]-shift>rGrid->GetR_f(ir)){
-            temp = irp[ip] - ir;
+        if(abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir) && rCoordPNext[ip]>rCoordPPrevious[ip]){
+            temp = (int)irp[ip] - (int)ir;
+            break;
+        }else if(rCoordPNext[ip] + shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip] + shift>rGrid->GetR_f(ir)){
+            temp = (int)irp[ip] - (int)ir;
             break;
         }
     }

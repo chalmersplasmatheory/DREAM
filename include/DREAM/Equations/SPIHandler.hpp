@@ -93,7 +93,7 @@ namespace DREAM{
         real_t *pelletDensity=nullptr;
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
-        len_t *nbrShiftGridCell=nullptr;
+        int *nbrShiftGridCell=nullptr;
         real_t *shift_store=nullptr;
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;
@@ -115,9 +115,9 @@ namespace DREAM{
         real_t* rp=nullptr;
         real_t* rpdot=nullptr;
         real_t* shift_r=nullptr;
-        real_t T_0, delta_y, Rm, Zavg0, ZavgD, ZavgNe;
+        real_t T_0, delta_y, Rm, ZavgD, ZavgNe;
         real_t t_acc, t_pol, t_pe, t_exp, t_polp, t_pep, t_expp;
-        real_t q, Zavg, Dr;
+        real_t q, Zavg;
         real_t v0, n_e, n_i, Te, B, sigma;
         real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
         len_t NZ;
@@ -136,7 +136,7 @@ namespace DREAM{
         real_t CalculateRDotDepositionLocal(len_t ir);
 
         void CalculateIrp();
-        len_t CalculateDriftIrp(len_t ip, real_t shift);
+        int CalculateDriftIrp(len_t ip, real_t shift);
         void CalculateRCld();
         real_t CalculateLambda(real_t X);
 
@@ -149,8 +149,8 @@ namespace DREAM{
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-            const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm, real_t Zavg0, real_t ZavgD, real_t ZavgNe, 
-            real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
+            const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm, real_t ZavgD, real_t ZavgNe, 
+            real_t VpVolNormFactor, real_t rclPrescribedConstant, int *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();

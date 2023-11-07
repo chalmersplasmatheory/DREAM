@@ -61,7 +61,6 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
-    id_Yp    = unknowns->GetUnknownID(OptionConstants::UQTY_Y_P);
 
     if (unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX))
         id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
@@ -822,14 +821,14 @@ void OtherQuantityHandler::DefineQuantities() {
         for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
-    
-    DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",unknowns->GetUnknown(id_Yp)->NumberOfMultiples(),
-        real_t *v = qd->StoreEmpty();
-        real_t *t = SPI->GetDrift();
-        for(len_t ip=0;ip<unknowns->GetUnknown(id_Yp)->NumberOfMultiples();ip++)
-            v[ip] = t[ip];
-    );
-
+    if (SPI != nullptr){
+        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+    }
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
 

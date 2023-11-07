@@ -52,7 +52,7 @@ class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None, ZavgD = None, ZavgNe = None):
+SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None, ZavgNe = None):
         """
         Constructor.
         
@@ -96,7 +96,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
         self.T0       = None
         self.delta_y  = None
         self.Rm       = None
-        self.Zavg0    = None
         self.ZavgD    = None
         self.ZavgNe   = None
 
@@ -408,7 +407,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
             self.t_delay = t_delay
             
     def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, 
-                              shift = SHIFT_MODE_NEGLECT, T=None, T0=None, delta_y=None, Rm=None, Zavg0=None, ZavgD=None, ZavgNe=None, **kwargs):
+                              shift = SHIFT_MODE_NEGLECT, T=None, T0=None, delta_y=None, Rm=None, ZavgD=None, ZavgNe=None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
@@ -416,8 +415,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
         
         Specifies which model to use for calculating the shift. Currently there only exists two (on/1 and off/0).
         T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the 
-        major radius of the magnetic axis. Zavg0, ZavgD and ZavgNe are the average charges of the ions in the 
-        background, deuterium and neon cloud.
+        major radius of the magnetic axis. ZavgD and ZavgNe are the average charges of the ions in the deuterium and neon cloud.
         """
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
@@ -434,7 +432,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
         self.T0 = T0
         self.delta_y = delta_y
         self.Rm = Rm
-        self.Zavg0 = Zavg0
         self.ZavgD = ZavgD
         self.ZavgNe = ZavgNe
         
@@ -470,22 +467,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
         deposition of ablated material.
         """
         self.deposition = int(deposition)
-        
-    def setShift(self, shift, T, T0, delta_y, Rm, Zavg0, ZavgD, ZavgNe):
-        """
-        Specifies which model to use for calculating the 
-        shift. Currently there only exists two (on/1 and off/0).
-        T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the major radius of the magnetic axis.
-        Zavg0, ZavgD and ZavgNe are the average charges of the ions in the background, deuterium and neon cloud.
-        """
-        self.shift = int(shift)
-        self.T = T
-        self.T0 = T0
-        self.delta_y = delta_y
-        self.Rm = Rm
-        self.Zavg0 = Zavg0
-        self.ZavgD = ZavgD
-        self.ZavgNe = ZavgNe
         
     def setHeatAbsorbtion(self, heatAbsorbtion):
         """
@@ -537,8 +518,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
             self.delta_y        = data['delta_y']
         if 'Rm' in data:
             self.Rm             = data['Rm']
-        if 'Zavg0' in data:
-            self.Zavg0          = data['Zavg0']
         if 'ZavgD' in data:
             self.ZavgD          = data['ZavgD']
         if 'ZavgNe' in data:
@@ -598,8 +577,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
             self.delta_y=0
         if self.Rm is None:
             self.Rm=0
-        if self.Zavg0 is None:
-            self.Zavg0 = 1
         if self.ZavgD is None:
             self.ZavgD = 1
         if self.ZavgNe is None:
@@ -614,7 +591,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
             'T0': self.T0,
             'delta_y': self.delta_y,
             'Rm': self.Rm,
-            'Zavg0': self.Zavg0,
             'ZavgD': self.ZavgD,
             'ZavgNe': self.ZavgNe,
             'heatAbsorbtion': self.heatAbsorbtion,
@@ -655,8 +631,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, Zavg0 = None
             raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float.")
         if type(self.Rm) != float and type(self.Rm) != int and self.T0 != None:
             raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float.")
-        if type(self.Zavg0) != float and type(self.Zavg0) != int and self.T0 != None:
-            raise EquationException("spi: Invalid value assigned to 'Zavg0'. Expected float.")
         if type(self.ZavgD) != float and type(self.ZavgD) != int and self.T0 != None:
             raise EquationException("spi: Invalid value assigned to 'ZavgD'. Expected float.")
         if type(self.ZavgNe) != float and type(self.ZavgNe) != int and self.T0 != None:
