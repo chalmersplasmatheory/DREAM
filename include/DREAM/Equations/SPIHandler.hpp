@@ -123,9 +123,7 @@ namespace DREAM{
         len_t NZ;
 
         void CalculateYpdotNGSParksTSDW();
-        void CalculateYpdotPreviousNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
-        void CalculateYpdotPreviousNGSParksTSDWKinetic();
         real_t CalculateBFieldDampingJOREK(len_t ir);
         void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();
 
@@ -179,7 +177,7 @@ namespace DREAM{
         real_t* GetDrift()
         { return this->shift_store; }
 
-        void Rebuild(real_t dt);
+        void Rebuild(real_t dt, len_t iteration);
 
         bool setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         bool setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);

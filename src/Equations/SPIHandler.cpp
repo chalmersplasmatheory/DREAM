@@ -298,7 +298,7 @@ void SPIHandler::AssignShardSpecificParameters(int ip){
     n_e = ncoldPrevious[irp[ip]];
     Te = TcoldPrevious[irp[ip]];
     B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
-    sigma = rf->evaluateSauterElectricConductivity(irp[ip], Te, rf->GetIonHandler()->GetZeffPrevious(irp[ip]), n_e, true);
+    sigma = rf->GetElectricConductivity(irp[ip]);// As this function will only be called during the first newton iteration of each time step, sigma will be the conductivity from the previous time step
     n_i = 0;
     for(len_t iZ=0;iZ<NZ;iZ++){
         n_i += rf->GetIonHandler()->GetTotalIonDensity(irp[ip], iZ);
@@ -324,8 +324,9 @@ void SPIHandler::AssignComputationParameters(int ip){
     CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     G = -4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip];
-    n_0 = (1 + rf->GetIonHandler()->GetZeffPrevious(irp[ip]))*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
-    a0 = ((1 + rf->GetIonHandler()->GetZeffPrevious(irp[ip]))*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
+    real_t Zavg0 = 1;// Assume all ion species are singly ionized directly after the neutral phase and while the cloud detaches from the pellet
+    n_0 = (1 + Zavg0)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
+    a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
     t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
     Lc = 2 * CST0*t_detach;
     n = n_0 * Lc; 
@@ -461,7 +462,7 @@ real_t SPIHandler::Deltar(int ip){
  * Rebuild this object
  * dt: current time step duration
  */
-void SPIHandler::Rebuild(real_t dt){
+void SPIHandler::Rebuild(real_t dt, len_t iteration){
 
     // Collect current data, and for some variables data from the previous time step
     xp=unknowns->GetUnknownData(id_xp);
@@ -511,7 +512,8 @@ void SPIHandler::Rebuild(real_t dt){
             if(distP<1e-20)
             	distP=0.01;
             	
-            rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
+            if(iteration==1)	
+                rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
             rGrid->GetRThetaPhiFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], &phiCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP, rCoordPPrevious[ip]);
         }
     }else if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE){
@@ -519,7 +521,9 @@ void SPIHandler::Rebuild(real_t dt){
         	// If the shards do not move, we can not use the distance 
         	// the shards travel in one time step as a length scale to set the tolerance.
         	// Here we use a hardcoded length scale of 1 cm
-            rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
+        	if(iteration==1)
+                rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
+                
             rGrid->GetRThetaPhiFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], &phiCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], 0.01, rCoordPPrevious[ip]);
         }
     }else {throw DREAMException("SPIHandler: unrecognized SPI shard velocity mode");}
@@ -530,7 +534,9 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate ablation rate (if any)
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
         CalculateYpdotNGSParksTSDW();
-        CalculateYpdotPreviousNGSParksTSDW();        
+        if(iteration==1)
+            for(len_t ip=0; ip<nShard; ip++)
+                YpdotPrevious[ip] = Ypdot[ip];       
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){ 
     
         for(len_t ir=0;ir<nr;ir++){
@@ -542,7 +548,9 @@ void SPIHandler::Rebuild(real_t dt){
             Eeff[ir]=4.0/3.0*(Wcold[ir]+Whot[ir])/ntot[ir];
         }
         CalculateYpdotNGSParksTSDWKinetic();
-        CalculateYpdotPreviousNGSParksTSDWKinetic();
+        if(iteration==1)
+            for(len_t ip=0; ip<nShard; ip++)
+                YpdotPrevious[ip] = Ypdot[ip]; 
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         for(len_t ip=0;ip<nShard;ip++){
             Ypdot[ip]=0;
@@ -556,7 +564,8 @@ void SPIHandler::Rebuild(real_t dt){
     if(spi_magnetic_field_dependence_mode==OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK)
         for(len_t ip = 0; ip<nShard; ip++){
             Ypdot[ip]*=CalculateBFieldDampingJOREK(irp[ip]);
-            YpdotPrevious[ip]*=CalculateBFieldDampingJOREK(irp[ip]);
+            if(iteration==1)
+                YpdotPrevious[ip]*=CalculateBFieldDampingJOREK(irp[ip]);
         }
     // Calculate radius of the neutral cloud (if any)
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
@@ -568,15 +577,17 @@ void SPIHandler::Rebuild(real_t dt){
         
         // Calculate drift (if any)
         if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
-            for(len_t ip=0;ip<nShard;ip++){
-                if (YpPrevious[ip]>0 && irp[ip]<nr){
-                    YpConversion(ip);
-                    AssignShardSpecificParameters(ip);
-                    AssignComputationParameters(ip);
-                    AssignTimeParameters(ip);
-                    shift_r[ip] = Deltar(ip);
-                    nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);
-                    shift_store[ip] = nbrShiftGridCell[ip] * rGrid->GetDr(irp[ip]);
+            if(iteration==1){
+                for(len_t ip=0;ip<nShard;ip++){
+                    if (YpPrevious[ip]>0 && irp[ip]<nr){
+                        YpConversion(ip);
+                        AssignShardSpecificParameters(ip);
+                        AssignComputationParameters(ip);
+                        AssignTimeParameters(ip);
+                        shift_r[ip] = Deltar(ip);
+                        nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);
+                        shift_store[ip] = nbrShiftGridCell[ip] * rGrid->GetDr(irp[ip]);
+                    }
                 }
             }
         }
@@ -645,14 +656,7 @@ void SPIHandler::CalculateYpdotNGSParksTSDW(){
             Ypdot[ip]=0;
     }
 }
-void SPIHandler::CalculateYpdotPreviousNGSParksTSDW(){
-    for(len_t ip=0;ip<nShard;ip++){
-        if(YpPrevious[ip]>0 && irp[ip]<nr){
-            YpdotPrevious[ip]=-NGSConstantFactor[ip]*pow(TcoldPrevious[irp[ip]],5.0/3.0)*cbrt(ncoldPrevious[irp[ip]]);
-        }else
-            YpdotPrevious[ip]=0;
-    }
-}
+
 
 /**
  * Deposition rate according to NGS formula from Parks TSDW presentation 2017,
@@ -670,14 +674,6 @@ void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
     }
 }
 
-void SPIHandler::CalculateYpdotPreviousNGSParksTSDWKinetic(){
-    for(len_t ip=0;ip<nShard;ip++){
-        if(YpPrevious[ip]>0 && irp[ip]<nr){
-            YpdotPrevious[ip]=-NGSConstantFactor[ip]*pow(qtot[irp[ip]],1.0/3.0)*pow(Eeff[irp[ip]],7.0/6.0);
-        }else
-            YpdotPrevious[ip]=0;
-    }
-}
 
 real_t SPIHandler::CalculateBFieldDampingJOREK(len_t ir){
     if(ir<rGrid->GetNr()){

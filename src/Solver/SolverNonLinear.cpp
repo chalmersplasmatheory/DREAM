@@ -326,7 +326,7 @@ void SolverNonLinear::StoreSolution(const real_t *x) {
  */
 const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timeKeeper->StartTimer(timerRebuild);
-	this->RebuildTerms(this->t, this->dt);
+	this->RebuildTerms(this->t, this->dt, this->iteration);
     this->timeKeeper->StopTimer(timerRebuild);
 
 	// Evaluate function vector
