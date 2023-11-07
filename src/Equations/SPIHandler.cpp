@@ -191,11 +191,14 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 			NGSConstantFactor[ip]=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda[ip]*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
 	}
 	
-	// Set the presdcribed number of grid cells to shift the deposition for every shard
-    for(len_t ip=0;ip<nShard;ip++){
-        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
-        this->shift_store[ip] = shift_store[ip];
-    }
+	// Set the presdcribed number of grid cells to shift the deposition for every shard (if any)
+	if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)
+		for(len_t ip=0;ip<nShard;ip++)
+	        this->nbrShiftGridCellPrescribed[ip] = 1;
+	else if(nbrShiftGridCell!=nullptr)
+	    for(len_t ip=0;ip<nShard;ip++){
+	        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
+        }
 }
 
 /**
@@ -574,7 +577,7 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
         CalculateRCld();
 
     // Calculate deposition (if any)
-    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
+    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
         
         // Calculate drift (if any)
@@ -620,21 +623,6 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                     else
                     depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
-                }
-            }
-        }
-    }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
-        CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-
-        // Shift the deposition profile to the last grid cell (before the current one) to avoid "self-dilution"
-        for(len_t ip=0;ip<nShard;ip++){
-            if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                for(len_t ir=0;ir<nr-1;ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+1)*nShard+ip];
-                }
-            }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
-                for(len_t ir=nr-1;ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-1)*nShard+ip];
                 }
             }
         }
