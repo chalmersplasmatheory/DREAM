@@ -595,14 +595,14 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
                     }
                 }
             }
-        } else if(nbrShiftGridCellPrescribed!=nullptr){// Prescribed drift (in terms of grid cells)
+        } else if(nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
             for(len_t ip=0;ip<nShard;ip++){
                 if(rCoordPNext[ip]>rCoordPPrevious[ip]){
                     nbrShiftGridCell[ip] = std::abs((int)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int)irp[ip];
                     
                     //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
                     if((int)irp[ip]-nbrShiftGridCellPrescribed[ip]<0)
-                        nbrShiftGridCell--;    
+                        nbrShiftGridCell[ip]--;    
                 }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
                     nbrShiftGridCell[ip] = nbrShiftGridCellPrescribed[ip];
                 }
@@ -612,17 +612,17 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
         for(len_t ip=0;ip<nShard;ip++){
             if(nbrShiftGridCell[ip]<0){
                 for(len_t ir=0;ir<nr;ir++){
-                    if((int)ir>(int)nr+nbrShiftGridCell[ip])
+                    if(ir>=nr+nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                     else
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }else if(nbrShiftGridCell[ip]>0){
-                for(int ir=nr-1;ir>=0;ir--){
-                    if((int)ir<nbrShiftGridCell[ip])
+                for(int ir=nr-1;ir>=0;ir--){// Use ant int as a loop index so that the loop can be terminated by ir becoming <0
+                    if(ir<nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                     else
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }
         }
@@ -719,10 +719,13 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
                 
                 // Account for shifted re-deposition 
                 // NOTE: only strictly valid for delta function kernel (assumes deposition only on one side of r=0)
-                if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
-                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
-                else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
-                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                if(nbrShiftGridCell[ip]<0){
+                    if(ir<nr+nbrShiftGridCell[ip])
+                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                }else if(nbrShiftGridCell[ip]>0){
+                    if((int)ir>=nbrShiftGridCell[ip])
+                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                }     
             }
         }
     }
