@@ -80,6 +80,7 @@ Nt_init2 = 300
 Tmax_injection = 3.4e-3
 Nt_injection = 1360   
 
+
 # For single stage
 # Tmax_injection = 6e-3
 # Nt_injection = 3000  
@@ -100,10 +101,10 @@ dr=(radius[1]-radius[0])/(Nr+1)
 radialgrid = np.linspace(radius[0]+dr/2,radius[-1]-dr/2,Nr)
 radius_wall = 2.15  # location of the wall 
 
-B0 = 16.3            # magnetic field strength in Tesla
+B0 = 5.3            # magnetic field strength in Tesla
 
 # Set up radial grid
-R0 = 2.96
+R0 = 6.2
 kappa = 1.0
 
 # Set up cylindrical radial grid
@@ -139,7 +140,7 @@ temperature = T_initial*temp_prof
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radialgrid)
 
 # Settings for the first SPI (presumably consisting mostly of deuterium)
-nShardD=300 # Number of shards
+nShardD=1688 # Number of shards
 NinjD=2e24# Number of atoms
 alpha_maxD=0.17 # Divergence angle
 abs_vp_meanD=800 # Mean shard speed
@@ -150,10 +151,10 @@ molarFractionNe=0 # Molar fraction of neon (the rest is deuterium)
 # and will be changed later when the injections are supposed to start
 
 # Settings for the second Neon SPI
-nShardNe=150
+nShardNe=100
 NinjNe=1e24
 alpha_maxNe=0.17
-abs_vp_meanNe=800
+abs_vp_meanNe=200
 abs_vp_diffNe=0.2*abs_vp_meanNe
 
 # Transport coefficients for the ablated neon
@@ -194,7 +195,7 @@ ds.eqsys.spi.setVelocity(SPI.VELOCITY_MODE_PRESCRIBED) # Constant prescribed vel
 ds.eqsys.spi.setAblation(SPI.ABLATION_MODE_FLUID_NGS) # Parks NGS formula based on T_cold
 ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL) # Delta function deposition kernel
 
-ds.eqsys.spi.setHeatAbsorbtion(SPI.HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS) # Remove all heat flowing through a disc 
+# ds.eqsys.spi.setHeatAbsorbtion(SPI.HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS) # Remove all heat flowing through a disc 
 #                                                                            of radius rcl from background plasma.
 #                                                                            when assuming a local and immediate deposition
 #                                                                            the heat absorbed by the ablated material is
@@ -340,7 +341,7 @@ ds3.timestep.setNumberOfSaveSteps(int(Tmax_injection/1e-4))
 
 if run_injection:
 	ds3.save('injection_restart_settings.h5')
-	runiface(ds3, 'output_restart_injection.h5', quiet=False)
+	runiface(ds3, 'output_restart_injection_drift.h5', quiet=False)
 	
 	
 #To reproduce the results of the drift model the current quench is unneccesary.
