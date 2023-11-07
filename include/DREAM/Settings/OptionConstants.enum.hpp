@@ -238,9 +238,10 @@ enum collqty_collfreq_mode {
 };
 
 enum collqty_collfreq_type {
-    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
-    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
-    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies etc
+    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1,           // only free electrons contribute 
+    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,                  // free and bound electrons contribute equally
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3,            // bound electrons contribute via mean excitation energies etc
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK=4   // bound electrons contribution with Walkowiak model https://doi.org/10.1063/5.0075859
 };
 
 enum collqty_pstar_mode {                // Runaway growth rates are determined from dynamics that are
@@ -397,6 +398,12 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
+};
+
+enum eqterm_tritium_mode {                        // Tritium generation is...
+    EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
+    EQTERM_TRITIUM_MODE_FLUID = 2,                // Fluid tritium generation rate
+    EQTERM_TRITIUM_MODE_KINETIC = 3               // Kinetic tritium generation rate
 };
 
 
