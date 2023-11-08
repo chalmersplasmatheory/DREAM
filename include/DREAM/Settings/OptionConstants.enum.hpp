@@ -398,7 +398,7 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
 enum eqterm_lcfs_loss_mode {                        // Loss term
     EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
     EQTERM_LCFS_LOSS_MODE_FLUID = 2,
-    EQTERM_LCFS_LOSS_MODE_KINETIC = 3
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3};
 
 enum eqterm_tritium_mode {                        // Tritium generation is...
     EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
