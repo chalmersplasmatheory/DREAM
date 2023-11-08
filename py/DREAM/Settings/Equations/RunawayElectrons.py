@@ -333,7 +333,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'negative_re': self.negative_re,
             'lcfs_loss': self.lcfs_loss, # Loss term
             'lcfs_user_input_psi': self.lcfs_user_input_psi,
-            'lcfs_psi_edge_t0': self.lcfs_psi_edge_t0
+            'lcfs_psi_edge_t0': self.lcfs_psi_edge_t0,
             'extrapolateDreicer': self.extrapolateDreicer
         }
         data['compton'] = {
