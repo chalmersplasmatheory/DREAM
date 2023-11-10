@@ -188,6 +188,13 @@ real_t HottailRateTermHighZ::evaluatePartialCriticalMomentum(len_t ir, len_t der
     return (root - pCrit[ir])/h;
 }
 
+/**
+* Return E-field
+*/
+const real_t* HottailRateTermHighZ::GetElectricField(){
+    return this->unknowns->GetUnknownData(id_Efield);
+}
+
 
 /**
  * Sets the Jacobian of this equation term

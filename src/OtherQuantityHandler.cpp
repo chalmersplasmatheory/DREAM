@@ -293,6 +293,7 @@ void OtherQuantityHandler::DefineQuantities() {
     }
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+        DEF_FL("fluid/Epar_hottail", "Parallel electric field [V/m]", qd->Store(tracked_terms->n_re_hottail_rate->GetElectricField()););
     }
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();

@@ -48,6 +48,8 @@ namespace DREAM {
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+        
+        virtual const real_t *GetElectricField() override;
     };
 }
 
