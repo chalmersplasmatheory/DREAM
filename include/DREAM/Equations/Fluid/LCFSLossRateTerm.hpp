@@ -17,12 +17,14 @@ namespace DREAM {
         const len_t userGivenPsiEdge_t0;
         real_t psi_edge_t0;
         const len_t id_psi;
+        FVM::RadialGrid *rGrid;
         real_t* GammaLoss = nullptr;
-        len_t ir_LCFS;
+        int_t ir_LCFS;
         bool signFixed = false;
         real_t sign = -1;
         
         real_t PsiDiff(len_t);
+        real_t InterpolatePsi(len_t);
         void FindRadiusOfLCFS();
         real_t StepFunction(len_t);
         void SetGammaLoss();

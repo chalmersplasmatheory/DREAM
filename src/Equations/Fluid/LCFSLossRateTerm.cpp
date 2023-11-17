@@ -18,6 +18,7 @@ LCFSLossRateTerm::LCFSLossRateTerm(FVM::Grid *grid, FVM::UnknownQuantityHandler 
     id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)) {
 
     SetName("LCFSLossRateTerm");
+    this->rGrid = grid->GetRadialGrid();
     this->GridRebuilt();
 }
 
@@ -68,12 +69,23 @@ void LCFSLossRateTerm::SetGammaLoss(){
 void LCFSLossRateTerm::FindRadiusOfLCFS(){
     
     if(this->userGivenPsiEdge_t0 == 0) {
-        this->psi_edge_t0 = unknowns->GetUnknownInitialData(id_psi)[nr-1];
+        //this->psi_edge_t0 = unknowns->GetUnknownInitialData(id_psi)[nr-1];
+        
+        // Need special solution if nr=1(0)?
+        // Extrapolate psi from last two ir:s to find the approximate edge value at t=0
+        real_t Rlow = this->rGrid->GetR(nr-2);
+        real_t Rhigh = this->rGrid->GetR(nr-1);
+        real_t Psilow = unknowns->GetUnknownInitialData(id_psi)[nr-2];
+        real_t Psihigh = unknowns->GetUnknownInitialData(id_psi)[nr-1];
+        real_t slope = (Psihigh - Psilow) / (Rhigh - Rlow);
+        real_t Redge = this->rGrid->GetR_f(nr);
+        
+        this->psi_edge_t0 = Psihigh + slope * (Redge - Rhigh); 
     }
     
     // Find if the sign of PsiDiff() should be +1 or -1
     if(this->signFixed == false) { 
-        real_t psi_mid_init = unknowns->GetUnknownInitialData(id_psi)[0]; 
+        real_t psi_mid_init = unknowns->GetUnknownInitialData(id_psi)[0]; // Use interpolate instead?
         real_t psi_edge_init = unknowns->GetUnknownInitialData(id_psi)[nr-1];
         if(psi_mid_init-psi_edge_init > 0) { this->sign = 1; }
         this->signFixed = true;
@@ -81,9 +93,8 @@ void LCFSLossRateTerm::FindRadiusOfLCFS(){
     
     bool exists = false;
     for (len_t ir = 0; ir < nr; ir++){
-        
         if(this->sign * PsiDiff(ir) >= 0){
-            this->ir_LCFS = ir; // Last ir to pass critera is ir_LCFS
+            this->ir_LCFS = (int_t)ir; // Last ir to pass critera is ir_LCFS
             exists = true;
         }
     }
@@ -96,9 +107,42 @@ void LCFSLossRateTerm::FindRadiusOfLCFS(){
 * Difference between the poloidal flux at radial point ir and at the edge at t=0
 */
 real_t LCFSLossRateTerm::PsiDiff(len_t ir){
-    real_t psi = unknowns->GetUnknownDataPrevious(id_psi)[ir]; // Previous data to skip dependence of psi in Jacobian
+    //real_t psi = unknowns->GetUnknownDataPrevious(id_psi)[ir]; 
+    // Interpolate (extrapolate for ir=0) psi for estimate of psi at inner 
+    // radial grid cell wall of current grid cell
+    real_t psi = InterpolatePsi(ir); 
     return psi - this->psi_edge_t0;
 }
+
+
+
+
+/**
+* Interpolate flux between ir:s to get psi at radial grid cell walls 
+* (Doesn't work for nr=1, add warning / if...else... with old condition in PsiDiff?)
+*/
+real_t LCFSLossRateTerm::InterpolatePsi(len_t jr){
+
+    // jr index for grid cell walls
+    len_t ir_j; // Helper index, lowest ir for which to find psi 
+    if (jr == 0) {
+        ir_j = 0; // Extrapolate for jr=0
+    } else {
+        ir_j = jr-1;
+    }
+    
+    // Need special solution if nr=1(0)?
+    real_t Rlow = this->rGrid->GetR(ir_j);
+    real_t Rhigh = this->rGrid->GetR(ir_j+1);
+    real_t Psilow = unknowns->GetUnknownDataPrevious(id_psi)[ir_j]; // Previous data to skip dependence of psi in Jacobian
+    real_t Psihigh = unknowns->GetUnknownDataPrevious(id_psi)[ir_j+1];
+    real_t slope = (Psihigh - Psilow) / (Rhigh - Rlow);
+    real_t Redge = this->rGrid->GetR_f(jr);
+    real_t interpPsi = Psilow + slope * (Redge - Rlow); // Extrapolates when jr=0 (then Redge < Rlow)
+    
+    return interpPsi;
+}
+
 
 
 
@@ -106,13 +150,11 @@ real_t LCFSLossRateTerm::PsiDiff(len_t ir){
 * Currently a step function at ir_LCFS, could be changed to continuous
 */
 real_t LCFSLossRateTerm::StepFunction(len_t ir){
-    real_t x;
-    if (ir > this->ir_LCFS) { 
-        x = 1; 
+    if ((int_t)ir > this->ir_LCFS) { 
+        return 1.; 
     } else { 
-        x = 0; 
+        return 0.; 
     }
-    return x;
 }
 
 
