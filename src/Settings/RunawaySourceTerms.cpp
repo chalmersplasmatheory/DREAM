@@ -116,8 +116,13 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
         rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
     }
      
-    // Add LCFS loss term 
+    // Add LCFS loss term (add exception if (nr==1 and lcfs_mode != LCFS_LOSS_MODE_DISABLED)...)
     OptionConstants::eqterm_lcfs_loss_mode lcfs_mode = (enum OptionConstants::eqterm_lcfs_loss_mode)s->GetInteger(mod + "/lcfs_loss");
+    if (lcfs_mode != OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED && grid->GetNr() == 1){
+        throw SettingsException(
+            "The LCFS loss term is not compatible with using only one radial grid point."
+        );
+    }
     len_t lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
     real_t lcfs_psi_edge_t0 = s->GetReal(mod + "/lcfs_psi_edge_t0");
     if(lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_FLUID){
