@@ -12,6 +12,8 @@
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -37,6 +39,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
     s->DefineSetting(MODULENAME "/negative_re", "When in kinetic mode, properly account for runaways in both positive and negative pitch directions.", (bool)false);
+    s->DefineSetting(MODULENAME "/extrapolateDreicer", "Extrapolation of the neural network for small electric fields", (bool)false);
 
     s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
@@ -48,7 +51,7 @@ void SimulationGenerator::DefineOptions_n_re(
     //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 	DefineDataT(MODULENAME "/compton", s, "flux");
 
-    s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
+    s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
     
@@ -125,10 +128,13 @@ void SimulationGenerator::ConstructEquation_n_re(
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+			FVM::BC::PXiExternalLoss *xloss = new FVM::BC::PXiExternalLoss(
 				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
-			));
+			);
+			oqty_terms->n_re_f_hot_flux = xloss;
+
+			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
         desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);

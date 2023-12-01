@@ -10,6 +10,8 @@
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -21,12 +23,12 @@ namespace DREAM {
         FVM::EquationTerm *avalanche=nullptr;       // Avalanche source applied to n_re
         FVM::EquationTerm *avalanche_neg=nullptr;   // Avalanche source applied to n_re_neg (same p|| direction as, but subtracted from, n_re)
         FVM::EquationTerm *avalanche_negpos=nullptr;// Avalanche source applied to n_re_neg (oppositive p|| direction as n_re; positive contribution to RE generation)
-        ComptonRateTerm *compton=nullptr;
+        FVM::EquationTerm *compton=nullptr;
         DreicerRateTerm *dreicer=nullptr;
         HottailRateTerm *hottail=nullptr;
         LCFSLossRateTerm *lcfs_loss=nullptr;
         // There can be multiple tritium species in the simulation...
-        std::vector<TritiumRateTerm*> tritium;
+        std::vector<FVM::EquationTerm*> tritium;
 
         // Description of equation
         std::string description;        
@@ -44,10 +46,17 @@ namespace DREAM {
         void AddAvalancheNreNegPos(AvalancheSourceRP *t) { this->avalanche_negpos = t; }
         void AddSourceTerm(const std::string& desc, ExternalAvalancheTerm *t) { this->description += desc; this->avalanche = t; }
         void AddSourceTerm(const std::string& desc, ComptonRateTerm *t) { this->description += desc; this->compton = t; }
+        void AddSourceTerm(const std::string& desc, ComptonSource *t)   { this->description += desc; this->compton = t; }
         void AddSourceTerm(const std::string& desc, DreicerRateTerm *t) { this->description += desc; this->dreicer = t; }
         void AddSourceTerm(const std::string& desc, HottailRateTerm *t) { this->description += desc; this->hottail = t; }
         void AddSourceTerm(const std::string& desc, LCFSLossRateTerm *t) { this->description += desc; this->lcfs_loss = t; }
         void AddSourceTerm(const std::string& desc, TritiumRateTerm *t) {
+            if (this->tritium.empty())
+                this->description += desc;
+
+            this->tritium.push_back(t);
+        }
+        void AddSourceTerm(const std::string& desc, TritiumSource *t){
             if (this->tritium.empty())
                 this->description += desc;
 

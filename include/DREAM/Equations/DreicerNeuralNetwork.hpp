@@ -32,6 +32,11 @@ namespace DREAM {
             const real_t, const real_t, const real_t,
             const real_t, const real_t
         );
+        real_t NNFix(
+            const real_t EDD, const real_t logTheta, 
+            const real_t Zeff, const real_t Zeff0, const real_t Z0Z, 
+            const real_t Z0_Z, const real_t logNfree, const real_t nfree_ntot,
+            const real_t nfree, const real_t tauEE, bool dreicerfix); 
 
         bool IsApplicable(const real_t);
     };
