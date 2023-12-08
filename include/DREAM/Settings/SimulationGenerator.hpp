@@ -109,7 +109,7 @@ namespace DREAM {
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
 
         static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
-        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
+        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, std::vector<UnknownQuantityEquation*>*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
         static void DefinePreconditionerSettings(Settings*);
         static DiagonalPreconditioner *LoadPreconditionerSettings(Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&);
 
@@ -239,7 +239,7 @@ namespace DREAM {
         static void ConstructEquation_x_p_prescribed_constant_velocity(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
-        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<len_t>*);
+        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, std::vector<len_t>*);
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
         static TimeStepperIonization *ConstructTimeStepper_ionization(Settings*, FVM::UnknownQuantityHandler*);
 

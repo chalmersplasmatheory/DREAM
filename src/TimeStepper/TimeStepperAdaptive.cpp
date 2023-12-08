@@ -55,8 +55,8 @@ using namespace std;
  */
 TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
-    vector<len_t>& nontrivials, ConvergenceChecker *cc, int_t checkEvery,
-    bool verbose, bool constantStep
+    vector<len_t>& nontrivials, vector<UnknownQuantityEquation*> *eqns,
+	ConvergenceChecker *cc, int_t checkEvery, bool verbose, bool constantStep
 ) : TimeStepper(uqh), tMax(tMax), dt(dt0), nontrivials(nontrivials),
   checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
@@ -64,7 +64,7 @@ TimeStepperAdaptive::TimeStepperAdaptive(
 
     if (cc == nullptr) {
         const real_t RELTOL = 1e-6;
-        this->convChecker = new ConvergenceChecker(uqh, nontrivials, RELTOL);
+        this->convChecker = new ConvergenceChecker(uqh, eqns, nontrivials, nullptr, RELTOL);
     } else
         this->convChecker = cc;
 

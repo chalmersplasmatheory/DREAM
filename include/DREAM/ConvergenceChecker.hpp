@@ -6,12 +6,17 @@
 #include <vector>
 #include "FVM/NormEvaluator.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/DiagonalPreconditioner.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
 
 namespace DREAM {
     class ConvergenceChecker : public FVM::NormEvaluator {
     private:
         std::unordered_map<len_t, real_t> absTols;
         std::unordered_map<len_t, real_t> relTols;
+
+		DiagonalPreconditioner *precond=nullptr;
+		std::vector<UnknownQuantityEquation*> *unknown_eqns=nullptr;
 
         void DefineAbsoluteTolerances();
         real_t GetDefaultAbsTol(const std::string&);
@@ -23,10 +28,13 @@ namespace DREAM {
         real_t *x_2norm=nullptr;
         real_t *dx_2norm=nullptr;
 
+		std::unordered_map<len_t, std::vector<bool>> residual_conv;
+
     public:
         ConvergenceChecker(
-            FVM::UnknownQuantityHandler*, const std::vector<len_t>&,
-            const real_t reltol=1e-6
+            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+			const std::vector<len_t>&,
+			DiagonalPreconditioner *precond=nullptr, const real_t reltol=1e-6
         );
         virtual ~ConvergenceChecker();
 
@@ -39,8 +47,12 @@ namespace DREAM {
         bool IsConverged(const real_t*, const real_t*, bool verbose=false);
         bool IsConverged(const real_t*, const real_t*, const real_t*, bool verbose=false);
 
+		bool IsConvergedResidual(const len_t, const real_t, const real_t*);
+
         const real_t *GetErrorNorms() { return this->dx_2norm; }
         const real_t GetErrorScale(const len_t);
+
+		void SaveConvergence(SFile*, const std::string&);
 
         void SetAbsoluteTolerance(const len_t, const real_t);
         void SetRelativeTolerance(const real_t);

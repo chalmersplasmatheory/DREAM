@@ -91,10 +91,10 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     solver->SetIonHandler(eqsys->GetIonHandler());
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
-        MODULENAME, s, u, solver->GetNonTrivials()
+        MODULENAME, s, eqns, u, solver->GetNonTrivials()
     ));
 	solver->SetExternalIteratorConvergenceChecker(LoadToleranceSettings(
-        MODULENAME, s, u, *eqsys->GetExternallyIteratedUnknowns()
+        MODULENAME, s, eqns, u, *eqsys->GetExternallyIteratedUnknowns()
 	));
 
     solver->SetPreconditioner(LoadPreconditionerSettings(

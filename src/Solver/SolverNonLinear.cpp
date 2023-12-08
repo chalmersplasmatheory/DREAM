@@ -161,7 +161,7 @@ void SolverNonLinear::initialize_internal(
 
     if (this->convChecker == nullptr)
         this->SetConvergenceChecker(
-            new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol)
+            new ConvergenceChecker(unknowns, this->unknown_equations, this->nontrivial_unknowns, this->diag_prec, this->reltol)
         );
 }
 

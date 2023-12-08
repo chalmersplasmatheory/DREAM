@@ -57,7 +57,7 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
             break;
 
         case OptionConstants::TIMESTEPPER_TYPE_ADAPTIVE:
-            ts = ConstructTimeStepper_adaptive(s, u, nontrivials);
+            ts = ConstructTimeStepper_adaptive(s, u, eqsys->GetEquations(), nontrivials);
             break;
 
 		case OptionConstants::TIMESTEPPER_TYPE_IONIZATION:
@@ -122,6 +122,7 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
  */
 TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     Settings *s, FVM::UnknownQuantityHandler *u,
+	vector<UnknownQuantityEquation*> *eqns,
     vector<len_t> *nontrivials
 ) {
     int_t checkevery = s->GetInteger(MODULENAME "/checkevery");
@@ -134,10 +135,10 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
         dt = 1;
 
     ConvergenceChecker *cc = LoadToleranceSettings(
-        MODULENAME, s, u, *nontrivials
+        MODULENAME, s, eqns, u, *nontrivials
     );
 
-    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, cc, checkevery, verbose, conststep);
+    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, eqns, cc, checkevery, verbose, conststep);
 }
 
 /**

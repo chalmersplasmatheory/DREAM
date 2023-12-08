@@ -40,6 +40,7 @@ void SimulationGenerator::DefineToleranceSettings(
  */
 ConvergenceChecker *SimulationGenerator::LoadToleranceSettings(
     const string& modname, Settings *s,
+	vector<UnknownQuantityEquation*> *unknown_equations,
     FVM::UnknownQuantityHandler *uqh, const vector<len_t>& nontrivials,
     const string& name
 ) {
@@ -53,7 +54,7 @@ ConvergenceChecker *SimulationGenerator::LoadToleranceSettings(
     const real_t *reltols = s->GetRealArray(n + "/reltols", 1, &nreltols);
 
     ConvergenceChecker *cc = new ConvergenceChecker(
-        uqh, nontrivials, reltol
+        uqh, unknown_equations, nontrivials, nullptr, reltol
     );
 
     // Set tolerances...

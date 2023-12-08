@@ -12,6 +12,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "FVM/UnknownQuantity.hpp"
 
 
 using namespace DREAM;
@@ -22,8 +23,9 @@ using namespace std;
  * Constructor.
  */
 ConvergenceChecker::ConvergenceChecker(
-    FVM::UnknownQuantityHandler *uqh, const vector<len_t> &nontrivials,
-    const real_t reltol
+    FVM::UnknownQuantityHandler *uqh, vector<UnknownQuantityEquation*> *eqns,
+	const vector<len_t> &nontrivials, DiagonalPreconditioner *precond,
+	const real_t reltol
 )
     : NormEvaluator(uqh, nontrivials) {
 
@@ -36,6 +38,15 @@ ConvergenceChecker::ConvergenceChecker(
 
     // Default absolute tolerances
     this->DefineAbsoluteTolerances();
+
+	this->unknown_eqns = eqns;
+
+	// Set the preconditioner (to use for appropriately
+	// scaling the residual vector)
+	if (precond)
+		this->precond = precond;
+	else
+		this->precond = new DiagonalPreconditioner(this->unknowns, nontrivials);
 }
 
 /**
@@ -140,7 +151,9 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *x1, const re
 
     return IsConverged(x, this->dx_buffer, verbose);
 }
-bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool verbose) {
+bool ConvergenceChecker::IsConverged(
+	const real_t *x, const real_t *dx, bool verbose
+) {
     this->Norm2(x, this->x_2norm);
     this->Norm2(dx, this->dx_2norm);
 
@@ -195,6 +208,59 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
 }
 
 /**
+ * Check if the residual vector is close to zero (as must be the case at a
+ * solution of the equation system). This check has to make assumptions about
+ * what the typical scale of different residual elements are, and so is not
+ * suited as a convergence condition. Nevertheless, it can be used to verify
+ * that the system of equations are satisfied in the given solution and that
+ * the solver has not diverged.
+ *
+ * iTimeStep: Time step index of current step.
+ * dt:        Length of time step.
+ * F:         Residual vector.
+ */
+bool ConvergenceChecker::IsConvergedResidual(
+	const len_t iTimeStep, const real_t dt, const real_t *F
+) {
+	bool converged = true;
+    const len_t N = this->nontrivials.size();
+
+    for (len_t i = 0, idx = 0; i < N; i++) {
+		bool conv = true;
+        const real_t epsr = this->relTols[this->nontrivials[i]];
+        const real_t epsa = this->absTols[this->nontrivials[i]];
+
+        // Is tolerance checking disabled for this quantity?
+        if (epsr == 0 && epsa == 0)
+            continue;
+
+		FVM::UnknownQuantity *uq = this->unknowns->GetUnknown(this->nontrivials[i]);
+		UnknownQuantityEquation *eqn = this->unknown_eqns->at(this->nontrivials[i]);
+
+		// Determine equation scale length
+		real_t scale = this->precond->GetEquationScale(i);
+		if (eqn->HasTransientTerm())
+			scale /= dt;
+
+		// Iterate over elements
+		for (len_t j = 0; j < uq->NumberOfElements(); j++, idx++) {
+			real_t sF = std::abs(F[idx]);
+			conv = conv && (sF <= (epsa + epsr*scale));
+		}
+
+		std::vector<bool> &v = this->residual_conv[this->nontrivials[i]];
+		if (v.size()-1 == iTimeStep)
+			v[iTimeStep] = conv;
+		else
+			v.push_back(conv);
+
+		converged = converged && conv;
+	}
+
+	return converged;
+}
+
+/**
  * Set the absolute tolerance for the specified unknown.
  *
  * uqty:   ID of the unknown quantity to set absolute tolerance for.
@@ -232,5 +298,32 @@ void ConvergenceChecker::SetRelativeTolerance(const len_t uqty, const real_t rel
     auto nt = this->nontrivials;
     if (find(nt.begin(), nt.end(), uqty) != nt.end())
 		this->relTols[uqty] = reltol;
+}
+
+/**
+ * Save stored results from the convergence checker to an output SFile.
+ */
+void ConvergenceChecker::SaveConvergence(SFile *sf, const string& path) {
+	string name = path + "/convergence";
+	sf->CreateStruct(name);
+
+	// Convert "residual_converged" to a 2D array
+	len_t nt = 0;
+	len_t N = this->unknowns->GetNUnknowns();
+	uint32_t *rc = nullptr;
+	for (auto it = this->residual_conv.begin(); it != this->residual_conv.end(); it++) {
+		if (rc == nullptr) {
+			nt = it->second.size();
+			rc = new uint32_t[N * nt];
+		}
+		
+		for (len_t i = 0; i < nt; i++)
+			rc[it->first*nt + i] = it->second[i];
+	}
+
+	sfilesize_t dims[2] = {N, nt};
+	sf->WriteMultiUInt32Array(name + "/residual", rc, 2, dims);
+
+	delete [] rc;
 }
 
