@@ -47,6 +47,12 @@ ConvergenceChecker::ConvergenceChecker(
 		this->precond = precond;
 	else
 		this->precond = new DiagonalPreconditioner(this->unknowns, nontrivials);
+	
+	// Initialize residual convergence map
+	for (len_t id : nontrivials) {
+		std::vector<bool> &v = this->residual_conv[id];
+		v.push_back(true);
+	}
 }
 
 /**
@@ -219,7 +225,7 @@ bool ConvergenceChecker::IsConverged(
  * dt:        Length of time step.
  * F:         Residual vector.
  */
-bool ConvergenceChecker::IsConvergedResidual(
+bool ConvergenceChecker::IsResidualConverged(
 	const len_t iTimeStep, const real_t dt, const real_t *F
 ) {
 	bool converged = true;
@@ -303,7 +309,7 @@ void ConvergenceChecker::SetRelativeTolerance(const len_t uqty, const real_t rel
 /**
  * Save stored results from the convergence checker to an output SFile.
  */
-void ConvergenceChecker::SaveConvergence(SFile *sf, const string& path) {
+void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 	string name = path + "/convergence";
 	sf->CreateStruct(name);
 

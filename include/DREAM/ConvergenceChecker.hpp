@@ -47,12 +47,12 @@ namespace DREAM {
         bool IsConverged(const real_t*, const real_t*, bool verbose=false);
         bool IsConverged(const real_t*, const real_t*, const real_t*, bool verbose=false);
 
-		bool IsConvergedResidual(const len_t, const real_t, const real_t*);
+		bool IsResidualConverged(const len_t, const real_t, const real_t*);
 
         const real_t *GetErrorNorms() { return this->dx_2norm; }
         const real_t GetErrorScale(const len_t);
 
-		void SaveConvergence(SFile*, const std::string&);
+		void SaveData(SFile*, const std::string&);
 
         void SetAbsoluteTolerance(const len_t, const real_t);
         void SetRelativeTolerance(const real_t);

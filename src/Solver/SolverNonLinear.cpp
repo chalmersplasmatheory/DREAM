@@ -25,9 +25,9 @@ SolverNonLinear::SolverNonLinear(
     enum OptionConstants::linear_solver ls,
     enum OptionConstants::linear_solver bk,
 	const int_t maxiter, const real_t reltol,
-	bool verbose
+	bool verbose, bool checkResidual
 ) : Solver(unknowns, unknown_equations, verbose, ls, bk), eqsys(eqsys),
-	maxiter(maxiter), reltol(reltol) {
+	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -187,6 +187,20 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 }
 
 /**
+ * Check if the residual is converged.
+ */
+bool SolverNonLinear::IsResidualConverged() {
+	real_t *F;
+	VecGetArray(this->petsc_F, &F);
+
+	bool c = convChecker->IsResidualConverged(this->nTimeStep, this->dt, F);
+
+	VecRestoreArray(this->petsc_F, &F);
+
+	return c;
+}
+
+/**
  * Set the initial guess for the solver.
  *
  * guess: Vector containing values of initial guess.
@@ -282,6 +296,13 @@ REDO_ITER:
 			
 			AcceptSolution();
 		} while (!IsConverged(x, dx));
+
+		if (this->checkResidual && !IsResidualConverged()) {
+			DREAM::IO::PrintWarning(
+				DREAM::IO::WARNING_RESIDUAL_NOT_CONVERGED,
+				"Newton solver converged, but the converged point does not solve the system of equations."
+			);
+		}
 
 		// External iterator
 		if (this->extiter != nullptr)
@@ -715,5 +736,7 @@ void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
 
     sf->WriteList(name+"/backupinverter", ubi, nubi);
     delete [] ubi;
+
+	this->convChecker->SaveData(sf, name);
 }
 

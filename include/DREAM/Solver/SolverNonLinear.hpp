@@ -31,6 +31,8 @@ namespace DREAM {
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
+		bool checkResidual = true;
+
         // Debug settings
         bool printjacobianinfo = false, savejacobian = false, savesolution = false,
             savevector = false, savenumjac = false, savesystem = false, debugrescaled = false;
@@ -53,7 +55,7 @@ namespace DREAM {
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
 			const int_t maxiter=100, const real_t reltol=1e-6,
-			bool verbose=false
+			bool verbose=false, bool checkResidual=true
 		);
 		virtual ~SolverNonLinear();
 
@@ -74,6 +76,7 @@ namespace DREAM {
 		void SetIteration(const len_t i) { this->iteration = i; }
 
 		bool IsConverged(const real_t*, const real_t*);
+		bool IsResidualConverged();
 
 		virtual void SetInitialGuess(const real_t*) override;
 		virtual void Solve(const real_t, const real_t) override;

@@ -22,7 +22,7 @@ LINEAR_SOLVER_GMRES   = 5
 class Solver:
     
 
-    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False):
+    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False, checkresidual=True):
         """
         Constructor.
         """
@@ -44,7 +44,7 @@ class Solver:
         self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
-        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
+        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
@@ -121,7 +121,15 @@ class Solver:
         self.setOption(verbose=verbose)
 
 
-    def setOption(self, linsolv=None, maxiter=None, verbose=None):
+    def setCheckResidual(self, checkresidual):
+        """
+        If 'True', ensures that the residual is close to zero at the end of
+        non-linear iteration in each time step.
+        """
+        self.setOption(checkresidual=checkresidual)
+
+
+    def setOption(self, linsolv=None, maxiter=None, verbose=None, checkresidual=None):
         """
         Sets a solver option.
         """
@@ -131,6 +139,8 @@ class Solver:
             self.maxiter = maxiter
         if verbose is not None:
             self.verbose = verbose
+        if checkresidual is not None:
+            self.checkresidual = checkresidual
 
         self.verifySettings()
 
@@ -164,6 +174,9 @@ class Solver:
 
         if 'verbose' in data:
             self.verbose = bool(data['verbose'])
+
+        if 'checkresidual' in data:
+            self.checkresidual = bool(data['checkresidual'])
 
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
@@ -201,7 +214,8 @@ class Solver:
             'type': self.type,
             'linsolv': self.linsolv,
             'maxiter': self.maxiter,
-            'verbose': self.verbose
+            'verbose': self.verbose,
+            'checkresiudal': self.checkresidual
         }
 
         data['preconditioner'] = self.preconditioner.todict()
@@ -252,9 +266,11 @@ class Solver:
 
         elif self.type == NONLINEAR:
             if type(self.maxiter) != int:
-                raise DREAMException("Solver: Invalid type of parameter 'maxiter': {}. Expected integer.".format(type(self.maxiter)))
+                raise DREAMException(f"Solver: Invalid type of parameter 'maxiter': {type(self.maxiter)}. Expected integer.")
             elif type(self.verbose) != bool:
-                raise DREAMException("Solver: Invalid type of parameter 'verbose': {}. Expected boolean.".format(type(self.verbose)))
+                raise DREAMException(f"Solver: Invalid type of parameter 'verbose': {type(self.verbose)}. Expected boolean.")
+            elif type(self.checkresidual) != bool:
+                raise DREAMException(f"Solver: Invalid type of parameter 'checkresidual': {type(self.checkresidual)}. Expected boolean.")
 
             if type(self.debug_printjacobianinfo) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_printjacobianinfo': {}. Expected boolean.".format(type(self.debug_printjacobianinfo)))
