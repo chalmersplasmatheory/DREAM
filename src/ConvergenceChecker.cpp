@@ -237,8 +237,10 @@ bool ConvergenceChecker::IsResidualConverged(
         const real_t epsa = this->absTols[this->nontrivials[i]];
 
         // Is tolerance checking disabled for this quantity?
-        if (epsr == 0 && epsa == 0)
+        if (epsr == 0 && epsa == 0) {
+			SetResidualConverged(this->nontrivials[i], iTimeStep, conv);
             continue;
+		}
 
 		FVM::UnknownQuantity *uq = this->unknowns->GetUnknown(this->nontrivials[i]);
 		UnknownQuantityEquation *eqn = this->unknown_eqns->at(this->nontrivials[i]);
@@ -254,16 +256,26 @@ bool ConvergenceChecker::IsResidualConverged(
 			conv = conv && (sF <= (epsa + epsr*scale));
 		}
 
-		std::vector<bool> &v = this->residual_conv[this->nontrivials[i]];
-		if (v.size()-1 == iTimeStep)
-			v[iTimeStep] = conv;
-		else
-			v.push_back(conv);
+		SetResidualConverged(this->nontrivials[i], iTimeStep, conv);
 
 		converged = converged && conv;
 	}
 
 	return converged;
+}
+
+/**
+ * Set a flag indicating whether or not the residual was converged in the
+ * specified time step.
+ */
+void ConvergenceChecker::SetResidualConverged(
+	const len_t uid, const len_t iTimeStep, const bool conv
+) {
+	std::vector<bool> &v = this->residual_conv[uid];
+	if (v.size()-1 == iTimeStep)
+		v[iTimeStep] = conv;
+	else
+		v.push_back(conv);
 }
 
 /**
@@ -327,6 +339,8 @@ void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 			rc[it->first*nt + i] = it->second[i];
 	}
 
+	printf("N  = " LEN_T_PRINTF_FMT "\n", N);
+	printf("nt = " LEN_T_PRINTF_FMT "\n", nt);
 	sfilesize_t dims[2] = {N, nt};
 	sf->WriteMultiUInt32Array(name + "/residual", rc, 2, dims);
 

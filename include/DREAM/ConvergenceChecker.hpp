@@ -57,6 +57,8 @@ namespace DREAM {
         void SetAbsoluteTolerance(const len_t, const real_t);
         void SetRelativeTolerance(const real_t);
         void SetRelativeTolerance(const len_t, const real_t);
+
+		void SetResidualConverged(const len_t, const len_t, const bool);
     };
 }
 
