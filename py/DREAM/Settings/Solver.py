@@ -215,7 +215,7 @@ class Solver:
             'linsolv': self.linsolv,
             'maxiter': self.maxiter,
             'verbose': self.verbose,
-            'checkresiudal': self.checkresidual
+            'checkresidual': self.checkresidual
         }
 
         data['preconditioner'] = self.preconditioner.todict()

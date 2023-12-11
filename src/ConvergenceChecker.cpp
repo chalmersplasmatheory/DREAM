@@ -329,7 +329,6 @@ void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 	len_t nt = 0;
 	len_t N = nNontrivials;
 	uint32_t *rc = nullptr;
-	//for (auto it = this->residual_conv.begin(); it != this->residual_conv.end(); it++) {
 	for (len_t i = 0; i < nNontrivials; i++) {
 		vector<bool> &v = this->residual_conv[this->nontrivials[i]];
 		if (rc == nullptr) {

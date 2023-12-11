@@ -720,23 +720,24 @@ void SolverNonLinear::SwitchToBackupInverter() {
  * name: Name of group within file to store data in.
  */
 void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
-    sf->CreateStruct(name);
+	sf->CreateStruct(name);
 
-    int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
-    sf->WriteList(name+"/type", &type, 1);
+	int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
+	sf->WriteList(name+"/type", &type, 1);
 
-    // Number of iterations per time step
-    sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
+	// Number of iterations per time step
+	sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
 
-    // Whether or not backup inverter was used for a given time step
-    len_t nubi = this->usedBackupInverter.size();
-    int32_t *ubi = new int32_t[nubi];
-    for (len_t i = 0; i < nubi; i++)
-        ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
+	// Whether or not backup inverter was used for a given time step
+	len_t nubi = this->usedBackupInverter.size();
+	int32_t *ubi = new int32_t[nubi];
+	for (len_t i = 0; i < nubi; i++)
+		ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
 
-    sf->WriteList(name+"/backupinverter", ubi, nubi);
-    delete [] ubi;
+	sf->WriteList(name+"/backupinverter", ubi, nubi);
+	delete [] ubi;
 
-	this->convChecker->SaveData(sf, name);
+	if (this->checkResidual)
+		this->convChecker->SaveData(sf, name);
 }
 
