@@ -327,16 +327,18 @@ void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 
 	// Convert "residual_converged" to a 2D array
 	len_t nt = 0;
-	len_t N = this->unknowns->GetNUnknowns();
+	len_t N = nNontrivials;
 	uint32_t *rc = nullptr;
-	for (auto it = this->residual_conv.begin(); it != this->residual_conv.end(); it++) {
+	//for (auto it = this->residual_conv.begin(); it != this->residual_conv.end(); it++) {
+	for (len_t i = 0; i < nNontrivials; i++) {
+		vector<bool> &v = this->residual_conv[this->nontrivials[i]];
 		if (rc == nullptr) {
-			nt = it->second.size();
+			nt = v.size();
 			rc = new uint32_t[N * nt];
 		}
 		
-		for (len_t i = 0; i < nt; i++)
-			rc[it->first*nt + i] = it->second[i];
+		for (len_t j = 0; j < nt; j++)
+			rc[i*nt + j] = v[j];
 	}
 
 	sfilesize_t dims[2] = {N, nt};

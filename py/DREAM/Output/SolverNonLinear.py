@@ -3,6 +3,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.matlib
 from .Solver import Solver
 
 
@@ -113,6 +114,65 @@ class SolverNonLinear(Solver):
                 ts1, ts2 = rg[0]-0.5, rg[1]+0.5
 
             ax.fill_between([ts1, ts2], [0, 0], [ymax, ymax], color='r', alpha=0.3)
+
+        if show:
+            plt.show(block=False)
+
+        return ax
+
+
+    def plotResidualConvergence(self, unknown=None, t=None, ax=None, show=None, showtimesteps=False):
+        """
+        Plot the residual convergence status for one or more unknowns.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+            
+            if show is None:
+                show = True
+
+        if unknown is None:
+            unknown = self.nontrivials
+            uids = range(len(self.nontrivials))
+        else:
+            if type(unknown) != list and type(unknown) != tuple:
+                unknown = [unknown]
+
+            # Translate unknown names to indices
+            uids = []
+            for u in unknown:
+                uids.append(self.nontrivials.index(u))
+
+        # Select data to plot
+        if t is not None:
+            data = np.zeros((len(uids), 1))
+            if showtimesteps:
+                tarr = np.array([t])
+            else:
+                tarr = np.array([self.output.grid.t[t]])
+
+            for i in range(len(uids)):
+                data[i,0] = self.convergence_residual[uids[i],t]
+        else:
+            data = np.zeros((len(uids), self.convergence_residual.shape[1]))
+            if showtimesteps:
+                tarr = np.array(range(self.output.grid.t.size))
+            else:
+                tarr = self.output.grid.t[:]
+            for i in range(len(uids)):
+                data[i,:] = self.convergence_residual[uids[i],:]
+
+        # Plot
+        if data.shape[0] == 1:
+            idxs = [-1, 1]
+            data = np.matlib.repmat(data, 2, 1)
+        else:
+            idxs = list(range(len(uids)))
+
+        ax.pcolormesh(tarr, idxs, data, cmap='RdYlGn', shading='nearest')
+        ax.set_yticks(list(range(len(uids))), labels=unknown)
 
         if show:
             plt.show(block=False)
