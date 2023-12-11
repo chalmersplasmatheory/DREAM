@@ -339,8 +339,6 @@ void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 			rc[it->first*nt + i] = it->second[i];
 	}
 
-	printf("N  = " LEN_T_PRINTF_FMT "\n", N);
-	printf("nt = " LEN_T_PRINTF_FMT "\n", nt);
 	sfilesize_t dims[2] = {N, nt};
 	sf->WriteMultiUInt32Array(name + "/residual", rc, 2, dims);
 

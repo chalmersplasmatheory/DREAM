@@ -17,6 +17,11 @@ class SolverNonLinear(Solver):
 
         self.iterations = [int(x) for x in solverdata['iterations'][:]]
         self.backupinverter = [x==1 for x in solverdata['backupinverter'][:]]
+        self.nontrivials = solverdata['nontrivials'][:].split(';')[:-1]
+        self.unknowns = solverdata['unknowns'][:].split(';')[:-1]
+
+        if 'convergence' in solverdata:
+            self.convergence_residual = solverdata['convergence']['residual'][:]
 
 
     def __str__(self):

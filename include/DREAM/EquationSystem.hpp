@@ -202,7 +202,7 @@ namespace DREAM {
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
-        void SaveSolverData(SFile *sf, const std::string& n) { this->solver->WriteDataSFile(sf, n); }
+        void SaveSolverData(SFile *sf, const std::string& n);
         void SaveTimings(SFile*, const std::string&);
 
         void Solve();
