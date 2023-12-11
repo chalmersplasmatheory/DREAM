@@ -50,8 +50,11 @@ ConvergenceChecker::ConvergenceChecker(
 	
 	// Initialize residual convergence map
 	for (len_t id : nontrivials) {
-		std::vector<bool> &v = this->residual_conv[id];
-		v.push_back(true);
+		std::vector<bool> &c = this->residual_conv[id];
+		c.push_back(true);
+
+		std::vector<real_t> &e = this->residual_conv_maxerr[id];
+		e.push_back(0);
 	}
 }
 
@@ -238,7 +241,7 @@ bool ConvergenceChecker::IsResidualConverged(
 
         // Is tolerance checking disabled for this quantity?
         if (epsr == 0 && epsa == 0) {
-			SetResidualConverged(this->nontrivials[i], iTimeStep, conv);
+			SetResidualConverged(this->nontrivials[i], iTimeStep, true, 0);
             continue;
 		}
 
@@ -246,17 +249,22 @@ bool ConvergenceChecker::IsResidualConverged(
 		UnknownQuantityEquation *eqn = this->unknown_eqns->at(this->nontrivials[i]);
 
 		// Determine equation scale length
-		real_t scale = this->precond->GetEquationScale(i);
+		real_t scale = this->precond->GetEquationScale(this->nontrivials[i]);
 		if (eqn->HasTransientTerm())
 			scale /= dt;
 
 		// Iterate over elements
+		real_t mx = 0;
 		for (len_t j = 0; j < uq->NumberOfElements(); j++, idx++) {
 			real_t sF = std::abs(F[idx]);
 			conv = conv && (sF <= (epsa + epsr*scale));
+
+			real_t dev = sF / scale;
+			if (dev > mx)
+				mx = dev;
 		}
 
-		SetResidualConverged(this->nontrivials[i], iTimeStep, conv);
+		SetResidualConverged(this->nontrivials[i], iTimeStep, conv, mx);
 
 		converged = converged && conv;
 	}
@@ -269,13 +277,19 @@ bool ConvergenceChecker::IsResidualConverged(
  * specified time step.
  */
 void ConvergenceChecker::SetResidualConverged(
-	const len_t uid, const len_t iTimeStep, const bool conv
+	const len_t uid, const len_t iTimeStep,
+	const bool conv, const real_t maxerr
 ) {
-	std::vector<bool> &v = this->residual_conv[uid];
-	if (v.size()-1 == iTimeStep)
-		v[iTimeStep] = conv;
-	else
-		v.push_back(conv);
+	std::vector<bool> &c = this->residual_conv[uid];
+	std::vector<real_t> &e = this->residual_conv_maxerr[uid];
+
+	if (c.size()-1 == iTimeStep) {
+		c[iTimeStep] = conv;
+		e[iTimeStep] = maxerr;
+	} else {
+		c.push_back(conv);
+		e.push_back(maxerr);
+	}
 }
 
 /**
@@ -329,20 +343,28 @@ void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 	len_t nt = 0;
 	len_t N = nNontrivials;
 	uint32_t *rc = nullptr;
+	real_t *re = nullptr;
 	for (len_t i = 0; i < nNontrivials; i++) {
-		vector<bool> &v = this->residual_conv[this->nontrivials[i]];
+		vector<bool> &c = this->residual_conv[this->nontrivials[i]];
+		vector<real_t> &e = this->residual_conv_maxerr[this->nontrivials[i]];
+
 		if (rc == nullptr) {
-			nt = v.size();
+			nt = c.size();
 			rc = new uint32_t[N * nt];
+			re = new real_t[N * nt];
 		}
 		
-		for (len_t j = 0; j < nt; j++)
-			rc[i*nt + j] = v[j];
+		for (len_t j = 0; j < nt; j++) {
+			rc[i*nt + j] = c[j];
+			re[i*nt + j] = e[j];
+		}
 	}
 
 	sfilesize_t dims[2] = {N, nt};
 	sf->WriteMultiUInt32Array(name + "/residual", rc, 2, dims);
+	sf->WriteMultiArray(name + "/residualmaxerror", re, 2, dims);
 
 	delete [] rc;
+	delete [] re;
 }
 

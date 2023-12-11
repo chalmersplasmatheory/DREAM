@@ -29,6 +29,7 @@ namespace DREAM {
         real_t *dx_2norm=nullptr;
 
 		std::unordered_map<len_t, std::vector<bool>> residual_conv;
+		std::unordered_map<len_t, std::vector<real_t>> residual_conv_maxerr;
 
     public:
         ConvergenceChecker(
@@ -58,7 +59,7 @@ namespace DREAM {
         void SetRelativeTolerance(const real_t);
         void SetRelativeTolerance(const len_t, const real_t);
 
-		void SetResidualConverged(const len_t, const len_t, const bool);
+		void SetResidualConverged(const len_t, const len_t, const bool, const real_t);
     };
 }
 

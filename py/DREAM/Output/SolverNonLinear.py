@@ -23,6 +23,7 @@ class SolverNonLinear(Solver):
 
         if 'convergence' in solverdata:
             self.convergence_residual = solverdata['convergence']['residual'][:]
+            self.convergence_residualmaxerr = solverdata['convergence']['residualmaxerror'][:]
 
 
     def __str__(self):
@@ -121,18 +122,10 @@ class SolverNonLinear(Solver):
         return ax
 
 
-    def plotResidualConvergence(self, unknown=None, t=None, ax=None, show=None, showtimesteps=False):
+    def _getResidualData(self, data, unknown=None, t=None, showtimesteps=False):
         """
-        Plot the residual convergence status for one or more unknowns.
+        Returns the requested subset of residual data.
         """
-        genax = ax is None
-
-        if genax:
-            ax = plt.axes()
-            
-            if show is None:
-                show = True
-
         if unknown is None:
             unknown = self.nontrivials
             uids = range(len(self.nontrivials))
@@ -147,36 +140,82 @@ class SolverNonLinear(Solver):
 
         # Select data to plot
         if t is not None:
-            data = np.zeros((len(uids), 1))
+            _d = np.zeros((len(uids), 1))
             if showtimesteps:
                 tarr = np.array([t])
             else:
                 tarr = np.array([self.output.grid.t[t]])
 
             for i in range(len(uids)):
-                data[i,0] = self.convergence_residual[uids[i],t]
+                _d[i,0] = data[uids[i],t]
         else:
-            data = np.zeros((len(uids), self.convergence_residual.shape[1]))
+            _d = np.zeros((len(uids), data.shape[1]))
             if showtimesteps:
                 tarr = np.array(range(self.output.grid.t.size))
             else:
                 tarr = self.output.grid.t[:]
             for i in range(len(uids)):
-                data[i,:] = self.convergence_residual[uids[i],:]
+                _d[i,:] = data[uids[i],:]
 
         # Plot
-        if data.shape[0] == 1:
+        if _d.shape[0] == 1:
             idxs = [-1, 1]
-            data = np.matlib.repmat(data, 2, 1)
+            _d = np.matlib.repmat(_d, 2, 1)
         else:
             idxs = list(range(len(uids)))
 
-        ax.pcolormesh(tarr, idxs, data, cmap='RdYlGn', shading='nearest')
-        ax.set_yticks(list(range(len(uids))), labels=unknown)
+        return tarr, idxs, _d, uids, unknown
+
+        
+    def plotResidualConvergence(self, unknown=None, t=None, ax=None, show=None, showtimesteps=False):
+        """
+        Plot the residual convergence status for one or more unknowns.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+            
+            if show is None:
+                show = True
+
+        tarr, idxs, data, uids, unknowns = self._getResidualData(self.convergence_residual, unknown=unknown, t=t, showtimesteps=showtimesteps)
+        ax.pcolormesh(tarr, idxs, data, cmap='RdYlGn', shading='nearest', vmin=0, vmax=1)
+        ax.set_yticks(list(range(len(uids))), labels=unknowns)
 
         if show:
             plt.show(block=False)
 
         return ax
+
+
+    def plotResidualMaxError(
+        self, unknown=None, t=None, ax=None, show=None,
+        showtimesteps=False, logx=False
+    ):
+        """
+        Plot the maximum error in the residual.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        tarr, _, data, uids, unknowns = self._getResidualData(self.convergence_residualmaxerr, unknown=unknown, t=t, showtimesteps=showtimesteps)
+
+        ax.plot([tarr[0], tarr[-1]], [1, 1], 'k--')
+        for i in range(len(unknowns)):
+            ax.plot(tarr, data[i,:], label=unknowns[i])
+
+        ax.legend(fancybox=False, edgecolor='k')
+        if logx:
+            ax.set_xscale('log')
+        ax.set_yscale('log')
+
+        if show:
+            plt.show()
 
 
