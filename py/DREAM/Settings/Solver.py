@@ -201,7 +201,7 @@ class Solver:
             self.backupsolver = int(data['backupsolver'])
 
         if 'saveconvergenceinfo' in data:
-            self.saveconvergenceinfo = int(data['saveconvergenceinfo'])
+            self.saveconvergenceinfo = bool(data['saveconvergenceinfo'])
 
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
