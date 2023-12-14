@@ -183,7 +183,7 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
     if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
-    return convChecker->IsConverged(x, dx, printVerbose);
+    return convChecker->IsConverged(x, dx, this->nTimeStep, printVerbose);
 }
 
 /**
@@ -306,7 +306,7 @@ REDO_ITER:
 
 		// External iterator
 		if (this->extiter != nullptr)
-			extiter_conv = this->extiter->Solve(t, dt);
+			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
 
 	} while (!extiter_conv);
 }

@@ -44,7 +44,7 @@ class Solver:
         self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
-        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual)
+        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
@@ -129,7 +129,18 @@ class Solver:
         self.setOption(checkresidual=checkresidual)
 
 
-    def setOption(self, linsolv=None, maxiter=None, verbose=None, checkresidual=None):
+    def setSaveConvergenceInfo(self, saveconvergenceinfo):
+        """
+        If 'True', saves information about the non-linear convergence to the
+        output file (|x| and |dx| norms in each time step and iteration).
+        """
+        self.setOption(saveconvergenceinfo=saveconvergenceinfo)
+
+
+    def setOption(
+        self, linsolv=None, maxiter=None, verbose=None,
+        checkresidual=None, saveconvergenceinfo=None
+    ):
         """
         Sets a solver option.
         """
@@ -141,6 +152,8 @@ class Solver:
             self.verbose = verbose
         if checkresidual is not None:
             self.checkresidual = checkresidual
+        if saveconvergenceinfo is not None:
+            self.saveconvergenceinfo = saveconvergenceinfo
 
         self.verifySettings()
 
@@ -187,6 +200,9 @@ class Solver:
         if 'backupsolver' in data:
             self.backupsolver = int(data['backupsolver'])
 
+        if 'saveconvergenceinfo' in data:
+            self.saveconvergenceinfo = int(data['saveconvergenceinfo'])
+
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
 
@@ -215,7 +231,8 @@ class Solver:
             'linsolv': self.linsolv,
             'maxiter': self.maxiter,
             'verbose': self.verbose,
-            'checkresidual': self.checkresidual
+            'checkresidual': self.checkresidual,
+            'saveconvergenceinfo': self.saveconvergenceinfo
         }
 
         data['preconditioner'] = self.preconditioner.todict()
@@ -271,6 +288,8 @@ class Solver:
                 raise DREAMException(f"Solver: Invalid type of parameter 'verbose': {type(self.verbose)}. Expected boolean.")
             elif type(self.checkresidual) != bool:
                 raise DREAMException(f"Solver: Invalid type of parameter 'checkresidual': {type(self.checkresidual)}. Expected boolean.")
+            elif type(self.saveconvergenceinfo) != bool:
+                raise DREAMException(f"Solver: Invalid type of parameter 'saveconvergenceinfo': {type(self.saveconvergenceinfo)}. Expected boolean.")
 
             if type(self.debug_printjacobianinfo) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_printjacobianinfo': {}. Expected boolean.".format(type(self.debug_printjacobianinfo)))

@@ -28,6 +28,10 @@ namespace DREAM {
         real_t *x_2norm=nullptr;
         real_t *dx_2norm=nullptr;
 
+		bool saveConvergenceInfo = false;
+		std::unordered_map<len_t, std::vector<std::vector<real_t>>> convergence_x;
+		std::unordered_map<len_t, std::vector<std::vector<real_t>>> convergence_dx;
+
 		std::unordered_map<len_t, std::vector<bool>> residual_conv;
 		std::unordered_map<len_t, std::vector<real_t>> residual_conv_maxerr;
 
@@ -35,7 +39,8 @@ namespace DREAM {
         ConvergenceChecker(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
 			const std::vector<len_t>&,
-			DiagonalPreconditioner *precond=nullptr, const real_t reltol=1e-6
+			DiagonalPreconditioner *precond=nullptr, const real_t reltol=1e-6,
+			bool saveConvergenceInfo=false
         );
         virtual ~ConvergenceChecker();
 
@@ -45,8 +50,8 @@ namespace DREAM {
         const std::string &GetNonTrivialName(const len_t i)
         { return this->unknowns->GetUnknown(nontrivials[i])->GetName(); }
 
-        bool IsConverged(const real_t*, const real_t*, bool verbose=false);
-        bool IsConverged(const real_t*, const real_t*, const real_t*, bool verbose=false);
+        bool IsConverged(const real_t*, const real_t*, const len_t, bool verbose=false);
+        bool IsConverged(const real_t*, const real_t*, const real_t*, const len_t, bool verbose=false);
 
 		bool IsResidualConverged(const len_t, const real_t, const real_t*);
 
@@ -59,6 +64,7 @@ namespace DREAM {
         void SetRelativeTolerance(const real_t);
         void SetRelativeTolerance(const len_t, const real_t);
 
+		void SaveConvergenceInfo(const len_t, const len_t, const real_t, const real_t);
 		void SetResidualConverged(const len_t, const len_t, const bool, const real_t);
     };
 }

@@ -441,7 +441,7 @@ bool TimeStepperAdaptive::UpdateStep() {
 
     CopySolution(&this->sol_full);
 
-    bool converged = this->convChecker->IsConverged(this->sol_full, this->sol_full, this->sol_half);
+    bool converged = this->convChecker->IsConverged(this->sol_full, this->sol_full, this->sol_half, this->currentStep);
     const real_t *err = this->convChecker->GetErrorNorms();
 
     // Calculate maximum error

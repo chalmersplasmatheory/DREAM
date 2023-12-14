@@ -52,9 +52,11 @@ ConvergenceChecker *SimulationGenerator::LoadToleranceSettings(
     vector<string> uqtyNames = s->GetStringList(n + "/names");
     const real_t *abstols = s->GetRealArray(n + "/abstols", 1, &nabstols);
     const real_t *reltols = s->GetRealArray(n + "/reltols", 1, &nreltols);
+	bool saveConvergenceInfo = s->GetBool("solver/saveconvergenceinfo");
 
     ConvergenceChecker *cc = new ConvergenceChecker(
-        uqh, unknown_equations, nontrivials, nullptr, reltol
+        uqh, unknown_equations, nontrivials, nullptr, reltol,
+		saveConvergenceInfo
     );
 
     // Set tolerances...

@@ -33,6 +33,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 	s->DefineSetting(MODULENAME "/checkresidual", "If true, prints a warning if the residual is not close to zero at the end of non-linear iteration", (bool)true);
+	s->DefineSetting(MODULENAME "/saveconvergenceinfo", "If true, saves information about non-linear convergence to the output file", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
     DefinePreconditionerSettings(s);
