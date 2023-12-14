@@ -60,3 +60,23 @@ def who():
     print("")
 
 
+def index2time(i):
+    """
+    Converts the specified time index to a time.
+    """
+    global do
+    return do.grid.t[i]
+
+
+def time2index(t):
+    """
+    Converts the specified time to a time index.
+    """
+    global do
+    return np.argmin(np.abs(do.grid.t[:]-t))
+
+
+def i2t(i): return index2time(i)
+def t2i(t): return time2index(t)
+
+
