@@ -30,7 +30,9 @@ class SolverNonLinear(Solver):
                 self.solution = SolutionConvergenceInformation(
                     solverdata['convergence']['x'][:],
                     solverdata['convergence']['dx'][:],
-                    self.nontrivials
+                    self.nontrivials,
+                    epsa=solverdata['convergence']['epsa'][:],
+                    epsr=solverdata['convergence']['epsr'][:]
                 )
 
 

@@ -377,6 +377,20 @@ void ConvergenceChecker::SaveData(SFile *sf, const string& path) {
 	len_t N = nNontrivials;
 	len_t nt = 0, niter = 0;
 	if (this->saveConvergenceInfo) {
+		real_t *epsa = new real_t[nNontrivials];
+		real_t *epsr = new real_t[nNontrivials];
+		for (len_t i = 0; i < nNontrivials; i++) {
+			epsa[i] = this->absTols[this->nontrivials[i]];
+			epsr[i] = this->relTols[this->nontrivials[i]];
+		}
+
+		// Save tolerances
+		sf->WriteList(name + "/epsa", epsa, nNontrivials);
+		sf->WriteList(name + "/epsr", epsr, nNontrivials);
+
+		delete [] epsa;
+		delete [] epsr;
+
 		// Figure out number of time steps and max number of iterations
 		vector<vector<real_t>> &tx = this->convergence_x[this->nontrivials[0]];
 		nt = tx.size();
