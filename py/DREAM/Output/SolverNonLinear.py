@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.matlib
 from .Solver import Solver
+from .SolutionConvergenceInformation import SolutionConvergenceInformation
 
 
 class SolverNonLinear(Solver):
@@ -24,6 +25,13 @@ class SolverNonLinear(Solver):
         if 'convergence' in solverdata:
             self.convergence_residual = solverdata['convergence']['residual'][:]
             self.convergence_residualmaxerr = solverdata['convergence']['residualmaxerror'][:]
+
+            if 'x' in solverdata['convergence']:
+                self.solution = SolutionConvergenceInformation(
+                    solverdata['convergence']['x'][:],
+                    solverdata['convergence']['dx'][:],
+                    self.nontrivials
+                )
 
 
     def __str__(self):
@@ -217,5 +225,7 @@ class SolverNonLinear(Solver):
 
         if show:
             plt.show()
+
+        return ax
 
 
