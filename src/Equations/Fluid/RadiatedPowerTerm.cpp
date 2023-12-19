@@ -96,7 +96,10 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 
             	if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){//Ly-opaque deuterium radiation from AMJUEL
 		            // Radiated power term
-		            Li = amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);// includes both line radiation and ionization potential energy difference
+		            // includes both line radiation and ionization potential energy difference
+		            // This term should be strictly larger than only the contribution from the ionization potential energy difference alone, 
+		            // i.e. the ionization rate*ionization energy, which the AMJUEL fit sometimes can give, so we manually enforce this lower limit
+		            Li = std::max(Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0), amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]));
 		            
 		            // The AMJUEL coefficients for recombination radiation do not contain bremsstrahlung,
 		            // but are on the other hand adjusted for repeated excitation/deexcitation and three-body recombination
@@ -189,7 +192,9 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
+		            
 		                Li =  amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);
+		                
 	                    Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
 				        
 				        Bi = 0;
@@ -260,7 +265,9 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
+		            	            
 		                dLi =  amjuel->getIonizLossLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+		                    
 	                    dLi += amjuel->getRecRadLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
 				        
 				        dBi = 0;
@@ -268,8 +275,6 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
 				        if(Z0>0){       // Recombination gain
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
-				            if(includePRB)
-				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
                         
                         real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
@@ -318,14 +323,18 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                dLi =  amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+		            	            
+		                dLi = amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+		                    
 		                dLi += amjuel->getRecRadLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 				        
 				        dBi = 0;
 				        // Binding energy rate term
 				        if(Z0>0){       // Recombination gain
-				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
+				            dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+				            if(includePRB)
+				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);				            
 			            }
 
                         real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);

@@ -117,7 +117,6 @@ class TransportCoefficientReader:
         if ixi is None:
             ixi = np.argmax(self.xi)
         dBB = np.sqrt(self.Drr[:,:,ixi,ip]/(np.pi*q*dsObj.radialgrid.R0*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))
-        print(dBB)
         dsObj.eqsys.T_cold.transport.setMagneticPerturbation(dBB=dBB,r=self.r, t=self.t)
             
     
@@ -167,10 +166,15 @@ class TransportCoefficientReader:
         # Helper function that appends two zeros in the time dimension to the transport coefficients, at times t_ramp and t_ramp+1 seconds
         # Can be used to turn off the transport at a given time, with a linear ramp down of duration t_ramp  , without stopping the simulation
            
+        self.appendRemnantTransport(0,t_ramp)
+        
+    def appendRemnantTransport(self, D_remnant, t_ramp = 1e-4):
+        # Helper function that appends a desired remaining transport in the time dimension to the transport coefficients, at times t_ramp and t_ramp+1 seconds
+           
         self.t  = np.append(self.t, [self.t[-1]+t_ramp, self.t[-1]+t_ramp+1])
-        _ins_array = np.zeros((2,self.r.size, self.xi.size, self.p.size))
+        _ins_array = D_remnant*np.ones((2,self.r.size, self.xi.size, self.p.size))
 
-        # Adding in the appending zeros
+        # Adding in the appending transport
         self.Ar  = np.append(self.Ar, _ins_array, axis=0)
         self.Drr = np.append(self.Drr, _ins_array, axis=0)
                 
@@ -211,7 +215,7 @@ class TransportCoefficientReader:
                 
         raise DREAMException('Temperature does not drop below the critical temperature for the TQ onset inside the q=2 flux surface')
         
-    def setDrrFromTQTimeScaleBesselApproximation(self, t_duration, a, Trepr, t_duration_over_t_diffusion = 1, t_before_onset = None, t_ramp = 1e-4, r_island = 0.0):
+    def setDrrFromTQTimeScaleBesselApproximation(self, t_duration, a, Trepr, t_duration_over_t_diffusion = 1, t_before_onset = None, t_ramp = 1e-4, r_island = 0.0, D0_remnant = 0):
         # Estimate a radially flat diffusion coefficients based on a desired TQ duration t_duration. This is done assuming
         # that a fix ratio of the TQ duration and the diffusion time scale, t_duration_over_t_diffusion, gives
         # the desired temperature drop during the TQ duration. The diffusion time scale is calculated assuming a
@@ -246,7 +250,7 @@ class TransportCoefficientReader:
         # Set islands and time before onset, if any, and append zeros to turn of the transport after the desired duration
         self.setRIsland(r_island)
         self.setTBeforeOnset(t_before_onset, t_ramp)
-        self.appendZeros(t_ramp)
+        self.appendRemnantTransport(D0_remnant*p_dep, t_ramp)
         
     def setPrecribedHyperResistivity(ds, Lambda0, Lambda1=0, t_before_onset = None, t_ramp = 1e-4, t_duration = None, t_sim_start = 0, r_island = 0.0, a_minor = None):
         if a_minor is None:
