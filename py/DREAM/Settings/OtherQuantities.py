@@ -69,7 +69,8 @@ class OtherQuantities:
         'scalar/radialloss_f_re',
         'scalar/radialloss_f_hot',
         'scalar/energyloss_f_re',
-        'scalar/energyloss_f_hot', 
+        'scalar/energyloss_f_hot',
+        'scalar/Ypdot',
         'ripple',
         'transport'
     ]

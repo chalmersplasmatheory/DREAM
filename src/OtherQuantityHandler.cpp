@@ -885,6 +885,12 @@ void OtherQuantityHandler::DefineQuantities() {
             for(len_t ip=0;ip<SPI->GetNShard();ip++)
                 v[ip] = t[ip];
         );
+        DEF_SC_MUL("scalar/Ypdot", "Rate at which the shards' radius decrease",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetYpdot();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
     }
     // Declare groups of parameters (for registering
     // multiple parameters in one go)

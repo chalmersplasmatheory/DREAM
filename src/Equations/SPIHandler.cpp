@@ -591,7 +591,7 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
                         AssignTimeParameters(ip);
                         shift_r[ip] = Deltar(ip);
                         nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);
-                        shift_store[ip] = nbrShiftGridCell[ip] * rGrid->GetDr(irp[ip]);
+                        shift_store[ip] = shift_r[ip];
                     }
                 }
             }
