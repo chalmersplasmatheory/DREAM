@@ -1,7 +1,7 @@
 
 DREAM interface for IMAS
 ==========================
-In this section you will find the details of the DREAM-IMAS interface implementation. Use case leírás
+In this section you will find the details of the DREAM-IMAS interface implementation.
 
 .. toctree::
    :maxdepth: 4
@@ -54,7 +54,7 @@ The ``readInIDSSlice()`` function takes a single time slice from the IDS databas
 
 The ``setUpDREAM()`` option can be used to initialize a DREAM settings object as an output from the function. The object initializes a DREAM run with the initial conditions for the physical quantities set from the IDS and the temperature and electric field calculated self-consistently. A few other settings might be required to be set independently from the IDS read in function. A simple example on how to use IDS's with DREAM can be found in the examples directory in the DREAM repository (``examples/imas``). This is a Python script which creates a ``dream_settings.h5`` file which can be used to run DREAM with the necessary input. The execution of the example file requires the ``imas`` Python module to be installed. The input generation from IDS's is conducted independently from running DREAM with the settings file, and can be run separately.
 
-The option not to create a DREAM settings object is currently not implemented, the loaded data could be saved in Python lists or dictionaries.
+The option not to create a DREAM settings object generates a dictionary with the relevant physical quantities.
 
 .. code-block:: python
 

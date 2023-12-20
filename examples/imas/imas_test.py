@@ -14,20 +14,15 @@ import sys
 
 sys.path.append('../../py/')
 
-
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.IMAS.IMAS as iw
 
 
-sys.path.append('../../tools/imas/')
-
-import imas_wrapper as iw
-
-
-ds = iw.readInIDSSlice(64614, 9999, 'tcv', log=True, setUpDream=True, wall_radius=0.25)
+ds = iw.readInIDSSlice(64614, 9999, 'tcv', log='test', setUpDream=True, wall_radius=0.25)
 
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e19)
 
@@ -49,7 +44,7 @@ ds.eqsys.n_re.setHottail(Runaways.HOTTAIL_MODE_ANALYTIC_ALT_PC)
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 
-# Use the linear solver
+# Use the linearly implicit solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Set time stepper

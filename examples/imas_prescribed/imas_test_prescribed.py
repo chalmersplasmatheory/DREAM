@@ -5,7 +5,7 @@
 #
 # Run as
 #
-#   $ ./imas_test.py
+#   $ ./imas_test_prescribed.py
 #
 # ###################################################################
 
@@ -14,20 +14,15 @@ import sys
 
 sys.path.append('../../py/')
 
-
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.IMAS.IMAS as iw
 
 
-sys.path.append('../../tools/imas/')
-
-import imas_wrapper as iw
-
-
-ds = iw.readInIDS(64614, 9999, 'tcv', log=True, setUpDream=True, wall_radius=0.25)
+ds = iw.readInIDS(64614, 9999, 'tcv', log='test', setUpDream=True, wall_radius=0.25)
 
 # Set fluid runaway models
 ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_FLUID_HESSLOW)
@@ -47,7 +42,7 @@ ds.eqsys.n_re.setHottail(Runaways.HOTTAIL_MODE_ANALYTIC_ALT_PC)
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 
-# Use the linear solver
+# Use the linearly implicit solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Set time stepper

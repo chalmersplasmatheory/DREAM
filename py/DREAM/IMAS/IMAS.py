@@ -17,14 +17,14 @@ import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
 from scipy.interpolate import CubicSpline
 
 
-def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=False, setUpDream=True, wall_radius=-999):
+def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, setUpDream=True, wall_radius=-999):
 	
 	# open shot file
 	dataEntry = imas.DBEntry(imasdef.MDSPLUS_BACKEND, tokamak, int(shot), int(run), user_name=user)
 	dataEntry.open()
 	
 	if log:
-		logging.basicConfig(filename='IDS_summary.log', format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG, filemode='w')
+		logging.basicConfig(filename='%s.log' % log, format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG, filemode='w')
 	
 	# set time value if not specified by user
 	if time==-999:
@@ -109,7 +109,7 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=False,
 		raise Exception('Error in loading core profiles data. Please check the input data!')
 	else:
 		B0 = coreprof.vacuum_toroidal_field.b0
-		print(B0)
+		
 		if log:
 			logging.info('The vacuum toroidal field from core profiles IDS loaded successfully!\n')
 				
@@ -235,7 +235,7 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=False,
 		else:
 			inverse_wall_time = resistivity / (4*np.pi*1e-7*R*np.log(R/wall_radius))
 			if log:
-				logging.info('The iverse wall time is %s 1/s with the given wall radius.\n', inverse_wall_time)
+				logging.info('The inverse wall time is %s 1/s with the given wall radius.\n', inverse_wall_time)
 		
 			ds.eqsys.E_field.setType(ElectricField.TYPE_SELFCONSISTENT)
 			ds.eqsys.E_field.setBoundaryCondition(ElectricField.BC_TYPE_SELFCONSISTENT, inverse_wall_time=inverse_wall_time, R0=R)
@@ -245,13 +245,15 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=False,
 		return ds
 	
 	else:
-		print('return a list? hdf5?')
-		return 'TO DO'
+		
+		IDS_variables = {'radius': radius, 'Core_profiles_radius': cp_radius, 'Equilibrium_radius': eq_radius, 'wall_radius': wall_radius, 'Major_radius': R, 'Magnetic_field': B0, 'Ion_names': ion_names, 'Ion_charges': ion_charges, 'Ion_densities': ion_densities, 'Temperature': T_cold, 'Electric_field': e_field,  'Wall_resistivity': resistivity, 'Toroidal_j': j_tor, 'Plasma_current': Ip, 'Time': time}
+
+		return IDS_variables
 	
 	
 def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True, wall_radius=-999):
 	
-	# TODO full IDS read in
+	#full IDS read in
 	
 	# open shot file
 	dataEntry = imas.DBEntry(imasdef.MDSPLUS_BACKEND, tokamak, int(shot), int(run), user_name=user)
@@ -495,6 +497,7 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 		if log:
 			logging.info('The major radius of the magnetic axis from core profiles IDS loaded successfully!\n')
 
+	dataEntry.close()
 
 	if setUpDream:
 		
@@ -526,7 +529,7 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 		else:
 			inverse_wall_time = resistivity / (4*np.pi*1e-7*R*np.log(R/wall_radius))
 			if log:
-				logging.info('The iverse wall time is %s 1/s with the given wall radius.\n', inverse_wall_time)
+				logging.info('The inverse wall time is %s 1/s with the given wall radius.\n', inverse_wall_time)
 		
 			ds.eqsys.E_field.setType(ElectricField.TYPE_SELFCONSISTENT)
 			ds.eqsys.E_field.setBoundaryCondition(ElectricField.BC_TYPE_SELFCONSISTENT, inverse_wall_time=inverse_wall_time, R0=R)
@@ -536,7 +539,6 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 		return ds
 	
 	else:
-		print('return a list? hdf5?')
-		return 'TO DO'
-	
-	dataEntry.close()
+		IDS_variables = {'radius': radius, 'Core_profiles_radius': cp_radius, 'Equilibrium_radius': eq_radius, 'wall_radius': wall_radius, 'Major_radius': R, 'Magnetic_field': B0, 'Ion_names': ion_names, 'Ion_charges': ion_charges, 'Ion_densities': ion_densities, 'Temperature': T_cold, 'Electric_field': e_field,  'Wall_resistivity': resistivity, 'Toroidal_j': j_tor, 'Plasma_current': Ip, 'Time': time}
+
+		return IDS_variables
