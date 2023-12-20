@@ -245,7 +245,8 @@ bool ConvergenceChecker::IsConverged(
  * F:         Residual vector.
  */
 bool ConvergenceChecker::IsResidualConverged(
-	const len_t iTimeStep, const real_t dt, const real_t *F
+	const len_t iTimeStep, const real_t dt, const real_t *F,
+	bool rescaled
 ) {
 	bool converged = true;
     const len_t N = this->nontrivials.size();
@@ -265,7 +266,12 @@ bool ConvergenceChecker::IsResidualConverged(
 		UnknownQuantityEquation *eqn = this->unknown_eqns->at(this->nontrivials[i]);
 
 		// Determine equation scale length
-		real_t scale = this->precond->GetEquationScale(this->nontrivials[i]);
+		real_t scale;
+		if (rescaled)
+			scale = 1;
+		else
+			scale = this->precond->GetEquationScale(this->nontrivials[i]);
+
 		if (eqn->HasTransientTerm())
 			scale /= dt;
 

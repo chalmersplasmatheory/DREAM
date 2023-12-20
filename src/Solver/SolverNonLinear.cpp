@@ -193,7 +193,8 @@ bool SolverNonLinear::IsResidualConverged() {
 	real_t *F;
 	VecGetArray(this->petsc_F, &F);
 
-	bool c = convChecker->IsResidualConverged(this->nTimeStep, this->dt, F);
+	bool rescaled = (this->diag_prec != nullptr);
+	bool c = convChecker->IsResidualConverged(this->nTimeStep, this->dt, F, rescaled);
 
 	VecRestoreArray(this->petsc_F, &F);
 

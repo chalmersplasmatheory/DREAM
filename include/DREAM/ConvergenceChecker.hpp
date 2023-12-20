@@ -53,7 +53,7 @@ namespace DREAM {
         bool IsConverged(const real_t*, const real_t*, const len_t, bool verbose=false);
         bool IsConverged(const real_t*, const real_t*, const real_t*, const len_t, bool verbose=false);
 
-		bool IsResidualConverged(const len_t, const real_t, const real_t*);
+		bool IsResidualConverged(const len_t, const real_t, const real_t*, bool);
 
         const real_t *GetErrorNorms() { return this->dx_2norm; }
         const real_t GetErrorScale(const len_t);
