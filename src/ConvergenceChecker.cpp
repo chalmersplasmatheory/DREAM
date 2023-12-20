@@ -279,7 +279,8 @@ bool ConvergenceChecker::IsResidualConverged(
 		real_t mx = 0;
 		for (len_t j = 0; j < uq->NumberOfElements(); j++, idx++) {
 			real_t sF = std::abs(F[idx]);
-			conv = conv && (sF <= (epsa + epsr*scale));
+			//conv = conv && (sF <= (epsa + epsr*scale));
+			conv = conv && (sF <= scale);
 
 			real_t dev = sF / scale;
 			if (dev > mx)
