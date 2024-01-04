@@ -27,14 +27,16 @@ namespace DREAM {
 	public:
 		TimeStepperIonization(
 			const real_t tMax, const real_t dt0, const real_t dtMax,
-			FVM::UnknownQuantityHandler*, const real_t automaticstep,
-			const real_t safetyfactor, const real_t minSaveDt
+			FVM::UnknownQuantityHandler*, EquationSystem*,
+			const real_t automaticstep, const real_t safetyfactor,
+			const real_t minSaveDt
 		);
 		~TimeStepperIonization();
 
 		virtual real_t CurrentTime() const { return this->currentTime; }
 		virtual bool IsFinished() override { return (this->currentTime >= this->tMax); }
 		virtual bool IsSaveStep() override;
+		virtual real_t MaxTime() const override;
 		virtual real_t NextTime() override;
 		virtual void ValidateStep() override;
 
