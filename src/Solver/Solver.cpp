@@ -8,6 +8,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/EquationSystem.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
@@ -32,11 +33,12 @@ using namespace std;
 Solver::Solver(
     FVM::UnknownQuantityHandler *unknowns,
     vector<UnknownQuantityEquation*> *unknown_equations,
+    EquationSystem *eqsys,
 	const bool verbose,
     enum OptionConstants::linear_solver lsolve,
     enum OptionConstants::linear_solver bksolve
 )
-    : unknowns(unknowns), unknown_equations(unknown_equations),
+    : unknowns(unknowns), unknown_equations(unknown_equations), eqsys(eqsys),
 	  verbose(verbose), linearSolver(lsolve), backupSolver(bksolve) {
 
     this->solver_timeKeeper = new FVM::TimeKeeper("Solver rebuild");
@@ -233,6 +235,26 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
     nontrivial_unknowns = unknowns;
 
     this->initialize_internal(size, unknowns);
+}
+
+/**
+ * This method is called whenever the solver finishes an
+ * iteration. It in turn calls all registered callback
+ * functions.
+ */
+void Solver::IterationFinished() {
+    for (auto f : this->callbacks_iterationFinished)
+        (*f)(this->eqsys->GetSimulation());
+}
+
+/**
+ * Register a function to call whenever a solver iteration
+ * has finished.
+ */
+void Solver::RegisterCallback_IterationFinished(
+    iteration_finished_func_t f
+) {
+    this->callbacks_iterationFinished.push_back(f);
 }
 
 /**

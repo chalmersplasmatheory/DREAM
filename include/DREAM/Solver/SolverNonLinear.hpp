@@ -18,7 +18,6 @@ namespace DREAM {
 	private:
 		FVM::BlockMatrix *jacobian = nullptr;
 		Vec petsc_F, petsc_dx;
-        EquationSystem *eqsys;
 
 		len_t maxiter=100;
 		real_t reltol=1e-6;

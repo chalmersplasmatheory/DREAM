@@ -239,9 +239,9 @@ namespace DREAM {
         static void ConstructEquation_x_p_prescribed_constant_velocity(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
-        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<len_t>*);
-        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
-        static TimeStepperIonization *ConstructTimeStepper_ionization(Settings*, FVM::UnknownQuantityHandler*);
+        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
+        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*, std::vector<len_t>*);
+        static TimeStepperIonization *ConstructTimeStepper_ionization(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
 
         // Data loading routines
         static void DefineDataR(const std::string&, Settings*, const std::string& name="data");
