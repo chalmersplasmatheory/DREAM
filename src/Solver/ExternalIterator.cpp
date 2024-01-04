@@ -66,9 +66,12 @@ bool ExternalIterator::Solve(
 		}
 
 		// Fetch the operator of the equation
-		FVM::Operator *op;
+		FVM::Operator *op = nullptr;
 		for (auto o : eqn->GetOperators())
 			op = o.second;
+
+		if (op == nullptr)
+			continue;
 
 		// Rebuild
 		op->RebuildTerms(t, dt, unknowns);

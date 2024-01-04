@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="18mm"
+   height="18mm"
+   viewBox="0 0 18 18"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.1 (c4e8f9ed74, 2021-05-24)"
+   sodipodi:docname="icon.svg"
+   inkscape:export-filename="/run/media/mathias/BlackTools/Fusion/software/DREAM/media/icon.png"
+   inkscape:export-xdpi="69.27272"
+   inkscape:export-ydpi="69.27272"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs2">
+    <rect
+       id="rect835"
+       height="49.703388"
+       width="164.2234"
+       y="74.457535"
+       x="88.62281" />
+  </defs>
+  <sodipodi:namedview
+     fit-margin-bottom="0"
+     fit-margin-right="0"
+     fit-margin-left="0"
+     fit-margin-top="0"
+     inkscape:window-maximized="1"
+     inkscape:window-y="32"
+     inkscape:window-x="0"
+     inkscape:window-height="1018"
+     inkscape:window-width="1920"
+     showgrid="false"
+     inkscape:document-rotation="0"
+     inkscape:current-layer="layer1"
+     inkscape:document-units="mm"
+     inkscape:cy="79.821429"
+     inkscape:cx="-58.571429"
+     inkscape:zoom="2.8"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     borderopacity="1.0"
+     bordercolor="#666666"
+     pagecolor="#ffffff"
+     id="base"
+     inkscape:pagecheckerboard="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     transform="translate(-119.30913,-71.53801)"
+     id="layer1"
+     inkscape:groupmode="layer"
+     inkscape:label="Lager 1">
+    <circle
+       style="fill:#3c26a5;fill-opacity:1;stroke:none;stroke-width:1.32292"
+       id="path839"
+       cx="128.30913"
+       cy="80.53801"
+       r="9" />
+    <circle
+       style="fill:#ac356d;fill-opacity:1;stroke:none;stroke-width:1.32292"
+       id="path856"
+       cx="127.55953"
+       cy="80.53801"
+       r="8" />
+    <circle
+       style="fill:#f95523;fill-opacity:1;stroke:none;stroke-width:1.32292"
+       id="path858"
+       cx="127.50771"
+       cy="80.53801"
+       r="7" />
+    <circle
+       style="fill:#e5ce42;fill-opacity:1;stroke:none;stroke-width:1.32292"
+       id="path887"
+       cx="127.76095"
+       cy="80.53801"
+       r="6" />
+    <circle
+       style="fill:#f1f1bb;fill-opacity:1;stroke:none;stroke-width:1.32292"
+       id="path889"
+       cx="128.13426"
+       cy="80.53801"
+       r="5" />
+    <ellipse
+       cy="80.53801"
+       cx="122.76424"
+       id="path839-3"
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292"
+       rx="9"
+       ry="11" />
+    <text
+       style="font-style:normal;font-weight:normal;font-size:14.1111px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;white-space:pre;shape-inside:url(#rect835);fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       id="text833"
+       xml:space="preserve"
+       transform="translate(31.164249,-1.9896932)"><tspan
+         x="88.623047"
+         y="87.108747"
+         id="tspan12775"><tspan
+           style="font-weight:900;font-family:Arial;-inkscape-font-specification:'Arial, Heavy';letter-spacing:-1.05833px"
+           id="tspan12773">D</tspan></tspan></text>
+  </g>
+</svg>

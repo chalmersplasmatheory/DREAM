@@ -15,14 +15,14 @@ TYPE_IONIZATION = 3
 
 class TimeStepper:
     
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, terminatefunc=None):
         """
         Constructor.
         """
-        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep)
+        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep, terminatefunc=None)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0, terminatefunc=None):
         """
         Set properties of the time stepper.
         """
@@ -38,6 +38,7 @@ class TimeStepper:
         self.setConstantStep(constantstep)       
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
+        self.terminatefunc = terminatefunc
         
         self.dtmax = None
         self.automaticstep = None
@@ -118,6 +119,17 @@ class TimeStepper:
         self.tolerance.set(reltol=float(reltol))
 
 
+    def setTerminationFunction(self, func):
+        """
+        Sets the Python function to call in order to determine when terminate
+        the time stepping. **NOTE**: This functionality is only available when
+        DREAM is compiled and run as a Python library.
+
+        :param func: Python function determining when to terminate time stepping. Takes a libdreampyface 'Simulation' object as input and returns a bool.
+        """
+        self.terminatefunc = func
+
+
     def setTmax(self, tmax):
         if tmax is None:
             self.tmax = None
@@ -185,6 +197,7 @@ class TimeStepper:
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
+        if 'terminatefunc' in data: self.terminatefunc = data['terminatefunc']
         
         self.verifySettings()
 
@@ -207,6 +220,9 @@ class TimeStepper:
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
             data['nsavesteps'] = int(self.nSaveSteps)
+
+            if self.terminatefunc != None:
+                data['terminatefunc'] = self.terminatefunc
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
             data['constantstep'] = self.constantstep
