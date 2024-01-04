@@ -175,6 +175,5 @@ class IonHandler(UnknownQuantity):
             plt.show(block=False)
 
         return ax
->>>>>>> master
 
 
