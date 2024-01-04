@@ -109,7 +109,7 @@ namespace DREAM {
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
 
         static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
-        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
+        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, std::vector<UnknownQuantityEquation*>*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
         static void DefinePreconditionerSettings(Settings*);
         static DiagonalPreconditioner *LoadPreconditionerSettings(Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&);
 

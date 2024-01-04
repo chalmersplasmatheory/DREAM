@@ -186,3 +186,10 @@ class DREAMOutput:
         return s
 
 
+    def time2index(self, t):
+        """
+        Converts the specified time to a time index.
+        """
+        return np.argmin(np.abs(self.grid.t[:]-t))
+
+

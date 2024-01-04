@@ -51,7 +51,7 @@ void ExternalIterator::Initialize(
  * quantities are converged.
  */
 bool ExternalIterator::Solve(
-	const real_t t, const real_t dt
+	const real_t t, const real_t dt, const len_t iTimeStep
 ) {
 	len_t vecoffs = 0;
 	for (len_t uqnId : external_unknowns) {
@@ -88,7 +88,7 @@ bool ExternalIterator::Solve(
 		dvec[i] = this->vec[i] - dvec[i];
 
 	// Check if ||dx||^2 is small enough for convergence
-	bool conv = this->convChecker->IsConverged(vec, dvec, this->printVerbose);
+	bool conv = this->convChecker->IsConverged(vec, dvec, iTimeStep, this->printVerbose);
 
 	// Update solution value
 	this->unknowns->Store(this->external_unknowns, this->vec);

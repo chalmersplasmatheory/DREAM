@@ -55,9 +55,8 @@ using namespace std;
  */
 TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
-    EquationSystem *eqsys,
-    vector<len_t>& nontrivials, ConvergenceChecker *cc, int_t checkEvery,
-    bool verbose, bool constantStep
+    EquationSystem *eqsys, vector<len_t>& nontrivials, vector<UnknownQuantityEquation*> *eqns,
+	ConvergenceChecker *cc, int_t checkEvery, bool verbose, bool constantStep
 ) : TimeStepper(uqh, eqsys), tMax(tMax), dt(dt0), nontrivials(nontrivials),
   checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
@@ -65,7 +64,7 @@ TimeStepperAdaptive::TimeStepperAdaptive(
 
     if (cc == nullptr) {
         const real_t RELTOL = 1e-6;
-        this->convChecker = new ConvergenceChecker(uqh, nontrivials, RELTOL);
+        this->convChecker = new ConvergenceChecker(uqh, eqns, nontrivials, nullptr, RELTOL);
     } else
         this->convChecker = cc;
 
@@ -454,7 +453,7 @@ bool TimeStepperAdaptive::UpdateStep() {
 
     CopySolution(&this->sol_full);
 
-    bool converged = this->convChecker->IsConverged(this->sol_full, this->sol_full, this->sol_half);
+    bool converged = this->convChecker->IsConverged(this->sol_full, this->sol_full, this->sol_half, this->currentStep);
     const real_t *err = this->convChecker->GetErrorNorms();
 
     // Calculate maximum error

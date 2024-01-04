@@ -120,12 +120,12 @@ void DiagonalPreconditioner::SetUnknownScale(
 
 
 // Default characteristic sizes of various types of quantities
-static constexpr real_t DENSITY_SCALE = 1e20;
-static constexpr real_t CURRENT_SCALE = 1e6;
-static constexpr real_t ENERGY_SCALE = 1e6;
-static constexpr real_t FLUX_SCALE = 1;
-static constexpr real_t TEMPERATURE_SCALE = 100;
-static constexpr real_t RUNAWAY_FRACTION = 1e-10;
+const real_t DiagonalPreconditioner::DENSITY_SCALE = 1e20;
+const real_t DiagonalPreconditioner::CURRENT_SCALE = 1e6;
+const real_t DiagonalPreconditioner::ENERGY_SCALE = 1e6;
+const real_t DiagonalPreconditioner::FLUX_SCALE = 1;
+const real_t DiagonalPreconditioner::TEMPERATURE_SCALE = 100;
+const real_t DiagonalPreconditioner::RUNAWAY_FRACTION = 1e-10;
 
 /**
  * Set default scalings.

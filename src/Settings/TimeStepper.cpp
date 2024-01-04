@@ -143,14 +143,16 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     bool verbose = s->GetBool(MODULENAME "/verbose");
     bool conststep = s->GetBool(MODULENAME "/constantstep");
 
+	vector<UnknownQuantityEquation*> *eqns = eqsys->GetEquations();
+
     if (dt == 0)
         dt = 1;
 
     ConvergenceChecker *cc = LoadToleranceSettings(
-        MODULENAME, s, u, *nontrivials
+        MODULENAME, s, eqns, u, *nontrivials
     );
 
-    return new TimeStepperAdaptive(tmax, dt, u, eqsys, *nontrivials, cc, checkevery, verbose, conststep);
+    return new TimeStepperAdaptive(tmax, dt, u, eqsys, *nontrivials, eqns, cc, checkevery, verbose, conststep);
 }
 
 /**

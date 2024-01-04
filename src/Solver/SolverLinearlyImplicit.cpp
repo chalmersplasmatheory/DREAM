@@ -176,7 +176,7 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
 
 		// Call external iterator (if enabled)
 		if (this->extiter != nullptr)
-			extiter_conv = this->extiter->Solve(t, dt);
+			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
 	} while (!extiter_conv);
 
 	if (this->extiter)
