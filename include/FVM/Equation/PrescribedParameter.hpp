@@ -9,7 +9,7 @@
 
 namespace DREAM::FVM {
     class PrescribedParameter : public PredeterminedParameter {
-    private:
+    protected:
         const real_t *time=nullptr;
         const real_t *data=nullptr;
 

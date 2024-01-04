@@ -158,9 +158,9 @@ def dict2h5(f, data, path=''):
         if type(d) == dict:
             o = f.create_group(key)
             dict2h5(o, d, path=path+'/'+key)
-        elif type(d) == float:
+        elif type(d) == float or type(d) == np.float64 or type(d) == np.float32:
             f.create_dataset(key, (1,), data=d)
-        elif type(d) == int:
+        elif type(d) == int or type(d) == np.int64:
             f.create_dataset(key, (1,), data=d, dtype='i8')
         elif type(d) == bool:
             v = 1 if d else 0

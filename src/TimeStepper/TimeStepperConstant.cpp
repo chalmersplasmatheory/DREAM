@@ -30,23 +30,6 @@ TimeStepperConstant::TimeStepperConstant(
 }
 
 /**
- * Check if a given unknown contains negative elements.
- */
-bool TimeStepperConstant::CheckNegative(const std::string& name) {
-    len_t uqtyid = unknowns->GetUnknownID(name);
-
-    if (unknowns->HasUnknown(name)) {
-        FVM::UnknownQuantity *uqty = unknowns->GetUnknown(uqtyid);
-        const real_t *data = uqty->GetData();
-        for (len_t i = 0; i < uqty->NumberOfElements(); i++)
-            if (data[i] < 0)
-                return true;
-    }
-
-    return false;
-}
-
-/**
  * Returns the time of the most recently _completed_ time step.
  */
 real_t TimeStepperConstant::CurrentTime() const {
@@ -54,29 +37,6 @@ real_t TimeStepperConstant::CurrentTime() const {
         return this->t0;
     else
         return (this->t0 + (this->tIndex-1)*this->dt);
-}
-
-/**
- * This method is called when an exception was thrown while
- * the next time step was being taken. In the constant time
- * stepper, we choose to forward this exception and just indicate
- * to the user that it might be due to the time step being too
- * short.
- *
- * ex: The exception that was caught.
- */
-void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
-    DREAM::IO::PrintError("TimeStepper: Exception caught during time stepping.");
-    DREAM::IO::PrintError("TimeStepper: Perhaps the exception could be avoided by decreasing the time step length?");
-
-//    if (CheckNegative(OptionConstants::UQTY_ION_SPECIES))
-//        DREAM::IO::PrintError("TimeStepper: Ion density 'n_i' is negative.");
-    if (CheckNegative(OptionConstants::UQTY_N_COLD))
-        DREAM::IO::PrintError("TimeStepper: Cold electron density 'n_cold' is negative.");
-    if (CheckNegative(OptionConstants::UQTY_T_COLD))
-        DREAM::IO::PrintError("TimeStepper: Cold electron temperature 'T_cold' is negative.");
-
-    throw ex;
 }
 
 /**
@@ -108,7 +68,7 @@ bool TimeStepperConstant::IsFinished() {
 
 /**
  * Returns 'true' if the current time step should be saved to
- * the final output. (Currently, we save all time steps)
+ * the final output.
  */
 bool TimeStepperConstant::IsSaveStep() {
     if (this->nSaveSteps == 0)

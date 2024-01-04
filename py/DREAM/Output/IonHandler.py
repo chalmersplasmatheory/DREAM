@@ -1,6 +1,8 @@
 # Object for handling the ion density 'n_i'
 
+import matplotlib.pyplot as plt
 import numpy as np
+
 from .IonSpecies import IonSpecies
 from .OutputException import OutputException
 from .UnknownQuantity import UnknownQuantity
@@ -129,5 +131,50 @@ class IonHandler(UnknownQuantity):
             n += ion.Z+1
 
         return n
+
+
+    def plot(self, t=-1, ax=None, show=None, **kwargs):
+        """
+        Visualize the ion charge state densities.
+        """
+        self.histogram(t=t, ax=ax, show=show, **kwargs)
+
+
+    def histogram(self, t=-1, ax=None, show=None, **kwargs):
+        """
+        Create a histogram of the ion charge state densities.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        x = [0]
+        y = [0]
+        labels = ['']
+        for i in range(len(self.ions)):
+            ion = self.ions[i]
+            for state in ion.ionstates:
+                x.append(x[-1]+1)
+                y.append(state.integral(t=t))
+                labels.append(state.getRomanName())
+        
+        x = x[1:]
+        y = y[1:]
+        labels = labels[1:]
+
+        #ax.hist(y, weights=x)
+        ax.bar(x, y, tick_label=labels, **kwargs)
+        lbls = ax.get_xticklabels()
+        plt.setp(lbls, rotation=45)
+
+        if show:
+            plt.show(block=False)
+
+        return ax
+>>>>>>> master
 
 

@@ -301,7 +301,7 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
             if(Flist[0]%2==1)
                 return 0;
             int_t Flist_new[4] = {Flist[1],Flist[2], Flist[3], Flist[4]};
-            return 4*M_PI/(Flist[0]+1)*fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, RadialGrid::FSA_FUNC_UNITY /*(not used)*/, nullptr, Flist_new);
+            return 2*M_PI/(Flist[0]+1)*fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, RadialGrid::FSA_FUNC_UNITY /*(not used)*/, nullptr, Flist_new);
         } else
             throw FVMException("BounceAverager: Bounce integrals with Flist=nullptr not supported when Nxi=1");
     }

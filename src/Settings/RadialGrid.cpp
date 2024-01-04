@@ -51,6 +51,8 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
     // Magnetic ripple effects
     DefineOptions_f_ripple(RADIALGRID, s);
+	// Time-varying B operator
+	DefineOptions_f_timevaryingb(RADIALGRID, s);
 
     // NumericBRadialGridGenerator
     s->DefineSetting(RADIALGRID "/filename", "Name of file containing the magnetic field data", (string)"");
@@ -69,6 +71,15 @@ void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s)
 
     // Define perturbation data
     DefineDataIonRT(mod, s, "ripple");
+}
+
+/**
+ * Define options for the time-varying magnetic field operator.
+ */
+void SimulationGenerator::DefineOptions_f_timevaryingb(
+	const string& mod, Settings *s
+) {
+	DefineDataT(mod, s, "dlnB0dt");
 }
 
 /**

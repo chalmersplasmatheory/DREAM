@@ -87,7 +87,7 @@ class IonSpecies:
 
         for ion in self.ionstates:
             if n is None:
-                n = ion.get(t=t)
+                n = np.copy(ion.get(t=t))
             else:
                 n += ion.get(t=t)
 
@@ -160,7 +160,39 @@ class IonSpecies:
             return _IonSum.plotIntegral(**kwargs)
         else:
             return _IonSum.plot(**kwargs)
-        
-        
+
+
+    def histogram(self, t=-1, ax=None, show=None, **kwargs):
+        """
+        Create a histogram of the ion charge state densities for this species.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        x = [0]
+        y = [0]
+        labels = ['']
+        for state in self.ionstates:
+            x.append(x[-1]+1)
+            y.append(state.integral(t=t))
+            labels.append(state.getRomanName())
+
+        x = x[1:]
+        y = y[1:]
+        labels = labels[1:]
+
+        ax.bar(x, y, tick_label=labels, **kwargs)
+        lbls = ax.get_xticklabels()
+        plt.setp(lbls, rotation=45)
+
+        if show:
+            plt.show(block=False)
+
+        return ax
         
         

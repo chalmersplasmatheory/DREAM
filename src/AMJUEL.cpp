@@ -54,16 +54,31 @@ real_t AMJUEL::getRecLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
-            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+        if(lnn == 0){
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                len_t j=0;
                 lnRecAMJUEL+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(j>0)
-                    derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
-                
                 lnnj*=lnn;
+                // Now lnnj*=lnn=0
+                j = 1;
+                
+                derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j;
+                
+                lnTi*=lnT;
             }
-            lnTi*=lnT;
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+                lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnRecAMJUEL+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(j>0)
+                        derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
+                    
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return derivFactor*exp(lnRecAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -89,16 +104,35 @@ real_t AMJUEL::getRecLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
+        if(lnT == 0){
+            len_t i=0;
         	lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnRecAMJUEL+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
-                    derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
-                    
                 lnnj*=lnn;
             }
             lnTi*=lnT;
+            // Now lnTi*=lnT=0
+            i = 1;
+            lnnj = 1.0;
+            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                    
+                lnnj*=lnn;
+            }
+            
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnRecAMJUEL+=recLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(i>0)
+                        derivFactor+=recLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return derivFactor*exp(lnRecAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -154,16 +188,31 @@ real_t AMJUEL::getRecRadLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
-            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+        if(lnn == 0){
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                len_t j=0;
                 lnRecRadAMJUEL+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(j>0)
-                    derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
-                    
                 lnnj*=lnn;
+                // Now lnnj*=lnn=0
+                j = 1;
+                
+                derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j;
+                
+                lnTi*=lnT;
             }
-            lnTi*=lnT;
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+                lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnRecRadAMJUEL+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(j>0)
+                        derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return Constants::ec*derivFactor*exp(lnRecRadAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -189,16 +238,34 @@ real_t AMJUEL::getRecRadLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
+        if(lnT == 0){
+            len_t i=0;
+        	lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnRecRadAMJUEL+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
-                    derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
-                    
                 lnnj*=lnn;
             }
             lnTi*=lnT;
+            // Now lnTi*=lnT=0
+            i = 1;
+            lnnj = 1.0;
+            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                    
+                lnnj*=lnn;
+            }
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnRecRadAMJUEL+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(i>0)
+                        derivFactor+=recRadLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return Constants::ec*derivFactor*exp(lnRecRadAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -254,16 +321,31 @@ real_t AMJUEL::getIonizLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
-            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+        if(lnn == 0){
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                len_t j=0;
                 lnIonizAMJUEL+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(j>0)
-                    derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
-                    
                 lnnj*=lnn;
+                // Now lnnj*=lnn=0
+                j = 1;
+                
+                derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j;
+                
+                lnTi*=lnT;
             }
-            lnTi=lnT;
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+                lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnIonizAMJUEL+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(j>0)
+                        derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi=lnT;
+            }
         }
         return derivFactor*exp(lnIonizAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -289,16 +371,34 @@ real_t AMJUEL::getIonizLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
+        if(lnT == 0){
+            len_t i=0;
+        	lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnIonizAMJUEL+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
-                    derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
-                    
                 lnnj*=lnn;
             }
             lnTi*=lnT;
+            // Now lnTi*=lnT=0
+            i = 1;
+            lnnj = 1.0;
+            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                    
+                lnnj*=lnn;
+            }
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnIonizAMJUEL+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(i>0)
+                        derivFactor+=ionizLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return derivFactor*exp(lnIonizAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -356,16 +456,31 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_n(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
-            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+        if(lnn == 0){
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                len_t j=0;
                 lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(j>0)
-                    derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
-                    
                 lnnj*=lnn;
+                // Now lnnj*=lnn=0
+                j = 1;
+                
+                derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j;
+                
+                lnTi*=lnT;
             }
-            lnTi*=lnT;
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+                lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(j>0)
+                        derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*j*lnnj/lnn/n;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return Constants::ec*derivFactor*exp(lnIonizLossAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{
@@ -391,16 +506,34 @@ real_t AMJUEL::getIonizLossLyOpaque_deriv_T(len_t Z0, real_t n, real_t T){
         real_t lnTi=1.0;
         real_t lnnj=1.0;
         
-        for(len_t i=0;i<maxTempCoeffsIndex;i++){
-            lnnj=1.0;
+        if(lnT == 0){
+            len_t i=0;
+        	lnnj=1.0;
             for(len_t j=0;j<maxDensCoeffsIndex;j++){
                 lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
-                if(i>0)
-                    derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
-                    
                 lnnj*=lnn;
             }
             lnTi*=lnT;
+            // Now lnTi*=lnT=0
+            i = 1;
+            lnnj = 1.0;
+            for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*i*lnnj;
+                    
+                lnnj*=lnn;
+            }
+        } else {
+            for(len_t i=0;i<maxTempCoeffsIndex;i++){
+            	lnnj=1.0;
+                for(len_t j=0;j<maxDensCoeffsIndex;j++){
+                    lnIonizLossAMJUEL+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*lnTi*lnnj;
+                    if(i>0)
+                        derivFactor+=ionizLossLyOpaque[i*maxDensCoeffsIndex+j]*i*lnTi/lnT/T*lnnj;
+                        
+                    lnnj*=lnn;
+                }
+                lnTi*=lnT;
+            }
         }
         return Constants::ec*derivFactor*exp(lnIonizLossAMJUEL)/1e6; // Factor 1e6 converts from cm^3 to m^3
     }else{

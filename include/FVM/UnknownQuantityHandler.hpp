@@ -51,6 +51,7 @@ namespace DREAM::FVM {
         void Store(const len_t id, Vec& v, const len_t offs, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
         void Store(const len_t id, const real_t *v, const len_t offs=0, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
         void SetFromLongVectorAll(const real_t*, bool mayBeConstant=false);
+		void RestoreSolution(std::vector<len_t>&);
 
         void RollbackSaveStep();
         void SaveStep(const real_t t, bool trueSave);

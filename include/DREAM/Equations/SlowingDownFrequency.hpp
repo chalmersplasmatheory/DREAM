@@ -10,6 +10,7 @@ namespace DREAM {
         gsl_interp_accel *gsl_acc;
 
         static const len_t  MAX_Z = 18; // tabulated mean excitation energies up to Z = 18
+        static const len_t  MAX_Z_EXTENDED = 86; // extended tabulated mean excitation energies up to Z = 86
         static const len_t  MAX_NE = 14; // tabulated constants for analytic formula up to Ne = 14
         static const real_t MEAN_EXCITATION_ENERGY_DATA[MAX_Z][MAX_Z];
         static const real_t MEAN_EXCITATION_ENERGY_FUNCTION_D[];
@@ -27,9 +28,10 @@ namespace DREAM {
 
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateDDTElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
-        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/) override {return 0;}
-        virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) override;
+        virtual real_t evaluateScreenedTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/, OptionConstants::collqty_collfreq_type) override {return 0;};
+        virtual real_t evaluateStoppingTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
+        virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode) override;
     protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
     public:

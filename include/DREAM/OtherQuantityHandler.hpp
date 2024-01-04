@@ -23,8 +23,14 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
+#include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -54,12 +60,26 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+			// Tritium and Compton source terms
+			DREAM::ComptonSource *comptonSource=nullptr;
+			DREAM::ComptonSource *comptonSource_fluid=nullptr;
+			std::vector<DREAM::TritiumSource*> tritiumSource;
+			// Pitch angle advection due to time varying B
+			DREAM::TimeVaryingBTerm *f_hot_timevaryingb=nullptr;
+			DREAM::TimeVaryingBTerm *f_re_timevaryingb=nullptr;
+			// Synchrotron loss term
+			DREAM::SynchrotronTerm *f_hot_synchrotron=nullptr;
+			DREAM::SynchrotronTerm *f_re_synchrotron=nullptr;
+			// Flux of RE from hottail grid
+			DREAM::FVM::BC::PXiExternalLoss *n_re_f_hot_flux=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
             // Hyperresistive diffusion term
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
+			// List of ion rate equations for each ion species
+			std::vector<IonRateEquation*> ni_rates;
         };
-
+    
     protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
@@ -76,7 +96,7 @@ namespace DREAM {
 
         // indices to unknownquantities
         len_t 
-            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Wcold,
+            id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
             id_n_re_neg=0;
 

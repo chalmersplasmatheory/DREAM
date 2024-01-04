@@ -106,6 +106,8 @@ namespace DREAM {
 
         bool HasSetting(const std::string&);
 
+		void UndefineSetting(const std::string& name);
+
         enum setting_type GetType(const std::string&);
 
         // GETTERS

@@ -79,13 +79,18 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         shell: bash
         #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.8/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
-        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.8/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.10/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+
+      - name: Examine configuration
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: cat CMakeCache.txt
       
       # Compile and link DREAM
       - name: Build
         working-directory: ${{ github.workspace }}/build
         shell: bash
-        run: make
+        run: make VERBOSE=YES
 
       # Runs a set of commands using the runners shell
       #- name: Test

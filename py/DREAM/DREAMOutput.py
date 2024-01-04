@@ -154,6 +154,8 @@ class DREAMOutput:
         if 'timings' in od:
             self.timings = Timings(od['timings'], output=self)
 
+        return od
+
 
     def getFileSize(self):
         """

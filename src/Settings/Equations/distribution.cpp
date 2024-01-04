@@ -10,9 +10,11 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
+#include "DREAM/Equations/Kinetic/PrescribedKineticParameter.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -22,6 +24,7 @@
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
+#include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
 
 
@@ -50,6 +53,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
+	s->DefineSetting(mod + "/timevaryingbmode", "Enables/disabled the adiabatic compression force caused by a time varying magnetic field strength", (int_t)OptionConstants::EQTERM_TIMEVARYINGB_MODE_NEGLECT);
 
     s->DefineSetting(mod + "/mode", "Which model to use for distribution (analytical function or numerical resolved on kinetic grid)", (int_t) OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
 
@@ -60,6 +64,9 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Kinetic transport model
     DefineOptions_Transport(mod, s, true);
+
+	// Prescribed distribution
+	DefineDataTR2P(mod, s, "f_prescribed");
 
     // Approximate jacobian settings
     s->DefineSetting(mod + "/fullIonJacobian", "Enables/disables the ion jacobian.", (bool) true);
@@ -89,7 +96,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
     FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
-    RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
+    RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
+	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -133,6 +141,10 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
             eqn->AddTerm(*ripple_Dxx);
 
+		// Add pitch angle advection due to time-varying B?
+		if ((*timevaryingb = ConstructEquation_f_timevaryingb(s, mod, grid)) != nullptr)
+			eqn->AddTerm(*timevaryingb);
+
         // Add trapping boundary condition which mirrors the solution in the trapping region.
         // Only affects the dynamics in inhomogeneous magnetic fields.
         if(grid->HasTrapped())
@@ -157,10 +169,10 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Synchrotron losses
     enum OptionConstants::eqterm_synchrotron_mode synchmode =
         (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
-    if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
-        eqn->AddTerm(new SynchrotronTerm(
-            grid, gridtype
-        ));
+    if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE) {
+		*synchrotron = new SynchrotronTerm(grid, gridtype);
+        eqn->AddTerm(*synchrotron);
+	}
 
     // Add transport term
     bool hasTransport = ConstructTransportTerm(
@@ -255,7 +267,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 			id_E_field
 		);*/
 
-		if (HasInitialJtot(eqsys, s))
+		if (HasInitialJtot(eqsys, s) && !isReducedEquation)
 			throw SettingsException(
 				"distribution: Cannot prescribe an initial plasma current when running in kinetic mode."
 			);
@@ -308,6 +320,41 @@ RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
         );
 
     return rps;
+}
+
+/**
+ * Construct an equation term for the time-varying magnetic field.
+ */
+TimeVaryingBTerm *SimulationGenerator::ConstructEquation_f_timevaryingb(
+    Settings *s, const std::string& mod, FVM::Grid *grid
+) {
+	enum OptionConstants::eqterm_timevaryingb_mode bmode =
+		(enum OptionConstants::eqterm_timevaryingb_mode)s->GetInteger(mod + "/timevaryingbmode");
+	
+	if (bmode == OptionConstants::EQTERM_TIMEVARYINGB_MODE_NEGLECT)
+		return nullptr;
+	
+	FVM::Interpolator1D *dlnB0dt = LoadDataT("radialgrid", s, "dlnB0dt");
+	TimeVaryingBTerm *tvbt = new TimeVaryingBTerm(grid, dlnB0dt);
+
+	return tvbt;
+}
+
+/**
+ * Construct an equation for f where it is prescribed in time.
+ */
+void SimulationGenerator::ConstructEquation_f_prescribed(
+	const len_t id_f, EquationSystem *eqsys, FVM::Grid *grid,
+	Settings *s, const std::string& mod
+) {
+	FVM::Operator *op = new FVM::Operator(grid);
+
+	struct dream_4d_data *data = LoadDataTR2P(
+		mod, s, "f_prescribed"
+	);
+
+	op->AddTerm(new PrescribedKineticParameter(grid, data));
+    eqsys->SetOperator(id_f, id_f, op, "Prescribed");
 }
 
 /**

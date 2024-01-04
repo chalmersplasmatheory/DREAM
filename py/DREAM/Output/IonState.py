@@ -17,3 +17,27 @@ class IonState(FluidQuantity):
         self.Z  = Z
         self.Z0 = Z0
 
+
+    def getRomanName(self):
+        """
+        Returns the name of this ion charge state using roman
+        numerals for the charge state number.
+        """
+        val = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1]
+        syb = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"]
+        roman_num = ''
+        i = 0
+        num = self.Z0
+
+        if num == 0:
+            roman_num = '0'
+        else:
+            while num > 0:
+                for _ in range(num // val[i]):
+                    roman_num += syb[i]
+                    num -= val[i]
+                i += 1
+
+        return self.name.split('-')[0]+f'-{roman_num}'
+
+
