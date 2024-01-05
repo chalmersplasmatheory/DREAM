@@ -10,8 +10,7 @@ import dreampyface
 from DREAM import DREAMSettings, DREAMOutput
 
 
-def callback(ptr):
-    sim = dreampyface.Simulation(ptr)
+def callback(sim):
     print('TIME = {}'.format(sim.getCurrentTime()))
 
 ds = DREAMSettings()
@@ -48,5 +47,5 @@ uinfo = s.unknowns.getInfo()
 for uq, info in uinfo.items():
     print('{:12s}  {:8d}  {}'.format(uq, info['nelements'], info['description']))
 
-#do = s.run()
+do = s.run()
 
