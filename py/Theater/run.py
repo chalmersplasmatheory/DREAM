@@ -9,6 +9,7 @@ import time
 from DREAM import DREAMSettings
 from dreampyface import Simulation
 
+from . DREAMTheater import DREAMTheater
 from . PlotWindow import PlotWindow
 
 
@@ -39,6 +40,17 @@ def plot_fluidquantity(simulation, unknown, radius=0):
         y.append(u['x'][:,r])
     
     return x, y
+
+
+def gui(ds=None):
+    """
+    Launch the DREAM Theater GUI with the given DREAMSettings object as
+    input.
+    """
+    app = QtWidgets.QApplication(sys.argv)
+    win = DREAMTheater(ds)
+    win.show()
+    return app.exec_()
 
 
 def run_monitor(s, func, *args, **kwargs):

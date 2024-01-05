@@ -28,7 +28,7 @@ import traceback
 import random
 import sys
 
-from . DialogFluidQuantity import DialogFluidQuantity
+#from . DialogFluidQuantity import DialogFluidQuantity
 
 try:
     import webbrowser
@@ -389,6 +389,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
                 "Plotting of quantities has not been implemented yet")
         elif action == actionMonitor:
             # TODO determine if this is a kinetic, fluid or scalar quantity...
+            """
             diag = DialogFluidQuantity(r=self.output.grid.r, parent=self)
             if not diag.exec_():
                 return
@@ -403,6 +404,8 @@ class DREAMTheater(QtWidgets.QMainWindow):
 
             self.plotconfig.addQuantity(item.text(), x=x, y=y, xlabel=x)
             self.plotconfig.render(self.data)
+            """
+            pass
 
     
     def runScript(self):
