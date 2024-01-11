@@ -40,6 +40,8 @@ namespace DREAM {
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }
         FVM::UnknownQuantity *GetUnknown() { return this->uqty; }
 
+		bool HasTransientTerm() const;
+
         len_t NumberOfElements() const { return this->uqty->NumberOfElements(); }
         len_t NumberOfNonZeros();
         len_t NumberOfNonZeros_jac();
