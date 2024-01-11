@@ -92,5 +92,6 @@ ds.output.setFilename('output.h5')
 
 # Save settings to HDF5 file
 #ds.save('dream_settings.h5')
-Theater.run_monitor(ds, func=lambda sim : Theater.plot_fluidquantity(sim, 'n_re'), xlim=(0, tMax), ylim=(0, 1e18))
+#Theater.run_monitor(ds, func=lambda sim : Theater.plot_fluidquantity(sim, 'n_re'), xlim=(0, tMax), ylim=(0, 1e18))
+Theater.gui(ds)
 
