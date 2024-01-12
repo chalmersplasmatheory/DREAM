@@ -79,8 +79,6 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t *n_i    = unknowns->GetUnknownData(id_ni);
     
-    real_t Li_ioniz, Li_amjuel, eps;
-    
     for (len_t i = 0; i < NCells; i++)
             weights[i] = 0;
 
@@ -179,8 +177,6 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t *n_i    = unknowns->GetUnknownData(id_ni);
     
-    real_t Li_ioniz, Li_amjuel, dLi_ioniz, dLi_amjuel, eps;
-
     if(derivId == id_ni){
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
@@ -254,7 +250,6 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
             }
         }
     } else if(derivId == id_ncold){
-        real_t Li;
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
