@@ -24,7 +24,7 @@ namespace DREAM::FVM {
         }
     public:
         TransientTerm(Grid* g, const len_t unknownId, real_t scaleFactor = 1.0) 
-            : LinearTransientTerm(g,unknownId), scaleFactor(scaleFactor) {} 
+            : LinearTransientTerm(g,unknownId), scaleFactor(scaleFactor) {SetName("TransientTerm");} 
     };
 }
 
