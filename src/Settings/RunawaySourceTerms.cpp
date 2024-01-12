@@ -145,7 +145,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     if(distHT!=nullptr && hottail_mode == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){
         oqty_terms->n_re_hottail_rate = new HottailRateTermHighZ(
             grid, distHT, unknowns, ions, 
-            REFluid->GetLnLambda(), -1.0
+            REFluid->GetLnLambda(), REFluid, -1.0
         );
         rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
     }
