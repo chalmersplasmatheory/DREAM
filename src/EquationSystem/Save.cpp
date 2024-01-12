@@ -35,3 +35,23 @@ void EquationSystem::SaveTimings(SFile *sf, const string& name) {
     this->REFluid->SaveTimings(sf, path);
 }
 
+/**
+ * Save solver data.
+ */
+void EquationSystem::SaveSolverData(SFile *sf, const string& name) {
+	this->solver->WriteDataSFile(sf, name);
+
+	// Save list of non-trivials
+	string unkn = "";
+	string nontriv = "";
+
+	for (len_t i = 0; i < this->unknowns.Size(); i++)
+		unkn += this->unknowns.GetUnknown(i)->GetName() + ";";
+
+	for (len_t i = 0; i < nontrivial_unknowns.size(); i++)
+		nontriv += this->unknowns.GetUnknown(nontrivial_unknowns[i])->GetName() + ";";
+
+	sf->WriteString(name + "/unknowns", unkn);
+	sf->WriteString(name + "/nontrivials", nontriv);
+}
+

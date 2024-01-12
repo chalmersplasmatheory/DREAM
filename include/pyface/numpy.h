@@ -18,5 +18,6 @@
 
 // Include numpy
 #include <numpy/arrayobject.h>
+#include <numpy/ndarraytypes.h>
 
 #endif/*_DREAM_NUMPY_H*/

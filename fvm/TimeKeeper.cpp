@@ -76,7 +76,7 @@ void TimeKeeper::StopTimer(const len_t timer) {
  *              timer with the specified ID.
  */
 void TimeKeeper::PrintTimings(bool printTitle, const int_t normalizeto) {
-    len_t timer;
+    len_t timer=0;
     bool normalize = (normalizeto >= 0);
 
     if (normalize)
