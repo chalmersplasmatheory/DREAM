@@ -19,9 +19,10 @@ using namespace std;
  */
 TimeStepperIonization::TimeStepperIonization(
 	const real_t tMax, const real_t dt0, const real_t dtMax,
-	FVM::UnknownQuantityHandler *u, const real_t automaticstep,
-	const real_t safetyfactor, const real_t minSaveDt
-) : TimeStepper(u), tMax(tMax), dt0(dt0), dtMax(dtMax),
+	FVM::UnknownQuantityHandler *u, EquationSystem *eqsys,
+	const real_t automaticstep, const real_t safetyfactor,
+	const real_t minSaveDt
+) : TimeStepper(u, eqsys), tMax(tMax), dt0(dt0), dtMax(dtMax),
 	minSaveDt(minSaveDt), automaticstep(automaticstep),
 	safetyfactor(safetyfactor)
 {
@@ -106,6 +107,13 @@ real_t TimeStepperIonization::NextTime() {
 		return this->tMax;
 	else
 		return this->currentTime+this->dt;
+}
+
+/**
+ * Returns the maximum time for this simulation.
+ */
+real_t TimeStepperIonization::MaxTime() const {
+    return this->tMax;
 }
 
 /**

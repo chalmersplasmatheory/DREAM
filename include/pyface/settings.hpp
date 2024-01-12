@@ -9,6 +9,7 @@
 
 DREAM::Settings *dreampy_loadsettings(PyObject*);
 void dreampy_load_dict(DREAM::Settings*, const std::string&, PyObject*);
+void dreampy_load_address(DREAM::Settings*, const std::string&, PyObject*);
 void dreampy_load_bool(DREAM::Settings*, const std::string&, PyObject*);
 void dreampy_load_int(DREAM::Settings*, const std::string&, PyObject*);
 void dreampy_load_real(DREAM::Settings*, const std::string&, PyObject*);

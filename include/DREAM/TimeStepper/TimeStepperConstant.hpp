@@ -20,14 +20,15 @@ namespace DREAM {
         real_t dSaveStep = 0, nextSaveStep = 0;
 
     public:
-        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, const len_t nSaveSteps=0);
-        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, const len_t nSaveSteps=0);
+        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, EquationSystem*, const len_t nSaveSteps=0);
+        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, EquationSystem*, const len_t nSaveSteps=0);
 
         void InitSaveSteps();
 
         virtual real_t CurrentTime() const override;
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
+        virtual real_t MaxTime() const override;
         virtual real_t NextTime() override;
         virtual void PrintProgress() override;
         virtual void ValidateStep() override;

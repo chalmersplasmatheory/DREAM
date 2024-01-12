@@ -539,7 +539,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
     real_t RMinusR0_crit=Delta-rmin*sin(delta);
 	
 	// Determine the quadrant
-	len_t quadrant;
+	len_t quadrant=0;
 	if(RMinusR0>RMinusR0_crit && y>=0)
 	    quadrant=1;
 	else if(RMinusR0<RMinusR0_crit && y>=0)

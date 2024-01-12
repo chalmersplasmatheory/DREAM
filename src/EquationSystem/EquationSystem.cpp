@@ -227,6 +227,8 @@ void EquationSystem::Solve() {
             this->postProcessor->Process(tNext);
 
             if (timestepper->IsSaveStep()) {
+                this->TimestepFinished();
+
                 // true = Really save the step (if it's false, we just
                 // indicate that we have taken another timestep). This
                 // should only be true for time steps which we want to
@@ -260,3 +262,37 @@ void EquationSystem::Solve() {
     }
 }
 
+/**
+ * Call all functions in 'callbacks_timestepFinished'.
+ */
+void EquationSystem::TimestepFinished() {
+    for (auto f : this->callbacks_timestepFinished)
+        (*f)(this->simulation);
+}
+
+/**
+ * Register a function to call whenever a time step
+ * has been taken.
+ */
+void EquationSystem::RegisterCallback_TimestepFinished(
+    timestep_finished_func_t f
+) {
+    this->callbacks_timestepFinished.push_back(f);
+}
+
+/**
+ * Register a function to call whenever a solver iteration
+ * has been finished.
+ */
+void EquationSystem::RegisterCallback_IterationFinished(
+    Solver::iteration_finished_func_t f
+) {
+    this->solver->RegisterCallback_IterationFinished(f);
+}
+
+/**
+ * Returns the maximum simulation time for this simulation.
+ */
+real_t EquationSystem::GetMaxTime() const {
+    return this->timestepper->MaxTime();
+}
