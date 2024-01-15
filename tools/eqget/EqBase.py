@@ -6,7 +6,11 @@
 #
 
 import h5py
-from matplotlib._contour import QuadContourGenerator
+try:
+    from matplotlib._contour import QuadContourGenerator as ContourGenerator
+except ModuleNotFoundError:
+    from contourpy import Mpl2014ContourGenerator as ContourGenerator
+
 import matplotlib.pyplot as plt
 import numpy as np
 import re
@@ -363,7 +367,7 @@ class EqBase:
         psi2d = np.transpose(self.psi(self.R, self.Z))
         psin2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
         R, Z = np.meshgrid(self.R, self.Z)
-        self.contour_generator = QuadContourGenerator(R, Z, psin2d, None, True, 0)
+        self.contour_generator = ContourGenerator(R, Z, psin2d, None, True, 0)
 
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)
