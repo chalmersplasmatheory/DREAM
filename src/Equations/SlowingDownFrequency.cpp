@@ -13,10 +13,20 @@
  * non-relativistic operator following Rosenbluth, Macdonald & Judd, Phys Rev (1957),
  * and is described in doc/notes/theory.pdf Appendix B.
  */
+ 
+ /*
+  * Modified by J. Walkowiak to include external atomic data (Mean Excitation Energy)
+  * 08.2022
+  * 
+  */
+ 
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
 #include <cmath>
+
+//indlude extended table with approximated Mean Excitation Energy
+#include "MeanExcitationEnergy_Extended.cpp"
 
 using namespace DREAM;
 
@@ -86,7 +96,7 @@ SlowingDownFrequency::~SlowingDownFrequency(){
  * Modification: Moved the -beta^2 contribution inside the interpolation term in order
  * to preserve positivity of the contribution.
  */
-real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
+real_t SlowingDownFrequency::evaluateStoppingTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
     real_t NBound = Z - Z0;
     if (!NBound)
@@ -96,6 +106,7 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t gamma = sqrt(1+p2);
     real_t beta2 = p2/(1+p2);
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
+
 
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
@@ -124,21 +135,27 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     }
     if (Z <= MAX_Z){ /* use tabulated data */
         I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0];
-    }else{ /* use the formula instead */
-        len_t Ne = Z-Z0;
-        if (Ne <= MAX_NE){
-            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[Ne-1]; 
-            S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
-        }else{
-            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE-1]; 
-            S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
-        }
-        real_t A_N = (1-D_N) * (1-D_N);
-        real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
-        real_t C_N = (Ne*D_N - S_N0) * (Ne*D_N - S_N0);
-
-        I = HYDROGEN_MEAN_EXCITATION_ENERGY * (A_N*Z*Z + B_N*Z + C_N);
     }
+    else  if (Z <= MAX_Z_EXTENDED) /* use extended data from MeanExcitationEnergy_Extended.cpp */
+	  { 
+	        I = MEAN_EXCITATION_ENERGY_EXTENDED[Z-1][Z-Z0-1];
+	  }
+	  else{ /* use the formula instead */ /*this if can be used to switch to the old version of code*/
+	        len_t Ne = Z-Z0;
+	        if (Ne <= MAX_NE) {
+	            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[Ne-1]; 
+	            S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
+	        }
+	        else {
+	            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE-1]; 
+	            S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
+	        }
+	        real_t A_N = (1-D_N) * (1-D_N);
+	        real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
+	        real_t C_N = (Ne*D_N - S_N0) * (Ne*D_N - S_N0);
+	
+	        I = HYDROGEN_MEAN_EXCITATION_ENERGY * (A_N*Z*Z + B_N*Z + C_N);
+	    }
     return I / Constants::mc2inEV;
 }
 
@@ -179,7 +196,7 @@ real_t bremsIntegrand(real_t x, void*){
  * Evaluates the bremsstrahlung stopping power formula. Using the non-screened 
  * formula given as (4BN) in H W Koch and J W Motz, Rev Mod Phys 31, 920 (1959).
  */
-real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*/, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type /*collfreq_type*/){
+real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*/, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode){
     if(brems_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER)
         return 0;
     else if(p==0)
@@ -294,7 +311,7 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
         for(len_t iz = 0; iz<nZ; iz++)
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 len_t ind = ionIndex[iz][Z0];
-                p3nuS0 += evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
+                p3nuS0 += evaluateStoppingTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
             }
     p3nuS0 *= preFactor;
     return p3nuS0;
@@ -340,7 +357,7 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
                 for(len_t iz=0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         len_t indZ = ionIndex[iz][Z0];
-                        dP3nuS[indZ*nr + ir] += preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
+                        dP3nuS[indZ*nr + ir] += preFactor * evaluateStoppingTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
                     }
         }
     else if(derivId == id_Tcold) 

@@ -29,8 +29,12 @@ COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
 COMPTON_RATE_ITER_DMS = -1
+COMPTON_RATE_ITER_DMS_KINETIC = -2
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
+TRITIUM_MODE_NEGLECT = 1
+TRITIUM_MODE_FLUID = 2
+TRITIUM_MODE_KINETIC = 3
 
 # Interpolation methods for advection term in transport equation
 AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
@@ -55,7 +59,7 @@ HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED):
         """
         Constructor.
         """
@@ -63,13 +67,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         self.avalanche = avalanche
         self.dreicer   = dreicer
-        self.compton   = compton
-        self.comptonPhotonFlux = comptonPhotonFlux
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
+        self.extrapolateDreicer = True
+
+        self.setCompton(compton, comptonPhotonFlux)
 
         self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.transport = TransportSettings(kinetic=False)
@@ -109,7 +114,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.dreicer = int(dreicer)
 
 
-    def setCompton(self, compton, photonFlux = None):
+    def setCompton(self, compton, photonFlux = None, photonFlux_t = np.array([0])):
         """
         Specifies which model to use for calculating the
         compton runaway rate.
@@ -121,13 +126,24 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 # set fluid compton source and standard ITER flux of 1e18
                 compton = COMPTON_MODE_FLUID
                 if photonFlux is None:
-                    photonFlux = ITER_PHOTON_FLUX_DENSITY
-            
+                    photonFlux = np.array([ITER_PHOTON_FLUX_DENSITY])
+                    photonFlux_t = np.array([0])
+
+            if compton == COMPTON_RATE_ITER_DMS_KINETIC:
+                # set fluid compton source and standard ITER flux of 1e18
+                compton = COMPTON_MODE_KINETIC
+                if photonFlux is None:
+                    photonFlux = np.array([ITER_PHOTON_FLUX_DENSITY])
+                    photonFlux_t = np.array([0])
+
             if photonFlux is None:
                 raise EquationException("n_re: Compton photon flux must be set.")
+            elif type(photonFlux) == int or type(photonFlux) == float or type(photonFlux) == np.float64:
+                photonFlux = np.array([float(photonFlux)])
 
             self.compton = int(compton)
             self.comptonPhotonFlux = photonFlux
+            self.comptonPhotonFlux_t = photonFlux_t
 
 
     def setEceff(self, Eceff):
@@ -143,7 +159,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifices whether or not to include runaway generation
         through tritium decay as a source term.
         """
-        self.tritium = tritium
+        if tritium == True or tritium == TRITIUM_MODE_FLUID:
+            self.tritium = TRITIUM_MODE_FLUID
+        if tritium == False or tritium == TRITIUM_MODE_NEGLECT:
+            self.tritium = TRITIUM_MODE_NEGLECT
+        self.tritium = int(tritium)
 
 
     def setHottail(self, hottail):
@@ -165,7 +185,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         large-angle collisions with runaways moving in different directions.
         """
         self.negative_re = negative_re
-
+        
+    def setExtrapolateDreicer(self, extrapolateDreicer=False):
+        """
+        Extrapolates the result from the neural network for small electric fields
+        such that the Dreicer generation rate is continuous and has continuous derivative.
+        """
+        self.extrapolateDreicer = extrapolateDreicer
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
@@ -192,9 +218,16 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.dreicer   = int(data['dreicer'])
         self.Eceff     = int(data['Eceff'])
         self.compton            = int(data['compton']['mode'])
-        self.comptonPhotonFlux  = data['compton']['flux']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        if 'flux' in data['compton']:
+            if type(data['compton']['flux']) == dict:
+                self.comptonPhotonFlux  = data['compton']['flux']['x']
+                self.comptonPhotonFlux_t = data['compton']['flux']['t']
+            else:
+                self.comptonPhotonFlux  = data['compton']['flux']
+                self.comptonPhotonFlux_t = np.array([0.0])
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
@@ -203,10 +236,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.hottail = int(data['hottail'])
 
         if 'tritium' in data:
-            self.tritium = bool(data['tritium'])
+            self.tritium = int(data['tritium'])
 
         if 'negative_re' in data:
             self.negative_re = bool(data['negative_re'])
+        
+        if 'extrapolateDreicer' in data:
+            self.ExtrapolateDreicer = bool(data['extrapolateDreicer'])
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
@@ -225,12 +261,17 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
-            'negative_re': self.negative_re
+            'negative_re': self.negative_re,
+            'extrapolateDreicer': self.extrapolateDreicer
         }
         data['compton'] = {
-            'mode': self.compton,
-            'flux': self.comptonPhotonFlux
+            'mode': self.compton
         }
+        if self.compton != COMPTON_MODE_NEGLECT:
+            data['compton']['flux'] = {
+                'x': self.comptonPhotonFlux,
+                't': self.comptonPhotonFlux_t
+            }
         data['init'] = {
             'x': self.density,
             'r': self.radius
@@ -258,12 +299,22 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
-        if type(self.tritium) != bool:
-            raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
+        if type(self.tritium) != int:
+            raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected integer.")
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
         if type(self.negative_re) != bool:
             raise EquationException("n_re: Invalid value assigned to 'negative_re'. Expected bool.")
+        if type(self.extrapolateDreicer) != bool:
+            raise EquationException("n_re: Invalid value assigned to 'extrapolateDreicer'. Expected bool.")
+
+        if self.compton != COMPTON_MODE_NEGLECT:
+            if type(self.comptonPhotonFlux) != np.ndarray:
+                raise EquationException("Invalid type for 'comptonPhotonFlux'. Expected numpy array.")
+            elif type(self.comptonPhotonFlux_t) != np.ndarray:
+                raise EquationException("Invalid type for 'comptonPhotonFlux_t'. Expected number array.")
+            elif self.comptonPhotonFlux.shape != self.comptonPhotonFlux_t.shape:
+                raise EquationException("The shapes of 'comptonPhotonFlux' and 'photonFlux_t' do not match.")
 
         self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()

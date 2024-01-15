@@ -8,6 +8,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/EquationSystem.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
@@ -32,10 +33,13 @@ using namespace std;
 Solver::Solver(
     FVM::UnknownQuantityHandler *unknowns,
     vector<UnknownQuantityEquation*> *unknown_equations,
+    EquationSystem *eqsys,
+	const bool verbose,
     enum OptionConstants::linear_solver lsolve,
     enum OptionConstants::linear_solver bksolve
 )
-    : unknowns(unknowns), unknown_equations(unknown_equations), linearSolver(lsolve), backupSolver(bksolve) {
+    : unknowns(unknowns), unknown_equations(unknown_equations), eqsys(eqsys),
+	  verbose(verbose), linearSolver(lsolve), backupSolver(bksolve) {
 
     this->solver_timeKeeper = new FVM::TimeKeeper("Solver rebuild");
     this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
@@ -54,6 +58,8 @@ Solver::~Solver() {
 
     if (this->diag_prec != nullptr)
         delete this->diag_prec;
+	if (this->extiter != nullptr)
+		delete this->extiter;
 }
 
 /**
@@ -232,6 +238,26 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
 }
 
 /**
+ * This method is called whenever the solver finishes an
+ * iteration. It in turn calls all registered callback
+ * functions.
+ */
+void Solver::IterationFinished() {
+    for (auto f : this->callbacks_iterationFinished)
+        (*f)(this->eqsys->GetSimulation());
+}
+
+/**
+ * Register a function to call whenever a solver iteration
+ * has finished.
+ */
+void Solver::RegisterCallback_IterationFinished(
+    iteration_finished_func_t f
+) {
+    this->callbacks_iterationFinished.push_back(f);
+}
+
+/**
  * Rebuild all equation terms in the equation system for
  * the specified time.
  *
@@ -252,11 +278,11 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     solver_timeKeeper->StopTimer(timerCqh);
 
     solver_timeKeeper->StartTimer(timerREFluid);
-    this->REFluid -> Rebuild();
+    this->REFluid -> Rebuild(t);
     solver_timeKeeper->StopTimer(timerREFluid);
 
     solver_timeKeeper->StartTimer(timerRebuildTerms);
-    // Update prescribed quantities
+    // Update prescribed quantities and external unknowns
     const len_t N = unknowns->Size();
     for (len_t i = 0; i < N; i++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(i);
@@ -439,6 +465,33 @@ void Solver::SetConvergenceChecker(ConvergenceChecker *cc) {
         delete this->convChecker;
 
     this->convChecker = cc;
+}
+
+/**
+ * Set the external iterator to use.
+ */
+void Solver::SetExternalIterator(ExternalIterator *ei) {
+	if (this->extiter != nullptr)
+		delete this->extiter;
+	
+	this->extiter = ei;
+	this->extiter->SetVerbose(this->verbose);
+
+	if (this->eConvChecker != nullptr)
+		this->extiter->SetConvergenceChecker(this->eConvChecker);
+}
+
+/**
+ * Set the external iterator to use.
+ */
+void Solver::SetExternalIteratorConvergenceChecker(ConvergenceChecker *cc) {
+	if (this->eConvChecker != nullptr)
+		delete this->eConvChecker;
+	
+	this->eConvChecker = cc;
+
+	if (this->extiter != nullptr)
+		this->extiter->SetConvergenceChecker(this->eConvChecker);
 }
 
 /**

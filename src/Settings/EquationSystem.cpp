@@ -72,7 +72,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
     // Timing information
-    eqsys->SetTiming(s->GetBool("/output/timingstdout"), s->GetBool("/output/timingfile"));
+    eqsys->SetTiming(s->GetBool("output/timingstdout"), s->GetBool("output/timingfile"));
 
     // Initialize from previous simulation output?
     const real_t t0 = ConstructInitializer(eqsys, s);
@@ -139,7 +139,7 @@ void SimulationGenerator::ConstructEquations(
     }
     
     // Fluid equations
-    ConstructEquation_Ions(eqsys, s, adas, amjuel);
+    ConstructEquation_Ions(eqsys, s, adas, amjuel, oqty_terms);
 
 
     IonHandler *ionHandler = eqsys->GetIonHandler();

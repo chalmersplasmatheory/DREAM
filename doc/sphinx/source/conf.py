@@ -16,6 +16,8 @@ import sys
 
 # Make sure autodoc can find the Python interface
 sys.path.insert(0, os.path.abspath('../../../py'))
+sys.path.insert(0, os.path.abspath('../../../'))
+sys.path.insert(0, os.path.abspath('../../../build/dreampyface/cxx'))
 sys.path.append(os.path.abspath('./_ext'))
 
 import guzzle_sphinx_theme

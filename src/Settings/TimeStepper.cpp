@@ -35,6 +35,10 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
 
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    s->DefineSetting(MODULENAME "/terminatefunc", "Python function used to determine when to terminate time stepping", (void*)nullptr);
+#endif
+
     // Tolerance settings for adaptive time stepper
     DefineToleranceSettings(MODULENAME, s);
 }
@@ -53,15 +57,15 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
     TimeStepper *ts;
     switch (type) {
         case OptionConstants::TIMESTEPPER_TYPE_CONSTANT:
-            ts = ConstructTimeStepper_constant(s, u);
+            ts = ConstructTimeStepper_constant(s, u, eqsys);
             break;
 
         case OptionConstants::TIMESTEPPER_TYPE_ADAPTIVE:
-            ts = ConstructTimeStepper_adaptive(s, u, nontrivials);
+            ts = ConstructTimeStepper_adaptive(s, u, eqsys, nontrivials);
             break;
 
 		case OptionConstants::TIMESTEPPER_TYPE_IONIZATION:
-			ts = ConstructTimeStepper_ionization(s, u);
+			ts = ConstructTimeStepper_ionization(s, u, eqsys);
 			break;
 
         default:
@@ -69,6 +73,12 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
                 "Unrecognized time stepper type: %d.", type
             );
     }
+
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    void *terminatefunc = s->GetAddress(MODULENAME "/terminatefunc");
+    if (terminatefunc != nullptr)
+        ts->SetPythonTerminateFunc(terminatefunc);
+#endif
 
     eqsys->SetTimeStepper(ts);
 }
@@ -81,7 +91,10 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
  * s: Settings object specifying how to construct the
  *    TimeStepperConstant object.
  */
-TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings *s, FVM::UnknownQuantityHandler *u) {
+TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(
+    Settings *s, FVM::UnknownQuantityHandler *u,
+    EquationSystem *eqsys
+) {
     real_t tmax = s->GetReal(MODULENAME "/tmax");
     real_t dt   = s->GetReal(MODULENAME "/dt", false);
     int_t nt    = s->GetInteger(MODULENAME "/nt", false);
@@ -106,10 +119,10 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
     // Generate object
     if (dtset) {
         s->MarkUsed(MODULENAME "/dt");
-        return new TimeStepperConstant(tmax, dt, u, nSaveSteps);
+        return new TimeStepperConstant(tmax, dt, u, eqsys, nSaveSteps);
     } else {
         s->MarkUsed(MODULENAME "/nt");
-        return new TimeStepperConstant(tmax, (len_t)nt, u, nSaveSteps);
+        return new TimeStepperConstant(tmax, (len_t)nt, u, eqsys, nSaveSteps);
     }
 }
 
@@ -122,7 +135,7 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
  */
 TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     Settings *s, FVM::UnknownQuantityHandler *u,
-    vector<len_t> *nontrivials
+	EquationSystem *eqsys, vector<len_t> *nontrivials
 ) {
     int_t checkevery = s->GetInteger(MODULENAME "/checkevery");
     real_t tmax = s->GetReal(MODULENAME "/tmax");
@@ -130,14 +143,16 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     bool verbose = s->GetBool(MODULENAME "/verbose");
     bool conststep = s->GetBool(MODULENAME "/constantstep");
 
+	vector<UnknownQuantityEquation*> *eqns = eqsys->GetEquations();
+
     if (dt == 0)
         dt = 1;
 
     ConvergenceChecker *cc = LoadToleranceSettings(
-        MODULENAME, s, u, *nontrivials
+        MODULENAME, s, eqns, u, *nontrivials
     );
 
-    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, cc, checkevery, verbose, conststep);
+    return new TimeStepperAdaptive(tmax, dt, u, eqsys, *nontrivials, eqns, cc, checkevery, verbose, conststep);
 }
 
 /**
@@ -148,7 +163,7 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
  *    TimeStepperIonization object.
  */
 TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
-	Settings *s, FVM::UnknownQuantityHandler *u
+	Settings *s, FVM::UnknownQuantityHandler *u, EquationSystem *eqsys
 ) {
 	real_t automaticstep = s->GetReal(MODULENAME "/automaticstep");
 	real_t dt = s->GetReal(MODULENAME "/dt");
@@ -160,6 +175,6 @@ TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
 	if (dt < 0)
 		throw SettingsException("TimeStepper ionization: Initial time step 'dt0' must be non-negative.");
 
-	return new TimeStepperIonization(tmax, dt, dtmax, u, automaticstep, safetyfactor, minSaveDt);
+	return new TimeStepperIonization(tmax, dt, dtmax, u, eqsys, automaticstep, safetyfactor, minSaveDt);
 }
 

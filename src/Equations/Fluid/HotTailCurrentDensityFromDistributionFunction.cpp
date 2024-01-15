@@ -99,7 +99,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetJ1Weights(const real_t *E
     const real_t *EffPass = fluidGrid->GetRadialGrid()->GetEffPassFrac();
     const real_t *Bavg = fluidGrid->GetRadialGrid()->GetFSA_B2();
 
-    real_t g0 = 4*M_PI/3.0 * Constants::ec * Constants::c; // prefactor
+    real_t g0 = 2*M_PI/3.0 * Constants::ec * Constants::c; // prefactor
     for(len_t ir = 0; ir<nr; ir++){
         FVM::MomentumGrid *mg = hottailGrid->GetMomentumGrid(ir);
         // Reset weights

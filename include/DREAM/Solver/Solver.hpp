@@ -1,9 +1,10 @@
 #ifndef _DREAM_SOLVER_HPP
-
 #define _DREAM_SOLVER_HPP
 /* Definition of the abstract base class 'Solver', which
  * defines the interface for all equation solvers in DREAM.
  */
+
+namespace DREAM { class Solver; class Simulation; class EquationSystem; }
 
 #include <vector>
 #include <softlib/SFile.h>
@@ -11,6 +12,7 @@
 #include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Solver/ExternalIterator.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -21,11 +23,17 @@
 
 namespace DREAM {
     class Solver {
+    public:
+        typedef void (*iteration_finished_func_t)(Simulation*);
+
     protected:
         FVM::UnknownQuantityHandler *unknowns;
         // List of equations associated with unknowns (owned by the 'EquationSystem')
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
+
+        // Parent equation system
+        EquationSystem *eqsys;
 
         // Mapping from EquationSystem 'unknown_quantity_id' to index
         // in the block matrix representing the system
@@ -36,6 +44,12 @@ namespace DREAM {
         // not appear in the matrix)
         len_t matrix_size;
 
+		// Whether or not to provide verbose output
+		bool verbose = false;
+
+		// Maximum number of iterations allowed for the external iterator
+		len_t extiter_maxiter = 20;
+
         // Flag indicating which linear solver to use
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
         enum OptionConstants::linear_solver backupSolver = OptionConstants::LINEAR_SOLVER_NONE;
@@ -45,9 +59,10 @@ namespace DREAM {
         IonHandler *ionHandler;
         
         // Convergence checker for linear solver (GMRES primarily)
-        ConvergenceChecker *convChecker=nullptr;
+        ConvergenceChecker *convChecker=nullptr, *eConvChecker=nullptr;
         DiagonalPreconditioner *diag_prec=nullptr;
         FVM::MatrixInverter *inverter=nullptr;
+		ExternalIterator *extiter=nullptr;
 
         // Main matrix inverter to use
         FVM::MatrixInverter *mainInverter=nullptr;
@@ -63,9 +78,12 @@ namespace DREAM {
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
+        std::vector<iteration_finished_func_t> callbacks_iterationFinished;
+
     public:
         Solver(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+            EquationSystem*, const bool verbose=false,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE
         );
@@ -84,6 +102,9 @@ namespace DREAM {
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
         std::vector<len_t> GetNonTrivials() { return this->nontrivial_unknowns; }
+
+        void IterationFinished();
+        void RegisterCallback_IterationFinished(iteration_finished_func_t);
 
         virtual void SetCollisionHandlers(
             CollisionQuantityHandler *cqh_hottail,
@@ -104,6 +125,7 @@ namespace DREAM {
 
         void Precondition(FVM::Matrix*, Vec);
         void UnPrecondition(Vec);
+		bool Verbose() const  { return this->verbose; }
         
         virtual void PrintTimings() = 0;
         void PrintTimings_rebuild();
@@ -112,6 +134,9 @@ namespace DREAM {
 
         FVM::MatrixInverter *ConstructLinearSolver(const len_t, enum OptionConstants::linear_solver);
         void SetConvergenceChecker(ConvergenceChecker*);
+        void SetExternalIteratorConvergenceChecker(ConvergenceChecker*);
+		void SetExternalIterator(ExternalIterator*);
+		void SetExternalIteratorMaxIterations(const len_t i) { this->extiter_maxiter = i; }
         void SetPreconditioner(DiagonalPreconditioner*);
         void SelectLinearSolver(const len_t);
 

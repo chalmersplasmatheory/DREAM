@@ -10,6 +10,7 @@ INIT_FORWARD = 1
 INIT_XI_NEGATIVE = 2
 INIT_XI_POSITIVE = 3
 INIT_ISOTROPIC = 4
+INIT_AVALANCHE = 5
 
 
 class RunawayElectronDistribution(DistributionFunction):

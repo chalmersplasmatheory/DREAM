@@ -43,9 +43,9 @@ using namespace std;
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
     vector<UnknownQuantityEquation*> *unknown_equations,
-    EquationSystem *eqsys,
+    EquationSystem *eqsys, const bool verbose,
     enum OptionConstants::linear_solver ls
-) : Solver(unknowns, unknown_equations, ls), eqsys(eqsys) {
+) : Solver(unknowns, unknown_equations, eqsys, verbose, ls) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -121,47 +121,70 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
 
     this->timeKeeper->StartTimer(timerTot);
 
-    this->timeKeeper->StartTimer(timerRebuild);
-    RebuildTerms(t, dt);
-    this->timeKeeper->StopTimer(timerRebuild);
+	bool extiter_conv = true;
+	len_t iter = 0;
+	do {
+		iter++;
+		
+		if (iter > this->extiter_maxiter)
+			throw SolverException(
+				"Maximum number of iterations in external iterator reached."
+			);
 
-    real_t *S;
-    VecGetArray(petsc_S, &S);
-    this->timeKeeper->StartTimer(timerMatrix);
-    BuildMatrix(t, dt, matrix, S);
-    this->timeKeeper->StopTimer(timerMatrix);
+		if (!extiter_conv)
+			unknowns->RestoreSolution(this->nontrivial_unknowns);
 
-    // Negate vector
-    // We do this since in DREAM, we write the equation as
-    //
-    //   Mx + S = 0
-    //
-    // whereas PETSc solves the equation
-    //
-    //   Ax = b
-    //
-    // Thus, b = -S
-    for (len_t i = 0; i < matrix->GetNRows(); i++)
-        S[i] = -S[i];
+		this->timeKeeper->StartTimer(timerRebuild);
+		RebuildTerms(t, dt);
+		this->timeKeeper->StopTimer(timerRebuild);
 
-    this->SaveDebugInfo(this->nTimeStep, matrix, S);
+		real_t *S;
+		VecGetArray(petsc_S, &S);
+		this->timeKeeper->StartTimer(timerMatrix);
+		BuildMatrix(t, dt, matrix, S);
+		this->timeKeeper->StopTimer(timerMatrix);
 
-    VecRestoreArray(petsc_S, &S);
+		// Negate vector
+		// We do this since in DREAM, we write the equation as
+		//
+		//   Mx + S = 0
+		//
+		// whereas PETSc solves the equation
+		//
+		//   Ax = b
+		//
+		// Thus, b = -S
+		for (len_t i = 0; i < matrix->GetNRows(); i++)
+			S[i] = -S[i];
 
-    // Apply preconditioner (if enabled)
-    this->Precondition(matrix, petsc_S);
+		this->SaveDebugInfo(this->nTimeStep, matrix, S);
 
-    this->timeKeeper->StartTimer(timerInvert);
-    inverter->Invert(matrix, &petsc_S, &petsc_S);
-    this->timeKeeper->StopTimer(timerInvert);
+		VecRestoreArray(petsc_S, &S);
 
-    // Undo preconditioner (if enabled)
-    this->UnPrecondition(petsc_S);
+		// Apply preconditioner (if enabled)
+		this->Precondition(matrix, petsc_S);
 
-    // Store solution
-    unknowns->Store(this->nontrivial_unknowns, petsc_S);
+		this->timeKeeper->StartTimer(timerInvert);
+		inverter->Invert(matrix, &petsc_S, &petsc_S);
+		this->timeKeeper->StopTimer(timerInvert);
+
+		// Undo preconditioner (if enabled)
+		this->UnPrecondition(petsc_S);
+
+		// Store solution
+		unknowns->Store(this->nontrivial_unknowns, petsc_S);
+
+		// Call external iterator (if enabled)
+		if (this->extiter != nullptr)
+			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
+	} while (!extiter_conv);
+
+	if (this->extiter)
+		this->extiter_nIterations.push_back(iter);
 
     this->timeKeeper->StopTimer(timerTot);
+
+    this->IterationFinished();
 }
 
 /**
@@ -271,5 +294,9 @@ void SolverLinearlyImplicit::WriteDataSFile(SFile *sf, const std::string &name) 
 
     int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT;
     sf->WriteList(name+"/type", &type, 1);
+
+	if (this->extiter != nullptr) {
+		sf->WriteList(name+"/iterations", this->extiter_nIterations.data(), this->extiter_nIterations.size());
+	}
 }
 

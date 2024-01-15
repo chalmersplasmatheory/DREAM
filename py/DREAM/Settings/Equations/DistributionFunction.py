@@ -34,8 +34,12 @@ RIPPLE_MODE_NEGLECT = 1
 RIPPLE_MODE_BOX = 2
 RIPPLE_MODE_GAUSSIAN = 3
 
+TIME_VARYING_B_MODE_NEGLECT = 1
+TIME_VARYING_B_MODE_INCLUDE = 2
+
 DISTRIBUTION_MODE_NUMERICAL = 1
 DISTRIBUTION_MODE_ANALYTICAL = 2
+DISTRIBUTION_MODE_PRESCRIBED = 3
 
 class DistributionFunction(UnknownQuantity):
     
@@ -61,6 +65,7 @@ class DistributionFunction(UnknownQuantity):
         self.mode = mode
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
+        self.timevaryingbmode = TIME_VARYING_B_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
         self.fullIonJacobian = True
 
@@ -75,6 +80,14 @@ class DistributionFunction(UnknownQuantity):
 
         self.T0  = rT0
         self.rT0 = T0
+
+        self.prescribed_t = None
+        self.prescribed_r = None
+        self.prescribed_f = None
+        self.prescribed_p = None
+        self.prescribed_xi = None
+        self.prescribed_ppar = None
+        self.prescribed_pperp = None
 
         self.init = None
 
@@ -233,6 +246,18 @@ class DistributionFunction(UnknownQuantity):
             self.ripplemode = int(mode)
 
 
+    def setTimeVaryingB(self, mode):
+        """
+        Enables/disable the time-varying magnetic field strength operator.
+
+        :param int mode: Flag indicating whether or not to include the time-varying magnetic field operator.
+        """
+        if type(mode) == bool:
+            self.timevaryingbmode = TIME_VARYING_B_MODE_INCLUDE if mode else TIME_VARYING_B_MODE_NEGLECT
+        else:
+            self.timevaryingbmode = int(mode)
+
+
     def setSynchrotronMode(self, mode):
         """
         Sets the type of synchrotron losses to have (either enabled or disabled).
@@ -251,6 +276,58 @@ class DistributionFunction(UnknownQuantity):
         :param bool includeJacobian: Flag indicating whether the ion jacobian will be added. True by default, False to disable.
         """
         self.fullIonJacobian = includeJacobian
+
+
+    def prescribe(self, f, t, r, xi=None, p=None, pperp=None, ppar=None):
+        """
+        Prescribe the time evolution of this distribution function instead of
+        solving for it using a kinetic equation.
+        """
+        f = np.array(f)
+        t = np.array(t)
+        r = np.array(r)
+        if p is not None and xi is not None:
+            p = np.array(p)
+            xi = np.array(xi)
+        elif ppar is not None and pperp is not None:
+            ppar = np.array(ppar)
+            pperp = np.array(pperp)
+        else:
+            raise EquationException("Either 'p' and 'xi', or 'ppar' and 'pperp', must be specified.")
+
+        if t.ndim != 1:
+            raise EquationException("The time vector 't' must be a one-dimensional array.")
+        if r.ndim != 1:
+            raise EquationException("The radius vector 'r' must be a one-dimensional array.")
+
+        self.mode = DISTRIBUTION_MODE_PRESCRIBED 
+        self.prescribed_t = t
+        self.prescribed_r = r
+        self.prescribed_f = f
+
+        if p is not None:
+            if xi.ndim != 1:
+                raise EquationException("The pitch vector 'xi' must be a one-dimensional array.")
+            if p.ndim != 1:
+                raise EquationException("The momentum vector 'p' must be a one-dimensional array.")
+
+            if f.shape != (t.size, r.size, xi.size, p.size):
+                raise EquationException(f"The distribution function 'f' must have shape (nt, nr, nxi, np) = ({t.size}, {r.size}, {xi.size}, {p.size})")
+
+            self.prescribed_p = p
+            self.prescribed_xi = xi
+        else:
+            if pperp.ndim != 1:
+                raise EquationException("The perpendicular momentum vector 'pperp' must be a one-dimensional array.")
+            if ppar.ndim != 1:
+                raise EquationException("The parallel momentum vector 'ppar' must be a one-dimensional array.")
+
+            if f.shape != (t.size, r.size, ppar.size, pperp.size):
+                raise EquationException(f"The distribution function 'f' must have shape (nt, nr, npperp, nppar) = ({t.size}, {r.size}, {pperp.size}, {ppar.size})")
+
+            self.prescribed_ppar = None
+            self.prescribed_pperp = None
+
 
     def fromdict(self, data):
         """
@@ -281,6 +358,9 @@ class DistributionFunction(UnknownQuantity):
         if 'ripplemode' in data:
             self.ripplemode = int(scal(data['ripplemode']))
 
+        if 'timevaryingbmode' in data:
+            self.timevaryingbmode = int(scal(data['timevaryingbmode']))
+
         if 'synchrotronmode' in data:
             self.synchrotronmode = data['synchrotronmode']
             if type(self.synchrotronmode) != int:
@@ -291,6 +371,20 @@ class DistributionFunction(UnknownQuantity):
 
         if 'fullIonJacobian' in data:
             self.fullIonJacobian = bool(data['fullIonJacobian'])
+
+        if 'f_prescribed' in data:
+            self.prescribed_t = data['f_prescribed']['t']
+            self.prescribed_r = data['f_prescribed']['r']
+            self.prescribed_f = data['f_prescribed']['x']
+
+            if 'p' in data['f_prescribed']:
+                self.prescribed_p = data['f_prescribed']['p']
+                self.prescribed_xi = data['f_prescribed']['xi']
+            elif 'ppar' in data['f_prescribed']:
+                self.prescribed_ppar = data['f_prescribed']['ppar']
+                self.prescribed_pperp = data['f_prescribed']['pperp']
+            else:
+                raise EquationException("Expected either 'p' and 'xi', or 'ppar' and 'pperp', to be present under 'f_prescribed'.")
 
         self.verifySettings()
 
@@ -305,7 +399,7 @@ class DistributionFunction(UnknownQuantity):
         data = {}
         data['mode'] = self.mode
         if self.grid.enabled:
-            data = {'boundarycondition': self.boundarycondition}
+            data['boundarycondition'] = self.boundarycondition
 
             # Advection interpolation
             data['adv_interp'] = self.advectionInterpolation.todict()
@@ -327,13 +421,27 @@ class DistributionFunction(UnknownQuantity):
             
             data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
+            data['timevaryingbmode'] = self.timevaryingbmode
             data['transport'] = self.transport.todict()
             data['fullIonJacobian'] = self.fullIonJacobian
 
-        if self.mode != DISTRIBUTION_MODE_NUMERICAL:
+            if self.mode == DISTRIBUTION_MODE_PRESCRIBED:
+                data['f_prescribed'] = {
+                    't': self.prescribed_t,
+                    'r': self.prescribed_r,
+                    'x': self.prescribed_f
+                }
+
+                if self.prescribed_p is not None:
+                    data['f_prescribed']['p'] = self.prescribed_p
+                    data['f_prescribed']['xi'] = self.prescribed_xi
+                else:
+                    data['f_prescribed']['ppar'] = self.prescribed_ppar
+                    data['f_prescribed']['pperp'] = self.prescribed_pperp
+
+        if self.mode == DISTRIBUTION_MODE_ANALYTICAL:
             data['n0'] = { 'r': self.rn0, 'x': self.n0 }
             data['T0'] = { 'r': self.rT0, 'x': self.T0 }
-
 
         return data
 
@@ -343,8 +451,8 @@ class DistributionFunction(UnknownQuantity):
         Verify that the settings of this unknown are correctly set.
         """
         if self.grid.enabled:
-            if self.mode != DISTRIBUTION_MODE_NUMERICAL:
-                raise EquationException("{}: Invalid mode set. Must be 'NUMERICAL' when the grid is 'enabled'.".format(self.name))
+            if self.mode not in [DISTRIBUTION_MODE_NUMERICAL, DISTRIBUTION_MODE_PRESCRIBED]:
+                raise EquationException("{}: Invalid mode set. Must be 'NUMERICAL' or 'PRESCRIBED' when the grid is 'enabled'.".format(self.name))
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("{}: Invalid external boundary condition set: {}.".format(self.name, bc))
@@ -364,7 +472,7 @@ class DistributionFunction(UnknownQuantity):
             else:
                 opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_BOX, RIPPLE_MODE_GAUSSIAN]
                 if self.ripplemode not in opt:
-                    raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
+                    raise EquationException("{}: Invalid option for ripple mode: {}.".format(self.name, self.ripplemode))
  
             if type(self.synchrotronmode) == bool:
                 self.setSynchrotronMode(self.synchrotronmode)
@@ -373,7 +481,16 @@ class DistributionFunction(UnknownQuantity):
             else:
                 opt = [SYNCHROTRON_MODE_NEGLECT, SYNCHROTRON_MODE_INCLUDE]
                 if self.synchrotronmode not in opt:
-                    raise EquationException("{}: Invalid option for synchrotron mode.".format(self.name, self.synchrotronmode))
+                    raise EquationException("{}: Invalid option for synchrotron mode: {}".format(self.name, self.synchrotronmode))
+
+            if type(self.timevaryingbmode) == bool:
+                self.setTimeVaryingBMode(self.timevaryingbmode)
+            elif type(self.timevaryingbmode) != int:
+                raise EquationException(f"{self.name}: Invalid type of time-varying B mode option: {self.timevaryingbmode}.")
+            else:
+                opt = [TIME_VARYING_B_MODE_NEGLECT, TIME_VARYING_B_MODE_INCLUDE]
+                if self.timevaryingbmode not in opt:
+                    raise EquationException(f"{self.name}: Invalid option for time-varying B mode: {self.timevaryingbmode}.")
 
             self.transport.verifySettings()
         elif self.mode != DISTRIBUTION_MODE_NUMERICAL:

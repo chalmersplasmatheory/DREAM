@@ -84,6 +84,15 @@ class MomentumGrid:
 
         self.pgrid.setPmax(pmax)
 
+
+    def setPmin(self, pmin):
+        """
+        Sets the minimum momentum on the kinetic grid. NOTE: This parameter
+        is only observed IF the runaway grid is the only kinetic grid enabled.
+        """
+        self.pgrid.setPmin(pmin)
+
+
     def setBiuniformGrid(self, psep=None, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None, thetasep=None, nthetasep=None, nthetasep_frac=None):
         """
         Set a two-region momentum grid. The lower part (0 < p < psep) has 'npsep' 

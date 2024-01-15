@@ -18,11 +18,9 @@ namespace DREAM {
 	private:
 		FVM::BlockMatrix *jacobian = nullptr;
 		Vec petsc_F, petsc_dx;
-        EquationSystem *eqsys;
 
 		len_t maxiter=100;
 		real_t reltol=1e-6;
-		bool verbose=false;
 
 		len_t iteration=0, nTimeStep=0;
 		real_t t, dt;
@@ -31,6 +29,8 @@ namespace DREAM {
 
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
+
+		bool checkResidual = true;
 
         // Debug settings
         bool printjacobianinfo = false, savejacobian = false, savesolution = false,
@@ -54,7 +54,7 @@ namespace DREAM {
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
 			const int_t maxiter=100, const real_t reltol=1e-6,
-			bool verbose=false
+			bool verbose=false, bool checkResidual=true
 		);
 		virtual ~SolverNonLinear();
 
@@ -70,12 +70,12 @@ namespace DREAM {
 		len_t GetIteration() const { return this->iteration; }
 		len_t MaxIter() const { return this->maxiter; }
 		real_t RelTol() const { return this->reltol; }
-		bool Verbose() const  { return this->verbose; }
 
 		// Setters
 		void SetIteration(const len_t i) { this->iteration = i; }
 
 		bool IsConverged(const real_t*, const real_t*);
+		bool IsResidualConverged();
 
 		virtual void SetInitialGuess(const real_t*) override;
 		virtual void Solve(const real_t, const real_t) override;
