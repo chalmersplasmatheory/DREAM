@@ -21,14 +21,14 @@ TimeStepperIonization::TimeStepperIonization(
 	const real_t tMax, const real_t dt0, const real_t dtMax,
 	FVM::UnknownQuantityHandler *u, EquationSystem *eqsys,
 	const real_t automaticstep, const real_t safetyfactor,
-	const real_t minSaveDt
+	const real_t minSaveDt, const real_t alpha
 ) : TimeStepper(u, eqsys), tMax(tMax), dt0(dt0), dtMax(dtMax),
 	minSaveDt(minSaveDt), automaticstep(automaticstep),
-	safetyfactor(safetyfactor)
+	safetyfactor(safetyfactor), alpha(alpha)
 {
 	if (tMax < dt0)
 		throw TimeStepperException("TimeStepperIonization: Maximum time must be greater than initial time step.");
-	
+
 	this->id_n_cold = u->GetUnknownID(OptionConstants::UQTY_N_COLD);
 	this->nr = u->GetUnknown(this->id_n_cold)->GetGrid()->GetNr();
 
@@ -64,13 +64,13 @@ real_t TimeStepperIonization::GetIonizationTimeScale() {
 		else
 			timescales[ir] = std::numeric_limits<real_t>::infinity();
 	}
-	
+
 	// Find shortest time scale
 	real_t tscale = timescales[0];
 	for (len_t ir = 0; ir < this->nr; ir++)
 		if (timescales[ir] < tscale)
 			tscale = timescales[ir];
-	
+
 	if (isinf(tscale))
 		return 0;
 	else
@@ -98,7 +98,10 @@ real_t TimeStepperIonization::NextTime() {
 			DREAM::IO::PrintInfo("Setting baseline timestep: %.7e\n", this->dt0);
 		}
 
-		this->dt = (this->dt0 * timescale / this->tscale0);
+		if (this->alpha > 0)
+			this->dt = alpha * timescale;
+		else
+			this->dt = (this->dt0 * timescale / this->tscale0);
 		if (this->dtMax > 0 && this->dt > this->dtMax)
 			this->dt = this->dtMax;
 	}
@@ -143,7 +146,7 @@ void TimeStepperIonization::ValidateStep() {
 		this->currentTime = this->tMax;
 	else
 		this->currentTime += this->dt;
-	
+
 	this->currentStep++;
 
 	// Copy current value of n_cold
@@ -162,7 +165,7 @@ void TimeStepperIonization::PrintProgress() {
 	const len_t EDGE_LENGTH = 1;
 	const len_t PROG_LENGTH =
 		PROGRESSBAR_LENGTH - 2*EDGE_LENGTH - PERC_FMT_LENGTH - 1;
-	
+
 	cout << "\r[";
 	real_t perc     = CurrentTime()/this->tMax;
 	len_t threshold = static_cast<len_t>(perc * PROG_LENGTH);
@@ -183,4 +186,3 @@ void TimeStepperIonization::PrintProgress() {
 
 	cout << flush;
 }
-
