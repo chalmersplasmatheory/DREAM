@@ -200,7 +200,7 @@ class TimeStepper:
         if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
         if 'terminatefunc' in data: self.terminatefunc = data['terminatefunc']
-        if 'alpha' in data: self.alpha = data['alpha']
+        if 'alpha' in data: self.alpha = float(data['alpha'])
 
         self.verifySettings()
 

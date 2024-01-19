@@ -177,6 +177,8 @@ method takes the following arguments:
 +-------------+------------------------------+
 | ``alpha``   | Ionization timescale factor. |
 +-------------+------------------------------+
+| ``tmax``    | Final time of simulation.    |
++-------------+------------------------------+
 
 
 Limit number of saved steps
@@ -233,6 +235,21 @@ the ionization time scale to the initial time step, you can make the call:
    ds = DREAMSettings()
    ...
    ds.timestep.setIonization(automaticstep=1e-12, safetyfactor=50, dtmax=1e-5, tmax=0.003)
+
+To make the time step directly proportional to the estimated ionization time
+scale, just provide an additional scaling factor ``alpha`` (between 0 and 1):
+
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.timestep.setIonization(dt0=1e-10, dtmax=1e-5, tmax=0.003, alpha=1e-2)
+
+.. note::
+
+   Appropriate values to use for the scaling factor ``alpha`` may vary from
+   simulation to simulation. We have found that fluid SPI simulations typically
+   work well with ``alpha`` :math:`\leq 10^{-2}`.
 
 Class documentation
 -------------------
