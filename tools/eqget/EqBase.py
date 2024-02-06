@@ -7,9 +7,13 @@
 
 import h5py
 try:
-    from matplotlib._contour import QuadContourGenerator as ContourGenerator
+    from matplotlib._contour import QuadContourGenerator
+    def ContourGenerator(x, y, z):
+        return QuadContourGenerator(x, y, z, None, True, 0)
 except ModuleNotFoundError:
-    from contourpy import Mpl2014ContourGenerator as ContourGenerator
+    import contourpy
+    def ContourGenerator(x, y, z):
+        return contourpy.contour_generator(x, y, z)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -360,14 +364,19 @@ class EqBase:
 
         if override_psilim:
             self.psi_axis = self.psi(*self.opoint)
-            # The -1e-4 term is required for us to be able to find all psi_n on [0, 1]
-            self.psi_bdry = self.psi(self.rplas[0], self.zplas[0]) - 2e-4
+            if override_psilim == True:
+                eps = 2e-4
+            else:
+                eps = override_psilim
+
+            self.psi_bdry = self.psi(self.rplas[0], self.zplas[0]) - eps
 
         # Set up contour generator
         psi2d = np.transpose(self.psi(self.R, self.Z))
         psin2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
         R, Z = np.meshgrid(self.R, self.Z)
-        self.contour_generator = ContourGenerator(R, Z, psin2d, None, True, 0)
+        #self.contour_generator = ContourGenerator(R, Z, psin2d, None, True, 0)
+        self.contour_generator = ContourGenerator(self.R, self.Z, psin2d)
 
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)
