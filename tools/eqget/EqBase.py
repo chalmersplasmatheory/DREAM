@@ -18,6 +18,7 @@ except ModuleNotFoundError:
 import matplotlib.pyplot as plt
 import numpy as np
 import re
+from scipy.constants import mu_0
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline, RectBivariateSpline
 import scipy.optimize
 
@@ -119,13 +120,6 @@ class EqBase:
         """
         Trace the flux surface for the given normalized psi.
         """
-        #vertices, _ = self.contour_generator.create_contour(psi_n)
-        #v = self.contour_generator.create_contour(psi_n)
-        #if len(v) == 1:
-        #    vertices = v
-        #else:
-        #    vertices = v[-1]
-            
         vertices = self.contour_generator.create_contour(psi_n)
 
         if type(vertices) == tuple:
@@ -316,6 +310,22 @@ class EqBase:
 
         return theta, B
 
+    
+    def get_Jtor(self, R, Z):
+        """
+        Evaluates the toroidal plasma current density in the given
+        (R, Z) point(s).
+        """
+        psi = self.psi(R, Z, grid=False)
+        psi_n = (psi - self.psi_axis) / (self.psi_bdry - self.psi_axis)
+
+        pp  = self.p_prime(psi_n)
+        ff  = self.f_psi(psi_n)
+        ffp = self.ff_prime(psi_n)
+
+        #return R*pp + ff/(R*mu_0) * ffp
+        return R*pp + ffp/R
+
 
     def process_data(self, data, override_psilim=False):
         """
@@ -365,9 +375,9 @@ class EqBase:
         if override_psilim:
             self.psi_axis = self.psi(*self.opoint)
             if override_psilim == True:
-                eps = 2e-4
+                eps = 2e-4 * np.sign(self.psi_bdry)
             else:
-                eps = override_psilim
+                eps = override_psilim * np.sign(self.psi_bdry)
 
             self.psi_bdry = self.psi(self.rplas[0], self.zplas[0]) - eps
 
@@ -375,17 +385,23 @@ class EqBase:
         psi2d = np.transpose(self.psi(self.R, self.Z))
         psin2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
         R, Z = np.meshgrid(self.R, self.Z)
-        #self.contour_generator = ContourGenerator(R, Z, psin2d, None, True, 0)
+        self.psin2d = psin2d
         self.contour_generator = ContourGenerator(R, Z, psin2d)
 
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)
 
-        for i, i_psiN in enumerate(psi_n[1:]):
-            surface_R, surface_Z = self.get_flux_surface(psi_n=i_psiN)
+        try:
+            for i, i_psiN in enumerate(psi_n[1:]):
+                surface_R, surface_Z = self.get_flux_surface(psi_n=i_psiN)
 
-            rho[i+1] = (max(surface_R)-min(surface_R)) / 2
-            R_major[i+1] = (max(surface_R)+min(surface_R)) / 2
+                rho[i+1] = (max(surface_R)-min(surface_R)) / 2
+                R_major[i+1] = (max(surface_R)+min(surface_R)) / 2
+        except Exception as ex:
+            self.plot_psi()
+            print(f"Failed to locate flux surfaces: {ex}.")
+            plt.show()
+            raise ex
 
         self.lcfs_R = surface_R
         self.lcfs_Z = surface_Z
@@ -400,6 +416,47 @@ class EqBase:
         self.R_major = InterpolatedUnivariateSpline(psi_n, R_major)
 
         self.R0 = self.R_major(0)
+
+
+    def plot_psi(self, ax=None, normalized=False, bdry=True, wall=True, opoint=True):
+        """
+        Make a contour plot of the poloidal flux.
+        """
+        psi2d = np.transpose(self.psi(self.R, self.Z))
+        psi_bdry = self.psi_bdry
+        if normalized:
+            psi2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
+            psi_bdry = 1
+
+        R, Z = np.meshgrid(self.R, self.Z)
+
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(6, 8))
+        else:
+            fig = ax.figure
+
+        cntrs = ax.contourf(R, Z, psi2d, levels=20)
+        if bdry:
+            ax.contour(R, Z, psi2d, levels=[psi_bdry], colors='w')
+            try:
+                surface_R, surface_Z = self.get_flux_surface(psi_n=1)
+                ax.plot(surface_R, surface_Z, 'r--', label='Calculated bdry')
+            except: pass
+
+        if wall and len(self.rlim)>0:
+            ax.plot(self.rlim, self.zlim, 'k', linewidth=2)
+
+        if opoint:
+            ax.plot(self.R0, self.Z0, 'wo', label='Magnetic axis')
+            ax.plot(*self.opoint, 'rx', label='Calculated axis')
+
+        if opoint or bdry:
+            ax.legend()
+        ax.axis('equal')
+        fig.colorbar(cntrs, ax=ax)
+
+        return ax
 
 
     def plot_flux_surfaces(self, ax=None, nr=10, ntheta=200, fit=True, *args, **kwargs):

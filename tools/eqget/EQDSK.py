@@ -160,9 +160,6 @@ class EQDSK(EqBase):
         eqdsk['R'] = np.linspace(eqdsk['rleft'], eqdsk['rleft']+eqdsk['rboxlen'], eqdsk['nx'])
         eqdsk['Z'] = np.linspace(eqdsk['zmid']-eqdsk['zboxlen']/2, eqdsk['zmid']+eqdsk['zboxlen']/2, eqdsk['ny'])
 
-        # Turn psi into regular psi
-        eqdsk['psi'] = eqdsk['psi']*(eqdsk['psiedge']-eqdsk['psiaxis']) + eqdsk['psiaxis']
-
         # Construct limiter from box if needed
         if len(eqdsk['rlim']) == 1 and eqdsk['nblim'] == 1:
             eqdsk['rlim'] = [
