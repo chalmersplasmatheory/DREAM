@@ -10,7 +10,7 @@ from EqBase import EqBase
 class EQDSK(EqBase):
     
 
-    def __init__(self, eqdskin, cocos=1, process=True, override_psilim=False):
+    def __init__(self, eqdskin, cocos=1, process=True, override_psilim=False, plot_on_error=True):
         """
         Constructor.
 
@@ -18,24 +18,25 @@ class EQDSK(EqBase):
         :param cocos:            COCOS number indicating sign convention of equilibrium.
         :param process:          If ``True`` calculates derived quantities from input data.
         :param override_psilim:  If ``True``, calculates the actual poloidal flux at the magnetic axis.
+        :param plot_on_error:    If an error occurs while loading equilibrium, plot the raw equilibrium data.
         """
         if type(eqdskin) == str:
-            self.load(eqdskin, cocos=cocos, process=process, override_psilim=override_psilim)
+            self.load(eqdskin, cocos=cocos, process=process, override_psilim=override_psilim, plot_on_error=plot_on_error)
         elif type(eqdskin) == dict:
             self.eqdsk = eqdskin
             if process:
-                self.process_data(eqdskin, cocos=cocos, override_psilim=override_psilim)
+                self.process_data(eqdskin, cocos=cocos, override_psilim=override_psilim, plot_on_error=plot_on_error)
         else:
             raise ValueError("Unrecognized input argument.")
 
 
-    def load(self, filename, cocos=1, process=True, override_psilim=False):
+    def load(self, filename, cocos=1, process=True, override_psilim=False, plot_on_error=True):
         """
         Load and initialize this object from the named EQDSK file.
         """
         self.eqdsk = self.load_eqdsk(filename, cocos=cocos)
         if process:
-            self.process_data(self.eqdsk, override_psilim=override_psilim)
+            self.process_data(self.eqdsk, override_psilim=override_psilim, plot_on_error=plot_on_error)
 
 
     def load_eqdsk(self, filename, cocos=1):

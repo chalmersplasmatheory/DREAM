@@ -26,7 +26,7 @@ import scipy.optimize
 class EqBase:
     
 
-    def __init__(self, filename, override_psilim=False):
+    def __init__(self):
         """
         Constructor.
         """
@@ -327,7 +327,7 @@ class EqBase:
         return R*pp + ffp/R
 
 
-    def process_data(self, data, override_psilim=False):
+    def process_data(self, data, override_psilim=False, plot_on_error=True):
         """
         Load data from the given EQDSK dictionary.
         """
@@ -398,7 +398,8 @@ class EqBase:
                 rho[i+1] = (max(surface_R)-min(surface_R)) / 2
                 R_major[i+1] = (max(surface_R)+min(surface_R)) / 2
         except Exception as ex:
-            self.plot_psi()
+            if plot_on_error:
+                self.plot_psi()
             print(f"Failed to locate flux surfaces: {ex}.")
             plt.show()
             raise ex
@@ -452,9 +453,9 @@ class EqBase:
             ax.plot(*self.opoint, 'rx', label='Calculated axis')
 
         if opoint or bdry:
-            ax.legend()
+            ax.legend(draggable=True)
         ax.axis('equal')
-        fig.colorbar(cntrs, ax=ax)
+        fig.colorbar(cntrs, ax=ax, label=r'$\psi(r)$ (Wb)')
 
         return ax
 
