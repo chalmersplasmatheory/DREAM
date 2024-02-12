@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import h5py
 import numpy as np
 import sys
@@ -39,6 +40,8 @@ class EqView(QtWidgets.QMainWindow):
         self.ui = EqView_design.Ui_EqView()
         self.ui.setupUi(self)
 
+        args = self.parse_args(argv)
+
         self.equil = None
         self.equil_type = 0
         self.frameAx = None
@@ -53,6 +56,14 @@ class EqView(QtWidgets.QMainWindow):
         self.windows = {}
 
         self.bindEvents()
+
+        if args.eq:
+            params = {}
+            if args.cocos:
+                params['cocos'] = args.cocos
+            if args.override_psilim:
+                params['override_psilim'] = args.override_psilim
+            self.load(args.eq, params=params)
 
 
     def bindEvents(self):
@@ -82,6 +93,19 @@ class EqView(QtWidgets.QMainWindow):
             w.close()
 
         self.close()
+
+
+    def parse_args(self, argv):
+        """
+        Parse command-line arguments.
+        """
+        parser = argparse.ArgumentParser("Equilibrium viewer for DREAM")
+
+        parser.add_argument('eq', help="Name of equilibrium file to view.", nargs='?')
+        parser.add_argument('-c', '--cocos', help="COCOS number (1-8 or 11-18).", type=int)
+        parser.add_argument('-o', '--override-psilim', help="Override poloidal flux value at LCFS.", nargs='?', default=None, const=2e-4, type=float)
+
+        return parser.parse_args()
 
 
     def open(self):
