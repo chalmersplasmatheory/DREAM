@@ -146,13 +146,16 @@
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuQuantities">
+    <property name="enabled">
+     <bool>false</bool>
+    </property>
     <property name="title">
      <string>Plot</string>
     </property>
-    <addaction name="actionPlot_G_r"/>
-    <addaction name="actionPlot_psi_r"/>
-    <addaction name="actionPlot_shaping_parameters"/>
-    <addaction name="actionToroidal_current_density"/>
+    <addaction name="actionPlotJ"/>
+    <addaction name="actionPlotPsi"/>
+    <addaction name="actionPlotShaping"/>
+    <addaction name="actionPlotG"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuQuantities"/>
@@ -184,24 +187,24 @@
     <string>Shaping profiles</string>
    </property>
   </action>
-  <action name="actionPlot_G_r">
+  <action name="actionPlotG">
    <property name="text">
     <string>Toroidal field function G(r)</string>
    </property>
   </action>
-  <action name="actionPlot_psi_r">
+  <action name="actionPlotPsi">
    <property name="text">
     <string>Poloidal flux ψ(r)</string>
    </property>
   </action>
-  <action name="actionPlot_shaping_parameters">
+  <action name="actionPlotShaping">
    <property name="text">
     <string>Shaping parameters</string>
    </property>
   </action>
-  <action name="actionToroidal_current_density">
+  <action name="actionPlotJ">
    <property name="text">
-    <string>Toroidal current density</string>
+    <string>Current density J(r)</string>
    </property>
   </action>
   <action name="actionWall">

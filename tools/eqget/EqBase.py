@@ -396,6 +396,28 @@ class EqBase:
         return Jtor/BT_B
 
 
+    def get_r(self, psi_n):
+        """
+        Get the minor radius coordinate of the given flux surface.
+        """
+        if np.isscalar(psi_n):
+            p = [psi_n]
+        else:
+            p = psi_n
+        
+        r = []
+        for psi in psi_n:
+            R, Z = self.get_flux_surface(psi)
+            i = np.argmin(np.abs(Z))
+            if R[i] < self.R0:
+                j = np.argmin(np.abs(Z[i+1:]))
+                i += j+1
+
+            r.append(R[i]-self.R0)
+
+        return r
+
+
     def process_data(self, data, override_psilim=False, plot_on_error=True):
         """
         Load data from the given EQDSK dictionary.

@@ -15,6 +15,7 @@ from DREAM.Settings.LUKEMagneticField import LUKEMagneticField
 import EqFile
 from EqViewConfig import EqViewConfig
 from EQDSK import EQDSK
+from PlotWindow import PlotWindow
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -62,6 +63,11 @@ class EqView(QtWidgets.QMainWindow):
         self.ui.actionOpen.triggered.connect(self.open)
         self.ui.actionSaveAs.triggered.connect(self.save)
         self.ui.actionShapingProfiles.triggered.connect(self.exportShaping)
+
+        self.ui.actionPlotG.triggered.connect(self.plotG)
+        self.ui.actionPlotJ.triggered.connect(self.plotJ)
+        self.ui.actionPlotPsi.triggered.connect(self.plotPsi)
+        self.ui.actionPlotShaping.triggered.connect(self.plotShaping)
 
 
     def closeEvent(self, event):
@@ -115,6 +121,7 @@ class EqView(QtWidgets.QMainWindow):
 
         self.setupPlot()
         self.plot()
+        self.ui.menuQuantities.setEnabled(True)
 
         return False
 
@@ -186,6 +193,103 @@ class EqView(QtWidgets.QMainWindow):
             self.frameAx.figure.tight_layout()
 
         self.canvas.draw()
+
+
+    def plotG(self):
+        """
+        Plot the toroidal field function G(r).
+        """
+        if 'G' in self.windows:
+            self.windows['G'].close()
+
+        pw = PlotWindow(width=600, height=400)
+
+        if self.equil_type == EQTYPE_LUKE:
+            r = self.equil.ptx[:,0]
+            G = self.equil.ptBPHI[:,0] * (self.equil.Rp + self.equil.ptx[:,0])
+            pw.ax.plot(r, G, lw=2)
+            pw.ax.set_xlabel('Minor radius $r$ (m)')
+            pw.ax.set_ylabel(r'$G(r)$ (T$\,$m)')
+            pw.figure.tight_layout()
+        elif self.equil_type == EQTYPE_EQDSK:
+            psi_n = np.linspace(0, 1, 101)[1:]
+            pw.ax.plot(psi_n, self.equil.f_psi(psi_n), lw=2)
+            pw.ax.set_xlabel(r'$\bar{\psi}(r)$')
+            pw.ax.set_ylabel(r'$G(r)$')
+            pw.figure.tight_layout()
+
+        pw.show()
+        self.windows['G'] = pw
+
+
+    def plotJ(self):
+        """
+        Plot the current density profile J(r).
+        """
+        if 'J' in self.windows:
+            self.windows['J'].close()
+
+        pw = PlotWindow(width=600, height=400)
+
+        if self.equil_type == EQTYPE_LUKE:
+            QMessageBox.critical(self, 'Unable to plot', 'Cannot plot the current density from a LUKE equilibrium file.')
+            return
+        elif self.equil_type == EQTYPE_EQDSK:
+            psi_n = np.linspace(0, 1, 101)[1:]
+            r = self.equil.get_r(psi_n)
+            pw.ax.plot(r, self.equil.get_Jtor_at_Bmin(psi_n)/1e6, lw=2, label=r'$J_{\varphi}$')
+            pw.ax.plot(r, self.equil.get_Jpar_at_Bmin(psi_n)/1e6, lw=2, label=r'$J_{\parallel}$')
+            pw.ax.set_xlabel(r'Minor radius $r$ (m)')
+            pw.ax.set_ylabel(r'Current density (MA$\,$m$^{-2}$)')
+            pw.ax.legend()
+            pw.figure.tight_layout()
+
+        pw.show()
+        self.windows['J'] = pw
+
+
+    def plotPsi(self):
+        """
+        Plot the poloidal flux function psi(r).
+        """
+        if 'psi' in self.windows:
+            self.windows['psi'].close()
+
+        pw = PlotWindow(width=600, height=400)
+
+        if self.equil_type == EQTYPE_LUKE:
+            QMessageBox.critical(self, 'Unable to plot', 'Cannot plot the current density from a LUKE equilibrium file.')
+            return
+        elif self.equil_type == EQTYPE_EQDSK:
+            psi_n = np.linspace(0, 1, 101)[1:]
+            r = self.equil.get_r(psi_n)
+            pw.ax.plot(r, self.equil.get_Jtor_at_Bmin(psi_n)/1e6, lw=2, label=r'$J_{\varphi}$')
+            pw.ax.set_xlabel(r'Minor radius $r$ (m)')
+            pw.ax.set_ylabel(r'Current density (MA$\,$m$^{-2}$)')
+            pw.ax.legend()
+            pw.figure.tight_layout()
+
+        pw.show()
+        self.windows['psi'] = pw
+
+
+    def plotShaping(self):
+        """
+        Plot the DREAM shaping parameters for this equilibrium.
+        """
+        if 'shaping' in self.windows:
+            self.windows['shaping'].close()
+
+        if self.equil_type == EQTYPE_LUKE:
+            QMessageBox.critical(self, 'Shaping profiles not available', 'Cannot plot shaping profiles for a LUKE equilibrium.')
+            return
+        elif self.equil_type == EQTYPE_EQDSK:
+            psi_n = np.linspace(0, 1, 101)[1:]
+            params = self.equil.parametrize_equilibrium()
+            pw = PlotShapingWindow(params)
+
+        pw.show()
+        self.windows['shaping'] = pw
 
 
     def exportShaping(self):
