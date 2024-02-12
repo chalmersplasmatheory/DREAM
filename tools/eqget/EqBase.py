@@ -263,6 +263,7 @@ class EqBase:
         coeff = cocos['sigma_RphiZ']*cocos['sigma_Bp']/(2*np.pi)**cocos['exp_Bp']
         return coeff
         
+
     def get_Br(self, R, Z):
         """
         Return the radial magnetic field component on the given (R,Z) grid.
@@ -294,6 +295,23 @@ class EqBase:
         return Btor
 
 
+    def get_RZ_of_Bmin(self, psi_n):
+        """
+        Returns the (R, Z) coordinates of the point with B=B_min along the
+        given flux surface.
+        """
+        R, Z = self.get_flux_surface(psi_n)
+
+        Br = self.get_Br(R, Z)
+        Bz = self.get_Bz(R, Z)
+        Bt = self.get_Btor(R, Z)
+
+        B = np.sqrt(Br**2 + Bz**2 + Bt**2)
+
+        i = np.argmin(B)
+        return R[i], Z[i]
+
+
     def getBOfTheta(self, psi_n):
         """
         Evaluates the magnetic field strength along the specified flux
@@ -323,8 +341,59 @@ class EqBase:
         ff  = self.f_psi(psi_n)
         ffp = self.ff_prime(psi_n)
 
-        #return R*pp + ff/(R*mu_0) * ffp
-        return R*pp + ffp/R
+        cocos = self.cocos()
+        eBp = cocos['exp_Bp']
+        sBp = cocos['sigma_Bp']
+        fac = sBp/(2*np.pi)**eBp
+
+        return (fac*R)*pp + ffp/(R*fac)
+
+
+    def get_Jtor_at_Bmin(self, psi_n, tor2par=False):
+        """
+        Evaluate the toroidal plasma current density at B=Bmin on the
+        specified flux surface.
+
+        :param psi_n:   Normalized poloidal flux of surface to evaluate Jtor for.
+        :param tor2par: If ``True``, also returns the conversion factor from toroidal to parallel current density.
+        """
+        if not np.isscalar(psi_n):
+            p = [psi_n]
+        else:
+            p = psi_n
+
+        J = []
+        BT_B = []
+        for psi in psi_n:
+            R, Z = self.get_RZ_of_Bmin(psi)
+            Jtor = self.get_Jtor(R, Z).flatten()[0]
+            J.append(Jtor)
+
+            if tor2par:
+                Br = self.get_Br(R, Z)
+                Bz = self.get_Bz(R, Z)
+                Bt = self.get_Btor(R, Z)
+                B = np.sqrt(Br**2 + Bz**2 + Bt**2)
+                btb = (Bt/B).flatten()[0]
+                BT_B.append(btb)
+
+        if np.isscalar(psi_n):
+            if tor2par:
+                return J[0], BT_B[0]
+            else: return J[0]
+        else:
+            if tor2par:
+                return np.array(J), np.array(BT_B)
+            else:
+                return np.array(J)
+
+
+    def get_Jpar_at_Bmin(self, psi_n):
+        """
+        Evaluate the parallel current density at
+        """
+        Jtor, BT_B = self.get_Jtor_at_Bmin(psi_n, tor2par=True)
+        return Jtor/BT_B
 
 
     def process_data(self, data, override_psilim=False, plot_on_error=True):
