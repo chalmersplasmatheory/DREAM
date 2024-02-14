@@ -20,9 +20,12 @@ namespace DREAM {
         real_t *source;
         FVM::Interpolator1D *comptonPhotonFlux;
         real_t photonFlux, pLower;
+        real_t integratedComptonSpectrum;// = 1.4865971659548942; // Integral of the photon flux spectrum over all Eg (in units of mc2).
+        real_t C1;// = 1.7414529925156674; // 1.2
+        real_t C2;// = 0.8835326679107941; // 0.8
+        real_t C3;// = 0.39190825871852136; // 0.
         real_t pc, scaleFactor;
-        static const real_t integratedComptonSpectrum; // Integral of the photon flux spectrum over all Eg (in units of mc2).
-        
+
         len_t limit;
         gsl_integration_workspace * wp;
         gsl_integration_workspace * wpOut;
@@ -41,8 +44,19 @@ namespace DREAM {
         struct intparams{
             len_t limit; 
             gsl_integration_workspace * wp;
+            real_t intConst;
+            real_t c1;
+            real_t c2;
+            real_t c3;
         };
-        ComptonSource(FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Interpolator1D*, real_t=0., real_t=0., SourceMode sm = SOURCE_MODE_KINETIC, RunawayFluid* REFluid=nullptr);
+        struct innerintparams{
+            real_t p;
+            real_t intConst;
+            real_t c1;
+            real_t c2;
+            real_t c3;
+        };
+        ComptonSource(FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Interpolator1D*, real_t, real_t, real_t, real_t, real_t=0., real_t=0., SourceMode sm = SOURCE_MODE_KINETIC, RunawayFluid* REFluid=nullptr);
         
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
 

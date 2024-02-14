@@ -1,6 +1,7 @@
 # Settings for the runaway electron density
 
 import numpy as np
+from scipy.integrate import quad
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
@@ -31,6 +32,10 @@ COMPTON_MODE_KINETIC = 3
 COMPTON_RATE_ITER_DMS = -1
 COMPTON_RATE_ITER_DMS_KINETIC = -2
 ITER_PHOTON_FLUX_DENSITY = 1e18
+INTEGRATED_COMPTON_SPECTRUM = 5.8844190260298
+C1_COMPTON = 1.2
+C2_COMPTON = 0.8
+C3_COMPTON = 0.
 
 TRITIUM_MODE_NEGLECT = 1
 TRITIUM_MODE_FLUID = 2
@@ -56,10 +61,15 @@ HOTTAIL_MODE_DISABLED = 1
 HOTTAIL_MODE_ANALYTIC = 2 # not yet implemented
 HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
+def GammafluxProfil(E, C1, C2, C3):
+    mc2 = 0.51099895000e6
+    z = (np.log(mc2 * E / 1e6) + C1) / C2 + C3 * (mc2 * E / 1e6)**2
+    Gamma = np.exp(-np.exp(-z) - z + 1)
+    return Gamma 
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON, C2_compton=C2_COMPTON, C3_Compton=C3_COMPTON, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED):
         """
         Constructor.
         """
@@ -73,9 +83,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.hottail   = hottail
         self.negative_re = False
         self.extrapolateDreicer = True
-
-        self.setCompton(compton, comptonPhotonFlux)
-
+        
+        self.setCompton(compton=compton, photonFlux=comptonPhotonFlux, C1=C1_Compton, C2=C2_compton, C3=C3_Compton)
         self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.transport = TransportSettings(kinetic=False)
 
@@ -114,7 +123,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.dreicer = int(dreicer)
 
 
-    def setCompton(self, compton, photonFlux = None, photonFlux_t = np.array([0])):
+    def setCompton(self, compton, photonFlux = None, photonFlux_t = np.array([0]), C1 = None, C2 = None, C3 = None):
         """
         Specifies which model to use for calculating the
         compton runaway rate.
@@ -140,11 +149,27 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 raise EquationException("n_re: Compton photon flux must be set.")
             elif type(photonFlux) == int or type(photonFlux) == float or type(photonFlux) == np.float64:
                 photonFlux = np.array([float(photonFlux)])
+            
+            if C1 is None:
+                C1 = C1_COMPTON
+            
+            if C2 is None:
+                C2 = C2_COMPTON
+            
+            if C3 is None:
+                C3 = C3_COMPTON
 
             self.compton = int(compton)
             self.comptonPhotonFlux = photonFlux
             self.comptonPhotonFlux_t = photonFlux_t
-
+            self.C1_Compton = C1
+            self.C2_Compton = C2
+            self.C3_Compton = C3
+            self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(C1, C2, C3))[0]
+            print(self.C1_Compton)
+            print(self.C2_Compton)
+            print(self.C3_Compton)
+            print(self.integratedComptonSpectrum)
 
     def setEceff(self, Eceff):
         """
@@ -217,9 +242,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         self.dreicer   = int(data['dreicer'])
         self.Eceff     = int(data['Eceff'])
-        self.compton            = int(data['compton']['mode'])
+        self.compton   = int(data['compton']['mode'])
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        self.C1_Compton = int(data['compton']['C1'])
+        self.C2_Compton = int(data['compton']['C2'])
+        self.C3_Compton = int(data['compton']['C3'])
+        self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(self.C1_Compton, self.C2_Compton, self.C3_Compton))[0]
 
         if 'flux' in data['compton']:
             if type(data['compton']['flux']) == dict:
@@ -264,13 +294,21 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'negative_re': self.negative_re,
             'extrapolateDreicer': self.extrapolateDreicer
         }
-        data['compton'] = {
-            'mode': self.compton
-        }
         if self.compton != COMPTON_MODE_NEGLECT:
+            data['compton'] = {
+                'mode': self.compton, 
+                'C1': self.C1_Compton,
+                'C2': self.C2_Compton,
+                'C3': self.C3_Compton,
+                'gammaInt': self.integratedComptonSpectrum
+            }
             data['compton']['flux'] = {
                 'x': self.comptonPhotonFlux,
                 't': self.comptonPhotonFlux_t
+            }
+        else:
+            data['compton'] = {
+                'mode': self.compton
             }
         data['init'] = {
             'x': self.density,
@@ -315,6 +353,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 raise EquationException("Invalid type for 'comptonPhotonFlux_t'. Expected number array.")
             elif self.comptonPhotonFlux.shape != self.comptonPhotonFlux_t.shape:
                 raise EquationException("The shapes of 'comptonPhotonFlux' and 'photonFlux_t' do not match.")
+            if type(self.integratedComptonSpectrum) != float:
+                raise EquationException("Invalid type for 'integratedComptonSpectrum'. Expected float.")
+            if type(self.C1_Compton) != float:
+                raise EquationException("Invalid type for 'C1_Compton'. Expected float.")
+            if type(self.C2_Compton) != float:
+                raise EquationException("Invalid type for 'C2_Compton'. Expected float.")
+            if type(self.C3_Compton) != float:
+                raise EquationException("Invalid type for 'C3_Compton'. Expected float.")
 
         self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()

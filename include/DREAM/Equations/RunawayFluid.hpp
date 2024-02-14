@@ -55,6 +55,7 @@ namespace DREAM {
         OptionConstants::eqterm_avalanche_mode ava_mode;
         OptionConstants::eqterm_compton_mode compton_mode;
         FVM::Interpolator1D *compton_photon_flux;
+        real_t integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton;
 
         len_t id_ncold;
         len_t id_ntot;
@@ -143,7 +144,8 @@ namespace DREAM {
             OptionConstants::collqty_Eceff_mode,
             OptionConstants::eqterm_avalanche_mode,
             OptionConstants::eqterm_compton_mode,
-            FVM::Interpolator1D *compton_flux
+            FVM::Interpolator1D *compton_flux, 
+            real_t, real_t, real_t, real_t
         );
         ~RunawayFluid();
 
@@ -153,9 +155,9 @@ namespace DREAM {
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
 
         static real_t evaluateTritiumRate(real_t gamma_c);
-        static real_t evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
-        static real_t evaluateDComptonRateDpc(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
-        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux);
+        static real_t evaluateComptonRate(real_t pc, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateDComptonRateDpc(real_t pc, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t photonFlux);
         static real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
         static real_t evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc);
 

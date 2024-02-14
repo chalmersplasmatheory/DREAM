@@ -133,7 +133,9 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
             throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
 
         FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
-        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0)), -1.0);
+        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), 
+            s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
+            hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0)), -1.0);
         Op_compton->AddTerm(oqty_terms->comptonSource);
         len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
         eqsys->SetOperator(id_f_hot, id_n_tot, Op_compton);
@@ -259,10 +261,13 @@ namespace DREAM {
         gsl_integration_workspace * wp;
         gsl_integration_workspace * wpOut;
     public:
-        real_t pLower, pUpper, photonFlux, scaleFactor, source;
+        real_t pLower, pUpper, photonFlux;
         FVM::Interpolator1D *comptonPhotonFlux;
-        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor), comptonPhotonFlux(comptonPhotonFlux) {
+        real_t integratedComptonSpectrum, C1, C2, C3, scaleFactor, source;
+        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, 
+                real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), 
+                integratedComptonSpectrum(integratedComptonSpectrum), C1(C1), C2(C2), C3(C3), comptonPhotonFlux(comptonPhotonFlux), scaleFactor(scaleFactor) {
                 this->limit = 1000;
                 this->wp = gsl_integration_workspace_alloc(limit);
                 this->wpOut = gsl_integration_workspace_alloc(limit);
@@ -273,8 +278,8 @@ namespace DREAM {
             this->DiagonalQuadraticTerm::Rebuild(0,0,nullptr);
         }
         virtual void SetWeights() override {
-            struct DREAM::ComptonSource::intparams params = {this->limit, this->wp};
-            struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut};
+            struct DREAM::ComptonSource::intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
+            struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
             for(len_t i = 0; i<grid->GetNCells(); i++)
                 weights[i] = scaleFactor * this->photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
         }
@@ -376,7 +381,9 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
 
         Op_Nre->AddTerm(
-            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), -1.0)
+            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), 
+                s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), 
+                s->GetReal("eqsys/n_re/compton/C3"), -1.0)
         );
         desc += " - internal Compton";
     }
