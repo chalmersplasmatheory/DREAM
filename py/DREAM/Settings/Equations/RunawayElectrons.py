@@ -165,10 +165,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.C2_Compton = C2
             self.C3_Compton = C3
             self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(C1, C2, C3))[0]
-            print(self.C1_Compton)
-            print(self.C2_Compton)
-            print(self.C3_Compton)
-            print(self.integratedComptonSpectrum)
 
     def setEceff(self, Eceff):
         """
@@ -245,11 +241,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
 
-        self.C1_Compton = int(data['compton']['C1'])
-        self.C2_Compton = int(data['compton']['C2'])
-        self.C3_Compton = int(data['compton']['C3'])
-        self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(self.C1_Compton, self.C2_Compton, self.C3_Compton))[0]
-
         if 'flux' in data['compton']:
             if type(data['compton']['flux']) == dict:
                 self.comptonPhotonFlux  = data['compton']['flux']['x']
@@ -257,6 +248,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             else:
                 self.comptonPhotonFlux  = data['compton']['flux']
                 self.comptonPhotonFlux_t = np.array([0.0])
+
+        if 'C1' in data['compton']:
+            self.C1_Compton = data['compton']['C1']
+            self.C2_Compton = data['compton']['C2']
+            self.C3_Compton = data['compton']['C3']
+            self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(self.C1_Compton, self.C2_Compton, self.C3_Compton))[0]
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
