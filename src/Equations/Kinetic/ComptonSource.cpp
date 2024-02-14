@@ -13,12 +13,6 @@ using namespace DREAM;
 /**
  * Constructor.
  */
- 
-//const real_t ComptonSource::integratedComptonSpectrum = 1.4865971659548942; // 5.8844190260298;
-//const real_t ComptonSource::C1 = 1.7414529925156674; // 1.2
-//const real_t ComptonSource::C2 = 0.8835326679107941; // 0.8
-//const real_t ComptonSource::C3 = 0.39190825871852136; // 0.
-
 
 ComptonSource::ComptonSource(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, 
