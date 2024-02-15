@@ -152,8 +152,6 @@ static PyObject *dreampy_setup_simulation(
     // Initialize the DREAM kernel
     dream_initialize();
 
-    DREAM::OutputGeneratorSFile *ogs;
-    SFile_Python *sfp = new SFile_Python();
     DREAM::Settings *settings;
     DREAM::Simulation *sim;
 
@@ -161,16 +159,13 @@ static PyObject *dreampy_setup_simulation(
         settings = dreampy_loadsettings(dict);
         sim = DREAM::SimulationGenerator::ProcessSettings(settings);
         
-        ogs = new DREAM::OutputGeneratorSFile(
-            sim->GetEquationSystem(), sfp
-        );
-        sim->SetOutputGenerator(ogs);
+        
         sim->GetEquationSystem()->GetTimeStepper()->SetPythonCaller(dreampy_callback_return_bool);
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;
     }
-
+    
     if (success)
         return PyCapsule_New(sim, "sim", NULL);
     else
@@ -184,18 +179,25 @@ static PyObject *dreampy_setup_simulation(
 static PyObject *dreampy_run_simulation(
     PyObject* /*self*/, PyObject *args
 ) {
+    dream_make_splash();
     bool success = true;
     DREAM::Simulation *sim = get_simulation_from_capsule(args);
+    DREAM::OutputGeneratorSFile *ogs;
+    SFile_Python *sfp = new SFile_Python();
 
     // Register callback functions
     register_callback_functions(sim);
 
     try {
+        ogs = new DREAM::OutputGeneratorSFile(
+            sim->GetEquationSystem(), sfp
+        );
         sim->Run();
 
         // Generate output
         Timer t;
         sim->Save();
+        ogs->Save();
         std::cout << "Time to save output: " << t.ToString() << std::endl;
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
@@ -206,10 +208,7 @@ static PyObject *dreampy_run_simulation(
     dream_finalize();
 
     if (success) {
-        DREAM::OutputGeneratorSFile *og = static_cast<DREAM::OutputGeneratorSFile*>(
-            sim->GetOutputGenerator()
-        );
-        SFile_Python *sfp = static_cast<SFile_Python*>(og->GetSFile());
+        SFile_Python *sfp = static_cast<SFile_Python*>(ogs->GetSFile());
         PyObject *d = sfp->GetPythonDict();
         
         // TODO delete simulation
