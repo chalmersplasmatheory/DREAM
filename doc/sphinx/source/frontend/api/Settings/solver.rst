@@ -124,6 +124,53 @@ but may sometimes need to be adjusted.
    tolerances when calling ``tolerance.set()``.
 
 
+Monitoring the residual
+***********************
+As noted above, the Newton solver uses a condition on the change in the
+solution from iteration to iteration in order to determine if it has converged.
+In the vast majority of cases, this works well, but in a few outlier cases (when
+the jacobian is particularly ill-conditioned) we have found that the solver
+stops iterating even though the found solution does not satisfy the system of
+equations. To avoid such unphysical solutions, it is possible to let DREAM also
+monitor the residual and issue a warning when the solution is diverged. This
+functionality is enabled by default, and can be switched on/off using
+
+.. code-block:: python
+
+   ds.solver.setCheckResidual(True)   # Check the residual in each iteration
+   ds.solver.setCheckResidual(False)  # Do NOT check the residual in each iteration
+
+If enabled, the solver will also output information about the convergence in
+the output file. This information consists of a flag for each time step and
+non-trivial unknown quantity in the equation system, indicating whether the
+residual was close to zero, as well as the maximum 2-norm of all elements in
+the unknown vector, normalized to the scale length used in DREAM to determine
+if the residual is close to zero or not.
+
+.. warning::
+
+   Sadly, if the residual is found to be diverging, there is no general
+   technique for correcting this problem. One will have to try to figure out
+   exactly what is causing the divergence manually and try to work around the
+   issue.
+
+
+Storing iteration progress in output
+************************************
+In each Newton iteration, the solver will estimate how well converged the
+solution is, and decide to either continue iteration or stop. The progress of
+the solution can be printed to ``stdout`` by calling
+``ds.solver.setVerbose(True)``, but the same information can also be saved to
+the output file. To save the iteration progress to the output file, just add
+the following line to your settings:
+
+.. code-block:: python
+
+   ds.solver.setSaveConvergenceInfo(True)
+
+By default, this option is disabled.
+
+
 Which solver should I use?
 --------------------------
 The difference between the two solvers is primarily that the linearly implicit

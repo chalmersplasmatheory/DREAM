@@ -90,8 +90,8 @@ namespace DREAM {
     public:
         TimeStepperAdaptive(
             const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler*,
-            std::vector<len_t>&, ConvergenceChecker*, int_t checkEvery=0,
-            bool verbose=false, bool constantStep=false
+            EquationSystem*, std::vector<len_t>&, std::vector<UnknownQuantityEquation*>*,
+			ConvergenceChecker*, int_t checkEvery=0, bool verbose=false, bool constantStep=false
         );
         ~TimeStepperAdaptive();
 
@@ -99,6 +99,7 @@ namespace DREAM {
         virtual void HandleException(FVM::FVMException&) override;
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
+        virtual real_t MaxTime() const override;
         virtual real_t NextTime() override;
         virtual void ValidateStep() override;
 

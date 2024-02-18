@@ -166,6 +166,16 @@ def load_elements(elements, datatype='binding', cache=False, cachedir=None):
 
     names, Z, data = parse_data(data)
 
+    if 'H' in names:
+        if 'T' not in names:
+            names.insert(1, 'T')
+            Z.insert(1, Z[0])
+            data.insert(1, data[0])
+        if 'D' not in names:
+            names.insert(1, 'D')
+            Z.insert(1, Z[0])
+            data.insert(1, data[0])
+
     # Check that 'elements' is a subset of 'names'
     for e in elements:
         # All hydrogenic species have the same ionization/binding energies

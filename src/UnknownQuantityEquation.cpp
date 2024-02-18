@@ -62,6 +62,17 @@ void UnknownQuantityEquation::Evaluate(
 }
 
 /**
+ * Returns true if this equation contains a transient term.
+ */
+bool UnknownQuantityEquation::HasTransientTerm() const {
+	for (auto it = equations.begin(); it != equations.end(); it++)
+		if (it->second->HasTransientTerm())
+			return true;
+	
+	return false;
+}
+
+/**
  * Returns the number of non-zero elements per row
  * in the linear operator matrix constructed for this
  * unknown.

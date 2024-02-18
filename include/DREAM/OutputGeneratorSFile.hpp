@@ -27,6 +27,8 @@ namespace DREAM {
 		OutputGeneratorSFile(EquationSystem*, SFile*, bool savesettings=true);
         virtual ~OutputGeneratorSFile();
 
+        SFile *GetSFile() { return this->sf; }
+
         virtual void Save(bool current=false) override;
 	};
 }
