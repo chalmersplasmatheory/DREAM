@@ -22,7 +22,7 @@ namespace DREAM {
 
         // Python termination members
         timestep_terminate_func_t python_caller;
-        void *python_terminate_func;
+        void *python_terminate_func = nullptr;
 
     public:
         TimeStepper(FVM::UnknownQuantityHandler *u, EquationSystem *eqsys)
