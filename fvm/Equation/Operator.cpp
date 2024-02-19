@@ -98,6 +98,15 @@ void Operator::AddTerm(EquationTerm *t)  {
 }
 
 /**
+ * Add a transient term to this operator.
+ */
+void Operator::AddTerm(TransientTerm *t) {
+	this->hasTransientTerm = true;
+	terms.push_back(t);
+	CheckConsistency();
+}
+
+/**
  * Add a boundary condition to this operator.
  */
 void Operator::AddBoundaryCondition(BC::BoundaryCondition *bc) {

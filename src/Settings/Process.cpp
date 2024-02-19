@@ -125,7 +125,7 @@ AMJUEL *SimulationGenerator::LoadAMJUEL(Settings*){
  * Load output settings.
  */
 void SimulationGenerator::LoadOutput(Settings *s, Simulation *sim) {
-    std::string filename = s->GetString("/output/filename");
+    std::string filename = s->GetString("output/filename");
 
     sim->SetOutputGenerator(new OutputGeneratorSFile(
         sim->GetEquationSystem(), filename

@@ -45,7 +45,7 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
     vector<UnknownQuantityEquation*> *unknown_equations,
     EquationSystem *eqsys, const bool verbose,
     enum OptionConstants::linear_solver ls
-) : Solver(unknowns, unknown_equations, verbose, ls), eqsys(eqsys) {
+) : Solver(unknowns, unknown_equations, eqsys, verbose, ls) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -176,13 +176,15 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
 
 		// Call external iterator (if enabled)
 		if (this->extiter != nullptr)
-			extiter_conv = this->extiter->Solve(t, dt);
+			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
 	} while (!extiter_conv);
 
 	if (this->extiter)
 		this->extiter_nIterations.push_back(iter);
 
     this->timeKeeper->StopTimer(timerTot);
+
+    this->IterationFinished();
 }
 
 /**

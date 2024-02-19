@@ -8,6 +8,7 @@
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
+#include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
@@ -28,6 +29,7 @@ namespace DREAM::FVM {
         PredeterminedParameter *predetermined = nullptr;
         AdvectionDiffusionTerm *adterm = nullptr;
         Grid *grid;
+		bool hasTransientTerm = false;
 
         // List of pointers to terms which can be identified with a
         // numeric value and returned separately...
@@ -42,18 +44,21 @@ namespace DREAM::FVM {
 
         ~Operator();
 
-        void AddTerm(AdvectionTerm *a, bool addAsEquationTerm = false);
-        void AddTerm(DiffusionTerm *d, bool addAsEquationTerm = false);
-        void AddTerm(PredeterminedParameter *p);
-        void AddTerm(EvaluableEquationTerm *t);
-        void AddTerm(EquationTerm *t);
-        void AddBoundaryCondition(BC::BoundaryCondition *bc);
+        void AddTerm(AdvectionTerm*, bool addAsEquationTerm = false);
+        void AddTerm(DiffusionTerm*, bool addAsEquationTerm = false);
+        void AddTerm(PredeterminedParameter*);
+        void AddTerm(EvaluableEquationTerm*);
+        void AddTerm(EquationTerm*);
+		void AddTerm(TransientTerm*);
+        void AddBoundaryCondition(BC::BoundaryCondition*);
 
         // Verifies that the operator is consistent
         void CheckConsistency();
 
         void Evaluate(real_t*, const real_t*);
         void EvaluableTransform(real_t*);
+
+		bool HasTransientTerm() const { return this->hasTransientTerm; }
 
         EquationTerm *GetTermByID(const int_t id) { return this->identifiableTerms[id]; }
 
