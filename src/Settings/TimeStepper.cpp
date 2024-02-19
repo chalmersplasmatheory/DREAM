@@ -34,6 +34,7 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
     s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
+    s->DefineSetting(MODULENAME "/time_scale_factor","Factor used to determine timestep from ionization timescale",(real_t)-1);
 
     // Tolerance settings for adaptive time stepper
     DefineToleranceSettings(MODULENAME, s);
@@ -156,10 +157,11 @@ TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
 	real_t minSaveDt = s->GetReal(MODULENAME "/minsavedt");
 	real_t safetyfactor = s->GetReal(MODULENAME "/safetyfactor");
 	real_t tmax = s->GetReal(MODULENAME "/tmax");
+	real_t time_scale_factor = s->GetReal(MODULENAME "/time_scale_factor");
 
 	if (dt < 0)
 		throw SettingsException("TimeStepper ionization: Initial time step 'dt0' must be non-negative.");
 
-	return new TimeStepperIonization(tmax, dt, dtmax, u, automaticstep, safetyfactor, minSaveDt);
+	return new TimeStepperIonization(tmax, dt, dtmax, u, automaticstep, safetyfactor, minSaveDt, time_scale_factor);
 }
 

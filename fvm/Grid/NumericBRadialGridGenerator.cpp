@@ -181,7 +181,7 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 		this->dataBZ = this->addR0DataPoint(this->dataBZ, this->R, this->npsi, this->ntheta);
 		this->dataBphi = this->addR0DataPoint(this->dataBphi, this->R, this->npsi, this->ntheta);
 
-		this->Z = this->addR0DataPoint(this->Z, this->R, this->npsi, this->ntheta);
+		this->Z = this->addR0DataPoint(this->Z, this->R, this->npsi, this->ntheta, 0); // <----
 		// The radial grid should be modified last...
 		this->R = this->addR0DataPoint(this->R, this->R, this->npsi, this->ntheta, 0);
 

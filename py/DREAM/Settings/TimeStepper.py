@@ -22,7 +22,7 @@ class TimeStepper:
         self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0, time_scale_factor=-1):
         """
         Set properties of the time stepper.
         """
@@ -38,6 +38,7 @@ class TimeStepper:
         self.setConstantStep(constantstep)       
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
+        self.setTimeScaleFactor(time_scale_factor)
         
         self.dtmax = None
         self.automaticstep = None
@@ -154,6 +155,15 @@ class TimeStepper:
 
         if tmax is not None:
             self.tmax = tmax
+            
+    def setTimeScaleFactor(self,value):
+    	
+    	if (value==False):
+    		self.time_scale_factor=-1
+    	else:
+    		self.time_scale_factor = value
+    	
+    
 
 
     def setVerbose(self, verbose=True):
@@ -185,6 +195,7 @@ class TimeStepper:
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
+        if 'time_scale_factor' in data: self.time_scale_factor=float(scal(data['time_scale_factor']))
         
         self.verifySettings()
 
@@ -217,6 +228,7 @@ class TimeStepper:
             data['automaticstep'] = self.automaticstep
             data['safetyfactor'] = self.safetyfactor
             data['minsavedt'] = self.minsavedt
+            data['time_scale_factor']=self.time_scale_factor
 
         return data
 

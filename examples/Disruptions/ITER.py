@@ -4,13 +4,13 @@
 
 import numpy as np
 
-try:
-    import DREAM.Settings.RadialGrid as RadialGrid
-except:
-    import sys
-    sys.path.append('/run/media/mathias/BlackTools/Fusion/software/DREAM/py')
+#try:
+import DREAM.Settings.RadialGrid as RadialGrid
+#except:
+#    import sys
+#    sys.path.append('/run/media/mathias/BlackTools/Fusion/software/DREAM/py')
 
-    import DREAM.Settings.RadialGrid as RadialGrid
+import DREAM.Settings.RadialGrid as RadialGrid
 
 import visualizeTokamak
 

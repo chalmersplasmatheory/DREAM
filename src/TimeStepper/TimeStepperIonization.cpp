@@ -20,10 +20,10 @@ using namespace std;
 TimeStepperIonization::TimeStepperIonization(
 	const real_t tMax, const real_t dt0, const real_t dtMax,
 	FVM::UnknownQuantityHandler *u, const real_t automaticstep,
-	const real_t safetyfactor, const real_t minSaveDt
+	const real_t safetyfactor, const real_t minSaveDt, const real_t time_scale_factor
 ) : TimeStepper(u), tMax(tMax), dt0(dt0), dtMax(dtMax),
 	minSaveDt(minSaveDt), automaticstep(automaticstep),
-	safetyfactor(safetyfactor)
+	safetyfactor(safetyfactor), time_scale_factor(time_scale_factor)
 {
 	if (tMax < dt0)
 		throw TimeStepperException("TimeStepperIonization: Maximum time must be greater than initial time step.");
@@ -81,6 +81,8 @@ real_t TimeStepperIonization::GetIonizationTimeScale() {
  */
 real_t TimeStepperIonization::NextTime() {
 	real_t timescale = GetIonizationTimeScale();
+	
+	
 
 	if (timescale == 0) {
 		if (this->dt0 == 0)
@@ -97,7 +99,12 @@ real_t TimeStepperIonization::NextTime() {
 			DREAM::IO::PrintInfo("Setting baseline timestep: %.7e\n", this->dt0);
 		}
 
-		this->dt = (this->dt0 * timescale / this->tscale0);
+		if(time_scale_factor == -1){
+			this->dt = (this->dt0 * timescale / this->tscale0);
+		}
+		else {
+			this->dt = timescale*time_scale_factor;
+    	}
 		if (this->dtMax > 0 && this->dt > this->dtMax)
 			this->dt = this->dtMax;
 	}

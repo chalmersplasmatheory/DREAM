@@ -23,12 +23,14 @@ namespace DREAM {
 		len_t nr;
 		real_t *timescales, *ncold;
 		
+		real_t time_scale_factor = -1;
+		
 		const len_t PROGRESSBAR_LENGTH = 80;
 	public:
 		TimeStepperIonization(
 			const real_t tMax, const real_t dt0, const real_t dtMax,
 			FVM::UnknownQuantityHandler*, const real_t automaticstep,
-			const real_t safetyfactor, const real_t minSaveDt
+			const real_t safetyfactor, const real_t minSaveDt, const real_t time_scale_factor = -1
 		);
 		~TimeStepperIonization();
 
