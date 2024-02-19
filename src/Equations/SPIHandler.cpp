@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <cmath>
 #include "DREAM/Equations/SPIHandler.hpp"
+#include <gsl/gsl_integration.h>
 
 using namespace DREAM;
 using namespace std;
@@ -30,6 +31,27 @@ const real_t T0=2000.0;// eV
 const real_t n0=1e20;// m^{-3}
 const real_t r0=0.002;// m
 
+const real_t qe = Constants::ec;//1.60217662e-19;// C
+const real_t mD = Constants::mD;//3.3435837724e-27;// kg
+const real_t mH = Constants::mH;//1.67262192369e-27;// kg
+const real_t me = Constants::me;//9.10938356e-31;// kg
+const real_t mNe = 10 * mH;//kg
+const real_t eps0 = Constants::eps0;// F/m
+const real_t gamma_e = 1;//Adiabatic constant of electrons
+const real_t gamma_i = 3;//Adiabatic constant of ions
+
+//Variables related to computing the drift
+//Time parameters
+real_t t_acc, t_pol, t_pe, t_exp;
+//Normalized time parameters
+real_t t_polp, t_pep, t_expp;
+//Parameters which are independent of time and shard
+real_t q, Zavg;
+//Parameters which are computed elsewhere in DREAM
+real_t v0, n_e, n_i, Te, B, sigma;
+//Parameter which are derived
+real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
+
 /**
  * Constructor
  */
@@ -39,16 +61,21 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
     OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
     OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
-    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, len_t *nbrShiftGridCell = nullptr){
+    OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
+    OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
+    const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t ZavgD, real_t ZavgNe,
+    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, int *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
     this->unknowns=u;
     this->VpVolNormFactor=VpVolNormFactor;
-    
+
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
-	
+    rf = this->rf;
+    q = 1; //TODO
+
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
 	// the size of the flux surfaces. The corresponding factor correcting the 
@@ -64,6 +91,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->spi_heat_absorbtion_mode=spi_heat_absorbtion_mode;
     this->spi_cloud_radius_mode=spi_cloud_radius_mode;
     this->spi_magnetic_field_dependence_mode=spi_magnetic_field_dependence_mode;
+    this->spi_shift_mode=spi_shift_mode;
 
     // Set prescribed cloud radius (if any)
     if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT){
@@ -78,6 +106,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     id_Yp = unknowns->GetUnknownID(OptionConstants::UQTY_Y_P);
     id_xp = unknowns->GetUnknownID(OptionConstants::UQTY_X_P);
     id_vp = unknowns->GetUnknownID(OptionConstants::UQTY_V_P);
+    id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
   	    id_Whot = unknowns->GetUnknownID(OptionConstants::UQTY_W_HOT);
@@ -91,6 +120,16 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Memory allocation
     AllocateQuantities();
     
+    for(len_t ip=0; ip<nShard; ip++){
+        T[ip]=T_temp[ip];  
+    }
+    this->T_0=T_0;
+    this->delta_y=delta_y;
+    this->Rm=Rm;
+    this->ZavgD=ZavgD;
+    this->ZavgNe=ZavgNe;
+    this->NZ=NZ;
+    
     // Initialize rCoordPrevious to the radial coordinate at the plasma edge 
     // to use as a starting guess if rCoord must be solved for numerically
     for(len_t ip=0;ip<nShard;ip++)
@@ -99,7 +138,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Calculate pellet molar mass, molar volume and density
     real_t molarMass=0;
     real_t solidDensity=0;
-    real_t *pelletDeuteriumFraction=new real_t[nShard];
     for(len_t ip=0;ip<nShard;ip++){
         pelletMolarMass[ip]=0;
         pelletMolarVolume[ip]=0;
@@ -125,6 +163,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 		        if(Z[iZ]==1 && isotopes[iZ]==2){
 		            pelletDeuteriumFraction[ip]+=molarFraction[offset+ip];
 		        }
+                if(Z[iZ]==10){
+		            pelletNeonFraction[ip]+=molarFraction[offset+ip];
+		        }
             }
             offset+=nShard;
         }else {
@@ -149,11 +190,15 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 		else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS)
 			NGSConstantFactor[ip]=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda[ip]*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
 	}
-	delete [] pelletDeuteriumFraction;
 	
-	// Set number of grid cells to shift the deposition for every shard
-	for(len_t ip=0;ip<nShard;ip++)
-	    this->nbrShiftGridCell[ip] = nbrShiftGridCell[ip];
+	// Set the presdcribed number of grid cells to shift the deposition for every shard (if any)
+	if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)
+		for(len_t ip=0;ip<nShard;ip++)
+	        this->nbrShiftGridCellPrescribed[ip] = 1;
+	else if(nbrShiftGridCell!=nullptr)
+	    for(len_t ip=0;ip<nShard;ip++){
+	        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
+        }
 }
 
 /**
@@ -191,7 +236,16 @@ void SPIHandler::AllocateQuantities(){
     pelletDensity = new real_t[nShard];
     lambda = new real_t[nShard];
     NGSConstantFactor = new real_t[nShard];
-    nbrShiftGridCell = new len_t[nShard];
+    nbrShiftGridCell = new int[nShard];
+    nbrShiftGridCellPrescribed = new int[nShard];
+    T = new real_t[nShard];
+    pelletDeuteriumFraction=new real_t[nShard];
+    pelletNeonFraction=new real_t[nShard];
+    rp=new real_t[nShard];
+    rpdot=new real_t[nShard];
+    shift_r=new real_t[nShard];
+    shift_store=new real_t[nShard];
+    YpdotPrevious=new real_t[nShard];
 }
 
 /**
@@ -221,13 +275,199 @@ void SPIHandler::DeallocateQuantities(){
     delete [] lambda;
     delete [] NGSConstantFactor;
     delete [] nbrShiftGridCell;
+    delete [] nbrShiftGridCellPrescribed;
+    delete [] T;
+    delete [] pelletDeuteriumFraction;
+    delete [] pelletNeonFraction;
+    delete [] rp;
+    delete [] rpdot;
+    delete [] shift_r;
+    delete [] shift_store;
+    delete [] YpdotPrevious;
+}
+/**
+* Calculates the radius and ablation of each shard
+*/
+void SPIHandler::YpConversion(len_t ip){
+    rp[ip] = pow(YpPrevious[ip], 3.0/5.0);
+    rpdot[ip] = 3.0/5.0 * pow(rp[ip], -2.0/3.0) * YpdotPrevious[ip];
+}
+/**
+ * Below are functions needed to compute the drift displacement of an ionised cloud
+ * succeeding the pellet injection. The analytical model is derived in doi:10.1017/S0022377823000466
+ */
+
+ // Stores data about the surroundings of a shard
+void SPIHandler::AssignShardSpecificParameters(int ip){
+    v0 = -vp[3*ip];
+    n_e = ncoldPrevious[irp[ip]];
+    Te = TcoldPrevious[irp[ip]];
+    B = sqrt(this->rGrid->GetFSA_B2(irp[ip])) * rGrid->GetBmin(irp[ip]);
+    sigma = rf->GetElectricConductivity(irp[ip]);// As this function will only be called during the first newton iteration of each time step, sigma will be the conductivity from the previous time step
+    n_i = 0;
+    for(len_t iZ=0;iZ<NZ;iZ++){
+        n_i += rf->GetIonHandler()->GetTotalIonDensity(irp[ip], iZ);
+    }
+}
+
+/**
+ * Computes relevant quantities for the drift displacement of a shard
+ * Zavg    : Total average charge inside the cloud
+ * CST     : Sound speed inside the cloud during the majority of the drift
+ * CST0    : Sound speed inside the cloud directly after the neutral phase
+ * G       : Mass ablation rate
+ * n_0     : Density directly after the neutral phase
+ * a0      : Initial cloud acceleration
+ * t_detach: Time it takes to move away from the pellet (shard)
+ * Lc      : Initial length
+ * n       : Line integrated density
+ * v_lab   : Initial radial drift velocity in the lab frame
+ * Reff    : Effective resistance to ohmic currents exiting the cloud parallell to the field lines
+ */
+void SPIHandler::AssignComputationParameters(int ip){
+    Zavg = ZavgD*pelletDeuteriumFraction[ip] + ZavgNe*pelletNeonFraction[ip];
+    CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
+    CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
+    G = -4 * M_PI * pelletDensity[ip] * rp[ip] * rp[ip] * rpdot[ip];
+    real_t Zavg0 = 1;// Assume all ion species are singly ionized directly after the neutral phase and while the cloud detaches from the pellet
+    n_0 = (1 + Zavg0)*G/(2 * M_PI * delta_y * delta_y * (mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip])*CST0);
+    a0 = ((1 + Zavg0)*qe*T_0/((mD*pelletDeuteriumFraction[ip] + mNe * pelletNeonFraction[ip])*Rm));
+    t_detach = -v0/a0 + sqrt(v0*v0/(a0*a0) + 2 * delta_y/a0);
+    Lc = 2 * CST0*t_detach;
+    n = n_0 * Lc; 
+    v_lab = a0 * t_detach;
+    Reff = -2*M_PI*M_PI*Rm*this->rGrid->GetMinorRadius()/(sigma*delta_y*delta_y*delta_y*log(delta_y/(this->rGrid->GetMinorRadius()*M_PI)));
+}
+
+/**
+ * Computes the characteristic quantities of time for a shard
+ * t_acc : Acceleration time scale
+ * t_pol : Poloidal rotation time scale
+ * t_pe  : Pressure equilibration time scale
+ * t_exp : Expansion time scale
+ * t_polp: Normalized t_pol
+ * t_pep : Normalized t_pe
+ * t_expp: Normalized t_exp
+ */
+void SPIHandler::AssignTimeParameters(int ip){
+    t_acc = n/(1+Zavg)*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip])*Reff/(B*B);
+    t_pol = q*Rm/CST;
+    t_pe = qe*T[ip]*n/(2*CST*(n_i+n_e)*qe*Te);
+    t_exp = Lc/(2*CST);
+    t_polp = t_pol/t_acc;
+    t_pep = t_pe/t_acc;
+    t_expp = t_exp/t_acc;
+}
+
+
+real_t SPIHandler::Integrand(real_t x, void *p){
+    struct integrand_struct *params = (struct integrand_struct *)p;
+    return (params->a*cos(x) + x*sin(x))/((params->a)*(params->a)+x*x);
+}
+real_t SPIHandler::IntegrandSin(real_t x, void *p){
+    if (x==0)
+        return 1;
+    else
+        return sin(x)/x;
+}
+/**
+ * Function to evaluate equation (A3) in doi:10.1017/S0022377823000466
+ * Be aware of the fact that the Epsiloni returns the wrong answer when a=0. 
+ * But when the subtraction is made at PrimitiveSecondRow() the output is correct.
+ * One way of fixing his is to let the sin integral go from b to inf(1000*b) and 
+ * that integral is hard to solve numerically
+ */
+real_t SPIHandler::Epsiloni(real_t a, real_t b){
+    gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(1000);
+    gsl_function F;
+    integrand_struct paramstruct = {a};
+    if (a==0){
+        F.function = &IntegrandSin;
+    }else{
+        F.function = &Integrand;
+    }
+    F.params = &paramstruct;
+
+    real_t sum, error;
+    if (b>0){
+        gsl_integration_qags(&F, 0, b, 0, 1e-7, 1000, workspace, &sum, &error);
+    }else{
+        gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
+        sum = -sum;
+    }
+    if (a==0)
+        sum = sum+M_PI*0.5;
+    gsl_integration_workspace_free(workspace);
+    return sum;
+
+}
+
+
+real_t SPIHandler::BisFunction(real_t t_prim){
+    return t_prim + t_expp;
+}
+
+//Function to evaluate two of the terms in equation (A4) 
+real_t SPIHandler::PrimitiveFirstRow(real_t t_prim){//- at cos in article
+    real_t t_bis = BisFunction(t_prim);
+    real_t term1 = Epsiloni(t_bis, t_bis/t_polp);
+    real_t numerator = (sin(t_bis/t_polp) + 1/t_polp * cos(t_bis/t_polp));
+    real_t denominator =  t_pep * (1 + 1/(t_polp * t_polp));
+    real_t term2 = numerator/denominator;
+    return term1 - term2;
+}
+
+// Function to evaluate two of the terms in equation (A4) 
+real_t SPIHandler::PrimitiveSecondRow(real_t t_prim){
+    real_t t_bis = BisFunction(t_prim);
+    real_t term1 = Epsiloni(0, t_bis/t_polp);
+    real_t term2 = Epsiloni(t_bis, t_bis/t_polp);
+    real_t result = term1 - term2;
+    return result;
+}
+
+// Function to evaluate two of the terms in equation (A4) 
+real_t SPIHandler::PrimitiveThirdRow(real_t t_prim){
+    real_t t_bis = BisFunction(t_prim);
+    real_t term1 = t_polp * cos(t_bis/t_polp);
+    real_t term2 = sin(t_bis/t_polp);
+    return term1 + term2;
+}
+
+real_t SPIHandler::FirstRow(){
+    real_t term1 = PrimitiveFirstRow(t_pep);
+    real_t term2 = PrimitiveFirstRow(0);
+    return term1 - term2;
+}
+
+real_t SPIHandler::SecondRow(){
+    real_t term1 = PrimitiveSecondRow(t_pep);
+    real_t term2 = PrimitiveSecondRow(0);
+    return term1 - term2;
+}
+
+real_t SPIHandler::ThirdRow(){
+    real_t factor = 1/t_pep * 1/(1 + 1/(t_polp*t_polp));
+    real_t term1 = PrimitiveThirdRow(t_pep);
+    real_t term2 = PrimitiveThirdRow(0);
+    return factor * (term1 - term2);
+}
+
+// Function to collect all terms to evaluate equation A4
+real_t SPIHandler::Deltar(int ip){
+    real_t first = FirstRow();
+    real_t second = SecondRow();
+    real_t third = ThirdRow();
+    real_t term1 = v_lab * t_acc;
+    real_t factor = (1+Zavg)*2*qe*T[ip]*q/(CST*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip]))*t_acc;
+    return (term1 + factor * (first + second + third))*cos(thetaCoordPPrevious[ip]);
 }
 
 /**
  * Rebuild this object
  * dt: current time step duration
  */
-void SPIHandler::Rebuild(real_t dt){
+void SPIHandler::Rebuild(real_t dt, len_t iteration){
 
     // Collect current data, and for some variables data from the previous time step
     xp=unknowns->GetUnknownData(id_xp);
@@ -240,6 +480,7 @@ void SPIHandler::Rebuild(real_t dt){
     Tcold=unknowns->GetUnknownData(id_Tcold);
     Yp=unknowns->GetUnknownData(id_Yp);
     Wcold=unknowns->GetUnknownData(id_Wcold);
+    ni=unknowns->GetUnknownData(id_ni);
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
         Whot=unknowns->GetUnknownData(id_Whot);
         qhot=unknowns->GetUnknownData(id_qhot);
@@ -249,6 +490,8 @@ void SPIHandler::Rebuild(real_t dt){
     // We use YpPrevious>0 as condition to keep the pellet terms active, 
     // to avoid making the functions discontinuous within a single time step
     YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
+    ncoldPrevious=unknowns->GetUnknownDataPrevious(id_ncold);
+    TcoldPrevious=unknowns->GetUnknownDataPrevious(id_Tcold);
 
     // We need the time step to calculate the transient factor in the deposition rate
     this->dt=dt;
@@ -274,7 +517,8 @@ void SPIHandler::Rebuild(real_t dt){
             if(distP<1e-20)
             	distP=0.01;
             	
-            rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
+            if(iteration==1)	
+                rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
             rGrid->GetRThetaPhiFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], &phiCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP, rCoordPPrevious[ip]);
         }
     }else if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE){
@@ -282,7 +526,9 @@ void SPIHandler::Rebuild(real_t dt){
         	// If the shards do not move, we can not use the distance 
         	// the shards travel in one time step as a length scale to set the tolerance.
         	// Here we use a hardcoded length scale of 1 cm
-            rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
+        	if(iteration==1)
+                rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
+                
             rGrid->GetRThetaPhiFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], &phiCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], 0.01, rCoordPPrevious[ip]);
         }
     }else {throw DREAMException("SPIHandler: unrecognized SPI shard velocity mode");}
@@ -293,6 +539,9 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate ablation rate (if any)
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
         CalculateYpdotNGSParksTSDW();
+        if(iteration==1)
+            for(len_t ip=0; ip<nShard; ip++)
+                YpdotPrevious[ip] = Ypdot[ip];       
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){ 
     
         for(len_t ir=0;ir<nr;ir++){
@@ -304,9 +553,14 @@ void SPIHandler::Rebuild(real_t dt){
             Eeff[ir]=4.0/3.0*(Wcold[ir]+Whot[ir])/ntot[ir];
         }
         CalculateYpdotNGSParksTSDWKinetic();
+        if(iteration==1)
+            for(len_t ip=0; ip<nShard; ip++)
+                YpdotPrevious[ip] = Ypdot[ip]; 
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
-        for(len_t ip=0;ip<nShard;ip++)
+        for(len_t ip=0;ip<nShard;ip++){
             Ypdot[ip]=0;
+            YpdotPrevious[ip]=0;
+        }
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
         throw NotImplementedException("SPIHandler: NGPS ablation is not yet supported");
     }else {throw DREAMException("SPIHandler: unrecognized SPI shard ablation mode");}
@@ -315,40 +569,60 @@ void SPIHandler::Rebuild(real_t dt){
     if(spi_magnetic_field_dependence_mode==OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK)
         for(len_t ip = 0; ip<nShard; ip++){
             Ypdot[ip]*=CalculateBFieldDampingJOREK(irp[ip]);
+            if(iteration==1)
+                YpdotPrevious[ip]*=CalculateBFieldDampingJOREK(irp[ip]);
         }
     // Calculate radius of the neutral cloud (if any)
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
         CalculateRCld();
 
     // Calculate deposition (if any)
-    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
+    if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
         
-        // Shift the deposition profile
-        for(len_t ip=0;ip<nShard;ip++){
-            if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                for(len_t ir=0;ir<nr-1;ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+nbrShiftGridCell[ip])*nShard+ip];
+        // Calculate drift (if any)
+        if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+            if(iteration==1){
+                for(len_t ip=0;ip<nShard;ip++){
+                    if (YpPrevious[ip]>0 && irp[ip]<nr){
+                        YpConversion(ip);
+                        AssignShardSpecificParameters(ip);
+                        AssignComputationParameters(ip);
+                        AssignTimeParameters(ip);
+                        shift_r[ip] = Deltar(ip);
+                        nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);
+                        shift_store[ip] = shift_r[ip];
+                    }
                 }
-            }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
-                for(len_t ir=nr-1;ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+            }
+        } else if(nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
+            for(len_t ip=0;ip<nShard;ip++){
+                if(rCoordPNext[ip]>rCoordPPrevious[ip]){
+                    nbrShiftGridCell[ip] = std::abs((int)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int)irp[ip];
+                    
+                    //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
+                    if((int)irp[ip]-nbrShiftGridCellPrescribed[ip]<0)
+                        nbrShiftGridCell[ip]--;    
+                }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
+                    nbrShiftGridCell[ip] = nbrShiftGridCellPrescribed[ip];
                 }
             }
         }
-
-    }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
-        CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-
-        // Shift the deposition profile to the last grid cell (before the current one) to avoid "self-dilution"
+        // Shift the deposition profile
         for(len_t ip=0;ip<nShard;ip++){
-            if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                for(len_t ir=0;ir<nr-1;ir++){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+1)*nShard+ip];
+            if(nbrShiftGridCell[ip]<0){
+                for(len_t ir=0;ir<nr;ir++){
+                    if(ir>=nr+nbrShiftGridCell[ip])
+                        depositionProfilesAllShards[ir*nShard+ip]=0;
+                    else
+                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
-            }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
-                for(len_t ir=nr-1;ir>0;ir--){
-                    depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-1)*nShard+ip];
+            }else if(nbrShiftGridCell[ip]>0){
+                for(int ir=nr-1;ir>=0;ir--){// Use ant int as a loop index so that the loop can be terminated by ir becoming <0
+                    if(ir<nbrShiftGridCell[ip])
+                        depositionProfilesAllShards[ir*nShard+ip]=0;
+                    else
+                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }
         }
@@ -387,6 +661,7 @@ void SPIHandler::CalculateYpdotNGSParksTSDW(){
     }
 }
 
+
 /**
  * Deposition rate according to NGS formula from Parks TSDW presentation 2017,
  * including contribution from a kinetically treated species. The kinetically treated
@@ -402,6 +677,7 @@ void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
             Ypdot[ip]=0;
     }
 }
+
 
 real_t SPIHandler::CalculateBFieldDampingJOREK(len_t ir){
     if(ir<rGrid->GetNr()){
@@ -443,10 +719,13 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
                 
                 // Account for shifted re-deposition 
                 // NOTE: only strictly valid for delta function kernel (assumes deposition only on one side of r=0)
-                if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
-                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
-                else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
-                    heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
+                if(nbrShiftGridCell[ip]<0){
+                    if(ir<nr+nbrShiftGridCell[ip])
+                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                }else if(nbrShiftGridCell[ip]>0){
+                    if((int)ir>=nbrShiftGridCell[ip])
+                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                }     
             }
         }
     }
@@ -539,6 +818,20 @@ void SPIHandler::CalculateIrp(){
             irp[ip]=nr;
         }
     }
+}
+
+int SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
+    int temp = 0;
+    for(len_t ir=0; ir<nr;ir++){
+        if(rCoordPNext[ip]>rCoordPPrevious[ip] && abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir)){
+            temp = (int)ir - (int)irp[ip];
+            break;
+        }else if(rCoordPNext[ip] + shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip] + shift>rGrid->GetR_f(ir)){
+            temp = (int)ir - (int)irp[ip];
+            break;
+        }
+    }
+    return temp;
 }
 
 /**

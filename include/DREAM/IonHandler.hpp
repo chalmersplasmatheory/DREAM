@@ -37,14 +37,17 @@ namespace DREAM {
         // DERIVED ION QUANTITIES
         real_t 
             *nfree,
+            *nfreePrevious,
             *nbound,
             *ntot,
             *nZ0Z0,
+            *nZ0Z0Previous,
             *nZZ,
             *nZ0Z,
             *nZ0_Z,
             *Ztot,
-            *Zeff;
+            *Zeff,
+            *ZeffPrevious;
         
         // mass of atomic species
         real_t *mi;
@@ -88,6 +91,7 @@ namespace DREAM {
 
         const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
+        const real_t GetIonDensityPrevious(len_t ir, len_t iz, len_t Z0) const;
         const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTritiumDensity(len_t ir) const;
@@ -110,6 +114,10 @@ namespace DREAM {
             { return Zeff; }
         const real_t GetZeff(len_t ir) const 
             { return Zeff[ir]; }
+        const real_t* GetZeffPrevious() const 
+            { return ZeffPrevious; }
+        const real_t GetZeffPrevious(len_t ir) const 
+            { return ZeffPrevious[ir]; }
         const real_t* GetZtot() const 
             { return Ztot; }
         const real_t GetZtot(len_t ir) const 

@@ -362,6 +362,11 @@ enum eqterm_spi_deposition_mode {
     EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN=4
 };
 
+enum eqterm_spi_shift_mode {
+    EQTERM_SPI_SHIFT_MODE_NEGLECT=1,
+    EQTERM_SPI_SHIFT_MODE_ANALYTICAL=2
+};
+
 enum eqterm_spi_heat_absorbtion_mode {
     EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT=1,
     EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS=2,

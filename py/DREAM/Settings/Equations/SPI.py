@@ -37,6 +37,9 @@ CLOUD_RADIUS_MODE_SELFCONSISTENT=3
 MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT = 1
 MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK = 2
 
+SHIFT_MODE_NEGLECT=1
+SHIFT_MODE_ANALYTICAL=2
+
 ZMolarMassList=[1,1,10]
 isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
 molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
@@ -48,7 +51,8 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
+    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
+SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None, ZavgNe = None):
         """
         Constructor.
         
@@ -68,6 +72,7 @@ class SPI(UnknownQuantity):
         :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
         :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
         :param int magneticFieldDependenceMode: Mode used for calculating the magnetic field dependence of the albation
+        :param int shiftMode: Mode used for determining the cloud drift from doi:10.1017/S0022377823000466
         """
         super().__init__(settings=settings)
 
@@ -80,15 +85,22 @@ class SPI(UnknownQuantity):
         self.rclPrescribedConstant       = rclPrescribedConstant
         self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
         self.abl_ioniz                   = int(abl_ioniz)
+        self.shift                       = int(shiftMode)
 
         self.rp       = None
         self.vp       = None
         self.xp       = None
         self.t_delay  = None 
         self.nbrShiftGridCell = None
+        self.T        = None
+        self.T0       = None
+        self.delta_y  = None
+        self.Rm       = None
+        self.ZavgD    = None
+        self.ZavgNe   = None
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, T = None):
 
         if rp is not None:
             if np.isscalar(rp):
@@ -114,7 +126,12 @@ class SPI(UnknownQuantity):
             if np.isscalar(nbrShiftGridCell):
                 self.nbrShiftGridCell = np.asarray([nbrShiftGridCell])
             else: self.nbrShiftGridCell = np.asarray(nbrShiftGridCell)
-        
+
+        if T is not None:
+            if np.isscalar(T):
+                self.T = np.asarray([T])
+            else: self.T = np.asarray(T)
+
     def rpDistrParksStatistical(self,rp,kp):
         """
         Evaluates the shard size distribution function referred to as the 
@@ -389,11 +406,16 @@ class SPI(UnknownQuantity):
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, 
+                              shift = SHIFT_MODE_NEGLECT, T=None, T0=None, delta_y=None, Rm=None, ZavgD=None, ZavgNe=None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
-        (available at https://hdl.handle.net/20.500.12380/302296)
+        (available at https://hdl.handle.net/20.500.12380/302296).
+        
+        Specifies which model to use for calculating the shift. Currently there only exists two (on/1 and off/0).
+        T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the 
+        major radius of the magnetic axis. ZavgD and ZavgNe are the average charges of the ions in the deuterium and neon cloud.
         """
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
@@ -404,7 +426,15 @@ class SPI(UnknownQuantity):
             self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard)
         else:
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard)))
-            
+        
+        self.shift = int(shift)
+        self.T = T
+        self.T0 = T0
+        self.delta_y = delta_y
+        self.Rm = Rm
+        self.ZavgD = ZavgD
+        self.ZavgNe = ZavgNe
+        
         return kp
         
     def setVpVolNormFactor(self,VpVolNormFactor):
@@ -437,7 +467,7 @@ class SPI(UnknownQuantity):
         deposition of ablated material.
         """
         self.deposition = int(deposition)
-
+        
     def setHeatAbsorbtion(self, heatAbsorbtion):
         """
         Specifies which model to use for calculating the
@@ -478,6 +508,20 @@ class SPI(UnknownQuantity):
             self.ablation       = int(data['ablation'])
         if 'deposition' in data:
             self.deposition     = int(data['deposition'])
+        if 'shift' in data:
+            self.shift          = int(data['shift'])
+        if 'T' in data:
+            self.T              = data['T']
+        if 'T0' in data:
+            self.T0             = data['T0']
+        if 'delta_y' in data:
+            self.delta_y        = data['delta_y']
+        if 'Rm' in data:
+            self.Rm             = data['Rm']
+        if 'ZavgD' in data:
+            self.ZavgD          = data['ZavgD']
+        if 'ZavgNe' in data:
+            self.ZavgNe          = data['ZavgNe']
         if 'heatAbsorption' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
@@ -525,11 +569,30 @@ class SPI(UnknownQuantity):
             self.t_delay=np.array([0])
         if self.nbrShiftGridCell is None:
             self.nbrShiftGridCell = np.array([0])
+        if self.T is None:
+            self.T=np.array([0])
+        if self.T0 is None:
+            self.T0=0
+        if self.delta_y is None:
+            self.delta_y=0
+        if self.Rm is None:
+            self.Rm=0
+        if self.ZavgD is None:
+            self.ZavgD = 1
+        if self.ZavgNe is None:
+            self.ZavgNe = 2
             
         data = {
             'velocity': self.velocity,
             'ablation': self.ablation,
             'deposition': self.deposition,
+            'shift': self.shift,
+            'T': self.T,
+            'T0': self.T0,
+            'delta_y': self.delta_y,
+            'Rm': self.Rm,
+            'ZavgD': self.ZavgD,
+            'ZavgNe': self.ZavgNe,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
@@ -560,6 +623,20 @@ class SPI(UnknownQuantity):
             raise EquationException("spi: Invalid value assigned to 'ablation'. Expected integer.")
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
+        if type(self.shift) != int:
+            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
+        if type(self.T0) != float and type(self.T0) != int and self.T0 != None:
+            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float.")
+        if type(self.delta_y) != float and type(self.delta_y) != int and self.T0 != None:
+            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float.")
+        if type(self.Rm) != float and type(self.Rm) != int and self.T0 != None:
+            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float.")
+        if type(self.ZavgD) != float and type(self.ZavgD) != int and self.T0 != None:
+            raise EquationException("spi: Invalid value assigned to 'ZavgD'. Expected float.")
+        if type(self.ZavgNe) != float and type(self.ZavgNe) != int and self.T0 != None:
+            raise EquationException("spi: Invalid value assigned to 'ZavgNe'. Expected float.")                
+        if self.deposition!=DEPOSITION_MODE_LOCAL and self.shift==SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 
