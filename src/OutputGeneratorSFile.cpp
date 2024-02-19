@@ -244,7 +244,7 @@ void OutputGeneratorSFile::SaveTimings(const std::string& name) {
  */
 void OutputGeneratorSFile::SaveUnknowns(const std::string& name, bool current) {
     this->sf->CreateStruct(name);
-    
+
     if (current)
         this->unknowns->SaveSFileCurrent(this->sf, name, false);
     else
