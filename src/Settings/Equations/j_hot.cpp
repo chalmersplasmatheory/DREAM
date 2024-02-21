@@ -53,30 +53,36 @@ void SimulationGenerator::ConstructEquation_j_hot(
 
             std::string desc = "Moment of f_hot";
 
-            FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+            enum OptionConstants::hot_region_p_mode hrpMode =
+				(enum OptionConstants::hot_region_p_mode)s->GetInteger("eqsys/f_hot/pThresholdMode");
             real_t pThreshold = 0.0;
             enum OptionConstants::collqty_collfreq_mode collfreq_mode =
                 (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-            if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+			FVM::MomentQuantity::pThresholdMode pMode =
+				(FVM::MomentQuantity::pThresholdMode)hrpMode;
+            if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
                 // With collfreq_mode FULL, n_hot is defined as density above some threshold.
                 pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold"); 
-                
+
                 std::ostringstream str;
                 str <<std::fixed << std::setprecision(3) << pThreshold;
-                switch(pMode){
-                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC:{
+                switch(hrpMode) {
+                    case OptionConstants::HOT_REGION_P_MODE_MC: {
+						pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MC;
                         desc = "integral(v_par*f_hot, p>"+str.str()+"*me*c)";
                         break;
                     } 
-                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL:{
+                    case OptionConstants::HOT_REGION_P_MODE_THERMAL: {
+						pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_THERMAL;
                         desc = "integral(v_par*f_hot, p>"+str.str()+"*pThermal)";
                         break;
                     }
-                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
+                    case OptionConstants::HOT_REGION_P_MODE_THERMAL_SMOOTH: {
+						pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_THERMAL_SMOOTH;
                         desc = "integral(v_par*f_hot), smooth lower limit at p="+str.str()+"*pThermal";
                         break;
                     }
-                    case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_MC:{
+                    /*case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_MC:{
                         desc = "integral(v_par*f_hot, p<"+str.str()+"*me*c)";
                         break;
                     } 
@@ -87,13 +93,20 @@ void SimulationGenerator::ConstructEquation_j_hot(
                     case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
                         desc = "integral(v_par*f_hot), smooth upper limit at p="+str.str()+"*pThermal";
                         break;
-                    }    
+                    }*/
+					default:
+						throw SettingsException(
+							"Unrecognized value assigned to '/eqsys/f_hot/pThresholdMode': %d",
+							hrpMode
+						);
                 }
             }
             FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-            Op1->AddTerm(new CurrentDensityFromDistributionFunction(
-                    fluidGrid, hottailGrid, id_j_hot, id_f_hot,eqsys->GetUnknownHandler(),pThreshold, pMode)
-                );
+            Op1->AddTerm(
+				new CurrentDensityFromDistributionFunction(
+                    fluidGrid, hottailGrid, id_j_hot, id_f_hot,eqsys->GetUnknownHandler(),pThreshold, pMode
+				)
+			);
             eqsys->SetOperator(id_j_hot, id_f_hot, Op1, desc);
 
             // Set initialization method
