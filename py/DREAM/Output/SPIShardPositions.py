@@ -61,5 +61,13 @@ class SPIShardPositions(ScalarQuantity):
         return data_rhop, data_thetap
         
         
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of shards) covered by this
+        quantity. The total number of elements in 'self.data' is the size of
+        the grid on which this quantity lives (i.e. 1, since the shards are
+        defined on a scalar grid) times this number.
+        """
+        return self.data.shape[1]
         
-        
+

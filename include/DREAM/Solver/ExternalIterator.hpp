@@ -30,7 +30,7 @@ namespace DREAM {
 		~ExternalIterator();
 
 		void Initialize(std::vector<len_t>&);
-		bool Solve(const real_t, const real_t);
+		bool Solve(const real_t, const real_t, const len_t);
 
 		void SetConvergenceChecker(ConvergenceChecker*);
 		void SetVerbose(bool v) { this->printVerbose = v; }
