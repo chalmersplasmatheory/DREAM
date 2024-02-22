@@ -532,7 +532,6 @@ void SimulationGenerator::ConstructEquation_Ions(
 			}
 		}
 
-		delete [] init_equil;
 		delete [] initNi;
 		delete [] dynamic_indices;
 	};

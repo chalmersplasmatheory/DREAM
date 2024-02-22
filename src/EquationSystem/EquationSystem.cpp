@@ -65,8 +65,11 @@ EquationSystem::~EquationSystem() {
     if (this->initializer != nullptr)
         delete this->initializer;
 
-    //if (this->settings != nullptr)
-    //    delete this->settings;
+    if (this->settings != nullptr)
+        delete this->settings;
+	
+	for (auto eqn : this->unknown_equations)
+		delete eqn;
 }
 
 /**

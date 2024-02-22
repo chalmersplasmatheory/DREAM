@@ -35,8 +35,8 @@ using namespace DREAM::FVM;
  */
 Interpolator1D::Interpolator1D(
     const len_t nx, const len_t nblocks, const real_t *x, const real_t *y,
-    enum interp_method meth
-) : nx(nx), nblocks(nblocks), x(x), y(y), method(meth) {
+    enum interp_method meth, bool owns_data
+) : nx(nx), nblocks(nblocks), x(x), y(y), method(meth), owns_data(owns_data) {
     
     // Since the 'nearest' interpolation method returns an
     // exact copy of some of the data in 'y', we won't need
@@ -62,8 +62,10 @@ Interpolator1D::Interpolator1D(
 Interpolator1D::~Interpolator1D() {
     if (buffer != nullptr)
         delete [] this->buffer;
-    delete [] this->x;
-    delete [] this->y;
+	if (this->owns_data) {
+		delete [] this->x;
+		delete [] this->y;
+	}
 }
 
 /**

@@ -566,6 +566,9 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataT(
             LEN_T_PRINTF_FMT " elements.",
             (modname+"/"+name).c_str(), nx, nt
         );
+	
+	if (nt == 0)
+		return nullptr;
 
     enum OptionConstants::prescribed_data_interp tinterp =
         (enum OptionConstants::prescribed_data_interp)s->GetInteger(modname + "/" + name + "/tinterp");

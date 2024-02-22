@@ -238,6 +238,8 @@ int main(int argc, char *argv[]) {
     // De-initialize the DREAM library
     dream_finalize();
 
+	delete sim;
+
     return exit_code;
 }
 

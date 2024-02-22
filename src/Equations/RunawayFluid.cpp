@@ -340,7 +340,9 @@ void RunawayFluid::CalculateGrowthRates(const real_t t){
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
         real_t pc = criticalREMomentum[ir]; 
-		real_t cmptnFlux = compton_photon_flux->Eval(t)[0];
+		real_t cmptnFlux = 0;
+		if (compton_photon_flux != nullptr)
+			cmptnFlux = compton_photon_flux->Eval(t)[0];
         tritiumRate[ir] = evaluateTritiumRate(pc);
         comptonRate[ir] = evaluateComptonRate(pc, cmptnFlux, integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton, gsl_ad_w);
         DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc, cmptnFlux, integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton, gsl_ad_w);
