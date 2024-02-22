@@ -31,6 +31,7 @@ COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
 COMPTON_RATE_ITER_DMS = -1
 COMPTON_RATE_ITER_DMS_KINETIC = -2
+COMPTON_MACHINE_ITER = 1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 C1_COMPTON = 1.2
 C2_COMPTON = 0.8
@@ -122,7 +123,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.dreicer = int(dreicer)
 
 
-    def setCompton(self, compton, photonFlux = None, photonFlux_t = np.array([0]), C1 = None, C2 = None, C3 = None):
+    def setCompton(self, compton, photonFlux = None, photonFlux_t = np.array([0]), machine = None, C1 = None, C2 = None, C3 = None):
         """
         Specifies which model to use for calculating the
         compton runaway rate.
@@ -149,14 +150,18 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             elif type(photonFlux) == int or type(photonFlux) == float or type(photonFlux) == np.float64:
                 photonFlux = np.array([float(photonFlux)])
             
-            if C1 is None:
-                C1 = C1_COMPTON
-            
-            if C2 is None:
-                C2 = C2_COMPTON
-            
-            if C3 is None:
-                C3 = C3_COMPTON
+            if machine == COMPTON_MACHINE_ITER:
+                C1 = 1.2
+                C2 = 0.8
+                C3 = 0.
+            else:
+                if C1 is None:
+                    C1 = C1_COMPTON
+                if C2 is None:
+                    C2 = C2_COMPTON
+                if C3 is None:
+                    C3 = C3_COMPTON
+
 
             self.compton = int(compton)
             self.comptonPhotonFlux = photonFlux
