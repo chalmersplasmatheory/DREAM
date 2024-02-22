@@ -22,6 +22,7 @@ Simulation::Simulation() {}
 Simulation::~Simulation() {
     delete this->adas;
 	delete this->outgen;
+    delete this->eqsys;
 }
 
 /**

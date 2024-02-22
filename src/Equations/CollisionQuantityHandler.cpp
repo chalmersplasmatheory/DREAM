@@ -25,11 +25,11 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *grid, FVM::Unknown
  * Destructor.
  */
 CollisionQuantityHandler::~CollisionQuantityHandler(){
-    delete [] nuS;
-    delete [] nuD;
-    delete [] nuPar;
-    delete [] lnLambdaEE;
-    delete [] lnLambdaEI;
+    delete nuS;
+    delete nuD;
+    delete nuPar;
+    delete lnLambdaEE;
+    delete lnLambdaEI;
 
 }
 

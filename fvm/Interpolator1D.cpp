@@ -62,6 +62,8 @@ Interpolator1D::Interpolator1D(
 Interpolator1D::~Interpolator1D() {
     if (buffer != nullptr)
         delete [] this->buffer;
+    delete [] this->x;
+    delete [] this->y;
 }
 
 /**

@@ -61,6 +61,12 @@ EquationSystem::~EquationSystem() {
     
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
+
+    if (this->initializer != nullptr)
+        delete this->initializer;
+
+    //if (this->settings != nullptr)
+    //    delete this->settings;
 }
 
 /**

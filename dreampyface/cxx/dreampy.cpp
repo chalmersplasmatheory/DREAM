@@ -1,6 +1,7 @@
 /**
  * Python interface to DREAM.
  */
+#include <csignal>
 
 #ifndef PY_SSIZE_T_CLEAN
 #   define PY_SSIZE_T_CLEAN
@@ -20,6 +21,8 @@
 #include "pyface/SFile_Python.hpp"
 #include "pyface/unknowns.hpp"
 #include "softlib/Timer.h"
+#include "DREAM/IO.hpp"
+#include "DREAM/QuitException.hpp"
 
 
 static PyMethodDef dreampyMethods[] = {
@@ -173,6 +176,20 @@ static PyObject *dreampy_setup_simulation(
 }
 
 /**
+ * Handle a 'SIGQUIT' signal.
+ */
+void sig_quit(int) {
+    throw DREAM::QuitException("The user requested execution to stop.");
+}
+
+/**
+ * Handle a 'SIGQUIT' signal.
+ */
+void sig_segv(int) {
+    throw DREAM::QuitException("A segmentation fault occured.");
+}
+
+/**
  * Run a previously constructed Simulation, passed
  * as a PyCapsule object to this function.
  */
@@ -188,6 +205,11 @@ static PyObject *dreampy_run_simulation(
     // Register callback functions
     register_callback_functions(sim);
 
+    // Allow the user to press Ctrl+\ or Ctrl+Y to quit the simulation early
+    PetscPopSignalHandler();
+    std::signal(SIGQUIT, sig_quit);
+    std::signal(SIGSEGV, sig_segv);
+
     try {
         ogs = new DREAM::OutputGeneratorSFile(
             sim->GetEquationSystem(), sfp
@@ -196,12 +218,19 @@ static PyObject *dreampy_run_simulation(
 
         // Generate output
         Timer t;
-        sim->Save();
         ogs->Save();
         std::cout << "Time to save output: " << t.ToString() << std::endl;
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;
+    }
+    
+    if (sim != nullptr) {
+        try {
+            sim->Save();
+        } catch (H5::FileIException &ex) {
+            PyErr_SetString(PyExc_RuntimeError, ex.getDetailMsg().c_str());
+        }
     }
 
     // De-initialize the DREAM kernel
@@ -213,9 +242,14 @@ static PyObject *dreampy_run_simulation(
         
         // TODO delete simulation
 
+        delete ogs;
+        delete sim;
         return d;
-    } else
+    } else {
+        delete ogs;
+        delete sim;
         return NULL;
+    }
 }
 
 /**
