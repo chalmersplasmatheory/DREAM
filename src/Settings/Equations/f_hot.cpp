@@ -261,9 +261,11 @@ namespace DREAM {
         gsl_integration_workspace * wp;
         gsl_integration_workspace * wpOut;
     public:
-        real_t pLower, pUpper, photonFlux;
+        real_t pLower, pUpper;
+        real_t integratedComptonSpectrum, C1, C2, C3;
         FVM::Interpolator1D *comptonPhotonFlux;
-        real_t integratedComptonSpectrum, C1, C2, C3, scaleFactor, source;
+        real_t scaleFactor;
+        real_t photonFlux;
         TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, 
                 real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t scaleFactor = 1.0) 
             : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), 
@@ -289,7 +291,7 @@ namespace DREAM {
 namespace DREAM {
     class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
     public:
-        real_t pLower, pUpper, scaleFactor, source;
+        real_t pLower, pUpper, scaleFactor;
         TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
             : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
 

@@ -17,22 +17,17 @@ namespace DREAM {
     private:
         len_t id_ne, id_Eterm, id_ntot;
         
-        real_t *source;
         FVM::Interpolator1D *comptonPhotonFlux;
-        real_t photonFlux, pLower;
-        real_t integratedComptonSpectrum;
-        real_t C1;
-        real_t C2;
-        real_t C3;
-        real_t pc, scaleFactor;
-
+        real_t integratedComptonSpectrum, C1, C2, C3;
+        real_t pLower, scaleFactor;
+        SourceMode sourceMode;
+    	RunawayFluid *REFluid;
+        real_t *source;
+        real_t photonFlux;
         len_t limit;
         gsl_integration_workspace * wp;
         gsl_integration_workspace * wpOut;
         
-        SourceMode sourceMode;
-        
-    	RunawayFluid *REFluid;
     protected:
         static real_t integrand(real_t, void * );
         static real_t innerIntegrand(real_t, void * );
