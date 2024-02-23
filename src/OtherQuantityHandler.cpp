@@ -88,8 +88,10 @@ OtherQuantityHandler::~OtherQuantityHandler() {
     
     delete this->tracked_terms;
 
-    delete [] kineticVectorHot;
-    delete [] kineticVectorRE;
+    if (kineticVectorHot != nullptr)
+        delete [] kineticVectorHot;
+    if (kineticVectorRE != nullptr)
+        delete [] kineticVectorRE;
 }
 
 /**

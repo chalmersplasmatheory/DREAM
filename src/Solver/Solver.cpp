@@ -60,6 +60,11 @@ Solver::~Solver() {
         delete this->diag_prec;
 	if (this->extiter != nullptr)
 		delete this->extiter;
+
+    if (this->mainInverter != nullptr)
+        delete this->mainInverter;
+    if (this->backupInverter != nullptr)
+        delete this->backupInverter;
 }
 
 /**

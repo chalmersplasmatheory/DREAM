@@ -59,7 +59,6 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
  */
 SolverLinearlyImplicit::~SolverLinearlyImplicit() {
     delete this->matrix;
-    delete this->inverter;
 
     VecDestroy(&this->petsc_sol);
     VecDestroy(&this->petsc_S);

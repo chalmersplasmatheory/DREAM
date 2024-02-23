@@ -124,10 +124,6 @@ void SolverNonLinear::AllocateJacobianMatrix() {
  * Deallocate memory used by this solver.
  */
 void SolverNonLinear::Deallocate() {
-    if (backupInverter != nullptr)
-        delete backupInverter;
-
-	delete mainInverter;
 	delete jacobian;
 
 	delete [] this->x_2norm;

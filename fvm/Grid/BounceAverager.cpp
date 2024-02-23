@@ -63,6 +63,12 @@ BounceAverager::~BounceAverager(){
     
     if(!integrateTrappedAdaptive)
         gsl_integration_fixed_free(gsl_w);
+
+    delete BOverBmin;
+    delete ROverR0;
+    delete NablaR2;
+    delete Metric;
+    
     delete [] np1;
     delete [] np2;
 }

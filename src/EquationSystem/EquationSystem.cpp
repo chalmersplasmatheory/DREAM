@@ -42,20 +42,25 @@ EquationSystem::EquationSystem(
 EquationSystem::~EquationSystem() {
     if (this->ionHandler != nullptr)
         delete this->ionHandler;
+
     if (this->solver != nullptr)
         delete this->solver;
+    
     if (this->timestepper != nullptr)
         delete this->timestepper;
 
     if (this->cqh_hottail != nullptr)
         delete this->cqh_hottail;
+
     if (this->cqh_runaway != nullptr)
         delete this->cqh_runaway;
 
     if (this->REFluid != nullptr)
         delete this->REFluid;
+
     if (this->distRE != nullptr)
         delete this->distRE;
+
     if (this->distHT != nullptr)
         delete this->distHT;
     
@@ -67,9 +72,30 @@ EquationSystem::~EquationSystem() {
 
     if (this->settings != nullptr)
         delete this->settings;
+
+    if (this->otherQuantityHandler != nullptr)
+		delete this->otherQuantityHandler;
+
+    if (this->SPI != nullptr)
+		delete this->SPI;
+
+    if (this->fluidGrid != nullptr){
+        delete this->fluidGrid->GetRadialGrid();
+		delete this->fluidGrid;
+    }
+
+    if (this->hottailGrid != nullptr)
+		delete this->hottailGrid;
+
+    if (this->runawayGrid != nullptr)
+		delete this->runawayGrid;
+
+    if (this->scalarGrid != nullptr)
+		delete this->scalarGrid;
 	
 	for (auto eqn : this->unknown_equations)
 		delete eqn;
+    
 }
 
 /**

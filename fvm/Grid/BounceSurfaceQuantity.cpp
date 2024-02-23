@@ -214,7 +214,7 @@ void BounceSurfaceQuantity::DeleteData(real_t ***&data, len_t nr, len_t np1, len
                 }
 
                 if (del)
-                    delete [] data[ir][j*np2+i];
+                    delete [] data[ir][j*np1+i];
             }
         delete [] data[ir];
     }

@@ -10,6 +10,16 @@ using namespace DREAM::FVM;
 using namespace std;
 
 /**
+ * Destructor.
+ */
+AdvectionDiffusionTerm::~AdvectionDiffusionTerm(){
+    for (auto dif : this->diffusionterms)
+        delete dif;
+    for (auto adv : this->advectionterms)
+        delete adv;
+}
+
+/**
  * Add an advection term to this term.
  */
 void AdvectionDiffusionTerm::Add(AdvectionTerm *a) {
