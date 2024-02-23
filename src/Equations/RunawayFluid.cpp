@@ -425,14 +425,12 @@ real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
         * pc/gamma_c;                                       // dWc/dpc                                
 }
 
-// Integral of the photon flux spectrum over all Eg (in units of mc2).
-const real_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844190260298;
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
  */
 real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3){
     real_t z = (C1 + log(Eg * Constants::mc2inEV/1e6) ) / C2 + C3 * (Eg * Constants::mc2inEV/1e6) * (Eg * Constants::mc2inEV/1e6);
-    return photonFlux * exp( - exp(-z) - z + 1 ) / NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM;
+    return photonFlux * exp( - exp(-z) - z + 1 ) / integratedComptonSpectrum;
 }
 
 /**
