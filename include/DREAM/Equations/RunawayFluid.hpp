@@ -157,7 +157,7 @@ namespace DREAM {
         static real_t evaluateTritiumRate(real_t gamma_c);
         static real_t evaluateComptonRate(real_t pc, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, gsl_integration_workspace *gsl_ad_w);
         static real_t evaluateDComptonRateDpc(real_t pc, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, gsl_integration_workspace *gsl_ad_w);
-        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t photonFlux);
+        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3);
         static real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
         static real_t evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc);
 
