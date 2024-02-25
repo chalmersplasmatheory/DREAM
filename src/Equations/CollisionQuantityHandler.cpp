@@ -30,7 +30,7 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
     delete nuPar;
     delete lnLambdaEE;
     delete lnLambdaEI;
-
+	delete collQtySettings;
 }
 
 /**

@@ -72,6 +72,9 @@ EquationSystem::~EquationSystem() {
 
     if (this->settings != nullptr)
         delete this->settings;
+	
+	if (this->rsth != nullptr)
+		delete this->rsth;
 
     if (this->otherQuantityHandler != nullptr)
 		delete this->otherQuantityHandler;

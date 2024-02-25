@@ -18,6 +18,7 @@ namespace DREAM { class EquationSystem; class Simulation; }
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
+#include "DREAM/Equations/RunawaySourceTermHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/FVMException.hpp"
@@ -63,6 +64,7 @@ namespace DREAM {
         RunawayFluid *REFluid = nullptr;
         SPIHandler *SPI = nullptr;
         Settings *settings = nullptr;
+		RunawaySourceTermHandler *rsth = nullptr;
 
         AnalyticDistributionRE *distRE = nullptr;
         AnalyticDistributionHottail *distHT = nullptr;
@@ -214,6 +216,7 @@ namespace DREAM {
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
         void SetSimulation(Simulation *sim) { this->simulation = sim; }
+		void SetRunawaySourceTermHandler(RunawaySourceTermHandler *rsth) { this->rsth = rsth; }
 
         void SaveSolverData(SFile *sf, const std::string& n);
         void SaveTimings(SFile*, const std::string&);

@@ -139,6 +139,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
+	eqsys->SetRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
@@ -205,7 +206,6 @@ void SimulationGenerator::ConstructEquation_n_re(
     real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(id_n_re, n_re_init);
     delete [] n_re_init;
-	delete rsth;
 }
 
 void SimulationGenerator::ConstructEquation_n_re_neg(
