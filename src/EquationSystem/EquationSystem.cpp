@@ -82,6 +82,9 @@ EquationSystem::~EquationSystem() {
     if (this->SPI != nullptr)
 		delete this->SPI;
 
+	for (auto eqn : this->unknown_equations)
+		delete eqn;
+    
 	FVM::RadialGrid *rgrid;
     if (this->fluidGrid != nullptr){
         rgrid = this->fluidGrid->GetRadialGrid();
@@ -108,10 +111,6 @@ EquationSystem::~EquationSystem() {
 
 	if (rgrid != nullptr)
 		delete rgrid;
-	
-	for (auto eqn : this->unknown_equations)
-		delete eqn;
-    
 }
 
 /**
