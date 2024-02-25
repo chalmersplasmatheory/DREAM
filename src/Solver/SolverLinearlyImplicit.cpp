@@ -59,9 +59,9 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
  */
 SolverLinearlyImplicit::~SolverLinearlyImplicit() {
     delete this->matrix;
+	delete this->timeKeeper;
 
-    VecDestroy(&this->petsc_sol);
-    VecDestroy(&this->petsc_S);
+    //VecDestroy(&this->petsc_S);
 }
 
 /**
@@ -86,7 +86,6 @@ void SolverLinearlyImplicit::initialize_internal(
     matrix->ConstructSystem();
 
     VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_S);
-    VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_sol);
 }
 
 /**

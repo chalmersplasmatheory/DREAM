@@ -467,6 +467,8 @@ void Grid::DeallocateBAvg(){
     delete [] this->BA_xi_fr;
     delete [] this->BA_xi_f1;
     delete [] this->BA_xi_f2;
+	delete [] this->BA_xi2OverB_f1;
+	delete [] this->BA_xi2OverB_f2;
     delete [] this->BA_BOverBOverXi_f1;
     delete [] this->BA_BOverBOverXi_f2;
     delete [] this->BA_B3_f1;

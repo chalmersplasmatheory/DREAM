@@ -79,19 +79,32 @@ EquationSystem::~EquationSystem() {
     if (this->SPI != nullptr)
 		delete this->SPI;
 
+	FVM::RadialGrid *rgrid;
     if (this->fluidGrid != nullptr){
-        delete this->fluidGrid->GetRadialGrid();
+        rgrid = this->fluidGrid->GetRadialGrid();
 		delete this->fluidGrid;
     }
 
-    if (this->hottailGrid != nullptr)
+    if (this->hottailGrid != nullptr) {
+		if (rgrid == nullptr)
+			rgrid = this->hottailGrid->GetRadialGrid();
 		delete this->hottailGrid;
+	}
 
-    if (this->runawayGrid != nullptr)
+    if (this->runawayGrid != nullptr) {
+		if (rgrid == nullptr)
+			rgrid = this->runawayGrid->GetRadialGrid();
 		delete this->runawayGrid;
+	}
 
-    if (this->scalarGrid != nullptr)
+    if (this->scalarGrid != nullptr) {
+		FVM::RadialGrid *rgs = this->scalarGrid->GetRadialGrid();
 		delete this->scalarGrid;
+		delete rgs;
+	}
+
+	if (rgrid != nullptr)
+		delete rgrid;
 	
 	for (auto eqn : this->unknown_equations)
 		delete eqn;

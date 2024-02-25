@@ -548,5 +548,11 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     delete [] types;
     delete [] opacity_mode;
+
+	delete [] charged_diffusion_mode;
+	delete [] neutral_diffusion_mode;
+	delete [] charged_advection_mode;
+	delete [] neutral_advection_mode;
+	delete [] source_types;
 }
 

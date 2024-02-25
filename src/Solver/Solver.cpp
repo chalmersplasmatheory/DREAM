@@ -56,6 +56,9 @@ Solver::~Solver() {
     delete this->solver_timeKeeper;
     delete this->convChecker;
 
+	if (this->eConvChecker != nullptr)
+		delete this->eConvChecker;
+
     if (this->diag_prec != nullptr)
         delete this->diag_prec;
 	if (this->extiter != nullptr)

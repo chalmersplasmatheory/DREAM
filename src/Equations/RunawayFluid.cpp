@@ -123,6 +123,15 @@ RunawayFluid::~RunawayFluid(){
         delete dreicer_ConnorHastie;
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
+	
+	if (this->nuS != nullptr)
+		delete this->nuS;
+	if (this->nuD != nullptr)
+		delete this->nuD;
+	if (this->lnLambdaEE != nullptr)
+		delete this->lnLambdaEE;
+	if (this->lnLambdaEI != nullptr)
+		delete this->lnLambdaEI;
 
     delete effectiveCriticalFieldObject;
 

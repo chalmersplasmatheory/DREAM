@@ -21,6 +21,8 @@ Simulation::Simulation() {}
  */
 Simulation::~Simulation() {
     delete this->adas;
+	delete this->amjuel;
+	delete this->nist;
 	delete this->outgen;
     delete this->eqsys;
 }

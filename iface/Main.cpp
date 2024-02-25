@@ -239,6 +239,7 @@ int main(int argc, char *argv[]) {
     dream_finalize();
 
 	delete sim;
+	delete a;
 
     return exit_code;
 }
