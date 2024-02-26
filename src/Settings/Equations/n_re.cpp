@@ -139,7 +139,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
-	eqsys->SetRunawaySourceTermHandler(rsth);
+	eqsys->AddRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();

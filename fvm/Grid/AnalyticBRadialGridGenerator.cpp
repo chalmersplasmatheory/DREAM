@@ -89,6 +89,8 @@ AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
     }
 
     DeallocateShapeProfiles();
+
+	delete this->providedProfiles;
 }
 
 /**

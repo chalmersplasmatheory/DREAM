@@ -417,6 +417,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s, signPositive
     );
+	eqsys->AddRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_Nre, Op_Ntot, Op_Ni);
     desc += rsth->GetDescription();
@@ -449,7 +450,8 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
            ));
         desc += " - f_hot transport";
         eqsys->SetOperator(id_Sp, id_fhot, Op_fhot);
-    }
+    } else
+		delete Op_fhot_tmp;
 
     eqsys->SetOperator(id_Sp, id_Sp, Op_Sp, desc);
 }

@@ -64,7 +64,7 @@ namespace DREAM {
         RunawayFluid *REFluid = nullptr;
         SPIHandler *SPI = nullptr;
         Settings *settings = nullptr;
-		RunawaySourceTermHandler *rsth = nullptr;
+		std::vector<RunawaySourceTermHandler*> rsths;
 
         AnalyticDistributionRE *distRE = nullptr;
         AnalyticDistributionHottail *distHT = nullptr;
@@ -216,7 +216,7 @@ namespace DREAM {
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
         void SetSimulation(Simulation *sim) { this->simulation = sim; }
-		void SetRunawaySourceTermHandler(RunawaySourceTermHandler *rsth) { this->rsth = rsth; }
+		void AddRunawaySourceTermHandler(RunawaySourceTermHandler *rsth) { this->rsths.push_back(rsth); }
 
         void SaveSolverData(SFile *sf, const std::string& n);
         void SaveTimings(SFile*, const std::string&);
