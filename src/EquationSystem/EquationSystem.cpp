@@ -85,7 +85,7 @@ EquationSystem::~EquationSystem() {
 	for (auto eqn : this->unknown_equations)
 		delete eqn;
     
-	FVM::RadialGrid *rgrid;
+	FVM::RadialGrid *rgrid=nullptr;
     if (this->fluidGrid != nullptr){
         rgrid = this->fluidGrid->GetRadialGrid();
 		delete this->fluidGrid;
