@@ -199,7 +199,7 @@ static PyObject *dreampy_run_simulation(
     dream_make_splash();
     bool success = true;
     DREAM::Simulation *sim = get_simulation_from_capsule(args);
-    DREAM::OutputGeneratorSFile *ogs;
+    DREAM::OutputGeneratorSFile *ogs = nullptr;
     SFile_Python *sfp = new SFile_Python();
 
     // Register callback functions
@@ -242,11 +242,15 @@ static PyObject *dreampy_run_simulation(
         
         // TODO delete simulation
 
-        delete ogs;
+		if (ogs != nullptr)
+			delete ogs;
+
         delete sim;
         return d;
     } else {
-        delete ogs;
+		if (ogs != nullptr)
+			delete ogs;
+
         delete sim;
         return NULL;
     }
