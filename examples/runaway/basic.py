@@ -37,10 +37,10 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 1    # maximum momentum in units of m_e*c
-Np   = 100  # number of momentum grid points
-Nxi  = 50   # number of pitch grid points
+Np   = 300  # number of momentum grid points
+Nxi  = 20   # number of pitch grid points
 tMax = 1e-3 # simulation time in seconds
-Nt   = 100   # number of time steps
+Nt   = 20   # number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
