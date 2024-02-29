@@ -24,6 +24,8 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 
+from DREAM import DREAMSettings, DREAMOutput, DREAMException, runiface
+
 ds = DREAMSettings()
 #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
@@ -92,3 +94,4 @@ ds.output.setFilename('output.h5')
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
 
+do = runiface(ds)

@@ -197,6 +197,20 @@ static PyObject *dreampy_run_simulation(
     PyObject* /*self*/, PyObject *args
 ) {
     dream_make_splash();
+    
+    PyObject* DREAMExceptionModule = PyImport_ImportModule("DREAM.DREAMException");
+    if (DREAMExceptionModule == NULL)
+        return NULL;
+    PyObject* DREAMQuitExceptionModule = PyImport_ImportModule("DREAM.DREAMQuitException");
+    if (DREAMQuitExceptionModule == NULL)
+        return NULL;
+    PyObject* DREAMException = PyObject_GetAttrString(DREAMExceptionModule, "DREAMException");
+    if (DREAMException == NULL)
+        return NULL;
+    PyObject* DREAMQuitException = PyObject_GetAttrString(DREAMQuitExceptionModule, "DREAMQuitException");
+    if (DREAMQuitException == NULL)
+        return NULL;
+
     bool success = true;
     DREAM::Simulation *sim = get_simulation_from_capsule(args);
     DREAM::OutputGeneratorSFile *ogs = nullptr;
@@ -220,21 +234,26 @@ static PyObject *dreampy_run_simulation(
         Timer t;
         ogs->Save();
         std::cout << "Time to save output: " << t.ToString() << std::endl;
-    } catch (DREAM::FVM::FVMException& ex) {
-        PyErr_SetString(PyExc_RuntimeError, ex.what());
+    } catch (DREAM::QuitException& ex) {
+        PyErr_SetString(DREAMQuitException, ex.what());
         success = false;
-    }
+    } catch (DREAM::FVM::FVMException& ex) {
+        PyErr_SetString(DREAMException, ex.what());
+        success = false;
+    } 
     
     if (sim != nullptr) {
         try {
             sim->Save();
         } catch (H5::FileIException &ex) {
-            PyErr_SetString(PyExc_RuntimeError, ex.getDetailMsg().c_str());
+            PyErr_SetString(DREAMException, ex.getDetailMsg().c_str());
+            success = false;
         }
     }
 
     // De-initialize the DREAM kernel
     dream_finalize();
+    std::signal(SIGQUIT, SIG_DFL);
 
     if (success) {
         SFile_Python *sfp = static_cast<SFile_Python*>(ogs->GetSFile());
