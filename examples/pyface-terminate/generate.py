@@ -86,7 +86,6 @@ def baseline():
     ds.timestep.setTerminationFunction(terminate_ioniz)
     ds.timestep.setNt(2000)
     ds.timestep.setTmax(1e-4)
-    ds.output.setFilename("output.h5")
 
     do.close()
 
@@ -97,12 +96,8 @@ def main():
     ds = baseline()
 
     #runiface(ds, 'output_ioniz.h5')
-    try:
-        s = dreampyface.setup_simulation(ds)
-        do = s.run()
-    except:
-        s1 = dreampyface.setup_simulation(ds)
-        do1 = s1.run()
+    s = dreampyface.setup_simulation(ds)
+    do = s.run()
 
     dnc = np.diff(do.eqsys.n_cold[:,0])
     plt.plot(do.grid.t[1:], dnc/do.eqsys.n_tot[-1,0])
