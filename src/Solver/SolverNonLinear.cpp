@@ -9,7 +9,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
-
+#include "DREAM/QuitException.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -244,7 +244,10 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
 	try {
         this->_InternalSolve();
-    } catch (FVM::FVMException &ex) {
+    } catch (DREAM::QuitException& ex) {
+		// Rethrow quit exception
+		throw ex;
+	} catch (FVM::FVMException &ex) {
         // Retry with backup-solver (if allowed and not already used)
         if (this->backupInverter != nullptr && this->inverter != this->backupInverter) {
             if (this->Verbose()) {

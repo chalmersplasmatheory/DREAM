@@ -24,6 +24,8 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 
+from DREAM import DREAMSettings, DREAMOutput, DREAMException, runiface
+
 ds = DREAMSettings()
 #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
@@ -35,10 +37,10 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 1    # maximum momentum in units of m_e*c
-Np   = 300  # number of momentum grid points
-Nxi  = 20   # number of pitch grid points
+Np   = 100  # number of momentum grid points
+Nxi  = 50   # number of pitch grid points
 tMax = 1e-3 # simulation time in seconds
-Nt   = 20   # number of time steps
+Nt   = 100   # number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -92,3 +94,4 @@ ds.output.setFilename('output.h5')
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
 
+do = runiface(ds)
