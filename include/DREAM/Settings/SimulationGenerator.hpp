@@ -260,7 +260,7 @@ namespace DREAM {
 		static void DefineDataIonT(const std::string&, Settings*, const std::string& name="data");
 		static MultiInterpolator1D *LoadDataIonT(const std::string&, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
-        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data", bool fluxGrid=false);
 
         static real_t *InterpolateR(
             const len_t, const real_t*, const real_t*,
