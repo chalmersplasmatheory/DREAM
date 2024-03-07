@@ -44,6 +44,9 @@ def cmp(m1, m2, show=True, tollow=None, tolup=None, eqsys=None):
     """
     r, c = sparse.find(m1)[:-1]
 
+    r = r.astype(int)
+    c = c.astype(int)
+
     dm  = m1.copy()
     dm[r,c] = np.abs(m2[r,c] / m1[r,c] - 1)
 
@@ -98,7 +101,10 @@ def _mplcursors_frmt2d(sel, mat=None, eqsys=None):
     Matplotlib cursor format for spy() on sparse matrices.
     """
     c, r = sel.target
-    
+
+    r = int(r)
+    c = int(c)
+
     sr = 'Row: {:d}'.format(int(r))
     sc = 'Col: {:d}'.format(int(c))
 

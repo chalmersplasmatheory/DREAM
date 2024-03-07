@@ -320,6 +320,10 @@ void OtherQuantityHandler::DefineQuantities() {
 				v[ir] = 0;
 
 			tracked_terms->n_re_f_hot_flux->AddToVectorElements(v, f_hot);
+
+			// Flip sign to get flux from f_hot -> n_re
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = -v[ir];
 		);
 	}
 

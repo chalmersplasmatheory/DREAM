@@ -14,15 +14,15 @@ TYPE_IONIZATION = 3
 
 
 class TimeStepper:
-    
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
+
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, terminatefunc=None):
         """
         Constructor.
         """
-        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep)
-        
+        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep, terminatefunc=None)
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0):
+
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0, terminatefunc=None):
         """
         Set properties of the time stepper.
         """
@@ -35,13 +35,15 @@ class TimeStepper:
         self.setMinSaveTimestep(minsavedt)
         self.setNumberOfSaveSteps(nSaveSteps)
         self.setVerbose(verbose)
-        self.setConstantStep(constantstep)       
+        self.setConstantStep(constantstep)
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
-        
+        self.terminatefunc = terminatefunc
+
         self.dtmax = None
         self.automaticstep = None
         self.safetyfactor = None
+        self.alpha = 0
 
 
     def __contains__(self, item):
@@ -58,7 +60,7 @@ class TimeStepper:
     def setCheckInterval(self, checkevery):
         if checkevery < 0:
             raise DREAMException("TimeStepper: Invalid value assigned to 'checkevery': {}".format(checkevery))
-        
+
         self.checkevery = int(checkevery)
 
 
@@ -75,7 +77,7 @@ class TimeStepper:
             raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
         if self.nt is not None and dt > 0:
             raise DREAMException("TimeStepper: 'dt' may not be set alongside 'nt'.")
-            
+
         self.dt = float(dt)
 
 
@@ -96,7 +98,7 @@ class TimeStepper:
             raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
         if self.dt is not None and self.dt > 0:
             raise DREAMException("TimeStepper: 'nt' may not be set alongside 'dt'.")
-            
+
         self.nt = int(nt)
 
 
@@ -118,6 +120,17 @@ class TimeStepper:
         self.tolerance.set(reltol=float(reltol))
 
 
+    def setTerminationFunction(self, func):
+        """
+        Sets the Python function to call in order to determine when terminate
+        the time stepping. **NOTE**: This functionality is only available when
+        DREAM is compiled and run as a Python library.
+
+        :param func: Python function determining when to terminate time stepping. Takes a libdreampyface 'Simulation' object as input and returns a bool.
+        """
+        self.terminatefunc = func
+
+
     def setTmax(self, tmax):
         if tmax is None:
             self.tmax = None
@@ -137,12 +150,12 @@ class TimeStepper:
             self.nt = None
 
         self.type = int(ttype)
-        
+
         if ttype == TYPE_IONIZATION:
             self.setIonization(*args, **kwargs)
-    
 
-    def setIonization(self, dt0=0, dtmax=0, tmax=None, automaticstep=1e-12, safetyfactor=50):
+
+    def setIonization(self, dt0=0, dtmax=0, tmax=None, automaticstep=1e-12, safetyfactor=50, alpha=0):
         """
         Select and set parameters for the ionization time stepper.
         """
@@ -151,6 +164,7 @@ class TimeStepper:
         self.dtmax = dtmax
         self.automaticstep = automaticstep
         self.safetyfactor = safetyfactor
+        self.alpha = alpha
 
         if tmax is not None:
             self.tmax = tmax
@@ -185,7 +199,9 @@ class TimeStepper:
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
-        
+        if 'terminatefunc' in data: self.terminatefunc = data['terminatefunc']
+        if 'alpha' in data: self.alpha = float(data['alpha'])
+
         self.verifySettings()
 
 
@@ -207,6 +223,9 @@ class TimeStepper:
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
             data['nsavesteps'] = int(self.nSaveSteps)
+
+            if self.terminatefunc != None:
+                data['terminatefunc'] = self.terminatefunc
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
             data['constantstep'] = self.constantstep
@@ -217,6 +236,7 @@ class TimeStepper:
             data['automaticstep'] = self.automaticstep
             data['safetyfactor'] = self.safetyfactor
             data['minsavedt'] = self.minsavedt
+            data['alpha'] = self.alpha
 
         return data
 
@@ -228,7 +248,7 @@ class TimeStepper:
         if self.type == TYPE_CONSTANT:
             if self.tmax is None or self.tmax <= 0:
                 raise DREAMException("TimeStepper constant: 'tmax' must be set to a value > 0.")
-            
+
             # Verify that _exactly_ one of 'dt' and 'nt' is
             # set to a valid value
             dtSet = (self.dt is not None and self.dt > 0)
@@ -261,7 +281,7 @@ class TimeStepper:
                 raise DREAMException("TimeStepper ionization: 'dtmax' must be set to a non-negative value.")
             elif self.minsavedt < 0:
                 raise DREAMException("TimeStepper ionization: 'minsavedt' must be non-negative.")
+            elif not 0 <= self.alpha <= 1:
+                raise DREAMException("TimeStepper ionization: 'alpha' must be between 0 and 1.")
         else:
             raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
-
-

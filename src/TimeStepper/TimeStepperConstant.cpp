@@ -14,16 +14,16 @@ using namespace DREAM;
  */
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
-    const len_t nSaveSteps
-) : TimeStepper(u), dt(dt), tMax(tMax), nSaveSteps(nSaveSteps) {
+    EquationSystem *eqsys, const len_t nSaveSteps
+) : TimeStepper(u, eqsys), dt(dt), tMax(tMax), nSaveSteps(nSaveSteps) {
 
     this->Nt = round(tMax/dt);
     InitSaveSteps();
 }
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
-    const len_t nSaveSteps
-) : TimeStepper(u), tMax(tMax), Nt(nt), nSaveSteps(nSaveSteps) {
+    EquationSystem *eqsys, const len_t nSaveSteps
+) : TimeStepper(u, eqsys), tMax(tMax), Nt(nt), nSaveSteps(nSaveSteps) {
     
     this->dt = tMax / nt;
     InitSaveSteps();
@@ -58,7 +58,12 @@ void TimeStepperConstant::InitSaveSteps() {
  * Returns 'true' if the time stepper has reached the maximum time.
  */
 bool TimeStepperConstant::IsFinished() {
-    return (this->tIndex>=this->Nt);
+    bool v = (this->tIndex>=this->Nt);
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    return (v || this->PythonIsTerminate());
+#else
+    return v;
+#endif
 }
 
 /**
@@ -73,6 +78,13 @@ bool TimeStepperConstant::IsSaveStep() {
         return true;
     else
         return false;
+}
+
+/**
+ * Returns the maximum time for this simulation.
+ */
+real_t TimeStepperConstant::MaxTime() const {
+    return this->tMax;
 }
 
 /**

@@ -1,6 +1,8 @@
 #ifndef _DREAM_OUTPUT_GENERATOR_HPP
 #define _DREAM_OUTPUT_GENERATOR_HPP
 
+namespace DREAM { class OutputGenerator; }
+
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/EquationSystem.hpp"

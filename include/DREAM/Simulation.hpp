@@ -42,11 +42,12 @@ namespace DREAM {
         AMJUEL *GetAMJUEL() {return this->amjuel;}
         NIST *GetNIST() { return this->nist; }
         EquationSystem *GetEquationSystem() { return this->eqsys; }
+        OutputGenerator *GetOutputGenerator() { return this->outgen; }
 
         void SetADAS(ADAS *a) { this->adas = a; }
         void SetAMJUEL(AMJUEL *amjuel) {this->amjuel=amjuel;}
         void SetNIST(NIST *n) { this->nist = n; }
-        void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
+        void SetEquationSystem(EquationSystem*);
 
         void Save();
         void SetOutputGenerator(OutputGenerator*);
