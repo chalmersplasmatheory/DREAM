@@ -58,6 +58,10 @@ namespace DREAM {
             return nnz + GetNumberOfMultiplesJacobian();
         }
 
+		real_t **GetIntegrandAllCS() { return IntegrandAllCS; }
+		real_t *GetIntegrandAllCS(const len_t Z0) { return IntegrandAllCS[Z0]; }
+		real_t GetIntegrandAllCS(const len_t Z0, const len_t idx) { return IntegrandAllCS[Z0][idx]; }
+
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{}
 

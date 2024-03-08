@@ -178,7 +178,13 @@ def load_elements(elements, datatype='binding', cache=False, cachedir=None):
 
     # Check that 'elements' is a subset of 'names'
     for e in elements:
-        if e not in names:
+        # All hydrogenic species have the same ionization/binding energies
+        if e == 'D' or e == 'T':
+            ename = 'H'
+        else:
+            ename = e
+
+        if ename not in names:
             if cache:
                 # Force download of elements
                 return load_elements(elements=elements, datatype=datatype, cache=False)
@@ -192,7 +198,7 @@ def load_elements(elements, datatype='binding', cache=False, cachedir=None):
         # Select only requested elements
         nnames, nZ, ndata = [], [], []
         for n,z,d in zip(names,Z,data):
-            if n in elements:
+            if n in elements or (n=='H' and ('D' in elements or  'T' in elements)):
                 nnames.append(n)
                 nZ.append(z)
                 ndata.append(d)
