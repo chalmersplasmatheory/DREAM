@@ -209,7 +209,7 @@ namespace DREAM {
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
 		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
-		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, len_t, const real_t*, const real_t*, len_t, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
 
 
         template<typename T>

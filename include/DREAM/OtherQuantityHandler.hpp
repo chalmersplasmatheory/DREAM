@@ -24,6 +24,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
@@ -78,6 +79,9 @@ namespace DREAM {
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
 			// List of ion rate equations for each ion species
 			std::vector<IonRateEquation*> ni_rates;
+			// List of kinetic ionization rates for each ion species
+			std::vector<IonKineticIonizationTerm*> f_hot_kin_rates;
+			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
         };
     
     protected:
