@@ -336,7 +336,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetVectorElements(real_t *ve
         real_t j1 = j1Vec[ir];
         real_t j2 = j2Vec[ir];
 
-        if (std::min(j1, j2) > sqrt(std::numeric_limits<real_t>::min()))
+        if (std::min(std::abs(j1), std::abs(j2)) > sqrt(std::numeric_limits<real_t>::min()))
             vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
     }
 }
