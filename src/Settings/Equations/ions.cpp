@@ -560,7 +560,6 @@ void SimulationGenerator::ConstructEquation_Ions(
 		EvaluateIonEquilibrium(ih, adas, eq_ions, nfree0, initNi, Te, Nr, vecni);
 
 		delete [] nfree0;
-		delete [] init_equil;
 		delete [] initNi;
 		delete [] dynamic_indices;
 	};
