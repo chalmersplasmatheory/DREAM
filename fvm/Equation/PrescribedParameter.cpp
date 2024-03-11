@@ -35,10 +35,7 @@ PrescribedParameter::~PrescribedParameter() {
  * Deallocation routine.
  */
 void PrescribedParameter::DeallocateData() {
-    delete [] time;
-    delete [] data;
-
-    delete [] this->interp;
+    delete this->interp;
 }
 
 /**

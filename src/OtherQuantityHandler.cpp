@@ -88,8 +88,10 @@ OtherQuantityHandler::~OtherQuantityHandler() {
     
     delete this->tracked_terms;
 
-    delete [] kineticVectorHot;
-    delete [] kineticVectorRE;
+    if (kineticVectorHot != nullptr)
+        delete [] kineticVectorHot;
+    if (kineticVectorRE != nullptr)
+        delete [] kineticVectorRE;
 }
 
 /**
@@ -283,7 +285,7 @@ void OtherQuantityHandler::DefineQuantities() {
 
 			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
-				S_C[ir] = this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
+				S_C[ir] = -this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
 			}
 	    );
     } else {
@@ -566,7 +568,7 @@ void OtherQuantityHandler::DefineQuantities() {
 			for (len_t ir = 0; ir < nr_ht; ir++) {
 				for (len_t j = 0; j < n2_ht; j++) {
 					for (len_t i = 0; i < n1_ht; i++) {
-						S_C[(ir*(n2_ht) + j)*n1_ht + i] = this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ntot[ir];
+						S_C[(ir*(n2_ht) + j)*n1_ht + i] = -this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ntot[ir];
 					}
 				}
 			}

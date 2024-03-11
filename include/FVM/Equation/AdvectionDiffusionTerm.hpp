@@ -18,7 +18,8 @@ namespace DREAM::FVM {
     public:
         AdvectionDiffusionTerm(Grid *g)
             : AdvectionTerm(g, true), DiffusionTerm(g, true) {}
-
+        ~AdvectionDiffusionTerm();
+        
         void Add(AdvectionTerm*);
         void Add(DiffusionTerm*);
 

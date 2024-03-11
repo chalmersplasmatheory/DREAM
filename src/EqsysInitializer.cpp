@@ -37,7 +37,11 @@ EqsysInitializer::EqsysInitializer(
 /**
  * Destructor.
  */
-EqsysInitializer::~EqsysInitializer() { }
+EqsysInitializer::~EqsysInitializer() { 
+    for (auto rule : this->rules){
+        delete rule.second;
+    }
+}
 
 /**
  * Add a new initialization rule.
