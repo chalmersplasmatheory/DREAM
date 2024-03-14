@@ -26,7 +26,9 @@ class SPIShardPositions(ScalarQuantity):
         :return: Axis object containing the plot
         """
         
+        
         data_rhop=self.calcRadialCoordinate(shards)
+        
                 
         _rhop=ScalarQuantity(name='\\rho_p',data=data_rhop, grid=self.grid, output=self.output)
         return _rhop.plot(**kwargs)
@@ -47,8 +49,8 @@ class SPIShardPositions(ScalarQuantity):
             
         if t is None:
             t=slice(None)
-            
-        data_xp=self.data[:,0::3,0]
+        
+        data_xp=self.data[:,0::3,0] 
         data_xp.reshape(data_xp.shape[0:2])
         data_yp=self.data[:,1::3,0]
         data_yp.reshape(data_xp.shape[0:2])
@@ -57,6 +59,7 @@ class SPIShardPositions(ScalarQuantity):
         
         data_rhop=np.sqrt(data_xp[t,shards]**2+data_yp[t,shards]**2)
         data_thetap=np.arctan2(data_yp[t,shards],data_xp[t,shards])
+
         
         return data_rhop, data_thetap
         
