@@ -205,6 +205,23 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 
 		// r grid has now been extended...
 		this->ntheta++;
+	} else {
+		// Ensure that values at theta=0 and theta=2*pi are identical
+		for (len_t ir = 0; ir < this->npsi; ir++) {
+			len_t idx0 = 0*this->ntheta + ir;
+			len_t idx1 = (this->npsi-1)*this->ntheta + ir;
+
+			if (this->R[idx0] != this->R[idx1])
+				this->R[idx1] = this->R[idx0];
+			if (this->Z[idx0] != this->Z[idx1])
+				this->Z[idx1] = this->Z[idx0];
+			if (this->dataBR[idx0] != this->dataBR[idx1])
+				this->dataBR[idx1] = this->dataBR[idx0];
+			if (this->dataBZ[idx0] != this->dataBZ[idx1])
+				this->dataBZ[idx1] = this->dataBZ[idx0];
+			if (this->dataBphi[idx0] != this->dataBphi[idx1])
+				this->dataBphi[idx1] = this->dataBphi[idx0];
+		}
 	}
 
     // Evaluate minor radius in outer midplane
@@ -238,6 +255,7 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     for (len_t i = 0; i < this->npsi; i++) {
         bool minFound = false, maxFound = false;
 
+		len_t maxk=0, mink=0;
         for (len_t j = 1; j < this->ntheta; j++) {
             len_t k  = j*npsi+i;
             len_t km = k-npsi, kp = k+npsi;
@@ -262,9 +280,15 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                     throw FVMException(
                         "The numeric magnetic field has more than one maximum "
                         "along at least one magnetic field line."
+						"ipsi = " LEN_T_PRINTF_FMT
+						", itheta(1) = " LEN_T_PRINTF_FMT
+						", itheta(2) = " LEN_T_PRINTF_FMT,
+						i, (k-i)/npsi, (maxk-i)/npsi
                     );
-                else
+                else {
                     maxFound = true;
+					maxk = k;
+				}
             } else if (this->dataB[km] > this->dataB[k] &&
                        this->dataB[kp] > this->dataB[k] &&
                        dB > TOLERANCE) {
@@ -273,10 +297,16 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                 if (minFound)
                     throw FVMException(
                         "The numeric magnetic field has more than one minimum "
-                        "along at least one magnetic field line."
+                        "along at least one magnetic field line. "
+						"ipsi = " LEN_T_PRINTF_FMT
+						", itheta(1) = " LEN_T_PRINTF_FMT
+						", itheta(2) = " LEN_T_PRINTF_FMT,
+						i, (k-i)/npsi, (mink-i)/npsi
                     );
-                else
+                else {
                     minFound = true;
+					mink = k;
+				}
             }
         }
     }
