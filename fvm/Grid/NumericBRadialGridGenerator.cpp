@@ -208,8 +208,8 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 	} else {
 		// Ensure that values at theta=0 and theta=2*pi are identical
 		for (len_t ir = 0; ir < this->npsi; ir++) {
-			len_t idx0 = 0*this->ntheta + ir;
-			len_t idx1 = (this->npsi-1)*this->ntheta + ir;
+			len_t idx0 = 0*this->npsi + ir;
+			len_t idx1 = (this->ntheta-1)*this->npsi + ir;
 
 			if (this->R[idx0] != this->R[idx1])
 				this->R[idx1] = this->R[idx0];
