@@ -45,6 +45,7 @@ class SettingsDiff:
             self.file1 = ff[0]
             self.path1 = ff[-1]
         if ':' in file2:
+            ff = file2.split(':')
             self.file2 = ff[0]
             self.path2 = ff[-1]
 
