@@ -418,6 +418,10 @@ class SPI(UnknownQuantity):
         self.t_delay = self.t_delay - tShift
 
 
+    def resetTimeDelay(self):
+        self.t_delay = 0
+
+
     def setVelocity(self, velocity):
         """
         Specifies mode to calculate shard velocities.
