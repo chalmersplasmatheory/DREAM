@@ -255,9 +255,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 self.comptonPhotonFlux_t = np.array([0.0])
 
         if 'C1' in data['compton']:
-            self.C1_Compton = data['compton']['C1']
-            self.C2_Compton = data['compton']['C2']
-            self.C3_Compton = data['compton']['C3']
+            self.C1_Compton = float(data['compton']['C1'])
+            self.C2_Compton = float(data['compton']['C2'])
+            self.C3_Compton = float(data['compton']['C3'])
             self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(self.C1_Compton, self.C2_Compton, self.C3_Compton))[0]
 
         if 'adv_interp' in data:
