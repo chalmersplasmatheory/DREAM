@@ -71,9 +71,9 @@ real_t TimeStepperIonization::GetIonizationTimeScale() {
 		if (timescales[ir] < tscale)
 			tscale = timescales[ir];
 
-	if (isinf(tscale))
-		return 0;
-	else
+	//if (isinf(tscale))
+	//	return 0;
+	//else
 		return tscale;
 }
 
