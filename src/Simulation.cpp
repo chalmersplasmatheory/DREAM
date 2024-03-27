@@ -73,3 +73,11 @@ void Simulation::SetOutputGenerator(OutputGenerator *ogen) {
     this->outgen = ogen;
 }
 
+/**
+ * Set the equation system to solve during this simulation.
+ */
+void Simulation::SetEquationSystem(EquationSystem *e) {
+    this->eqsys = e;
+    this->eqsys->SetSimulation(this);
+}
+

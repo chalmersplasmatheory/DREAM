@@ -47,7 +47,7 @@ void SimulationGenerator::DefineOptions_ADAS(Settings *s) {
  * Define output options.
  */
 void SimulationGenerator::DefineOptions_Output(Settings *s) {
-    s->DefineSetting("/output/filename", "File name of simulation output", (std::string)"output.h5");
-    s->DefineSetting("/output/timingstdout", "Print timing info to stdout after the simulation.", (bool)false);
-    s->DefineSetting("/output/timingfile", "Save timing info to the output file.", (bool)false);
+    s->DefineSetting("output/filename", "File name of simulation output", (std::string)"output.h5");
+    s->DefineSetting("output/timingstdout", "Print timing info to stdout after the simulation.", (bool)false);
+    s->DefineSetting("output/timingfile", "Save timing info to the output file.", (bool)false);
 }
