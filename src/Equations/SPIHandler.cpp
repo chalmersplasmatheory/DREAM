@@ -821,17 +821,14 @@ void SPIHandler::CalculateIrp(){
 }
 
 int SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
-    int temp = 0;
     for(len_t ir=0; ir<nr;ir++){
         if(rCoordPNext[ip]>rCoordPPrevious[ip] && abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir)){
-            temp = (int)ir - (int)irp[ip];
-            break;
+            return (int)ir - (int)irp[ip];
         }else if(rCoordPNext[ip] + shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip] + shift>rGrid->GetR_f(ir)){
-            temp = (int)ir - (int)irp[ip];
-            break;
+            return (int)ir - (int)irp[ip];
         }
     }
-    return temp;
+    return nr;
 }
 
 /**

@@ -140,7 +140,7 @@ temperature = T_initial*temp_prof
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radialgrid)
 
 # Settings for the first SPI (presumably consisting mostly of deuterium)
-nShardD=1688 # Number of shards
+nShardD=168 # Number of shards
 NinjD=2e24# Number of atoms
 alpha_maxD=0.17 # Divergence angle
 abs_vp_meanD=800 # Mean shard speed
@@ -151,7 +151,7 @@ molarFractionNe=0 # Molar fraction of neon (the rest is deuterium)
 # and will be changed later when the injections are supposed to start
 
 # Settings for the second Neon SPI
-nShardNe=100
+nShardNe=10
 NinjNe=1e24
 alpha_maxNe=0.17
 abs_vp_meanNe=200
@@ -163,12 +163,12 @@ neutral_prescribed_advection = charged_prescribed_advection
 charged_prescribed_diffusion = 100
 neutral_prescribed_diffusion = 100
 
-
+temp = 0.3
 if molarFractionNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE, Ions.ION_OPACITY_TRANSPARENT], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), shift = SPI.SHIFT_MODE_ANALYTICAL,  T=30*np.ones(nShardD), T0=2, delta_y = 0.0125, Rm=R0, ZavgD = 1, ZavgNe = 2)
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE, Ions.ION_OPACITY_TRANSPARENT], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), shift = SPI.SHIFT_MODE_ANALYTICAL,  T=30*np.ones(nShardD), T0=2, delta_y = 0.0125*temp, Rm=R0, ZavgD = 1, ZavgNe = 2)
 #To disable shift write SPI.SHIFT_MODE_NEGLECT. The default value of shift is SPI.SHIFT_MODE_NEGLECT
 else:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), shift = SPI.SHIFT_MODE_ANALYTICAL, T=30*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125, Rm=R0, ZavgD = 1, ZavgNe = 2)
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), shift = SPI.SHIFT_MODE_ANALYTICAL, T=30*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125*temp, Rm=R0, ZavgD = 1, ZavgNe = 2)
 if nShardNe>0:
     if use_ion_transport:
 	    ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
@@ -176,10 +176,10 @@ if nShardNe>0:
 	    charged_advection_modes = [Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED], charged_prescribed_advections =  [charged_prescribed_advection],
         neutral_advection_modes = [Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED], neutral_prescribed_advections =  [neutral_prescribed_advection],
         charged_diffusion_modes = [Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED], charged_prescribed_diffusions =  [charged_prescribed_diffusion],
-        neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion], shift =  SPI.SHIFT_MODE_ANALYTICAL, T=30*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125, Rm=R0, ZavgD = 1, ZavgNe = 2)
+        neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion], shift =  SPI.SHIFT_MODE_ANALYTICAL, T=30*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125*temp, Rm=R0, ZavgD = 1, ZavgNe = 2)
     else:
 	    ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
-	    abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), shift = SPI.SHIFT_MODE_ANALYTICAL, T=30*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125, Rm=R0, ZavgD = 1, ZavgNe = 2)
+	    abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), shift = SPI.SHIFT_MODE_ANALYTICAL, T=30*np.ones(nShardD+nShardNe), T0=2, delta_y = 0.0125*temp, Rm=R0, ZavgD = 1, ZavgNe = 2)
         
 ds.eqsys.n_i.setAdvectionInterpolationMethodCharged(ad_int=IonsAll.AD_INTERP_UPWIND,
         ad_jac=IonsAll.AD_INTERP_JACOBIAN_UPWIND, fluxlimiterdamping=1.0)
