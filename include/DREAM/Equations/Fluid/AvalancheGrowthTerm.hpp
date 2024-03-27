@@ -63,7 +63,7 @@ namespace DREAM {
             RunawayFluid *ref, FVM::Grid *operandGrid, real_t scaleFactor = 1.0
         ) : FVM::DiagonalComplexTerm(g, u, operandGrid), RunawaySourceTerm(g,u),
             REFluid(ref), scaleFactor(scaleFactor) {
-
+            SetName("AvalancheGrowthTerm");
             id_n_re = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));

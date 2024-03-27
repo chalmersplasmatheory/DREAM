@@ -297,6 +297,7 @@ void OtherQuantityHandler::DefineQuantities() {
     }
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+        DEF_FL("fluid/Epar_hottail", "Parallel electric field [V/m]", qd->Store(tracked_terms->n_re_hottail_rate->GetElectricField()););
     }
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
@@ -304,6 +305,16 @@ void OtherQuantityHandler::DefineQuantities() {
         for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
             v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
+    if(tracked_terms->lcfsLossRate_fluid != nullptr){
+        DEF_FL("fluid/gammaLCFSLoss", "LCFS runaway loss rate (weights * n_re) [s^-1 m^-3]", 
+            real_t *v = qd->StoreEmpty();
+            const real_t *gLCFS = tracked_terms->lcfsLossRate_fluid->GetLCFSLossWeights();
+            real_t *nRE = this->unknowns->GetUnknownData(id_n_re);
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++){
+                v[ir] = gLCFS[ir] * nRE[ir];
+            }
+        );
+    }
 
 	if (tracked_terms->n_re_f_hot_flux != nullptr) {
 		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to n_re [s^-1 m^-3]",
