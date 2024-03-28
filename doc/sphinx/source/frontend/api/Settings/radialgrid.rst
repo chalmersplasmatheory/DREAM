@@ -248,6 +248,8 @@ specified in DREAM:
    assumed to take the prescribed value at all radii.
 
 
+.. _radialgrid-numerical:
+
 Numeric toroidal grid
 ---------------------
 .. note::
