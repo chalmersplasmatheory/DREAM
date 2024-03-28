@@ -8,7 +8,6 @@ using namespace DREAM;
 IonChargedAdvectionTerm::IonChargedAdvectionTerm(FVM::Grid *grid, IonHandler *ions, const len_t iIon, 
     bool allocCoefficients, FVM::AdvectionInterpolationCoefficient::adv_interpolation intp,
     OptionConstants::adv_jacobian_mode jac_mode, len_t id, real_t damping_factor) : IonChargedAdvectionDiffusionTerm<FVM::AdvectionTerm>(grid, ions, iIon, allocCoefficients){
-	    std::cout<<"check charged 2 \n";
 	    AllocateInterpolationCoefficients();
 	    SetAdvectionInterpolationMethod(intp, jac_mode, id, damping_factor);
 	}

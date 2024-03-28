@@ -9,9 +9,6 @@ namespace DREAM::FVM {
 	class MIMKL : public MatrixInverter {
     private:
         bool verbose = false;
-        Vec x;
-
-        PetscScalar *x_data;
         len_t xn;
 	public:
 		MIMKL(const len_t, bool verbose=false);

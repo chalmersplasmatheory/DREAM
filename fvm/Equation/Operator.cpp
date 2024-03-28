@@ -21,7 +21,19 @@ Operator::Operator(Grid *grid) : grid(grid) {}
 /**
  * Destructor.
  */
-Operator::~Operator() {}
+Operator::~Operator() {
+	if (this->adterm != nullptr)
+		delete this->adterm;
+	if (this->predetermined != nullptr)
+		delete this->predetermined;
+	
+	for (auto term : this->terms)
+		delete term;
+	for (auto term : this->eval_terms)
+		delete term;
+	for (auto bc : this->boundaryConditions)
+		delete bc;
+}
 
 
 /**

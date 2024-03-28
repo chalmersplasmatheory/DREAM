@@ -36,6 +36,8 @@ Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/, FluxSurfaceAve
 Grid::~Grid() {
     const len_t nr = this->GetNr();
 
+    delete this->bounceAverager;
+
     // Destroy momentum grids
     //   Since several, or even all, radii may share
     //   a single momentum grid, we should be careful
@@ -51,13 +53,11 @@ Grid::~Grid() {
         deletedPtrs.push_back(p);
         delete p;
     }
+    delete [] this->momentumGrids;
     
     DeallocateVprime();
     DeallocateBAvg();
     DeallocateBounceParameters();
-    delete [] this->momentumGrids;
-    delete this->rgrid;
-    delete this->bounceAverager;
 
     if(avalancheDeltaHat != nullptr){
         for(len_t ir=0; ir<nr; ir++){
@@ -467,6 +467,8 @@ void Grid::DeallocateBAvg(){
     delete [] this->BA_xi_fr;
     delete [] this->BA_xi_f1;
     delete [] this->BA_xi_f2;
+	delete [] this->BA_xi2OverB_f1;
+	delete [] this->BA_xi2OverB_f2;
     delete [] this->BA_BOverBOverXi_f1;
     delete [] this->BA_BOverBOverXi_f2;
     delete [] this->BA_B3_f1;

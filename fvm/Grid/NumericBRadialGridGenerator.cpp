@@ -79,6 +79,27 @@ void NumericBRadialGridGenerator::Init(
 NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
     if (this->rf_provided != nullptr)
         delete [] this->rf_provided;
+	
+	if (this->input_r != nullptr)
+		delete [] this->input_r;
+	
+	if (this->dataB != nullptr)
+		delete [] this->dataB;
+	
+	if (this->theta != nullptr)
+		delete [] this->theta;
+	if (this->R != nullptr)
+		delete [] this->R;
+	if (this->Z != nullptr)
+		delete [] this->Z;
+	if (this->psi != nullptr)
+		delete [] this->psi;
+	if (this->dataBR != nullptr)
+		delete [] this->dataBR;
+	if (this->dataBZ != nullptr)
+		delete [] this->dataBZ;
+	if (this->dataBphi != nullptr)
+		delete [] this->dataBphi;
 
     if (this->spline_R != nullptr) {
         gsl_spline_free(this->spline_psi);
@@ -87,13 +108,11 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         gsl_spline2d_free(this->spline_BR);
         gsl_spline2d_free(this->spline_BZ);
         gsl_spline2d_free(this->spline_Bphi);
+		gsl_spline2d_free(this->spline_B);
     }
 
     gsl_interp_accel_free(this->acc_theta);
     gsl_interp_accel_free(this->acc_r);
-
-	delete [] this->BtorGOverR0;
-	delete [] this->BtorGOverR0_f;
 }
 
 
