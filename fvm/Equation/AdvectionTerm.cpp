@@ -207,6 +207,10 @@ void AdvectionTerm::DeallocateDifferentiationCoefficients() {
     if (JacobianColumn != nullptr){
         delete [] JacobianColumn;
     }
+	if (df1pSqAtZero != nullptr) {
+		delete [] df1pSqAtZero[0];
+		delete [] df1pSqAtZero;
+	}
 }
 
 /**

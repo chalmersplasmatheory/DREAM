@@ -29,10 +29,6 @@ MIMKL::MIMKL(const len_t n, bool verbose) {
  * Destructor.
  */
 MIMKL::~MIMKL() {
-    KSPDestroy(&this->ksp);
-    VecDestroy(&this->x);
-
-    delete [] this->x_data;
 }
 
 /**

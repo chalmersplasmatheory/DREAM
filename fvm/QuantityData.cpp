@@ -60,6 +60,7 @@ QuantityData::~QuantityData() {
 
     delete [] olddata[0];
     delete [] olddata;
+	delete [] oldtime;
     delete [] data;
     delete [] idxVec;
 }

@@ -421,18 +421,18 @@ void SimulationGenerator::ConstructEquation_Ions(
     
     // Load prescribed diffusion coefficients
     MultiInterpolator1D *DrrChargedPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_diffusion, "charged_prescribed_diffusion"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_diffusion, "charged_prescribed_diffusion", true
     ); 
     MultiInterpolator1D *DrrNeutralPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_diffusion, "neutral_prescribed_diffusion"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_diffusion, "neutral_prescribed_diffusion", true
     );
     
     // Load prescribed advection coefficients
     MultiInterpolator1D *FrChargedPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_advection, "charged_prescribed_advection"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_advection, "charged_prescribed_advection", true
     ); 
     MultiInterpolator1D *FrNeutralPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection", true
     );
 
 	// Load prescribed source term data
@@ -560,7 +560,6 @@ void SimulationGenerator::ConstructEquation_Ions(
 		EvaluateIonEquilibrium(ih, adas, eq_ions, nfree0, initNi, Te, Nr, vecni);
 
 		delete [] nfree0;
-		delete [] init_equil;
 		delete [] initNi;
 		delete [] dynamic_indices;
 	};
@@ -577,5 +576,11 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     delete [] types;
     delete [] opacity_mode;
+
+	delete [] charged_diffusion_mode;
+	delete [] neutral_diffusion_mode;
+	delete [] charged_advection_mode;
+	delete [] neutral_advection_mode;
+	delete [] source_types;
 }
 

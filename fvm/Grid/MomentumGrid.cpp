@@ -77,6 +77,9 @@ void MomentumGrid::DeallocatePAndXi0() {
     delete [] p;
     delete [] p_f1;
     delete [] p_f2;
+	delete [] gamma;
+	delete [] gamma_f1;
+	delete [] gamma_f2;
     delete [] xi0;
     delete [] xi0_f1;
     delete [] xi0_f2;

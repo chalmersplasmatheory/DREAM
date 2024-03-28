@@ -95,6 +95,8 @@ void SFile_Python::CreateStruct(const string& name) {
 
     PyObject *newdict = PyDict_New();
     PyDict_SetItemString(par, dname.c_str(), newdict);
+
+    Py_DECREF(newdict);
 }
 
 /**
@@ -356,6 +358,7 @@ void SFile_Python::writeArray(
         nel *= dims[i];
     }
 
+
     PyObject *arr = PyArray_SimpleNew(ndims, _dims, dtype);
     // Insert data...
     T *p = reinterpret_cast<T*>(
@@ -368,6 +371,10 @@ void SFile_Python::writeArray(
     string dname;
     PyObject *par = getParentStruct(name, dname);
     PyDict_SetItemString(par, dname.c_str(), arr);
+
+    Py_DECREF(arr);
+
+    delete[]_dims;
 }
 
 void SFile_Python::WriteMultiArray(
