@@ -2,9 +2,10 @@
 
 import numpy as np
 import eqhelpers
+import h5py
 
 from DREAM.Settings.LUKEMagneticField import LUKEMagneticField
-from GEQDSK import GEQDSK
+from EQDSK import EQDSK
 
 
 def isAvailable():
@@ -15,17 +16,13 @@ def isAvailable():
     return True
 
 
-def getLUKE(file, *args, **kwargs):
+def getLUKE(file, override_psilim=False, *args, **kwargs):
     """
     Returns magnetic equilibrium data from the named file.
 
     :param file: Name of file to load data from.
     """
-    if file.endswith('.geqdsk'):
-        mf = GEQDSK(file)
-        return mf.get_LUKE(*args, **kwargs)
-    else:
-        # Assume LUKE format...
+    if h5py.is_hdf5(file):
         mf = LUKEMagneticField(file)
 
         equil = {
@@ -42,6 +39,10 @@ def getLUKE(file, *args, **kwargs):
         }
 
         return equil
+    else:
+        mf = EQDSK(file, override_psilim=override_psilim)
+        return mf.get_LUKE(*args, **kwargs)
+
 
 def getShaping(file, *args, equil=None, **kwargs):
     """
