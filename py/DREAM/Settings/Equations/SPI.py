@@ -521,7 +521,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         if 'ZavgD' in data:
             self.ZavgD          = data['ZavgD']
         if 'ZavgNe' in data:
-            self.ZavgNe          = data['ZavgNe']
+            self.ZavgNe         = data['ZavgNe']
         if 'heatAbsorption' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
@@ -624,16 +624,16 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
         if type(self.shift) != int:
-            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
-        if type(self.T0) != float and type(self.T0) != int and self.T0 != None:
+            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer, 1 or 2.")
+        if type(self.T0) != float and type(self.T0) != int and self.shift == 2:
             raise EquationException("spi: Invalid value assigned to 'T0'. Expected float.")
-        if type(self.delta_y) != float and type(self.delta_y) != int and self.T0 != None:
+        if type(self.delta_y) != float and type(self.delta_y) != int and self.shift == 2:
             raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float.")
-        if type(self.Rm) != float and type(self.Rm) != int and self.T0 != None:
+        if type(self.Rm) != float and type(self.Rm) != int and self.shift == 2:
             raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float.")
-        if type(self.ZavgD) != float and type(self.ZavgD) != int and self.T0 != None:
+        if type(self.ZavgD) != float and type(self.ZavgD) != int and self.shift == 2:
             raise EquationException("spi: Invalid value assigned to 'ZavgD'. Expected float.")
-        if type(self.ZavgNe) != float and type(self.ZavgNe) != int and self.T0 != None:
+        if type(self.ZavgNe) != float and type(self.ZavgNe) != int and self.shift == 2:
             raise EquationException("spi: Invalid value assigned to 'ZavgNe'. Expected float.")                
         if self.deposition!=DEPOSITION_MODE_LOCAL and self.shift==SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")

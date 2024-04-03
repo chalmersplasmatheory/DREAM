@@ -6,6 +6,7 @@
 #include <cmath>
 #include "DREAM/Equations/SPIHandler.hpp"
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_sf_expint.h>
 
 using namespace DREAM;
 using namespace std;
@@ -40,18 +41,6 @@ const real_t eps0 = Constants::eps0;// F/m
 const real_t gamma_e = 1;//Adiabatic constant of electrons
 const real_t gamma_i = 3;//Adiabatic constant of ions
 
-//Variables related to computing the drift
-//Time parameters
-real_t t_acc, t_pol, t_pe, t_exp;
-//Normalized time parameters
-real_t t_polp, t_pep, t_expp;
-//Parameters which are independent of time and shard
-real_t q, Zavg;
-//Parameters which are computed elsewhere in DREAM
-real_t v0, n_e, n_i, Te, B, sigma;
-//Parameter which are derived
-real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
-
 /**
  * Constructor
  */
@@ -64,7 +53,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
     OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
     const real_t *T_temp, real_t T_0, real_t delta_y, real_t Rm, real_t ZavgD, real_t ZavgNe,
-    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, int *nbrShiftGridCell=nullptr){
+    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, int_t *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
@@ -162,10 +151,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 		 
 		        if(Z[iZ]==1 && isotopes[iZ]==2){
 		            pelletDeuteriumFraction[ip]+=molarFraction[offset+ip];
-		        }
-                if(Z[iZ]==10){
+		        }else if(Z[iZ]==10){
 		            pelletNeonFraction[ip]+=molarFraction[offset+ip];
-		        }
+		        }else if(molarFraction[offset+ip]>0){throw DREAMException("SPIHandler: The drift model can only handle deuterium and neon pellets.");}
             }
             offset+=nShard;
         }else {
@@ -236,8 +224,8 @@ void SPIHandler::AllocateQuantities(){
     pelletDensity = new real_t[nShard];
     lambda = new real_t[nShard];
     NGSConstantFactor = new real_t[nShard];
-    nbrShiftGridCell = new int[nShard];
-    nbrShiftGridCellPrescribed = new int[nShard];
+    nbrShiftGridCell = new int_t[nShard];
+    nbrShiftGridCellPrescribed = new int_t[nShard];
     T = new real_t[nShard];
     pelletDeuteriumFraction=new real_t[nShard];
     pelletNeonFraction=new real_t[nShard];
@@ -298,7 +286,7 @@ void SPIHandler::YpConversion(len_t ip){
  */
 
  // Stores data about the surroundings of a shard
-void SPIHandler::AssignShardSpecificParameters(int ip){
+void SPIHandler::AssignShardSpecificParameters(len_t ip){
     v0 = -vp[3*ip];
     n_e = ncoldPrevious[irp[ip]];
     Te = TcoldPrevious[irp[ip]];
@@ -324,7 +312,7 @@ void SPIHandler::AssignShardSpecificParameters(int ip){
  * v_lab   : Initial radial drift velocity in the lab frame
  * Reff    : Effective resistance to ohmic currents exiting the cloud parallell to the field lines
  */
-void SPIHandler::AssignComputationParameters(int ip){
+void SPIHandler::AssignComputationParameters(len_t ip){
     Zavg = ZavgD*pelletDeuteriumFraction[ip] + ZavgNe*pelletNeonFraction[ip];
     CST = sqrt((gamma_e*Zavg + gamma_i) * qe * T[ip]/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
     CST0 = sqrt((gamma_e*Zavg + gamma_i) * qe * T_0/(mD*pelletDeuteriumFraction[ip] + mNe*pelletNeonFraction[ip]));
@@ -349,7 +337,7 @@ void SPIHandler::AssignComputationParameters(int ip){
  * t_pep : Normalized t_pe
  * t_expp: Normalized t_exp
  */
-void SPIHandler::AssignTimeParameters(int ip){
+void SPIHandler::AssignTimeParameters(len_t ip){
     t_acc = n/(1+Zavg)*(mD*pelletDeuteriumFraction[ip]+mNe*pelletNeonFraction[ip])*Reff/(B*B);
     t_pol = q*Rm/CST;
     t_pe = qe*T[ip]*n/(2*CST*(n_i+n_e)*qe*Te);
@@ -364,40 +352,29 @@ real_t SPIHandler::Integrand(real_t x, void *p){
     struct integrand_struct *params = (struct integrand_struct *)p;
     return (params->a*cos(x) + x*sin(x))/((params->a)*(params->a)+x*x);
 }
-real_t SPIHandler::IntegrandSin(real_t x, void *p){
-    if (x==0)
-        return 1;
-    else
-        return sin(x)/x;
-}
 /**
- * Function to evaluate equation (A3) in doi:10.1017/S0022377823000466
- * Be aware of the fact that the Epsiloni returns the wrong answer when a=0. 
- * But when the subtraction is made at PrimitiveSecondRow() the output is correct.
- * One way of fixing his is to let the sin integral go from b to inf(1000*b) and 
- * that integral is hard to solve numerically
+ * Function to evaluate the difference of two complex exponential integrals in equation (A2) in doi:10.1017/S0022377823000466
  */
 real_t SPIHandler::Epsiloni(real_t a, real_t b){
-    gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(1000);
-    gsl_function F;
-    integrand_struct paramstruct = {a};
-    if (a==0){
-        F.function = &IntegrandSin;
-    }else{
-        F.function = &Integrand;
-    }
-    F.params = &paramstruct;
-
     real_t sum, error;
-    if (b>0){
-        gsl_integration_qags(&F, 0, b, 0, 1e-7, 1000, workspace, &sum, &error);
+    if (a!=0){
+        gsl_integration_workspace *workspace = gsl_integration_workspace_alloc(1000);
+        gsl_function F;
+        integrand_struct paramstruct = {a};
+        F.function = &Integrand;
+        F.params = &paramstruct;
+        if (b>0){
+            gsl_integration_qags(&F, 0, b, 0, 1e-7, 1000, workspace, &sum, &error);
+        }else{
+            gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
+            sum = -sum;
+        }
+        gsl_integration_workspace_free(workspace);
+    }else if(b>=0){
+        sum = gsl_sf_Si(b) + 0.5*M_PI;
     }else{
-        gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
-        sum = -sum;
+        sum = gsl_sf_Si(b) - 0.5*M_PI;
     }
-    if (a==0)
-        sum = sum+M_PI*0.5;
-    gsl_integration_workspace_free(workspace);
     return sum;
 
 }
@@ -454,7 +431,7 @@ real_t SPIHandler::ThirdRow(){
 }
 
 // Function to collect all terms to evaluate equation A4
-real_t SPIHandler::Deltar(int ip){
+real_t SPIHandler::Deltar(len_t ip){
     real_t first = FirstRow();
     real_t second = SecondRow();
     real_t third = ThirdRow();
@@ -598,10 +575,10 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
         } else if(nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
             for(len_t ip=0;ip<nShard;ip++){
                 if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                    nbrShiftGridCell[ip] = std::abs((int)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int)irp[ip];
+                    nbrShiftGridCell[ip] = std::abs((int_t)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int_t)irp[ip];
                     
                     //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
-                    if((int)irp[ip]-nbrShiftGridCellPrescribed[ip]<0)
+                    if((int_t)irp[ip]-nbrShiftGridCellPrescribed[ip]<0)
                         nbrShiftGridCell[ip]--;    
                 }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
                     nbrShiftGridCell[ip] = nbrShiftGridCellPrescribed[ip];
@@ -615,10 +592,10 @@ void SPIHandler::Rebuild(real_t dt, len_t iteration){
                     if(ir>=nr+nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                     else
-                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                        depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int_t)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int_t)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }else if(nbrShiftGridCell[ip]>0){
-                for(int ir=nr-1;ir>=0;ir--){// Use ant int as a loop index so that the loop can be terminated by ir becoming <0
+                for(int_t ir=nr-1;ir>=0;ir--){// Use ant int as a loop index so that the loop can be terminated by ir becoming <0
                     if(ir<nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                     else
@@ -721,9 +698,9 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
                 // NOTE: only strictly valid for delta function kernel (assumes deposition only on one side of r=0)
                 if(nbrShiftGridCell[ip]<0){
                     if(ir<nr+nbrShiftGridCell[ip])
-                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol((int)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int)ir-nbrShiftGridCell[ip])*nShard+ip];
+                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol((int_t)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int_t)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }else if(nbrShiftGridCell[ip]>0){
-                    if((int)ir>=nbrShiftGridCell[ip])
+                    if((int_t)ir>=nbrShiftGridCell[ip])
                         heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }     
             }
@@ -820,12 +797,12 @@ void SPIHandler::CalculateIrp(){
     }
 }
 
-int SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
+int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
     for(len_t ir=0; ir<nr;ir++){
         if(rCoordPNext[ip]>rCoordPPrevious[ip] && abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir)){
-            return (int)ir - (int)irp[ip];
+            return (int_t)ir - (int_t)irp[ip];
         }else if(rCoordPNext[ip] + shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip] + shift>rGrid->GetR_f(ir)){
-            return (int)ir - (int)irp[ip];
+            return (int_t)ir - (int_t)irp[ip];
         }
     }
     return nr;

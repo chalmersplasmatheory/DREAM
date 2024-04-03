@@ -92,8 +92,7 @@ namespace DREAM {
         void BuildJacobian(const real_t, const real_t, FVM::BlockMatrix*);
         void BuildMatrix(const real_t, const real_t, FVM::BlockMatrix*, real_t*);
         void BuildVector(const real_t, const real_t, real_t*, FVM::BlockMatrix*);
-        void RebuildTerms(const real_t t, const real_t dt){RebuildTerms(t, dt, 0);}
-        void RebuildTerms(const real_t, const real_t, const len_t);
+        void RebuildTerms(const real_t, const real_t, const len_t x=0);
 
         void CalculateNonTrivial2Norm(const real_t*, real_t*);
 

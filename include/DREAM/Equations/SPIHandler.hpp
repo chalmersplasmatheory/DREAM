@@ -93,8 +93,8 @@ namespace DREAM{
         real_t *pelletDensity=nullptr;
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
-        int *nbrShiftGridCell=nullptr;
-        int *nbrShiftGridCellPrescribed=nullptr;
+        int_t *nbrShiftGridCell=nullptr;
+        int_t *nbrShiftGridCellPrescribed=nullptr;
         real_t *shift_store=nullptr;
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;
@@ -135,7 +135,7 @@ namespace DREAM{
         real_t CalculateRDotDepositionLocal(len_t ir);
 
         void CalculateIrp();
-        int CalculateDriftIrp(len_t ip, real_t shift);
+        int_t CalculateDriftIrp(len_t ip, real_t shift);
         void CalculateRCld();
         real_t CalculateLambda(real_t X);
 
@@ -149,7 +149,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
             const real_t *T_temp, real_t T_0_temp, real_t delta_y_temp,real_t Rm, real_t ZavgD, real_t ZavgNe, 
-            real_t VpVolNormFactor, real_t rclPrescribedConstant, int *nbrShiftGridCell);
+            real_t VpVolNormFactor, real_t rclPrescribedConstant, int_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();
@@ -157,11 +157,10 @@ namespace DREAM{
         struct integrand_struct {real_t a;};
         // Functions for the drift calculation
         void YpConversion(len_t ip);
-        void AssignShardSpecificParameters(int ip);
-        void AssignComputationParameters(int ip);
-        void AssignTimeParameters(int ip);
+        void AssignShardSpecificParameters(len_t ip);
+        void AssignComputationParameters(len_t ip);
+        void AssignTimeParameters(len_t ip);
         static real_t Integrand(real_t x, void * params);
-        static real_t IntegrandSin(real_t x, void * params);
         real_t Epsiloni(real_t a, real_t b);
         real_t BisFunction(real_t t_prim);
         real_t PrimitiveFirstRow(real_t t_prim);
@@ -170,7 +169,7 @@ namespace DREAM{
         real_t FirstRow();
         real_t SecondRow();
         real_t ThirdRow();
-        real_t Deltar(int ip);
+        real_t Deltar(len_t ip);
         
         void SetREFluid(RunawayFluid *REF) 
         { this->rf = REF; }

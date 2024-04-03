@@ -67,9 +67,9 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
         isotopes[i]=(len_t)_isotopes[i];
     }
     
-    int *nbrShiftGridCell = new int[nShard];
+    int_t *nbrShiftGridCell = new int_t[nShard];
     for (len_t i = 0; i < nShard; i++)
-        nbrShiftGridCell[i] = (int)_nbrShiftGridCell[i];
+        nbrShiftGridCell[i] = (int_t)_nbrShiftGridCell[i];
 
     real_t *T = new real_t[nShard];
     if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){

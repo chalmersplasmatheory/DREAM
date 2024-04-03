@@ -141,16 +141,13 @@ void IonHandler::Initialize() {
         }
 
     nfree  = new real_t[nr];
-    nfreePrevious  = new real_t[nr];
     ntot   = new real_t[nr];
     nbound = new real_t[nr];
     nZ0Z0  = new real_t[nr];
-    nZ0Z0Previous  = new real_t[nr];
     nZZ    = new real_t[nr];
     nZ0Z   = new real_t[nr];
     nZ0_Z  = new real_t[nr];
     Zeff   = new real_t[nr];
-    ZeffPrevious   = new real_t[nr];
     Ztot   = new real_t[nr];
 
     mi = new real_t[nZ];
@@ -182,26 +179,20 @@ void IonHandler::Initialize() {
 void IonHandler::Rebuild(){
     for(len_t ir=0; ir<nr; ir++){
         nfree[ir]  = 0.0;
-        nfreePrevious[ir]  = 0.0;
         ntot[ir]   = 0.0;
         nZ0Z0[ir]  = 0.0;
-        nZ0Z0Previous[ir]  = 0.0;
         nZZ[ir]    = 0.0;
         nZ0Z[ir]   = 0.0;
         nZ0_Z[ir]  = 0.0;
         Zeff[ir]   = 1.0;
-        ZeffPrevious[ir]   = 1.0;
         Ztot[ir]   = 1.0;
 
         for (len_t iz = 0; iz < nZ; iz++)
             for (len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
                 real_t ni = GetIonDensity(ir,iz,Z0);
-                real_t niPrevious = GetIonDensityPrevious(ir, iz, Z0);
                 nfree[ir]  += Z0*ni;
-                nfreePrevious[ir] += Z0*niPrevious; 
                 ntot[ir]   += Zs[iz]*ni;
                 nZ0Z0[ir]  += Z0*Z0*ni;
-                nZ0Z0Previous[ir]  += Z0*Z0*niPrevious;
                 nZZ[ir]    += Zs[iz]*Zs[iz]*ni;
                 nZ0Z[ir]   += Z0*Zs[iz]*ni;
                 nZ0_Z[ir]  += (Z0/Zs[iz])*ni;
@@ -209,8 +200,6 @@ void IonHandler::Rebuild(){
         nbound[ir] = ntot[ir] - nfree[ir];
         if(nfree[ir])
             Zeff[ir] = nZ0Z0[ir] / nfree[ir];
-        if(nfreePrevious[ir])
-            ZeffPrevious[ir] = nZ0Z0Previous[ir] / nfreePrevious[ir];
         if(ntot[ir])
             Ztot[ir] = nZZ[ir] / ntot[ir];
         // correct for roundoff errors in ideal plasmas
@@ -246,18 +235,6 @@ const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
         throw FVM::FVMException("IonHandler GetIonDensity: Ion charge number cannot be larger than atomic number. Z0: %u, Z: %u", Z0, Zs[iz]);
 
     const real_t *n_i = unknowns->GetUnknownData(niID);
-    len_t Zind = GetIndex(iz,Z0);
-    return n_i[nr*Zind + ir];
-}
-
-// Returns the previous density of ions which are characterised by 
-// atomic number Z and charge number Z0 at radial index ir.
-const real_t IonHandler::GetIonDensityPrevious(len_t ir, len_t iz, len_t Z0) const{
-
-    if (Z0 > Zs[iz])
-        throw FVM::FVMException("IonHandler GetIonDensity: Ion charge number cannot be larger than atomic number. Z0: %u, Z: %u", Z0, Zs[iz]);
-
-    const real_t *n_i = unknowns->GetUnknownDataPrevious(niID);
     len_t Zind = GetIndex(iz,Z0);
     return n_i[nr*Zind + ir];
 }
@@ -441,16 +418,13 @@ void IonHandler::DeallocateAll(){
     delete [] izsList;
     delete [] Z0sList;
     delete [] nfree;
-    delete [] nfreePrevious;
     delete [] ntot;
     delete [] nbound;
     delete [] nZ0Z0;
-    delete [] nZ0Z0Previous;
     delete [] nZZ;
     delete [] nZ0Z;
     delete [] nZ0_Z;
     delete [] Zeff;
-    delete [] ZeffPrevious;
     delete [] Ztot;
     delete [] mi;
     delete [] Zs;
