@@ -16,6 +16,9 @@ import DREAM.Settings.Equations.ElectricField as ElectricField
 import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
 from scipy.interpolate import CubicSpline
 
+'''
+The readInIDSSlice function takes a single time slice from the IDS database defined by the shot and run numbers, the tokamak and the time points from which the data will be loaded. If the time specified by the user is not available in the requested IDS, an interpolation from the closest timepoints will be performed. This function is optimal to perform DREAM simulations using IDS data as initial condition.
+'''
 
 def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, setUpDream=True, wall_radius=-999):
 	
@@ -173,9 +176,9 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, 
 	# get the limiting psi values
 	magnetic_axis_psi = max(eq_psi)			# psi value on the magnetic axis
 	
-	# get the indices fot the limits in psi_eq
+	# get the indices for the limits in psi_eq
 	# get the magnetic axis index
-	magnetic_axis_psi_index = np.where(eq_psi == max(eq_psi))[0][0]
+	magnetic_axis_psi_index = np.where(eq_psi == magnetic_axis_psi)[0][0]
 	eq_psi = eq_psi[magnetic_axis_psi_index:]
 	
 	#normalize eq_psi
@@ -190,9 +193,14 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, 
 		if log:
 			logging.info('The poloidal flux from core profiles IDS loaded successfully!\n')
 	
+	# sort the coreprofiles coordinates for interpolation
+	p = cp_psi.argsort()
+	cp_psi_sorted = cp_psi[p]
+	cp_radius_sorted = cp_radius[p]
+	
 	# interpolate the coreprof rho from the coreprof psi to the equilibrium psi
-	interp_radius = CubicSpline(-cp_psi, cp_radius)
-	radius = interp_radius(-eq_psi)
+	interp_radius = CubicSpline(cp_psi_sorted, cp_radius_sorted)
+	radius = abs(interp_radius(eq_psi))
 	
 	# Check if the interpolation gave a correct answer
 	error = (radius[-1] - cp_radius[-1]) / radius[-1]
@@ -249,8 +257,13 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, 
 		IDS_variables = {'radius': radius, 'Core_profiles_radius': cp_radius, 'Equilibrium_radius': eq_radius, 'wall_radius': wall_radius, 'Major_radius': R, 'Magnetic_field': B0, 'Ion_names': ion_names, 'Ion_charges': ion_charges, 'Ion_densities': ion_densities, 'Temperature': T_cold, 'Electric_field': e_field,  'Wall_resistivity': resistivity, 'Toroidal_j': j_tor, 'Plasma_current': Ip, 'Time': time}
 
 		return IDS_variables
-	
-	
+
+
+'''
+The readInIDS function takes the time evolution of different IDS fields from the database defined by the shot and run numbers and the tokamak. All the time points are loaded with this function, hence it allows for simulation of prescribed cases with DREAM.
+'''
+
+
 def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True, wall_radius=-999):
 	
 	#full IDS read in
@@ -461,7 +474,7 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 	
 	# get the indices fot the limits in psi_eq
 	# get the magnetic axis index
-	magnetic_axis_psi_index = np.where(eq_psi == max(eq_psi))[0][0]
+	magnetic_axis_psi_index = np.where(eq_psi == magnetic_axis_psi)[0][0]
 	eq_psi = eq_psi[magnetic_axis_psi_index:]
 	
 	# normalize eq_psi
@@ -479,9 +492,14 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 	# load the coreprof radius
 	single_cp_radius = coreprof.profiles_1d[0].grid.rho_tor
 	
+	# sort the coreprofiles coordinates for interpolation
+	p = cp_psi.argsort()
+	cp_psi_sorted = cp_psi[p]
+	single_cp_radius_sorted = single_cp_radius[p]	
+	
 	# interpolate the coreprof rho from the coreprof psi to the equilibrium psi
-	interp_radius = CubicSpline(-cp_psi, single_cp_radius)
-	radius = interp_radius(-eq_psi)
+	interp_radius = CubicSpline(cp_psi_sorted, single_cp_radius_sorted)
+	radius = abs(interp_radius(eq_psi))
 	
 	# Check if the interpolation gave a correct answer
 	error = (radius[-1] - single_cp_radius[-1]) / radius[-1]
