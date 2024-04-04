@@ -285,7 +285,9 @@ void SimulationGenerator::ConstructEquation_Ions(
     if (includeKineticIonizationApprox && eqsys->HasRunawayGrid())
         throw SettingsException("Invalid ionization mode: cannot use approximated kinetic ionization together with a runaway kinetic grid.");
 
-        const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    std::cout << includeKineticIonizationApprox << std::endl;
+
+    const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
     len_t nDynamic = 0, nEquil = 0;
     for (len_t iZ = 0; iZ < nZ; iZ++) {
@@ -353,9 +355,10 @@ void SimulationGenerator::ConstructEquation_Ions(
                     }
                 }
                 else if (includeKineticIonizationApprox) {
+                    std::cout << "HERE" << std::endl;
                     IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, 1.0);
-                    eqn->AddTerm(ifrit);
                     oqty_terms->f_re_kin_approx_rates.push_back(ifrit);
+                    eqn->AddTerm(ifrit);
                 }
                 break;
 

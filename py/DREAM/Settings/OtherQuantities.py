@@ -6,8 +6,8 @@ from .. DREAMException import DREAMException
 
 
 class OtherQuantities:
-    
-    
+
+
     # Here, we keep a list of the possible settings found in DREAM.
     # This allows to check the input the user gives, and emit warnings
     # if the user specifies an unrecognized quantity.
@@ -35,6 +35,7 @@ class OtherQuantities:
         'fluid/Tcold_ion_coll',
         'fluid/W_hot',
         'fluid/W_re',
+        'fluid/kinioniz_approx_vsigma',
         'energy',
         'hottail/Ar', 'hottail/Ap1', 'hottail/Ap2',
         'hottail/Drr', 'hottail/Dpp', 'hottail/Dpx', 'hottail/Dxp', 'hottail/Dxx',
@@ -70,7 +71,7 @@ class OtherQuantities:
         'scalar/radialloss_f_re',
         'scalar/radialloss_f_hot',
         'scalar/energyloss_f_re',
-        'scalar/energyloss_f_hot', 
+        'scalar/energyloss_f_hot',
         'ripple',
         'transport'
     ]
@@ -81,7 +82,7 @@ class OtherQuantities:
         """
         self._include = list()
 
-    
+
     def include(self, *args):
         """
         Include one or more "other" quantities in the output.
@@ -130,5 +131,3 @@ class OtherQuantities:
         Verify that these settings are consistent.
         """
         pass
-
-
