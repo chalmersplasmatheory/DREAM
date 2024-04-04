@@ -6,6 +6,7 @@
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/LyOpaqueDIonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
+#include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/IonSPIDepositionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonChargedPrescribedDiffusionTerm.hpp"
@@ -39,16 +40,16 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/opacity_modes", "Specifies if/how opacity should be treated (neglected by default)", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/charged_diffusion_modes", "Specifies how to treat diffusion of charged particles (neglected by default)", 1, dims, (int_t*)nullptr);
-    s->DefineSetting(MODULENAME "/neutral_diffusion_modes", "Specifies how to treat diffusion of neutral particles (neglected by default)", 1, dims, (int_t*)nullptr);    
+    s->DefineSetting(MODULENAME "/neutral_diffusion_modes", "Specifies how to treat diffusion of neutral particles (neglected by default)", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/charged_advection_modes", "Specifies how to treat advection of charged particles (neglected by default)", 1, dims, (int_t*)nullptr);
-    s->DefineSetting(MODULENAME "/neutral_advection_modes", "Specifies how to treat advection of neutral particles (neglected by default)", 1, dims, (int_t*)nullptr);    
+    s->DefineSetting(MODULENAME "/neutral_advection_modes", "Specifies how to treat advection of neutral particles (neglected by default)", 1, dims, (int_t*)nullptr);
 	s->DefineSetting(MODULENAME "/ion_source_types", "Specifies which type of ion sources to include", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/adv_interp_charged/r", "Type of interpolation method to use in the charged advection term", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp_charged/r_jac", "Type of interpolation method to use in the jacobian of the charged advection term", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
-    s->DefineSetting(MODULENAME "/adv_interp_charged/fluxlimiterdamping", "Underrelaxation parameter for the charged advection term that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);    
+    s->DefineSetting(MODULENAME "/adv_interp_charged/fluxlimiterdamping", "Underrelaxation parameter for the charged advection term that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
     s->DefineSetting(MODULENAME "/adv_interp_neutral/r", "Type of interpolation method to use in the advection term", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp_neutral/r_jac", "Type of interpolation method to use in the jacobian of the advection term", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
-    s->DefineSetting(MODULENAME "/adv_interp_neutral/fluxlimiterdamping", "Underrelaxation parameter for the neutral advection term that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);    
+    s->DefineSetting(MODULENAME "/adv_interp_neutral/fluxlimiterdamping", "Underrelaxation parameter for the neutral advection term that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
     s->DefineSetting(MODULENAME "/hydrogennames", "Names of the hydrogen ion species", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
@@ -82,7 +83,7 @@ len_t SimulationGenerator::GetNumberOfIonChargeStates(Settings *s) {
     len_t nChargeStates = 0;
     for (len_t i = 0; i < nZ; i++)
         nChargeStates += Z[i]+1;
-    
+
     return nChargeStates;
 }
 
@@ -119,7 +120,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     const int_t *icharged_advection_modes = s->GetIntegerArray(MODULENAME "/charged_advection_modes", 1, &ntypes);
     const int_t *ineutral_advection_modes = s->GetIntegerArray(MODULENAME "/neutral_advection_modes", 1, &ntypes);
 	const int_t *iion_source_types = s->GetIntegerArray(MODULENAME "/ion_source_types", 1, &nSourceTypes);
-    
+
     // Parse list of ion names (stored as one contiguous string,
     // each substring separated by ';')
     vector<string> ionNames = s->GetStringList(MODULENAME "/names");
@@ -162,11 +163,11 @@ void SimulationGenerator::ConstructEquation_Ions(
                 ionNames[i].c_str(), Z[i]
             );
     }
-    
+
     enum OptionConstants::ion_opacity_mode *opacity_mode = new enum OptionConstants::ion_opacity_mode[ntypes];
     for (len_t i = 0; i < ntypes; i++)
         opacity_mode[i] = (enum OptionConstants::ion_opacity_mode)iopacity_modes[i];
-        
+
     // Verify that all non-prescribed elements have ground state opaque coefficients available
     for (len_t i = 0; i < nZ; i++) {
         if (Z[i]!=1 && opacity_mode[i]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
@@ -175,7 +176,7 @@ void SimulationGenerator::ConstructEquation_Ions(
             );
         }
     }
-    
+
     // Load diffusion settings
     enum OptionConstants::ion_charged_diffusion_mode *charged_diffusion_mode = new enum OptionConstants::ion_charged_diffusion_mode[ntypes];
     for (len_t i = 0; i < ntypes; i++)
@@ -183,7 +184,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     enum OptionConstants::ion_neutral_diffusion_mode *neutral_diffusion_mode = new enum OptionConstants::ion_neutral_diffusion_mode[ntypes];
     for (len_t i = 0; i < ntypes; i++)
         neutral_diffusion_mode[i] = (enum OptionConstants::ion_neutral_diffusion_mode)ineutral_diffusion_modes[i];
-        
+
     // Load advection settings
     enum OptionConstants::ion_charged_advection_mode *charged_advection_mode = new enum OptionConstants::ion_charged_advection_mode[ntypes];
     for (len_t i = 0; i < ntypes; i++)
@@ -191,7 +192,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     enum OptionConstants::ion_neutral_advection_mode *neutral_advection_mode = new enum OptionConstants::ion_neutral_advection_mode[ntypes];
     for (len_t i = 0; i < ntypes; i++)
         neutral_advection_mode[i] = (enum OptionConstants::ion_neutral_advection_mode)ineutral_advection_modes[i];
-	
+
 	// Ion source settings
 	enum OptionConstants::ion_source_type *source_types = new enum OptionConstants::ion_source_type[ntypes];
 	if (iion_source_types != nullptr) {
@@ -201,7 +202,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 		for (len_t i = 0; i < ntypes; i++)
 			source_types[i] = OptionConstants::ION_SOURCE_NONE;
 	}
-        
+
     // Also enable flux limiters
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r_charged =
         (enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp_charged/r");
@@ -218,7 +219,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     len_t nZSPInShard;
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition");
     OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = (enum OptionConstants::eqterm_spi_abl_ioniz_mode)s->GetInteger(MODULENAME_SPI "/abl_ioniz");
-    OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger(MODULENAME_SPI "/ablation"); 
+    OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger(MODULENAME_SPI "/ablation");
     const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME "/SPIMolarFraction", 1, &nZSPInShard);
 
     /////////////////////
@@ -263,12 +264,12 @@ void SimulationGenerator::ConstructEquation_Ions(
     // Initialize ion equations
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-    OptionConstants::eqterm_ionization_mode ionization_mode = 
+    OptionConstants::eqterm_ionization_mode ionization_mode =
         (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
-    FVM::Operator *Op_kiniz = nullptr; 
-    FVM::Operator *Op_kiniz_re = nullptr; 
+    FVM::Operator *Op_kiniz = nullptr;
+    FVM::Operator *Op_kiniz_re = nullptr;
     // TODO: simplify the bool logic below if possible
-    bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC) 
+    bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC)
                                  || (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC);
     if(includeKineticIonization && !(eqsys->HasHotTailGrid()||eqsys->HasRunawayGrid()))
         throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
@@ -280,12 +281,16 @@ void SimulationGenerator::ConstructEquation_Ions(
     if (nZ0_prescribed > 0)
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
-    const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    bool includeKineticIonizationApprox = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_APPROX_RE);
+    if (includeKineticIonizationApprox && eqsys->HasRunawayGrid())
+        throw SettingsException("Invalid ionization mode: cannot use approximated kinetic ionization together with a runaway kinetic grid.");
+
+        const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
     len_t nDynamic = 0, nEquil = 0;
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         switch (types[iZ]) {
-            case OptionConstants::ION_DATA_PRESCRIBED: 
+            case OptionConstants::ION_DATA_PRESCRIBED:
                 break;
             // 'Dynamic' and 'Equilibrium' differ by a transient term
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
@@ -301,7 +306,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 		                fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),
 		                addFluidIonization, addFluidJacobian, false, amjuel
 					);
-					eqn->AddTerm(ire);		            
+					eqn->AddTerm(ire);
 					oqty_terms->ni_rates.push_back(ire);
                 }else{
 					IonRateEquation *ire = new IonRateEquation(
@@ -315,16 +320,16 @@ void SimulationGenerator::ConstructEquation_Ions(
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid
                         if(Op_kiniz == nullptr)
                             Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
-                        FVM::MomentQuantity::pThresholdMode pMode = 
+                        FVM::MomentQuantity::pThresholdMode pMode =
                             (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
                         real_t pThreshold = 0.0;
                         if(collfreqModeIsFull)
                             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
 						IonKineticIonizationTerm *ikit =
 							new IonKineticIonizationTerm(
-								fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
-								eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
-								ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+								fluidGrid, eqsys->GetHotTailGrid(), id_ni,
+								eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(),
+								ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI,
 								eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
 								pThreshold, pMode
 							);
@@ -338,14 +343,19 @@ void SimulationGenerator::ConstructEquation_Ions(
                             Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
 						IonKineticIonizationTerm *ikit =
 							new IonKineticIonizationTerm(
-								fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
-								eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
-								ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+								fluidGrid, eqsys->GetRunawayGrid(), id_ni,
+								eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(),
+								ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI,
 								eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
-							); 
+							);
 						oqty_terms->f_re_kin_rates.push_back(ikit);
 						Op_kiniz_re->AddTerm(ikit);
                     }
+                }
+                else if (includeKineticIonizationApprox) {
+                    IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, 1.0);
+                    eqn->AddTerm(ifrit);
+                    oqty_terms->f_re_kin_approx_rates.push_back(ifrit);
                 }
                 break;
 
@@ -379,7 +389,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
-        
+
     // Add SPI deposition terms
     if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
         len_t SPIOffset=0;
@@ -394,7 +404,7 @@ void SimulationGenerator::ConstructEquation_Ions(
             }
         }
     }
-    
+
     // Find number of charge states with prescribed diffusion
     len_t nZ0_charged_prescribed_diffusion = 0;
     len_t nZ0_neutral_prescribed_diffusion = 0;
@@ -406,7 +416,7 @@ void SimulationGenerator::ConstructEquation_Ions(
             nZ0_neutral_prescribed_diffusion++;
         }
     }
-    
+
     // Find number of charge states with prescribed advection
     len_t nZ0_charged_prescribed_advection = 0;
     len_t nZ0_neutral_prescribed_advection = 0;
@@ -418,19 +428,19 @@ void SimulationGenerator::ConstructEquation_Ions(
             nZ0_neutral_prescribed_advection++;
         }
     }
-    
+
     // Load prescribed diffusion coefficients
     MultiInterpolator1D *DrrChargedPrescribed = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_diffusion, "charged_prescribed_diffusion", true
-    ); 
+    );
     MultiInterpolator1D *DrrNeutralPrescribed = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_diffusion, "neutral_prescribed_diffusion", true
     );
-    
+
     // Load prescribed advection coefficients
     MultiInterpolator1D *FrChargedPrescribed = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_advection, "charged_prescribed_advection", true
-    ); 
+    );
     MultiInterpolator1D *FrNeutralPrescribed = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection", true
     );
@@ -439,7 +449,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 	MultiInterpolator1D *source_data = LoadDataIonT(
 		MODULENAME, s, nZ0_dynamic+nZ0_prescribed, "ion_source"
 	);
-    
+
     // Add diffusion terms
     len_t offsetChargedDiffusion = 0;
     len_t offsetNeutralDiffusion = 0;
@@ -453,7 +463,7 @@ void SimulationGenerator::ConstructEquation_Ions(
             offsetNeutralDiffusion++;
         }
     }
-    
+
     // Add advection terms
     len_t offsetChargedAdvection = 0;
     len_t offsetNeutralAdvection = 0;
@@ -473,7 +483,7 @@ void SimulationGenerator::ConstructEquation_Ions(
         eqsys->SetOperator(id_ni, OptionConstants::UQTY_F_HOT, Op_kiniz, desc);
     if(Op_kiniz_re != nullptr)
         eqsys->SetOperator(id_ni, OptionConstants::UQTY_F_RE, Op_kiniz_re, desc);
-	
+
 	// Add ion source boundary conditions
 	for (len_t iZ = 0; iZ < nZ; iZ++) {
 		if (source_types[iZ] == OptionConstants::ION_SOURCE_PRESCRIBED) {
@@ -583,4 +593,3 @@ void SimulationGenerator::ConstructEquation_Ions(
 	delete [] neutral_advection_mode;
 	delete [] source_types;
 }
-

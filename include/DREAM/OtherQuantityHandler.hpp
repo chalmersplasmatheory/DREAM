@@ -25,6 +25,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
+#include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
@@ -38,7 +39,7 @@ namespace DREAM {
     public:
         struct eqn_terms {
             // Terms in the heat equation:
-            DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr; 
+            DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr;
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
@@ -82,8 +83,10 @@ namespace DREAM {
 			// List of kinetic ionization rates for each ion species
 			std::vector<IonKineticIonizationTerm*> f_hot_kin_rates;
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
+            // List of approximated RE impact ionization rates for teach ion species
+            std::vector<IonFluidRunawayIonizationTerm*> f_re_kin_approx_rates;
         };
-    
+
     protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
@@ -99,19 +102,19 @@ namespace DREAM {
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
         // indices to unknownquantities
-        len_t 
+        len_t
             id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
             id_n_re_neg=0;
 
-        // helper arrays with enough memory allocated to store the hottail and runaway grids 
-        real_t *kineticVectorHot = nullptr; 
-        real_t *kineticVectorRE = nullptr; 
+        // helper arrays with enough memory allocated to store the hottail and runaway grids
+        real_t *kineticVectorHot = nullptr;
+        real_t *kineticVectorRE = nullptr;
 
         // helper functions for evaluating other quantities
         real_t integratedKineticBoundaryTerm(
-            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid*, 
-            FVM::BC::BoundaryCondition*, FVM::BC::BoundaryCondition*, 
+            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid*,
+            FVM::BC::BoundaryCondition*, FVM::BC::BoundaryCondition*,
             real_t *kineticVector
         );
         real_t evaluateMagneticEnergy();
