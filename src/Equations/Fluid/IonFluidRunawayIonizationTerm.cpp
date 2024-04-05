@@ -67,8 +67,12 @@ bool IonFluidRunawayIonizationTerm::SetCSJacobianBlock(
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
     if (derivId == id_nre)
         for (len_t ir = 0; ir < nr; ir++){
-            real_t nij = ions->GetIonDensity(ir, iIon, Z0);
-            jac->SetElement(rOffset+ir, rOffset+ir, weights[ir*(Zion+1)+Z0] * nij);
+            real_t nion = ions->GetIonDensity(ir, iIon, Z0);
+            jac->SetElement(rOffset+ir, rOffset+ir, -weights[ir*(Zion+1)+Z0] * nion);
+            if (Z0 > 0) {
+                nion = ions->GetIonDensity(ir, iIon, Z0-1);
+                jac->SetElement(rOffset+ir, rOffset+ir-nr, weights[ir*(Zion+1)+Z0-1] * nion);
+            }
         }
     return true;
 }
@@ -82,7 +86,9 @@ void IonFluidRunawayIonizationTerm::SetCSMatrixElements(
 ) {
     real_t *nre = u->GetUnknownData(id_nre);
     for (len_t ir = 0; ir < nr; ir++){
-        mat->SetElement(rOffset+ir, rOffset+ir, weights[ir*(Zion+1)+Z0] * nre[ir]);
+        mat->SetElement(rOffset+ir, rOffset+ir, -weights[ir*(Zion+1)+Z0] * nre[ir]);
+        if (Z0 > 0)
+            mat->SetElement(rOffset+ir, rOffset+ir-nr, weights[ir*(Zion+1)+Z0-1] * nre[ir]);
     }
 }
 
@@ -91,10 +97,12 @@ void IonFluidRunawayIonizationTerm::SetCSMatrixElements(
  * Sets vector elements for this ion and charge state
  */
 void IonFluidRunawayIonizationTerm::SetCSVectorElements(
-    real_t *vec, const real_t *x, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
+    real_t *vec, const real_t *nions, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
     real_t *nre = u->GetUnknownData(id_nre);
     for(len_t ir = 0; ir < nr; ir++){
-        vec[rOffset+ir] += weights[ir*(Zion+1)+Z0] * nre[ir] * x[ir];
+        vec[rOffset+ir] -= weights[ir*(Zion+1)+Z0] * nre[ir] * nions[rOffset+ir];
+        if (Z0 > 0)
+            vec[rOffset+ir] += weights[ir*(Zion+1)+Z0-1] * nre[ir] * nions[rOffset+ir-nr];
     }
 }
