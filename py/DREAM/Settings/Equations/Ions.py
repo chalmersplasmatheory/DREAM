@@ -754,7 +754,7 @@ class Ions(UnknownQuantity):
 
             self.ions[i].verifySettings()
 
-        if (self.ionization != IONIZATION_MODE_FLUID) and (self.ionization != IONIZATION_MODE_KINETIC) and (self.ionization != IONIZATION_MODE_KINETIC_APPROX_JAC):
+        if (self.ionization != IONIZATION_MODE_FLUID) and (self.ionization != IONIZATION_MODE_KINETIC) and (self.ionization != IONIZATION_MODE_KINETIC_APPROX_JAC) and (self.ionization != IONIZATION_MODE_FLUID_APPROX_RE):
             raise EquationException("ions: Invalid ionization mode: {}.".format(self.ionization))
 
 
