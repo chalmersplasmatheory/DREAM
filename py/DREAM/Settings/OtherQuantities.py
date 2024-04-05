@@ -36,6 +36,7 @@ class OtherQuantities:
         'fluid/W_hot',
         'fluid/W_re',
         'fluid/kinioniz_approx_vsigma',
+        'fluid/Zeff',
         'energy',
         'hottail/Ar', 'hottail/Ap1', 'hottail/Ap2',
         'hottail/Drr', 'hottail/Dpp', 'hottail/Dpx', 'hottail/Dxp', 'hottail/Dxx',
