@@ -21,6 +21,8 @@ namespace DREAM::FVM {
         BounceSurfaceMetric(Grid *grid, FluxSurfaceQuantity *Jacobian, FluxSurfaceQuantity *B, FluxSurfaceAverager *FSA);
         virtual ~BounceSurfaceMetric();
 
+		virtual void DeallocateData() override;
+
         void SetDataForPassing(len_t ntheta_interp_passing, const real_t *theta_passing);
 
         virtual const real_t *GetData(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const override;        

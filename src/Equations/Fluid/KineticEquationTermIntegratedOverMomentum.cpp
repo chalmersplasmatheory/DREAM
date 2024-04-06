@@ -43,6 +43,8 @@ KineticEquationTermIntegratedOverMomentum::~KineticEquationTermIntegratedOverMom
         MatDestroy(this->CsetJacobian+i);
         
     delete [] this->CsetJacobian;
+	if (this->kineticOperator != nullptr)
+		delete this->kineticOperator;
 }
 
 

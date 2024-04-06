@@ -23,6 +23,13 @@ ScalarLinearTerm::ScalarLinearTerm(Grid *scalarGrid,Grid *targetGrid,
 }
 
 /**
+ * Destructor.
+ */
+ScalarLinearTerm::~ScalarLinearTerm() {
+	DeallocateWeights();
+}
+
+/**
  * Transform the given input vector 'vec' so as to solve for
  * the value of the unknown quantity operated on by this
  * ScalarLinearTerm. We imagine that this term is part of

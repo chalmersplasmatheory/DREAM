@@ -29,6 +29,7 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
     public:
         ExternalAvalancheTerm(FVM::Grid*, real_t pc, real_t aExp, RunawayFluid*, FVM::UnknownQuantityHandler*, real_t scaleFactor=1.0);
+		~ExternalAvalancheTerm();
     };
 }
 

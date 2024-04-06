@@ -54,7 +54,7 @@ namespace DREAM::FVM {
         virtual ~BounceSurfaceQuantity();
 
 
-        void DeallocateData();
+        virtual void DeallocateData();
         void AllocateData();
         void AllocateSingle(real_t ***&bounceData, len_t nr, len_t n1, len_t n2);
         

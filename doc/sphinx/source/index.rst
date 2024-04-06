@@ -24,8 +24,10 @@ developers, while the latter is intended for code users.
 For more details on the physical models implemented in DREAM, please consult
 the physics manuals available in the DREAM GitHub repository.
 
-The DREAM code is developed and maintained by the
-`Plasma Theory group <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
+The DREAM code is developed and maintained by European fusion scientists from
+several labs, lead by the fast electron group at KTH Royal Institute of
+Technology, Stockholm and the
+`Technology <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
 Technology, Gothenburg, Sweden.
 
 .. note::
@@ -42,7 +44,7 @@ Table of contents
    compiling
    kernel/index
    frontend/index
-   atomicdata
+   tools/index
    start/index
    imas/index
    todo
@@ -72,8 +74,8 @@ Table of contents
    </div>
    <div style="clear:both"></div>
    <div class="admonition note" style="width:49%; float:left">
-     <a href="atomicdata.html">
-       <p class="admonition-title">Atomic data</p>
+     <a href="tools/index.html">
+       <p class="admonition-title">Tools</p>
      </a>
      <p>Learn how to add support for more elements</p>
    </div>
