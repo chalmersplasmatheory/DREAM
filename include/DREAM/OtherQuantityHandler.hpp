@@ -25,6 +25,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
@@ -82,6 +83,9 @@ namespace DREAM {
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
 			// List of ion rate equations for each ion species
 			std::vector<IonRateEquation*> ni_rates;
+			// List of kinetic ionization rates for each ion species
+			std::vector<IonKineticIonizationTerm*> f_hot_kin_rates;
+			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
         };
     
     protected:
@@ -105,8 +109,8 @@ namespace DREAM {
             id_n_re_neg=0;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids 
-        real_t *kineticVectorHot; 
-        real_t *kineticVectorRE; 
+        real_t *kineticVectorHot = nullptr; 
+        real_t *kineticVectorRE = nullptr; 
 
         // helper functions for evaluating other quantities
         real_t integratedKineticBoundaryTerm(

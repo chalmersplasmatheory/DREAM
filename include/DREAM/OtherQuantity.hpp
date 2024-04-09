@@ -11,7 +11,7 @@
 namespace DREAM {
     class OtherQuantity {
     private:
-        FVM::QuantityData *data;
+        FVM::QuantityData *data = nullptr;
 
         std::string name, description;
         FVM::Grid *grid;
@@ -32,7 +32,8 @@ namespace DREAM {
             this->storeFunc = storeFunc;
         }
         ~OtherQuantity() {
-            delete data;
+            if (data != nullptr)
+                delete data;
         }
 
         void Activate() { 

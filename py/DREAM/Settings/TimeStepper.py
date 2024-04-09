@@ -238,6 +238,9 @@ class TimeStepper:
             data['minsavedt'] = self.minsavedt
             data['alpha'] = self.alpha
 
+            if self.terminatefunc != None:
+                data['terminatefunc'] = self.terminatefunc
+
         return data
 
 

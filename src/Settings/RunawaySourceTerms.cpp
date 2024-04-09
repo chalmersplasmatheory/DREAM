@@ -103,10 +103,14 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                 pLower = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
             
             if(grid == fluidGrid) {
-                oqty_terms->comptonSource_fluid = new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), pLower, -1.0, ComptonSource::SOURCE_MODE_FLUID, REFluid);
+                oqty_terms->comptonSource_fluid = new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"),
+                    s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
+                    pLower, -1.0, ComptonSource::SOURCE_MODE_FLUID, REFluid);
                 rsth->AddSourceTerm(eqnSign + "fluid Compton", oqty_terms->comptonSource_fluid);
             } else {
-                rsth->AddSourceTerm(eqnSign + "kinetic Compton", new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), pLower, -1.0, ComptonSource::SOURCE_MODE_KINETIC));
+                rsth->AddSourceTerm(eqnSign + "kinetic Compton", new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), 
+                    s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
+                    pLower, -1.0, ComptonSource::SOURCE_MODE_KINETIC));
             }
         } else {
             DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_COMPTON_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid is disabled. Ignoring Compton source...");

@@ -1121,27 +1121,39 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         
         delete [] ionIndex;
         delete [] ionDensities; 
+
+        this->Zs = nullptr;
     }
     if(K0Scaled != nullptr){
         delete [] K0Scaled;
         delete [] K1Scaled;
         delete [] K2Scaled;
+
+        this->K0Scaled = nullptr;
     }
     if(preFactor!=nullptr){
         delete [] preFactor;
         delete [] preFactor_fr;
+
+        this->preFactor = nullptr;
     }
     if(ionTerm!=nullptr){
         delete [] ionTerm;
         delete [] ionTerm_fr;
+
+        this->ionTerm = nullptr;
     }   
     if(preFactor_f1 != nullptr){
         delete [] preFactor_f1;
         delete [] preFactor_f2;
+
+        this->preFactor_f1 = nullptr;
     }
-    if(ionTerm!=nullptr){
+    if(ionTerm_f1!=nullptr){
         delete [] ionTerm_f1;
         delete [] ionTerm_f2;
+
+        this->ionTerm_f1 = nullptr;
     }
     if(nColdTerm != nullptr){
         for(len_t ir=0;ir<nr;ir++)
@@ -1150,50 +1162,72 @@ void CollisionFrequency::DeallocatePartialQuantities(){
             delete [] nColdTerm_fr[ir];
         delete [] nColdTerm;
         delete [] nColdTerm_fr;
+
+        this->nColdTerm = nullptr;
     }
     if (screenedTerm != nullptr){
         delete [] screenedTerm;
-        delete [] screenedTerm_fr;            
+        delete [] screenedTerm_fr;
+
+        this->screenedTerm = nullptr;
     }
     if (screenedTerm_f1 != nullptr){
         delete [] screenedTerm_f1;
         delete [] screenedTerm_f2;
+
+        this->screenedTerm_f1 = nullptr;
 	}
     if (stoppingTerm != nullptr){
         delete [] stoppingTerm;
-        delete [] stoppingTerm_fr;            
+        delete [] stoppingTerm_fr;  
+
+        this->stoppingTerm = nullptr;          
     }
     if (stoppingTerm_f1 != nullptr){
         delete [] stoppingTerm_f1;
         delete [] stoppingTerm_f2;
+
+        this->stoppingTerm_f1 = nullptr;
     }
     if (nColdPartialContribution != nullptr){
         delete [] nColdPartialContribution;
         delete [] nColdPartialContribution_fr;
+
+        this->nColdPartialContribution = nullptr;
     }
     if (nColdPartialContribution_f1 != nullptr){
         delete [] nColdPartialContribution_f1;
         delete [] nColdPartialContribution_f2;
+
+        this->nColdPartialContribution_f1 = nullptr;
     }
     if (TColdPartialContribution != nullptr){
         delete [] TColdPartialContribution;
         delete [] TColdPartialContribution_fr;
+
+        this->TColdPartialContribution = nullptr;
     }
     if (TColdPartialContribution_f1 != nullptr){
         delete [] TColdPartialContribution_f1;
         delete [] TColdPartialContribution_f2;
+
+        this->TColdPartialContribution_f1 = nullptr;
     }
     if (ionPartialContribution != nullptr){
         delete [] ionPartialContribution;
         delete [] ionPartialContribution_fr;
         delete [] ionLnLambdaPartialContribution;
         delete [] ionLnLambdaPartialContribution_fr;
+
+        this->ionPartialContribution = nullptr;
     }
     if (ionPartialContribution_f1 != nullptr){
         delete [] ionPartialContribution_f1;
         delete [] ionPartialContribution_f2;
         delete [] ionLnLambdaPartialContribution_f1;
         delete [] ionLnLambdaPartialContribution_f2;
+
+        this->ionPartialContribution_f1 = nullptr;
     }
     if(nColdTerm_f1 != nullptr){
         for(len_t ir=0;ir<nr;ir++){
@@ -1202,15 +1236,22 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         }
         delete [] nColdTerm_f1;
         delete [] nColdTerm_f2;
+
+        this->nColdTerm_f1 = nullptr;
     }
-    if(atomicParameter != nullptr)
+    if(atomicParameter != nullptr){
         delete [] atomicParameter;
+
+        this->atomicParameter = nullptr;
+    }
     if(nonlinearMat != nullptr){
         for(len_t i = 0; i<np1+1;i++)
             delete [] nonlinearMat[i];
         delete [] nonlinearMat;
         delete [] trapzWeights;
         delete [] fHotPartialContribution_f1;
+
+        this->nonlinearMat = nullptr;
     }
 }
 
@@ -1228,8 +1269,10 @@ void CollisionFrequency::InitializeGSLWorkspace(){
  * Deallocator
  */
 void CollisionFrequency::DeallocateGSL(){
-    if (this->gsl_ad_w != nullptr)
+    if (this->gsl_ad_w != nullptr){
         gsl_integration_workspace_free(gsl_ad_w);
+        this->gsl_ad_w = nullptr;
+    }
 }
 
 

@@ -1,6 +1,7 @@
 /**
  * Python interface to DREAM.
  */
+#include <csignal>
 
 #ifndef PY_SSIZE_T_CLEAN
 #   define PY_SSIZE_T_CLEAN
@@ -20,6 +21,8 @@
 #include "pyface/SFile_Python.hpp"
 #include "pyface/unknowns.hpp"
 #include "softlib/Timer.h"
+#include "DREAM/IO.hpp"
+#include "DREAM/QuitException.hpp"
 
 
 static PyMethodDef dreampyMethods[] = {
@@ -152,8 +155,6 @@ static PyObject *dreampy_setup_simulation(
     // Initialize the DREAM kernel
     dream_initialize();
 
-    DREAM::OutputGeneratorSFile *ogs;
-    SFile_Python *sfp = new SFile_Python();
     DREAM::Settings *settings;
     DREAM::Simulation *sim;
 
@@ -161,20 +162,31 @@ static PyObject *dreampy_setup_simulation(
         settings = dreampy_loadsettings(dict);
         sim = DREAM::SimulationGenerator::ProcessSettings(settings);
         
-        ogs = new DREAM::OutputGeneratorSFile(
-            sim->GetEquationSystem(), sfp
-        );
-        sim->SetOutputGenerator(ogs);
+        
         sim->GetEquationSystem()->GetTimeStepper()->SetPythonCaller(dreampy_callback_return_bool);
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;
     }
-
+    
     if (success)
         return PyCapsule_New(sim, "sim", NULL);
     else
         return NULL;
+}
+
+/**
+ * Handle a 'SIGQUIT' signal.
+ */
+void sig_quit(int) {
+    throw DREAM::QuitException("The user requested execution to stop.");
+}
+
+/**
+ * Handle a 'SIGQUIT' signal.
+ */
+void sig_segv(int) {
+    throw DREAM::QuitException("A segmentation fault occured.");
 }
 
 /**
@@ -184,39 +196,83 @@ static PyObject *dreampy_setup_simulation(
 static PyObject *dreampy_run_simulation(
     PyObject* /*self*/, PyObject *args
 ) {
+    dream_make_splash();
+    
+    PyObject* DREAMExceptionModule = PyImport_ImportModule("DREAM.DREAMException");
+    if (DREAMExceptionModule == NULL)
+        return NULL;
+    PyObject* DREAMQuitExceptionModule = PyImport_ImportModule("DREAM.DREAMQuitException");
+    if (DREAMQuitExceptionModule == NULL)
+        return NULL;
+    PyObject* DREAMException = PyObject_GetAttrString(DREAMExceptionModule, "DREAMException");
+    if (DREAMException == NULL)
+        return NULL;
+    PyObject* DREAMQuitException = PyObject_GetAttrString(DREAMQuitExceptionModule, "DREAMQuitException");
+    if (DREAMQuitException == NULL)
+        return NULL;
+
     bool success = true;
     DREAM::Simulation *sim = get_simulation_from_capsule(args);
+    DREAM::OutputGeneratorSFile *ogs = nullptr;
+    SFile_Python *sfp = new SFile_Python();
 
     // Register callback functions
     register_callback_functions(sim);
 
+    // Allow the user to press Ctrl+\ or Ctrl+Y to quit the simulation early
+    PetscPopSignalHandler();
+    std::signal(SIGQUIT, sig_quit);
+    std::signal(SIGSEGV, sig_segv);
+
     try {
+        ogs = new DREAM::OutputGeneratorSFile(
+            sim->GetEquationSystem(), sfp
+        );
         sim->Run();
 
         // Generate output
         Timer t;
-        sim->Save();
+        ogs->Save();
         std::cout << "Time to save output: " << t.ToString() << std::endl;
-    } catch (DREAM::FVM::FVMException& ex) {
-        PyErr_SetString(PyExc_RuntimeError, ex.what());
+    } catch (DREAM::QuitException& ex) {
+        PyErr_SetString(DREAMQuitException, ex.what());
         success = false;
+    } catch (DREAM::FVM::FVMException& ex) {
+        PyErr_SetString(DREAMException, ex.what());
+        success = false;
+    } 
+    
+    if (sim != nullptr) {
+        try {
+            sim->Save();
+        } catch (H5::FileIException &ex) {
+            PyErr_SetString(DREAMException, ex.getDetailMsg().c_str());
+            success = false;
+        }
     }
 
     // De-initialize the DREAM kernel
     dream_finalize();
+    std::signal(SIGQUIT, SIG_DFL);
 
     if (success) {
-        DREAM::OutputGeneratorSFile *og = static_cast<DREAM::OutputGeneratorSFile*>(
-            sim->GetOutputGenerator()
-        );
-        SFile_Python *sfp = static_cast<SFile_Python*>(og->GetSFile());
+        SFile_Python *sfp = static_cast<SFile_Python*>(ogs->GetSFile());
         PyObject *d = sfp->GetPythonDict();
         
         // TODO delete simulation
 
+		if (ogs != nullptr)
+			delete ogs;
+
+        delete sim;
         return d;
-    } else
+    } else {
+		if (ogs != nullptr)
+			delete ogs;
+
+        delete sim;
         return NULL;
+    }
 }
 
 /**
