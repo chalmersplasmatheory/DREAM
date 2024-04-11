@@ -20,8 +20,7 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/T0","Cloud temperature directly after the neutral phase", (real_t)0);
     s->DefineSetting(MODULENAME "/delta_y","Cloud half-width during the drift", (real_t)0);
     s->DefineSetting(MODULENAME "/Rm","Major radius", (real_t)0);
-    s->DefineSetting(MODULENAME "/ZavgD","Average charge of the deuterium ions", (real_t)0);
-    s->DefineSetting(MODULENAME "/ZavgNe","Average charge of the neon ions", (real_t)0);
+    s->DefineSetting(MODULENAME "/ZavgArray","Average charge of the ions", 0, (real_t*)nullptr);
 
 
     s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
@@ -56,8 +55,6 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     real_t T0 = s->GetReal(MODULENAME "/T0");
     real_t delta_y = s->GetReal(MODULENAME "/delta_y");
     real_t Rm = s->GetReal(MODULENAME "/Rm");
-    real_t ZavgD = s->GetReal(MODULENAME "/ZavgD");
-    real_t ZavgNe = s->GetReal(MODULENAME "/ZavgNe");
 
     // Data type conversion
     len_t *Z = new len_t[nZ];
@@ -72,12 +69,17 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
         nbrShiftGridCell[i] = (int_t)_nbrShiftGridCell[i];
 
     real_t *T = new real_t[nShard];
+    real_t *ZavgArray = new real_t[nZ];
     if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
         const real_t *_T = s->GetRealArray(MODULENAME "/T", 1, &nShard);
+        const real_t *_ZavgArray = s->GetRealArray(MODULENAME "/ZavgArray", 1, &nZ);
         for (len_t i = 0; i < nShard; i++)
             T[i] = (real_t)_T[i];
+        for (len_t i = 0; i < nZ; i++)
+            ZavgArray[i] = (real_t)_ZavgArray[i];
+        
     }
 
-    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, ZavgD, ZavgNe, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
+    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, ZavgArray, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
     return SPI;
 }

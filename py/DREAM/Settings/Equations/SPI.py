@@ -52,7 +52,7 @@ class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None, ZavgNe = None):
+SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = None):
         """
         Constructor.
         
@@ -96,8 +96,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         self.T0       = None
         self.delta_y  = None
         self.Rm       = None
-        self.ZavgD    = None
-        self.ZavgNe   = None
+        self.ZavgArray    = None
 
 
     def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, T = None):
@@ -407,7 +406,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
             self.t_delay = t_delay
             
     def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, 
-                              shift = SHIFT_MODE_NEGLECT, T=None, T0=None, delta_y=None, Rm=None, ZavgD=None, ZavgNe=None, **kwargs):
+                              shift = SHIFT_MODE_NEGLECT, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
@@ -415,7 +414,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         
         Specifies which model to use for calculating the shift. Currently there only exists two (on/1 and off/0).
         T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the 
-        major radius of the magnetic axis. ZavgD and ZavgNe are the average charges of the ions in the deuterium and neon cloud.
+        major radius of the magnetic axis. Zavgarray is the average charge of the present ions in the cloud in increasing order.
         """
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
@@ -432,8 +431,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         self.T0 = T0
         self.delta_y = delta_y
         self.Rm = Rm
-        self.ZavgD = ZavgD
-        self.ZavgNe = ZavgNe
+        self.Zavgarray = ZavgArray
         
         return kp
         
@@ -511,17 +509,15 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         if 'shift' in data:
             self.shift          = int(data['shift'])
         if 'T' in data:
-            self.T              = data['T']
+            self.T              = [float(x) for x in data['T']]
         if 'T0' in data:
-            self.T0             = data['T0']
+            self.T0             = float(data['T0'])
         if 'delta_y' in data:
-            self.delta_y        = data['delta_y']
+            self.delta_y        = float(data['delta_y'])
         if 'Rm' in data:
-            self.Rm             = data['Rm']
-        if 'ZavgD' in data:
-            self.ZavgD          = data['ZavgD']
-        if 'ZavgNe' in data:
-            self.ZavgNe         = data['ZavgNe']
+            self.Rm             = float(data['Rm'])
+        if 'ZavgArray' in data:
+            self.ZavgArray          = [float(x) for x in data['Zavgarray']]
         if 'heatAbsorption' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
@@ -576,11 +572,9 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
         if self.delta_y is None:
             self.delta_y=0
         if self.Rm is None:
-            self.Rm=0
-        if self.ZavgD is None:
-            self.ZavgD = 1
-        if self.ZavgNe is None:
-            self.ZavgNe = 2
+            self.Rm=-1
+        if self.ZavgArray is None:
+            self.ZavgArray=np.array([0])
             
         data = {
             'velocity': self.velocity,
@@ -591,8 +585,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
             'T0': self.T0,
             'delta_y': self.delta_y,
             'Rm': self.Rm,
-            'ZavgD': self.ZavgD,
-            'ZavgNe': self.ZavgNe,
+            'ZavgArray': self.ZavgArray,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
@@ -625,16 +618,16 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgD = None
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
         if type(self.shift) != int:
             raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer, 1 or 2.")
-        if type(self.T0) != float and type(self.T0) != int and self.shift == 2:
-            raise EquationException("spi: Invalid value assigned to 'T0'. Expected float.")
-        if type(self.delta_y) != float and type(self.delta_y) != int and self.shift == 2:
-            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected float.")
-        if type(self.Rm) != float and type(self.Rm) != int and self.shift == 2:
-            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected float.")
-        if type(self.ZavgD) != float and type(self.ZavgD) != int and self.shift == 2:
-            raise EquationException("spi: Invalid value assigned to 'ZavgD'. Expected float.")
-        if type(self.ZavgNe) != float and type(self.ZavgNe) != int and self.shift == 2:
-            raise EquationException("spi: Invalid value assigned to 'ZavgNe'. Expected float.")                
+        if self.T0<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'T0'. Expected positive float.")
+        if all(self.T)<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'T'. Expected array of positive floats.")
+        if self.delta_y<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected positive float.")
+        if self.Rm<=0 and self.Rm!=-1 and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected positive float.")
+        if all(self.ZavgArray)<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'ZavgArray'. Expected array of positive floats.")         
         if self.deposition!=DEPOSITION_MODE_LOCAL and self.shift==SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:
