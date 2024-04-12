@@ -33,9 +33,9 @@ ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_NEURAL_NETWORK)
 # Disable hottail grid
 ds.hottailgrid.setEnabled(False)
 
-r = np.linspace(0, ds.radialgrid.a, ds.radialgrid.nr)
-rT = np.linspace(0, ds.radialgrid.a, len(ds.eqsys.T_cold.temperature))
-n0 = 4e18*np.ones(ds.radialgrid.nr)
+r = np.linspace(0, max(ds.radialgrid.r_f), len(ds.radialgrid.r_f))
+rT = np.linspace(0, max(ds.radialgrid.r_f), len(ds.eqsys.T_cold.temperature))
+n0 = 4e18*np.ones(len(ds.radialgrid.r_f))
 
 # rn, n0, rT, T0 = ...  get profiles of density and temperature
 ds.eqsys.f_hot.setInitialProfiles(rn0=r, n0=n0, rT0=rT, T0=ds.eqsys.T_cold.temperature)

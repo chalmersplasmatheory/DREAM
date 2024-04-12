@@ -46,8 +46,8 @@ ds.runawaygrid.setEnabled(False)
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Set time stepper
-ds.timestep.setTmax(1.5)
-ds.timestep.setNt(400)
+ds.timestep.setTmax(1.45)
+ds.timestep.setNt(30)
 
 ds.other.include('fluid')
 

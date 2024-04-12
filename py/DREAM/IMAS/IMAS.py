@@ -532,6 +532,8 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 		ds.radialgrid.setB0(abs(B0[0]))
 		
 		cp_time_length = len(cp_time)
+		#renormalize the time array to start from 0
+		cp_time = cp_time - cp_time[0]
 		
 		for i in range(len(ion_names)):
 				
