@@ -36,6 +36,13 @@ ExternalAvalancheTerm::ExternalAvalancheTerm(
 }
 
 /**
+ * Destructor.
+ */
+ExternalAvalancheTerm::~ExternalAvalancheTerm() {
+	delete [] this->dGammaFluid;
+}
+
+/**
  * Sets the weights of this diagonal equation term
  */ 
 void ExternalAvalancheTerm::SetWeights(){

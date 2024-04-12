@@ -20,7 +20,9 @@ BounceSurfaceMetric::BounceSurfaceMetric(Grid *g, FluxSurfaceQuantity *Jacobian,
 /**
  * Destructor
  */
-BounceSurfaceMetric::~BounceSurfaceMetric(){}
+BounceSurfaceMetric::~BounceSurfaceMetric() {
+	DeallocateData();
+}
 
 /**
  * Set data on passing grid (unlike BounceSurfaceQuantities where this is done 
@@ -170,6 +172,22 @@ const real_t BounceSurfaceMetric::evaluateAtTheta(len_t /*ir*/, len_t i, len_t j
 }
 
 /**
+ * Deallocate all passing data
+ */
+void BounceSurfaceMetric::DeallocateData(){
+    if(bounceData == nullptr)
+        return;
+    DeleteData(bounceData,    nr,   np1[0],   np2[0], FLUXGRIDTYPE_DISTRIBUTION);
+    DeleteData(bounceData_fr, nr+1, np1[0],   np2[0], FLUXGRIDTYPE_RADIAL);
+    DeleteData(bounceData_f1, nr,   np1[0]+1, np2[0], FLUXGRIDTYPE_P1);
+    DeleteData(bounceData_f2, nr,   np1[0],   np2[0]+1, FLUXGRIDTYPE_P2);
+    
+    trappedAllocated = false;
+    passingAllocated = false;
+
+}
+
+/**
  * Deallocator
  */
 void BounceSurfaceMetric::DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2, fluxGridType fluxGrid){
@@ -193,5 +211,7 @@ void BounceSurfaceMetric::DeleteData(real_t ***&data, len_t nr, len_t np1, len_t
         delete [] data[ir];
     }
     delete [] data;
+
+	data = nullptr;
 }
     

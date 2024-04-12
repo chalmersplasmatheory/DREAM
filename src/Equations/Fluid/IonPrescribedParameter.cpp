@@ -37,7 +37,7 @@ IonPrescribedParameter::~IonPrescribedParameter() {
 
     delete [] ionIndices;
     delete [] Z;
-    delete [] iondata;
+    delete iondata;
 }
 
 

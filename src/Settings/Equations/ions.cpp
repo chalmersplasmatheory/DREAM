@@ -320,25 +320,31 @@ void SimulationGenerator::ConstructEquation_Ions(
                         real_t pThreshold = 0.0;
                         if(collfreqModeIsFull)
                             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
-                        Op_kiniz->AddTerm(new IonKineticIonizationTerm(
-                            fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
-                            ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
-                            pThreshold, pMode
-                        ));
+						IonKineticIonizationTerm *ikit =
+							new IonKineticIonizationTerm(
+								fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
+								ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
+								pThreshold, pMode
+							);
+						oqty_terms->f_hot_kin_rates.push_back(ikit);
+                        Op_kiniz->AddTerm(ikit);
                     }
                     // TODO: always include RE ionization (as long as HasRunawayGrid), but
                     //       consider using a simple jacobian (assume Ion_re ~ n_re)
                     if(eqsys->HasRunawayGrid()) {
                         if(Op_kiniz_re == nullptr)
                             Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
-                        Op_kiniz_re->AddTerm(new IonKineticIonizationTerm(
-                            fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
-                            ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
-                        )); 
+						IonKineticIonizationTerm *ikit =
+							new IonKineticIonizationTerm(
+								fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
+								ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+								eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
+							); 
+						oqty_terms->f_re_kin_rates.push_back(ikit);
+						Op_kiniz_re->AddTerm(ikit);
                     }
                 }
                 break;
@@ -415,18 +421,18 @@ void SimulationGenerator::ConstructEquation_Ions(
     
     // Load prescribed diffusion coefficients
     MultiInterpolator1D *DrrChargedPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_diffusion, "charged_prescribed_diffusion"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_diffusion, "charged_prescribed_diffusion", true
     ); 
     MultiInterpolator1D *DrrNeutralPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_diffusion, "neutral_prescribed_diffusion"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_diffusion, "neutral_prescribed_diffusion", true
     );
     
     // Load prescribed advection coefficients
     MultiInterpolator1D *FrChargedPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_advection, "charged_prescribed_advection"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_charged_prescribed_advection, "charged_prescribed_advection", true
     ); 
     MultiInterpolator1D *FrNeutralPrescribed = LoadDataIonRT(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection", true
     );
 
 	// Load prescribed source term data
@@ -514,25 +520,46 @@ void SimulationGenerator::ConstructEquation_Ions(
 			ipp->Evaluate(ni);
 		}
 
-		// ...and then fill in with the initial dynamic ion values
+		// Then we initialize dynamic ions with prescribed initial densities
+		std::vector<len_t> eq_ions;
+		std::vector<real_t*> vecni;
 		for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
-			len_t Z   = ih->GetZ(dynamic_indices[i]);
+			len_t Z = ih->GetZ(dynamic_indices[i]);
 			len_t idx = ih->GetIndex(dynamic_indices[i], 0);
 
-			if (init_equil[dynamic_indices[i]] != 0) {
-				// Initialize according to equilibrium distribution
-				EvaluateIonEquilibrium(ih, adas, dynamic_indices[i], initNi+dynamic_indices[i]*Nr, Te, Nr, ni+idx*Nr);
-			} else {
-				// Initialize as specified
+			if (init_equil[dynamic_indices[i]] == 0) {
 				for (len_t Z0 = 0; Z0 <= Z; Z0++) {
 					for (len_t ir = 0; ir < Nr; ir++)
 						ni[(idx+Z0)*Nr+ir] = dynamic_densities[ionOffset+ir];
 					ionOffset += Nr;
 				}
+			} else {
+				eq_ions.push_back(i);
+				vecni.push_back(ni+idx*Nr);
 			}
 		}
 
-		delete [] init_equil;
+		// Evaluate background free electron density
+		real_t *nfree0 = new real_t[Nr];
+		for (len_t ir = 0; ir < Nr; ir++)
+			nfree0[ir] = 0;
+
+		for (len_t iZ = 0, ionOffset = 0; iZ < ih->GetNZ(); iZ++) {
+			// Skip equilibrium ions
+			if (init_equil[iZ] != 0)
+				continue;
+
+			for (len_t Z0 = 1; Z0 <= ih->GetZ(iZ); Z0++, ionOffset++) {
+				for (len_t ir = 0; ir < Nr; ir++) {
+					nfree0[ir] += Z0 * ni[ionOffset*Nr + ir];
+				}
+			}
+		}
+
+		// Finally, we initialize dynamic ions in equilibrium
+		EvaluateIonEquilibrium(ih, adas, eq_ions, nfree0, initNi, Te, Nr, vecni);
+
+		delete [] nfree0;
 		delete [] initNi;
 		delete [] dynamic_indices;
 	};
@@ -549,5 +576,11 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     delete [] types;
     delete [] opacity_mode;
+
+	delete [] charged_diffusion_mode;
+	delete [] neutral_diffusion_mode;
+	delete [] charged_advection_mode;
+	delete [] neutral_advection_mode;
+	delete [] source_types;
 }
 

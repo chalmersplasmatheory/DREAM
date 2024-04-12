@@ -117,6 +117,18 @@ real_t TimeStepperIonization::MaxTime() const {
 }
 
 /**
+ * Returns 'true' if the time stepper has reached the maximum time.
+ */
+bool TimeStepperIonization::IsFinished() {
+    bool v = (this->currentTime >= this->tMax);
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    return (v || this->PythonIsTerminate());
+#else
+    return v;
+#endif
+}
+
+/**
  * Returns 'true' if the current time step is to be saved to the output file.
  */
 bool TimeStepperIonization::IsSaveStep() {

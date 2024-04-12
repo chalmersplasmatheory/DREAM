@@ -29,9 +29,10 @@ namespace DREAM::FVM {
         const real_t *_eval_nearest(const real_t);
 
         enum interp_method method;
+		bool owns_data;
 
     public:
-        Interpolator1D(const len_t, const len_t, const real_t*, const real_t*, enum interp_method meth=INTERP_LINEAR);
+        Interpolator1D(const len_t, const len_t, const real_t*, const real_t*, enum interp_method meth=INTERP_LINEAR, bool owns_data=true);
         ~Interpolator1D();
 
         const real_t *Eval(const real_t);
