@@ -68,6 +68,16 @@ void SimulationGenerator::DefineOptions_Transport(
 		"Maximum value allowed for frozen current diffusion coefficient.",
 		(real_t)1000
 	);
+	s->DefineSetting(
+		mod + "/" + subname + "/dDdt_D_max",
+		"Maximum normalized time-rate-of-change of the diffusion coefficient.",
+		(real_t)0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/D_I_floor",
+		"Lowest amount by which (1/D)*(dD/dt) should be limited.",
+		(real_t)1e-3
+	);
 	DefineDataT(mod + "/" + subname, s, "I_p_presc");
 }
 
@@ -206,12 +216,14 @@ void SimulationGenerator::ConstructEquation_D_I(
 	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
 	real_t D_I_min = s->GetReal(path + "/D_I_min");
 	real_t D_I_max = s->GetReal(path + "/D_I_max");
+	real_t dDdt_D_max = s->GetReal(path + "/dDdt_D_max");
+	real_t D_I_floor = s->GetReal(path + "/D_I_floor");
 
 	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
 	FrozenCurrentCoefficient *fcc =
 		new FrozenCurrentCoefficient(
 			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
-			D_I_min, D_I_max
+			D_I_min, D_I_max, dDdt_D_max, D_I_floor
 		);
 	eqn->AddTerm(fcc);
 
