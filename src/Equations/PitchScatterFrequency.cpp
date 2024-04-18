@@ -18,6 +18,7 @@
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
+#include "PartialScreeningFactorWalkowiak.cpp"
 
 using namespace DREAM;
 
@@ -89,9 +90,12 @@ PitchScatterFrequency::~PitchScatterFrequency(){
 
 
 /**
- * Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper. 
+ *  Evaluate g(p) function, using either the 
+ *  Hesslow (Equation (2.25) in https://doi.org/10.48550/arXiv.1807.05036) 
+ *  or Walkowiak (Equation 25 in https://doi.org/10.1063/5.0075859).
+ *  The version from Walkowiak should be a bit more accurate, at a slightly higher computational cost
  */
-real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode ){
+real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_type collfreq_type){
     len_t Z = Zs[iz];
     real_t NBound = Z - Z0;
     if (!NBound)
@@ -99,7 +103,19 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     len_t ind = ionIndex[iz][Z0];
     real_t pa = p * atomicParameter[ind];
     real_t x  = pa*sqrt(pa); 
-    return 2.0/3.0 * NBound * ((Z+Z0)*log(1+x) - NBound*x/(1+x) );
+    
+    // Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper.
+    if (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
+        return 2.0/3.0 * NBound * ((Z+Z0)*log(1+x) - NBound*x/(1+x) );
+        
+    // Evaluates PT_opt model from Walkowiak paper https://doi.org/10.1063/5.0075859
+    if (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK)
+        return gEquation(Z, Z0, p);
+    
+    // If this function is called, it should always return some option. 
+    throw NotImplementedException("ScreenedTerm requested but the method is not specified. This should never happen, so pleas check the code.");
+    return gEquation(Z, Z0, p);
+       
 }
 
 
