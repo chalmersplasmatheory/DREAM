@@ -11,7 +11,7 @@
 namespace DREAM {
     class OtherQuantity {
     private:
-        FVM::QuantityData *data;
+        FVM::QuantityData *data = nullptr;
 
         std::string name, description;
         FVM::Grid *grid;
@@ -32,7 +32,8 @@ namespace DREAM {
             this->storeFunc = storeFunc;
         }
         ~OtherQuantity() {
-            delete data;
+            if (data != nullptr)
+                delete data;
         }
 
         void Activate() { 
@@ -40,9 +41,13 @@ namespace DREAM {
             this->active = true;    
         }
         bool IsActive() { return this->active; }
+        const std::string& GetDescription() { return this->description; }
         const std::string& GetName() { return this->name; }
 
         FVM::Grid *GetGrid() { return this->grid; }
+
+        len_t NumberOfElements() { return grid->GetNCells() * this->nMultiples; }
+        len_t NumberOfMultiples() { return this->nMultiples; }
 
         void SaveSFile(SFile *sf, const std::string& path="") {
             this->data->SaveSFile(sf, this->name, path, this->description);

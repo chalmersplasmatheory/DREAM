@@ -89,6 +89,8 @@ AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
     }
 
     DeallocateShapeProfiles();
+
+	delete this->providedProfiles;
 }
 
 /**
@@ -367,7 +369,7 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
 			} else if (r_f[ir] < rProvided[0]) {
 				real_t dx       = gsl_spline_eval_deriv(spline_x, rProvided[0], spline_acc);
 				(*x_f)[ir]      = xProvided[0] - (rProvided[0]-r_f[ir])*dx;
-				(*xPrime)[ir]   = dx;
+				(*xPrime_f)[ir] = dx;
             } else {
                 (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
                 (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
@@ -539,7 +541,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
     real_t RMinusR0_crit=Delta-rmin*sin(delta);
 	
 	// Determine the quadrant
-	len_t quadrant;
+	len_t quadrant=0;
 	if(RMinusR0>RMinusR0_crit && y>=0)
 	    quadrant=1;
 	else if(RMinusR0<RMinusR0_crit && y>=0)

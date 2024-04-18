@@ -21,7 +21,10 @@ Simulation::Simulation() {}
  */
 Simulation::~Simulation() {
     delete this->adas;
+	delete this->amjuel;
+	delete this->nist;
 	delete this->outgen;
+    delete this->eqsys;
 }
 
 /**
@@ -71,5 +74,13 @@ void Simulation::SetOutputGenerator(OutputGenerator *ogen) {
         delete this->outgen;
 
     this->outgen = ogen;
+}
+
+/**
+ * Set the equation system to solve during this simulation.
+ */
+void Simulation::SetEquationSystem(EquationSystem *e) {
+    this->eqsys = e;
+    this->eqsys->SetSimulation(this);
 }
 

@@ -24,7 +24,7 @@ MILU::MILU(const len_t n) {
  * Destructor.
  */
 MILU::~MILU() {
-    KSPDestroy(&this->ksp);
+    //KSPDestroy(&this->ksp);
 }
 
 /**

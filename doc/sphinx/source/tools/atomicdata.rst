@@ -1,3 +1,5 @@
+.. _dream-atomicdata:
+
 Atomic data
 ===========
 DREAM takes some tabulated atomic data from the ADAS and NIST databases. From

@@ -47,5 +47,6 @@ void EqsysInitializer::NonLinearSolve(const real_t t0, vector<len_t>& ssQty) {
 	}
 
 	delete snl;
+	delete [] guess;
 }
 

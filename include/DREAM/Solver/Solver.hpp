@@ -1,9 +1,10 @@
 #ifndef _DREAM_SOLVER_HPP
-
 #define _DREAM_SOLVER_HPP
 /* Definition of the abstract base class 'Solver', which
  * defines the interface for all equation solvers in DREAM.
  */
+
+namespace DREAM { class Solver; class Simulation; class EquationSystem; }
 
 #include <vector>
 #include <softlib/SFile.h>
@@ -22,11 +23,17 @@
 
 namespace DREAM {
     class Solver {
+    public:
+        typedef void (*iteration_finished_func_t)(Simulation*);
+
     protected:
         FVM::UnknownQuantityHandler *unknowns;
         // List of equations associated with unknowns (owned by the 'EquationSystem')
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
+
+        // Parent equation system
+        EquationSystem *eqsys;
 
         // Mapping from EquationSystem 'unknown_quantity_id' to index
         // in the block matrix representing the system
@@ -71,10 +78,12 @@ namespace DREAM {
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
+        std::vector<iteration_finished_func_t> callbacks_iterationFinished;
+
     public:
         Solver(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
-			const bool verbose=false,
+            EquationSystem*, const bool verbose=false,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE
         );
@@ -93,6 +102,9 @@ namespace DREAM {
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
         std::vector<len_t> GetNonTrivials() { return this->nontrivial_unknowns; }
+
+        void IterationFinished();
+        void RegisterCallback_IterationFinished(iteration_finished_func_t);
 
         virtual void SetCollisionHandlers(
             CollisionQuantityHandler *cqh_hottail,

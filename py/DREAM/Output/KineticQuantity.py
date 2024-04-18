@@ -62,7 +62,16 @@ class KineticQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        return '({}) Kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}\n{}'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn, self.data)
+        s = f'({self.name}) Kinetic quantity of size NT x NR x NP2 x NP1 = {self.data.shape[0]} x {self.data.shape[1]} x {self.data.shape[2]} x {self.data.shape[3]}'
+
+        if hasattr(self, 'description'):
+            s += f'\n:: {self.description}'
+        if hasattr(self, 'description_eqn'):
+            s += f'\n:: Evolved using: {self.description_eqn}'
+
+        s += f'\n{self.data}'
+
+        return s
 
 
     def __getitem__(self, index):
@@ -481,3 +490,13 @@ class KineticQuantity(UnknownQuantity):
         plt.show()
 		
 
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        return 1
+
+        

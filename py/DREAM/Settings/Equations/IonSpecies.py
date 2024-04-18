@@ -23,6 +23,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
+from ... DREAMException import DREAMException
 
 
 # Types in DREAM
@@ -111,6 +112,22 @@ class IonSpecies:
         self.init_equil = init_equil
         self.initialNi = None
 
+        self.charged_prescribed_diffusion = None
+        self.rChargedPrescribedDiffusion = None
+        self.tChargedPrescribedDiffusion = None
+
+        self.neutral_prescribed_diffusion = None
+        self.rNeutralPrescribedDiffusion = None
+        self.tNeutralPrescribedDiffusion = None
+
+        self.charged_prescribed_advection = None
+        self.rChargedPrescribedAdvection = None
+        self.tChargedPrescribedAdvection = None
+
+        self.neutral_prescribed_advection = None
+        self.rNeutralPrescribedAdvection = None
+        self.tNeutralPrescribedAdvection = None
+
         self.setSPIMolarFraction(SPIMolarFraction)
 
         if self.tritium and self.hydrogen:
@@ -166,65 +183,50 @@ class IonSpecies:
         self.T = self.setTemperature(T)
         
         # Initialize diffusion
-        self.charged_prescribed_diffusion = None
-        self.rChargedPrescribedDiffusion = None
-        self.tChargedPrescribedDiffusion = None
-        if charged_diffusion_mode == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
-            # If an exponential decay of the transport coefficients are prescribed, 
-            # set the precribed diffusion coefficients according to this, if nothing else is prescribed
-            if charged_prescribed_diffusion is None and t_transp_expdecay_all_cs is not None:
-                charged_prescribed_diffusion, rChargedPrescribedDiffusion, tChargedPrescribedDiffusion = self.calcTransportCoefficientExpdecayAllChargedStates(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = diffusion_initial_all_cs, cf = diffusion_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
-                
-            self.initialize_charged_prescribed_diffusion(charged_prescribed_diffusion = charged_prescribed_diffusion, rChargedPrescribedDiffusion = rChargedPrescribedDiffusion,
-                tChargedPrescribedDiffusion = tChargedPrescribedDiffusion, interpr=interpr, interpt=interpt)
-        else:
-            self.charged_diffusion_mode = charged_diffusion_mode
-            
-        self.neutral_prescribed_diffusion = None
-        self.rNeutralPrescribedDiffusion = None
-        self.tNeutralPrescribedDiffusion = None
-        if neutral_diffusion_mode == ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
-        
-            # If an exponential decay of the transport coefficients are prescribed, 
-            # set the precribed diffusion coefficients according to this, if nothing else is prescribed
-            if neutral_prescribed_diffusion is None and t_transp_expdecay_all_cs is not None:
-                neutral_prescribed_diffusion, rNeutralPrescribedDiffusion, tNeutralPrescribedDiffusion = self.calcTransportCoefficientExpdecaySingleChargeState(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = diffusion_initial_all_cs, cf = diffusion_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
-                
-            self.initialize_neutral_prescribed_diffusion(neutral_prescribed_diffusion = neutral_prescribed_diffusion, rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusion,
-                tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusion, interpr=interpr, interpt=interpt)
-        else:
-            self.neutral_diffusion_mode = neutral_diffusion_mode
+        self.setChargedDiffusion(
+            mode=charged_diffusion_mode, Drr=charged_prescribed_diffusion,
+            r=rChargedPrescribedDiffusion, t=tChargedPrescribedDiffusion,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Drr_0=diffusion_initial_all_cs,
+            Drr_f=diffusion_final_all_cs,
+            r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
 
-        # Initialize advection
-        self.charged_prescribed_advection = None
-        self.rChargedPrescribedAdvection = None
-        self.tChargedPrescribedAdvection = None
-        if charged_advection_mode == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
-        
-            # If an exponential decay of the transport coefficients are prescribed, 
-            # set the precribed advection coefficients according to this, if nothing else is prescribed
-            if charged_prescribed_advection is None and t_transp_expdecay_all_cs is not None:
-                charged_prescribed_advection, rChargedPrescribedAdvection, tChargedPrescribedAdvection = self.calcTransportCoefficientExpdecayAllChargedStates(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = advection_initial_all_cs, cf = advection_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
-                
-            self.initialize_charged_prescribed_advection(charged_prescribed_advection = charged_prescribed_advection, rChargedPrescribedAdvection = rChargedPrescribedAdvection,
-                tChargedPrescribedAdvection = tChargedPrescribedAdvection, interpr=interpr, interpt=interpt)
-        else:
-            self.charged_advection_mode = charged_advection_mode
+        self.setNeutralDiffusion(
+            mode=neutral_diffusion_mode, Drr=neutral_prescribed_diffusion,
+            r=rNeutralPrescribedDiffusion, t=tNeutralPrescribedDiffusion,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Drr_0=diffusion_initial_all_cs,
+            Drr_f=diffusion_final_all_cs,
+            r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
             
-        self.neutral_prescribed_advection = None
-        self.rNeutralPrescribedAdvection = None
-        self.tNeutralPrescribedAdvection = None
-        if neutral_advection_mode == ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+        # Initialize advection
+        self.setChargedAdvection(
+            mode=charged_advection_mode, Ar=charged_prescribed_advection,
+            r=rChargedPrescribedAdvection, t=tChargedPrescribedAdvection,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Ar_0=advection_initial_all_cs,
+            Ar_f=advection_final_all_cs,
+            r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
         
-            # If an exponential decay of the transport coefficients are prescribed, 
-            # set the precribed advection coefficients according to this, if nothing else is prescribed
-            if neutral_prescribed_advection is None and t_transp_expdecay_all_cs is not None:
-                neutral_prescribed_advection, rNeutralPrescribedAdvection, tNeutralPrescribedAdvection = self.calcTransportCoefficientExpdecaySingleChargeState(t_start = t_transp_start_expdecay_all_cs, t_exp = t_transp_expdecay_all_cs, c0 = advection_initial_all_cs, cf = advection_final_all_cs, r = r_expdecay_all_cs, t = t_expdecay_all_cs)
-                
-            self.initialize_neutral_prescribed_advection(neutral_prescribed_advection = neutral_prescribed_advection, rNeutralPrescribedAdvection = rNeutralPrescribedAdvection,
-                tNeutralPrescribedAdvection = tNeutralPrescribedAdvection, interpr=interpr, interpt=interpt)
-        else:
-            self.neutral_advection_mode = neutral_advection_mode
+        self.setNeutralAdvection(
+            mode=neutral_advection_mode, Ar=neutral_prescribed_advection,
+            r=rNeutralPrescribedAdvection, t=tNeutralPrescribedAdvection,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Ar_0=advection_initial_all_cs,
+            Ar_f=advection_final_all_cs,
+            r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
 
 
     def setTemperature(self, T):
@@ -959,7 +961,197 @@ class IonSpecies:
             raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
 
 
+    def setChargedDiffusion(
+        self, mode, Drr=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Drr_0=None, Drr_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial diffusion for charged particles.
+
+        :param mode:                           Type of transport to prescribe.
+        :param Drr:                            Diffusion coefficient to prescribe.
+        :param r:                              Radial grid on which ``Drr`` is given.
+        :param t:                              Time grid on which ``Drr`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Drr_0:                          Initial value of diffusion coefficient when decaying exponentially.
+        :param Drr_f:                          Final value of diffusion coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        if mode == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed diffusion coefficients according to this, if nothing else is prescribed
+            if Drr is not None:
+                # All good
+                pass
+            elif Drr is None and t_transp_expdecay_all_cs is not None:
+                Drr, r, t = self.calcTransportCoefficientExpdecayAllChargedStates(
+                    t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
+                    c0=Drr_0, cf=Drr_f,
+                    r=r_expdecay_all_cs, t=t_expdecay_all_cs
+                )
+            else:
+                raise DREAMException(f"No diffusion coefficient given, and no exponential decay time given.")
+                
+            self.initialize_charged_prescribed_diffusion(
+                charged_prescribed_diffusion=Drr, rChargedPrescribedDiffusion=r,
+                tChargedPrescribedDiffusion=t, interpr=interpr, interpt=interpt
+            )
+        else:
+            self.charged_diffusion_mode = mode
+    
+
+    def setNeutralDiffusion(
+        self, mode, Drr=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Drr_0=None, Drr_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial diffusion for neutral particles.
+
+        :param mode:                           Type of transport to prescribe.
+        :param Drr:                            Diffusion coefficient to prescribe.
+        :param r:                              Radial grid on which ``Drr`` is given.
+        :param t:                              Time grid on which ``Drr`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Drr_0:                          Initial value of diffusion coefficient when decaying exponentially.
+        :param Drr_f:                          Final value of diffusion coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        if mode == ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed diffusion coefficients according to this, if nothing else is prescribed
+            if Drr is not None:
+                # All good
+                pass
+            elif Drr is None and t_transp_expdecay_all_cs is not None:
+                Drr, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(
+                    t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
+                    c0=Drr_0, cf=Drr_f,
+                    r=r_expdecay_all_cs, t=t_expdecay_all_cs
+                )
+                
+            self.initialize_neutral_prescribed_diffusion(
+                neutral_prescribed_diffusion=Drr, rNeutralPrescribedDiffusion=r,
+                tNeutralPrescribedDiffusion=t, interpr=interpr, interpt=interpt
+            )
+        else:
+            self.neutral_diffusion_mode = mode
+
+
+    def setChargedAdvection(
+        self, mode, Ar=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Ar_0=None, Ar_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial advection for charged particles.
+
+        :param mode:                           Type of transport to prescribe.
+        :param Ar:                             Advection coefficient to prescribe.
+        :param r:                              Radial grid on which ``Ar`` is given.
+        :param t:                              Time grid on which ``Ar`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Ar_0:                           Initial value of advection coefficient when decaying exponentially.
+        :param Ar_f:                           Final value of advection coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        if mode == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed advection coefficients according to this, if nothing else is prescribed
+            if Ar is not None:
+                # All good
+                pass
+            elif Ar is None and t_transp_expdecay_all_cs is not None:
+                Ar, r, t = self.calcTransportCoefficientExpdecayAllChargedStates(
+                    t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
+                    c0=Ar_0, cf=Ar_f,
+                    r=r_expdecay_all_cs, t=t_expdecay_all_cs
+                )
+            else:
+                raise DREAMException(f"No advection coefficient given, and no exponential decay time given.")
+                
+            self.initialize_charged_prescribed_advection(
+                charged_prescribed_advection=Ar, rChargedPrescribedAdvection=r,
+                tChargedPrescribedAdvection=t, interpr=interpr, interpt=interpt
+            )
+        else:
+            self.charged_advection_mode = mode
+
+
+    def setNeutralAdvection(
+        self, mode, Ar=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Ar_0=None, Ar_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial advection for neutral particles.
+
+        :param mode:                           Type of transport to prescribe.
+        :param Ar:                             Advection coefficient to prescribe.
+        :param r:                              Radial grid on which ``Ar`` is given.
+        :param t:                              Time grid on which ``Ar`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Ar_0:                           Initial value of advection coefficient when decaying exponentially.
+        :param Ar_f:                           Final value of advection coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        if mode == ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED:
+            # If an exponential decay of the transport coefficients are prescribed, 
+            # set the precribed advection coefficients according to this, if nothing else is prescribed
+            if Ar is not None:
+                # All good
+                pass
+            elif Ar is None and t_transp_expdecay_all_cs is not None:
+                Ar, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(
+                    t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
+                    c0=Ar_0, cf=Ar_f,
+                    r=r_expdecay_all_cs, t=t_expdecay_all_cs
+                )
+            else:
+                raise DREAMException(f"No advection coefficient given, and no exponential decay time given.")
+                
+            self.initialize_neutral_prescribed_advection(
+                neutral_prescribed_advection=Ar, rNeutralPrescribedAdvection=r,
+                tNeutralPrescribedAdvection=t, interpr=interpr, interpt=interpt
+            )
+        else:
+            self.neutral_advection_mode = mode
+
+
     def calcTransportCoefficientExpdecaySingleChargeState(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
+        """
+        Contsruct a transport coefficient which decays exponentially in time
+        according to
+
+          c = cf + (c0-cf)*exp(-(t-t_start)/t_exp).
+
+        The coefficient is set to 0 for t <= t_start.
+        """
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
         if r is None:
@@ -985,6 +1177,10 @@ class IonSpecies:
 
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
+        """
+        Construct transport coefficients which decay exponentially in
+        time, for all charge states of this species.
+        """
         c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
         cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state[0,:])))
         for i in range(self.Z):

@@ -6,12 +6,15 @@ from . ScalarQuantity import ScalarQuantity
 from . OutputException import OutputException
 
 class SPIShardPositions(ScalarQuantity):
+
+
     def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
         super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
         
+
     def plotRadialCoordinate(self, shards=None,**kwargs):
         """ 
         Wrapper for ScalarQuantity.plot(), calculating 
@@ -25,12 +28,13 @@ class SPIShardPositions(ScalarQuantity):
         
         :return: Axis object containing the plot
         """
-        
-        data_rhop=self.calcRadialCoordinate(shards)
+        rhop, _ = self.calcRadialCoordinate(shards)
                 
-        _rhop=ScalarQuantity(name='\\rho_p',data=data_rhop, grid=self.grid, output=self.output)
+        _rhop = ScalarQuantity(name='\\rho_p', data=rhop, grid=self.grid, output=self.output)
+
         return _rhop.plot(**kwargs)
         
+
     def calcRadialCoordinate(self, shards=None, t=None):
         """ 
         Calculates the radial coordinates of the shards 
@@ -39,27 +43,31 @@ class SPIShardPositions(ScalarQuantity):
         :param slice shards: Shards wose radial coordinates should be calculated
         :param slice t: time steps at which the radial coordinates should be calculated
         
-        :return: radial coordinate data_rhop and poloidal angle data_thetap
+        :return: radial coordinate ``rhop`` and poloidal angle ``thetap``.
         """
-        
         if shards is None:
-            shards=slice(None)
+            shards = slice(None)
             
         if t is None:
-            t=slice(None)
-            
-        data_xp=self.data[:,0::3,0]
-        data_xp.reshape(data_xp.shape[0:2])
-        data_yp=self.data[:,1::3,0]
-        data_yp.reshape(data_xp.shape[0:2])
-        data_zp=self.data[:,2::3,0]
-        data_zp.reshape(data_xp.shape[0:2])
+            t = slice(None)
         
-        data_rhop=np.sqrt(data_xp[t,shards]**2+data_yp[t,shards]**2)
-        data_thetap=np.arctan2(data_yp[t,shards],data_xp[t,shards])
+        xp = self.data[:,0::3,0] 
+        yp = self.data[:,1::3,0]
+        zp = self.data[:,2::3,0]
         
-        return data_rhop, data_thetap
+        rhop   = np.sqrt(xp[t,shards]**2+yp[t,shards]**2)
+        thetap = np.arctan2(yp[t,shards],xp[t,shards])
+
+        return rhop, thetap
         
         
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of shards) covered by this
+        quantity. The total number of elements in 'self.data' is the size of
+        the grid on which this quantity lives (i.e. 1, since the shards are
+        defined on a scalar grid) times this number.
+        """
+        return self.data.shape[1]
         
-        
+

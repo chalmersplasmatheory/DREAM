@@ -229,7 +229,10 @@ def getData(f, key):
         return f[key][:].tostring().decode('utf-8')
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
-            return f[key][()].decode()
+            if type(f[key][()]) == str:
+                return f[key][()]
+            else:
+                return f[key][()].decode()
         elif type(f[key][:][0]) == str:
             return f[key][:][0]
         else:
