@@ -9,7 +9,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
-
+#include "DREAM/QuitException.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -25,9 +25,9 @@ SolverNonLinear::SolverNonLinear(
     enum OptionConstants::linear_solver ls,
     enum OptionConstants::linear_solver bk,
 	const int_t maxiter, const real_t reltol,
-	bool verbose
-) : Solver(unknowns, unknown_equations, verbose, ls, bk), eqsys(eqsys),
-	maxiter(maxiter), reltol(reltol) {
+	bool verbose, bool checkResidual
+) : Solver(unknowns, unknown_equations, eqsys, verbose, ls, bk),
+	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -57,6 +57,7 @@ void SolverNonLinear::AcceptSolution() {
 	this->x0  = x;
 
 	this->StoreSolution(x);
+    this->IterationFinished();
 }
 
 /**
@@ -123,10 +124,6 @@ void SolverNonLinear::AllocateJacobianMatrix() {
  * Deallocate memory used by this solver.
  */
 void SolverNonLinear::Deallocate() {
-    if (backupInverter != nullptr)
-        delete backupInverter;
-
-	delete mainInverter;
 	delete jacobian;
 
 	delete [] this->x_2norm;
@@ -161,7 +158,7 @@ void SolverNonLinear::initialize_internal(
 
     if (this->convChecker == nullptr)
         this->SetConvergenceChecker(
-            new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol)
+            new ConvergenceChecker(unknowns, this->unknown_equations, this->nontrivial_unknowns, this->diag_prec, this->reltol)
         );
 }
 
@@ -183,7 +180,22 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
     if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
-    return convChecker->IsConverged(x, dx, printVerbose);
+    return convChecker->IsConverged(x, dx, this->nTimeStep, printVerbose);
+}
+
+/**
+ * Check if the residual is converged.
+ */
+bool SolverNonLinear::IsResidualConverged() {
+	real_t *F;
+	VecGetArray(this->petsc_F, &F);
+
+	bool rescaled = (this->diag_prec != nullptr);
+	bool c = convChecker->IsResidualConverged(this->nTimeStep, this->dt, F, rescaled);
+
+	VecRestoreArray(this->petsc_F, &F);
+
+	return c;
 }
 
 /**
@@ -232,7 +244,10 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
 	try {
         this->_InternalSolve();
-    } catch (FVM::FVMException &ex) {
+    } catch (DREAM::QuitException& ex) {
+		// Rethrow quit exception
+		throw ex;
+	} catch (FVM::FVMException &ex) {
         // Retry with backup-solver (if allowed and not already used)
         if (this->backupInverter != nullptr && this->inverter != this->backupInverter) {
             if (this->Verbose()) {
@@ -283,9 +298,16 @@ REDO_ITER:
 			AcceptSolution();
 		} while (!IsConverged(x, dx));
 
+		if (this->checkResidual && !IsResidualConverged()) {
+			DREAM::IO::PrintWarning(
+				DREAM::IO::WARNING_RESIDUAL_NOT_CONVERGED,
+				"Newton solver converged, but the converged point does not solve the system of equations."
+			);
+		}
+
 		// External iterator
 		if (this->extiter != nullptr)
-			extiter_conv = this->extiter->Solve(t, dt);
+			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
 
 	} while (!extiter_conv);
 }
@@ -699,21 +721,24 @@ void SolverNonLinear::SwitchToBackupInverter() {
  * name: Name of group within file to store data in.
  */
 void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
-    sf->CreateStruct(name);
+	sf->CreateStruct(name);
 
-    int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
-    sf->WriteList(name+"/type", &type, 1);
+	int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
+	sf->WriteList(name+"/type", &type, 1);
 
-    // Number of iterations per time step
-    sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
+	// Number of iterations per time step
+	sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
 
-    // Whether or not backup inverter was used for a given time step
-    len_t nubi = this->usedBackupInverter.size();
-    int32_t *ubi = new int32_t[nubi];
-    for (len_t i = 0; i < nubi; i++)
-        ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
+	// Whether or not backup inverter was used for a given time step
+	len_t nubi = this->usedBackupInverter.size();
+	int32_t *ubi = new int32_t[nubi];
+	for (len_t i = 0; i < nubi; i++)
+		ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
 
-    sf->WriteList(name+"/backupinverter", ubi, nubi);
-    delete [] ubi;
+	sf->WriteList(name+"/backupinverter", ubi, nubi);
+	delete [] ubi;
+
+	if (this->checkResidual)
+		this->convChecker->SaveData(sf, name);
 }
 

@@ -17,10 +17,6 @@ namespace DREAM {
         FVM::BlockMatrix* matrix = nullptr;
         // Vector to store source terms in
         Vec petsc_S;
-        // Vector to store solution in
-        Vec petsc_sol;
-
-        EquationSystem *eqsys;
 
         real_t t, dt;
         len_t nTimeStep=0;

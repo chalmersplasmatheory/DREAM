@@ -88,8 +88,10 @@ OtherQuantityHandler::~OtherQuantityHandler() {
     
     delete this->tracked_terms;
 
-    delete [] kineticVectorHot;
-    delete [] kineticVectorRE;
+    if (kineticVectorHot != nullptr)
+        delete [] kineticVectorHot;
+    if (kineticVectorRE != nullptr)
+        delete [] kineticVectorRE;
 }
 
 /**
@@ -253,6 +255,8 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_HT_F2(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+	#define DEF_HT_MUL(NAME, MUL, DESC, FUNC) \
+		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
 
     // Define on runaway grid
     #define DEF_RE(NAME, DESC, FUNC) \
@@ -263,6 +267,8 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_RE_F2(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+	#define DEF_RE_MUL(NAME, MUL, DESC, FUNC) \
+		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
 
     // fluid/...
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
@@ -279,7 +285,7 @@ void OtherQuantityHandler::DefineQuantities() {
 
 			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
-				S_C[ir] = this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
+				S_C[ir] = -this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
 			}
 	    );
     } else {
@@ -309,6 +315,10 @@ void OtherQuantityHandler::DefineQuantities() {
 				v[ir] = 0;
 
 			tracked_terms->n_re_f_hot_flux->AddToVectorElements(v, f_hot);
+
+			// Flip sign to get flux from f_hot -> n_re
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = -v[ir];
 		);
 	}
 
@@ -558,7 +568,7 @@ void OtherQuantityHandler::DefineQuantities() {
 			for (len_t ir = 0; ir < nr_ht; ir++) {
 				for (len_t j = 0; j < n2_ht; j++) {
 					for (len_t i = 0; i < n1_ht; i++) {
-						S_C[(ir*(n2_ht) + j)*n1_ht + i] = this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ntot[ir];
+						S_C[(ir*(n2_ht) + j)*n1_ht + i] = -this->tracked_terms->comptonSource->GetSourceFunction(ir,i,j) * ntot[ir];
 					}
 				}
 			}
@@ -805,6 +815,42 @@ void OtherQuantityHandler::DefineQuantities() {
             offset+=(Z+1)*nr;
         }
     );
+
+	if (this->tracked_terms->f_hot_kin_rates.size() > 0) {
+		DEF_HT_MUL("hottail/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
+			real_t *v = qd->StoreEmpty();
+
+			for (len_t iz = 0, offs = 0; iz < this->tracked_terms->f_hot_kin_rates.size(); iz++) {
+				IonKineticIonizationTerm *ikit = this->tracked_terms->f_hot_kin_rates[iz];
+				real_t **intg = ikit->GetIntegrandAllCS();
+
+				len_t Z = ions->GetZ(iz);
+				for (len_t Z0 = 0; Z0 <= Z; Z0++)
+					for (len_t ir = 0; ir < nr_ht; ir++)
+						for (len_t j = 0; j < n2_ht; j++)
+							for (len_t i = 0; i < n1_ht; i++, offs++)
+								v[offs] = intg[Z0][n1_ht*j+i];
+			}
+		);
+	}
+
+	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
+		DEF_RE_MUL("runaway/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
+			real_t *v = qd->StoreEmpty();
+
+			for (len_t iz = 0, offs = 0; iz < this->tracked_terms->f_re_kin_rates.size(); iz++) {
+				IonKineticIonizationTerm *ikit = this->tracked_terms->f_re_kin_rates[iz];
+				real_t **intg = ikit->GetIntegrandAllCS();
+
+				len_t Z = ions->GetZ(iz);
+				for (len_t Z0 = 0; Z0 <= Z; Z0++)
+					for (len_t ir = 0; ir < nr_re; ir++)
+						for (len_t j = 0; j < n2_re; j++)
+							for (len_t i = 0; i < n1_re; i++, offs++)
+								v[offs] = intg[Z0][n1_re*j+i];
+			}
+		);
+	}
 
     if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
         this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {

@@ -49,6 +49,10 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
     //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 	DefineDataT(MODULENAME "/compton", s, "flux");
+    s->DefineSetting(MODULENAME "/compton/gammaInt", "Integrated gamma flux spektrum", (real_t) 5.8844190260298);
+    s->DefineSetting(MODULENAME "/compton/C1", "First gamma spectrum parameter", (real_t) 1.2);
+    s->DefineSetting(MODULENAME "/compton/C2", "Second gamma spectrum parameter", (real_t) 0.8);
+    s->DefineSetting(MODULENAME "/compton/C3", "Third gamma spectrum parameter", (real_t) 0.0);
 
     s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
@@ -135,6 +139,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
+	eqsys->AddRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
