@@ -15,6 +15,7 @@ namespace DREAM {
         std::unordered_map<len_t, real_t> absTols;
         std::unordered_map<len_t, real_t> relTols;
 
+		bool ownsPreconditioner = false;
 		DiagonalPreconditioner *precond=nullptr;
 		std::vector<UnknownQuantityEquation*> *unknown_eqns=nullptr;
 
