@@ -46,6 +46,11 @@ RadialGrid::~RadialGrid(){
         delete [] this->VpVol;
         delete [] this->VpVol_f;
     }
+	if (this->psiToroidal != nullptr) {
+		delete [] this->psiToroidal;
+		delete [] this->psiToroidal_f;
+	}
+
     delete this->generator;
     delete this->fluxSurfaceAverager;
 }

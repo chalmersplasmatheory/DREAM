@@ -46,8 +46,9 @@ DiagonalPreconditioner::DiagonalPreconditioner(
  * Destructor.
  */
 DiagonalPreconditioner::~DiagonalPreconditioner() {
-    VecDestroy(&this->eqn);
-    VecDestroy(&this->iuqn);
+	// These seem to (somehow) be deleted anyway...
+    //VecDestroy(&this->eqn);
+    //VecDestroy(&this->iuqn);
 }
 
 

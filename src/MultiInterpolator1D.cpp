@@ -29,7 +29,10 @@ MultiInterpolator1D::MultiInterpolator1D(
 
     for (len_t i = 0; i < nZ0; i++) {
         this->interps[i] = new FVM::Interpolator1D(
-            nt, nr, t, x+(i*nt*nr),  meth
+            nt, nr, t, x+(i*nt*nr),  meth,
+			// owns the data "x+(i*nt*nr)"? (i.e. should it be deleted
+			// by this Interpolator1D object?)
+			false
         );
     }
 }

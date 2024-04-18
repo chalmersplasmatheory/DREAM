@@ -117,7 +117,12 @@ class DataObject:
             if (self.data.dtype == 'S1') or (str(self.data.dtype).startswith('|S')):  # Regular strings
                 return self.data[:].tostring().decode('utf-8')
             elif self.data.dtype == 'object':  # New strings
-                if type(self.data[:][0]) == str:
+                if self.data.shape == ():
+                    if type(self.data[()]) == str:
+                        return self.data[()]
+                    else:
+                        return self.data[()].decode()
+                elif type(self.data[:][0]) == str:
                     return self.data[:][0]
                 else:
                     return self.data[:][0].decode()
