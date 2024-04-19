@@ -153,7 +153,7 @@ method takes the following arguments (should be given as keyword arguments):
 | ``tmax``          | Final time of simulation.    | Final time of simulation.                                                                                                                                  |
 +-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
-In situations where material is added to the plasma at :math: `t\neq0`, which
+In situations where material is added to the plasma at :math:`t\neq0`, which
 usually is the case in simulations with SPI or MGI where the gas is injected
 from the edge, this approach of rescaling the timesteps based on the initial
 ionization timescale can lead to extremely short timesteps as the electron
@@ -164,7 +164,7 @@ timesteps according to:
 
     \Delta t = {\rm min}(\Delta t_{\rm max}, \alpha \tau_{\rm ioniz}),
 
-where :math: `\alpha` is factor between 0 and 1 provided by the user. If the
+where :math:`\alpha` is factor between 0 and 1 provided by the user. If the
 the time stepper should update the timesteps according to this method, the
 method takes the following arguments:
 
