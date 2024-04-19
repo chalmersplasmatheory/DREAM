@@ -157,8 +157,8 @@ In situations where material is added to the plasma at :math:`t\neq0`, which
 usually is the case in simulations with SPI or MGI where the gas is injected
 from the edge, this approach of rescaling the timesteps based on the initial
 ionization timescale can lead to extremely short timesteps as the electron
-density is suddenly increased. Instead, one could instead choose to update
-timesteps according to:
+density is suddenly increased. Instead, one could choose to update timesteps
+according to:
 
 .. math::
 
