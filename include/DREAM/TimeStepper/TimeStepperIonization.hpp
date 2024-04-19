@@ -35,7 +35,7 @@ namespace DREAM {
 		~TimeStepperIonization();
 
 		virtual real_t CurrentTime() const { return this->currentTime; }
-		virtual bool IsFinished() override { return (this->currentTime >= this->tMax); }
+		virtual bool IsFinished() override;
 		virtual bool IsSaveStep() override;
 		virtual real_t MaxTime() const override;
 		virtual real_t NextTime() override;

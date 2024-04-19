@@ -172,4 +172,9 @@ void CollisionQuantity::DeallocateCollisionQuantities(){
     }
     DeallocateCollisionQuantity(collisionQuantity_f1,nr);
     DeallocateCollisionQuantity(collisionQuantity_f2,nr);    
+
+    this->collisionQuantity = nullptr;
+    this->collisionQuantity_f1 = nullptr;
+    this->collisionQuantity_f2 = nullptr;
+    this->collisionQuantity_fr = nullptr;
 }
