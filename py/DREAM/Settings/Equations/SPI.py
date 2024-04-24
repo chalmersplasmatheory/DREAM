@@ -52,7 +52,7 @@ class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = None):
+SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = None, Zs = None, isotopes = None):
         """
         Constructor.
         
@@ -96,7 +96,9 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.T0       = None
         self.delta_y  = None
         self.Rm       = None
-        self.ZavgArray    = None
+        self.ZavgArray= None
+        self.Zs       = None
+        self.isotopes = None
 
 
     def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, T = None):
@@ -414,7 +416,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         
         Specifies which model to use for calculating the shift. Currently there only exists two (on/1 and off/0).
         T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the 
-        major radius of the magnetic axis. Zavgarray is the average charge of the present ions in the cloud in increasing order.
+        major radius of the magnetic axis. ZavgArray is the average charge of the present ions in the cloud in increasing order.
         """
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
@@ -431,7 +433,9 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.T0 = T0
         self.delta_y = delta_y
         self.Rm = Rm
-        self.Zavgarray = ZavgArray
+        self.ZavgArray = ZavgArray
+        self.Zs = Zs
+        self.isotopes = isotopes
         
         return kp
         
@@ -517,7 +521,11 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         if 'Rm' in data:
             self.Rm             = float(data['Rm'])
         if 'ZavgArray' in data:
-            self.ZavgArray          = [float(x) for x in data['Zavgarray']]
+            self.ZavgArray      = [float(x) for x in data['ZavgArray']]
+        if 'Zs' in data:        
+            self.Zs             = [float(x) for x in data['Zs']]
+        if 'isotopes' in data:        
+            self.isotopes             = [float(x) for x in data['isotopes']]
         if 'heatAbsorption' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
@@ -575,6 +583,10 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.Rm=-1
         if self.ZavgArray is None:
             self.ZavgArray=np.array([0])
+        if self.Zs is None:
+            self.Zs=np.array([0])
+        if self.isotopes is None:
+            self.isotopes=np.array([0])
             
         data = {
             'velocity': self.velocity,
@@ -586,6 +598,8 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             'delta_y': self.delta_y,
             'Rm': self.Rm,
             'ZavgArray': self.ZavgArray,
+            'Zs': self.Zs,
+            'isotopes': self.isotopes,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
@@ -618,16 +632,18 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
         if type(self.shift) != int:
             raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer, 1 or 2.")
-        if self.T0<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+        if self.T0<0 and self.shift == SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'T0'. Expected positive float.")
-        if all(self.T)<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+        if any(self.T)<0 and self.shift == SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'T'. Expected array of positive floats.")
-        if self.delta_y<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
+        if self.delta_y<0 and self.shift == SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected positive float.")
-        if self.Rm<=0 and self.Rm!=-1 and self.shift == SHIFT_MODE_ANALYTICAL:
+        if self.Rm<0 and self.Rm!=-1 and self.shift == SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'Rm'. Expected positive float.")
-        if all(self.ZavgArray)<=0 and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'ZavgArray'. Expected array of positive floats.")         
+        if (len(self.ZavgArray)!=len(self.Zs) or np.array_equal(self.ZavgArray, np.array([0]))) and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'ZavgArray'. Expected array of positive floats with the same shape as 'Zs'.")
+        if (len(self.isotopes)!=len(self.Zs) or np.array_equal(self.isotopes, np.array([0]))) and self.shift == SHIFT_MODE_ANALYTICAL:
+            raise EquationException("spi: Invalid value assigned to 'isotopes'. Expected array of positive floats with the same shape as 'Zs'.")
         if self.deposition!=DEPOSITION_MODE_LOCAL and self.shift==SHIFT_MODE_ANALYTICAL:
             raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:

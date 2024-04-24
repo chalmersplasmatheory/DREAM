@@ -21,6 +21,8 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/delta_y","Cloud half-width during the drift", (real_t)0);
     s->DefineSetting(MODULENAME "/Rm","Major radius", (real_t)0);
     s->DefineSetting(MODULENAME "/ZavgArray","Average charge of the ions", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/Zs","Ion charges", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/isotopes","Ion isotopes", 0, (real_t*)nullptr);
 
 
     s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
@@ -45,6 +47,7 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     len_t nZ;
     len_t nZSPInShard;
     len_t nShard;
+    len_t nZavg;
     
     const int_t *_Z  = s->GetIntegerArray(MODULENAME_IONS "/Z", 1, &nZ);
     const int_t *_isotopes  = s->GetIntegerArray(MODULENAME_IONS "/isotopes", 1, &nZ);
@@ -68,18 +71,24 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     for (len_t i = 0; i < nShard; i++)
         nbrShiftGridCell[i] = (int_t)_nbrShiftGridCell[i];
 
+    const real_t *_T = s->GetRealArray(MODULENAME "/T", 1, &nShard);
+    const real_t *_ZavgArray = s->GetRealArray(MODULENAME "/ZavgArray", 1, &nZavg);
+    const real_t *_Zs = s->GetRealArray(MODULENAME "/Zs", 1, &nZavg);
+    const real_t *_isotopesDrift = s->GetRealArray(MODULENAME "/isotopes", 1, &nZavg);
     real_t *T = new real_t[nShard];
-    real_t *ZavgArray = new real_t[nZ];
+    real_t *ZavgArray = new real_t[nZavg];
+    real_t *Zs = new real_t[nZavg];
+    real_t *isotopesDrift = new real_t[nZavg];
     if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
-        const real_t *_T = s->GetRealArray(MODULENAME "/T", 1, &nShard);
-        const real_t *_ZavgArray = s->GetRealArray(MODULENAME "/ZavgArray", 1, &nZ);
         for (len_t i = 0; i < nShard; i++)
             T[i] = (real_t)_T[i];
-        for (len_t i = 0; i < nZ; i++)
+        for (len_t i = 0; i < nZavg; i++){
             ZavgArray[i] = (real_t)_ZavgArray[i];
-        
+            Zs[i] = (real_t)_Zs[i];
+            isotopesDrift[i] = (real_t)_isotopesDrift[i];
+        }
     }
 
-    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, ZavgArray, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
+    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, T, T0, delta_y, Rm, ZavgArray, nZavg, Zs, isotopesDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
     return SPI;
 }

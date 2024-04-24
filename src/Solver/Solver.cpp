@@ -264,7 +264,7 @@ void Solver::RegisterCallback_IterationFinished(
  * t:  Time for which to rebuild the equation system.
  * dt: Length of time step to take next.
  */
-void Solver::RebuildTerms(const real_t t, const real_t dt, const len_t iteration) {
+void Solver::RebuildTerms(const real_t t, const real_t dt) {
     solver_timeKeeper->StartTimer(timerTot);
 
     this->ionHandler->Rebuild();
@@ -297,7 +297,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt, const len_t iteration
 
     solver_timeKeeper->StartTimer(timerSPIHandler);
     if(this->SPI!=nullptr){
-        this->SPI-> Rebuild(dt, iteration);
+        this->SPI-> Rebuild(dt, t);
     }
     solver_timeKeeper->StopTimer(timerSPIHandler);
 
