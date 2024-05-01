@@ -183,13 +183,18 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         # Calculate solid particle density of the pellet (needed to calculate the 
         # inverse characteristic shard size)
         molarVolume=0
+        counter=0
         for iZ in range(len(Zs)):
             for iList in range(len(solidDensityList)):
                 if Zs[iZ]==ZSolidDensityList[iList] and isotopes[iZ]==isotopesSolidDensityList[iList]:
                     solidDensityIZ=solidDensityList[iList]
                 if Zs[iZ]==ZMolarMassList[iList] and isotopes[iZ]==isotopesMolarMassList[iList]:
                     molarMassIZ=molarMassList[iList]
-            
+                else:
+                    counter+=1
+            if counter==len(solidDensityList):
+                raise EquationException("spi: Pellet type is not recognized. Currently only neon and deuterium pellets are supported. To support other types fill in the material data in src/Equations/SPIHandler.cpp and py/DREAM/Settings/Equations/SPI.py")
+            counter=0
             molarVolume+=molarFractions[iZ]*molarMassIZ/solidDensityIZ
             
         solidParticleDensity=N_A/molarVolume
@@ -632,20 +637,21 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
         if type(self.shift) != int:
             raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer, 1 or 2.")
-        if self.T0<0 and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'T0'. Expected positive float.")
-        if any(self.T)<0 and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'T'. Expected array of positive floats.")
-        if self.delta_y<0 and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected positive float.")
-        if self.Rm<0 and self.Rm!=-1 and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'Rm'. Expected positive float.")
-        if (len(self.ZavgArray)!=len(self.Zs) or np.array_equal(self.ZavgArray, np.array([0]))) and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'ZavgArray'. Expected array of positive floats with the same shape as 'Zs'.")
-        if (len(self.isotopes)!=len(self.Zs) or np.array_equal(self.isotopes, np.array([0]))) and self.shift == SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'isotopes'. Expected array of positive floats with the same shape as 'Zs'.")
-        if self.deposition!=DEPOSITION_MODE_LOCAL and self.shift==SHIFT_MODE_ANALYTICAL:
-            raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
+        if self.shift == SHIFT_MODE_ANALYTICAL:
+            if self.T0<0: 
+                raise EquationException("spi: Invalid value assigned to 'T0'. Expected positive float.")
+            if any(self.T)<0:
+                raise EquationException("spi: Invalid value assigned to 'T'. Expected array of positive floats.")
+            if self.delta_y<0:
+                raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected positive float.")
+            if self.Rm<0 and self.Rm!=-1:
+                raise EquationException("spi: Invalid value assigned to 'Rm'. Expected positive float.")
+            if len(self.ZavgArray)!=len(self.Zs):
+                raise EquationException("spi: Invalid value assigned to 'ZavgArray'. Expected array of positive floats with the same shape as 'Zs'.")
+            if len(self.isotopes)!=len(self.Zs):
+                raise EquationException("spi: Invalid value assigned to 'isotopes'. Expected array of positive floats with the same shape as 'Zs'.")
+            if self.deposition!=DEPOSITION_MODE_LOCAL:
+                raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 

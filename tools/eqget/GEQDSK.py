@@ -332,7 +332,7 @@ class GEQDSK:
         psi2d = np.transpose(self.psi(self.R, self.Z))
         psin2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
         R, Z = np.meshgrid(self.R, self.Z)
-        self.contour_generator = ContourGenerator(R, Z, psin2d, None, True, 0)
+        self.contour_generator = ContourGenerator(R, Z, psin2d, mask=None, corner_mask=True, x_chunk_size=0)
 
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)
