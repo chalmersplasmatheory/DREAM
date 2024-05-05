@@ -63,8 +63,6 @@ void SimulationGenerator::DefineOptions_n_re(
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
-    // Prescribed initial profile
-    DefineDataR(MODULENAME, s, "Tfinal");
     // Prescribed LCFS loss timescale
     DefineDataR(MODULENAME, s, "lcfs_t_loss");
     // Prescribed LCFS psi_p at plasma edge, t = 0

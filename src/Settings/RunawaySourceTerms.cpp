@@ -4,7 +4,6 @@
 
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTermHighZ.hpp"
-#include "DREAM/Equations/Fluid/HottailRateTermLowZ.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ExternalAvalancheTerm.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
@@ -155,11 +154,9 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
         );
         rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
     } else if (distHT!=nullptr && hottail_mode == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC){
-        oqty_terms->n_re_hottail_rate = new HottailRateTermLowZ(
-            grid, distHT, unknowns, ions, 
-            REFluid->GetLnLambda(), REFluid, LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "Tfinal"), -1.0
-        );
-        rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
+        throw SettingsException(
+			"The 'HOTTAIL_MODE_ANALYTIC' has not been implemented yet."
+		);
     }
      
     // Add LCFS loss term (add exception if (nr==1 and lcfs_mode != LCFS_LOSS_MODE_DISABLED)...)
