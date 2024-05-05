@@ -30,6 +30,7 @@ namespace DREAM {
         void SetGammaLoss();
         void Deallocate();
         
+	protected:
         /***************************** FUNCTIONS NEEDED FOR DIAGONALCOMPLEXTERM *****************************/
         virtual void SetWeights() override; 
         

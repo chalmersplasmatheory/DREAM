@@ -99,9 +99,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.radius  = None
         self.setInitialProfile(density=density, radius=radius)
         
-        self.hottail_T_final = 0
-        self.hottail_T_final_r  = 0
-        
         # Loss term
         self.lcfs_loss = lcfs_loss
         self.lcfs_t_loss = 0
@@ -118,14 +115,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.verifySettingsPrescribedInitialData()
 
 
-    def setHottailFinalTemperature(self, T_final, radius=0):
-        _data, _rad = self._setInitialData(data=T_final, radius=radius)
-
-        self.hottail_T_final = _data
-        self.hottail_T_final_r  = _rad
-        self.verifySettingsPrescribedInitialData()
-        
-    
     # Loss term    
     def setLCFSLoss(self, lcfs_loss):
         """
@@ -307,14 +296,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.compton   = int(data['compton']['mode'])
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
-        self.hottail_T_final   = data['Tfinal']['x']
-        self.hottail_T_final_r    = data['Tfinal']['r']
         # Loss term
-        self.lcfs_loss     = int(data['lcfs_loss'])
-        self.lcfs_user_input_psi     = int(data['lcfs_user_input_psi'])
-        self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
-        self.lcfs_t_loss   = data['lcfs_t_loss']['x']
-        self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
+        if 'lcfs_loss' in data:
+            self.lcfs_loss     = int(data['lcfs_loss'])
+            self.lcfs_user_input_psi     = int(data['lcfs_user_input_psi'])
+            self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
+            self.lcfs_t_loss   = data['lcfs_t_loss']['x']
+            self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
 
         if 'flux' in data['compton']:
             if type(data['compton']['flux']) == dict:
@@ -388,10 +376,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         data['init'] = {
             'x': self.density,
             'r': self.radius
-        }
-        data['Tfinal'] = {
-            'x': self.hottail_T_final,
-            'r': self.hottail_T_final_r
         }
         # Loss term
         data['lcfs_t_loss'] = {
