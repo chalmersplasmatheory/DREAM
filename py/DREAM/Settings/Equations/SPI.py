@@ -402,9 +402,9 @@ class SPI(UnknownQuantity):
         self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,t_delay,nDim,add)
         
         if self.nbrShiftGridCell is None:
-            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard)
+            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
         else:
-            self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard)))
+            self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))
       
         return kp
         
@@ -416,6 +416,10 @@ class SPI(UnknownQuantity):
         
     def shiftTimeDelay(self, tShift):
         self.t_delay = self.t_delay - tShift
+
+
+    def resetTimeDelay(self):
+        self.t_delay = 0
 
 
     def setVelocity(self, velocity):
@@ -515,10 +519,6 @@ class SPI(UnknownQuantity):
         # Before this stage it is usefull to use None to indicate if any SPI settings have been made yet,
         # to know if there are any previous shards to add the new ones to, so therefore
         # we don't set this default setting until this stage
-        if self.vp is None:
-            self.vp=np.array([0,0,0])
-        if self.xp is None:
-            self.xp=np.array([0,0,0])
         if self.t_delay is None:
             self.t_delay=np.array([0])
         if self.nbrShiftGridCell is None:

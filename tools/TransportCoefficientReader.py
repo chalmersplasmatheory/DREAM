@@ -106,7 +106,7 @@ class TransportCoefficientReader:
                                                             interp3d=self.interp3d, interp1d=self.interp1d)
         else:
             raise DREAMException("Error setting Svensson transport: the 1D-interpolation parameter has not been given.")
-            
+                        
     def setdBBFromDrr(self, dsObj, ip = None, ixi = None, q = 1):
         # Calculates values of dB/B assuming Drr at momentum ndex ip 
         # and pitch angle index ixi corresponds to a Rechester-Rosenbluth transport coefficient,
@@ -116,7 +116,12 @@ class TransportCoefficientReader:
             ip = np.argmin(self.p)
         if ixi is None:
             ixi = np.argmax(self.xi)
-        dBB = np.sqrt(self.Drr[:,:,ixi,ip]/(np.pi*q*dsObj.radialgrid.R0*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))
+         # 6.2/2 correction factor due to wrong major radius import
+         # (see email from O. Vallhagen 2024-02-28)
+        dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        print(f'R0 = {dsObj.radialgrid.R0}')
+        print(f'dB/B = {np.amax(dBB)}')
+        print(f'Drr  = {np.amax(self.Drr[:,:,ixi,ip])}')
         dsObj.eqsys.T_cold.transport.setMagneticPerturbation(dBB=dBB,r=self.r, t=self.t)
             
     
@@ -183,6 +188,11 @@ class TransportCoefficientReader:
         # Helper function that shifts the times of the coeffs
         ds_new.eqsys.n_re.transport.s_ar_t  = ds_prev.eqsys.n_re.transport.s_ar_t - ds_prev.timestep.tmax
         ds_new.eqsys.n_re.transport.s_drr_t = ds_prev.eqsys.n_re.transport.s_drr_t - ds_prev.timestep.tmax
+        
+    def shiftTimeSvenssonbyTime(self, ds_prev, ds_new, t_max):
+        # Helper function that shifts the times of the coeffs
+        ds_new.eqsys.n_re.transport.s_ar_t  = ds_prev.eqsys.n_re.transport.s_ar_t - t_max
+        ds_new.eqsys.n_re.transport.s_drr_t = ds_prev.eqsys.n_re.transport.s_drr_t - t_max
         
     def tBeforeOnsetFromQCritAndPelletShardPosition(q, rref, shatterPoint, abs_vp_mean, qcrit = 2):
         # Estimates the time of the TQ onset, assuming the TQ starts when pellet shards 
