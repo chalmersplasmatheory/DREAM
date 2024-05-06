@@ -287,7 +287,7 @@ void SimulationGenerator::DefineDataIonRT(
  */
 MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
     const string& modname, FVM::RadialGrid *rgrid, Settings *s,
-    const len_t nZ0, const string& name
+    const len_t nZ0, const string& name, bool fluxGrid
 ) {
     len_t xdims[3], nr_inp, nt;
 
@@ -348,7 +348,11 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
             );
     }
 
-    const len_t Nr_targ = rgrid->GetNr();
+	len_t Nr_targ;
+	if (fluxGrid)
+		Nr_targ = rgrid->GetNr()+1;
+	else
+		Nr_targ = rgrid->GetNr();
 
     // Construct new 'x' and 't' vectors (since Interpolator1D assumes
     // ownership of the data, and 'Settings' doesn't renounces its,
@@ -373,7 +377,11 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
                 gsl_interp_init(interp, r, x+((iZ*nt + it)*nr_inp), nr_inp);
 
                 for (len_t ir = 0; ir < Nr_targ; ir++) {
-                    real_t xr = rgrid->GetR(ir);
+					real_t xr;
+					if (fluxGrid)
+						xr = rgrid->GetR_f(ir);
+					else
+						xr = rgrid->GetR(ir);
 
                     if (xr < r[0]) {
                         // Extrapolate linearly!
