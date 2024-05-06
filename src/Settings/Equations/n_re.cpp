@@ -114,10 +114,14 @@ void SimulationGenerator::ConstructEquation_n_re(
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
 			// Influx from hot-tail grid (with runaway grid at higher p)
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+            FVM::BC::PXiExternalKineticKinetic *xkinkin = new FVM::BC::PXiExternalKineticKinetic(
 				fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
 				Op, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_DENSITY
-			));
+			);
+
+            oqty_terms->f_re_f_hot_flux = xkinkin;
+
+			Op_nRE_fHot->AddBoundaryCondition(xkinkin);
 		} else {
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =

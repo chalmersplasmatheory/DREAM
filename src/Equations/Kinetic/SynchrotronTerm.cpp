@@ -53,28 +53,19 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         if (gridtypePXI) {
             if(np2==1){ // pitch averaged p-component
                 for(len_t i=0; i<np1+1; i++){
-                    p = mg->GetP_f1(i,0);
-                    gamma = mg->GetGamma_f1(i,0);
-                    F1(ir,i,0) += -2.0/3.0*preFactor*p*gamma*rGrid->GetFSA_B2(ir);
+                    F1(ir,i,0) += getf1_PXI(i, 0, mg, BA1_f1, Bmin, ir, rGrid);
                 }
                 continue;
             }
 
             for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
-                    xi0 = mg->GetP2(j);
-                    p = mg->GetP1_f(i);
-
-                    F1(ir, i, j)  += -preFactor * p*sqrt(1+p*p)*(1-xi0*xi0) * BA1_f1[j*(np1+1)+i] ;
+                    F1(ir, i, j)  +=  getf1_PXI(i, j, mg, BA1_f1, Bmin);
                 }
 
             for (len_t j = 0; j < np2+1; j++)
                 for (len_t i = 0; i < np1; i++) {
-                    xi0 = mg->GetP2_f(j);
-                    p = mg->GetP1(i);
-                    gamma = sqrt(1+p*p);
-
-                    F2(ir, i, j)  += +preFactor * (1-xi0*xi0)*xi0/gamma * BA2_f2[j*np1+i] ;
+                    F2(ir, i, j)  += getf2_PXI(i, j, mg, BA2_f2, Bmin);
                 }
         } else if (gridtypePPARPPERP) {
             for (len_t j = 0; j < np2; j++)
@@ -96,4 +87,28 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                 }
         }
     }
+}
+
+real_t SynchrotronTerm::getf1_PXI(len_t i, len_t j, FVM::MomentumGrid *mg, const real_t *BA1_f1, real_t Bmin, len_t ir, FVM::RadialGrid *rGrid){
+    real_t preFactor = Bmin*Bmin*this->constPrefactor;
+    if (mg->GetNp2() == 1){
+        real_t p = mg->GetP_f1(i,0);
+        real_t gamma = mg->GetGamma_f1(i,0);
+        return -2.0/3.0*preFactor*p*gamma*rGrid->GetFSA_B2(ir);
+    }
+
+    real_t xi0 = mg->GetP2(j);
+    real_t p = mg->GetP1_f(i);
+
+    return -preFactor * p*sqrt(1+p*p)*(1-xi0*xi0) * BA1_f1[j*(mg->GetNp1()+1)+i];
+}
+
+real_t SynchrotronTerm::getf2_PXI(len_t i, len_t j, FVM::MomentumGrid *mg, const real_t *BA2_f2, real_t Bmin){
+    real_t preFactor = Bmin*Bmin*this->constPrefactor;
+    
+    real_t xi0 = mg->GetP2(j);
+    real_t p = mg->GetP1_f(i);
+    real_t gamma = sqrt(1+p*p);
+
+    return +preFactor * (1-xi0*xi0)*xi0/gamma * BA2_f2[j*mg->GetNp1()+i];
 }
