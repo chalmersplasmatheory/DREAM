@@ -195,17 +195,18 @@ class DistributionFunction(KineticQuantity):
 
         data = None
         if model == 'total':
+            data = np.zeros((len(t), len(r), self.data.shape[-2], self.data.shape[-1]))
             pperp2 = self.momentumgrid.PPERP**2
             m2c2   = (scipy.constants.m_e * scipy.constants.c)**2
-            data = pperp2 * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
+            for i in range(len(t)):
+                for j in range(len(r)):
+                    data[i,j,:,:] = pperp2 * self.data[t[i],r[j],:,:] * self.momentumgrid.Vprime_VpVol[r[j],:,:]
         elif model == 'spectrum':
             S = []
             W = Bekefi.synchrotron(self.momentumgrid.P, self.momentumgrid.XI, wavelength, B)
             data = W * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
         else:
             raise OutputException("Unrecognized model for calculating synchrotron moment with: '{}'.".format(model))
-
-        data = data.reshape((len(t), len(r), data.shape[-2], data.shape[-1]))
         return KineticQuantity('synchrotron({})'.format(self.name), data=data, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid, attr={'description': 'Synchrotron moment of {}'.format(self.name), 'equation': 'synchrotron({})'.format(self.name)})
 
 

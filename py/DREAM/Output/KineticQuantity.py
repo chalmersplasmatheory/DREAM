@@ -338,6 +338,8 @@ class KineticQuantity(UnknownQuantity):
             ax.set_xlabel(r'$p$')
             ax.set_ylabel(r'$\xi$')
         elif coordinates == 'cylindrical'[:len(coordinates)]:
+            if data.shape[1] == self.momentumgrid.PPAR.shape[1] + 1:
+                data = (data[:,1:] + data[:,:-1]) / 2
             cp = ax.contourf(self.momentumgrid.PPAR, self.momentumgrid.PPERP, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'$p_\parallel$')
             ax.set_ylabel(r'$p_\perp$')
@@ -351,7 +353,7 @@ class KineticQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
 
-        return ax
+        return ax, cp
         
         
         
