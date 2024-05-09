@@ -18,7 +18,7 @@ using namespace std;
 
 /**
  * Define options for the time stepper.
- * 
+ *
  * s: Settings object to define settings in.
  */
 void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
@@ -32,6 +32,7 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/nt", "Number of time steps to take", (int_t)0);
 	s->DefineSetting(MODULENAME "/safetyfactor", "Safety factor to use when automatically determining the baseline timestep for the adaptive ionization time stepper.", (real_t)50);
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
+	s->DefineSetting(MODULENAME "/alpha", "Scaling factor for the ionization time. If not zero, timesteps are updated as: dt = min(dtmax, alpha * t_ioniz)", (real_t)0.0);
     s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
 
@@ -171,10 +172,10 @@ TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
 	real_t minSaveDt = s->GetReal(MODULENAME "/minsavedt");
 	real_t safetyfactor = s->GetReal(MODULENAME "/safetyfactor");
 	real_t tmax = s->GetReal(MODULENAME "/tmax");
+	real_t alpha = s->GetReal(MODULENAME "/alpha");
 
 	if (dt < 0)
 		throw SettingsException("TimeStepper ionization: Initial time step 'dt0' must be non-negative.");
 
-	return new TimeStepperIonization(tmax, dt, dtmax, u, eqsys, automaticstep, safetyfactor, minSaveDt);
+	return new TimeStepperIonization(tmax, dt, dtmax, u, eqsys, automaticstep, safetyfactor, minSaveDt, alpha);
 }
-
