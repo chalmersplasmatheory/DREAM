@@ -235,8 +235,7 @@ void SimulationGenerator::ConstructEquation_D_I(
 		true	// Solved externally
 	);
 
-	real_t v = 0;
-	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &v);
+	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &D_I_min);
 }
 
 /**
