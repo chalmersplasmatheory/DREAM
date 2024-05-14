@@ -26,7 +26,7 @@ namespace DREAM {
         void _setcoeff(const len_t, const len_t, const real_t);
 
     public:
-        TransportPrescribed<T>(
+        TransportPrescribed(
             FVM::Grid*,
             const len_t, const len_t, const len_t, const len_t,
             const real_t**, const real_t*, const real_t*,
@@ -35,7 +35,7 @@ namespace DREAM {
             enum FVM::Interpolator3D::interp_method interpmethod=FVM::Interpolator3D::INTERP_LINEAR,
             bool allocCoefficients=false
         );
-        virtual ~TransportPrescribed<T>();
+        virtual ~TransportPrescribed();
 
         const real_t *GetCoefficient(const len_t ir);
 

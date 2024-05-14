@@ -42,10 +42,10 @@ namespace DREAM {
         void ResetJacobianColumn();
 
     public:
-        TransportBC<T>(
+        TransportBC(
             FVM::Grid*, T*, enum bctype type=TRANSPORT_BC_F0
         );
-        ~TransportBC<T>();
+        ~TransportBC();
 
         virtual bool GridRebuilt() override;
 
