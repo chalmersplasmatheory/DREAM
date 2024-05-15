@@ -492,6 +492,8 @@ bool SimulationGenerator::ConstructTransportTerm(
 
 		// Add transport operator
 		if (!heat) {
+			hasNonTrivialTransport = true;
+
 			FrozenCurrentTransport *fct = new FrozenCurrentTransport(
 				grid, eqsys->GetUnknownHandler(), ts
 			);
