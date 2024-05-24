@@ -520,9 +520,15 @@ class SPI(UnknownQuantity):
         # to know if there are any previous shards to add the new ones to, so therefore
         # we don't set this default setting until this stage
         if self.t_delay is None:
-            self.t_delay=np.array([0])
+            if self.rp is not None:
+                self.t_delay=np.zeros(self.rp.shape)
+            else:
+                self.t_delay=np.array([0])
         if self.nbrShiftGridCell is None:
-            self.nbrShiftGridCell = np.array([0])
+            if self.rp is not None:
+                self.nbrShiftGridCell = np.zeros(self.rp.shape)
+            else:
+                self.nbrShiftGridCell = np.array([0])
             
         data = {
             'velocity': self.velocity,
