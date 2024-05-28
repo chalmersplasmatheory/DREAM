@@ -115,16 +115,6 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
         // step.
         offset+=N;
     }
-    /*
-    printf("\nnParam1d=%zu, nr=%zu, nxi=%zu, np=%zu", nParam1d, nr, nxi, np);
-    for (len_t ii=0, jj=0; ii<nParam1d; ii++) 
-        for (len_t rr=0; rr<nr_f; rr++) 
-            for (len_t xx=0; xx<nxi; xx++) 
-                for (len_t pp=0; pp<np; pp++, jj++) 
-                    if (coeffTRXiP[jj] < 0)
-                        printf("\nt=%zu, r=%zu, xi=%zu, p=%zu", ii, rr, xx, pp);
-    printf("\n");
-    */
     // Note that `coeffTRXiP` now contains r_f, xi and p data for _every_ time step.
 
     if (this->interp1dCoeff != nullptr)
