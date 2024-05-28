@@ -99,12 +99,15 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.radius  = None
         self.setInitialProfile(density=density, radius=radius)
         
+        self.hottail_T_final = np.array([0])
+        self.hottail_T_final_r  = np.array([0])
+        
         # Loss term
         self.lcfs_loss = lcfs_loss
-        self.lcfs_t_loss = 0
-        self.lcfs_t_loss_r = 0
-        self.lcfs_user_input_psi = 0
-        self.lcfs_psi_edge_t0 = 0
+        self.lcfs_t_loss = np.array([0])
+        self.lcfs_t_loss_r = np.array([0])
+        self.lcfs_user_input_psi = np.array([0])
+        self.lcfs_psi_edge_t0 = np.array([0])
 
 
     def setInitialProfile(self, density, radius=0):
@@ -148,7 +151,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         simulation. user_input_active should be 1 (default)
         or set to 0 to manually switch off the user input.
         """
-        self.lcfs_user_input_psi = int(user_input_active)
+        self.lcfs_user_input_psi = bool(user_input_active)
         self.lcfs_psi_edge_t0 = psi_edge_t0
 
 

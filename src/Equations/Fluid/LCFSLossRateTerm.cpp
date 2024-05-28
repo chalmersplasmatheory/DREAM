@@ -12,7 +12,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-LCFSLossRateTerm::LCFSLossRateTerm(FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, FVM::Grid *operandGrid, real_t sf, real_t* t_loss, len_t userGivenPsiEdge_t0, real_t PsiEdge_t0) : 
+LCFSLossRateTerm::LCFSLossRateTerm(FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, FVM::Grid *operandGrid, real_t sf, real_t* t_loss, bool userGivenPsiEdge_t0, real_t PsiEdge_t0) : 
     RunawaySourceTerm(grid, unknowns), FVM::DiagonalComplexTerm(grid, unknowns, operandGrid), unknowns(unknowns), scaleFactor(sf), t_loss(t_loss), 
     userGivenPsiEdge_t0(userGivenPsiEdge_t0), psi_edge_t0(PsiEdge_t0), 
     id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)) {
@@ -20,6 +20,7 @@ LCFSLossRateTerm::LCFSLossRateTerm(FVM::Grid *grid, FVM::UnknownQuantityHandler 
     SetName("LCFSLossRateTerm");
     this->rGrid = grid->GetRadialGrid();
     this->GridRebuilt();
+    
 }
 
 /**
@@ -48,10 +49,6 @@ bool LCFSLossRateTerm::GridRebuilt(){
 * Set weights for term to be multiplied with unknown (n_RE). 
 */
 void LCFSLossRateTerm::SetGammaLoss(){
-
-    for (len_t ir = 0; ir < nr; ir++){ // Empty GammaLoss
-        this->GammaLoss[ir] = 0;
-    }
     
     FindRadiusOfLCFS(); // Find ir_LCFS
     
@@ -104,14 +101,14 @@ void LCFSLossRateTerm::FindRadiusOfLCFS(){
 
 
 /**
-* Difference between the poloidal flux at radial point ir and at the edge at t=0
+* Difference between psi_p at ir+1/2 and the edge psi_p
 */
 real_t LCFSLossRateTerm::PsiDiff(len_t ir){
     //real_t psi = unknowns->GetUnknownDataPrevious(id_psi)[ir]; 
     // Interpolate (extrapolate for ir=0) psi for estimate of psi at inner 
     // radial grid cell wall of current grid cell
-    real_t psi = InterpolatePsi(ir); 
-    return psi - this->psi_edge_t0;
+    real_t psi_f = InterpolatePsi(ir); 
+    return psi_f - this->psi_edge_t0;
 }
 
 
@@ -168,11 +165,15 @@ void LCFSLossRateTerm::SetWeights() {
     
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++){
-        const len_t xiIndex = this->GetXiIndexForEDirection(ir);
         const real_t V = this->GetVolumeScaleFactor(ir);
-
-        weights[offset + n1[ir]*xiIndex] = scaleFactor * this->GammaLoss[ir] * V;
-        offset += n1[ir]*n2[ir];
+        
+        for (len_t j = 0; j < n2[ir]; j++){
+	        for (len_t i = 0; i < n1[ir]; i++){
+                weights[offset + n1[ir]*j+i] = scaleFactor * this->GammaLoss[ir] * V;
+                offset += n1[ir]*n2[ir];
+            }
+        }
+        
     }
 }
 
@@ -200,6 +201,12 @@ const real_t* LCFSLossRateTerm::GetLCFSLossWeights(){
 void LCFSLossRateTerm::Deallocate(){
     if(this->GammaLoss != nullptr){ delete [] this->GammaLoss; }
 }
+
+
+
+
+
+
 
 
 

@@ -24,7 +24,7 @@ class LCFSLoss(OtherFluidQuantity):
             
         jreScrapedOff = self.output.eqsys.j_re.data[t,r]
         
-        for i in range(len(self.grid.r)):
+        for i in range(len(self.grid.r[r])):
             if np.any(self.data[:,i]<0):
                 itScrapeOff = np.argwhere(self.data[:,i]<0)[0][0]
                 
@@ -49,9 +49,9 @@ class LCFSLoss(OtherFluidQuantity):
         return jreScrapedOff.current(t = t)
         
     def plotScrapedOffJre(self, r=None, t=None, **kwargs):
-        jreScrapedOff = CurrentDensity(name = 'scraped-off $J_{re}$ [A/m$^2$]', data = self.calcScrapedOffJre(r,t), grid = self.grid, output=self.output)
-        return jreScrapedOff.plot(**kwargs)
+        jreScrapedOff = CurrentDensity(name = 'scraped-off $J_{re}$ [A/m$^2$]', data = self.calcScrapedOffJre(), grid = self.grid, output=self.output)
+        return jreScrapedOff.plot(r=r, t=t, **kwargs)
         
     def plotScrapedOffIre(self, r=None, t=None, **kwargs):
-        jreScrapedOff = ScalarQuantity(name = 'scraped-off $I_{re}$ [A]', data = self.calcScrapedOffIre(r,t), grid = self.grid, output=self.output)
-        return jreScrapedOff.plot(**kwargs)
+        jreScrapedOff = ScalarQuantity(name = 'scraped-off $I_{re}$ [A]', data = self.calcScrapedOffIre(), grid = self.grid, output=self.output)
+        return jreScrapedOff.plot(r=r, t=t, **kwargs)

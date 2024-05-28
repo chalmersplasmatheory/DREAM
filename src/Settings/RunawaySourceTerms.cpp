@@ -166,7 +166,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             "The LCFS loss term is not compatible with using only one radial grid point."
         );
     }
-    len_t lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
+    bool lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
     real_t lcfs_psi_edge_t0 = s->GetReal(mod + "/lcfs_psi_edge_t0");
     if(lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_FLUID){
     	oqty_terms->lcfsLossRate_fluid = new LCFSLossRateTerm(grid, unknowns, fluidGrid, -1.0, LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss"), lcfs_user_input_psi, lcfs_psi_edge_t0);
