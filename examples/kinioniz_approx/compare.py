@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+#
+# Compares the approximate kinetic ionization mode with the fully kinetic one.
+#
+# Run as
+#
+#   $ ./compare.py
+#
+# And then run plot script as
+#
+#   $ ./plot.py
+#
+# ###################################################################
+
 import sys, os
 import numpy as np
 
@@ -6,65 +20,15 @@ import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.RunawayElectronDistribution as REDist
 
-sys.path.append('../../build/dreampyface/cxx/')
-sys.path.append('../../')
-import dreampyface
-
 sys.path.append("../../py/DREAM/Formulas/")
 from Distributions import getAvalancheDistribution
 
-LOG_NRE_MIN = 14
-LOG_NRE_MAX = 20
-NSCAN_FLUID = 200
-NSCAN_KINETIC = 6
-
 ARGON_DENSITY = 1e22
 
-
 def run(ds, tmax, file="output.h5"):
-    """
-    NOTE: ugly workaround to be able to save outputs to another directory.
-    """
-
     ds.timestep.setIonization(dt0=1e-7, dtmax=1e-5, tmax=tmax)
     ds.timestep.setMinSaveTimestep(3e-7)
-    # # ds.timestep.setTerminationFunction(terminate_ioniz)
-    #
-    # filename = file.split("/")[-1]
-    # ds.output.setFilename(filename)
-    #
-    # dir = os.path.dirname(os.path.abspath(file))
-    # dir0 = os.getcwd()
-    # os.chdir(dir)
-    #
-    # s = dreampyface.setup_simulation(ds)
-    # do = s.run()
-    #
-    # os.chdir(dir0)
-    # return os
     return DREAM.runiface(ds, outfile=file)
-
-def terminate_ioniz(sim):
-    """
-    Function which determines when to stop the ionization simulation.
-    """
-    # Fractional change in ncold below which ionization should stop
-    THRESHOLD = 1e-6
-
-    # if sim.getCurrentTime() < 1e-2:
-    #     return False
-
-    ncold = sim.unknowns.getData('n_cold')
-    ntot  = sim.unknowns.getData('n_tot')
-
-    if ncold['x'].shape[0] < 2:
-        return False
-
-    dnc = ncold['x'][-1,:] - ncold['x'][-2,:]
-
-    mx = np.abs(np.amax(dnc/ntot['x'][-1,:]))
-
-    return mx < THRESHOLD
 
 def generate_base(nre, temperature, electric_field):
 
@@ -94,7 +58,7 @@ def generate_base(nre, temperature, electric_field):
 
 def generate_fluid(nre, temperature, electric_field):
     ds = generate_base(nre, temperature, electric_field)
-    ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_FLUID_APPROX_RE)
+    ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_APPROX_RE)
     ds.other.include(["fluid/Zeff", "fluid/kinioniz_approx_vsigma"])
     return ds
 
@@ -129,6 +93,11 @@ def generate_kinetic(nre, temperature, electric_field):
 
 if __name__ == '__main__':
 
+
+    LOG_NRE_MIN = 14
+    LOG_NRE_MAX = 20
+    NSCAN_FLUID = 200
+    NSCAN_KINETIC = 6
 
     import argparse
 

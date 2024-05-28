@@ -335,7 +335,7 @@ enum eqterm_ionization_mode {                       // Ionization is modelled wi
     EQTERM_IONIZATION_MODE_FLUID=1,                 // fluid ADAS rate coefficients
     EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
     EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
-    EQTERM_IONIZATION_MODE_FLUID_APPROX_RE=4,       // approximation of the kinetic ionization rate
+    EQTERM_IONIZATION_MODE_APPROX_RE=4,             // approximation of the kinetic ionization rate, can be used in both fluid and kinetic mode
 };
 
 enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source)

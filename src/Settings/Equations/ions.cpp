@@ -281,9 +281,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     if (nZ0_prescribed > 0)
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
-    bool includeKineticIonizationApprox = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_APPROX_RE);
-    if (includeKineticIonizationApprox && eqsys->HasRunawayGrid())
-        throw SettingsException("Invalid ionization mode: cannot use approximated kinetic ionization together with a runaway kinetic grid.");
+    bool includeKineticIonizationApprox = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_APPROX_RE);
 
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
@@ -384,9 +382,12 @@ void SimulationGenerator::ConstructEquation_Ions(
         else
             desc = "Dynamic + equilibrium";
     }
-    if((nEquil>0) && includeKineticIonization)
-        desc += " (kinetic ionization)";
-
+    if (nEquil>0) {
+        if (includeKineticIonization)
+            desc += " (kinetic ionization)";
+        else if (includeKineticIonizationApprox)
+            desc += " (approx. kinetic ionization)";
+    }
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
 

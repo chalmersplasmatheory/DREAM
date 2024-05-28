@@ -1,9 +1,8 @@
+#!/usr/bin/env python3
 import glob
 import matplotlib.pyplot as plt
 
 import DREAM
-
-
 
 def plot_charge_state_densities(ax, do):
     cmap = plt.cm.get_cmap("plasma_r", do.eqsys.n_i.getMultiples())
@@ -45,5 +44,10 @@ if __name__ == '__main__':
     do = DREAM.DREAMOutput("outputs/fluid.h5")
     plot_electron_density(ax1, do)
     plot_effective_charge(ax2, do)
+
+    ax1.set_ylabel("electron density [m$^{-3}$]")
+    ax1.set_xlabel("runaway density [m$^{-3}$]")
+    ax2.set_ylabel("effective charge [e]")
+    ax2.set_xlabel("runaway density [m$^{-3}$]")
 
     plt.show()
