@@ -9,7 +9,8 @@ namespace DREAM::FVM {
     public:
         enum interp_method {
             INTERP_NEAREST,
-            INTERP_LINEAR
+            INTERP_LINEAR,
+            INTERP_LOGARITHMIC
         };
 
     private:
@@ -26,6 +27,7 @@ namespace DREAM::FVM {
 
         len_t _find_x(const real_t);
         const real_t *_eval_linear(const real_t);
+        const real_t *_eval_logarithmic(const real_t);
         const real_t *_eval_nearest(const real_t);
 
         enum interp_method method;

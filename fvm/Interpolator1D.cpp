@@ -77,6 +77,7 @@ Interpolator1D::~Interpolator1D() {
 const real_t *Interpolator1D::Eval(const real_t x) {
     switch (this->method) {
         case INTERP_NEAREST: return _eval_nearest(x);
+        case INTERP_LOGARITHMIC: return _eval_logarithmic(x);
         case INTERP_LINEAR: return _eval_linear(x);
 
         // We shouldn't end up here, so just return
@@ -129,6 +130,37 @@ const real_t *Interpolator1D::_eval_linear(const real_t xv) {
         const real_t y2 = y[(ix+1)*nblocks + i];
 
         buffer[i] = (1-ddx)*y1 + ddx*y2;
+    }
+
+    return buffer;
+}
+
+/**
+ * Logarithmic interpolation.
+ */
+const real_t *Interpolator1D::_eval_logarithmic(const real_t xv) {
+    len_t ix = _find_x(xv);
+
+    if (ix+1 >= nx) {
+        for (len_t i = 0; i < nblocks; i++)
+            buffer[i] = y[(nx-1)*nblocks + i];
+
+        return buffer;
+    }
+
+    const real_t x1  = x[ix];
+    const real_t x2  = x[ix+1];
+    const real_t ddx = (xv-x1) / (x2-x1);
+    for (len_t i = 0; i < nblocks; i++) {
+        const real_t y1 = y[ix*nblocks + i];
+        const real_t y2 = y[(ix+1)*nblocks + i];
+
+        if (y1 > 0 && y2 > 0) {
+            const real_t logy1 = log(y1);
+            const real_t logy2 = log(y2);
+            buffer[i] = exp((1-ddx)*logy1 + ddx*logy2);
+        } else 
+            buffer[i] = (1-ddx)*y1 + ddx*y2;
     }
 
     return buffer;

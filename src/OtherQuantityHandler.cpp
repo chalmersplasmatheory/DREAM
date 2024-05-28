@@ -383,6 +383,20 @@ void OtherQuantityHandler::DefineQuantities() {
     }
     if (tracked_terms->svensson_D != nullptr)
         DEF_FL_FR("fluid/svensson_D", "Advection coefficient used in Svensson n_re transport.", qd->Store(this->tracked_terms->svensson_D->GetDiffusionCoeffRR()[0]););
+    
+    if (tracked_terms->svensson_A != nullptr || tracked_terms->svensson_advD != nullptr || tracked_terms->svensson_D != nullptr)
+        DEF_FL("fluid/svensson_transport", "Transported runaway density [s^-1 m^-3]",
+            real_t *n_re = this->unknowns->GetUnknownData(this->id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            if (tracked_terms->svensson_A != nullptr)
+                tracked_terms->svensson_A->SetVectorElements(vec, n_re);
+            else if (tracked_terms->svensson_advD != nullptr)
+                tracked_terms->svensson_advD->SetVectorElements(vec, n_re);
+            if (tracked_terms->svensson_D != nullptr)
+                tracked_terms->svensson_D->SetVectorElements(vec, n_re);
+        );
 
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););

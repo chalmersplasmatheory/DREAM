@@ -14,7 +14,8 @@ enum prescribed_data_interp {
     // We start from 0 here to remain somewhat compatible
     // with the GSL interpolation interface
     PRESCRIBED_DATA_INTERP_NEAREST=0,
-    PRESCRIBED_DATA_INTERP_LINEAR=1
+    PRESCRIBED_DATA_INTERP_LINEAR=1,
+    PRESCRIBED_DATA_INTERP_LOGARITHMIC=2
 };
 enum prescribed_data_interp_gsl {
     PRESCRIBED_DATA_INTERP_GSL_LINEAR=1,
@@ -25,7 +26,8 @@ enum prescribed_data_interp_gsl {
 };
 enum prescribed_data_interp3d {
     PRESCRIBED_DATA_INTERP3D_NEAREST=0,
-    PRESCRIBED_DATA_INTERP3D_LINEAR=1
+    PRESCRIBED_DATA_INTERP3D_LINEAR=1,
+    PRESCRIBED_DATA_INTERP3D_LOGARITHMIC=2
 };
 
 enum ion_data_type {
