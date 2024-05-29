@@ -99,8 +99,6 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.radius  = None
         self.setInitialProfile(density=density, radius=radius)
         
-        self.hottail_T_final = np.array([0])
-        self.hottail_T_final_r  = np.array([0])
         
         # Loss term
         self.lcfs_loss = lcfs_loss

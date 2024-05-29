@@ -66,9 +66,7 @@ void LCFSLossRateTerm::SetGammaLoss(){
 void LCFSLossRateTerm::FindRadiusOfLCFS(){
     
     if(this->userGivenPsiEdge_t0 == 0) {
-        //this->psi_edge_t0 = unknowns->GetUnknownInitialData(id_psi)[nr-1];
         
-        // Need special solution if nr=1(0)?
         // Extrapolate psi from last two ir:s to find the approximate edge value at t=0
         real_t Rlow = this->rGrid->GetR(nr-2);
         real_t Rhigh = this->rGrid->GetR(nr-1);
@@ -82,7 +80,7 @@ void LCFSLossRateTerm::FindRadiusOfLCFS(){
     
     // Find if the sign of PsiDiff() should be +1 or -1
     if(this->signFixed == false) { 
-        real_t psi_mid_init = unknowns->GetUnknownInitialData(id_psi)[0]; // Use interpolate instead?
+        real_t psi_mid_init = unknowns->GetUnknownInitialData(id_psi)[0];
         real_t psi_edge_init = unknowns->GetUnknownInitialData(id_psi)[nr-1];
         if(psi_mid_init-psi_edge_init > 0) { this->sign = 1; }
         this->signFixed = true;
@@ -104,7 +102,6 @@ void LCFSLossRateTerm::FindRadiusOfLCFS(){
 * Difference between psi_p at ir+1/2 and the edge psi_p
 */
 real_t LCFSLossRateTerm::PsiDiff(len_t ir){
-    //real_t psi = unknowns->GetUnknownDataPrevious(id_psi)[ir]; 
     // Interpolate (extrapolate for ir=0) psi for estimate of psi at inner 
     // radial grid cell wall of current grid cell
     real_t psi_f = InterpolatePsi(ir); 
