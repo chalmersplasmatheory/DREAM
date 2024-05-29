@@ -106,8 +106,8 @@ real_t SynchrotronTerm::getf1_PXI(len_t i, len_t j, FVM::MomentumGrid *mg, const
 real_t SynchrotronTerm::getf2_PXI(len_t i, len_t j, FVM::MomentumGrid *mg, const real_t *BA2_f2, real_t Bmin){
     real_t preFactor = Bmin*Bmin*this->constPrefactor;
     
-    real_t xi0 = mg->GetP2(j);
-    real_t p = mg->GetP1_f(i);
+    real_t xi0 = mg->GetP2_f(j);
+    real_t p = mg->GetP1(i);
     real_t gamma = sqrt(1+p*p);
 
     return +preFactor * (1-xi0*xi0)*xi0/gamma * BA2_f2[j*mg->GetNp1()+i];
