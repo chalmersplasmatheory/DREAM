@@ -22,6 +22,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
@@ -78,6 +79,9 @@ namespace DREAM {
 			DREAM::FVM::BC::PXiExternalKineticKinetic *f_re_f_hot_flux=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
+            // LCFS runaway loss rate term
+            //DREAM::LCFSLossRateTerm *lcfsLossRate_kinetic=nullptr;
+            DREAM::LCFSLossRateTerm *lcfsLossRate_fluid=nullptr;
             // Hyperresistive diffusion term
             DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
 			// List of ion rate equations for each ion species

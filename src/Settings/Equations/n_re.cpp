@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
+#include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
@@ -57,9 +58,16 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
+    
+    s->DefineSetting(MODULENAME "/lcfs_loss", "Model to use for the LCFS loss.", (int_t) OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED);
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
+    // Prescribed LCFS loss timescale
+    DefineDataR(MODULENAME, s, "lcfs_t_loss");
+    // Prescribed LCFS psi_p at plasma edge, t = 0
+    s->DefineSetting(MODULENAME "/lcfs_user_input_psi", "Whether or not to use user prescribed psi_p at edge t = 0 for LCFS loss term (0 or 1).", (int_t) 0);
+    s->DefineSetting(MODULENAME "/lcfs_psi_edge_t0", "Psi_p at plasma edge at t = 0, used for LCFS loss term.", (real_t) 0.0);
 
 }
 

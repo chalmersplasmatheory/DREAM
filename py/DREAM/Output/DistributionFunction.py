@@ -184,14 +184,14 @@ class DistributionFunction(KineticQuantity):
         :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
         """
         if t is None:
-            t = range(len(self.time))
-        elif np.isscalar(t):
-            t = np.array([t])
-
+            t = np.arange(len(self.time))
+        else:
+            t = np.arange(len(self.time))[t]
+        
         if r is None:
-            r = range(len(self.grid.r))
-        elif np.isscalar(r):
-            r = np.array([r])
+            r = np.arange(len(self.grid.r))
+        else:
+            t = np.arange(len(self.grid.r[:]))[r]
 
         data = None
         if model == 'total':
