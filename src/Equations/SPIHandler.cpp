@@ -327,11 +327,11 @@ void SPIHandler::Rebuild(real_t dt){
         // Shift the deposition profile
         for(len_t ip=0;ip<nShard;ip++){
             if(rCoordPNext[ip]>rCoordPPrevious[ip]){
-                for(len_t ir=0;ir<nr-1;ir++){
+                for(len_t ir=0;ir<nr-nbrShiftGridCell[ip];ir++){
                     depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir+nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir+nbrShiftGridCell[ip])*nShard+ip];
                 }
             }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
-                for(len_t ir=nr-1;ir>0;ir--){
+                for(len_t ir=nr-1;ir>nbrShiftGridCell[ip];ir--){
                     depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }
