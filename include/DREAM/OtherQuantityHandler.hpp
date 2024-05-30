@@ -33,6 +33,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -63,7 +64,8 @@ namespace DREAM {
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
 			// Tritium and Compton source terms
-			DREAM::ComptonSource *comptonSource=nullptr;
+			DREAM::ComptonSource *comptonSource_hottail=nullptr;
+			DREAM::ComptonSource *comptonSource_runaway=nullptr;
 			DREAM::ComptonSource *comptonSource_fluid=nullptr;
 			std::vector<DREAM::TritiumSource*> tritiumSource;
 			// Pitch angle advection due to time varying B
@@ -74,6 +76,7 @@ namespace DREAM {
 			DREAM::SynchrotronTerm *f_re_synchrotron=nullptr;
 			// Flux of RE from hottail grid
 			DREAM::FVM::BC::PXiExternalLoss *n_re_f_hot_flux=nullptr;
+			DREAM::FVM::BC::PXiExternalKineticKinetic *f_re_f_hot_flux=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
             // LCFS runaway loss rate term
