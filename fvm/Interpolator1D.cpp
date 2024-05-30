@@ -37,7 +37,6 @@ Interpolator1D::Interpolator1D(
     const len_t nx, const len_t nblocks, const real_t *x, const real_t *y,
     enum interp_method meth, bool owns_data
 ) : nx(nx), nblocks(nblocks), x(x), y(y), method(meth), owns_data(owns_data) {
-    real_t EXPLOGMIN = exp(GSL_LOG_DBL_MIN);
     // Since the 'nearest' interpolation method returns an
     // exact copy of some of the data in 'y', we won't need
     // a buffer for that method.
@@ -47,7 +46,7 @@ Interpolator1D::Interpolator1D(
         for (ix = 1; ix < nx; ix++)
             for (ib = 0; ib < nblocks; ib++){
                 i = ix*nblocks + ib;
-                if (y[i] > EXPLOGMIN)
+                if (y[i] > GSL_DBL_MIN)
                     logy[i] = log(y[i]);
                 else
                     logy[i] = GSL_LOG_DBL_MIN;

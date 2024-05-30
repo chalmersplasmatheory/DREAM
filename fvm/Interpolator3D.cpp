@@ -28,13 +28,12 @@ Interpolator3D::Interpolator3D(
     
     if (meth == INTERP_LOGARITHMIC){
         this->logy = new real_t[nx1*nx2*nx3];
-        real_t EXPLOGMIN = exp(GSL_LOG_DBL_MIN);
         len_t i, i1, i2, i3;
         for (i1 = 0; i1 < nx1; i1++)
             for (i2 = 0; i2 < nx2; i2++)
                 for (i3 = 0; i3 < nx3; i3++){
                     i = ((i1)*nx2 + (i2))*nx3 + (i3);
-                    if (y[i] > EXPLOGMIN)
+                    if (y[i] > GSL_DBL_MIN)
                         logy[i] = log(y[i]);
                     else
                         logy[i] = GSL_LOG_DBL_MIN;
