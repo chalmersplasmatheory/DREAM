@@ -23,6 +23,7 @@ namespace DREAM::FVM {
 
         const real_t *x1, *x2, *x3;
         const real_t *y;
+        real_t *logy=nullptr;
 
         enum momentumgrid_type gridtype;
         enum interp_method method;

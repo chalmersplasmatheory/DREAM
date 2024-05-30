@@ -20,6 +20,7 @@ namespace DREAM::FVM {
 
         const real_t *x;
         const real_t *y;
+        real_t *logy=nullptr;
 
         real_t *buffer=nullptr;
 

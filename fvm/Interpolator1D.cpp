@@ -20,10 +20,10 @@
 
 #include <cmath>
 #include "FVM/Interpolator1D.hpp"
+#include <gsl/gsl_machine.h>
 
 
 using namespace DREAM::FVM;
-
 
 /**
  * Constructor.
@@ -37,10 +37,22 @@ Interpolator1D::Interpolator1D(
     const len_t nx, const len_t nblocks, const real_t *x, const real_t *y,
     enum interp_method meth, bool owns_data
 ) : nx(nx), nblocks(nblocks), x(x), y(y), method(meth), owns_data(owns_data) {
-    
+    real_t EXPLOGMIN = exp(GSL_LOG_DBL_MIN);
     // Since the 'nearest' interpolation method returns an
     // exact copy of some of the data in 'y', we won't need
     // a buffer for that method.
+    if (meth == INTERP_LOGARITHMIC){
+        this->logy = new real_t[nx*nblocks];
+        len_t i, ix, ib;
+        for (ix = 1; ix < nx; ix++)
+            for (ib = 0; ib < nblocks; ib++){
+                i = ix*nblocks + ib;
+                if (y[i] > EXPLOGMIN)
+                    logy[i] = log(y[i]);
+                else
+                    logy[i] = GSL_LOG_DBL_MIN;
+            }
+    }
     if (meth != INTERP_NEAREST)
         this->buffer = new real_t[nblocks];
 
@@ -62,6 +74,8 @@ Interpolator1D::Interpolator1D(
 Interpolator1D::~Interpolator1D() {
     if (buffer != nullptr)
         delete [] this->buffer;
+    if (logy != nullptr)
+        delete [] this->logy;
 	if (this->owns_data) {
 		delete [] this->x;
 		delete [] this->y;
@@ -143,7 +157,7 @@ const real_t *Interpolator1D::_eval_logarithmic(const real_t xv) {
 
     if (ix+1 >= nx) {
         for (len_t i = 0; i < nblocks; i++)
-            buffer[i] = y[(nx-1)*nblocks + i];
+            buffer[i] = logy[(nx-1)*nblocks + i];
 
         return buffer;
     }
@@ -152,15 +166,10 @@ const real_t *Interpolator1D::_eval_logarithmic(const real_t xv) {
     const real_t x2  = x[ix+1];
     const real_t ddx = (xv-x1) / (x2-x1);
     for (len_t i = 0; i < nblocks; i++) {
-        const real_t y1 = y[ix*nblocks + i];
-        const real_t y2 = y[(ix+1)*nblocks + i];
+        const real_t y1 = logy[ix*nblocks + i];
+        const real_t y2 = logy[(ix+1)*nblocks + i];
 
-        if (y1 > 0 && y2 > 0) {
-            const real_t logy1 = log(y1);
-            const real_t logy2 = log(y2);
-            buffer[i] = exp((1-ddx)*logy1 + ddx*logy2);
-        } else 
-            buffer[i] = (1-ddx)*y1 + ddx*y2;
+        buffer[i] = exp((1-ddx)*y1 + ddx*y2);
     }
 
     return buffer;

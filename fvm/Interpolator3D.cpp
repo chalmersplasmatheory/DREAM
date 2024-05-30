@@ -6,7 +6,7 @@
 #include <gsl/gsl_interp.h>
 #include "FVM/FVMException.hpp"
 #include "FVM/Interpolator3D.hpp"
-
+#include <gsl/gsl_machine.h>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -25,6 +25,21 @@ Interpolator3D::Interpolator3D(
     x1(x1), x2(x2), x3(x3), y(y),
     gridtype(type), method(meth),
     ownsArrays(ownsArrays) {
+    
+    if (meth == INTERP_LOGARITHMIC){
+        this->logy = new real_t[nx1*nx2*nx3];
+        real_t EXPLOGMIN = exp(GSL_LOG_DBL_MIN);
+        len_t i, i1, i2, i3;
+        for (i1 = 0; i1 < nx1; i1++)
+            for (i2 = 0; i2 < nx2; i2++)
+                for (i3 = 0; i3 < nx3; i3++){
+                    i = ((i1)*nx2 + (i2))*nx3 + (i3);
+                    if (y[i] > EXPLOGMIN)
+                        logy[i] = log(y[i]);
+                    else
+                        logy[i] = GSL_LOG_DBL_MIN;
+                }
+    }
 
     this->acc1 = gsl_interp_accel_alloc();
     this->acc2 = gsl_interp_accel_alloc();
@@ -38,6 +53,10 @@ Interpolator3D::~Interpolator3D() {
     gsl_interp_accel_free(this->acc3);
     gsl_interp_accel_free(this->acc2);
     gsl_interp_accel_free(this->acc1);
+
+
+    if (logy != nullptr)
+        delete [] this->logy;
 
     if (this->ownsArrays) {
         delete [] this->y;
@@ -233,28 +252,14 @@ real_t Interpolator3D::_eval_logarithmic(
 
     #define IDX(X1,X2,X3) (((X1)*nx2 + (X2))*nx3 + (X3))
 
-    real_t y000 = this->y[IDX(ix10, ix20, ix30)];
-    real_t y100 = this->y[IDX(ix11, ix20, ix30)];
-    real_t y010 = this->y[IDX(ix10, ix21, ix30)];
-    real_t y001 = this->y[IDX(ix10, ix20, ix31)];
-    real_t y110 = this->y[IDX(ix11, ix21, ix30)];
-    real_t y101 = this->y[IDX(ix11, ix20, ix31)];
-    real_t y011 = this->y[IDX(ix10, ix21, ix31)];
-    real_t y111 = this->y[IDX(ix11, ix21, ix31)];
-
-    bool logarithmic = false;
-    if (y000 > 0 && y100 > 0 && y010 > 0 && y001 && y110 > 0 && y101 > 0 && y011 > 0 && y111 > 0){
-        logarithmic = true;
-        y000 = log(y000);
-        y100 = log(y100);
-        y010 = log(y010);
-        y001 = log(y001);
-        y110 = log(y110);
-        y101 = log(y101);
-        y011 = log(y011);
-        y111 = log(y111);
-    } 
-
+    real_t y000 = this->logy[IDX(ix10, ix20, ix30)];
+    real_t y100 = this->logy[IDX(ix11, ix20, ix30)];
+    real_t y010 = this->logy[IDX(ix10, ix21, ix30)];
+    real_t y001 = this->logy[IDX(ix10, ix20, ix31)];
+    real_t y110 = this->logy[IDX(ix11, ix21, ix30)];
+    real_t y101 = this->logy[IDX(ix11, ix20, ix31)];
+    real_t y011 = this->logy[IDX(ix10, ix21, ix31)];
+    real_t y111 = this->logy[IDX(ix11, ix21, ix31)];
 
     real_t x1d=0, x2d=0, x3d=0;
     if (this->x1 != nullptr)
@@ -272,9 +277,7 @@ real_t Interpolator3D::_eval_logarithmic(
     real_t y0 = y00*(1 - x2d) + y10*x2d;
     real_t y1 = y01*(1 - x2d) + y11*x2d;
 
-    if (logarithmic)
-        return exp(y0*(1 - x3d) + y1*x3d);
-    return (y0*(1 - x3d) + y1*x3d);
+    return exp(y0*(1 - x3d) + y1*x3d);
 }
 
 /**
