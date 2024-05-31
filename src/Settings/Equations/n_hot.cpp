@@ -37,9 +37,11 @@ void SimulationGenerator::ConstructEquation_n_hot(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     len_t id_n_hot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
 
+	int_t nHotMode = s->GetInteger("eqsys/f_hot/nHotMode");
+
     // If the hot-tail grid is enabled, we calculate n_hot as a
     // moment of the hot electron distribution function...
-    if (hottailGrid) {
+    if (hottailGrid && nHotMode != OptionConstants::EQTERM_HOT_ELECTRON_DENSITY_MODE_EXCLUDE) {
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 

@@ -29,6 +29,9 @@ HOT_REGION_P_MODE_MC = 1
 HOT_REGION_P_MODE_THERMAL = 2
 HOT_REGION_P_MODE_THERMAL_SMOOTH = 3
 
+HOT_ELECTRON_DENSITY_MODE_INCLUDE = 1
+HOT_ELECTRON_DENSITY_MODE_EXCLUDE = 2
+
 PARTICLE_SOURCE_ZERO     = 1
 PARTICLE_SOURCE_IMPLICIT = 2
 PARTICLE_SOURCE_EXPLICIT = 3
@@ -54,7 +57,8 @@ class HotElectronDistribution(DistributionFunction):
         dist_mode = F_HOT_DIST_MODE_NONREL,
         pThreshold=7, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
         particleSource=PARTICLE_SOURCE_EXPLICIT,
-        particleSourceShape=PARTICLE_SOURCE_SHAPE_MAXWELLIAN):
+        particleSourceShape=PARTICLE_SOURCE_SHAPE_MAXWELLIAN,
+        nHotMode=HOT_ELECTRON_DENSITY_MODE_INCLUDE):
         """
         Constructor.
         """
@@ -68,6 +72,7 @@ class HotElectronDistribution(DistributionFunction):
         self.dist_mode      = dist_mode
         self.pThreshold     = pThreshold
         self.pThresholdMode = pThresholdMode
+        self.nHotMode       = nHotMode
 
         self.particleSource = particleSource
         self.particleSourceShape = particleSourceShape
@@ -94,6 +99,13 @@ class HotElectronDistribution(DistributionFunction):
         self.particleSourceShape = shape
 
 
+    def setHotElectronDensityMode(self, hedm=HOT_ELECTRON_DENSITY_MODE_INCLUDE):
+        """
+        Set how the hot electron density 'n_hot' is to be treated.
+        """
+        self.nHotMode = hedm
+
+
     def fromdict(self, data):
         """
         Load data for this object from the given dictionary.
@@ -108,6 +120,8 @@ class HotElectronDistribution(DistributionFunction):
             self.particleSource = data['particleSource']
         if 'particleSourceShape' in data:
             self.particleSourceShape = data['particleSourceShape']
+        if 'nHotMode' in data:
+            self.nHotMode = data['nHotMode']
 
 
     def todict(self):
@@ -122,6 +136,7 @@ class HotElectronDistribution(DistributionFunction):
             data['pThresholdMode'] = self.pThresholdMode
             data['particleSource'] = self.particleSource
             data['particleSourceShape'] = self.particleSourceShape
+            data['nHotMode']       = self.nHotMode
 
         return data
 
