@@ -343,6 +343,11 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
 };
 
+enum eqterm_hot_electron_density_mode {
+	EQTERM_HOT_ELECTRON_DENSITY_MODE_INCLUDE = 1,	// Evolve 'n_hot' as a moment of the distribution function (if applicable)
+	EQTERM_HOT_ELECTRON_DENSITY_MODE_EXCLUDE = 2	// Keep 'n_hot' = 0
+};
+
 enum eqterm_spi_velocity_mode {
     EQTERM_SPI_VELOCITY_MODE_NONE=1,
     EQTERM_SPI_VELOCITY_MODE_PRESCRIBED=2

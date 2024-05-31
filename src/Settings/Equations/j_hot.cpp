@@ -38,9 +38,11 @@ void SimulationGenerator::ConstructEquation_j_hot(
     len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
     len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
+	int_t nHotMode = s->GetInteger("eqsys/f_hot/nHotMode");
+
     // If the hot-tail grid is enabled, we calculate j_hot as a
     // moment of the hot electron distribution function...
-    if (hottailGrid) {
+    if (hottailGrid && nHotMode != OptionConstants::EQTERM_HOT_ELECTRON_DENSITY_MODE_EXCLUDE) {
         if(hottailGrid->GetNp2(0)==1) // XXX: assumes we don't switch mode between radii
             ConstructEquation_j_hot_hottailMode(eqsys,s);
         else {
