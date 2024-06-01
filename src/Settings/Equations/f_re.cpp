@@ -120,7 +120,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
     if (!Op_nTot->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_tot, Op_nTot);
     if (!Op_ni->IsEmpty())
-        eqsys->SetOperator(id_f_re, id_n_i, Op_nTot);
+        eqsys->SetOperator(id_f_re, id_n_i, Op_ni);
     if (Op_nREn != nullptr && !Op_nREn->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_re_neg, Op_nREn);
 
