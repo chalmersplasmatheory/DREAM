@@ -22,7 +22,6 @@ PCustomGridGenerator::PCustomGridGenerator(
     this->pf_provided = new real_t[np+1];
     for(len_t i=0; i<np+1; i++)
         this->pf_provided[i] = p_f_in[i];
-    delete [] p_f_in;
 }
 
 

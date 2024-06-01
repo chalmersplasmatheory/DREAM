@@ -188,7 +188,6 @@ real_t HottailRateTermHighZ::evaluatePartialCriticalMomentum(len_t ir, len_t der
     return (root - pCrit[ir])/h;
 }
 
-
 /**
  * Sets the Jacobian of this equation term
  */

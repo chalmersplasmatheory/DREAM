@@ -41,6 +41,8 @@ void RunawaySourceTermHandler::applyToAll(std::function<void(FVM::EquationTerm*)
         op(this->dreicer);
     if (this->hottail != nullptr)
         op(this->hottail);
+    if (this->lcfs_loss != nullptr)
+        op(this->lcfs_loss);
     if (!this->tritium.empty()) {
         for (auto t : this->tritium)
             op(t);
@@ -55,6 +57,8 @@ void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::Equation
         op(this->dreicer);
     if (this->hottail != nullptr)
         op(this->hottail);
+    if (this->lcfs_loss != nullptr)
+        op(this->lcfs_loss);
     if (!this->tritium.empty()) {
         for (auto t : this->tritium)
             op(t);
@@ -108,6 +112,15 @@ void RunawaySourceTermHandler::AddToOperators(
             );
         else
             op_nRE->AddTerm(this->hottail);
+    }
+    if (this->lcfs_loss != nullptr) {
+        if (op_nRE == nullptr)
+            throw DREAMException(
+                "RunawaySourceTermHandler: LCFS loss term enabled, but no operator "
+                "for n_re provided."
+            );
+        else
+            op_nRE->AddTerm(this->lcfs_loss);
     }
 
     // n_tot

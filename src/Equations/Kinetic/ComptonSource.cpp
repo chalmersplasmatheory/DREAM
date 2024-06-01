@@ -147,6 +147,9 @@ real_t ComptonSource::EvaluateSource(len_t ir, len_t i, len_t) {
     real_t dp = pp-pm;
     real_t pi = (pp+pm)/2;
 
+    if (integrand(pm, &params) < 1e-300)
+        return 0.;
+
 
     real_t integral;
     real_t abserr;

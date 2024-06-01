@@ -33,7 +33,7 @@ CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
 }
 
 CollisionalEnergyTransferKineticTerm::~CollisionalEnergyTransferKineticTerm(){
-    delete [] collQtySetting;
+    delete collQtySetting;
 }
 
 

@@ -6,7 +6,7 @@
 #include <gsl/gsl_interp.h>
 #include "FVM/FVMException.hpp"
 #include "FVM/Interpolator3D.hpp"
-
+#include <gsl/gsl_machine.h>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -25,6 +25,20 @@ Interpolator3D::Interpolator3D(
     x1(x1), x2(x2), x3(x3), y(y),
     gridtype(type), method(meth),
     ownsArrays(ownsArrays) {
+    
+    if (meth == INTERP_LOGARITHMIC){
+        this->logy = new real_t[nx1*nx2*nx3];
+        len_t i, i1, i2, i3;
+        for (i1 = 0; i1 < nx1; i1++)
+            for (i2 = 0; i2 < nx2; i2++)
+                for (i3 = 0; i3 < nx3; i3++){
+                    i = ((i1)*nx2 + (i2))*nx3 + (i3);
+                    if (y[i] > GSL_DBL_MIN)
+                        logy[i] = log(y[i]);
+                    else
+                        logy[i] = GSL_LOG_DBL_MIN;
+                }
+    }
 
     this->acc1 = gsl_interp_accel_alloc();
     this->acc2 = gsl_interp_accel_alloc();
@@ -38,6 +52,10 @@ Interpolator3D::~Interpolator3D() {
     gsl_interp_accel_free(this->acc3);
     gsl_interp_accel_free(this->acc2);
     gsl_interp_accel_free(this->acc1);
+
+
+    if (logy != nullptr)
+        delete [] this->logy;
 
     if (this->ownsArrays) {
         delete [] this->y;
@@ -147,6 +165,8 @@ const real_t *Interpolator3D::Eval(
                     const len_t idx = (k*nx2 + j)*nx3 + i; \
                     if (meth == INTERP_NEAREST) { \
                         out[idx] = this->_eval_nearest((X1), (X2), (X3)); \
+                    } else if (meth == INTERP_LOGARITHMIC) { \
+                        out[idx] = this->_eval_logarithmic((X1), (X2), (X3)); \
                     } else { \
                         out[idx] = this->_eval_linear((X1), (X2), (X3)); \
                     } \
@@ -203,6 +223,60 @@ real_t Interpolator3D::_eval_nearest(
     #undef CORRECT
 
     return this->y[(ix1*nx2 + ix2)*nx3 + ix3];
+}
+
+/**
+ * Evaluate a single point on the grid using the
+ * 'logarithmic' interpolation algorithm.
+ */
+real_t Interpolator3D::_eval_logarithmic(
+    const real_t x1, const real_t x2, const real_t x3
+) {
+    len_t ix10 = _find_x1(x1);
+    len_t ix20 = _find_x2(x2);
+    len_t ix30 = _find_x3(x3);
+
+    if (this->nx1 > 1 && ix10+1 == this->nx1) ix10--;
+    if (this->nx2 > 1 && ix20+1 == this->nx2) ix20--;
+    if (this->nx3 > 1 && ix30+1 == this->nx3) ix30--;
+
+    len_t ix11 = ix10 + 1;
+    len_t ix21 = ix20 + 1;
+    len_t ix31 = ix30 + 1;
+
+    // Check for single grid points
+    if (ix11 == this->nx1) ix11 = ix10;
+    if (ix21 == this->nx2) ix21 = ix20;
+    if (ix31 == this->nx3) ix31 = ix30;
+
+    #define IDX(X1,X2,X3) (((X1)*nx2 + (X2))*nx3 + (X3))
+
+    real_t y000 = this->logy[IDX(ix10, ix20, ix30)];
+    real_t y100 = this->logy[IDX(ix11, ix20, ix30)];
+    real_t y010 = this->logy[IDX(ix10, ix21, ix30)];
+    real_t y001 = this->logy[IDX(ix10, ix20, ix31)];
+    real_t y110 = this->logy[IDX(ix11, ix21, ix30)];
+    real_t y101 = this->logy[IDX(ix11, ix20, ix31)];
+    real_t y011 = this->logy[IDX(ix10, ix21, ix31)];
+    real_t y111 = this->logy[IDX(ix11, ix21, ix31)];
+
+    real_t x1d=0, x2d=0, x3d=0;
+    if (this->x1 != nullptr)
+        if (ix10 != ix11) x1d = (x1-this->x1[ix10]) / (this->x1[ix11] - this->x1[ix10]);
+    if (this->x2 != nullptr)
+        if (ix20 != ix21) x2d = (x2-this->x2[ix20]) / (this->x2[ix21] - this->x2[ix20]);
+    if (this->x3 != nullptr)
+        if (ix30 != ix31) x3d = (x3-this->x3[ix30]) / (this->x3[ix31] - this->x3[ix30]);
+
+    real_t y00 = y000*(1 - x1d) + y100*x1d;
+    real_t y01 = y001*(1 - x1d) + y101*x1d;
+    real_t y10 = y010*(1 - x1d) + y110*x1d;
+    real_t y11 = y011*(1 - x1d) + y111*x1d;
+
+    real_t y0 = y00*(1 - x2d) + y10*x2d;
+    real_t y1 = y01*(1 - x2d) + y11*x2d;
+
+    return exp(y0*(1 - x3d) + y1*x3d);
 }
 
 /**

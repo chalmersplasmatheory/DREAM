@@ -231,6 +231,8 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -319,6 +321,8 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -588,6 +592,8 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -667,6 +673,8 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -843,6 +851,8 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
             interp_meth = FVM::Interpolator3D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP3D_LINEAR:
             interp_meth = FVM::Interpolator3D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP3D_LOGARITHMIC:
+            interp_meth = FVM::Interpolator3D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -955,6 +965,8 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
             interp3d = FVM::Interpolator3D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP3D_LINEAR:
             interp3d = FVM::Interpolator3D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP3D_LOGARITHMIC:
+            interp3d = FVM::Interpolator3D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -970,7 +982,8 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
             interp1d = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1d = FVM::Interpolator1D::INTERP_LINEAR; break;
-
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1d = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
         default:
             throw SettingsException(
                 "%s: Unrecognized 1D interpolation method: %d.",

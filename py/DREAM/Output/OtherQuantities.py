@@ -8,6 +8,7 @@ from . OtherKineticQuantity import OtherKineticQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
 
 from . AvalancheGrowthRate import AvalancheGrowthRate
+from . LCFSLoss import LCFSLoss
 
 
 class OtherQuantities:
@@ -19,6 +20,7 @@ class OtherQuantities:
         'f_re_ripple_pmn': OtherQuantity,
         'kinioniz_vsigma': OtherIonSpeciesKineticQuantity,
         'GammaAva': AvalancheGrowthRate,
+        'gammaLCFSLoss': LCFSLoss,
         'nu_D_f1': OtherKineticQuantity,
         'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,

@@ -48,21 +48,38 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
     this->nr = grid->GetNr() + (fgType==FLUXGRIDTYPE_RADIAL);
     n1 = new len_t[nr];
     n2 = new len_t[nr];
+    n1[0] = grid->GetNp1(0*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P1);
+    n2[0] = grid->GetNp2(0*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P2);
+    len_t n1n2 = n1[0]*n2[0];
+
     deltas = new real_t**[nr];
+    deltas[0] = new real_t*[nr*n1n2];
+    deltas[0][0] = new real_t[nr*n1n2*2*STENCIL_WIDTH];
+
     deltas_jac = new real_t**[nr];
-    for(len_t ir=0; ir<nr; ir++){
+    deltas_jac[0] = new real_t*[nr*n1n2];
+    deltas_jac[0][0] = new real_t[nr*n1n2*2*STENCIL_WIDTH];
+
+    for(len_t i=1; i<n1n2; i++){
+        deltas[0][i] = deltas[0][i-1] + 2*STENCIL_WIDTH;
+        deltas_jac[0][i] = deltas_jac[0][i-1] + 2*STENCIL_WIDTH;
+    }
+    for(len_t ir=1; ir<nr; ir++){
         // XXX: If radial flux grid, assume same momentum grid at all radii
         n1[ir] = grid->GetNp1(ir*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P1);
         n2[ir] = grid->GetNp2(ir*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P2);
-        len_t N = n1[ir]*n2[ir];
-        deltas[ir] = new real_t*[N];
-        deltas_jac[ir] = new real_t*[N];
-        for(len_t i=0; i<N; i++){
-            deltas[ir][i] = new real_t[2*STENCIL_WIDTH];
-            deltas_jac[ir][i] = new real_t[2*STENCIL_WIDTH];
+
+        deltas[ir] = deltas[ir-1] + n1n2;
+        deltas[ir][0] = deltas[ir-1][n1n2-1] + 2*STENCIL_WIDTH; 
+
+        deltas_jac[ir] = deltas_jac[ir-1] + n1n2;
+        deltas_jac[ir][0] = deltas_jac[ir-1][n1n2-1] + 2*STENCIL_WIDTH;
+        for(len_t i=1; i<n1n2; i++){
+            deltas[ir][i] = deltas[ir][i-1] + 2*STENCIL_WIDTH;
+            deltas_jac[ir][i] = deltas_jac[ir][i-1] + 2*STENCIL_WIDTH;
         }
-        
     }
+    
     ResetCoefficient();
     return true;
 }
@@ -484,19 +501,13 @@ void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
  */
 void AdvectionInterpolationCoefficient::Deallocate(){
     if(deltas != nullptr){
-        for(len_t ir=0; ir<nr; ir++){
-            for(len_t i=0; i<n1[ir]*n2[ir]; i++)
-                delete [] deltas[ir][i];
-            delete [] deltas[ir];
-        }
+        delete [] deltas[0][0];
+        delete [] deltas[0];
         delete [] deltas;
     }
     if(deltas_jac != nullptr){
-        for(len_t ir=0; ir<nr; ir++){
-            for(len_t i=0; i<n1[ir]*n2[ir]; i++)
-                delete [] deltas_jac[ir][i];
-            delete [] deltas_jac[ir];
-        }
+        delete [] deltas_jac[0][0];
+        delete [] deltas_jac[0];
         delete [] deltas_jac;
     }
 

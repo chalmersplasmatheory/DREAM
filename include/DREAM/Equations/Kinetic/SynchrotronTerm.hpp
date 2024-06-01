@@ -26,6 +26,9 @@ namespace DREAM {
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
+
+        real_t getf1_PXI(len_t i, len_t j, FVM::MomentumGrid *mg, const real_t *BA1_f1, real_t Bmin, len_t ir=0, FVM::RadialGrid *rGrid=nullptr);
+        real_t getf2_PXI(len_t i, len_t j, FVM::MomentumGrid *mg, const real_t *BA2_f2, real_t Bmin);
     };
 }
 

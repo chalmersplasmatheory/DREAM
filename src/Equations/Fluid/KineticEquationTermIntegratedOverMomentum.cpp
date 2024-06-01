@@ -28,6 +28,7 @@ KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMome
 ) : FVM::EquationTerm(fluidGrid), kineticGrid(kineticGrid),
     kineticOperator(kineticOperator), id_f(id_f), unknowns(u),
     rebuildOperator(rebuild), scaleFactor(scaleFactor) {
+    NCells = kineticGrid->GetNCells();
     
     SetName("KineticEquationTermIntegratedOverMomentum");
 }
@@ -63,7 +64,6 @@ void KineticEquationTermIntegratedOverMomentum::Allocate() {
  * Allocate and initialize grid quantities
  */
 void KineticEquationTermIntegratedOverMomentum::allocateKineticStorage(){
-    NCells = kineticGrid->GetNCells();
     PetscInt nnzPerRow = kineticOperator->GetNumberOfNonZerosPerRow_jac();
     PetscInt maxMGN = 0;
     for(len_t ir=0; ir<nr; ir++){

@@ -45,6 +45,8 @@ namespace DREAM {
 
         real_t GetP3NuSAtZero(len_t ir);
         real_t *GetPartialP3NuSAtZero(len_t derivId); 
+
+        real_t evaluateBremsstrahlungAtPforZ(len_t iz, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode) { return -evaluateBremsstrahlungTermAtP(iz, 0, p, brems_mode); }
     };
 
 }
