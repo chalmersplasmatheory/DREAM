@@ -104,7 +104,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.lcfs_loss = lcfs_loss
         self.lcfs_t_loss = np.array([0])
         self.lcfs_t_loss_r = np.array([0])
-        self.lcfs_user_input_psi = np.array([0])
+        self.lcfs_user_input_psi = False
         self.lcfs_psi_edge_t0 = np.array([0])
 
 
@@ -141,7 +141,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.verifySettingsPrescribedInitialData()
         
         
-    def setLCFSLossPsiEdget0(self, psi_edge_t0, user_input_active=1):
+    def setLCFSLossPsiEdget0(self, psi_edge_t0, user_input_active=True):
         """
         Sets the value of psi_p at the plasma edge at
         t = 0, used to determine the LCFS radial point.
@@ -300,10 +300,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         # Loss term
         if 'lcfs_loss' in data:
             self.lcfs_loss     = int(data['lcfs_loss'])
-            self.lcfs_user_input_psi     = int(data['lcfs_user_input_psi'])
-            self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
-            self.lcfs_t_loss   = data['lcfs_t_loss']['x']
-            self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
+
+            if self.lcfs_loss != LCFS_LOSS_MODE_DISABLED:
+                self.lcfs_user_input_psi     = bool(data['lcfs_user_input_psi'])
+                self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
+                self.lcfs_t_loss   = data['lcfs_t_loss']['x']
+                self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
 
         if 'flux' in data['compton']:
             if type(data['compton']['flux']) == dict:

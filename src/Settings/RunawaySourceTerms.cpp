@@ -164,19 +164,33 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
      
     // Add LCFS loss term (add exception if (nr==1 and lcfs_mode != LCFS_LOSS_MODE_DISABLED)...)
     OptionConstants::eqterm_lcfs_loss_mode lcfs_mode = (enum OptionConstants::eqterm_lcfs_loss_mode)s->GetInteger(mod + "/lcfs_loss");
-    if (lcfs_mode != OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED && grid->GetNr() == 1){
-        throw SettingsException(
-            "The LCFS loss term is not compatible with using only one radial grid point."
-        );
-    }
-    bool lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
-    real_t lcfs_psi_edge_t0 = s->GetReal(mod + "/lcfs_psi_edge_t0");
-    if(lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_FLUID){
-    	oqty_terms->lcfsLossRate_fluid = new LCFSLossRateTerm(grid, unknowns, fluidGrid, -1.0, LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss"), lcfs_user_input_psi, lcfs_psi_edge_t0);
-        rsth->AddSourceTerm(eqnSign + "n_re*lcfs_loss", oqty_terms->lcfsLossRate_fluid);
-    } else if (lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_KINETIC){
-        rsth->AddSourceTerm(eqnSign + "n_re*lcfs_loss", new LCFSLossRateTerm(grid, unknowns, runawayGrid, -1.0, LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss"), lcfs_user_input_psi, lcfs_psi_edge_t0));
-    }
+	if (lcfs_mode != OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED) {
+		if (grid->GetNr() == 1){
+			throw SettingsException(
+				"The LCFS loss term is not compatible with using only one radial grid point."
+			);
+		}
+
+		bool lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
+		real_t lcfs_psi_edge_t0 = s->GetReal(mod + "/lcfs_psi_edge_t0");
+		real_t *lcfs_t_loss = LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss");
+
+		if(lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_FLUID){
+			oqty_terms->lcfsLossRate_fluid = new LCFSLossRateTerm(
+				grid, unknowns, fluidGrid, -1.0, lcfs_t_loss,
+				lcfs_user_input_psi, lcfs_psi_edge_t0
+			);
+			rsth->AddSourceTerm(eqnSign + "n_re*lcfs_loss", oqty_terms->lcfsLossRate_fluid);
+		} else if (lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_KINETIC){
+			rsth->AddSourceTerm(
+				eqnSign + "n_re*lcfs_loss",
+				new LCFSLossRateTerm(
+					grid, unknowns, runawayGrid, -1.0, lcfs_t_loss,
+					lcfs_user_input_psi, lcfs_psi_edge_t0
+				)
+			);
+		}
+	}
     
     
     return rsth;
