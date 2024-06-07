@@ -1185,6 +1185,10 @@ class IonSpecies:
 
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, co = 0, t_start = 0, r = None, t = None):
+        """
+        Construct transport coefficients which decay exponentially in
+        time, for all charge states of this species.
+        """
         c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, co, t_start, r, t)
         cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state[0,:])))
         for i in range(self.Z):
