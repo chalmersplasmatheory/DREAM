@@ -4,16 +4,25 @@
 import argparse
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.integrate import quad
 from scipy.optimize import curve_fit
 import sys
 
 
-def func(E, lphi, c1, c2, c3):
+def func(E, lG, c1, c2, c3):
     """
     Function to fit to photon spectrum.
     """
     z = (np.log(E) + c1) / c2 + c3 * E**2
-    return lphi - np.exp(-z)-z+1
+    return lG - np.exp(-z)-z+1
+
+
+def eval_integral(lG, c1, c2, c3):
+    """
+    Evaluate the integral of the photon spectrum from 0 to inf.
+    """
+    I, _ = quad(lambda E : np.exp(func(E, lG, c1, c2, c3)), 0, np.inf)
+    return I
 
 
 def fit_spectrum(E, G):
@@ -78,9 +87,10 @@ def main():
         raise Exception("Unrecognized file type of spectrum file.")
 
     params = fit_spectrum(E, G)
+    I = eval_integral(*params) / np.exp(params[0])
 
     print('Best fitting parameters:')
-    print(f'  PHI = {np.exp(params[0]):.3e}')
+    print(f'  PHI = {np.exp(params[0])*I:.3e}')
     print(f'   C1 = {params[1]:.3f}')
     print(f'   C2 = {params[2]:.3f}')
     print(f'   C3 = {params[3]:.3f}')
