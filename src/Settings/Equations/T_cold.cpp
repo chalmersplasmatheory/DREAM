@@ -9,6 +9,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
+#include "DREAM/Equations/Fluid/ColdHotHeatTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "DREAM/Equations/Fluid/IonisationHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
@@ -216,8 +217,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
      *       hot region. This should be corrected for at some point!
      */
     bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
-    if( eqsys->HasHotTailGrid()&& !collfreqModeFull ){
+    if (eqsys->HasHotTailGrid()) {
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
 
         FVM::MomentQuantity::pThresholdMode pMode = 
             (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
@@ -226,6 +228,15 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             // With collfreq_mode FULL, only add contribution from hot electrons
             // defined as those with momentum above the defined threshold. 
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+
+			oqty_terms->T_cold_coldhot_transfer = new ColdHotHeatTransferTerm(
+				fluidGrid, eqsys->GetHotTailGrid(),
+				id_T_cold, id_f_hot, eqsys->GetUnknownHandler(),
+				pThreshold, pMode
+			);
+			Op5->AddTerm(oqty_terms->T_cold_coldhot_transfer);
+
+			desc += " - W_transfer";
         }
         oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),
@@ -233,7 +244,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             eqsys->GetHotTailGridType(), -1.0,
             pThreshold, pMode
         );
-        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
         eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
         desc += " + int(W*nu_E*f_hot)";

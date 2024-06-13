@@ -118,6 +118,13 @@ enum radialgrid_numeric_format {
     RADIALGRID_NUMERIC_FORMAT_LUKE=1
 };
 
+// Condition to use for separating f_hot into cold/hot regions
+enum hot_region_p_mode {
+	HOT_REGION_P_MODE_MC=1,
+	HOT_REGION_P_MODE_THERMAL=2,
+	HOT_REGION_P_MODE_THERMAL_SMOOTH=3
+};
+
 /////////////////////////////////////
 ///
 /// SOLVER OPTIONS
