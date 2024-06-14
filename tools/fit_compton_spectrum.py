@@ -45,7 +45,7 @@ def load_delim(filename, delim):
     return A[:,0], A[:,1]
     
 
-def plot_spectrum(E, G, phi, c1, c2, c3):
+def plot_spectrum(E, G, phi, c1, c2, c3, I):
     """
     Plot numerical data and fit.
     """
@@ -61,7 +61,7 @@ def plot_spectrum(E, G, phi, c1, c2, c3):
     mx = np.ceil(np.log10(np.amax(G)))
     ax.set_ylim([10**(mx-10), 10**mx])
 
-    ax.set_title(f'phi={np.exp(phi):.3e}, c1={c1:.3f}, c2={c2:.3f}, c3={c3:.3f}')
+    ax.set_title(f'phi={np.exp(phi)*I:.3e}, c1={c1:.3f}, c2={c2:.3f}, c3={c3:.3f}')
 
     fig.tight_layout()
     plt.show()
@@ -72,6 +72,7 @@ def parse_args():
 
     parser.add_argument('spectrum', help="File containing photon spectrum data.")
     parser.add_argument('-p', '--plot', help="Plot the fit and numerical data.", action='store_true')
+    parser.add_argument('-s', '--scale', help="Factor by which to multiply the input data.", nargs='?', default=1, type=float)
 
     return parser.parse_args()
 
@@ -86,6 +87,8 @@ def main():
     else:
         raise Exception("Unrecognized file type of spectrum file.")
 
+    G *= args.scale
+
     params = fit_spectrum(E, G)
     I = eval_integral(*params) / np.exp(params[0])
 
@@ -96,7 +99,7 @@ def main():
     print(f'   C3 = {params[3]:.3f}')
 
     if args.plot:
-        plot_spectrum(E, G, *params)
+        plot_spectrum(E, G, *params, I=I)
 
     return 0
 
