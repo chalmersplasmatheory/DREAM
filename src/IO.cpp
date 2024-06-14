@@ -2,6 +2,8 @@
  * Implementation of some screen I/O helper routines.
  */
 
+#include <string>
+#include <vector>
 #include <omp.h>
 #include "DREAM/IO.hpp"
 
@@ -16,6 +18,10 @@ bool IO::message_checklist[MESSAGE_LAST] = {false};
     const std::string IO::PRINT_YES = "YES";
     const std::string IO::PRINT_NO  = "NO";
 #endif
+
+/* Vector for storing warnings emitted during the simulation. */
+std::vector<std::string> IO::emitted_warning_messages = std::vector<std::string>();
+
 
 /**
  * Print a single new-line character in the 'Info' channel.
