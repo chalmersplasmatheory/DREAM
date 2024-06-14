@@ -259,11 +259,7 @@ and the kinetic source rate by
 where :math:`n_{\rm T}` is the tritium density, :math:`\tau_{\rm T} = 4800\pm 8`
 days is the tritium half-life, :math:`f_\beta(\gamma)` is the beta energy spectrum 
 and :math:`F_\beta(\gamma_{\rm c})` denotes the fraction of beta electrons generated with 
-an energy above the critical energy :math:`\gamma_{\rm c}` for runaway to occur. Note 
-that with the kinetic source rate, the electrons will be added to the kinetic grids, when 
-possible. If the runaway grid is not activated, the generation of runaways above the upper
-limit of the hot-tail grid will be integrated, as with the fluid runaway rate, from the upper
-limit of the hot-tail grid.
+an energy above the critical energy :math:`\gamma_{\rm c}` for runaway to occur. 
 
 The following settings are used to control the tritium source mode:
 
@@ -301,7 +297,7 @@ mechanism in a DREAM simulation:
    ds = DREAMSettings()
    ...
    # Include source term in equation for n_re
-   ds.eqsys.n_re.setTritium(True)
+   ds.eqsys.n_re.setTritium(tritium=TRITIUM_MODE_FLUID)
 
    # Add tritium ion species to list of ions
    ds.eqsys.ions.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
@@ -343,11 +339,16 @@ Following Martin-Solis Eq (24), we model the photon energy spectrum with
 where :math:`\Phi_0 = \int \Phi \,\mathrm{d}E_\gamma` is the total photon gamma flux.
 For ITER, according to Martin-Solis, this value is :math:`\Phi_0 \approx 10^{18}\,\mathrm{m}^{-2}\mathrm{s}^{-1}`
 during the nuclear phase.
-We use :math:`z = [C_1 + \ln(E_\gamma[MeV])]/C_2 + C_3(E_\gamma[MeV])^2`, where :math:`C_1,\ C_2,\ C_3`
+We use :math:`z = [C_1 + \ln(E_\gamma[MeV])]/C_2 + C_3(E_\gamma[MeV])^2`, where :math:`C_1,\ C_2` and :math:`C_3`
 are free positive parameters used to determine the shape of the photon flux spectrum. The Compton fitting tool can
 be used to fit these parameters to data of this spectrum, otherwise the default values are the ones used by 
 Martin-Solis, i.e. :math:`C_1 = 1.2`, :math:`C_2 = 0.8` and :math:`C_3 = 0`.
 
+Note 
+that with the kinetic source rate, the electrons will be added to the kinetic grids, when 
+possible. If the runaway grid is not activated, the generation of runaways above the upper
+limit of the hot-tail grid will be integrated, as with the fluid runaway rate, from the upper
+limit of the hot-tail grid.
 
 The following settings are used to control the Compton source mode:
 
