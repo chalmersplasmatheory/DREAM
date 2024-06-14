@@ -852,14 +852,14 @@ void OtherQuantityHandler::DefineQuantities() {
 		);
 	}
 
-    if (this->tracked_terms->f_re_kin_approx_rates.size() > 0) {
+    if (this->tracked_terms->n_re_kin_rates.size() > 0) {
         DEF_FL_MUL("fluid/kinioniz_approx_vsigma", nChargeStates, "Approximated runaway impact ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
             real_t *v = qd->StoreEmpty();
             const len_t nr = this->fluidGrid->GetNr();
             const real_t *nre = unknowns->GetUnknownData(id_n_re);
             len_t offset = 0;
-            for (len_t iz = 0; iz < this->tracked_terms->f_re_kin_approx_rates.size(); iz++) {
-                IonFluidRunawayIonizationTerm *ifrit = this->tracked_terms->f_re_kin_approx_rates[iz];
+            for (len_t iz = 0; iz < this->tracked_terms->n_re_kin_rates.size(); iz++) {
+                IonFluidRunawayIonizationTerm *ifrit = this->tracked_terms->n_re_kin_rates[iz];
                 real_t *weights = ifrit->GetWeights();
                 len_t Z = ions->GetZ(iz);
                 for (len_t Z0 = 0; Z0 <= Z; Z0++)

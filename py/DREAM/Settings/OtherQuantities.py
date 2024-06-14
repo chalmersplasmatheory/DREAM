@@ -35,7 +35,7 @@ class OtherQuantities:
         'fluid/Tcold_ion_coll',
         'fluid/W_hot',
         'fluid/W_re',
-        'fluid/kinioniz_approx_vsigma',
+        'fluid/kinioniz_vsigma',
         'fluid/Zeff',
         'energy',
         'hottail/Ar', 'hottail/Ap1', 'hottail/Ap2',

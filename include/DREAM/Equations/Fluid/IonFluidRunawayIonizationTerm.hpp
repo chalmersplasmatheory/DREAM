@@ -24,8 +24,15 @@ namespace DREAM {
 
             len_t nr;
 
-            const real_t p0 = 20.0; // same value used for RE heating term?
-            real_t preFactor;
+            /**
+             * The ionisation cross-section scales logarithmically with the runaway momentum p, 
+             * and thus only weakly depends on p at relevant energies. This motivates the 
+             * assumption of f_re ~ delta(p - p*) in approximating the runaway electron impact ionisation.
+             * To this end, the characteristic momentum of 20 mc is used.
+             */
+            const real_t CHARACTERISTIC_RUNAWAY_MOMENTUM = 20.0;
+
+	    real_t preFactor;
 
 
 

@@ -281,7 +281,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     if (nZ0_prescribed > 0)
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
-    bool includeKineticIonizationApprox = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_APPROX_RE);
+    bool includeFluidREIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE);
 
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
@@ -350,9 +350,9 @@ void SimulationGenerator::ConstructEquation_Ions(
 						Op_kiniz_re->AddTerm(ikit);
                     }
                 }
-                else if (includeKineticIonizationApprox) {
+                else if (includeFluidREIonization) {
                     IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, 1.0);
-                    oqty_terms->f_re_kin_approx_rates.push_back(ifrit);
+                    oqty_terms->n_re_kin_rates.push_back(ifrit);
                     eqn->AddTerm(ifrit);
                 }
                 break;
@@ -385,8 +385,8 @@ void SimulationGenerator::ConstructEquation_Ions(
     if (nEquil>0) {
         if (includeKineticIonization)
             desc += " (kinetic ionization)";
-        else if (includeKineticIonizationApprox)
-            desc += " (approx. kinetic ionization)";
+        else if (includeFluidREIonization)
+            desc += " (fluid RE ionization)";
     }
     if (ipp != nullptr)
         eqn->AddTerm(ipp);

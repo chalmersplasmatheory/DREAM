@@ -84,7 +84,7 @@ namespace DREAM {
 			std::vector<IonKineticIonizationTerm*> f_hot_kin_rates;
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
             // List of approximated RE impact ionization rates for teach ion species
-            std::vector<IonFluidRunawayIonizationTerm*> f_re_kin_approx_rates;
+            std::vector<IonFluidRunawayIonizationTerm*> n_re_kin_rates;
         };
 
     protected:
