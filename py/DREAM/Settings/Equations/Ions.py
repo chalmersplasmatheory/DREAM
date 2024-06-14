@@ -370,6 +370,165 @@ class Ions(UnknownQuantity):
         if self.tNeutralPrescribedAdvection is not None:
             self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
 
+<<<<<<< HEAD
+=======
+
+    def setChargedDiffusion(
+        self, species, mode, Drr=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Drr_0=None, Drr_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial diffusion for charged particles.
+
+        :param species:                        Species to apply transport to.
+        :param mode:                           Type of transport to prescribe.
+        :param Drr:                            Diffusion coefficient to prescribe.
+        :param r:                              Radial grid on which ``Drr`` is given.
+        :param t:                              Time grid on which ``Drr`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Drr_0:                          Initial value of diffusion coefficient when decaying exponentially.
+        :param Drr_f:                          Final value of diffusion coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        ion = self.getIon(self.getIndex(species))
+        ion.setChargedDiffusion(
+            mode=mode, Drr=Drr, r=r, t=t,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Drr_0=Drr_0, Drr_f=Drr_f, r_expdecay_all_cs=r_expdecay_all_cs,
+            t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
+
+        if mode == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
+            self.rChargedPrescribedDiffusion = ion.getRChargedPrescribedDiffusion()
+            self.tChargedPrescribedDiffusion = ion.getTChargedPrescribedDiffusion()
+
+
+    def setNeutralDiffusion(
+        self, species, mode, Drr=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Drr_0=None, Drr_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial diffusion for neutral particles.
+
+        :param species:                        Species to apply transport to.
+        :param mode:                           Type of transport to prescribe.
+        :param Drr:                            Diffusion coefficient to prescribe.
+        :param r:                              Radial grid on which ``Drr`` is given.
+        :param t:                              Time grid on which ``Drr`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Drr_0:                          Initial value of diffusion coefficient when decaying exponentially.
+        :param Drr_f:                          Final value of diffusion coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        ion = self.getIon(self.getIndex(species))
+        ion.setNeutralDiffusion(
+            mode=mode, Drr=Drr, r=r, t=t,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Drr_0=Drr_0, Drr_f=Drr_f, r_expdecay_all_cs=r_expdecay_all_cs,
+            t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
+
+        if mode == ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED:
+            self.rNeutralPrescribedDiffusion = ion.getRNeutralPrescribedDiffusion()
+            self.tNeutralPrescribedDiffusion = ion.getTNeutralPrescribedDiffusion()
+
+
+    def setChargedAdvection(
+        self, species, mode, Ar=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Ar_0=None, Ar_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial advection for charged particles.
+
+        :param species:                        Species to apply transport to.
+        :param mode:                           Type of transport to prescribe.
+        :param Ar:                             Advection coefficient to prescribe.
+        :param r:                              Radial grid on which ``Ar`` is given.
+        :param t:                              Time grid on which ``Ar`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Ar_0:                           Initial value of advection coefficient when decaying exponentially.
+        :param Ar_f:                           Final value of advection coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        ion = self.getIon(self.getIndex(species))
+        ion.setChargedAdvection(
+            mode=mode, Ar=Ar, r=r, t=t,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Ar_0=Ar_0, Ar_f=Ar_f, r_expdecay_all_cs=r_expdecay_all_cs,
+            t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
+
+        if mode == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+            self.rChargedPrescribedAdvection = ion.getRChargedPrescribedAdvection()
+            self.tChargedPrescribedAdvection = ion.getTChargedPrescribedAdvection()
+
+
+    def setNeutralAdvection(
+        self, species, mode, Ar=None, r=None, t=None,
+        t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
+        Ar_0=None, Ar_f=0,
+        r_expdecay_all_cs=None, t_expdecay_all_cs=None,
+        interpr=None, interpt=None
+    ):
+        """
+        Set ion radial advection for neutral particles.
+
+        :param species:                        Species to apply transport to.
+        :param mode:                           Type of transport to prescribe.
+        :param Ar:                             Advection coefficient to prescribe.
+        :param r:                              Radial grid on which ``Ar`` is given.
+        :param t:                              Time grid on which ``Ar`` is given.
+        :param t_transp_expdecay_all_cs:       e-folding time of transport coefficient decay (exponential decay).
+        :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
+        :param Ar_0:                           Initial value of advection coefficient when decaying exponentially.
+        :param Ar_f:                           Final value of advection coefficient when decaying exponentially.
+        :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
+        :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
+        :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
+        :param interpt:                        Time grid onto which ion transport coefficients should be interpolated.
+        """
+        ion = self.getIon(self.getIndex(species))
+        ion.setNeutralAdvection(
+            mode=mode, Ar=Ar, r=r, t=t,
+            t_transp_expdecay_all_cs=t_transp_expdecay_all_cs,
+            t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
+            Ar_0=Ar_0, Ar_f=Ar_f, r_expdecay_all_cs=r_expdecay_all_cs,
+            t_expdecay_all_cs=t_expdecay_all_cs,
+            interpr=interpr, interpt=interpt
+        )
+
+        if mode == ION_CHARGED_ADVECTION_MODE_PRESCRIBED:
+            self.rNeutralPrescribedAdvection = ion.getRNeutralPrescribedAdvection()
+            self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
+    
+>>>>>>> master
 
     def fromdict(self, data):
         """
@@ -519,11 +678,21 @@ class Ions(UnknownQuantity):
                 rnpa=None
                 tnpa=None
 
-            self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies, iontype=types[i], opacity_mode=opacity_modes[i],
-                charged_diffusion_mode=charged_diffusion_modes[i], charged_prescribed_diffusion = cpd, rChargedPrescribedDiffusion=rcpd, tChargedPrescribedDiffusion = tcpd,
-                neutral_diffusion_mode=neutral_diffusion_modes[i], neutral_prescribed_diffusion = npd, rNeutralPrescribedDiffusion=rnpd, tNeutralPrescribedDiffusion = tnpd,
-                charged_advection_mode=charged_advection_modes[i], charged_prescribed_advection = cpa, rChargedPrescribedAdvection=rcpa, tChargedPrescribedAdvection = tcpa,
-                neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa, rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
+            self.addIon(
+                name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies,
+                iontype=types[i], opacity_mode=opacity_modes[i], 
+                # Charged diffusion
+                charged_diffusion_mode=charged_diffusion_modes[i], charged_prescribed_diffusion = cpd,
+                rChargedPrescribedDiffusion=rcpd, tChargedPrescribedDiffusion = tcpd,
+                # Neutral diffusion
+                neutral_diffusion_mode=neutral_diffusion_modes[i], neutral_prescribed_diffusion = npd,
+                rNeutralPrescribedDiffusion=rnpd, tNeutralPrescribedDiffusion = tnpd,
+                # Charged advection
+                charged_advection_mode=charged_advection_modes[i], charged_prescribed_advection = cpa,
+                rChargedPrescribedAdvection=rcpa, tChargedPrescribedAdvection = tcpa,
+                # Neutral advection
+                neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa,
+                rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
                 T=T, n=n, r=r, t=t, tritium=tritium, hydrogen=hydrogen)
 
         if 'ionization' in data:

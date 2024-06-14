@@ -153,6 +153,34 @@ method takes the following arguments (should be given as keyword arguments):
 | ``tmax``          | Final time of simulation.    | Final time of simulation.                                                                                                                                  |
 +-------------------+------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+In situations where material is added to the plasma at :math:`t\neq0`, which
+usually is the case in simulations with SPI or MGI where the gas is injected
+from the edge, this approach of rescaling the timesteps based on the initial
+ionization timescale can lead to extremely short timesteps as the electron
+density is suddenly increased. Instead, one could choose to update timesteps
+according to:
+
+.. math::
+
+    \Delta t = {\rm min}(\Delta t_{\rm max}, \alpha \tau_{\rm ioniz}),
+
+where :math:`\alpha` is factor between 0 and 1 provided by the user. If the
+the time stepper should update the timesteps according to this method, the
+method takes the following arguments:
+
++-------------+------------------------------+
+| Option      | Description                  |
++=============+==============================+
+| ``dt0``     | Initial time step.           |
++-------------+------------------------------+
+| ``dtmax``   | Maximum time step allowed.   |
++-------------+------------------------------+
+| ``alpha``   | Ionization timescale factor. |
++-------------+------------------------------+
+| ``tmax``    | Final time of simulation.    |
++-------------+------------------------------+
+
+
 Limit number of saved steps
 ***************************
 The number of time steps which are saved to the output file can also be limited
@@ -208,6 +236,21 @@ the ionization time scale to the initial time step, you can make the call:
    ...
    ds.timestep.setIonization(automaticstep=1e-12, safetyfactor=50, dtmax=1e-5, tmax=0.003)
 
+To make the time step directly proportional to the estimated ionization time
+scale, just provide an additional scaling factor ``alpha`` (between 0 and 1):
+
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.timestep.setIonization(dt0=1e-10, dtmax=1e-5, tmax=0.003, alpha=1e-2)
+
+.. note::
+
+   Appropriate values to use for the scaling factor ``alpha`` may vary from
+   simulation to simulation. We have found that fluid SPI simulations typically
+   work well with ``alpha`` :math:`\leq 10^{-2}`.
+
 Class documentation
 -------------------
 
@@ -216,4 +259,3 @@ Class documentation
    :undoc-members:
    :show-inheritance:
    :special-members: __init__
-
