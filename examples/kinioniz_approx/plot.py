@@ -2,27 +2,7 @@
 import glob
 import matplotlib.pyplot as plt
 
-import DREAM
-
-def plot_charge_state_densities(ax, do):
-    cmap = plt.cm.get_cmap("plasma_r", do.eqsys.n_i.getMultiples())
-    nre = do.eqsys.n_re.data[-1,:]
-    for i, ion in enumerate(do.eqsys.n_i.ions[0]):
-        ax.semilogx(nre, ion.data[-1,:]/1e22, c=cmap(i), label=ion.name)
-    # ax.legend()
-
-def plot_electron_density(ax, do):
-    nre = do.eqsys.n_re.data[-1,:]
-    ncold = do.eqsys.n_cold.data[-1,:]
-    ax.semilogx(nre, ncold)
-
-def plot_effective_charge(ax, do):
-    nre = do.eqsys.n_re.data[-1,:]
-    Zeff = do.other.fluid.Zeff.data[-1,:]
-    ax.semilogx(nre, Zeff)
-
-
-
+import DREAM.DREAMOutput
 
 if __name__ == '__main__':
 
@@ -38,16 +18,19 @@ if __name__ == '__main__':
 
     fig, (ax1, ax2) = plt.subplots(ncols=2)
 
-    ax1.scatter(nre, ncold)
+    ax1.scatter(nre, ncold, label="kinetic")
     ax2.scatter(nre, Zeff)
 
     do = DREAM.DREAMOutput("outputs/fluid.h5")
-    plot_electron_density(ax1, do)
-    plot_effective_charge(ax2, do)
+    ax1.semilogx(do.eqsys.n_re.data[-1,:], do.eqsys.n_cold.data[-1,:], label="fluid")
+    ax2.semilogx(do.eqsys.n_re.data[-1,:], do.other.fluid.Zeff.data[-1,:])
 
+    ax1.legend()
     ax1.set_ylabel("electron density [m$^{-3}$]")
     ax1.set_xlabel("runaway density [m$^{-3}$]")
     ax2.set_ylabel("effective charge [e]")
     ax2.set_xlabel("runaway density [m$^{-3}$]")
+    
 
+    plt.tight_layout()
     plt.show()

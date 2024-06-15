@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Compares the approximate kinetic ionization mode with the fully kinetic one.
+# Compares the fluid RE impact ionization mode with the fully kinetic one.
 #
 # Run as
 #
@@ -25,10 +25,11 @@ from Distributions import getAvalancheDistribution
 
 ARGON_DENSITY = 1e22
 
-def run(ds, tmax, file="output.h5"):
-    ds.timestep.setIonization(dt0=1e-7, dtmax=1e-5, tmax=tmax)
-    #ds.timestep.setMinSaveTimestep(3e-7)
-    return DREAM.runiface(ds, outfile=file)
+def run(ds, tmax, outfile="output.h5"):
+    if os.path.exists(outfile):
+        return DREAM.DREAMOutput(outfile)
+    ds.timestep.setIonization(dt0=1e-7, dtmax=1e-6, tmax=tmax)
+    return DREAM.runiface(ds, outfile=outfile)
 
 def generate_base(nre, temperature, electric_field):
 
@@ -94,8 +95,8 @@ def generate_kinetic(nre, temperature, electric_field):
 if __name__ == '__main__':
 
 
-    LOG_NRE_MIN = 14
-    LOG_NRE_MAX = 20
+    LOG_NRE_MIN = 15
+    LOG_NRE_MAX = 19
     NSCAN_FLUID = 100
     NSCAN_KINETIC = 6
 
@@ -113,8 +114,8 @@ if __name__ == '__main__':
     Path(args.save_dir).mkdir(parents=True, exist_ok=True)
 
     ds = generate_fluid(np.logspace(LOG_NRE_MIN, LOG_NRE_MAX, NSCAN_FLUID), temperature=args.temperature, electric_field=args.electric_field)
-    do = run(ds, 1e-2, file=f"{args.save_dir}/fluid.h5")
+    do = run(ds, 1e-3, outfile=f"{args.save_dir}/fluid.h5")
 
     for i, nre in enumerate(np.logspace(LOG_NRE_MIN, LOG_NRE_MAX, NSCAN_KINETIC)):
         ds = generate_kinetic(nre, temperature=args.temperature, electric_field=args.electric_field)
-        do = run(ds, 1e-2, file=f"{args.save_dir}/kinetic_{i}.h5")
+        do = run(ds, 1e-3, outfile=f"{args.save_dir}/kinetic_{i}.h5")
