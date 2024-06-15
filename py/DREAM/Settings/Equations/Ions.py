@@ -370,8 +370,6 @@ class Ions(UnknownQuantity):
         if self.tNeutralPrescribedAdvection is not None:
             self.tNeutralPrescribedAdvection = self.tNeutralPrescribedAdvection - tShift
 
-<<<<<<< HEAD
-=======
 
     def setChargedDiffusion(
         self, species, mode, Drr=None, r=None, t=None,
@@ -528,7 +526,6 @@ class Ions(UnknownQuantity):
             self.rNeutralPrescribedAdvection = ion.getRNeutralPrescribedAdvection()
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
     
->>>>>>> master
 
     def fromdict(self, data):
         """

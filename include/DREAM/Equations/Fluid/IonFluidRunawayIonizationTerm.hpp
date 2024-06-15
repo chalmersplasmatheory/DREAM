@@ -32,10 +32,7 @@ namespace DREAM {
              */
             const real_t CHARACTERISTIC_RUNAWAY_MOMENTUM = 20.0;
 
-	    real_t preFactor;
-
-
-
+            real_t preFactor;
 
         public:
             IonFluidRunawayIonizationTerm(

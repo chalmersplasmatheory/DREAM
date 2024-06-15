@@ -853,7 +853,7 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
     if (this->tracked_terms->n_re_kin_rates.size() > 0) {
-        DEF_FL_MUL("fluid/kinioniz_approx_vsigma", nChargeStates, "Approximated runaway impact ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
+        DEF_FL_MUL("fluid/kinioniz_vsigma", nChargeStates, "Approximated runaway impact ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
             real_t *v = qd->StoreEmpty();
             const len_t nr = this->fluidGrid->GetNr();
             const real_t *nre = unknowns->GetUnknownData(id_n_re);

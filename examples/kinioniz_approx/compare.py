@@ -27,7 +27,7 @@ ARGON_DENSITY = 1e22
 
 def run(ds, tmax, file="output.h5"):
     ds.timestep.setIonization(dt0=1e-7, dtmax=1e-5, tmax=tmax)
-    ds.timestep.setMinSaveTimestep(3e-7)
+    #ds.timestep.setMinSaveTimestep(3e-7)
     return DREAM.runiface(ds, outfile=file)
 
 def generate_base(nre, temperature, electric_field):
@@ -58,8 +58,8 @@ def generate_base(nre, temperature, electric_field):
 
 def generate_fluid(nre, temperature, electric_field):
     ds = generate_base(nre, temperature, electric_field)
-    ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_APPROX_RE)
-    ds.other.include(["fluid/Zeff", "fluid/kinioniz_approx_vsigma"])
+    ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_FLUID_RE)
+    ds.other.include(["fluid/Zeff", "fluid/kinioniz_vsigma"])
     return ds
 
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
     LOG_NRE_MIN = 14
     LOG_NRE_MAX = 20
-    NSCAN_FLUID = 200
+    NSCAN_FLUID = 100
     NSCAN_KINETIC = 6
 
     import argparse

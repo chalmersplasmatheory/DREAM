@@ -24,14 +24,13 @@ IonFluidRunawayIonizationTerm::IonFluidRunawayIonizationTerm(
     AddUnknownForJacobian(u, id_ions);
     AddUnknownForJacobian(u, id_nre);
 
+    real_t p0 = CHARACTERISTIC_RUNAWAY_MOMENTUM;
     preFactor = Constants::c * p0 / sqrt(1 + p0*p0);
 
     nr = g->GetNr();
     weights = new real_t[(Zion+1)*nr];
 
     tableIndexIon = IonKineticIonizationTerm::GetTableIndex(Zion);
-    // possible to use an instance of IonKineticIonizationTerm, without having a MomentumGrid, to use the method for calculating sigma?
-
 }
 
 /**
@@ -48,7 +47,7 @@ void IonFluidRunawayIonizationTerm::Rebuild(
     for (len_t iZ = 0; iZ < Zion; iZ++) {
         const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndexIon].params + iZ *  IonKineticIonizationTerm::nParamsForFit;
         for (len_t ir = 0; ir < nr; ir++) {
-            weights[ir*(Zion+1)+iZ] = scaleFactor * preFactor * IonKineticIonizationTerm::EvaluateIonizationCrossSection(p0, params);
+            weights[ir*(Zion+1)+iZ] = scaleFactor * preFactor * IonKineticIonizationTerm::EvaluateIonizationCrossSection(CHARACTERISTIC_RUNAWAY_MOMENTUM, params);
         }
     }
     for (len_t ir = 0; ir < nr; ir++)
