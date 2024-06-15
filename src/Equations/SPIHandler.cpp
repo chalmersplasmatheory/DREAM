@@ -704,7 +704,7 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
         heatAbsorbtionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
             if(YpPrevious[ip]>0 && irp[ip]<nr){
-                real_t heatAbsorbtionPrefactor = M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                real_t heatAbsorbtionPrefactor = M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]/exp(1.8);// Dividing by exp(1.8) as an approximate way to account for the sheath potential damping of the absorbed heat flux
                 
                 heatAbsorbtionRate[ir]+=-heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                 
