@@ -713,7 +713,7 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
                 if(nbrShiftGridCell[ip]<0){
                     if(ir<nr+nbrShiftGridCell[ip])
                         heatAbsorbtionRate[ir]+=rGrid->GetVpVol((int_t)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int_t)ir-nbrShiftGridCell[ip])*nShard+ip];
-                }else if(nbrShiftGridCell[ip]>0){
+                }else if(nbrShiftGridCell[ip]>=0){
                     if((int_t)ir>=nbrShiftGridCell[ip])
                         heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }     
