@@ -317,7 +317,7 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
         ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_FLUID_HESSLOW)
         ds1.eqsys.n_re.setDreicer(RunawayElectrons.DREICER_RATE_NEURAL_NETWORK)
         ds1.eqsys.n_re.setTritium(RunawayElectrons.TRITIUM_MODE)
-        ds1.eqsys.n_re.setCompton(RunawayElectrons.COMPTON_RATE_ITER_DMS)
+        ds1.eqsys.n_re.setCompton(RunawayElectrons.COMPTON_RATE_ITER_DMS_FLUID)
         if INCLUDE_FLUID_HOTTAIL:
             ds1.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree, rT0=rT, T0=T0)
             ds1.eqsys.n_re.setHottail(RunawayElectrons.HOTTAIL_MODE_ANALYTIC_ALT_PC)
