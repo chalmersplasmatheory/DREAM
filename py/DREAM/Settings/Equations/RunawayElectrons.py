@@ -30,6 +30,7 @@ COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
 COMPTON_RATE_ITER_DMS = -1
+COMPTON_RATE_ITER_DMS_FLUID = -1
 COMPTON_RATE_ITER_DMS_KINETIC = -2
 COMPTON_MACHINE_ITER = 1
 ITER_PHOTON_FLUX_DENSITY = 1e18
@@ -183,7 +184,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if compton == False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
-            if compton == COMPTON_RATE_ITER_DMS:
+            if compton == COMPTON_RATE_ITER_DMS_FLUID:
                 # set fluid compton source and standard ITER flux of 1e18
                 compton = COMPTON_MODE_FLUID
                 if photonFlux is None:
