@@ -72,7 +72,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
         :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
         :param int magneticFieldDependenceMode: Mode used for calculating the magnetic field dependence of the albation
-        :param int shiftMode: Mode used for determining the cloud drift from doi:10.1017/S0022377823000466
+        :param int shift: Model used for determining the cloud drift
         """
         super().__init__(settings=settings)
 
@@ -412,16 +412,11 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, 
-                              shift = SHIFT_MODE_NEGLECT, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
         (available at https://hdl.handle.net/20.500.12380/302296).
-        
-        Specifies which model to use for calculating the shift. Currently there only exists two (on/1 and off/0).
-        T, T0, delta_y and Rm specify the temperatures, the characteristic length of the shards and Rm is the 
-        major radius of the magnetic axis. ZavgArray is the average charge of the present ions in the cloud in increasing order.
         """
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
@@ -433,6 +428,21 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         else:
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard)))
         
+        return kp
+        
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None):
+        """
+        Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
+        
+        :param int shift: Model used for determining the cloud drift
+        :param float T0: cloud temperature close to the pellet (before the cloud has drifted away from the pellet)
+        :param numpy.ndarray T: representative cloud temperature during the drift motion for each shard
+        :param float delta_y: characteristic half-thickness of the drifting cloud (should be similar to the radius of the neutral cloud around the pellet)
+        :param float Rm: major radius of the magnetic axis, only used if the major radius is otherwise infinite in the simulation
+        :param list ZavgArray: average charge states inside the drifting cloud of all drifting ion species. These can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. Note that his list does NOT neccessarily have the same shape as the list of atomic numbers and isotopes included in the simulation, but instead the ZavgArray-list and the Zs and isotopes-lists below will instead be used to look up the average charge state inside the drifting cloud for all the simulated ion species included in the pellet.
+        :param list Zs: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
+        :param list isotopes: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
+        """
         self.shift = int(shift)
         self.T = T
         self.T0 = T0
@@ -441,8 +451,6 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.ZavgArray = ZavgArray
         self.Zs = Zs
         self.isotopes = isotopes
-        
-        return kp
         
     def setVpVolNormFactor(self,VpVolNormFactor):
         self.VpVolNormFactor=VpVolNormFactor
