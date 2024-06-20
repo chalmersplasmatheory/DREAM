@@ -82,6 +82,7 @@ second column. By default, the script assumes that photon fluxes are given as
     parser.add_argument('-n', '--no-normalize-per-bin', help="Do not normalize the energy spectrum to the energy bin size.", action='store_true')
     parser.add_argument('-p', '--plot', help="Plot the fit and numerical data.", action='store_true')
     parser.add_argument('-s', '--scale', help="Factor by which to multiply the input data.", nargs='?', default=1, type=float)
+    parser.add_argument('--skip', help="Skip elements with the specified indices.", nargs='*', type=int, default=[])
     parser.add_argument('--skip-below', help="Skip all values below this index.", nargs='?', type=int, default=0)
     parser.add_argument('--skip-above', help="Skip all values above this index.", nargs='?', type=int, default=-1)
 
@@ -106,7 +107,23 @@ def main():
         E = E[:args.skip_above]
         G = G[:args.skip_above]
 
+    if args.skip:
+        # Transform indices after 'skip_below' and 'skip_above'
+        l = []
+        for i in args.skip:
+            if i >= args.skip_below:
+                if args.skip_above >= 0 and i > args.skip_above:
+                    continue
+                else:
+                    l.append(i - args.skip_below)
+
+        print(f'Removing indices {l}')
+        E = np.delete(E, l)
+        G = np.delete(G, l)
+
     G *= args.scale
+
+    print(G)
 
     # Normalize the spectrum to the bin size
     if not args.no_normalize_per_bin:
