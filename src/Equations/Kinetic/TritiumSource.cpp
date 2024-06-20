@@ -117,7 +117,7 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
 
         real_t integral;
         real_t abserr;
-        len_t neval;
+        size_t neval;
         gsl_function F;
         F.function = &(TritiumSource::integrand);
         gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
@@ -206,7 +206,7 @@ real_t TritiumSource::EvaluateTotalTritiumNumber(real_t pLower, real_t pUpper){
                 
     real_t integral;
     real_t abserr;
-    len_t neval;
+    size_t neval;
     gsl_function F;
     F.function = &(integrand);
     gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, &abserr, &neval);
