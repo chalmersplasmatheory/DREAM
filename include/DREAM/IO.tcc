@@ -57,6 +57,23 @@ void IO::PrintWarning(const IO::message_t id, const char *msg, Args&& ... args) 
 	std::snprintf(buf, size, msg, args ...);
 	std::string smsg(buf);
 
+	bool prepended = false;
+	if (IO::simulation != nullptr) {
+		EquationSystem *eqsys = IO::simulation->GetEquationSystem();
+		if (eqsys != nullptr) {
+			FVM::UnknownQuantityHandler *u = eqsys->GetUnknownHandler();
+			if (u != nullptr && u->Size() > 0) {
+				smsg = "At time step " +
+					std::to_string(u->GetUnknown(0)->GetNumberOfSavedSteps()+1) +
+					": " + smsg;
+				prepended = true;
+			}
+		}
+	}
+	
+	if (!prepended)
+		smsg = "During initialization: " + smsg;
+
 	emitted_warning_messages.push_back(smsg);
 
 #ifdef COLOR_TERMINAL

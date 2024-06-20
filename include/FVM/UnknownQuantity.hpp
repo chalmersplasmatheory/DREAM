@@ -47,6 +47,7 @@ namespace DREAM::FVM {
         const std::string& GetDescription() const { return this->description; }
         const std::string& GetEquationDescription() const { return this->description_eqn; }
         const std::string& GetName() const { return this->name; }
+		len_t GetNumberOfSavedSteps() const { return this->data->Size(); }
 
         bool HasChanged() const { return data->HasChanged(); }
         bool HasInitialValue() const { return data->HasInitialValue(); }
