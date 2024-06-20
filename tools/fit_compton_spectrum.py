@@ -29,7 +29,7 @@ def fit_spectrum(E, G):
     """
     Fit curve to the provided photon spectrum.
     """
-    popt, _ = curve_fit(func, E, np.log(G), p0=(np.amax(G), 1.2, 0.8, 0)) 
+    popt, _ = curve_fit(func, E, np.log(G), p0=(np.amax(G), 1.2, 0.8, 0), bounds=([0, -np.inf, -np.inf, 0], [np.inf, np.inf, np.inf, np.inf]))
     return popt
 
 
@@ -68,11 +68,22 @@ def plot_spectrum(E, G, phi, c1, c2, c3, I):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser('Fit function to numerical Compton photon spectrum.')
+    parser = argparse.ArgumentParser(
+        description="""Fit function to numerical Compton photon spectrum.
+
+Fits a Compton photon spectrum to the fit used in DREAM. The spectrum should be
+given as a function of photon energy, in MeV units. The data should be stored in
+a CSV or TSV file, with energies in the first column and photon fluxes in the
+second column. By default, the script assumes that photon fluxes are given as
+'photons per energy bin' and adjusts the fitting accordingly."""
+    )
 
     parser.add_argument('spectrum', help="File containing photon spectrum data.")
+    parser.add_argument('-n', '--no-normalize-per-bin', help="Do not normalize the energy spectrum to the energy bin size.", action='store_true')
     parser.add_argument('-p', '--plot', help="Plot the fit and numerical data.", action='store_true')
     parser.add_argument('-s', '--scale', help="Factor by which to multiply the input data.", nargs='?', default=1, type=float)
+    parser.add_argument('--skip-below', help="Skip all values below this index.", nargs='?', type=int, default=0)
+    parser.add_argument('--skip-above', help="Skip all values above this index.", nargs='?', type=int, default=-1)
 
     return parser.parse_args()
 
@@ -87,7 +98,22 @@ def main():
     else:
         raise Exception("Unrecognized file type of spectrum file.")
 
+    # Remove data points?
+    E = E[args.skip_below:]
+    G = G[args.skip_below:]
+
+    if args.skip_above >= 0:
+        E = E[:args.skip_above]
+        G = G[:args.skip_above]
+
     G *= args.scale
+
+    # Normalize the spectrum to the bin size
+    if not args.no_normalize_per_bin:
+        dE = np.zeros(E.size)
+        dE[0] = E[0]
+        dE[1:] = E[1:] - E[0:-1]
+        G /= dE
 
     params = fit_spectrum(E, G)
     I = eval_integral(*params) / np.exp(params[0])
