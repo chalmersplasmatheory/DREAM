@@ -2,6 +2,8 @@
 #define _DREAM_IO_HPP
 
 #include <string>
+#include <vector>
+#include "DREAM/Simulation.hpp"
 
 namespace DREAM {
     class IO {
@@ -24,6 +26,11 @@ namespace DREAM {
             // [Must always come last]
             MESSAGE_LAST
         } message_t;
+
+		static std::vector<std::string> emitted_warning_messages;
+		static Simulation *simulation;
+
+		static void Init(Simulation*);
 
         static bool VerifyMessage(const message_t);
 
