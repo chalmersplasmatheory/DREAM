@@ -1,5 +1,6 @@
 
 #include <string>
+#include <vector>
 #include "FVM/config.h"
 
 namespace DREAM {
@@ -48,12 +49,39 @@ void IO::PrintWarning(const IO::message_t id, const char *msg, Args&& ... args) 
     if (!IO::VerifyMessage(id))
         return;
 
+	// Generate warning string
+	int size = std::snprintf(nullptr, 0, msg, args ...) + 1;
+	if (size <= 0)
+		return;
+	char *buf = new char[size];
+	std::snprintf(buf, size, msg, args ...);
+	std::string smsg(buf);
+
+	bool prepended = false;
+	if (IO::simulation != nullptr) {
+		EquationSystem *eqsys = IO::simulation->GetEquationSystem();
+		if (eqsys != nullptr) {
+			FVM::UnknownQuantityHandler *u = eqsys->GetUnknownHandler();
+			if (u != nullptr && u->Size() > 0) {
+				smsg = "At time step " +
+					std::to_string(u->GetUnknown(0)->GetNumberOfSavedSteps()+1) +
+					": " + smsg;
+				prepended = true;
+			}
+		}
+	}
+	
+	if (!prepended)
+		smsg = "During initialization: " + smsg;
+
+	emitted_warning_messages.push_back(smsg);
+
 #ifdef COLOR_TERMINAL
     fputs("\x1B[1;33m[WARNING]\x1B[0m ", stderr);
 #else
     fputs("[WARNING] ", stderr);
 #endif
-    fprintf(stderr, msg, std::forward<Args>(args) ...);
+    fputs(smsg.c_str(), stderr);
     fputc('\n', stderr);
 }
 
