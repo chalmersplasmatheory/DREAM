@@ -34,9 +34,11 @@ COMPTON_RATE_ITER_DMS_FLUID = -1
 COMPTON_RATE_ITER_DMS_KINETIC = -2
 COMPTON_MACHINE_ITER = 1
 ITER_PHOTON_FLUX_DENSITY = 1e18
-C1_COMPTON = 1.2
-C2_COMPTON = 0.8
-C3_COMPTON = 0.
+# Compton photon spectrum fitted values corresponding to the
+# photon spectrum in [Martin-Solis et al, NF 57 (2017)]
+C1_COMPTON_MS2017 = 1.2
+C2_COMPTON_MS2017 = 0.8
+C3_COMPTON_MS2017 = 0.
 
 TRITIUM_MODE_NEGLECT = 1
 TRITIUM_MODE_FLUID = 2
@@ -77,7 +79,7 @@ def GammafluxProfil(E, C1, C2, C3):
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
   
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON, C2_compton=C2_COMPTON, C3_Compton=C3_COMPTON, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON_MS2017, C2_compton=C2_COMPTON_MS2017, C3_Compton=C3_COMPTON_MS2017, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED):
         """
         Constructor.
         """
@@ -209,11 +211,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 C3 = 0.
             else:
                 if C1 is None:
-                    C1 = C1_COMPTON
+                    C1 = C1_COMPTON_MS2017
                 if C2 is None:
-                    C2 = C2_COMPTON
+                    C2 = C2_COMPTON_MS2017
                 if C3 is None:
-                    C3 = C3_COMPTON
+                    C3 = C3_COMPTON_MS2017
 
 
             self.compton = int(compton)
