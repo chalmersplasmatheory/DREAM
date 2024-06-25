@@ -516,7 +516,7 @@ class SPI(UnknownQuantity):
         this SPI object.
         """
         # If no SPI settings have been given, set everything to zero (to avoid a DREAMIOException)
-        # Before this stage it is usefull to use None to indicate if any SPI settings have been made yet,
+        # Before this stage it is useful to use None to indicate if any SPI settings have been made yet,
         # to know if there are any previous shards to add the new ones to, so therefore
         # we don't set this default setting until this stage
         if self.t_delay is None:
@@ -524,6 +524,15 @@ class SPI(UnknownQuantity):
                 self.t_delay=np.zeros(self.rp.shape)
             else:
                 self.t_delay=np.array([0])
+
+        # t_delay is expected to be an array with one element per shard
+        else:
+            if np.isscalar(self.t_delay):
+                if self.rp is not None:
+                    self.t_delay *= np.ones(self.rp.shape)
+                else:
+                    self.t_delay = np.array([self.t_delay])
+
         if self.nbrShiftGridCell is None:
             if self.rp is not None:
                 self.nbrShiftGridCell = np.zeros(self.rp.shape)
@@ -572,6 +581,10 @@ class SPI(UnknownQuantity):
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 
+        if not self.t_delay is None:
+            if not np.isscalar(self.t_delay):
+                if self.t_delay.size != self.rp.size:
+                    raise EquationException("Missmatch in size of initial data arrays for rp and t_delay. Expected t_delay to have the same size of rp")
 
 
     def verifySettingsPrescribedInitialData(self):
@@ -579,4 +592,3 @@ class SPI(UnknownQuantity):
             raise EquationException("Missmatch in size of initial data arrays for rp and vp. Expected vp to have a size 3 times the size of rp")
         if xp.size!=3*rp.size:
             raise EquationException("Missmatch in size of initial data arrays for rp and xp. Expected xp to have a size 3 times the size of rp")
-        
