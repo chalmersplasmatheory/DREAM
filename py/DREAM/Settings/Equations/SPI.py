@@ -581,7 +581,7 @@ class SPI(UnknownQuantity):
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 
-        if not self.t_delay is None:
+        if self.t_delay is not None and self.rp is not None:
             if not np.isscalar(self.t_delay):
                 if self.t_delay.size != self.rp.size:
                     raise EquationException("Missmatch in size of initial data arrays for rp and t_delay. Expected t_delay to have the same size of rp")
