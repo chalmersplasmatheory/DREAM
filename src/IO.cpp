@@ -33,6 +33,13 @@ void IO::Init(Simulation *sim) {
 }
 
 /**
+ * De-initialize the DREAM::IO interface.
+ */
+void IO::Deinit() {
+	IO::simulation = nullptr;
+}
+
+/**
  * Print a single new-line character in the 'Info' channel.
  */
 void IO::PrintInfo() {
