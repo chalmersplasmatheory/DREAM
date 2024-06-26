@@ -174,22 +174,22 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
     
     len_t nZSPInShard;
-    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition"); 
+    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition");
+    OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = (enum OptionConstants::eqterm_spi_abl_ioniz_mode)s->GetInteger(MODULENAME_SPI "/abl_ioniz"); 
     const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME_ION "/SPIMolarFraction", 1, &nZSPInShard);
     
-    // If we use heat absorbtion based on the cloud size, 
-    // this heat contains the energy required for ionization, 
-    // so in that case we shouldn't have another ionization loss term
-    // Otherwise, add one ionization loss term for every species the pellet consists of
-    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+    // Add one ionization loss term for every species the pellet consists of
+    // Note that, when accounting for the heat absorbed in the neutral cloud,
+    // this energy is currently being redeposited where the material is deposited,
+    // and we therefore need these terms even when heat absorption is included.
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
         len_t offset=0;
         len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         const len_t nZ = ionHandler->GetNZ();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[offset]>0){
                 Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(),
-                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, 
-                    OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT));
+                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, spi_abl_ioniz_mode));
                 offset+=nShard;
             }else {
             	offset+=1;
