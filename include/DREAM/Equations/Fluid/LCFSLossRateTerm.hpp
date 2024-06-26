@@ -14,7 +14,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         real_t scaleFactor;
         real_t* t_loss;
-        const len_t userGivenPsiEdge_t0;
+        bool userGivenPsiEdge_t0;
         real_t psi_edge_t0;
         const len_t id_psi;
         FVM::RadialGrid *rGrid;
@@ -30,6 +30,7 @@ namespace DREAM {
         void SetGammaLoss();
         void Deallocate();
         
+	protected:
         /***************************** FUNCTIONS NEEDED FOR DIAGONALCOMPLEXTERM *****************************/
         virtual void SetWeights() override; 
         
@@ -40,7 +41,11 @@ namespace DREAM {
         
     public:
     
-        LCFSLossRateTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Grid* /*operandGrid*/, real_t, real_t*, len_t userGivenPsiEdge_t0=0, real_t PsiEdge_t0=0);
+        LCFSLossRateTerm(
+			FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Grid*
+			/*operandGrid*/, real_t, real_t*, bool userGivenPsiEdge_t0=0,
+			real_t PsiEdge_t0=0
+		);
         ~LCFSLossRateTerm();
         // USES REBUILD, SETVECTORELEMENT, SETJACOBIANBLOCK FROM PARENT CLASSES
         

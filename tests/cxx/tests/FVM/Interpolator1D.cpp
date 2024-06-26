@@ -61,7 +61,7 @@ bool Interpolator1D::TestLinear_general(
         for (len_t i = 0; i < nblocks; i++)
             v[j*(nblocks) + i] = f(x[j], a[i]);
 
-    auto *intp = new DREAM::FVM::Interpolator1D(nx, nblocks, x, v, meth);
+    auto *intp = new DREAM::FVM::Interpolator1D(nx, nblocks, x, v, meth, false);
     for (len_t i = 0; i < ntests && success; i++) {
         const real_t *b = intp->Eval(xtest[i]);
 
@@ -84,7 +84,7 @@ bool Interpolator1D::TestLinear_general(
         for (len_t i = 0; i < nblocks; i++)
             v[j*(nblocks) + i] = f(x[j], a[i]);
 
-    intp = new DREAM::FVM::Interpolator1D(nx, nblocks, x, v, meth);
+    intp = new DREAM::FVM::Interpolator1D(nx, nblocks, x, v, meth, false);
     for (len_t i = 0; i < ntests && success; i++) {
         const real_t *b = intp->Eval(xtest[i]);
 

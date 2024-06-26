@@ -766,12 +766,15 @@ void SPIHandler::CalculateTimeAveragedDeltaSourceLocal(real_t *timeAveragedDelta
                     rSourceMax=max(rCoordPPrevious[ip],rCoordPNext[ip]); 
                     rSourceMin=min(rCoordPPrevious[ip],rCoordPNext[ip]);
                 }
-        
-                for(len_t ir=0;ir<nr;ir++){
-                    if(!(rGrid->GetR_f(ir)>rSourceMax || rGrid->GetR_f(ir+1)<rSourceMin)){
-                        timeAveragedDeltaSource[ir*nShard+ip]+=1.0/(rGrid->GetVpVol(ir)*VpVolNormFactor*(rSourceMax-rSourceMin))*
-                                                             (min(rGrid->GetR_f(ir+1),rSourceMax)-max(rGrid->GetR_f(ir),rSourceMin))/rGrid->GetDr(ir);
-                    }
+		        if(rSourceMax!=rSourceMin){
+                	for(len_t ir=0;ir<nr;ir++){
+      
+                    	if(!(rGrid->GetR_f(ir)>rSourceMax || rGrid->GetR_f(ir+1)<rSourceMin)){
+		                    timeAveragedDeltaSource[ir*nShard+ip]+=1.0/(rGrid->GetVpVol(ir)*VpVolNormFactor*(rSourceMax-rSourceMin))*
+		                                                         (min(rGrid->GetR_f(ir+1),rSourceMax)-max(rGrid->GetR_f(ir),rSourceMin))/rGrid->GetDr(ir); 
+                                              
+		                }
+		            }
                 }
                 iSplit++;
             }

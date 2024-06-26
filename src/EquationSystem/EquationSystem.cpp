@@ -42,25 +42,75 @@ EquationSystem::EquationSystem(
 EquationSystem::~EquationSystem() {
     if (this->ionHandler != nullptr)
         delete this->ionHandler;
+
     if (this->solver != nullptr)
         delete this->solver;
+    
     if (this->timestepper != nullptr)
         delete this->timestepper;
 
     if (this->cqh_hottail != nullptr)
         delete this->cqh_hottail;
+
     if (this->cqh_runaway != nullptr)
         delete this->cqh_runaway;
 
     if (this->REFluid != nullptr)
         delete this->REFluid;
+
     if (this->distRE != nullptr)
         delete this->distRE;
+
     if (this->distHT != nullptr)
         delete this->distHT;
     
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
+
+    if (this->initializer != nullptr)
+        delete this->initializer;
+
+    if (this->settings != nullptr)
+        delete this->settings;
+	
+	for (auto rsth : this->rsths)
+		delete rsth;
+
+    if (this->otherQuantityHandler != nullptr)
+		delete this->otherQuantityHandler;
+
+    if (this->SPI != nullptr)
+		delete this->SPI;
+
+	for (auto eqn : this->unknown_equations)
+		delete eqn;
+    
+	FVM::RadialGrid *rgrid=nullptr;
+    if (this->fluidGrid != nullptr){
+        rgrid = this->fluidGrid->GetRadialGrid();
+		delete this->fluidGrid;
+    }
+
+    if (this->hottailGrid != nullptr) {
+		if (rgrid == nullptr)
+			rgrid = this->hottailGrid->GetRadialGrid();
+		delete this->hottailGrid;
+	}
+
+    if (this->runawayGrid != nullptr) {
+		if (rgrid == nullptr)
+			rgrid = this->runawayGrid->GetRadialGrid();
+		delete this->runawayGrid;
+	}
+
+    if (this->scalarGrid != nullptr) {
+		FVM::RadialGrid *rgs = this->scalarGrid->GetRadialGrid();
+		delete this->scalarGrid;
+		delete rgs;
+	}
+
+	if (rgrid != nullptr)
+		delete rgrid;
 }
 
 /**

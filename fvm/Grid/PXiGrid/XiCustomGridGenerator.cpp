@@ -22,7 +22,6 @@ XiCustomGridGenerator::XiCustomGridGenerator(
     this->xif_provided = new real_t[nxi+1];
     for(len_t i=0; i<nxi+1; i++)
         this->xif_provided[i] = xi_f_in[i];
-    delete [] xi_f_in;
 }
 
 

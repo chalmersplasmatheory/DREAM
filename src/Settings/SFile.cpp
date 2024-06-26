@@ -25,6 +25,8 @@ using namespace std;
 void DREAM::SettingsSFile::LoadSettings(Settings *settings, const string& filename) {
     SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
     LoadSettings(settings, sf);
+
+	delete sf;
 }
 void DREAM::SettingsSFile::LoadSettings(Settings *settings, SFile *sf) {
     const map<string, Settings::setting_t*> allset = settings->GetSettings();

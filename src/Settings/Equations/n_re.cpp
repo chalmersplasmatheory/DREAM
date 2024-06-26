@@ -50,6 +50,10 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
     //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 	DefineDataT(MODULENAME "/compton", s, "flux");
+    s->DefineSetting(MODULENAME "/compton/gammaInt", "Integrated gamma flux spektrum", (real_t) 5.8844190260298);
+    s->DefineSetting(MODULENAME "/compton/C1", "First gamma spectrum parameter", (real_t) 1.2);
+    s->DefineSetting(MODULENAME "/compton/C2", "Second gamma spectrum parameter", (real_t) 0.8);
+    s->DefineSetting(MODULENAME "/compton/C3", "Third gamma spectrum parameter", (real_t) 0.0);
 
     s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
@@ -59,8 +63,6 @@ void SimulationGenerator::DefineOptions_n_re(
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
-    // Prescribed initial profile
-    DefineDataR(MODULENAME, s, "Tfinal");
     // Prescribed LCFS loss timescale
     DefineDataR(MODULENAME, s, "lcfs_t_loss");
     // Prescribed LCFS psi_p at plasma edge, t = 0
@@ -120,10 +122,14 @@ void SimulationGenerator::ConstructEquation_n_re(
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
 			// Influx from hot-tail grid (with runaway grid at higher p)
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+            FVM::BC::PXiExternalKineticKinetic *xkinkin = new FVM::BC::PXiExternalKineticKinetic(
 				fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
 				Op, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_DENSITY
-			));
+			);
+
+            oqty_terms->f_re_f_hot_flux = xkinkin;
+
+			Op_nRE_fHot->AddBoundaryCondition(xkinkin);
 		} else {
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
@@ -145,6 +151,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
+	eqsys->AddRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();

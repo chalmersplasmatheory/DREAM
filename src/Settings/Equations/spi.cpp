@@ -107,6 +107,4 @@ void SimulationGenerator::ConstructEquation_x_p_prescribed_constant_velocity(
 
     // Initialization
     eqsys->SetInitialValue(OptionConstants::UQTY_X_P, xp_init);
-    
-    delete [] t_delay;
 }

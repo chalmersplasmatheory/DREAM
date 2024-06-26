@@ -71,9 +71,9 @@ real_t TimeStepperIonization::GetIonizationTimeScale() {
 		if (timescales[ir] < tscale)
 			tscale = timescales[ir];
 
-	//if (isinf(tscale))
-	//	return 0;
-	//else
+	if (isinf(tscale))
+		return 0;
+	else
 		return tscale;
 }
 
@@ -117,6 +117,18 @@ real_t TimeStepperIonization::NextTime() {
  */
 real_t TimeStepperIonization::MaxTime() const {
     return this->tMax;
+}
+
+/**
+ * Returns 'true' if the time stepper has reached the maximum time.
+ */
+bool TimeStepperIonization::IsFinished() {
+    bool v = (this->currentTime >= this->tMax);
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    return (v || this->PythonIsTerminate());
+#else
+    return v;
+#endif
 }
 
 /**

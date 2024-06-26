@@ -45,8 +45,10 @@ ConvergenceChecker::ConvergenceChecker(
 	// scaling the residual vector)
 	if (precond)
 		this->precond = precond;
-	else
+	else {
 		this->precond = new DiagonalPreconditioner(this->unknowns, nontrivials);
+		this->ownsPreconditioner = true;
+	}
 	
 	// Initialize convergence info
 	if (this->saveConvergenceInfo) {
@@ -74,6 +76,9 @@ ConvergenceChecker::~ConvergenceChecker() {
 
     delete [] this->x_2norm;
     delete [] this->dx_2norm;
+
+	if (this->ownsPreconditioner)
+		delete this->precond;
 }
 
 

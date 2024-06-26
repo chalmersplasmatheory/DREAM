@@ -209,7 +209,7 @@ namespace DREAM {
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
 		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
-		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, len_t, const real_t*, const real_t*, len_t, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
 
 
         template<typename T>
@@ -260,7 +260,7 @@ namespace DREAM {
 		static void DefineDataIonT(const std::string&, Settings*, const std::string& name="data");
 		static MultiInterpolator1D *LoadDataIonT(const std::string&, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
-        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data", bool fluxGrid=false);
 
         static real_t *InterpolateR(
             const len_t, const real_t*, const real_t*,

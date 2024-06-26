@@ -23,9 +23,9 @@ RunawaySourceTermHandler::RunawaySourceTermHandler() { }
  * Destructor.
  */
 RunawaySourceTermHandler::~RunawaySourceTermHandler() {
-    this->applyToAll([](FVM::EquationTerm *eqterm) {
+    /*this->applyToAll([](FVM::EquationTerm *eqterm) {
         delete eqterm;
-    });
+    });*/
 }
 
 /**

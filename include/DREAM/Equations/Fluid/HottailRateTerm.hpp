@@ -40,8 +40,6 @@ namespace DREAM {
 
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {return false;}
-        
-        virtual const real_t *GetElectricField() = 0;
     };
 }
 

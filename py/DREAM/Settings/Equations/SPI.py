@@ -92,6 +92,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.xp       = None
         self.t_delay  = None 
         self.nbrShiftGridCell = None
+
         self.T        = None
         self.T0       = None
         self.delta_y  = None
@@ -179,6 +180,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         :return: the inverse characteristic shard size kp
         """
         
+ 
         
         # Calculate solid particle density of the pellet (needed to calculate the 
         # inverse characteristic shard size)
@@ -208,12 +210,12 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         rp_init=self.sampleRpDistrParksStatistical(nShard,kp)
         Ninj_obtained=np.sum(4*np.pi*rp_init**(3)/3/molarVolume*N_A)
         rp_init*=(Ninj/Ninj_obtained)**(1/3)       
-       
+        
         if add and self.rp is not None:
             self.rp=np.concatenate((self.rp,rp_init))
         else:
             self.rp=rp_init
-            
+           
         # Add zeros to the end of SPIMolarFraction for all ion species previously connected to a pellet
         for ion in self.settings.eqsys.n_i.ions:
             SPIMolarFractionPrevious=ion.getSPIMolarFraction()
@@ -424,10 +426,15 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,t_delay,nDim,add)
         
         if self.nbrShiftGridCell is None:
-            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard)
+            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
         else:
+<<<<<<< HEAD
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard)))
         
+=======
+            self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))
+      
+>>>>>>> master
         return kp
         
     def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None):
@@ -462,13 +469,16 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.t_delay = self.t_delay - tShift
 
 
+    def resetTimeDelay(self):
+        self.t_delay = 0
+
+
     def setVelocity(self, velocity):
         """
         Specifies mode to calculate shard velocities.
         """
         self.velocity = int(velocity)
-
-
+        
     def setAblation(self, ablation):
         """
         Specifies which model to use for calculating the
@@ -576,15 +586,13 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         # Before this stage it is usefull to use None to indicate if any SPI settings have been made yet,
         # to know if there are any previous shards to add the new ones to, so therefore
         # we don't set this default setting until this stage
-        if self.rp is None:
-            self.rp=np.array([0])
-        if self.vp is None:
-            self.vp=np.array([0,0,0])
-        if self.xp is None:
-            self.xp=np.array([0,0,0])
         if self.t_delay is None:
-            self.t_delay=np.array([0])
+            if self.rp is not None:
+                self.t_delay=np.zeros(self.rp.shape)
+            else:
+                self.t_delay=np.array([0])
         if self.nbrShiftGridCell is None:
+<<<<<<< HEAD
             self.nbrShiftGridCell = np.array([0])
         if self.T is None:
             self.T=np.array([0])
@@ -600,6 +608,12 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.Zs=np.array([0])
         if self.isotopes is None:
             self.isotopes=np.array([0])
+=======
+            if self.rp is not None:
+                self.nbrShiftGridCell = np.zeros(self.rp.shape)
+            else:
+                self.nbrShiftGridCell = np.array([0])
+>>>>>>> master
             
         data = {
             'velocity': self.velocity,
@@ -623,12 +637,17 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         }
         
             
-        data['init'] = {
-                'rp': self.rp,
-                'vp': self.vp,
-                'xp': self.xp,
-                't_delay': self.t_delay
-        }
+        data['init'] = {}
+        
+        if self.rp is not None:
+            data['init']['rp']=self.rp
+        if self.vp is not None:
+            data['init']['vp']=self.vp
+        if self.xp is not None:    
+            data['init']['xp']=self.xp
+        if self.t_delay is not None: 
+            data['init']['t_delay']=self.t_delay
+            
 
         return data
 

@@ -57,6 +57,7 @@ namespace DREAM::FVM {
         real_t GetPreviousTime() { return this->oldtime[0]; }
         real_t *GetInitialData() { return this->store.front(); }
         len_t Size() { return this->nElements; }
+		len_t GetNumberOfSavedSteps() { return this->store.size(); }
 
         /**
          * Returns 'true' if the data stored by this quantity

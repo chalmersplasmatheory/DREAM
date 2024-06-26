@@ -74,7 +74,7 @@ def load(filename):
     """
     pbio = PetscBinaryIO.PetscBinaryIO()
     mat = pbio.readBinaryFile(filename)[0]
-    return sparse.csr_matrix((mat[1][2], mat[1][1], mat[1][0]))
+    return sparse.csr_matrix((mat[1][2], mat[1][1], mat[1][0]), dtype=np.float64)
 
 
 def _mplcursors_frmt1d(sel, eqsys=None):
