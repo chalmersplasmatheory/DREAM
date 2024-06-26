@@ -428,13 +428,8 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         if self.nbrShiftGridCell is None:
             self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
         else:
-<<<<<<< HEAD
-            self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard)))
-        
-=======
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))
-      
->>>>>>> master
+            
         return kp
         
     def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None):
@@ -592,8 +587,10 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             else:
                 self.t_delay=np.array([0])
         if self.nbrShiftGridCell is None:
-<<<<<<< HEAD
-            self.nbrShiftGridCell = np.array([0])
+            if self.rp is not None:
+                self.nbrShiftGridCell = np.zeros(self.rp.shape)
+            else:
+                self.nbrShiftGridCell = np.array([0])
         if self.T is None:
             self.T=np.array([0])
         if self.T0 is None:
@@ -608,12 +605,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.Zs=np.array([0])
         if self.isotopes is None:
             self.isotopes=np.array([0])
-=======
-            if self.rp is not None:
-                self.nbrShiftGridCell = np.zeros(self.rp.shape)
-            else:
-                self.nbrShiftGridCell = np.array([0])
->>>>>>> master
+
             
         data = {
             'velocity': self.velocity,
