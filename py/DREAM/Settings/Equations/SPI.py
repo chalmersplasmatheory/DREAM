@@ -544,7 +544,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.Zs             = [float(x) for x in data['Zs']]
         if 'isotopes' in data:        
             self.isotopes             = [float(x) for x in data['isotopes']]
-        if 'heatAbsorption' in data:
+        if 'heatAbsorbtion' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
             self.cloudRadiusMode = int(data['cloudRadiusMode'])
