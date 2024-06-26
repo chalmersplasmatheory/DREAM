@@ -152,6 +152,23 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.lcfs_user_input_psi = bool(user_input_active)
         self.lcfs_psi_edge_t0 = psi_edge_t0
 
+    def setPsiEdgefromOutput(self, do = None):
+        """Helper function to find the location of the 
+        LCFS through the extrapolation 
+        of the poloidal magnetic flux until the LCFS
+       
+        :param do: DREAM output file 
+        """
+        psi_high_t0 = do.eqsys.psi_p.data[0,-1]
+        psi_low_t0 = do.eqsys.psi_p.data[0,-2]
+        r_high_psi = do.other.fluid.grid.r.data[-1]
+        r_low_psi = do.other.fluid.grid.r.data[-2]
+        r_edge_psi = do.other.fluid.grid.r_f.data[-1]
+        slope_psi = (psi_high_t0 - psi_low_t0) / (r_high_psi - r_low_psi)
+        psi_edge_t0 = psi_high_t0 + slope_psi * (r_edge_psi - r_high_psi)
+
+        return psi_edge_t0
+
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
         """
@@ -281,6 +298,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
+       
 
 
     def fromdict(self, data):
