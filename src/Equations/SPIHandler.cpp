@@ -452,6 +452,11 @@ real_t SPIHandler::Deltar(len_t ip){
     real_t term1 = v_lab * t_acc;
     real_t factor = (1+Zavg[ip])*2*qe*T[ip]*q/(CST*pelletMolarMass[ip]/N_Avogadro)*t_acc;
     return (term1 + factor * (first + second + third))*cos(thetaCoordPPrevious[ip]);
+    // Factor cos(thetaCoordPPrevious) is not included in the reference paper, but is included here
+    // to correct the projection onto the radial coordinates for shards which are not on the outboard midplane.
+    // Note, however, that we do not account for that this angular coordinate, and also not the background 
+    // plasma parameters at the location of the plasmoid, changes during the drift motion, so this is only approximate!
+    // (accounting for this would require a much more complicated model than this simple analytical expression)
 }
 
 /**
@@ -572,6 +577,7 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
         // Calculate drift (if any)
         if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+            // We only calculate the drift once per time step, to avoid a discontinuity between Newton iterations
             if(t!=t_old){
                 for(len_t ip=0;ip<nShard;ip++){
                     if (YpPrevious[ip]>0 && irp[ip]<nr){
@@ -580,14 +586,18 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                         AssignComputationParameters(ip);
                         AssignTimeParameters(ip);
                         shift_r[ip] = Deltar(ip);
-                        nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);
+                        nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);// Negative if shift is tawards smaller radii
                         shift_store[ip] = shift_r[ip];
                     }
                 }
             }
         } else if(nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
+            // If the shard is on the HFS, the shift should go towards smaller radii, unless the shift goes past
+            // the core and ends at a larger radii on the other side. Here we account for this when setting 
+            // the prescribed shift, keeping in mind that nbrShiftGridCell should be negative if the shift is 
+            // towards smaller radii, while nbrShiftGridCellPrescribed is always positive
             for(len_t ip=0;ip<nShard;ip++){
-                if(rCoordPNext[ip]>rCoordPPrevious[ip]){
+                if(rCoordPNext[ip]>rCoordPPrevious[ip]){// is the shard on the HFS?
                     nbrShiftGridCell[ip] = std::abs((int_t)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int_t)irp[ip];
                     
                     //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
@@ -605,6 +615,8 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                     if(ir>=nr+nbrShiftGridCell[ip])
                         depositionProfilesAllShards[ir*nShard+ip]=0;
                     else
+                        // recall that nbrShiftGridCell is now negative here, 
+                        // so the point that we move inwards, with index ir-nbrShiftGridCell, is really outside the point with index ir
                         depositionProfilesAllShards[ir*nShard+ip]=rGrid->GetVpVol((int_t)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*depositionProfilesAllShards[((int_t)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }
             }else if(nbrShiftGridCell[ip]>0){
@@ -814,6 +826,12 @@ void SPIHandler::CalculateIrp(){
     }
 }
 
+/**
+* Function used to calculate the number of grid cells to shift the deposition due to the drift
+* (the shift is only made in integer steps of the radial resolution)
+* ip: shard index
+* shift: the radial shift to be made (exact, not necessarilly an integer of radial grid cells), sign included
+*/
 int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
     for(len_t ir=0; ir<nr;ir++){
         if(rCoordPNext[ip]>rCoordPPrevious[ip] && abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir)){
