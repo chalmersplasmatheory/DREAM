@@ -414,7 +414,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, T = None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
@@ -425,14 +425,22 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,t_delay,nDim,add)
         
-        if self.nbrShiftGridCell is None:
-            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
-        else:
+        if add and self.nbrShiftGridCell is not None:
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))
+        else:
+            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
+            
+        if T is not None:
+            if np.isscalar(T):
+                T = T*np.ones(nShard)
+            if add and self.T is not None:
+                self.T = np.concatenate((self.T,T))
+            else:
+                self.T = T
             
         return kp
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None, add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
@@ -446,7 +454,11 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         :param list isotopes: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
         """
         self.shift = int(shift)
-        self.T = T
+        if T is not None:
+            if add and self.T is not None:
+                self.T = np.concatenate((self.T,T))
+            else:
+                self.T = T
         self.T0 = T0
         self.delta_y = delta_y
         self.Rm = Rm
