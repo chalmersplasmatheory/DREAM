@@ -17,12 +17,12 @@ using namespace std;
  * This is in turn needed in the NGS formula since the ablation rate (from Parks TSDW 2017) is given in g/s
  * Isotope 0 means naturally occuring mix
  */
-const len_t SPIHandler::nMolarMassList=4;
+const len_t SPIHandler::nMolarMassList=3;
 const len_t SPIHandler::ZMolarMassList[nMolarMassList]={1,1,10};
 const len_t SPIHandler::isotopesMolarMassList[nMolarMassList]={2,0,0};// 0 means naturally occuring mix
 const real_t SPIHandler::molarMassList[nMolarMassList]={0.0020141,0.001008,0.020183};// kg/mol
 
-const len_t SPIHandler::nSolidDensityList=4;
+const len_t SPIHandler::nSolidDensityList=3;
 const len_t SPIHandler::ZSolidDensityList[nSolidDensityList]={1,1,10};
 const len_t SPIHandler::isotopesSolidDensityList[nSolidDensityList]={2,0,0};
 const real_t SPIHandler::solidDensityList[nSolidDensityList]={205.9,86,1444};// kg/m^3
@@ -153,7 +153,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
                 }
             }
             for(len_t i=0;i<nZavg;i++){
-                if(Z[iZ]==Zs[i] && Z[iZ]==isotopesDrift[i]){
+                if(Z[iZ]==Zs[i] && isotopes[iZ]==isotopesDrift[i]){
                     ZavgList=ZavgArray[i];
                 }
             }
