@@ -99,6 +99,7 @@ namespace DREAM{
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;
         real_t *YpdotPrevious=nullptr;
+        real_t *plasmoidAbsorbtionFactor=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
