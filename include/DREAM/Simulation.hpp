@@ -29,7 +29,7 @@ namespace DREAM {
         ADAS *adas;
         AMJUEL *amjuel;
         NIST *nist;
-        EquationSystem *eqsys;
+        EquationSystem *eqsys=nullptr;
 		OutputGenerator *outgen=nullptr;
 
     public:
