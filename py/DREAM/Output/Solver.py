@@ -16,7 +16,10 @@ class Solver:
         """
         self.solverdata = None
         self.output = output
+        self.warnings = []
 
+        if 'warnings' in solverdata:
+            self.warnings = solverdata['warnings'][:].split(';')[:-1]
 
 
     def __contains__(self, item):

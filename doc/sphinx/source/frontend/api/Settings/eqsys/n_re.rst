@@ -242,23 +242,43 @@ beta decay process
 
    \mathrm{T} \to \ ^3_2\mathrm{He} + \mathrm{e}^- + \bar{\nu}_{\rm e}.
 
-The corresponding runaway rate is given by
+The corresponding fluid runaway rate is given by
 
 .. math::
 
    \left( \frac{\mathrm{d} n_{\rm RE}}{\mathrm{d} t} \right)_{\rm T} \approx
    \ln 2 \frac{n_{\rm T}}{\tau_{\rm T}} F_\beta\left( \gamma_{\rm c} \right),
 
+and the kinetic source rate by
+
+.. math::
+
+   \left( \frac{\mathrm{d} f}{\mathrm{d} t} \right)_{\rm T} \approx
+   \frac{\ln 2}{4\pi } \frac{n_{\rm T}}{\tau_{\rm T}}\frac{1}{p^2} f_\beta\left( \gamma \right)m_{\rm e}c^2\frac{p}{\gamma},
+
 where :math:`n_{\rm T}` is the tritium density, :math:`\tau_{\rm T} = 4800\pm 8`
-days is the tritium half-life, and :math:`F_\beta(\gamma_{\rm c})` denotes the
-fraction of beta electrons generated with an energy above the critical energy
-:math:`\gamma_{\rm c}` for runaway to occur.
+days is the tritium half-life, :math:`f_\beta(\gamma)` is the beta energy spectrum 
+and :math:`F_\beta(\gamma_{\rm c})` denotes the fraction of beta electrons generated with 
+an energy above the critical energy :math:`\gamma_{\rm c}` for runaway to occur. 
+
+The following settings are used to control the tritium source mode:
+
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| Option                    | Description                                                                                                                       |
++===========================+===================================================================================================================================+
+| ``TRITIUM_MODE_NEGLECT``  | Do not include generation from tritium beta decay in the simulation.                                                              |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``TRITIUM_MODE_FLUID``    | Use the fluid runaway rate, model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_.              |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``TRITIUM_MODE_KINETIC``  | Use the kinetic source rate, model described in `Ekmark JPP (2024) <https://doi.org/10.1017/S0022377824000606>`_.                 |
++---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
 
 Tritium runaway generation is enabled with the ``setTritium()`` method of the
 ``RunawayElectrons`` object, but it is necessary to also provide a tritium ion
 species in the :ref:`ions interface <ds-eqsys-ions-tritium>`. The user must make
 sure to specify ``tritium=True`` when adding the tritium ion to the simulation
 using the ``addIon()`` method.
+
 
 .. note::
 
@@ -277,7 +297,7 @@ mechanism in a DREAM simulation:
    ds = DREAMSettings()
    ...
    # Include source term in equation for n_re
-   ds.eqsys.n_re.setTritium(True)
+   ds.eqsys.n_re.setTritium(tritium=TRITIUM_MODE_FLUID)
 
    # Add tritium ion species to list of ions
    ds.eqsys.ions.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
@@ -286,46 +306,70 @@ mechanism in a DREAM simulation:
 Compton
 ^^^^^^^
 Runaway generation by Compton scattering is modelled via the Klein-Nishina differential
-cross section integrated over the runaway region :math:`p>p_c`, analogous to the tritium 
-and avalanche calculations. This integrated cross section is given by Equation (29) in
-`Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_.
-This total cross section :math:`\sigma(p_c,\,E_\gamma)`
-depends on plasma parameters through :math:`p_c`and on the incident-photon energy 
-:math:`E_\gamma`. The net runaway rate is consequently obtained as the integral 
-of the total cross section over the photon energy spectrum :math:`\Phi(E_\gamma)`
+cross section :math:`\frac{{\rm d}\sigma}{{\rm d}\Omega}(p,E_\gamma)` depends on the momentum 
+and the incident-photon energy :math:`E_\gamma`. Using the fluid Compton generation, 
+this source is integrated over the runaway region :math:`p>p_c`, analogous to the tritium 
+and avalanche calculations. The integrated cross section is given by Equation (29) in
+`Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_
+, and this total cross section :math:`\sigma(p_c,\,E_\gamma)` depends on plasma parameters 
+through :math:`p_c`. For both the fluid and kinetic Compton generation models, the net 
+generation rates are consequently obtained as the integrals of the Klein-Nishina or total 
+cross section over the photon energy spectrum :math:`\Phi(E_\gamma)`
 (where we assume that bound and free electrons are equally susceptible to 
-Compton scattering):
+Compton scattering). 
+
+Accordingly, the fluid runaway rate is given by
 
 .. math::
    \left(\frac{\partial n_\mathrm{RE}}{\partial t}\right)_\mathrm{Compton} 
    = n_\mathrm{tot} \int \Phi \sigma \, \mathrm{d}E_\gamma
+
+and the kinetic source rate by
+
+.. math::
+   \left(\frac{\partial f}{\partial t}\right)_\mathrm{Compton} 
+   = \frac{n_\mathrm{tot}}{4\pi}\frac{1}{p^2} \int \Phi \frac{{\rm d}\sigma}{{\rm d}\Omega}
+   \frac{p/\gamma}{E_\gamma/m_{\rm e} c + 1 - \gamma} \, \mathrm{d}E_\gamma .
 
 Following Martin-Solis Eq (24), we model the photon energy spectrum with 
 
 .. math::
    \Phi = \Phi_0 \frac{\exp[ - \exp(-z) - z + 1 ]}{5.8844 m_e c^2} 
 
-where :math:`z = [1.2 + \ln(E_\gamma[MeV])]/0.8`, and 
-:math:`\Phi_0 = \int \Phi \,\mathrm{d}E_\gamma` is the total photon gamma flux.
+where :math:`\Phi_0 = \int \Phi \,\mathrm{d}E_\gamma` is the total photon gamma flux.
 For ITER, according to Martin-Solis, this value is :math:`\Phi_0 \approx 10^{18}\,\mathrm{m}^{-2}\mathrm{s}^{-1}`
 during the nuclear phase.
+We use :math:`z = [C_1 + \ln(E_\gamma[MeV])]/C_2 + C_3(E_\gamma[MeV])^2`, where :math:`C_1,\ C_2` and :math:`C_3`
+are free positive parameters used to determine the shape of the photon flux spectrum. The Compton fitting tool can
+be used to fit these parameters to data of this spectrum, otherwise the default values are the ones used by 
+Martin-Solis, i.e. :math:`C_1 = 1.2`, :math:`C_2 = 0.8` and :math:`C_3 = 0`.
+
+Note 
+that with the kinetic source rate, the electrons will be added to the kinetic grids, when 
+possible. If the runaway grid is not activated, the generation of runaways above the upper
+limit of the hot-tail grid will be integrated, as with the fluid runaway rate, from the upper
+limit of the hot-tail grid.
 
 The following settings are used to control the Compton source mode:
 
-+---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| Option                    | Description                                                                                                                       |
-+===========================+===================================================================================================================================+
-| ``COMPTON_MODE_NEGLECT``  | Do not include Compton scattering in the simulation.                                                                              |
-+---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| ``COMPTON_MODE_FLUID``    | Use the model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
-+---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
-| ``COMPTON_MODE_ITER_DMS`` | Short-hand for ``COMPTON_MODE_FLUID`` with the ITER DMS photon flux density given by Martin-Solis.                                |
-+---------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
++-----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Option                            | Description                                                                                                                                           |
++===================================+=======================================================================================================================================================+
+| ``COMPTON_MODE_NEGLECT``          | Do not include Compton scattering in the simulation.                                                                                                  |
++-----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_FLUID``            | Use the fluid runaway rate, model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
++-----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_KINETIC``          | Use the kinetic source rate, model described in `Ekmark JPP (2024) <https://doi.org/10.1017/S0022377824000606>`_, with tuneable total photon flux.    |
++-----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_ITER_DMS_FLUID``   | Short-hand for ``COMPTON_MODE_FLUID`` with the ITER DMS photon flux density given by Martin-Solis.                                                    |
++-----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_ITER_DMS_KINETIC`` | Short-hand for ``COMPTON_MODE_KINETIC`` with the ITER DMS photon flux density given by Martin-Solis.                                                  |
++-----------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 Example
 *******
 
-The Compton source can be activated following this example: 
+The fluid Compton source can be activated following this example: 
 
 .. code-block:: python 
 
@@ -334,7 +378,11 @@ The Compton source can be activated following this example:
    ds = DREAMSettings()
 
    Phi0 = 1e18 # total photon flux in units of m^-2 s^-1, typical of ITER
-   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi0)
+   c_1 = 1.2
+   c_2 = 0.8
+   c_3 = 0.
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, 
+                                    photonFlux=Phi0, C1=c_1, C2=c_2, C3=c_3)
 
 If one is simulating ITER specifically, it is possible to instead just do
 
@@ -345,7 +393,7 @@ If one is simulating ITER specifically, it is possible to instead just do
    ds = DREAMSettings()
 
    # Equivalent to the above example
-   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_ITER_DMS)
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_ITER_DMS_FLUID)
 
 The photon flux can also be specified as a function of time. In this case, the
 photon flux should be given as a 1D array along with a equally shaped time

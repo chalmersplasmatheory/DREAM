@@ -147,10 +147,13 @@ real_t ComptonSource::EvaluateSource(len_t ir, len_t i, len_t) {
     real_t dp = pp-pm;
     real_t pi = (pp+pm)/2;
 
+    if (integrand(pm, &params) < 1e-300)
+        return 0.;
+
 
     real_t integral;
     real_t abserr;
-    len_t neval;
+    size_t neval;
     gsl_function F;
     F.function = &(ComptonSource::integrand);
     F.params = &params;
@@ -222,7 +225,7 @@ real_t ComptonSource::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, cons
 real_t ComptonSource::EvaluateTotalComptonNumber(real_t pLower, intparams * params, intparams * paramsOut, real_t pUpper){
     real_t integral;
     real_t abserr;
-    len_t neval;
+    size_t neval;
     gsl_function F;
     if(pUpper == std::numeric_limits<real_t>::infinity()) {
         struct intparams *iparamsOut = reinterpret_cast<struct intparams*>(paramsOut);
