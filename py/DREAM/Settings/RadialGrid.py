@@ -89,9 +89,9 @@ class RadialGrid(PrescribedScalarParameter):
         if self.nr != 0 or self.a != 0 or self.r0 != 0:
             #raise EquationException("RadialGrid: Cannot assign custom grid points while prescribing 'nr', 'a' or 'r0'.")         
             print("*WARNING* RadialGrid: Prescibing custom radial grid overrides 'nr', 'a' and 'r0'.")
-            self.nr = int(0)
-            self.a  = 0.0
-            self.r0 = 0.0
+            self.nr = r_f.size
+            self.a  = max(r_f)
+            self.r0 = min(r_f)
 
         if type(r_f)==list:
             r_f = np.array(r_f)

@@ -941,6 +941,58 @@ unstable simulations, one may want to adjust the maximum diffusion coefficient:
    )
 
 
+Scrape-off model 
+-----------------------
+DREAM is equipped with a model to mimick the he scrape-off of runaway electrons due to 
+vertical displacement events (VDE) and the resulting breaking of flux surfaces. This is done
+through the following runaway density loss term 
+
+.. math::
+   \frac{d n_{re}}{dt} = -\frac{n_{re}}{t_{loss}} \cdot \theta(r > r_{LCFS}),
+   
+where :math:`n_{re}` is the runaway electron density and :math:`t_{loss}` is the scrape-off 
+timescale, which must be set from the input script. The step fucnton :math:`\theta` is 1 only if 
+:math:`r > r_{LCFS}`, otherwise it is eual to 0. When term is active and removes runaways outside
+the last closed flux surface identified by :math:`r_{LCFS}`. The radius of the LCFS is
+found under the condition that the poloidal flux :math:`\psi_p` at the LCFS is constant
+during the simulation, and equal to the  poloidal flux at the edge (:math:`a:` minor
+plasma radius) at :math:`t = 0: \, \psi_{p,a_0} = \psi_p(r=a,t=0)`. The radial point where 
+:math:`\psi_p(r,t)-\psi_{p,a_0}` switches sign for each simulation time step.
+
+In a specific radial grid cell the term is conditioned on the entire cell being outside the last
+closed flux surface, instead of the centre of the cell. Linear interpolation (extrapolation for
+ir = 0) is used to approximate :math:`\psi_{p}` at the inner radial grid cell wall for each ir, 
+for comparison to :math:`\psi_{p,a_0}`, which is extrapolated in the same manner and approximated
+at the outer radial grid cell wall instead. This means that the term is only activated in grid 
+cells where it is approximated that all flux surfaces have broken, to not remove runaways in 
+areas where the flux surfaces are closed, which would increase the effect of the term.
+The interpolation used to find approximations of :math:`\psi_{p}` requires two or more radial 
+grid points, so this term can not be used with a single point in the radial grid (no radial resolution).
+
+The flux value at the LCFS can be set manually from the input script. This can be used to keep the same 
+:math:`\psi_{p,a_0}` in later restarts, or to potentially set the flux level for rLCFS to follow to a 
+different chosen value. The default is to get the followed flux value as an estimate of :math:`\psi_{p,a_0}`
+by linear extrapolation for the current simulation r restart.
+
+Example
+*******
+The following example illustrates how to enable the scrape-off mechanism
+in a DREAM simulation:
+
+.. code:: python
+   from DREAM import DREAMSettings
+   
+   ds = DREAMSettings()
+   
+   # Set the loss mode (fluid or kinetic) 	
+   ds.eqsys.n_re.setLCFSLoss(RE.LCFS_LOSS_MODE_FLUID)
+   
+   # Set the scrape-off timescale
+   ds.eqsys.n_re.setLCFSLossTime(t_loss) 
+   
+      
+   ...
+  
 
 
 Class documentation
