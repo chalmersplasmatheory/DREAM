@@ -182,7 +182,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // Note that, when accounting for the heat absorbed in the neutral cloud,
     // this energy is currently being redeposited where the material is deposited,
     // and we therefore need these terms even when heat absorption is included.
-    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_abl_ioniz_mode!=OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL){
         len_t offset=0;
         len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         const len_t nZ = ionHandler->GetNZ();
