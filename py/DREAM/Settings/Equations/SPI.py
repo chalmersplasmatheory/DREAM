@@ -592,7 +592,10 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             else:
                 self.nbrShiftGridCell = np.array([0])
         if self.T is None:
-            self.T=np.array([0])
+            if self.rp is not None:
+                self.T = np.zeros(self.rp.shape)
+            else:
+                self.T=np.array([0])
         if self.T0 is None:
             self.T0=0
         if self.delta_y is None:
