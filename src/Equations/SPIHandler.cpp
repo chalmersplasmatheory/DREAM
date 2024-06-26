@@ -597,7 +597,7 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
             // the prescribed shift, keeping in mind that nbrShiftGridCell should be negative if the shift is 
             // towards smaller radii, while nbrShiftGridCellPrescribed is always positive
             for(len_t ip=0;ip<nShard;ip++){
-                if(rCoordPNext[ip]>rCoordPPrevious[ip]){// is the shard on the HFS?
+                if(cos(thetaCoordPNext[ip])<0){// is the shard on the HFS?
                     nbrShiftGridCell[ip] = std::abs((int_t)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int_t)irp[ip];
                     
                     //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
@@ -834,9 +834,7 @@ void SPIHandler::CalculateIrp(){
 */
 int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
     for(len_t ir=0; ir<nr;ir++){
-        if(rCoordPNext[ip]>rCoordPPrevious[ip] && abs(rCoordPNext[ip] - shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] - shift)>rGrid->GetR_f(ir)){
-            return (int_t)ir - (int_t)irp[ip];
-        }else if(rCoordPNext[ip] + shift<rGrid->GetR_f(ir+1) && rCoordPNext[ip] + shift>rGrid->GetR_f(ir)){
+        if(abs(rCoordPNext[ip] + shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] + shift)>rGrid->GetR_f(ir)){
             return (int_t)ir - (int_t)irp[ip];
         }
     }
@@ -1049,9 +1047,9 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                         real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                         
                         // Account for shifted re-deposition
-                        if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                        if(nbrShiftGridCell[ip]<0 && ir<nr-1)
                             jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
-                        else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                        else if(nbrShiftGridCell[ip]>0 && ir>0)
                             jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
                     
                         jac->SetElement(ir,ip,jacEl);
@@ -1068,9 +1066,9 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                     real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                         
                     // Account for shifted re-deposition
-                    if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                    if(nbrShiftGridCell[ip]<0 && ir<nr-1)
                         jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
-                    else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                    else if(nbrShiftGridCell[ip]>0 && ir>0)
                         jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
                 
                     jac->SetElement(ir,irp[ip],jacEl);
@@ -1086,9 +1084,9 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                     real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                         
                     // Account for shifted re-deposition
-                    if(rCoordPNext[ip]>rCoordPPrevious[ip] && ir<nr-1)
+                    if(nbrShiftGridCell[ip]<0 && ir<nr-1)
                         jacEl+=-rGrid->GetVpVol(ir+1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir+1)*nShard+ip];
-                    else if(rCoordPNext[ip]<rCoordPPrevious[ip] && ir>0)
+                    else if(nbrShiftGridCell[ip]>0 && ir>0)
                         jacEl+=-rGrid->GetVpVol(ir-1)/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1)*nShard+ip];
                 
                     jac->SetElement(ir,irp[ip],jacEl);
