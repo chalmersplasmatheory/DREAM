@@ -1049,7 +1049,7 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                         // Account for shifted re-deposition
                         if(nbrShiftGridCell[ip]<0 && ir<nr+nbrShiftGridCell[ip])
                             jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
-                        else if(nbrShiftGridCell[ip]>0 && ir>=nbrShiftGridCell[ip])
+                        else if(nbrShiftGridCell[ip]>0 && ir>=(len_t)nbrShiftGridCell[ip])
                             jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                     
                         jac->SetElement(ir,ip,jacEl);
@@ -1068,7 +1068,7 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                     // Account for shifted re-deposition
                     if(nbrShiftGridCell[ip]<0 && ir<nr+nbrShiftGridCell[ip])
                         jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
-                    else if(nbrShiftGridCell[ip]>0 && ir>nbrShiftGridCell[ip])
+                    else if(nbrShiftGridCell[ip]>0 && ir>=(len_t)nbrShiftGridCell[ip])
                         jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 
                     jac->SetElement(ir,irp[ip],jacEl);
@@ -1085,8 +1085,8 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                         
                     // Account for shifted re-deposition
                     if(nbrShiftGridCell[ip]<0 && ir<nr+nbrShiftGridCell[ip])
-                        jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-1nbrShiftGridCell[ip]*nShard+ip];
-                    else if(nbrShiftGridCell[ip]>0 && ir>nbrShiftGridCell[ip])
+                        jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                    else if(nbrShiftGridCell[ip]>0 && ir>=(len_t)nbrShiftGridCell[ip])
                         jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 
                     jac->SetElement(ir,irp[ip],jacEl);
