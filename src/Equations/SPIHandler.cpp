@@ -249,6 +249,7 @@ void SPIHandler::AllocateQuantities(){
     shift_store=new real_t[nShard];
     YpdotPrevious=new real_t[nShard];
     Zavg=new real_t[nShard];
+    plasmoidAbsorbtionFactor=new real_t[nShard];
 }
 
 /**
@@ -287,6 +288,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] shift_store;
     delete [] YpdotPrevious;
     delete [] Zavg;
+    delete [] plasmoidAbsorbtionFactor;
 }
 /**
 * Calculates the radius and ablation of each shard
@@ -338,6 +340,13 @@ void SPIHandler::AssignComputationParameters(len_t ip){
     n = n_0 * Lc; 
     v_lab = a0 * t_detach;
     Reff = -2*M_PI*M_PI*Rm*this->rGrid->GetMinorRadius()/(sigma*delta_y*delta_y*delta_y*log(delta_y/(this->rGrid->GetMinorRadius()*M_PI)));
+    
+    //Calculate and save plasmoid opacity factor for heat absorbtion calculation (if any)
+    if(Lc>3*rf->GetElectronCollisionTimeThermal(irp[ip])*n_e/n_0*(1+Zavg0)*sqrt(2*Te*qe/me))
+        plasmoidAbsorbtionFactor[ip] = 1.0;
+    else
+        plasmoidAbsorbtionFactor[ip] = 0.0;
+
 }
 
 /**
@@ -716,7 +725,7 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
         heatAbsorbtionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
             if(YpPrevious[ip]>0 && irp[ip]<nr){
-                real_t heatAbsorbtionPrefactor = M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]/exp(1.8);// Dividing by exp(1.8) as an approximate way to account for the sheath potential damping of the absorbed heat flux (see e.g. Parks et al PoP 2000, https://doi.org/10.1063/1.874052)
+                real_t heatAbsorbtionPrefactor = plasmoidAbsorbtionFactor[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]/exp(1.8);// Dividing by exp(1.8) as an approximate way to account for the sheath potential damping of the absorbed heat flux (see e.g. Parks et al PoP 2000, https://doi.org/10.1063/1.874052)
                 
                 heatAbsorbtionRate[ir]+=-heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                 
@@ -1043,7 +1052,7 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
             for(len_t ir=0;ir<nr;ir++){
                 for(len_t ip=0;ip<nShard;ip++){
                     if(YpPrevious[ip]>0 && irp[ip]<nr){
-                        real_t prefactor = -scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                        real_t prefactor = -scaleFactor*6.0/5.0/Yp[ip]*plasmoidAbsorbtionFactor[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]/exp(1.8);
                         real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                         
                         // Account for shifted re-deposition
@@ -1062,7 +1071,7 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(irp[ip]<nr){
-                    real_t prefactor = -scaleFactor*3.0/2.0*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec;
+                    real_t prefactor = -scaleFactor*3.0/2.0*plasmoidAbsorbtionFactor[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec/exp(1.8);
                     real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                         
                     // Account for shifted re-deposition
@@ -1080,7 +1089,7 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(irp[ip]<nr){
-                    real_t prefactor = -scaleFactor*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]];
+                    real_t prefactor = -scaleFactor*plasmoidAbsorbtionFactor[ip]*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]/exp(1.8);
                     real_t jacEl = prefactor*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
                         
                     // Account for shifted re-deposition
