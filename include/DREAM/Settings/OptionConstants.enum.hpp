@@ -14,7 +14,8 @@ enum prescribed_data_interp {
     // We start from 0 here to remain somewhat compatible
     // with the GSL interpolation interface
     PRESCRIBED_DATA_INTERP_NEAREST=0,
-    PRESCRIBED_DATA_INTERP_LINEAR=1
+    PRESCRIBED_DATA_INTERP_LINEAR=1,
+    PRESCRIBED_DATA_INTERP_LOGARITHMIC=2
 };
 enum prescribed_data_interp_gsl {
     PRESCRIBED_DATA_INTERP_GSL_LINEAR=1,
@@ -25,7 +26,8 @@ enum prescribed_data_interp_gsl {
 };
 enum prescribed_data_interp3d {
     PRESCRIBED_DATA_INTERP3D_NEAREST=0,
-    PRESCRIBED_DATA_INTERP3D_LINEAR=1
+    PRESCRIBED_DATA_INTERP3D_LINEAR=1,
+    PRESCRIBED_DATA_INTERP3D_LOGARITHMIC=2
 };
 
 enum ion_data_type {
@@ -396,6 +398,11 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
+
+enum eqterm_lcfs_loss_mode {                        // Loss term
+    EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
+    EQTERM_LCFS_LOSS_MODE_FLUID = 2,
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3};
 
 enum eqterm_tritium_mode {                        // Tritium generation is...
     EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected

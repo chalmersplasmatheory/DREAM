@@ -56,6 +56,11 @@ def setup_interactive(do, glob):
     print(do.grid)
     who()
 
+    if len(do.solver.warnings) > 0:
+        print(f'\nThe simulation has {len(do.solver.warnings)} warnings.')
+        for w in do.solver.warnings:
+            print(f'\x1B[1;33m[WARNING]\x1B[0m {w}')
+
 
 def who():
     """

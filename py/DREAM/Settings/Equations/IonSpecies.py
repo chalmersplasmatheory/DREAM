@@ -73,8 +73,7 @@ class IonSpecies:
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
-        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,
-        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
+        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
         """
         Constructor.
 
@@ -191,6 +190,7 @@ class IonSpecies:
             t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
             Drr_0=diffusion_initial_all_cs,
             Drr_f=diffusion_final_all_cs,
+            Drr_o=diffusion_offset_all_cs,
             r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
             interpr=interpr, interpt=interpt
         )
@@ -202,6 +202,7 @@ class IonSpecies:
             t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
             Drr_0=diffusion_initial_all_cs,
             Drr_f=diffusion_final_all_cs,
+            Drr_o=diffusion_offset_all_cs,
             r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
             interpr=interpr, interpt=interpt
         )
@@ -214,6 +215,7 @@ class IonSpecies:
             t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
             Ar_0=advection_initial_all_cs,
             Ar_f=advection_final_all_cs,
+            Ar_o=advection_offset_all_cs,
             r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
             interpr=interpr, interpt=interpt
         )
@@ -225,6 +227,7 @@ class IonSpecies:
             t_transp_start_expdecay_all_cs=t_transp_start_expdecay_all_cs,
             Ar_0=advection_initial_all_cs,
             Ar_f=advection_final_all_cs,
+            Ar_o=advection_offset_all_cs,
             r_expdecay_all_cs=r_expdecay_all_cs, t_expdecay_all_cs=t_expdecay_all_cs,
             interpr=interpr, interpt=interpt
         )
@@ -965,7 +968,7 @@ class IonSpecies:
     def setChargedDiffusion(
         self, mode, Drr=None, r=None, t=None,
         t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
-        Drr_0=None, Drr_f=0,
+        Drr_0=None, Drr_f=0, Drr_o=0,
         r_expdecay_all_cs=None, t_expdecay_all_cs=None,
         interpr=None, interpt=None
     ):
@@ -980,6 +983,7 @@ class IonSpecies:
         :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
         :param Drr_0:                          Initial value of diffusion coefficient when decaying exponentially.
         :param Drr_f:                          Final value of diffusion coefficient when decaying exponentially.
+        :param Drr_o:                          Value of diffusion coefficient before exponential decay.
         :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
         :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
         :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
@@ -994,7 +998,7 @@ class IonSpecies:
             elif Drr is None and t_transp_expdecay_all_cs is not None:
                 Drr, r, t = self.calcTransportCoefficientExpdecayAllChargedStates(
                     t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
-                    c0=Drr_0, cf=Drr_f,
+                    c0=Drr_0, cf=Drr_f, co=Drr_o,
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
@@ -1011,7 +1015,7 @@ class IonSpecies:
     def setNeutralDiffusion(
         self, mode, Drr=None, r=None, t=None,
         t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
-        Drr_0=None, Drr_f=0,
+        Drr_0=None, Drr_f=0, Drr_o=0,
         r_expdecay_all_cs=None, t_expdecay_all_cs=None,
         interpr=None, interpt=None
     ):
@@ -1026,6 +1030,7 @@ class IonSpecies:
         :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
         :param Drr_0:                          Initial value of diffusion coefficient when decaying exponentially.
         :param Drr_f:                          Final value of diffusion coefficient when decaying exponentially.
+        :param Drr_o:                          Value of diffusion coefficient before exponential decay.
         :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
         :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
         :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
@@ -1040,7 +1045,7 @@ class IonSpecies:
             elif Drr is None and t_transp_expdecay_all_cs is not None:
                 Drr, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(
                     t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
-                    c0=Drr_0, cf=Drr_f,
+                    c0=Drr_0, cf=Drr_f, co=Drr_o,
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
                 
@@ -1055,7 +1060,7 @@ class IonSpecies:
     def setChargedAdvection(
         self, mode, Ar=None, r=None, t=None,
         t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
-        Ar_0=None, Ar_f=0,
+        Ar_0=None, Ar_f=0, Ar_o=0,
         r_expdecay_all_cs=None, t_expdecay_all_cs=None,
         interpr=None, interpt=None
     ):
@@ -1070,6 +1075,7 @@ class IonSpecies:
         :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
         :param Ar_0:                           Initial value of advection coefficient when decaying exponentially.
         :param Ar_f:                           Final value of advection coefficient when decaying exponentially.
+        :param Ar_o:                           Value of advection coefficient before exponential decay.
         :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
         :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
         :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
@@ -1084,7 +1090,7 @@ class IonSpecies:
             elif Ar is None and t_transp_expdecay_all_cs is not None:
                 Ar, r, t = self.calcTransportCoefficientExpdecayAllChargedStates(
                     t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
-                    c0=Ar_0, cf=Ar_f,
+                    c0=Ar_0, cf=Ar_f, co=Ar_o,
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
@@ -1101,7 +1107,7 @@ class IonSpecies:
     def setNeutralAdvection(
         self, mode, Ar=None, r=None, t=None,
         t_transp_expdecay_all_cs=None, t_transp_start_expdecay_all_cs=0,
-        Ar_0=None, Ar_f=0,
+        Ar_0=None, Ar_f=0, Ar_o=0,
         r_expdecay_all_cs=None, t_expdecay_all_cs=None,
         interpr=None, interpt=None
     ):
@@ -1116,6 +1122,7 @@ class IonSpecies:
         :param t_transp_start_expdecay_all_cs: Start time of exponential decay.
         :param Ar_0:                           Initial value of advection coefficient when decaying exponentially.
         :param Ar_f:                           Final value of advection coefficient when decaying exponentially.
+        :param Ar_o:                           Value of advection coefficient before exponential decay.
         :param r_expdecay_all_cs:              Radial grid on which the coefficient should be defined.
         :param t_expdecay_all_cs:              Time grid on which the coefficient should be defined.
         :param interpr:                        Radial grid onto which ion transport coefficients should be interpolated.
@@ -1130,7 +1137,7 @@ class IonSpecies:
             elif Ar is None and t_transp_expdecay_all_cs is not None:
                 Ar, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(
                     t_start=t_transp_start_expdecay_all_cs, t_exp=t_transp_expdecay_all_cs,
-                    c0=Ar_0, cf=Ar_f,
+                    c0=Ar_0, cf=Ar_f, co=Ar_o,
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
@@ -1144,14 +1151,14 @@ class IonSpecies:
             self.neutral_advection_mode = mode
 
 
-    def calcTransportCoefficientExpdecaySingleChargeState(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
+    def calcTransportCoefficientExpdecaySingleChargeState(self, t_exp, c0, cf=0, co=0, t_start=0, r=None, t=None):
         """
         Contsruct a transport coefficient which decays exponentially in time
         according to
 
-          c = cf + (c0-cf)*exp(-(t-t_start)/t_exp).
+          c = co + cf + (c0-cf)*exp(-(t-t_start)/t_exp).
 
-        The coefficient is set to 0 for t <= t_start.
+        The coefficient is set to 'co' for t <= t_start.
         """
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
@@ -1171,25 +1178,24 @@ class IonSpecies:
         c_single_charge_state = (cf + np.exp(-(t-t_start)/t_exp)*(c0-cf))*(t>t_start)
 
         # Copy the coefficients for the last time step to avoid an unintended linear extrapolation with an unphysical sign change
-        c_single_charge_state = np.vstack((c_single_charge_state, c_single_charge_state[-1,:]))
+        c_single_charge_state = co + np.vstack((c_single_charge_state, c_single_charge_state[-1,:])) 
         t = np.vstack((t, t[-1]+1))
 
         return c_single_charge_state, r.flatten(), t.flatten()
 
 
-    def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, t_start = 0, r = None, t = None):
+    def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, co = 0, t_start = 0, r = None, t = None):
         """
         Construct transport coefficients which decay exponentially in
         time, for all charge states of this species.
         """
-        c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, t_start, r, t)
+        c_single_charge_state, r, t = self.calcTransportCoefficientExpdecaySingleChargeState(t_exp, c0, cf, co, t_start, r, t)
         cCharged = np.zeros((self.Z,len(t),len(c_single_charge_state[0,:])))
         for i in range(self.Z):
             cCharged[i,:,:]=c_single_charge_state
 
         return cCharged, r, t
-
-
+    
     def verifySettings(self):
         """
         Verify that the settings of this ion species are correctly set.
