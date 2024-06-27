@@ -62,6 +62,7 @@ class OtherQuantities:
         'runaway/S_ava', 'runaway/S_compton', 
         'runaway/synchrotron_f1', 'runaway/synchrotron_f2', 'runaway/bremsstrahlung_f1', 
         'scalar',
+        'scalar/ablationDrift',
         'scalar/E_mag',
         'scalar/L_i',
         'scalar/L_i_flux',
@@ -71,7 +72,8 @@ class OtherQuantities:
         'scalar/radialloss_f_re',
         'scalar/radialloss_f_hot',
         'scalar/energyloss_f_re',
-        'scalar/energyloss_f_hot', 
+        'scalar/energyloss_f_hot',
+        'scalar/Ypdot',
         'ripple',
         'transport'
     ]
