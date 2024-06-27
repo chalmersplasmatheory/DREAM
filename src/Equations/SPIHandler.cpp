@@ -316,7 +316,7 @@ void SPIHandler::AssignShardSpecificParameters(len_t ip){
 }
 
 /**
- * Computes relevant quantities for the drift displacement of a shard
+ * Computes relevant quantities for the drift displacement and heat absorbtion of a shard
  * Zavg    : Total average charge inside the cloud
  * CST     : Sound speed inside the cloud during the majority of the drift
  * CST0    : Sound speed inside the cloud directly after the neutral phase
@@ -341,11 +341,10 @@ void SPIHandler::AssignComputationParameters(len_t ip){
     v_lab = a0 * t_detach;
     Reff = -2*M_PI*M_PI*Rm*this->rGrid->GetMinorRadius()/(sigma*delta_y*delta_y*delta_y*log(delta_y/(this->rGrid->GetMinorRadius()*M_PI)));
     
-    //Calculate and save plasmoid opacity factor for heat absorbtion calculation (if any)
-    if(Lc>3*rf->GetElectronCollisionTimeThermal(irp[ip])*n_e/n_0*(1+Zavg0)*sqrt(2*Te*qe/me))
-        plasmoidAbsorbtionFactor[ip] = 1.0;
-    else
-        plasmoidAbsorbtionFactor[ip] = 0.0;
+       
+    // Calculate the fraction of the heat flux being absorbed in the cloud, using eq. 4.77 in Nicos MSc thesis
+    real_t x = rf->GetElectronCollisionTimeThermal(irp[ip])*n_e/n_0*(1+Zavg0)*sqrt(2*Te*qe/me)/Lc;// Ratio of mean free path and cloud length
+    plasmoidAbsorbtionFactor[ip] = 1-1/(x*x)*(exp(-1/sqrt(x))*(-0.5*sqrt(x)+0.5*x+x*sqrt(x)+x*x)-0.5*expint(-1/sqrt(x)));
 
 }
 
