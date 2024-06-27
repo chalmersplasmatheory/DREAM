@@ -67,11 +67,13 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	// we can not use R0 from the radial grid of this simulation to calculate 
 	// the size of the flux surfaces. The corresponding factor correcting the 
 	// size of the flux surfaces must instead be included directly in the 
-	// VpVolNormFactor
+	// VpVolNormFactor. We also need the major radius for the drift displacement
+	// calculation, so we also set this here if the R0 from the radial grid is finite
+	// and no other value is specified by the user.
 	if(!isinf(R0)){
 	    this->VpVolNormFactor*=R0;
-        if(Rm==-1)
-            Rm=R0;
+        if(Rm==-1)// Rm==-1 meeans that no value has been given by the user
+            Rm=R0;// Rm is the major radius used for the drift calculation
     }else if(Rm==-1 && spi_shift_mode==true)
         throw DREAMException("SPIHandler: The drift model requires a finite major radius.");
 
@@ -111,6 +113,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Memory allocation
     AllocateQuantities();
     
+    // Ablation cloud quantities
     this->T=T;
     this->T_0=T_0;
     this->delta_y=delta_y;
@@ -123,7 +126,10 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     for(len_t ip=0;ip<nShard;ip++)
         rCoordPPrevious[ip]=rGrid->GetR_f(nr-1);
 
-    // Calculate pellet molar mass, molar volume and density
+    // Calculate pellet molar mass, molar volume, density and average charge of the ablation cloud
+    // The later is calculated based on a user-given lookup table (ZavgArray) for the average charge
+    // of the relevant species (specified in Zs and isotopesDrift), as the ADAS rates are not valid 
+    // for the conditions inside the ablation cloud
     real_t molarMass=0;
     real_t solidDensity=0;
     real_t ZavgList=0;
