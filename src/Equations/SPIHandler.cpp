@@ -589,7 +589,17 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
     // Calculate deposition (if any)
     if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-        // Calculate drift (if any)
+        
+    }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
+        CalculateGaussianSourceLocal(depositionProfilesAllShards);
+
+    }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
+        for(len_t ir=0;ir<nr;ir++)
+            depositionRate[ir]=0;
+    }else {throw DREAMException("SPIHandler: unrecognized SPI material deposition mode");}
+    
+    // Calculate drift (if any)
+    if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL || (nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)){
         if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
             // We only calculate the drift once per time step, to avoid a discontinuity between Newton iterations
             if(t!=t_old){
@@ -600,7 +610,7 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                         AssignComputationParameters(ip);
                         AssignTimeParameters(ip);
                         shift_r[ip] = Deltar(ip);
-                        nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);// Negative if shift is tawards smaller radii
+                        nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);// Negative if shift is towards smaller radii
                         shift_store[ip] = shift_r[ip];
                     }
                 }
@@ -642,13 +652,7 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                 }
             }
         }
-    }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
-        CalculateGaussianSourceLocal(depositionProfilesAllShards);
-
-    }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
-        for(len_t ir=0;ir<nr;ir++)
-            depositionRate[ir]=0;
-    }else {throw DREAMException("SPIHandler: unrecognized SPI material deposition mode");}
+    }
 
     // Calculate heat absorbtion
     if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS){
