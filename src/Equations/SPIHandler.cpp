@@ -74,7 +74,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	    this->VpVolNormFactor*=R0;
         if(Rm==-1)// Rm==-1 meeans that no value has been given by the user
             Rm=R0;// Rm is the major radius used for the drift calculation
-    }else if(Rm==-1 && spi_shift_mode==true)
+    }else if(Rm==-1 && spi_shift_mode!=OptionConstants::EQTERM_SPI_SHIFT_MODE_NEGLECT)
         throw DREAMException("SPIHandler: The drift model requires a finite major radius.");
 
     // Store settings
@@ -204,7 +204,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)
 		for(len_t ip=0;ip<nShard;ip++)
 	        this->nbrShiftGridCellPrescribed[ip] = 1;
-	else if(nbrShiftGridCell!=nullptr)
+	else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_PRESCRIBED)
 	    for(len_t ip=0;ip<nShard;ip++){
 	        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
         }
@@ -601,7 +601,7 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
     }else {throw DREAMException("SPIHandler: unrecognized SPI material deposition mode");}
     
     // Calculate drift (if any)
-    if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL || (nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)){
+    if(spi_shift_mode!=OptionConstants::EQTERM_SPI_SHIFT_MODE_NEGLECT || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
     
         // Calculate the projection of the major radius unit vector on the flux surface normal, cos(thetaDrift)=R dot grad r / (|R|*|grad r|).
         // The drift is in general not only directed along the major radius, as the E-field causing the drift rotates
@@ -644,7 +644,7 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                     }
                 }
             }
-        } else if(nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
+        } else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_PRESCRIBED || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
             // If the radial projection of the drift is negative, the shift should go towards smaller radii, 
             // unless the shift goes past the core and ends at a larger radii on the other side. Here we 
             // account for this when setting the prescribed shift, keeping in mind that nbrShiftGridCell 
@@ -682,7 +682,11 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                 }
             }
         }
-    }
+    }else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_NEGLECT){
+        for(len_t ip=0;ip<nShard;ip++){
+            nbrShiftGridCell[ip] = 0;
+        }
+    }else {throw DREAMException("SPIHandler: unrecognized SPI shift mode");}
 
     // Calculate heat absorbtion
     if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS){

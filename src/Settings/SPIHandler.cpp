@@ -15,7 +15,7 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/cloudRadiusMode","method to use for calculating the size of the neutral cloud surrounding the pellet shards",(int_t)OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/magneticFieldDependenceMode","method to use for calculating the magnetic field dependence of the ablation rate",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/abl_ioniz","method to use for calculating the charge state distribution with which the recently ablated material is deposited",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
-    s->DefineSetting(MODULENAME "/shift","method to use for displacing the plasma due to the drift",(int_t)OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL);
+    s->DefineSetting(MODULENAME "/shift","method to use for displacing the plasma due to the drift",(int_t)OptionConstants::EQTERM_SPI_SHIFT_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/T","Cloud temperature during the majority of the drift",0, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/T0","Cloud temperature directly after the neutral phase", (real_t)0);
     s->DefineSetting(MODULENAME "/delta_y","Cloud half-width during the drift", (real_t)0);

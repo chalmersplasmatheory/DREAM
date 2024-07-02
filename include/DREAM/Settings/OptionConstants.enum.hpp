@@ -366,7 +366,8 @@ enum eqterm_spi_deposition_mode {
 
 enum eqterm_spi_shift_mode {
     EQTERM_SPI_SHIFT_MODE_NEGLECT=1,
-    EQTERM_SPI_SHIFT_MODE_ANALYTICAL=2
+    EQTERM_SPI_SHIFT_MODE_PRESCRIBED=2,
+    EQTERM_SPI_SHIFT_MODE_ANALYTICAL=3
 };
 
 enum eqterm_spi_heat_absorbtion_mode {

@@ -38,7 +38,8 @@ MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT = 1
 MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK = 2
 
 SHIFT_MODE_NEGLECT=1
-SHIFT_MODE_ANALYTICAL=2
+SHIFT_MODE_PRESCRIBED=2
+SHIFT_MODE_ANALYTICAL=3
 
 ZMolarMassList=[1,1,10]
 isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
@@ -430,6 +431,12 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         else:
             self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
             
+        # Perhaps it would be better to force the user to explicitly set the shift mode,
+        # but this helps to ensure backwards compatibility with scripts relying on that 
+        # setting nbrShiftGridCell>0 automatically gives a corresponding prescribed shift
+        if nbrShiftGridCell>0:
+            self.setShift(SHIFT_MODE_PRESCRIBED)
+            
         if T is not None:
             if np.isscalar(T):
                 T = T*np.ones(nShard)
@@ -439,6 +446,14 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
                 self.T = T
             
         return kp
+        
+    def setShiftParamsPrescribed(self, shift = SHIFT_MODE_PRESCRIBED, nbrShiftGridCell=None, add=True):
+        self.setShift(shift)
+        if nbrShiftGridCell is not None:
+            if add and self.nbrShiftGridCell is not None:
+                self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell))
+            else:
+                self.nbrShiftGridCell = nbrShiftGridCell
         
     def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None, add=True):
         """
@@ -453,7 +468,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         :param list Zs: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
         :param list isotopes: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
         """
-        self.shift = int(shift)
+        self.setShift(shift)
         if T is not None:
             if add and self.T is not None:
                 self.T = np.concatenate((self.T,T))
@@ -528,7 +543,13 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         ablated material is deposited
         """
         self.abl_ioniz = int(abl_ioniz)
-
+        
+    def setShift(self, shift):
+        """
+        Specifies which model to use for calculating the
+        ablation cloud drift
+        """
+        self.shift = int(shift)
 
     def fromdict(self, data):
         """
@@ -670,7 +691,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
         if type(self.shift) != int:
-            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer, 1 or 2.")
+            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
         if self.shift == SHIFT_MODE_ANALYTICAL:
             if self.T0<0: 
                 raise EquationException("spi: Invalid value assigned to 'T0'. Expected positive float.")
