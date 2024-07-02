@@ -256,6 +256,7 @@ void SPIHandler::AllocateQuantities(){
     YpdotPrevious=new real_t[nShard];
     Zavg=new real_t[nShard];
     plasmoidAbsorbtionFactor=new real_t[nShard];
+    cosThetaDrift = new real_t[nShard];
 }
 
 /**
@@ -295,6 +296,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] YpdotPrevious;
     delete [] Zavg;
     delete [] plasmoidAbsorbtionFactor;
+    delete [] cosThetaDrift;
 }
 /**
 * Calculates the radius and ablation of each shard
@@ -465,8 +467,8 @@ real_t SPIHandler::Deltar(len_t ip){
     real_t third = ThirdRow();
     real_t term1 = v_lab * t_acc;
     real_t factor = (1+Zavg[ip])*2*qe*T[ip]*q/(CST*pelletMolarMass[ip]/N_Avogadro)*t_acc;
-    return (term1 + factor * (first + second + third))*cos(thetaCoordPPrevious[ip]);
-    // Factor cos(thetaCoordPPrevious) is not included in the reference paper, but is included here
+    return (term1 + factor * (first + second + third))*cosThetaDrift[ip];
+    // Factor cosThetaDrift is not included in the reference paper, but is included here
     // to correct the projection onto the radial coordinates for shards which are not on the outboard midplane.
     // Note, however, that we do not account for that this angular coordinate, and also not the background 
     // plasma parameters at the location of the plasmoid, changes during the drift motion, so this is only approximate!
@@ -600,6 +602,33 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
     
     // Calculate drift (if any)
     if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL || (nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)){
+    
+        // Calculate the projection of the major radius unit vector on the flux surface normal, cos(thetaDrift)=R dot grad r / (|R|*|grad r|).
+        // The drift is in general not only directed along the major radius, as the E-field causing the drift rotates
+        // with the twist of the field lines, but it turns out that the radial drift component will anyway be modified 
+        // by this factor. This can be seen by noting that the angle between Yhat and yhat in Vallhagen et al JPP 2023
+        // will everywhere be modified by thetaDrift for shards not on the outboard midplane, and after performing the 
+        // integral in eq. 2.8 an overall modifying factor of cos(thetaDrift) falls out.
+        if(t!=t_old){
+            for(len_t ip=0;ip<nShard;ip++){
+                if(rCoordPPrevious[ip]<rGrid->GetR_f(nr)){
+                    rGrid->GetGradRCartesian(gradRCartesianPrevious,rCoordPPrevious[ip],thetaCoordPPrevious[ip],phiCoordPPrevious[ip]);
+                    
+                    // Note that even if we need a finite value for the major radius when calculating the drift, this value
+                    // does not affect the angle against the flux surface normal, if the major radius of the radial grid is infinite.
+                    // In that case, the major radius unit vector simply coincides with the unit vector for x in the SPI coordinate
+                    // system.
+                    real_t R0 = this->rGrid->GetR0();
+                    if(isinf(R0))
+                        cosThetaDrift[ip] = gradRCartesianPrevious[0]/sqrt(gradRCartesianPrevious[0]*gradRCartesianPrevious[0] + gradRCartesianPrevious[1]*gradRCartesianPrevious[1] + gradRCartesianPrevious[2]*gradRCartesianPrevious[2]);
+                    else
+                        cosThetaDrift[ip] = ((xpPrevious[3*ip] + R0)*gradRCartesianPrevious[0] + xpPrevious[3*ip+2]*gradRCartesianPrevious[2])/sqrt(((xpPrevious[3*ip] + R0)*(xpPrevious[3*ip] + R0) + xpPrevious[3*ip+2]*xpPrevious[3*ip+2]) * (gradRCartesianPrevious[0]*gradRCartesianPrevious[0] + gradRCartesianPrevious[1]*gradRCartesianPrevious[1] + gradRCartesianPrevious[2]*gradRCartesianPrevious[2]));
+                } else {
+                    cosThetaDrift[ip]=1;
+                }
+            }
+        }
+    
         if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
             // We only calculate the drift once per time step, to avoid a discontinuity between Newton iterations
             if(t!=t_old){
@@ -616,12 +645,13 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                 }
             }
         } else if(nbrShiftGridCellPrescribed!=nullptr || spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){// Prescribed drift (in terms of grid cells)
-            // If the shard is on the HFS, the shift should go towards smaller radii, unless the shift goes past
-            // the core and ends at a larger radii on the other side. Here we account for this when setting 
-            // the prescribed shift, keeping in mind that nbrShiftGridCell should be negative if the shift is 
-            // towards smaller radii, while nbrShiftGridCellPrescribed is always positive
+            // If the radial projection of the drift is negative, the shift should go towards smaller radii, 
+            // unless the shift goes past the core and ends at a larger radii on the other side. Here we 
+            // account for this when setting the prescribed shift, keeping in mind that nbrShiftGridCell 
+            // should be negative if the shift is towards smaller radii, while nbrShiftGridCellPrescribed 
+            // is always positive
             for(len_t ip=0;ip<nShard;ip++){
-                if(cos(thetaCoordPNext[ip])<0){// is the shard on the HFS?
+                if(cosThetaDrift[ip]<0){// Is the radial projection of the drift negative?
                     nbrShiftGridCell[ip] = std::abs((int_t)irp[ip]-nbrShiftGridCellPrescribed[ip])-(int_t)irp[ip];
                     
                     //Account for that grid cell 0 should be counted twice (on both sides of the magnetic axis)
