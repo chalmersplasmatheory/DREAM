@@ -534,8 +534,9 @@ void SimulationGenerator::ConstructEquation_Ions(
 					ionOffset += Nr;
 				}
 			} else {
-				eq_ions.push_back(i);
+				eq_ions.push_back(dynamic_indices[i]);
 				vecni.push_back(ni+idx*Nr);
+				ionOffset += (Z+1)*Nr;
 			}
 		}
 
@@ -549,7 +550,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 			if (init_equil[iZ] != 0)
 				continue;
 
-			for (len_t Z0 = 1; Z0 <= ih->GetZ(iZ); Z0++, ionOffset++) {
+			for (len_t Z0 = 0; Z0 <= ih->GetZ(iZ); Z0++, ionOffset++) {
 				for (len_t ir = 0; ir < Nr; ir++) {
 					nfree0[ir] += Z0 * ni[ionOffset*Nr + ir];
 				}
