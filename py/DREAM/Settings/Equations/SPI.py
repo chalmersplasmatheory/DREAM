@@ -95,12 +95,12 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.nbrShiftGridCell = None
 
         self.TDrift        = None
-        self.T0Drift       = None
-        self.DeltaYDrift  = None
-        self.RmDrift       = None
-        self.ZavgDriftArray= None
-        self.ZsDrift       = None
-        self.isotopesDrift = None
+        self.T0Drift       = 0
+        self.DeltaYDrift  = 0
+        self.RmDrift       = -1
+        self.ZavgDriftArray= [0]
+        self.ZsDrift       = [0]
+        self.isotopesDrift = [0]
 
 
     def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, TDrift = None):
@@ -150,7 +150,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         # First we calculate the cdf, and then interpolate the cdf-values 
         # back to the corresponding radii at N randomly chosen points between 0 and 1
         rp_integrate=np.linspace(1e-10/kp,10/kp,5000)
-        cdf=integrate.cumtrapz(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
+        cdf=integrate.cumulative_trapezoid(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
         return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
     def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
@@ -455,7 +455,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             else:
                 self.nbrShiftGridCell = nbrShiftGridCell
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=None, DeltaYDrift=None, RmDrift=None, ZavgDriftArray=None, ZsDrift=None, isotopesDrift=None, add=True):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0], ZsDrift=[0], isotopesDrift=[0], add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
@@ -629,18 +629,6 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.TDrift = np.zeros(self.rp.shape)
             else:
                 self.TDrift=np.array([0])
-        if self.T0Drift is None:
-            self.T0Drift=0
-        if self.DeltaYDrift is None:
-            self.DeltaYDrift=0
-        if self.RmDrift is None:
-            self.RmDrift=-1
-        if self.ZavgDriftArray is None:
-            self.ZavgDriftArray=np.array([0])
-        if self.ZsDrift is None:
-            self.ZsDrift=np.array([0])
-        if self.isotopesDrift is None:
-            self.isotopesDrift=np.array([0])
 
             
         data = {
