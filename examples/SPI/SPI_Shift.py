@@ -164,9 +164,9 @@ charged_prescribed_diffusion = 100
 neutral_prescribed_diffusion = 100
 
 if molarFractionNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE, Ions.ION_OPACITY_TRANSPARENT], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), T=5)
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE, Ions.ION_OPACITY_TRANSPARENT], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), TDrift=5)
 else:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), T=30)
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], opacity_modes=[Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), TDrift=30)
 if nShardNe>0:
     if use_ion_transport:
 	    ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
@@ -174,12 +174,12 @@ if nShardNe>0:
 	    charged_advection_modes = [Ions.ION_CHARGED_ADVECTION_MODE_PRESCRIBED], charged_prescribed_advections =  [charged_prescribed_advection],
         neutral_advection_modes = [Ions.ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED], neutral_prescribed_advections =  [neutral_prescribed_advection],
         charged_diffusion_modes = [Ions.ION_CHARGED_DIFFUSION_MODE_PRESCRIBED], charged_prescribed_diffusions =  [charged_prescribed_diffusion],
-        neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion], T=5)
+        neutral_diffusion_modes = [Ions.ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED], neutral_prescribed_diffusions =  [neutral_prescribed_diffusion], TDrift=5)
     else:
 	    ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], 
-	    abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), T=5)
+	    abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]), TDrift=5)
 	    
-ds.eqsys.spi.setShiftParamsAnalytical(shift=SPI.SHIFT_MODE_ANALYTICAL, T0=2, delta_y=0.0125, Rm=R0, ZavgArray=[1, 2], Zs=[1, 10], isotopes=[2, 0])
+ds.eqsys.spi.setShiftParamsAnalytical(shift=SPI.SHIFT_MODE_ANALYTICAL, T0Drift=2, DeltaYDrift=0.0125, RmDrift=R0, ZavgDriftArray=[1, 2], ZsDrift=[1, 10], isotopesDrift=[2, 0])
 #To disable shift write SPI.SHIFT_MODE_NEGLECT. The default value of shift is SPI.SHIFT_MODE_NEGLECT
         
 ds.eqsys.n_i.setAdvectionInterpolationMethodCharged(ad_int=IonsAll.AD_INTERP_TCDF,

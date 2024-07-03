@@ -53,7 +53,7 @@ class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = None, Zs = None, isotopes = None):
+SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift = None, ZavgDriftArray = None, ZsDrift = None, isotopesDrift = None):
         """
         Constructor.
         
@@ -94,16 +94,16 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         self.t_delay  = None 
         self.nbrShiftGridCell = None
 
-        self.T        = None
-        self.T0       = None
-        self.delta_y  = None
-        self.Rm       = None
-        self.ZavgArray= None
-        self.Zs       = None
-        self.isotopes = None
+        self.TDrift        = None
+        self.T0Drift       = None
+        self.DeltaYDrift  = None
+        self.RmDrift       = None
+        self.ZavgDriftArray= None
+        self.ZsDrift       = None
+        self.isotopesDrift = None
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, T = None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, TDrift = None):
 
         if rp is not None:
             if np.isscalar(rp):
@@ -130,10 +130,10 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
                 self.nbrShiftGridCell = np.asarray([nbrShiftGridCell])
             else: self.nbrShiftGridCell = np.asarray(nbrShiftGridCell)
 
-        if T is not None:
-            if np.isscalar(T):
-                self.T = np.asarray([T])
-            else: self.T = np.asarray(T)
+        if TDrift is not None:
+            if np.isscalar(TDrift):
+                self.TDrift = np.asarray([TDrift])
+            else: self.TDrift = np.asarray(TDrift)
 
     def rpDistrParksStatistical(self,rp,kp):
         """
@@ -415,7 +415,7 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, T = None, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
@@ -437,13 +437,13 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         if nbrShiftGridCell>0:
             self.setShift(SHIFT_MODE_PRESCRIBED)
             
-        if T is not None:
-            if np.isscalar(T):
-                T = T*np.ones(nShard)
-            if add and self.T is not None:
-                self.T = np.concatenate((self.T,T))
+        if TDrift is not None:
+            if np.isscalar(TDrift):
+                TDrift = TDrift*np.ones(nShard)
+            if add and self.TDrift is not None:
+                self.TDrift = np.concatenate((self.TDrift,TDrift))
             else:
-                self.T = T
+                self.TDrift = TDrift
             
         return kp
         
@@ -455,31 +455,31 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             else:
                 self.nbrShiftGridCell = nbrShiftGridCell
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, T=None, T0=None, delta_y=None, Rm=None, ZavgArray=None, Zs=None, isotopes=None, add=True):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=None, DeltaYDrift=None, RmDrift=None, ZavgDriftArray=None, ZsDrift=None, isotopesDrift=None, add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
         :param int shift: Model used for determining the cloud drift
-        :param float T0: cloud temperature close to the pellet (before the cloud has drifted away from the pellet)
-        :param numpy.ndarray T: representative cloud temperature during the drift motion for each shard
-        :param float delta_y: characteristic half-thickness of the drifting cloud (should be similar to the radius of the neutral cloud around the pellet)
-        :param float Rm: major radius of the magnetic axis, only used if the major radius is otherwise infinite in the simulation
-        :param list ZavgArray: average charge states inside the drifting cloud of all drifting ion species. These can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. Note that his list does NOT neccessarily have the same shape as the list of atomic numbers and isotopes included in the simulation, but instead the ZavgArray-list and the Zs and isotopes-lists below will instead be used to look up the average charge state inside the drifting cloud for all the simulated ion species included in the pellet.
-        :param list Zs: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
-        :param list isotopes: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgArray-list above
+        :param float T0Drift: cloud temperature close to the pellet (before the cloud has drifted away from the pellet)
+        :param numpy.ndarray TDrift: representative cloud temperature during the drift motion for each shard
+        :param float DeltaYDrift: characteristic half-thickness of the drifting cloud (should be similar to the radius of the neutral cloud around the pellet)
+        :param float RmDrift: major radius of the magnetic axis, only used if the major radius is otherwise infinite in the simulation
+        :param list ZavgDriftArray: average charge states inside the drifting cloud of all drifting ion species. These can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. Note that his list does NOT neccessarily have the same shape as the list of atomic numbers and isotopes included in the simulation, but instead the ZavgDriftArray-list and the ZsDrift and isotopesDrift-lists below will instead be used to look up the average charge state inside the drifting cloud for all the simulated ion species included in the pellet.
+        :param list ZsDrift: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
+        :param list isotopesDrift: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
         """
         self.setShift(shift)
-        if T is not None:
-            if add and self.T is not None:
-                self.T = np.concatenate((self.T,T))
+        if TDrift is not None:
+            if add and self.TDrift is not None:
+                self.TDrift = np.concatenate((self.TDrift,TDrift))
             else:
-                self.T = T
-        self.T0 = T0
-        self.delta_y = delta_y
-        self.Rm = Rm
-        self.ZavgArray = ZavgArray
-        self.Zs = Zs
-        self.isotopes = isotopes
+                self.TDrift = TDrift
+        self.T0Drift = T0Drift
+        self.DeltaYDrift = DeltaYDrift
+        self.RmDrift = RmDrift
+        self.ZavgDriftArray = ZavgDriftArray
+        self.ZsDrift = ZsDrift
+        self.isotopesDrift = isotopesDrift
         
     def setVpVolNormFactor(self,VpVolNormFactor):
         self.VpVolNormFactor=VpVolNormFactor
@@ -563,20 +563,20 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             self.deposition     = int(data['deposition'])
         if 'shift' in data:
             self.shift          = int(data['shift'])
-        if 'T' in data:
-            self.T              = [float(x) for x in data['T']]
-        if 'T0' in data:
-            self.T0             = float(data['T0'])
-        if 'delta_y' in data:
-            self.delta_y        = float(data['delta_y'])
-        if 'Rm' in data:
-            self.Rm             = float(data['Rm'])
-        if 'ZavgArray' in data:
-            self.ZavgArray      = [float(x) for x in data['ZavgArray']]
-        if 'Zs' in data:        
-            self.Zs             = [float(x) for x in data['Zs']]
-        if 'isotopes' in data:        
-            self.isotopes             = [float(x) for x in data['isotopes']]
+        if 'TDrift' in data:
+            self.TDrift              = [float(x) for x in data['TDrift']]
+        if 'T0Drift' in data:
+            self.T0Drift             = float(data['T0Drift'])
+        if 'DeltaYDrift' in data:
+            self.DeltaYDrift        = float(data['DeltaYDrift'])
+        if 'RmDrift' in data:
+            self.RmDrift             = float(data['RmDrift'])
+        if 'ZavgDriftArray' in data:
+            self.ZavgDriftArray      = [float(x) for x in data['ZavgDriftArray']]
+        if 'ZsDrift' in data:        
+            self.ZsDrift             = [float(x) for x in data['ZsDrift']]
+        if 'isotopesDrift' in data:        
+            self.isotopesDrift             = [float(x) for x in data['isotopesDrift']]
         if 'heatAbsorbtion' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
@@ -624,23 +624,23 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
                 self.nbrShiftGridCell = np.zeros(self.rp.shape)
             else:
                 self.nbrShiftGridCell = np.array([0])
-        if self.T is None:
+        if self.TDrift is None:
             if self.rp is not None:
-                self.T = np.zeros(self.rp.shape)
+                self.TDrift = np.zeros(self.rp.shape)
             else:
-                self.T=np.array([0])
-        if self.T0 is None:
-            self.T0=0
-        if self.delta_y is None:
-            self.delta_y=0
-        if self.Rm is None:
-            self.Rm=-1
-        if self.ZavgArray is None:
-            self.ZavgArray=np.array([0])
-        if self.Zs is None:
-            self.Zs=np.array([0])
-        if self.isotopes is None:
-            self.isotopes=np.array([0])
+                self.TDrift=np.array([0])
+        if self.T0Drift is None:
+            self.T0Drift=0
+        if self.DeltaYDrift is None:
+            self.DeltaYDrift=0
+        if self.RmDrift is None:
+            self.RmDrift=-1
+        if self.ZavgDriftArray is None:
+            self.ZavgDriftArray=np.array([0])
+        if self.ZsDrift is None:
+            self.ZsDrift=np.array([0])
+        if self.isotopesDrift is None:
+            self.isotopesDrift=np.array([0])
 
             
         data = {
@@ -648,13 +648,13 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
             'ablation': self.ablation,
             'deposition': self.deposition,
             'shift': self.shift,
-            'T': self.T,
-            'T0': self.T0,
-            'delta_y': self.delta_y,
-            'Rm': self.Rm,
-            'ZavgArray': self.ZavgArray,
-            'Zs': self.Zs,
-            'isotopes': self.isotopes,
+            'TDrift': self.TDrift,
+            'T0Drift': self.T0Drift,
+            'DeltaYDrift': self.DeltaYDrift,
+            'RmDrift': self.RmDrift,
+            'ZavgDriftArray': self.ZavgDriftArray,
+            'ZsDrift': self.ZsDrift,
+            'isotopesDrift': self.isotopesDrift,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
@@ -693,18 +693,18 @@ SHIFT_MODE_NEGLECT, T = None, T0 = None, delta_y = None, Rm = None, ZavgArray = 
         if type(self.shift) != int:
             raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
         if self.shift == SHIFT_MODE_ANALYTICAL:
-            if self.T0<0: 
-                raise EquationException("spi: Invalid value assigned to 'T0'. Expected positive float.")
-            if any(self.T)<0:
-                raise EquationException("spi: Invalid value assigned to 'T'. Expected array of positive floats.")
-            if self.delta_y<0:
-                raise EquationException("spi: Invalid value assigned to 'delta_y'. Expected positive float.")
-            if self.Rm<0 and self.Rm!=-1:
-                raise EquationException("spi: Invalid value assigned to 'Rm'. Expected positive float.")
-            if len(self.ZavgArray)!=len(self.Zs):
-                raise EquationException("spi: Invalid value assigned to 'ZavgArray'. Expected array of positive floats with the same shape as 'Zs'.")
-            if len(self.isotopes)!=len(self.Zs):
-                raise EquationException("spi: Invalid value assigned to 'isotopes'. Expected array of positive floats with the same shape as 'Zs'.")
+            if self.T0Drift<0: 
+                raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
+            if any(self.TDrift)<0:
+                raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
+            if self.DeltaYDrift<0:
+                raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
+            if self.RmDrift<0 and self.RmDrift!=-1:
+                raise EquationException("spi: Invalid value assigned to 'RmDrift'. Expected positive float.")
+            if len(self.ZavgDriftArray)!=len(self.ZsDrift):
+                raise EquationException("spi: Invalid value assigned to 'ZavgDriftArray'. Expected array of positive floats with the same shape as 'ZsDrift'.")
+            if len(self.isotopesDrift)!=len(self.ZsDrift):
+                raise EquationException("spi: Invalid value assigned to 'isotopesDrift'. Expected array of positive floats with the same shape as 'ZsDrift'.")
             if self.deposition!=DEPOSITION_MODE_LOCAL:
                 raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:

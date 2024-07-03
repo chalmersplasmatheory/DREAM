@@ -28,6 +28,7 @@ namespace DREAM{
         len_t nShard;
         len_t nr;
         real_t dt;
+        len_t NZ;
 
         len_t spi_velocity_mode;
         len_t spi_ablation_mode;
@@ -112,19 +113,23 @@ namespace DREAM{
         static const real_t solidDensityList[];
 
         //Parameters for the shift calculation
-        real_t *T=nullptr;
-        real_t *ZavgArray;
+        real_t *TDrift=nullptr;
+        real_t *ZavgDriftArray;
         real_t *pelletDeuteriumFraction=nullptr;
         real_t* rp=nullptr;
         real_t* rpdot=nullptr;
         real_t* shift_r=nullptr;
-        real_t* Zavg=nullptr;
+        real_t* ZavgDrift=nullptr;
         real_t* isotopesDrift=nullptr;
-        real_t T_0, delta_y, Rm;
-        real_t t_acc, t_pol, t_pe, t_exp, t_polp, t_pep, t_expp;
-        real_t v0, n_e, n_i, Te, B, sigma, q;
-        real_t CST, CST0, G, n_0, a0, t_detach, Lc, n, v_lab, Reff;
-        len_t NZ;
+        real_t T0Drift, DeltaYDrift, RmDrift;
+        real_t tAccDrift, tPolDrift, tPeDrift, tExpDrift, tPolDriftPrime, tPeDriftPrime, tExpDriftPrime;
+        real_t v0Drift, neBgDrift, niBgDrift, TeBgDrift, BBgDrift, sigmaBgDrift, qBgDrift;
+        real_t CSTDrift, CST0Drift, G, n0Drift, a0Drift, tDetachDrift, LcInitDrift, nBarDrift, vLabInitDrift, ReffBgDrift;
+        
+        // We store the time at the end of the time step for the previous iteration 
+        // to be able to tell if the current iteration is the first one on the current time step
+        // This is useful for e.g. the drift calculation, which is only rebuilt in the first iteration
+        // of every time step to avoid a discontinuity in the jacobian when using a delta fucntion kernel
         real_t t_old=0;
 
         void CalculateYpdotNGSParksTSDW();
@@ -152,7 +157,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-            real_t *T, real_t T_0_temp, real_t delta_y_temp,real_t Rm, real_t *ZavgArray, len_t nZavg, real_t *Zs, real_t *isotopesDrift,
+            real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray, len_t nZavgDrift, real_t *ZsDrift, real_t *isotopesDrift,
             real_t VpVolNormFactor, real_t rclPrescribedConstant, int_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
@@ -161,9 +166,9 @@ namespace DREAM{
         struct integrand_struct {real_t a;};
         // Functions for the drift calculation
         void YpConversion(len_t ip);
-        void AssignShardSpecificParameters(len_t ip);
-        void AssignComputationParameters(len_t ip);
-        void AssignTimeParameters(len_t ip);
+        void AssignShardSpecificDriftParameters(len_t ip);
+        void AssignDriftComputationParameters(len_t ip);
+        void AssignDriftTimeParameters(len_t ip);
         static real_t Integrand(real_t x, void * params);
         real_t Epsiloni(real_t a, real_t b);
         real_t BisFunction(real_t t_prim);
