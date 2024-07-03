@@ -21,8 +21,8 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/DeltaYDrift","Cloud half-width during the drift", (real_t)0);
     s->DefineSetting(MODULENAME "/RmDrift","Major radius to be used for the drift calculation (needed if the grid has an infinite major radius)", (real_t)0);
     s->DefineSetting(MODULENAME "/ZavgDriftArray","Average charge of the ions inside the drifting ablation cloud", 0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/ZsDrift","Ion charges correspnding to ZavgDriftArray", 0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/isotopesDrift","Ion isotopes correspnding to ZavgDriftArray", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/ZsDrift","Ion charges correspnding to ZavgDriftArray", 0, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/isotopesDrift","Ion isotopes correspnding to ZavgDriftArray", 0, (int_t*)nullptr);
 
 
     s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
@@ -73,19 +73,19 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
 
     const real_t *_TDrift = s->GetRealArray(MODULENAME "/TDrift", 1, &nShard);
     const real_t *_ZavgDriftArray = s->GetRealArray(MODULENAME "/ZavgDriftArray", 1, &nZavgDrift);
-    const real_t *_ZsDrift = s->GetRealArray(MODULENAME "/ZsDrift", 1, &nZavgDrift);
-    const real_t *_isotopesDrift = s->GetRealArray(MODULENAME "/isotopesDrift", 1, &nZavgDrift);
+    const int_t *_ZsDrift = s->GetIntegerArray(MODULENAME "/ZsDrift", 1, &nZavgDrift);
+    const int_t *_isotopesDrift = s->GetIntegerArray(MODULENAME "/isotopesDrift", 1, &nZavgDrift);
     real_t *TDrift = new real_t[nShard];
     real_t *ZavgDriftArray = new real_t[nZavgDrift];
-    real_t *ZsDrift = new real_t[nZavgDrift];
-    real_t *isotopesDrift = new real_t[nZavgDrift];
+    len_t *ZsDrift = new len_t[nZavgDrift];
+    len_t *isotopesDrift = new len_t[nZavgDrift];
     if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
         for (len_t i = 0; i < nShard; i++)
             TDrift[i] = (real_t)_TDrift[i];
         for (len_t i = 0; i < nZavgDrift; i++){
             ZavgDriftArray[i] = (real_t)_ZavgDriftArray[i];
-            ZsDrift[i] = (real_t)_ZsDrift[i];
-            isotopesDrift[i] = (real_t)_isotopesDrift[i];
+            ZsDrift[i] = (len_t)_ZsDrift[i];
+            isotopesDrift[i] = (len_t)_isotopesDrift[i];
         }
     }
 

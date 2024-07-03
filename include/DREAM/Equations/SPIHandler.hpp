@@ -120,7 +120,7 @@ namespace DREAM{
         real_t* rpdot=nullptr;
         real_t* shift_r=nullptr;
         real_t* ZavgDrift=nullptr;
-        real_t* isotopesDrift=nullptr;
+        len_t* isotopesDrift=nullptr;
         real_t T0Drift, DeltaYDrift, RmDrift;
         real_t tAccDrift, tPolDrift, tPeDrift, tExpDrift, tPolDriftPrime, tPeDriftPrime, tExpDriftPrime;
         real_t v0Drift, neBgDrift, niBgDrift, TeBgDrift, BBgDrift, sigmaBgDrift, qBgDrift;
@@ -157,7 +157,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-            real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray, len_t nZavgDrift, real_t *ZsDrift, real_t *isotopesDrift,
+            real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray, len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
             real_t VpVolNormFactor, real_t rclPrescribedConstant, int_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
