@@ -7,6 +7,7 @@
 #include "DREAM/Equations/SPIHandler.hpp"
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_expint.h>
+#include "DREAM/IO.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -61,7 +62,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
     rf = this->rf;
-    qBgDrift = 1; //TODO
+    qBgDrift = 1; //TODO Update if a self-consistent calculation of the q-profile becomes available
 
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
 	// we can not use R0 from the radial grid of this simulation to calculate 
@@ -116,7 +117,8 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     AllocateQuantities();
     
     // Ablation cloud quantities
-    this->TDrift=TDrift;
+    for(len_t ip=0;ip<nShard;ip++)
+        this->TDrift[ip]=TDrift[ip];
     this->T0Drift=T0Drift;
     this->DeltaYDrift=DeltaYDrift;
     this->RmDrift=RmDrift;
@@ -138,6 +140,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     for(len_t ip=0;ip<nShard;ip++){
         pelletMolarMass[ip]=0;
         pelletMolarVolume[ip]=0;
+        pelletDeuteriumFraction[ip]=0;
         ZavgDrift[ip]=0;
     }
     
@@ -174,7 +177,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 
                 ZavgDrift[ip]+=ZavgDriftList*molarFraction[offset+ip];
                 if (!((Z[iZ]==1 && isotopes[iZ]==2) || Z[iZ]==10) && counter2==0){
-                    printf("SPIHandler: Using other molarFractions other than deuterium and neon will lead to urealistic ablating.");
+                    DREAM::IO::PrintWarning(DREAM::IO::WARNING_ABLATION_RATE_NOT_VALID, "SPIHandler: The currently available ablation rate is only derived for deuterium and neon mixtures. Results may be inaccurate");
                     counter2++;
                 }
             }
@@ -643,6 +646,9 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                         shift_r[ip] = Deltar(ip);
                         nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);// Negative if shift is towards smaller radii
                         shift_store[ip] = shift_r[ip];
+                    }else{
+                        nbrShiftGridCell[ip]=0;
+                        shift_store[ip]=0;
                     }
                 }
             }
