@@ -95,12 +95,12 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.nbrShiftGridCell = None
 
         self.TDrift        = None
-        self.T0Drift       = None
-        self.DeltaYDrift  = None
-        self.RmDrift       = None
-        self.ZavgDriftArray= None
-        self.ZsDrift       = None
-        self.isotopesDrift = None
+        self.T0Drift       = 0
+        self.DeltaYDrift  = 0
+        self.RmDrift       = -1
+        self.ZavgDriftArray= [0]
+        self.ZsDrift       = [0]
+        self.isotopesDrift = [0]
 
 
     def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, TDrift = None):
@@ -455,7 +455,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             else:
                 self.nbrShiftGridCell = nbrShiftGridCell
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=None, DeltaYDrift=None, RmDrift=None, ZavgDriftArray=None, ZsDrift=None, isotopesDrift=None, add=True):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0], ZsDrift=[0], isotopesDrift=[0], add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
@@ -629,18 +629,6 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.TDrift = np.zeros(self.rp.shape)
             else:
                 self.TDrift=np.array([0])
-        if self.T0Drift is None:
-            self.T0Drift=0
-        if self.DeltaYDrift is None:
-            self.DeltaYDrift=0
-        if self.RmDrift is None:
-            self.RmDrift=-1
-        if self.ZavgDriftArray is None:
-            self.ZavgDriftArray=np.array([0])
-        if self.ZsDrift is None:
-            self.ZsDrift=np.array([0])
-        if self.isotopesDrift is None:
-            self.isotopesDrift=np.array([0])
 
             
         data = {
