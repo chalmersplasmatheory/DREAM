@@ -32,6 +32,7 @@ namespace DREAM {
 		static Simulation *simulation;
 
 		static void Init(Simulation*);
+		static void Deinit();
 
         static bool VerifyMessage(const message_t);
 

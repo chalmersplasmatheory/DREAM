@@ -690,7 +690,7 @@ void OtherQuantityHandler::DefineQuantities() {
 	} 
     
     // Bremsstrahlung radiation
-    if (this->cqtyRunaway != nullptr) {
+    if (this->cqtyHottail != nullptr) {
         if (this->cqtyHottail->GetCollisionQuantitySettings()->bremsstrahlung_mode == OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER) {
             DEF_HT_F1("hottail/bremsstrahlung_f1", "Advection due to bremsstrahlung radiation",
                 real_t *Abrems = qd->StoreEmpty();
