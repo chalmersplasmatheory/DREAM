@@ -87,6 +87,7 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
 
     SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, TDrift, T0Drift, DeltaYDrift, RmDrift, ZavgDriftArray, nZavgDrift, ZsDrift, isotopesDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
 
+	delete [] TDrift;
 	delete [] isotopes;
 	delete [] Z;
 
