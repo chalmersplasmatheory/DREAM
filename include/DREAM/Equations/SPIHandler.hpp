@@ -157,8 +157,9 @@ namespace DREAM{
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-            real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray, len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
-            real_t VpVolNormFactor, real_t rclPrescribedConstant, int_t *nbrShiftGridCell);
+            real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray,
+			len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
+            real_t VpVolNormFactor, real_t rclPrescribedConstant, const int_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();

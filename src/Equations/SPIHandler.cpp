@@ -50,8 +50,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode,
     OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
     OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
-    real_t *TDrift, real_t T0Drift, real_t DeltaYDrift, real_t RmDrift, real_t *ZavgDriftArray, len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
-    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, int_t *nbrShiftGridCell=nullptr){
+    real_t *TDrift, real_t T0Drift, real_t DeltaYDrift, real_t RmDrift, real_t *ZavgDriftArray,
+	len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
+    real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, const int_t *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
     this->rGrid=g->GetRadialGrid();
@@ -206,17 +207,26 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)
 		for(len_t ip=0;ip<nShard;ip++)
 	        this->nbrShiftGridCellPrescribed[ip] = 1;
-	else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_PRESCRIBED)
+	else if(spi_shift_mode==OptionConstants::EQTERM_SPI_SHIFT_MODE_PRESCRIBED) {
 	    for(len_t ip=0;ip<nShard;ip++){
 	        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
         }
+	
+		delete [] nbrShiftGridCell;
+	}
+
+	delete [] ZsDrift;
+	delete [] isotopesDrift;
 }
 
 /**
  * Destructor
  */
 SPIHandler::~SPIHandler(){
-   DeallocateQuantities();
+	DeallocateQuantities();
+
+	if (this->ZavgDriftArray != nullptr)
+		delete [] this->ZavgDriftArray;
 }
 
 /**

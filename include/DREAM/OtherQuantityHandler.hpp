@@ -131,9 +131,9 @@ namespace DREAM {
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
-            std::vector<UnknownQuantityEquation*>*, IonHandler*,
+            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
-            struct eqn_terms*, SPIHandler*
+            struct eqn_terms*
         );
         virtual ~OtherQuantityHandler();
 

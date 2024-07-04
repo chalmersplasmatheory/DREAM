@@ -45,9 +45,9 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
-    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms, SPIHandler *SPI
+    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),

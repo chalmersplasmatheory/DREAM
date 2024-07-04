@@ -562,6 +562,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 		delete [] nfree0;
 		delete [] initNi;
 		delete [] dynamic_indices;
+		delete [] dynamic_densities;
 	};
 
     //eqsys->SetInitialValue(id_ni, ni, t0);

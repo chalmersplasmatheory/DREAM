@@ -150,7 +150,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         # First we calculate the cdf, and then interpolate the cdf-values 
         # back to the corresponding radii at N randomly chosen points between 0 and 1
         rp_integrate=np.linspace(1e-10/kp,10/kp,5000)
-        cdf=integrate.cumtrapz(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
+        cdf=integrate.cumulative_trapezoid(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
         return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
     def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
