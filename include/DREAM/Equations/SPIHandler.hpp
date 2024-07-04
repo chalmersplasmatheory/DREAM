@@ -130,7 +130,7 @@ namespace DREAM{
         // to be able to tell if the current iteration is the first one on the current time step
         // This is useful for e.g. the drift calculation, which is only rebuilt in the first iteration
         // of every time step to avoid a discontinuity in the jacobian when using a delta fucntion kernel
-        real_t t_old=0;
+        real_t t_old=-1;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
