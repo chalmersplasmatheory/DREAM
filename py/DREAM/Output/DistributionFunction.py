@@ -227,7 +227,7 @@ class DistributionFunction(KineticQuantity):
         return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, **kwargs):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, interpolateCylindrical=False, **kwargs):
         """
         Make a contour plot of this quantity.
 
@@ -239,7 +239,7 @@ class DistributionFunction(KineticQuantity):
         :param str coordinates:  Name of coordinates to use (either 'spherical' (p/xi) or 'cylindrical' (ppar/pperp)).
         :param kwargs:           Keyword arguments passed on to matplotlib.contourf().
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, **kwargs)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, interpolateCylindrical=interpolateCylindrical, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None, **kwargs):
