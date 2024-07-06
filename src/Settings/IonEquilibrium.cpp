@@ -85,13 +85,13 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 		real_t nfree = nfree0[ir], dnfree;
 
 		// Assume equilibrium ions are singly ionized
-		for (len_t iZ = 0; iZ < Nequil; iZ++)
+		for (len_t & iZ : equil_indices)
 			nfree += Ni[iZ*Nr+ir];
 
 		len_t niter = 0;
 		do {
 			for (len_t iZ = 0; iZ < Nequil; iZ++) {
-				const real_t *Ntot = Ni+iZ*Nr;
+				const real_t *Ntot = Ni+equil_indices[iZ]*Nr;
 				real_t *II = I[iZ];
 				real_t *RR = R[iZ];
 

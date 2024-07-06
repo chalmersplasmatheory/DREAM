@@ -534,8 +534,9 @@ void SimulationGenerator::ConstructEquation_Ions(
 					ionOffset += Nr;
 				}
 			} else {
-				eq_ions.push_back(i);
+				eq_ions.push_back(dynamic_indices[i]);
 				vecni.push_back(ni+idx*Nr);
+				ionOffset += (Z+1)*Nr;
 			}
 		}
 
@@ -544,14 +545,17 @@ void SimulationGenerator::ConstructEquation_Ions(
 		for (len_t ir = 0; ir < Nr; ir++)
 			nfree0[ir] = 0;
 
-		for (len_t iZ = 0, ionOffset = 0; iZ < ih->GetNZ(); iZ++) {
+		for (len_t iZ = 0; iZ < ih->GetNZ(); iZ++) {
+
 			// Skip equilibrium ions
 			if (init_equil[iZ] != 0)
 				continue;
 
-			for (len_t Z0 = 1; Z0 <= ih->GetZ(iZ); Z0++, ionOffset++) {
+			len_t Z = ih->GetZ(iZ);
+			len_t idx = ih->GetIndex(iZ, 0);
+			for (len_t Z0 = 1; Z0 <= Z; Z0++) {
 				for (len_t ir = 0; ir < Nr; ir++) {
-					nfree0[ir] += Z0 * ni[ionOffset*Nr + ir];
+					nfree0[ir] += Z0 * ni[(idx+Z0)*Nr + ir];
 				}
 			}
 		}
@@ -562,6 +566,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 		delete [] nfree0;
 		delete [] initNi;
 		delete [] dynamic_indices;
+		delete [] dynamic_densities;
 	};
 
     //eqsys->SetInitialValue(id_ni, ni, t0);

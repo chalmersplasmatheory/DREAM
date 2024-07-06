@@ -22,6 +22,7 @@ namespace DREAM {
             WARNING_KINETIC_COMPTON_NO_HOT_GRID,
             WARNING_KINETIC_TRITIUM_NO_HOT_GRID,
 			WARNING_RESIDUAL_NOT_CONVERGED,
+            WARNING_ABLATION_RATE_NOT_VALID,
 
             // [Must always come last]
             MESSAGE_LAST
@@ -31,6 +32,7 @@ namespace DREAM {
 		static Simulation *simulation;
 
 		static void Init(Simulation*);
+		static void Deinit();
 
         static bool VerifyMessage(const message_t);
 

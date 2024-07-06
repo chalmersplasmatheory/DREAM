@@ -31,6 +31,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 
 
 using namespace DREAM;
@@ -44,13 +45,13 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -237,6 +238,9 @@ void OtherQuantityHandler::DefineQuantities() {
     // Define on scalar grid
     #define DEF_SC(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+    #define DEF_SC_MUL(NAME, DESC, MUL, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+    
 
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
@@ -1098,7 +1102,20 @@ void OtherQuantityHandler::DefineQuantities() {
         for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
-
+    if (SPI != nullptr){
+        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+        DEF_SC_MUL("scalar/Ypdot", "Rate at which the shards' radius decrease",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetYpdot();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+    }
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
 

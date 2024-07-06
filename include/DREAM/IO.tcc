@@ -56,6 +56,7 @@ void IO::PrintWarning(const IO::message_t id, const char *msg, Args&& ... args) 
 	char *buf = new char[size];
 	std::snprintf(buf, size, msg, args ...);
 	std::string smsg(buf);
+	delete [] buf;
 
 	bool prepended = false;
 	if (IO::simulation != nullptr) {
