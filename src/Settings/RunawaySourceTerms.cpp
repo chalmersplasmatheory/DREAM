@@ -115,7 +115,12 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                     oqty_terms->comptonSource_runaway = comptonSource;
             }
         } else {
-            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_COMPTON_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid and runaway grids are disabled. Ignoring Compton source...");
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_COMPTON_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid and runaway grids are disabled. Integrating kinetic Compton source.");
+            oqty_terms->comptonSource_fluid = new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"),
+                s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
+                0., -1.0, ComptonSource::SOURCE_MODE_FLUID, REFluid);
+            rsth->AddSourceTerm(eqnSign + "fluid Compton", oqty_terms->comptonSource_fluid);
+ 
         }
     }
     
@@ -136,15 +141,24 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             
             if(grid == fluidGrid) {
                 for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
-                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID));
+		    oqty_terms->tritiumSource_fluid.push_back(new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid));
+                    rsth->AddSourceTerm(eqnSign + "fluid tritium", oqty_terms->tritiumSource_fluid[iT]);
                 }
             } else {
                 for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
-                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_KINETIC));
+		    TritiumSource *tritiumSource = new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_KINETIC);
+                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", tritiumSource);
+		    if (grid == runawayGrid)
+                        oqty_terms->tritiumSource_runaway.push_back(tritiumSource);
                 }
             }
         } else {
-            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail and runaway grids are disabled. Ignoring tritium source...");
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail and runaway grids are disabled. Integrating kinetic tritium source.");
+	    const len_t *ti = ions->GetTritiumIndices();
+            for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
+                    oqty_terms->tritiumSource_fluid.push_back(new TritiumSource(grid, unknowns, ions, ti[iT], 0., -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid));
+                    rsth->AddSourceTerm(eqnSign + "fluid tritium", oqty_terms->tritiumSource_fluid[iT]);
+            }
         }
     } 
 

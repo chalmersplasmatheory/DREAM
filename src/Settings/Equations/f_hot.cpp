@@ -150,8 +150,8 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
         FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);    
         const len_t *ti = eqsys->GetIonHandler()->GetTritiumIndices();
         for(len_t iT=0; iT<eqsys->GetIonHandler()->GetNTritiumIndices(); iT++){
-            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
-            Op_tritium->AddTerm(oqty_terms->tritiumSource[iT]);
+            oqty_terms->tritiumSource_hottail.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
+            Op_tritium->AddTerm(oqty_terms->tritiumSource_hottail[iT]);
         }
         len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
         eqsys->SetOperator(id_f_hot, id_n_i, Op_tritium);

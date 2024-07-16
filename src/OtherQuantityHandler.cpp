@@ -287,7 +287,6 @@ void OtherQuantityHandler::DefineQuantities() {
 		    const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
 			real_t *S_C = qd->StoreEmpty();
 
-			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
 			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
 				S_C[ir] = -this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
 			}
@@ -306,12 +305,26 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
 	}
 
-    DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
-        const real_t *gt = this->REFluid->GetTritiumRunawayRate();
-        real_t *v = qd->StoreEmpty();
-        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
-            v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
-    );
+    if(!tracked_terms->tritiumSource_fluid.empty()){
+        DEF_FL("fluid/gammaTritium", "Tritium runaway rate to n_re [s^-1 m^-3]",
+            real_t *S_T = qd->StoreEmpty();
+
+            for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
+	        len_t nT = this->ions->GetNTritiumIndices();
+		const len_t *ti = this->ions->GetTritiumIndices();
+		S_T[ir] = 0;
+		for (len_t iT=0; iT<nT; iT++)
+                    S_T[ir] += -this->tracked_terms->tritiumSource_fluid[iT]->GetSourceFunction(ir,0,0) * this->ions->GetTotalIonDensity(ir, ti[iT]);
+            }
+        );
+    } else { 
+        DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
+            const real_t *gt = this->REFluid->GetTritiumRunawayRate();
+            real_t *v = qd->StoreEmpty();
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+                v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
+        );
+    }
     if(tracked_terms->lcfsLossRate_fluid != nullptr){
         DEF_FL("fluid/gammaLCFSLoss", "LCFS runaway loss rate (weights * n_re) [s^-1 m^-3]", 
             real_t *v = qd->StoreEmpty();
@@ -616,23 +629,24 @@ void OtherQuantityHandler::DefineQuantities() {
 			}
 		);
 	}
-    if (!tracked_terms->tritiumSource.empty()) {
-		DEF_HT("hottail/S_tritium", "Tritium decay source term [s^-1 m^-3]",
-			real_t *S_T = qd->StoreEmpty();
+    if (!tracked_terms->tritiumSource_hottail.empty()) {
+        DEF_HT("hottail/S_tritium", "Tritium decay source term [s^-1 m^-3]",
+            real_t *S_T = qd->StoreEmpty();
 
-			for (len_t ir = 0; ir < nr_ht; ir++) {
-				for (len_t j = 0; j < n2_ht; j++) {
-					for (len_t i = 0; i < n1_ht; i++) {
-					    len_t nT = this->ions->GetNTritiumIndices();
-                        S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
+            for (len_t ir = 0; ir < nr_ht; ir++) {
+                for (len_t j = 0; j < n2_ht; j++) {
+                    for (len_t i = 0; i < n1_ht; i++) {
+                        len_t nT = this->ions->GetNTritiumIndices();
+                        const len_t *ti = this->ions->GetTritiumIndices();
+			S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
                         for(len_t iT=0; iT<nT; iT++){
-                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += this->tracked_terms->tritiumSource[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTritiumDensity(ir);
+                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += -this->tracked_terms->tritiumSource_hottail[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTotalIonDensity(ir, ti[iT]);
                         }
-					}
-				}
-			}
-		);
-	}
+                    }
+                }
+            }
+        );
+    }
 
 	// Pitch angle scattering due to time varying B
 	if (tracked_terms->f_hot_timevaryingb != nullptr) {
@@ -785,6 +799,27 @@ void OtherQuantityHandler::DefineQuantities() {
 			}
 		);
 	}
+
+    if (!tracked_terms->tritiumSource_runaway.empty()) {
+        DEF_HT("runaway/S_tritium", "Tritium decay source term [s^-1 m^-3]",
+            real_t *S_T = qd->StoreEmpty();
+
+            for (len_t ir = 0; ir < nr_ht; ir++) {
+                for (len_t j = 0; j < n2_ht; j++) {
+     	            for (len_t i = 0; i < n1_ht; i++) {
+                        len_t nT = this->ions->GetNTritiumIndices();
+			const len_t *ti = this->ions->GetTritiumIndices();
+                        S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
+                        for(len_t iT=0; iT<nT; iT++){
+                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += -this->tracked_terms->tritiumSource_runaway[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTotalIonDensity(ir, ti[iT]);
+                        }
+                    }
+                }
+            }
+	);
+    }
+
+
 
 	// Pitch angle scattering due to time varying B
 	if (tracked_terms->f_re_timevaryingb != nullptr) {
