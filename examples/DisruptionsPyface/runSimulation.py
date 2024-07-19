@@ -65,11 +65,11 @@ LINEAR_SOLVER = Solver.LINEAR_SOLVER_MKL    # Linear solver to use
 EXTENSION = ''
 
 
-def setname(mode, phase, toroidal=True, io='settings', pattern="settings/"): # TODO: Keep toroidal? Keep different scenarios?
+def setname(mode, phase, toroidal=True, io='settings', pattern="settings/"):
     return outname(mode=mode, phase=phase, toroidal=toroidal, io=io, pattern=pattern)
 
 
-def outname(mode, phase, toroidal=True, io='output', pattern=PATTERN):  # TODO: Keep toroidal? Keep different scenarios?
+def outname(mode, phase, toroidal=True, io='output', pattern=PATTERN):
     """
     Returns the appropriate output name to use.
     """
@@ -147,7 +147,7 @@ def terminateTQ(sim):
     Tcold = sim.unknowns.getData('T_cold')['x']
     if sim.getCurrentTime() > tmin and (np.max(Tcold, axis=0) > Tcold[-1,:]).all():
         Tmean = np.mean(Tcold[-1,:])
-        maxT = Tokamak.T_initial
+        maxT = Tokamak.T_core
         if Tmean <= f_stop * maxT:
             return True
     return False
@@ -191,9 +191,20 @@ def terminateCQ(sim):
     # End simulation if the plasma current is below half of the tolerated RE current
     return Ip[-1] < I_tol/2
 
-def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., mode=MODE_ISOTROPIC, activated=True, toroidal=True): # TODO: Keep toroidal? Keep different scenarios?
+def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., mode=MODE_ISOTROPIC, activated=True, toroidal=True):
     """
-    TODO: Describe this
+    Build TQ settings object and run TQ simulation
+
+    :param float nD_MMI, nNe_MMI, nAr_MMI:  Mean density of deuterium, neon and argon for the MMI
+    :param float cD_MMI, cNe_MMI, cAr_MMI:  Radial MMI profile parameter for density of deuterium, neon and argon
+    :param int mode:                        Simulation mode to run in (aka model to use).
+    :param bool activated:                  If ``True``, runs simulation with a 50/50 deuterium/tritium plasma and with
+                                            RE generation from tritium beta decay and Compton scattering
+    :param bool toroidal:                   If ``True``, sets up a simulation in
+                                            toroidal/tokamak geometry. Otherwise, uses
+                                            cylindrical geometry.
+
+    :return: Resulting DREAMSettings and DREAMOutput objects.
     """
     lsetname = lambda phase: setname(mode=mode, phase=phase, toroidal=toroidal)
     loutname = lambda phase: outname(mode=mode, phase=phase, toroidal=toroidal)
@@ -218,19 +229,19 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
     ds.solver.tolerance.set('n_re', abstol=1e5)
     ds.solver.tolerance.set('j_re', abstol=1e-5)
     if mode != MODE_FLUID:
-        ds.solver.tolerance.set('n_hot', reltol=2e-6, abstol=1e5)
-        ds.solver.tolerance.set('j_hot', reltol=2e-6, abstol=1)
+        ds.solver.tolerance.set('n_hot', abstol=1e5)
+        ds.solver.tolerance.set('j_hot', abstol=1)
+        ds.solver.tolerance.set('f_hot', abstol=1)
 
     # Set collision settings
     ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
     ds.collisions.collfreq_type       = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
     ds.collisions.lnlambda            = Collisions.LNLAMBDA_ENERGY_DEPENDENT
     ds.collisions.pstar_mode          = Collisions.PSTAR_MODE_COLLISIONAL # TODO: ok?
+    ds.collisions.collfreq_mode       = Collisions.COLLFREQ_MODE_FULL # TODO: OK?
 
-    # Set tokamak specifications
+    # Set tokamak geometric specifications
     Tokamak.setRadialGrid(ds, nr=nr, toroidal=toroidal)
-
-
 
     # Initial densities
     if activated:
@@ -251,15 +262,13 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
         ds.eqsys.j_ohm.setInitialProfile(j, radius=rj, Ip0=Ip)
         ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree, rT0=rT0, T0=T0)
     else:
-        # Initial simulations to let E-field and plasma current etc stabilize at correct values
+        # Initial simulation to ensure the correct plasma current and current profile
         ds.runawaygrid.setEnabled(False)
         ds.hottailgrid.setEnabled(False)
 
         ds.eqsys.T_cold.setPrescribedData(T0, radius=rT0)
         ds.eqsys.E_field.setType(EField.TYPE_PRESCRIBED_OHMIC_CURRENT)
         ds.eqsys.j_ohm.setCurrentProfile(j, radius=rj, Ip0=Ip)
-
-        ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
         ds.timestep.setTmax(1)
         ds.timestep.setNt(1)
@@ -274,6 +283,7 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
             mod = 0.9999
             ds.eqsys.j_ohm.setCorrectedConductivity(False)
 
+        # f_hot settings
         ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0= mod * nfree, rT0=rT0, T0=T0)
 
         # All electrons between pThreshold and pMax are counted as hot electrons
@@ -290,27 +300,28 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
         if mode == MODE_ISOTROPIC or mode == MODE_SUPERTHERMAL:
                 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
 
-
+    # Set to self consistent temperature and E-field evolution
     ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
     ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_SELFCONSISTENT, inverse_wall_time=1 / Tokamak.tau_w, R0=Tokamak.R0)
-
-    # Set to self consistent temperature evolution
     ds.eqsys.T_cold.setType(Temperature.TYPE_SELFCONSISTENT)
     if mode == MODE_ISOTROPIC or mode == MODE_SUPERTHERMAL:
         ds.eqsys.T_cold.setInitialProfile(1)
     elif mode == MODE_FLUID:
         ds.eqsys.T_cold.setInitialProfile(T0, radius=rT0)
 
-
+    # Kinetic grid settings
     match modename(mode):
         case 'fluid':
             ds.hottailgrid.setEnabled(False)
+            ds.runawaygrid.setEnabled(False)
         case 'isotropic':
+            ds.runawaygrid.setEnabled(False)
             ds.hottailgrid.setEnabled(True)
             ds.hottailgrid.setNxi(1)
             ds.hottailgrid.setPmax(PMAX_KIN)
             ds.hottailgrid.setNp(NP_KIN2)
         case 'superthermal':
+            ds.runawaygrid.setEnabled(False)
             ds.hottailgrid.setEnabled(True)
             if not toroidal:
                 ds.hottailgrid.setNxi(NXI_CYLINDRICAL)
@@ -319,6 +330,7 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
             ds.hottailgrid.setPmax(PMAX_KIN)
             ds.hottailgrid.setNp(NP_KIN2)
         case 'kinetic':
+            ds.runawaygrid.setEnabled(False)
             ds.hottailgrid.setEnabled(True)
             if not toroidal:
                 ds.hottailgrid.setNxi(NXI_CYLINDRICAL)
@@ -330,6 +342,7 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
 
     include = ['fluid', 'scalar']
 
+    # RE settings
     if mode == MODE_FLUID or mode == MODE_ISOTROPIC:
         ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_FLUID_HESSLOW)
     else:
@@ -354,10 +367,12 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
         ds.eqsys.n_re.setCompton(Runaways.COMPTON_MODE_NEGLECT)
         ds.eqsys.n_re.setTritium(Runaways.TRITIUM_MODE_NEGLECT)
 
+    # Inject material
     MMI(ds, 'D_MMI', 1, nD_MMI, c=cD_MMI, nr=NR)
     MMI(ds, 'Ne', 10, nNe_MMI, c=cNe_MMI, nr=NR)
     MMI(ds, 'Ar', 18, nAr_MMI, c=cAr_MMI, nr=NR)
 
+    # Set magnetic perturbations
     magneticPertubations(ds, DBB0_TQ, TMAX_TQ, 1000, mode=mode, nr=nr)
 
     # Timestep settings
@@ -372,9 +387,27 @@ def runTQ(nD_MMI=0., cD_MMI=0., nNe_MMI=0., cNe_MMI=0., nAr_MMI=0., cAr_MMI=0., 
     s = dreampyface.setup_simulation(ds)
     do = s.run()
 
-    return ds, do
+    successfulTQ = True
+    if do.grid.t[-1] >= TMAX_TQ:
+        successfulTQ = False
+    
+    return ds, do, successfulTQ
 
-def runCQ(ds_TQ, do_TQ, mode=MODE_ISOTROPIC, activated=True, toroidal=True): # TODO: Keep toroidal? Keep different scenarios?
+def runCQ(ds_TQ, do_TQ, mode=MODE_ISOTROPIC, activated=True, toroidal=True):
+    """
+    Build CQ settings object and run CQ simulation
+
+    :param DREAMSettings ds_TQ:  DREAMSettings object from TQ simulation
+    :param DREAMOutput do_TQ:    DREAMOutput object from TQ simulation
+    :param int mode:                        Simulation mode to run in (aka model to use).
+    :param bool activated:                  If ``True``, runs simulation with a 50/50 deuterium/tritium plasma and with
+                                            RE generation from tritium beta decay and Compton scattering
+    :param bool toroidal:                   If ``True``, sets up a simulation in
+                                            toroidal/tokamak geometry. Otherwise, uses
+                                            cylindrical geometry.
+
+    :return: Resulting DREAMSettings and DREAMOutput objects.
+    """
     lsetname = lambda phase: setname(mode=mode, phase=phase, toroidal=toroidal)
     loutname = lambda phase: outname(mode=mode, phase=phase, toroidal=toroidal)
 
@@ -384,15 +417,19 @@ def runCQ(ds_TQ, do_TQ, mode=MODE_ISOTROPIC, activated=True, toroidal=True): # T
 
     ds = DREAMSettings(ds_TQ)
 
+    # Initialize this simulation from TQ simulation
     ds.fromOutput(loutname('TQ'))
 
     ds.solver.tolerance.set(unknown='n_re', reltol=2e-6, abstol=1e-15)
 
+    # Reduce RE generation from Compton scattering - no fusion power after TQ
     if activated:
         ds.eqsys.n_re.setCompton(Runaways.COMPTON_MODE_KINETIC, photonFlux=1e14, C1=Runaways.C1_COMPTON_MS2017, C2=Runaways.C2_COMPTON_MS2017, C3=Runaways.C3_COMPTON_MS2017)
 
+    # Set magnetic perturbations to 0 when flux surfaces have rehealed
     magneticPertubations(ds, DBB0_CQ, TMAX_CQ, 1000, mode=mode, nr=nr)
 
+    # Needed for CQ termination function
     global VpVol, dr, GR0, Bmin, FSA_R02OverR2
     VpVol = do_TQ.grid.VpVol[:]
     dr = do_TQ.grid.dr[:]
@@ -417,8 +454,8 @@ def main(argv):
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-nD', help="MMI parameter: mean deuterium density", dest="nD", action='store', default=0., type=float)
-    parser.add_argument('-cD', help="MMI parameter: deuterium density profile parameter", dest="cD", action='store', default=0., type=float)
+    parser.add_argument('-nD',  help="MMI parameter: mean deuterium density", dest="nD", action='store', default=0., type=float)
+    parser.add_argument('-cD',  help="MMI parameter: deuterium density profile parameter", dest="cD", action='store', default=0., type=float)
     parser.add_argument('-nNe', help="MMI parameter: mean neon density", dest="nNe", action='store', default=0., type=float)
     parser.add_argument('-cNe', help="MMI parameter: deuterium neon profile parameter", dest="cNe", action='store', default=0., type=float)
     parser.add_argument('-nAr', help="MMI parameter: mean deuterium density", dest="nAr", action='store', default=0., type=float)
@@ -436,7 +473,7 @@ def main(argv):
     noMode = not np.array([settings.fluid, settings.isotropic, settings.superthermal, settings.kinetic]).any()
 
     if settings.nD == 0. and settings.nNe == 0. and settings.nAr == 0.:
-        nD  = 1e22
+        nD  = 1e21
         nNe = 1e19
     else:
         nD  = settings.nD
@@ -457,26 +494,36 @@ def main(argv):
         cAr = 0.
 
     if settings.fluid:
-        print('Running in fluid mode')
-        #ds_TQ, do_TQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_FLUID, activated=settings.activated, toroidal=(not settings.cylindrical))
-        #ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_FLUID, activated=settings.activated, toroidal=(not settings.cylindrical))
+        print('\n\n\n------------ Running in fluid mode ------------\n\n\n')
+        ds_TQ, do_TQ, successfulTQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_FLUID, activated=settings.activated, toroidal=(not settings.cylindrical))
+        if successfulTQ:
+            ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_FLUID, activated=settings.activated, toroidal=(not settings.cylindrical))
+        else:
+            print(f'TQ was not completed within {TMAX_TQ*1000} ms, will not run CQ simulation')
 
     if settings.isotropic or noMode:
-        print('Running in isotropic mode')
-        ds_TQ, do_TQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_ISOTROPIC, activated=settings.activated, toroidal=(not settings.cylindrical))
-        ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_ISOTROPIC, activated=settings.activated, toroidal=(not settings.cylindrical))
+        print('\n\n\n------------ Running in isotropic mode ------------\n\n\n')
+        ds_TQ, do_TQ, successfulTQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_ISOTROPIC, activated=settings.activated, toroidal=(not settings.cylindrical))
+        if successfulTQ:
+            ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_ISOTROPIC, activated=settings.activated, toroidal=(not settings.cylindrical))
+        else:
+            print(f'TQ was not completed within {TMAX_TQ * 1000} ms, will not run CQ simulation')
 
     if settings.superthermal:
-        print('Running in superthermal mode')
-        #ds_TQ, do_TQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_SUPERTHERMAL, activated=settings.activated, toroidal=(not settings.cylindrical))
-        #ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_SUPERTHERMAL, activated=settings.activated, toroidal=(not settings.cylindrical))
+        print('\n\n\n------------ Running in superthermal mode ------------\n\n\n')
+        ds_TQ, do_TQ, successfulTQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_SUPERTHERMAL, activated=settings.activated, toroidal=(not settings.cylindrical))
+        if successfulTQ:
+            ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_SUPERTHERMAL, activated=settings.activated, toroidal=(not settings.cylindrical))
+        else:
+            print(f'TQ was not completed within {TMAX_TQ * 1000} ms, will not run CQ simulation')
 
     if settings.kinetic:
-        print('Running in kinetic mode')
-        #ds_TQ, do_TQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_KINETIC, activated=settings.activated, toroidal=(not settings.cylindrical))
-        #ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_KINETIC, activated=settings.activated, toroidal=(not settings.cylindrical))
-
-
+        print('\n\n\n------------ Running in kinetic mode ------------\n\n\n')
+        ds_TQ, do_TQ, successfulTQ = runTQ(nD_MMI=nD, cD_MMI=cD, nNe_MMI=nNe, cNe_MMI=cNe, nAr_MMI=nAr, cAr_MMI=cAr, mode=MODE_KINETIC, activated=settings.activated, toroidal=(not settings.cylindrical))
+        if successfulTQ:
+            ds_CQ, do_CQ = runCQ(ds_TQ, do_TQ, mode=MODE_KINETIC, activated=settings.activated, toroidal=(not settings.cylindrical))
+        else:
+            print(f'TQ was not completed within {TMAX_TQ * 1000} ms, will not run CQ simulation')
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[:]))
