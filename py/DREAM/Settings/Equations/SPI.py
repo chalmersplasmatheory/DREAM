@@ -98,7 +98,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.T0Drift       = 0
         self.DeltaYDrift  = 0
         self.RmDrift       = -1
-        self.ZavgDriftArray= [0]
+        self.ZavgDriftArray= [0.]
         self.ZsDrift       = [0]
         self.isotopesDrift = [0]
 
@@ -455,7 +455,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             else:
                 self.nbrShiftGridCell = nbrShiftGridCell
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0], ZsDrift=[0], isotopesDrift=[0], add=True):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0.], ZsDrift=[0], isotopesDrift=[0], add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
