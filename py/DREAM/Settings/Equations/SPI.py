@@ -306,14 +306,18 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             SPIMolarFraction=np.zeros(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
             
-            
-            self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=n, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,
-            charged_diffusion_mode = charged_diffusion_modes[iZ], charged_prescribed_diffusion = charged_prescribed_diffusions[iZ], rChargedPrescribedDiffusion = rChargedPrescribedDiffusions[iZ], tChargedPrescribedDiffusion = tChargedPrescribedDiffusions[iZ],
-            neutral_diffusion_mode = neutral_diffusion_modes[iZ], neutral_prescribed_diffusion = neutral_prescribed_diffusions[iZ], rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusions[iZ], tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusions[iZ],
-            charged_advection_mode = charged_advection_modes[iZ], charged_prescribed_advection = charged_prescribed_advections[iZ], rChargedPrescribedAdvection = rChargedPrescribedAdvections[iZ], tChargedPrescribedAdvection = tChargedPrescribedAdvections[iZ],
-            neutral_advection_mode = neutral_advection_modes[iZ], neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ], tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ],
-            **kwargs)
-            
+            self.settings.eqsys.n_i.addIon(
+                name=ionNames[iZ], n=n, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL,
+                SPIMolarFraction=SPIMolarFraction, charged_diffusion_mode = charged_diffusion_modes[iZ],
+                charged_prescribed_diffusion = charged_prescribed_diffusions[iZ], rChargedPrescribedDiffusion = rChargedPrescribedDiffusions[iZ],
+                tChargedPrescribedDiffusion = tChargedPrescribedDiffusions[iZ], neutral_diffusion_mode = neutral_diffusion_modes[iZ],
+                neutral_prescribed_diffusion = neutral_prescribed_diffusions[iZ], rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusions[iZ],
+                tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusions[iZ], charged_advection_mode = charged_advection_modes[iZ],
+                charged_prescribed_advection = charged_prescribed_advections[iZ], rChargedPrescribedAdvection = rChargedPrescribedAdvections[iZ],
+                tChargedPrescribedAdvection = tChargedPrescribedAdvections[iZ], neutral_advection_mode = neutral_advection_modes[iZ],
+                neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ],
+                tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ], **kwargs
+            )
             
               
         return kp
@@ -415,7 +419,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs):
+    def setParamsVallhagenMSc(
+        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,
+        nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs
+    ):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
