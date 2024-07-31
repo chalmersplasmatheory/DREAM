@@ -76,6 +76,23 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     len_t *ZsDrift = new len_t[nZavgDrift];
     len_t *isotopesDrift = new len_t[nZavgDrift];
     if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+		if (_TDrift == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but no plasmoid temperature 'TDrift' has been specified."
+			);
+		else if (_ZavgDriftArray == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but no plasmoid average charge 'ZavgDriftArray' has been specified."
+			);
+		else if (_ZsDrift == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but the vector 'ZsDrift' has not been specified."
+			);
+		else if (_isotopesDrift == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but the vector 'isotopesDrift' has not been specified."
+			);
+			
         for (len_t i = 0; i < nShard; i++)
             TDrift[i] = (real_t)_TDrift[i];
         for (len_t i = 0; i < nZavgDrift; i++){

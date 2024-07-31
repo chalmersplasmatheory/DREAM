@@ -455,7 +455,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.TDrift = np.concatenate((self.TDrift,TDrift))
             else:
                 self.TDrift = TDrift
-            
+
         return kp
         
     def setShiftParamsPrescribed(self, shift = SHIFT_MODE_PRESCRIBED, nbrShiftGridCell=None, add=True):
@@ -630,24 +630,12 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.t_delay=np.zeros(self.rp.shape)
             else:
                 self.t_delay=np.array([0])
-        if self.nbrShiftGridCell is None:
-            if self.rp is not None:
-                self.nbrShiftGridCell = np.zeros(self.rp.shape)
-            else:
-                self.nbrShiftGridCell = np.array([0])
-        if self.TDrift is None:
-            if self.rp is not None:
-                self.TDrift = np.zeros(self.rp.shape)
-            else:
-                self.TDrift=np.array([0])
 
-            
         data = {
             'velocity': self.velocity,
             'ablation': self.ablation,
             'deposition': self.deposition,
             'shift': self.shift,
-            'TDrift': self.TDrift,
             'T0Drift': self.T0Drift,
             'DeltaYDrift': self.DeltaYDrift,
             'RmDrift': self.RmDrift,
@@ -659,8 +647,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
             'abl_ioniz': self.abl_ioniz,
             'VpVolNormFactor': self.VpVolNormFactor,
-            'rclPrescribedConstant': self.rclPrescribedConstant,
-            'nbrShiftGridCell': self.nbrShiftGridCell
+            'rclPrescribedConstant': self.rclPrescribedConstant
         }
         
             
@@ -675,6 +662,25 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if self.t_delay is not None: 
             data['init']['t_delay']=self.t_delay
             
+        if self.nbrShiftGridCell is not None:
+            data['nbrShiftGridCell'] = self.nbrShiftGridCell
+        """
+        else:
+            if self.rp is not None:
+                self.nbrShiftGridCell = np.zeros(self.rp.shape)
+            else:
+                self.nbrShiftGridCell = np.array([0])
+        """
+
+        if self.TDrift is not None:
+            data['TDrift'] = self.TDrift
+        """
+        else:
+            if self.rp is not None:
+                self.TDrift = np.zeros(self.rp.shape)
+            else:
+                self.TDrift=np.array([0])
+        """
 
         return data
 
@@ -694,7 +700,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if self.shift == SHIFT_MODE_ANALYTICAL:
             if self.T0Drift<0: 
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
-            if any(self.TDrift)<0:
+            if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
