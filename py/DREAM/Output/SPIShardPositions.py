@@ -1,5 +1,6 @@
 # Special implementation for 'x_p'
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from . ScalarQuantity import ScalarQuantity
@@ -59,6 +60,63 @@ class SPIShardPositions(ScalarQuantity):
         thetap = np.arctan2(yp[t,shards],xp[t,shards])
 
         return rhop, thetap
+
+
+    def plotTrajectoryPoloidal(self, shards=None, ax=None, show=None, color=None):
+        """
+        Plot the trajectory of one or more shards in a poloidal cross-section.
+        """
+        black = (87/255, 117/255, 144/255)
+        red = (249/255, 65/255, 68/255)
+
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        eq = self.grid.eq
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        if shards is None:
+            i1 = np.argmin(yp[-1,:])
+            i2 = np.argmax(yp[-1,:])
+            shards = (i1, i2)
+
+            if color is None:
+                color = red
+
+        if np.isinf(eq.R0): R0 = 1
+        else: R0 = eq.R0
+
+        #ax.plot(R0*eq.ROverR0_f[:,-1] - R0, eq.Z_f[:,-1] - eq.Z0, color=black, linewidth=2)
+        eq.visualize(ax=ax, shifted=True, maxis=False)
+
+        ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+        if color is None:
+            ax.plot(xp[:,shards], yp[:,shards])
+        else:
+            ax.plot(xp[:,shards], yp[:,shards], color=color)
+
+        if np.isinf(eq.R0):
+            ax.set_xlabel('Radius $R-R_0$ (m)')
+        else:
+            ax.set_xlabel('Major radius $R$ (m)')
+
+        ax.set_ylabel('Height $Z$ (m)')
+        ax.axis('equal')
+
+        if show:
+            plt.show()
+
+        return ax
         
         
     def getMultiples(self):

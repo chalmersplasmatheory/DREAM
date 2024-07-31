@@ -34,6 +34,13 @@ class Grid:
             self.setGrid(grid)
 
 
+    def __contains__(self, item):
+        """
+        Overrides the Python 'in' operator.
+        """
+        return item in self.__dict__
+
+
     def __str__(self):
         """
         Convert this object to a string.
