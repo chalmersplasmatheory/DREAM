@@ -121,7 +121,9 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
     this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
 
-
+	// Equilibrium data
+	this->sf->CreateStruct(group + "eq");
+	SaveEquilibrium(this->sf, group + "eq/");
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -134,6 +136,45 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
         this->sf->CreateStruct(group + "runaway");
         SaveMomentumGrid(this->sf, group + "runaway/", this->runawayGrid, this->eqsys->GetRunawayGridType());
     }
+}
+
+/**
+ * Save equilibrium data to the output.
+ *
+ * sf:    SFile object to write data to.
+ * group: Full path to the equilibrium in the output.
+ */
+void OutputGeneratorSFile::SaveEquilibrium(
+	SFile *sf, const string& group
+) {
+	FVM::RadialGrid *rg = this->fluidGrid->GetRadialGrid();
+
+	sf->WriteScalar(group + "R0", rg->GetR0());
+	sf->WriteScalar(group + "Z0", rg->GetZ0());
+
+	// Flux surface coordinates
+	len_t npsi = rg->GetNPsi();
+	len_t ntheta = rg->GetNTheta();
+
+	const real_t *R = rg->GetFluxSurfaceROverR0();
+	const real_t *R_f = rg->GetFluxSurfaceROverR0_f();
+	const real_t *Z = rg->GetFluxSurfaceZ();
+	const real_t *Z_f = rg->GetFluxSurfaceZ_f();
+	const real_t *theta = rg->GetPoloidalAngle();
+
+	sfilesize_t dims[2] = {ntheta, npsi};
+	sfilesize_t dims_f[2] = {ntheta, npsi+1};
+	sf->WriteMultiArray(group + "ROverR0", R, 2, dims);
+	sf->WriteMultiArray(group + "ROverR0_f", R_f, 2, dims_f);
+	sf->WriteMultiArray(group + "Z", Z, 2, dims);
+	sf->WriteMultiArray(group + "Z_f", Z_f, 2, dims_f);
+	sf->WriteList(group + "theta", theta, ntheta);
+
+	delete [] theta;
+	delete [] Z_f;
+	delete [] Z;
+	delete [] R_f;
+	delete [] R;
 }
 
 /**

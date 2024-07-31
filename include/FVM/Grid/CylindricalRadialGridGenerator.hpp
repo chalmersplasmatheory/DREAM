@@ -45,6 +45,15 @@ namespace DREAM::FVM {
             {Jacobian=x[ir]; B=B0; NablaR2 = 1; ROverR0 = 1;}
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override
             {Jacobian=x_f[ir]; B=B0; NablaR2 = 1; ROverR0 = 1;}
+
+		virtual const real_t GetZ0() override { return 0; }
+		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNTheta() override { return 120; }
+		virtual const real_t *GetFluxSurfaceROverR0() override;
+		virtual const real_t *GetFluxSurfaceROverR0_f() override;
+		virtual const real_t *GetFluxSurfaceZ() override;
+		virtual const real_t *GetFluxSurfaceZ_f() override;
+		virtual const real_t *GetPoloidalAngle() override;
     };
 }
 

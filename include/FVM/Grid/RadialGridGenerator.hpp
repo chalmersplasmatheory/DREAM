@@ -98,6 +98,17 @@ namespace DREAM::FVM {
         
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) = 0;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) = 0;
+
+		// Helper routines for saving equilibrium to output
+		virtual const real_t GetZ0() = 0;
+		virtual const len_t GetNPsi() = 0;
+		virtual const len_t GetNTheta() = 0;
+		virtual const real_t *GetFluxSurfaceROverR0() = 0;
+		virtual const real_t *GetFluxSurfaceROverR0_f() = 0;
+		virtual const real_t *GetFluxSurfaceZ() = 0;
+		virtual const real_t *GetFluxSurfaceZ_f() = 0;
+		virtual const real_t *GetPoloidalAngle() = 0;
+        
     };
 }
 
