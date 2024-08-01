@@ -1,5 +1,6 @@
 # Special implementation for 'x_p'
 
+from matplotlib import path
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -15,6 +16,70 @@ class SPIShardPositions(ScalarQuantity):
         """
         super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
         
+
+    def arrivalTime(self):
+        """
+        Estimate the time at which the pellet arrives to the plasma edge.
+        """
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        R0 = self.grid.eq.R0
+        if np.isinf(R0): R0 = 1
+
+        ROverR0 = self.grid.eq.ROverR0_f*R0 - R0
+        Z = self.grid.eq.Z_f - self.grid.eq.Z0
+        ntheta = self.grid.eq.theta.size
+
+        vertices = [(ROverR0[i,-1], Z[i,-1]) for i in range(ntheta)]
+        p = path.Path(vertices)
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        # Check if the shards start within the plasma
+        if p.contains_point((xp[0,0], yp[0,0])):
+            return 0
+
+        # Find the pellet which is travelling the fastest in the x direction
+        imax = np.argmax(np.abs(xp[-1,:] - xp[0,:]))
+
+        # Roughly estimate when the fastest pellet reaches the plasma edge
+        it_est = np.argmin(np.abs(ROverR0[0,-1] - xp[:,imax]))
+
+        # Determine if the first pellet arrives before or after
+        # the estimated time
+        arrives_before = False
+        for ip in range(xp.shape[1]):
+            if p.contains_point((xp[it_est,ip], yp[it_est,ip])):
+                arrives_before = True
+                break
+        
+        if arrives_before:
+            for it in range(it_est-1, -1, -1):
+                inside = False
+                for ip in range(xp.shape[1]):
+                    if p.contains_point((xp[it,ip], yp[it,ip])):
+                        # One pellet has arrived
+                        # => break out and go to one time step earlier...
+                        inside = True
+                        break
+
+                if not inside:
+                    return it+1
+        else:
+            for it in range(it_est+1, self.grid.t.size):
+                inside = False
+                for ip in range(xp.shape[1]):
+                    if p.contains_point((xp[it,ip], yp[it,ip])):
+                        inside = True
+                        break
+
+                if inside:
+                    return it
+
+        return np.nan
+
 
     def plotRadialCoordinate(self, shards=None,**kwargs):
         """ 
@@ -62,6 +127,51 @@ class SPIShardPositions(ScalarQuantity):
         return rhop, thetap
 
 
+    def plotAtTime(self, t=-1, shards=None, ax=None, show=None):
+        """
+        Plot the pellet shards over the poloidal cross-section at a given time.
+        """
+        black = (87/255, 117/255, 144/255)
+        red = (249/255, 65/255, 68/255)
+
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        if shards is None:
+            shards = slice(None)
+
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        eq = self.grid.eq
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        eq.visualize(ax=ax, shifted=True, maxis=False)
+
+        ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+        ax.plot(xp[t,shards], yp[t,shards], 'k.')
+
+        if np.isinf(eq.R0):
+            ax.set_xlabel('Radius $R-R_0$ (m)')
+        else:
+            ax.set_xlabel('Major radius $R$ (m)')
+
+        ax.set_ylabel('Height $Z$ (m)')
+        ax.axis('equal')
+
+        if show:
+            plt.show()
+
+        return ax
+
+
     def plotTrajectoryPoloidal(self, shards=None, ax=None, show=None, color=None):
         """
         Plot the trajectory of one or more shards in a poloidal cross-section.
@@ -92,9 +202,6 @@ class SPIShardPositions(ScalarQuantity):
 
             if color is None:
                 color = red
-
-        if np.isinf(eq.R0): R0 = 1
-        else: R0 = eq.R0
 
         #ax.plot(R0*eq.ROverR0_f[:,-1] - R0, eq.Z_f[:,-1] - eq.Z0, color=black, linewidth=2)
         eq.visualize(ax=ax, shifted=True, maxis=False)
