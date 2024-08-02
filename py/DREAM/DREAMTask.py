@@ -61,7 +61,7 @@ class DREAMTask:
         env = None
         if self.nthreads is not None:
             env = os.environ.copy()
-            env['OMP_NUM_THREADS'] = self.nthreads
+            env['OMP_NUM_THREADS'] = str(self.nthreads)
            
         if self.quiet: 
             self.p = subprocess.Popen([f'{self.DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, stdout=self.open_stdout, env=env)
