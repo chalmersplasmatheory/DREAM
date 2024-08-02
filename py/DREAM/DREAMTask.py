@@ -64,9 +64,9 @@ class DREAMTask:
             env['OMP_NUM_THREADS'] = self.nthreads
            
         if self.quiet: 
-            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=self.open_stderr, stdout=self.open_stdout, env=env)
+            self.p = subprocess.Popen([f'{DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, stdout=self.open_stdout, env=env)
         else:
-            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=self.open_stderr, env=env)
+            self.p = subprocess.Popen([f'{DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, env=env)
 
     def hasFinished(self, timeout=1):
         try:
@@ -76,7 +76,6 @@ class DREAMTask:
            
             if self.stdout_name!='':
                 self.open_stdout.close()
-                print(f"one process finished")
             if self.stderr_name!='':
                 self.open_stderr.close()
                 
