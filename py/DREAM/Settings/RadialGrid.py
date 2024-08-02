@@ -37,7 +37,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.r0 = 0.0
 
         # Analytic toroidal settings
-        self.R0 = 2.0
+        self.R0 = None
         self.ntheta = 20
         self.Delta = None       # Shafranov shift
         self.Delta_r = None
@@ -70,6 +70,8 @@ class RadialGrid(PrescribedScalarParameter):
         self.r_f = None 
 
 
+
+
     #######################
     # SETTERS
     #######################
@@ -87,9 +89,9 @@ class RadialGrid(PrescribedScalarParameter):
         if self.nr != 0 or self.a != 0 or self.r0 != 0:
             #raise EquationException("RadialGrid: Cannot assign custom grid points while prescribing 'nr', 'a' or 'r0'.")         
             print("*WARNING* RadialGrid: Prescibing custom radial grid overrides 'nr', 'a' and 'r0'.")
-            self.nr = int(0)
-            self.a  = 0.0
-            self.r0 = 0.0
+            self.nr = r_f.size
+            self.a  = max(r_f)
+            self.r0 = min(r_f)
 
         if type(r_f)==list:
             r_f = np.array(r_f)
@@ -338,7 +340,18 @@ class RadialGrid(PrescribedScalarParameter):
             self.num_magneticfield.visualize(*args, ax=ax, show=show, **kwargs)
         else:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
-
+    
+    def getMajorRadius(self):
+        if self.type==TYPE_CYLINDRICAL:
+            return np.inf
+        elif self.type==TYPE_ANALYTIC_TOROIDAL:
+            print('analytic toroidal')
+            return self.R0
+        elif self.type==TYPE_NUMERICAL:
+            print('type numerical')
+            return self.num_magneticfield.Rp
+        else: 
+            raise Exception('Unrecognized radial grid type')
         
     def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None, **kwargs):
         """
@@ -463,6 +476,11 @@ class RadialGrid(PrescribedScalarParameter):
 
             if 'fileformat' in data:
                 self.num_fileformat = data['fileformat']
+                if self.num_fileformat == FILE_FORMAT_LUKE:
+                    try:
+                        self.num_magneticfield = LUKEMagneticField(self.num_filename)
+                    except:
+                        self.num_magneticfield = None
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 

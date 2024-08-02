@@ -33,15 +33,33 @@ def setup_interactive(do, glob):
     for uqn in do.eqsys.keys():
         glob[uqn]   = do.eqsys[uqn]
 
+    # Helper functions
+    def index2time(i):
+        """Converts the specified time index to a time."""
+        return do.grid.t[i]
+
+    def time2index(t):
+        """Converts the specified time to a time index."""
+        return do.time2index(t)
+
     # Declare other useful stuff
     glob['grid']  = do.grid
     glob['other'] = do.other
     glob['solver'] = do.solver
     glob['do'] = do
+    glob['time2index'] = time2index
+    glob['t2i'] = time2index
+    glob['index2time'] = index2time
+    glob['i2t'] = index2time
 
     print('Loaded {} unknowns ({})'.format(len(do.eqsys.keys()), do.getFileSize_s()))
     print(do.grid)
     who()
+
+    if len(do.solver.warnings) > 0:
+        print(f'\nThe simulation has {len(do.solver.warnings)} warnings.')
+        for w in do.solver.warnings:
+            print(f'\x1B[1;33m[WARNING]\x1B[0m {w}')
 
 
 def who():

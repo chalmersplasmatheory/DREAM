@@ -31,6 +31,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 
 
 using namespace DREAM;
@@ -44,13 +45,13 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -88,8 +89,10 @@ OtherQuantityHandler::~OtherQuantityHandler() {
     
     delete this->tracked_terms;
 
-    delete [] kineticVectorHot;
-    delete [] kineticVectorRE;
+    if (kineticVectorHot != nullptr)
+        delete [] kineticVectorHot;
+    if (kineticVectorRE != nullptr)
+        delete [] kineticVectorRE;
 }
 
 /**
@@ -235,6 +238,9 @@ void OtherQuantityHandler::DefineQuantities() {
     // Define on scalar grid
     #define DEF_SC(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+    #define DEF_SC_MUL(NAME, DESC, MUL, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+    
 
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
@@ -253,6 +259,8 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_HT_F2(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+	#define DEF_HT_MUL(NAME, MUL, DESC, FUNC) \
+		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
 
     // Define on runaway grid
     #define DEF_RE(NAME, DESC, FUNC) \
@@ -263,6 +271,8 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_RE_F2(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+	#define DEF_RE_MUL(NAME, MUL, DESC, FUNC) \
+		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
 
     // fluid/...
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
@@ -272,22 +282,74 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
-    DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]",
-		const real_t *cr = this->REFluid->GetComptonRunawayRate();
-		const real_t *n_tot = this->unknowns->GetUnknownData(this->id_ntot);
-		real_t *v = qd->StoreEmpty();
-		for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
-			v[ir] = cr[ir] * n_tot[ir];
-	);
-    if(tracked_terms->n_re_hottail_rate != nullptr){
-        DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+    if(tracked_terms->comptonSource_fluid != nullptr){
+        DEF_FL("fluid/gammaCompton", "Compton runaway rate to n_re [s^-1 m^-3]",
+		    const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *S_C = qd->StoreEmpty();
+
+			//qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+			for (len_t ir = 0; ir < fluidGrid->GetNr(); ir++) {
+				S_C[ir] = -this->tracked_terms->comptonSource_fluid->GetSourceFunction(ir,0,0) * ntot[ir];
+			}
+	    );
+    } else {
+        DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]",
+		    const real_t *cr = this->REFluid->GetComptonRunawayRate();
+		    const real_t *n_tot = this->unknowns->GetUnknownData(this->id_ntot);
+		    real_t *v = qd->StoreEmpty();
+		    for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+			    v[ir] = cr[ir] * n_tot[ir];
+	    );
     }
+
+    if (tracked_terms->n_re_hottail_rate != nullptr) {
+        DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+	}
+
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
         real_t *v = qd->StoreEmpty();
         for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
             v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
+    if(tracked_terms->lcfsLossRate_fluid != nullptr){
+        DEF_FL("fluid/gammaLCFSLoss", "LCFS runaway loss rate (weights * n_re) [s^-1 m^-3]", 
+            real_t *v = qd->StoreEmpty();
+            const real_t *gLCFS = tracked_terms->lcfsLossRate_fluid->GetLCFSLossWeights();
+            real_t *nRE = this->unknowns->GetUnknownData(id_n_re);
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++){
+                v[ir] = gLCFS[ir] * nRE[ir];
+            }
+        );
+    }
+
+	if (tracked_terms->n_re_f_hot_flux != nullptr) {
+		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to n_re [s^-1 m^-3]",
+			const real_t *f_hot = this->unknowns->GetUnknownData(this->id_f_hot);
+			real_t *v = qd->StoreEmpty();
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = 0;
+
+			tracked_terms->n_re_f_hot_flux->AddToVectorElements(v, f_hot);
+
+			// Flip sign to get flux from f_hot -> n_re
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = -v[ir];
+		);
+	}else if (tracked_terms->f_re_f_hot_flux != nullptr) {
+		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to f_re [s^-1 m^-3]",
+			const real_t *f_hot = this->unknowns->GetUnknownData(this->id_f_hot);
+			real_t *v = qd->StoreEmpty();
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = 0;
+
+			tracked_terms->f_re_f_hot_flux->AddToVectorElements(v, f_hot);
+
+			// Flip sign to get flux from f_hot -> f_re
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				v[ir] = -v[ir];
+		);
+	}
 
     // Magnetic ripple resonant momentum
     if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
@@ -315,6 +377,8 @@ void OtherQuantityHandler::DefineQuantities() {
     if(tracked_terms->n_re_hottail_rate != nullptr){
         DEF_FL("fluid/pCritHottail", "Critical momentum for hottail (in units of mc)", qd->Store(tracked_terms->n_re_hottail_rate->GetHottailCriticalMomentum()););
     }
+	DEF_FL("fluid/pStar", "Effective critical momentum in Hesslow theory", qd->Store(this->REFluid->GetPStar()););
+	DEF_FL("fluid/nusnuDatPStar", "Slowing-down times deflection frequency for electrons, evaluated at pStar", qd->Store(this->REFluid->GetNusNuDatPStar()););
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt [s^-1 m^-3]", qd->Store(this->postProcessor->GetRunawayRate()););
     DEF_FL("fluid/qR0", "Safety factor multiplied by major radius R0 [m]",
         real_t *vec = qd->StoreEmpty();
@@ -335,6 +399,20 @@ void OtherQuantityHandler::DefineQuantities() {
     }
     if (tracked_terms->svensson_D != nullptr)
         DEF_FL_FR("fluid/svensson_D", "Advection coefficient used in Svensson n_re transport.", qd->Store(this->tracked_terms->svensson_D->GetDiffusionCoeffRR()[0]););
+    
+    if (tracked_terms->svensson_A != nullptr || tracked_terms->svensson_advD != nullptr || tracked_terms->svensson_D != nullptr)
+        DEF_FL("fluid/svensson_transport", "Transported runaway density [s^-1 m^-3]",
+            real_t *n_re = this->unknowns->GetUnknownData(this->id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            if (tracked_terms->svensson_A != nullptr)
+                tracked_terms->svensson_A->SetVectorElements(vec, n_re);
+            else if (tracked_terms->svensson_advD != nullptr)
+                tracked_terms->svensson_advD->SetVectorElements(vec, n_re);
+            if (tracked_terms->svensson_D != nullptr)
+                tracked_terms->svensson_D->SetVectorElements(vec, n_re);
+        );
 
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
@@ -468,7 +546,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
     // hottail/...
-    DEF_HT_F1("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
+    DEF_HT_FR("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeffR();
         qd->Store(nr_ht+1, n1_ht*n2_ht, Ar);
     );
@@ -523,6 +601,38 @@ void OtherQuantityHandler::DefineQuantities() {
             avaNeg->SetVectorElements(v, nre_neg);
         }
     );
+    
+	if (tracked_terms->comptonSource_hottail != nullptr) {
+		DEF_HT("hottail/S_compton", "Compton scattering source term [s^-1 m^-3]",
+			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *S_C = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+				for (len_t j = 0; j < n2_ht; j++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+						S_C[(ir*(n2_ht) + j)*n1_ht + i] = -this->tracked_terms->comptonSource_hottail->GetSourceFunction(ir,i,j) * ntot[ir];
+					}
+				}
+			}
+		);
+	}
+    if (!tracked_terms->tritiumSource.empty()) {
+		DEF_HT("hottail/S_tritium", "Tritium decay source term [s^-1 m^-3]",
+			real_t *S_T = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+				for (len_t j = 0; j < n2_ht; j++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+					    len_t nT = this->ions->GetNTritiumIndices();
+                        S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
+                        for(len_t iT=0; iT<nT; iT++){
+                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += this->tracked_terms->tritiumSource[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTritiumDensity(ir);
+                        }
+					}
+				}
+			}
+		);
+	}
 
 	// Pitch angle scattering due to time varying B
 	if (tracked_terms->f_hot_timevaryingb != nullptr) {
@@ -541,6 +651,69 @@ void OtherQuantityHandler::DefineQuantities() {
 			}
 		);
 	}
+
+
+
+    // Synchrotron radiation
+	if (tracked_terms->f_hot_synchrotron != nullptr) {
+		DEF_HT_F1("hottail/synchrotron_f1", "Advection due to Synchrotron radiation",
+			real_t *Asyn = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+                auto *mg = this->hottailGrid->GetMomentumGrid(ir);
+                const real_t *BA1_f1 = this->hottailGrid->GetBA_B3_f1(ir);
+                real_t Bmin = this->fluidGrid->GetRadialGrid()->GetBmin(ir);
+				for (len_t j = 0; j < n2_ht; j++) {
+					for (len_t i = 0; i < n1_ht + 1; i++) {
+						Asyn[(ir*n2_ht + j)*(n1_ht + 1) + i] = this->tracked_terms->f_hot_synchrotron->getf1_PXI(i, j, mg, BA1_f1, Bmin, ir, this->fluidGrid->GetRadialGrid());
+                    }
+				}
+			}
+		);
+	} 
+
+	if (tracked_terms->f_hot_synchrotron != nullptr) {
+		DEF_HT_F2("hottail/synchrotron_f2", "Advection due to Synchrotron radiation",
+			real_t *Asyn = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_ht; ir++) {
+                auto *mg = this->hottailGrid->GetMomentumGrid(ir);
+                const real_t *BA2_f2 = this->hottailGrid->GetBA_xi2B2_f2(ir);
+                real_t Bmin = this->fluidGrid->GetRadialGrid()->GetBmin(ir);
+				for (len_t j = 0; j < n2_ht+1; j++) {
+					for (len_t i = 0; i < n1_ht; i++) {
+						Asyn[(ir*(n2_ht+1) + j)*n1_ht + i] = this->tracked_terms->f_hot_synchrotron->getf2_PXI(i, j, mg, BA2_f2, Bmin); 
+                    }
+				}
+			}
+		);
+	} 
+    
+    // Bremsstrahlung radiation
+    if (this->cqtyHottail != nullptr) {
+        if (this->cqtyHottail->GetCollisionQuantitySettings()->bremsstrahlung_mode == OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER) {
+            DEF_HT_F1("hottail/bremsstrahlung_f1", "Advection due to bremsstrahlung radiation",
+                real_t *Abrems = qd->StoreEmpty();
+                const len_t nZ = this->ions->GetNZ();
+                real_t n_i;
+                real_t p;
+                for (len_t ir = 0; ir < nr_ht; ir++) {
+                    auto *mg = this->hottailGrid->GetMomentumGrid(ir);
+                    for (len_t i = 0; i < n1_ht + 1; i++) {   
+                        p = mg->GetP1_f(i);
+                        for (len_t j = 0; j < n2_ht; j++) {
+                            Abrems[(ir*n2_ht + j)*(n1_ht + 1) + i] = 0;
+                            for (len_t iZ = 0; iZ < nZ; iZ++) {
+                                n_i = this->ions->GetTotalIonDensity(ir, iZ);
+                                Abrems[(ir*n2_ht + j)*(n1_ht + 1) + i] += n_i*this->cqtyHottail->GetNuS()->evaluateBremsstrahlungAtPforZ(iZ, p, OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER); 
+                            }
+                        }
+                    }
+                }
+            );
+        } 
+    }
+    
 
     // runaway/...
     DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
@@ -579,8 +752,8 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
     DEF_RE_F1("runaway/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_D_f2", "Pitch-angle scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
-    DEF_RE_F1("runaway/nu_D_f1", "Energy scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuPar()->GetValue_f1()););
-    DEF_RE_F2("runaway/nu_D_f2", "Energy scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuPar()->GetValue_f2()););
+    DEF_RE_F1("runaway/nu_par_f1", "Energy scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuPar()->GetValue_f1()););
+    DEF_RE_F2("runaway/nu_par_f2", "Energy scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuPar()->GetValue_f2()););
     DEF_RE_F1("runaway/lnLambda_ee_f1", "Coulomb logarithm for e-e collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEE()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
@@ -598,6 +771,20 @@ void OtherQuantityHandler::DefineQuantities() {
             avaNeg->SetVectorElements(v, nre_neg);
         }
     );
+    if (tracked_terms->comptonSource_runaway != nullptr) {
+		DEF_RE("runaway/S_compton", "Compton scattering source term [s^-1 m^-3]",
+			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *S_C = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_re; ir++) {
+				for (len_t j = 0; j < n2_re; j++) {
+					for (len_t i = 0; i < n1_re; i++) {
+						S_C[(ir*(n2_re) + j)*n1_re + i] = -this->tracked_terms->comptonSource_runaway->GetSourceFunction(ir,i,j) * ntot[ir];
+					}
+				}
+			}
+		);
+	}
 
 	// Pitch angle scattering due to time varying B
 	if (tracked_terms->f_re_timevaryingb != nullptr) {
@@ -615,6 +802,66 @@ void OtherQuantityHandler::DefineQuantities() {
 			}
 		);
 	}
+
+    // Synchrotron radiation
+	if (tracked_terms->f_re_synchrotron != nullptr) {
+		DEF_RE_F1("runaway/synchrotron_f1", "Advection due to synchrotron radiation",
+			real_t *Asyn = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_re; ir++) {
+                auto *mg = this->runawayGrid->GetMomentumGrid(ir);
+                const real_t *BA1_f1 = this->runawayGrid->GetBA_B3_f1(ir);
+                real_t Bmin = this->fluidGrid->GetRadialGrid()->GetBmin(ir);
+				for (len_t j = 0; j < n2_re; j++) {
+					for (len_t i = 0; i < n1_re + 1; i++) {
+						Asyn[(ir*n2_re + j)*(n1_re + 1) + i] = this->tracked_terms->f_re_synchrotron->getf1_PXI(i, j, mg, BA1_f1, Bmin); 
+                    }
+				}
+			}
+		);
+	} 
+
+	if (tracked_terms->f_re_synchrotron != nullptr) {
+		DEF_RE_F2("runaway/synchrotron_f2", "Advection due to synchrotron radiation",
+			real_t *Asyn = qd->StoreEmpty();
+
+			for (len_t ir = 0; ir < nr_re; ir++) {
+                auto *mg = this->runawayGrid->GetMomentumGrid(ir);
+                const real_t *BA2_f2 = this->runawayGrid->GetBA_xi2B2_f2(ir);
+                real_t Bmin = this->fluidGrid->GetRadialGrid()->GetBmin(ir);
+				for (len_t j = 0; j < n2_re+1; j++) {
+					for (len_t i = 0; i < n1_re; i++) {
+						Asyn[(ir*(n2_re+1) + j)*n1_re + i] = this->tracked_terms->f_re_synchrotron->getf2_PXI(i, j, mg, BA2_f2, Bmin); 
+                    }
+				}
+			}
+		);
+	} 
+    
+    // Bremsstrahlung radiation
+    if (this->cqtyRunaway != nullptr){
+        if (this->cqtyRunaway->GetCollisionQuantitySettings()->bremsstrahlung_mode == OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER) {
+            DEF_RE_F1("runaway/bremsstrahlung_f1", "Advection due to bremsstrahlung radiation",
+                real_t *Abrems = qd->StoreEmpty();
+                const len_t nZ = this->ions->GetNZ();
+                real_t n_i;
+                real_t p;
+                for (len_t ir = 0; ir < nr_re; ir++) {
+                    auto *mg = this->runawayGrid->GetMomentumGrid(ir);
+                    for (len_t i = 0; i < n1_re + 1; i++) {   
+                        p = mg->GetP1_f(i);
+                        for (len_t j = 0; j < n2_re; j++) {
+                            Abrems[(ir*n2_re + j)*(n1_re + 1) + i] = 0;
+                            for (len_t iZ = 0; iZ < nZ; iZ++) {
+                                n_i = this->ions->GetTotalIonDensity(ir, iZ);
+                                Abrems[(ir*n2_re + j)*(n1_re + 1) + i] += p*n_i*this->cqtyRunaway->GetNuS()->evaluateBremsstrahlungAtPforZ(iZ, p, OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER); 
+                            }
+                        }
+                    }
+                }
+            );
+        } 
+    }
 
     // scalar/..
     DEF_SC("scalar/radialloss_n_re", "Rate of runaway number loss through plasma edge, normalized to R0 [s^-1 m^-1]",
@@ -747,6 +994,42 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     );
 
+	if (this->tracked_terms->f_hot_kin_rates.size() > 0) {
+		DEF_HT_MUL("hottail/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
+			real_t *v = qd->StoreEmpty();
+
+			for (len_t iz = 0, offs = 0; iz < this->tracked_terms->f_hot_kin_rates.size(); iz++) {
+				IonKineticIonizationTerm *ikit = this->tracked_terms->f_hot_kin_rates[iz];
+				real_t **intg = ikit->GetIntegrandAllCS();
+
+				len_t Z = ions->GetZ(iz);
+				for (len_t Z0 = 0; Z0 <= Z; Z0++)
+					for (len_t ir = 0; ir < nr_ht; ir++)
+						for (len_t j = 0; j < n2_ht; j++)
+							for (len_t i = 0; i < n1_ht; i++, offs++)
+								v[offs] = intg[Z0][n1_ht*j+i];
+			}
+		);
+	}
+
+	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
+		DEF_RE_MUL("runaway/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
+			real_t *v = qd->StoreEmpty();
+
+			for (len_t iz = 0, offs = 0; iz < this->tracked_terms->f_re_kin_rates.size(); iz++) {
+				IonKineticIonizationTerm *ikit = this->tracked_terms->f_re_kin_rates[iz];
+				real_t **intg = ikit->GetIntegrandAllCS();
+
+				len_t Z = ions->GetZ(iz);
+				for (len_t Z0 = 0; Z0 <= Z; Z0++)
+					for (len_t ir = 0; ir < nr_re; ir++)
+						for (len_t j = 0; j < n2_re; j++)
+							for (len_t i = 0; i < n1_re; i++, offs++)
+								v[offs] = intg[Z0][n1_re*j+i];
+			}
+		);
+	}
+
     if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
         this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {
         // Magnetic energy and internal inductance
@@ -803,7 +1086,11 @@ void OtherQuantityHandler::DefineQuantities() {
         settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
         settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
         settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
-
+        
+        this->REFluid->GetLnLambda()->GridRebuilt();
+        this->REFluid->GetLnLambda()->Rebuild();
+        nuS->GridRebuilt();
+        nuS->Rebuild();
         std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
         {
             real_t v = Constants::c * p/sqrt(1+p*p);
@@ -815,7 +1102,20 @@ void OtherQuantityHandler::DefineQuantities() {
         for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
-
+    if (SPI != nullptr){
+        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+        DEF_SC_MUL("scalar/Ypdot", "Rate at which the shards' radius decrease",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetYpdot();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+    }
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
 

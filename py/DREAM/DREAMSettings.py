@@ -249,7 +249,7 @@ class DREAMSettings:
 
         if 'timeindex' in self.init:
             data['init']['filetimeindex'] = self.init['timeindex']
-        if 'fromfile' in self.init:
+        if 'fromfile' in self.init and self.init['fromfile'] != '':
             data['init']['fromfile'] = self.init['fromfile']
 
         return data

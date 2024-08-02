@@ -40,16 +40,29 @@ PXiInternalTrapping::~PXiInternalTrapping() {
  */
 void PXiInternalTrapping::DeallocateTrappedIndices() {
     len_t nr = this->grid->GetNr();
-    for (len_t ir = 0; ir < nr; ir++)
+    for (len_t ir = 0; ir < nr; ir++) {
         delete [] trappedNegXi_indices[ir];
+		delete [] trappedNegXiRadial_indices[ir];
 
+		delete [] trappedPosXi_indices[ir];
+		delete [] trappedPosXiRadial_indices[ir];
+	}
+	
     delete [] trappedNegXi_indices;
+	delete [] trappedPosXi_indices;
+	delete [] trappedNegXiRadial_indices;
+	delete [] trappedPosXiRadial_indices;
     delete [] nTrappedNegXi_indices;
+	delete [] nTrappedNegXiRadial_indices;
 
     delete [] rowsToReset;
 
     this->trappedNegXi_indices = nullptr;
+	this->trappedPosXi_indices = nullptr;
+	this->trappedNegXiRadial_indices = nullptr;
+	this->trappedPosXiRadial_indices = nullptr;
     this->nTrappedNegXi_indices = nullptr;
+    this->nTrappedNegXiRadial_indices = nullptr;
     this->rowsToReset = nullptr;
 }
 

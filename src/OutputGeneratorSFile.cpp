@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include <DREAM/IO.hpp>
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SFile.hpp"
@@ -46,6 +47,8 @@ void OutputGeneratorSFile::Save(bool current) {
     if (close) {
         this->sf->Close();
         delete this->sf;
+
+		IO::PrintInfo("Saved output file to '%s'.", this->filename.c_str());
     }
 }
 
@@ -244,7 +247,7 @@ void OutputGeneratorSFile::SaveTimings(const std::string& name) {
  */
 void OutputGeneratorSFile::SaveUnknowns(const std::string& name, bool current) {
     this->sf->CreateStruct(name);
-    
+
     if (current)
         this->unknowns->SaveSFileCurrent(this->sf, name, false);
     else

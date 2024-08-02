@@ -2,6 +2,8 @@
 #define _DREAM_IO_HPP
 
 #include <string>
+#include <vector>
+#include "DREAM/Simulation.hpp"
 
 namespace DREAM {
     class IO {
@@ -16,10 +18,21 @@ namespace DREAM {
             WARNING_OVERRIDE_CUSTOM_P_GRID,
             WARNING_P_UNDERRESOLVED,
             WARNING_INCONSISTENT_RE_TRANSPORT,
+            WARNING_TRITIUM_GENERATION_INVALID,
+            WARNING_KINETIC_COMPTON_NO_HOT_GRID,
+            WARNING_KINETIC_TRITIUM_NO_HOT_GRID,
+			WARNING_RESIDUAL_NOT_CONVERGED,
+            WARNING_ABLATION_RATE_NOT_VALID,
 
             // [Must always come last]
             MESSAGE_LAST
         } message_t;
+
+		static std::vector<std::string> emitted_warning_messages;
+		static Simulation *simulation;
+
+		static void Init(Simulation*);
+		static void Deinit();
 
         static bool VerifyMessage(const message_t);
 

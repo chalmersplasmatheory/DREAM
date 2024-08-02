@@ -25,6 +25,8 @@ using namespace std;
 void DREAM::SettingsSFile::LoadSettings(Settings *settings, const string& filename) {
     SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
     LoadSettings(settings, sf);
+
+	delete sf;
 }
 void DREAM::SettingsSFile::LoadSettings(Settings *settings, SFile *sf) {
     const map<string, Settings::setting_t*> allset = settings->GetSettings();
@@ -321,11 +323,16 @@ void DREAM::SettingsSFile::SaveSettings(
             case Settings::SETTING_TYPE_STRING:
                 SettingsSFile::SaveString(fullname, s->GetString(name), sf);
                 break;
+
+            case Settings::SETTING_TYPE_ADDRESS:
+                // Addresses are worthless after Python has exited, so we don't
+                // save them here...
+                break;
             
             default:
                 throw SettingsException(
-                    "SettingsSFile: Unrecognized setting type: " LEN_T_PRINTF_FMT,
-                    set->type
+                    "SettingsSFile: Unrecognized setting type for setting '%s': " LEN_T_PRINTF_FMT,
+                    name.c_str(), set->type
                 );
         }
     }

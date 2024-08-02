@@ -295,13 +295,16 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
 	real_t comptonFlux = 0.0, comptonFlux_t = 0.0;
 	DREAM::FVM::Interpolator1D *comptonFlux_i = new DREAM::FVM::Interpolator1D(
 		1, 1, &comptonFlux_t, &comptonFlux,
-		DREAM::FVM::Interpolator1D::INTERP_NEAREST
+		DREAM::FVM::Interpolator1D::INTERP_NEAREST, false
 	);
+    real_t integratedComptonSpectrum = 5.8844190260298, C1_Compton = 1.2, C2_Compton = 0.8, C3_Compton = 0.;
+    bool extrapolateDreicer = true;
     DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
-        grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
+        grid, unknowns, nuS, nuD,lnLEE, extrapolateDreicer, lnLEI, ionHandler, distRE, cqPc, cqEc,
         DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
         eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
-        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, comptonFlux_i
+        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, comptonFlux_i,
+        integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton
     );
     REFluid->Rebuild(0);
     return REFluid;

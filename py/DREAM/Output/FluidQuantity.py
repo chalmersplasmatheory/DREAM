@@ -11,6 +11,9 @@ from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
 
+anim_contours = None
+
+
 class FluidQuantity(UnknownQuantity):
     
 
@@ -151,6 +154,16 @@ class FluidQuantity(UnknownQuantity):
         else:
             return self.data[t,r]
 
+
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        return 1
+
         
     def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, unit='s', **kwargs):
         """
@@ -213,7 +226,7 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
         """
         Plot the radial profile of this quantity revolved over a 
         poloidal cross section at the specified time step. 
@@ -270,7 +283,10 @@ class FluidQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
             
-        return ax, cb
+        if return_contours:
+            return ax, cb, cp
+        else:
+            return ax, cb
 
         
     def animatePoloidal(self, t=None, repeat=False, repeat_delay=None, speed=None, dpi=100, save=None,**kwargs):
@@ -285,19 +301,28 @@ class FluidQuantity(UnknownQuantity):
         :param float dpi: animation resolution
         :param str save: title of the file (if any) into which the animation is saved
         """
+        global anim_contours
         
         fig, ax=plt.subplots(1,1)
         
         if t is None:
             t=range(len(self.grid.t))
             
-        ax,cb=self.plotPoloidal(show=False,t=0,**kwargs)
+        ax, cb, anim_contours = self.plotPoloidal(show=False, t=0, return_contours=True, **kwargs)
         
         def update_ani(t, fq, ax):
-            ax.clear()
-            ax=fq.plotPoloidal(colorbar=False, show=False,t=t,**kwargs)
-        
+            global anim_contours
+
+            for c in anim_contours.collections:
+                c.remove()
+
+            anim_contours, cb = fq.plotPoloidal(ax=ax, show=False, t=t, colorbar=False, **kwargs)
+
+            return anim_contours
             
+        if speed is None:
+            speed = 50
+
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=t,
             repeat=repeat, repeat_delay=repeat_delay, interval=speed,
@@ -305,7 +330,7 @@ class FluidQuantity(UnknownQuantity):
         
         if save:
             # Make animation
-            writer = animation.FFMpegFileWriter(fps=fps)
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
             writer.setup(fig, save, dpi=dpi)
             ani.save(save, writer=writer)
             print("Done saving video to '{}'.".format(save))

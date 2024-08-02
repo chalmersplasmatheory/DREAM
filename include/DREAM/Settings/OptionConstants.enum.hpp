@@ -14,7 +14,8 @@ enum prescribed_data_interp {
     // We start from 0 here to remain somewhat compatible
     // with the GSL interpolation interface
     PRESCRIBED_DATA_INTERP_NEAREST=0,
-    PRESCRIBED_DATA_INTERP_LINEAR=1
+    PRESCRIBED_DATA_INTERP_LINEAR=1,
+    PRESCRIBED_DATA_INTERP_LOGARITHMIC=2
 };
 enum prescribed_data_interp_gsl {
     PRESCRIBED_DATA_INTERP_GSL_LINEAR=1,
@@ -25,7 +26,8 @@ enum prescribed_data_interp_gsl {
 };
 enum prescribed_data_interp3d {
     PRESCRIBED_DATA_INTERP3D_NEAREST=0,
-    PRESCRIBED_DATA_INTERP3D_LINEAR=1
+    PRESCRIBED_DATA_INTERP3D_LINEAR=1,
+    PRESCRIBED_DATA_INTERP3D_LOGARITHMIC=2
 };
 
 enum ion_data_type {
@@ -144,7 +146,8 @@ enum linear_solver {
 enum timestepper_type {
     TIMESTEPPER_TYPE_CONSTANT=1,
     TIMESTEPPER_TYPE_ADAPTIVE=2,
-	TIMESTEPPER_TYPE_IONIZATION=3
+	TIMESTEPPER_TYPE_IONIZATION=3,
+    TIMESTEPPER_TYPE_PYTHON_TERMINATE=4
 };
 
 /////////////////////////////////////
@@ -210,7 +213,8 @@ enum uqty_T_i_eqn {
 
 enum uqty_distribution_mode {
     UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
-    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2    // distribution modelled with analytical distribution function
+    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2,   // distribution modelled with analytical distribution function
+	UQTY_DISTRIBUTION_MODE_PRESCRIBED=3    // distribution is prescribed in time from user input
 };
 
 enum uqty_f_hot_dist_mode {                     // Model used for analytic hottail distribution
@@ -237,9 +241,10 @@ enum collqty_collfreq_mode {
 };
 
 enum collqty_collfreq_type {
-    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
-    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
-    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies etc
+    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1,           // only free electrons contribute 
+    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,                  // free and bound electrons contribute equally
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3,            // bound electrons contribute via mean excitation energies etc
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK=4   // bound electrons contribution with Walkowiak model https://doi.org/10.1063/5.0075859
 };
 
 enum collqty_pstar_mode {                // Runaway growth rates are determined from dynamics that are
@@ -359,6 +364,12 @@ enum eqterm_spi_deposition_mode {
     EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN=4
 };
 
+enum eqterm_spi_shift_mode {
+    EQTERM_SPI_SHIFT_MODE_NEGLECT=1,
+    EQTERM_SPI_SHIFT_MODE_PRESCRIBED=2,
+    EQTERM_SPI_SHIFT_MODE_ANALYTICAL=3
+};
+
 enum eqterm_spi_heat_absorbtion_mode {
     EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT=1,
     EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS=2,
@@ -391,6 +402,17 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
+};
+
+enum eqterm_lcfs_loss_mode {                        // Loss term
+    EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
+    EQTERM_LCFS_LOSS_MODE_FLUID = 2,
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3};
+
+enum eqterm_tritium_mode {                        // Tritium generation is...
+    EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
+    EQTERM_TRITIUM_MODE_FLUID = 2,                // Fluid tritium generation rate
+    EQTERM_TRITIUM_MODE_KINETIC = 3               // Kinetic tritium generation rate
 };
 
 

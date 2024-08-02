@@ -22,6 +22,7 @@ namespace DREAM::FVM {
         
     public:
         ScalarLinearTerm(Grid*,Grid*, UnknownQuantityHandler*, const len_t);
+		~ScalarLinearTerm();
         
 //        virtual void EvaluableTransform(real_t*) override;
 

@@ -48,6 +48,7 @@ void SimulationGenerator::ConstructEquation_SPI(
 
     // Initialize shard radii-variable
     eqsys->SetInitialValue(id_Yp, Yp_init);
+	delete [] Yp_init;
 
     // Shard velocity and position terms
     switch (spi_velocity_mode) {
@@ -107,6 +108,4 @@ void SimulationGenerator::ConstructEquation_x_p_prescribed_constant_velocity(
 
     // Initialization
     eqsys->SetInitialValue(OptionConstants::UQTY_X_P, xp_init);
-    
-    delete [] t_delay;
 }

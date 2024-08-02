@@ -6,21 +6,25 @@
 #
 
 import h5py
-from matplotlib._contour import QuadContourGenerator
+try:
+    from matplotlib._contour import QuadContourGenerator as ContourGenerator
+except ModuleNotFoundError:
+    from contourpy import Mpl2014ContourGenerator as ContourGenerator
 import matplotlib.pyplot as plt
 import numpy as np
 import re
 from scipy.interpolate import CubicSpline, InterpolatedUnivariateSpline, RectBivariateSpline
+from EqBase import EqBase
 
 
-class GEQDSK:
+class GEQDSK(EqBase):
     
 
-    def __init__(self, filename):
+    def __init__(self, filename, cocos=1):
         """
         Constructor.
         """
-        self.load(filename)
+        self.load(filename, cocos=cocos)
 
 
     def _next_value(self, fh):
@@ -214,7 +218,7 @@ class GEQDSK:
         """
         Load data from the named GEQDSK file to this object.
         """
-        data = self.load_geqdsk(filename)
+        data = self.load_geqdsk(filename, cocos=1)
         self.process_data(data)
 
 
@@ -230,10 +234,10 @@ class GEQDSK:
 
             nx, ny = int(words[-2]), int(words[-1])
             
-            data = {"nx": nx, "ny": ny}
-            fields = ["rdim", "zdim", "rcentr", "rleft", "zmid", "rmagx",
-                      "zmagx", "simagx", "sibdry", "bcentr", "cpasma", "simagx",
-                      None, "rmagx", None, "zmagx", None, "sibdry", None, None]
+            data = {"nx": nx, "ny": ny, "cocos": cocos}
+            fields = ["rboxlen", "zboxlen", "rcentr", "rleft", "zmid", "raxis",
+                      "zaxis", "psiaxis", "psiedge", "bcentr", "cpasma", "psiaxis",
+                      None, "raxis", None, "zaxis", None, "psiedge", None, None]
 
             values = self._next_value(fh)
             
@@ -266,17 +270,17 @@ class GEQDSK:
 
 
             data["fpol"] = _read_1d(nx)
-            data["pres"] = _read_1d(nx)
+            data["p"] = _read_1d(nx)
             data["ffprime"] = _read_1d(nx)
             data["pprime"] = _read_1d(nx)
 
             data["psi"] = _read_2d(nx, ny)
 
-            data["qpsi"] = _read_1d(nx)
+            data["q"] = _read_1d(nx)
 
             # Ensure that psi is divided by 2pi
             if cocos > 10:
-                for var in ["psi", "simagx", "sibdry"]:
+                for var in ["psi", "psiaxis", "psiedge"]:
                     data[var] /= 2 * pi
 
             nbdry = next(values)
@@ -329,7 +333,7 @@ class GEQDSK:
         psi2d = np.transpose(self.psi(self.R, self.Z))
         psin2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
         R, Z = np.meshgrid(self.R, self.Z)
-        self.contour_generator = QuadContourGenerator(R, Z, psin2d, None, True, 0)
+        self.contour_generator = ContourGenerator(R, Z, psin2d, mask=None, corner_mask=True, x_chunk_size=0)
 
         rho = np.zeros(psi_n.shape)
         R_major = np.zeros(psi_n.shape)

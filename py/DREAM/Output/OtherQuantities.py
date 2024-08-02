@@ -3,10 +3,12 @@ import numpy as np
 
 from . OtherQuantity import OtherQuantity
 from . OtherFluidQuantity import OtherFluidQuantity
+from . OtherIonSpeciesKineticQuantity import OtherIonSpeciesKineticQuantity
 from . OtherKineticQuantity import OtherKineticQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
 
 from . AvalancheGrowthRate import AvalancheGrowthRate
+from . LCFSLoss import LCFSLoss
 
 
 class OtherQuantities:
@@ -16,7 +18,9 @@ class OtherQuantities:
         # List of other quantities with their own classes
         'f_hot_ripple_pmn': OtherQuantity,
         'f_re_ripple_pmn': OtherQuantity,
+        'kinioniz_vsigma': OtherIonSpeciesKineticQuantity,
         'GammaAva': AvalancheGrowthRate,
+        'gammaLCFSLoss': LCFSLoss,
         'nu_D_f1': OtherKineticQuantity,
         'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,
@@ -103,7 +107,9 @@ class OtherQuantities:
             else:
                 o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         elif name in self.SPECIAL_TREATMENT:
-            if data.ndim == 4 and self.momentumgrid is not None:
+            if data.ndim == 5 and self.momentumgrid is not None:
+                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            elif data.ndim == 4 and self.momentumgrid is not None:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)

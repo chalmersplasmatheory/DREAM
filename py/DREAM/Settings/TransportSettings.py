@@ -11,11 +11,13 @@ TRANSPORT_RECHESTER_ROSENBLUTH = 3
 TRANSPORT_SVENSSON = 4
 TRANSPORT_FROZEN_CURRENT = 5
 
-INTERP3D_NEAREST = 0
-INTERP3D_LINEAR  = 1
+INTERP3D_NEAREST     = 0
+INTERP3D_LINEAR      = 1
+INTERP3D_LOGARITHMIC = 2
 
-INTERP1D_NEAREST = 0
-INTERP1D_LINEAR  = 1
+INTERP1D_NEAREST     = 0
+INTERP1D_LINEAR      = 1
+INTERP1D_LOGARITHMIC = 2
 
 SVENSSON_INTERP1D_PARAM_TIME = 1
 SVENSSON_INTERP1D_PARAM_IP   = 2
@@ -398,7 +400,7 @@ class TransportSettings:
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
         if 'pstar' in data:
-            self.pstar = data['pstar']
+            self.pstar = float(data['pstar'])
             
         if 'interp1d_param' in data:
             self.interp1d_param = data['interp1d_param']
@@ -604,11 +606,11 @@ class TransportSettings:
             elif g('_r').ndim != 1 or g('_r').size != c.shape[1]:
                 raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[1]))
 
-            if g('_interp3d') not in [INTERP3D_LINEAR, INTERP3D_NEAREST]:
+            if g('_interp3d') not in [INTERP3D_LINEAR, INTERP3D_NEAREST, INTERP3D_LOGARITHMIC]:
                 raise TransportException("{}: Invalid value assigned to interp3d.".format(coeff))
 
             if coeff+'v' in self.__dict__:
-                if g('_interp1d') not in [INTERP1D_LINEAR, INTERP1D_NEAREST]:
+                if g('_interp1d') not in [INTERP1D_LINEAR, INTERP1D_NEAREST, INTERP1D_LOGARITHMIC]:
                     raise TransportException("{}: Invalid value assigned to interp1d.".format(coeff))
 
             if g('_p') is not None or g('_xi') is not None:

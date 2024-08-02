@@ -19,12 +19,15 @@
 #include "DREAM/Equations/Fluid/FreeElectronDensityTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/ParticleSourceTerm.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
+#include "DREAM/IO.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
@@ -51,7 +54,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
     s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
     s->DefineSetting(MODULENAME "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
-
+	
     s->DefineSetting(MODULENAME "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
 }
 
@@ -65,6 +68,24 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
  */
 void SimulationGenerator::ConstructEquation_f_hot(
     EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
+	enum OptionConstants::uqty_distribution_mode mode =
+		(enum OptionConstants::uqty_distribution_mode)
+			s->GetInteger(MODULENAME "/mode");
+	
+	if (mode == OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED)
+		ConstructEquation_f_hot_prescribed(
+			eqsys, s
+		);
+	else
+		ConstructEquation_f_hot_kineq(
+			eqsys, s, oqty_terms
+		);
+}
+
+void SimulationGenerator::ConstructEquation_f_hot_kineq(
+    EquationSystem *eqsys, Settings *s,
+	struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -103,6 +124,37 @@ void SimulationGenerator::ConstructEquation_f_hot(
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
+    }
+    
+    // Add Compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if(compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
+
+        FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
+        oqty_terms->comptonSource_hottail = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), 
+            s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
+            hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0)), -1.0);
+        Op_compton->AddTerm(oqty_terms->comptonSource_hottail);
+        len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
+        eqsys->SetOperator(id_f_hot, id_n_tot, Op_compton);
+    }
+    
+    // Add tritium source
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
+    if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+
+        FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);    
+        const len_t *ti = eqsys->GetIonHandler()->GetTritiumIndices();
+        for(len_t iT=0; iT<eqsys->GetIonHandler()->GetNTritiumIndices(); iT++){
+            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
+            Op_tritium->AddTerm(oqty_terms->tritiumSource[iT]);
+        }
+        len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+        eqsys->SetOperator(id_f_hot, id_n_i, Op_tritium);
     }
 
     // PARTICLE SOURCE TERMS
@@ -158,6 +210,33 @@ void SimulationGenerator::ConstructEquation_f_hot(
 }
 
 /**
+ * Prescribe f_hot in time.
+ */
+void SimulationGenerator::ConstructEquation_f_hot_prescribed(
+    EquationSystem *eqsys, Settings *s
+) {
+	/**
+	 * In order to implement prescribed mode for f_hot, we should make
+	 * sure that all moments can be calculated appropriately for it
+	 * (e.g. j_ohm, n_cold, n_hot etc.)
+	 */
+	throw DREAMException(
+		"Prescribed mode is not available for 'f_hot' yet."
+	);
+		
+    len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+
+	ConstructEquation_f_prescribed(
+		id_f_hot, eqsys, hottailGrid, s, MODULENAME
+	);
+
+	eqsys->initializer->AddRule(
+		id_f_hot, EqsysInitializer::INITRULE_EVAL_EQUATION
+	);
+}
+
+/**
  * Implementation of an equation term which represents the total
  * number of electrons created by the kinetic Rosenbluth-Putvinski source
  */
@@ -171,6 +250,54 @@ namespace DREAM {
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
                 weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pLower, pUpper);
+        }
+    };
+}
+
+namespace DREAM {
+    class TotalElectronDensityFromKineticCompton : public FVM::DiagonalQuadraticTerm {
+    private: 
+        len_t limit;
+        gsl_integration_workspace * wp;
+        gsl_integration_workspace * wpOut;
+    public:
+        real_t pLower, pUpper;
+        real_t integratedComptonSpectrum, C1, C2, C3;
+        FVM::Interpolator1D *comptonPhotonFlux;
+        real_t scaleFactor;
+        real_t photonFlux;
+        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, 
+                real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), 
+                integratedComptonSpectrum(integratedComptonSpectrum), C1(C1), C2(C2), C3(C3), comptonPhotonFlux(comptonPhotonFlux), scaleFactor(scaleFactor) {
+                this->limit = 1000;
+                this->wp = gsl_integration_workspace_alloc(limit);
+                this->wpOut = gsl_integration_workspace_alloc(limit);
+            }
+        
+        virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) override {
+            this->photonFlux = this->comptonPhotonFlux->Eval(t)[0];
+            this->DiagonalQuadraticTerm::Rebuild(0,0,nullptr);
+        }
+        virtual void SetWeights() override {
+            struct DREAM::ComptonSource::intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
+            struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * this->photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
+        }
+    };
+}
+
+namespace DREAM {
+    class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
+    public:
+        real_t pLower, pUpper, scaleFactor;
+        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
+
+        virtual void SetWeights() override {
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
         }
     };
 }
@@ -246,12 +373,51 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         );
         desc += " - internal avalanche";
     }
+    
+    // Add contribution from kinetic Compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if(compton_mode == OptionConstants::EQTERM_COMPTON_MODE_KINETIC) {
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), 
+                s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), 
+                s->GetReal("eqsys/n_re/compton/C3"), -1.0)
+        );
+        desc += " - internal Compton";
+    }
+    
+    // Add contribution from kinetic tritium source
+    OptionConstants::eqterm_tritium_mode tritium_mode = (enum OptionConstants::eqterm_tritium_mode)s->GetInteger("eqsys/n_re/tritium");
+    if(tritium_mode == OptionConstants::EQTERM_TRITIUM_MODE_KINETIC) {
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        
+        real_t pLimTritium = sqrt((18.6e3/Constants::mc2inEV + 1)*(18.6e3/Constants::mc2inEV + 1) - 1);
+        if(pMax < pLimTritium) 
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_TRITIUM_GENERATION_INVALID,
+                "Momentum limit of hot-tail grid (%.2f) is lower than upper "
+                "limit for momentum of tritium beta decay (%.2f), causing the "
+                "tritium generation mechanism to be underestimated.", pMax, pLimTritium
+            );
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, -1.0)
+        );
+        desc += " - internal Tritium";
+    }
     // Add source terms
     bool signPositive = false;
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s, signPositive
     );
+	eqsys->AddRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_Nre, Op_Ntot, Op_Ni);
     desc += rsth->GetDescription();
@@ -284,7 +450,8 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
            ));
         desc += " - f_hot transport";
         eqsys->SetOperator(id_Sp, id_fhot, Op_fhot);
-    }
+    } else
+		delete Op_fhot_tmp;
 
     eqsys->SetOperator(id_Sp, id_Sp, Op_Sp, desc);
 }

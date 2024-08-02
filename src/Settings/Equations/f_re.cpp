@@ -53,6 +53,28 @@ void SimulationGenerator::ConstructEquation_f_re(
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
     FVM::Operator **transport
 ) {
+	enum OptionConstants::uqty_distribution_mode mode =
+		(enum OptionConstants::uqty_distribution_mode)
+			s->GetInteger(MODULENAME "/mode");
+	
+	if (mode == OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED)
+		ConstructEquation_f_re_prescribed(
+			eqsys, s
+		);
+	else
+		ConstructEquation_f_re_kineq(
+			eqsys, s, oqty_terms, transport
+		);
+}
+
+/**
+ * Construct a kinetic equation for f_re.
+ */
+void SimulationGenerator::ConstructEquation_f_re_kineq(
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    FVM::Operator **transport
+) {
     len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
 
@@ -98,7 +120,7 @@ void SimulationGenerator::ConstructEquation_f_re(
     if (!Op_nTot->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_tot, Op_nTot);
     if (!Op_ni->IsEmpty())
-        eqsys->SetOperator(id_f_re, id_n_i, Op_nTot);
+        eqsys->SetOperator(id_f_re, id_n_i, Op_ni);
     if (Op_nREn != nullptr && !Op_nREn->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_re_neg, Op_nREn);
 
@@ -188,5 +210,23 @@ void SimulationGenerator::ConstructEquation_f_re(
             id_n_re, id_E_field, id_n_i
         );
     //}
+}
+
+/**
+ * Prescribe f_re in time.
+ */
+void SimulationGenerator::ConstructEquation_f_re_prescribed(
+	EquationSystem *eqsys, Settings *s
+) {
+	len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+	FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
+
+	ConstructEquation_f_prescribed(
+		id_f_re, eqsys, runawayGrid, s, MODULENAME
+	);
+
+	eqsys->initializer->AddRule(
+		id_f_re, EqsysInitializer::INITRULE_EVAL_EQUATION
+	);
 }
 

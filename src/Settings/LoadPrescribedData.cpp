@@ -231,6 +231,8 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -287,7 +289,7 @@ void SimulationGenerator::DefineDataIonRT(
  */
 MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
     const string& modname, FVM::RadialGrid *rgrid, Settings *s,
-    const len_t nZ0, const string& name
+    const len_t nZ0, const string& name, bool fluxGrid
 ) {
     len_t xdims[3], nr_inp, nt;
 
@@ -319,6 +321,8 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -348,7 +352,11 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
             );
     }
 
-    const len_t Nr_targ = rgrid->GetNr();
+	len_t Nr_targ;
+	if (fluxGrid)
+		Nr_targ = rgrid->GetNr()+1;
+	else
+		Nr_targ = rgrid->GetNr();
 
     // Construct new 'x' and 't' vectors (since Interpolator1D assumes
     // ownership of the data, and 'Settings' doesn't renounces its,
@@ -373,7 +381,11 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
                 gsl_interp_init(interp, r, x+((iZ*nt + it)*nr_inp), nr_inp);
 
                 for (len_t ir = 0; ir < Nr_targ; ir++) {
-                    real_t xr = rgrid->GetR(ir);
+					real_t xr;
+					if (fluxGrid)
+						xr = rgrid->GetR_f(ir);
+					else
+						xr = rgrid->GetR(ir);
 
                     if (xr < r[0]) {
                         // Extrapolate linearly!
@@ -566,6 +578,9 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataT(
             LEN_T_PRINTF_FMT " elements.",
             (modname+"/"+name).c_str(), nx, nt
         );
+	
+	if (nt == 0)
+		return nullptr;
 
     enum OptionConstants::prescribed_data_interp tinterp =
         (enum OptionConstants::prescribed_data_interp)s->GetInteger(modname + "/" + name + "/tinterp");
@@ -577,6 +592,8 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -656,6 +673,8 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
             interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1_meth = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -832,6 +851,8 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
             interp_meth = FVM::Interpolator3D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP3D_LINEAR:
             interp_meth = FVM::Interpolator3D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP3D_LOGARITHMIC:
+            interp_meth = FVM::Interpolator3D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -944,6 +965,8 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
             interp3d = FVM::Interpolator3D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP3D_LINEAR:
             interp3d = FVM::Interpolator3D::INTERP_LINEAR; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP3D_LOGARITHMIC:
+            interp3d = FVM::Interpolator3D::INTERP_LOGARITHMIC; break;
 
         default:
             throw SettingsException(
@@ -959,7 +982,8 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
             interp1d = FVM::Interpolator1D::INTERP_NEAREST; break;
         case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
             interp1d = FVM::Interpolator1D::INTERP_LINEAR; break;
-
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LOGARITHMIC:
+            interp1d = FVM::Interpolator1D::INTERP_LOGARITHMIC; break;
         default:
             throw SettingsException(
                 "%s: Unrecognized 1D interpolation method: %d.",
@@ -975,10 +999,14 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
         (_p2=s->GetRealArray(modname + "/" + name + "/xi", 1, &np2, false)) != nullptr) {
 
         momtype = FVM::Interpolator3D::GRID_PXI;
+		s->MarkUsed(modname + "/" + name + "/p");
+		s->MarkUsed(modname + "/" + name + "/xi");
     } else if ((_p1=s->GetRealArray(modname + "/" + name + "/ppar", 1, &np1, false)) != nullptr &&
         (_p2=s->GetRealArray(modname + "/" + name + "/pperp", 1, &np2, false)) != nullptr) {
 
         momtype = FVM::Interpolator3D::GRID_PPARPPERP;
+		s->MarkUsed(modname + "/" + name + "/ppar");
+		s->MarkUsed(modname + "/" + name + "/pperp");
     } else
         throw SettingsException(
             "%s: No momentum grid set for data.",
