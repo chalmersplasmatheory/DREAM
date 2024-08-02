@@ -118,7 +118,7 @@ class TransportCoefficientReader:
             ixi = np.argmax(self.xi)
          # 6.2/2 correction factor due to wrong major radius import
          # (see email from O. Vallhagen 2024-02-28)
-        dBB = 1.005721155984339 * np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
         print(f'R0 = {dsObj.radialgrid.R0}')
         print(f'dB/B = {np.amax(dBB)}')
         print(f'Drr  = {np.amax(self.Drr[:,:,ixi,ip])}')
@@ -259,7 +259,7 @@ class TransportCoefficientReader:
         self.Drr = Drr_vrepr / vrepr * c * p_dep * np.ones((len(self.t), len(self.r), len(self.xi), len(self.p)))
    
         
-        # Set islands and time before onset, if any, and append zeros to turn of the transport after the desired duration
+        # Set islands and time before onset, if any, and append zeros to turn off the transport after the desired duration
         self.setRIsland(r_island)
         self.setTBeforeOnset(t_before_onset, t_ramp)
         self.appendRemnantTransport(D0_remnant*p_dep, t_ramp)

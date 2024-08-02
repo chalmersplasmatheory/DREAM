@@ -24,7 +24,7 @@ namespace DREAM {
             JACOBIAN_SET_CENTER = 3,    // Sets diagonal jacobian contributions
             JACOBIAN_SET_UPPER  = 4     // Sets offset contribution for radial flux
         };
-    private:
+    protected:
         T *transportOperator;
 
         real_t *jacobianColumn;
