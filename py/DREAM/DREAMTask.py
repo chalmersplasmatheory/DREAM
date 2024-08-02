@@ -11,7 +11,7 @@ from . DREAMErrorOutput import DREAMErrorOutput
 from subprocess import TimeoutExpired
 
 class DREAMTask:
-    def __init__(self, settings, outfile=None, quiet=False, timeout=None, DREAMPATH=None):
+    def __init__(self, settings, outfile=None, quiet=False, timeout=None, DREAMPATH=None, stdout_name='', stderr_name='', nthreads=None):
         self.deleteOutput = False
         if outfile is None:
             self.deleteOutput = True
@@ -32,26 +32,56 @@ class DREAMTask:
         self.p = None
         self.obj = None
         self.stderr_data = None
+        #self.stderr_dat_byte=None
         self.DREAMPATH = DREAMPATH
         self.quiet = quiet
         self.timeout = timeout if timeout is not None else float('inf')
+        self.nthreads = nthreads
+        
+        self.stdout_name =stdout_name   
+        self.stderr_name =stderr_name  #new
+        self.open_stdout = None
+        self.open_stderr = None
 
     def run(self):
         self.startTime= time.time()
         if self.p != None: #if process is already created then we can safely od nothing
             return 
-        if self.quiet:
-            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            
+        if self.stdout_name != '':
+                self.open_stdout=open(self.stdout_name,'w')
+        else :  
+                self.open_stdout=subprocess.PIPE
+
+        if self.stderr_name != '':
+                self.open_stderr=open(self.stderr_name,'w')
+        else :  
+                self.open_stderr=subprocess.PIPE
+
+        env = None
+        if self.nthreads is not None:
+            env = os.environ.copy()
+            env['OMP_NUM_THREADS'] = self.nthreads
+           
+        if self.quiet: 
+            self.p = subprocess.Popen([f'{self.DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, stdout=self.open_stdout, env=env)
         else:
-            self.p = subprocess.Popen(['{}/build/iface/dreami'.format(self.DREAMPATH), self.infile], stderr=subprocess.PIPE)
+            self.p = subprocess.Popen([f'{self.DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, env=env)
 
     def hasFinished(self, timeout=1):
         try:
-            self.stderr_data = self.p.communicate(timeout=timeout)[1].decode('utf-8')
-
+            self.stderr_dat_byte=self.p.communicate(timeout=timeout)[1]
+            if self.stderr_dat_byte != None:
+                self.stderr_data = self.stderr_dat_byte.decode('utf-8')
+           
+            if self.stdout_name!='':
+                self.open_stdout.close()
+            if self.stderr_name!='':
+                self.open_stderr.close()
+                
             if self.p.returncode != 0:
                 self.errorOnExit = 1
-            else:
+            else:  #gives error when closing file since outfiles do not correspond to the actual output directory files
                 self.obj = DREAMOutput(self.outfile)
 
                 if self.deleteOutput:
