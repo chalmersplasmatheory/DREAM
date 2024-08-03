@@ -306,14 +306,18 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             SPIMolarFraction=np.zeros(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
             
-            
-            self.settings.eqsys.n_i.addIon(name=ionNames[iZ], n=n, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,
-            charged_diffusion_mode = charged_diffusion_modes[iZ], charged_prescribed_diffusion = charged_prescribed_diffusions[iZ], rChargedPrescribedDiffusion = rChargedPrescribedDiffusions[iZ], tChargedPrescribedDiffusion = tChargedPrescribedDiffusions[iZ],
-            neutral_diffusion_mode = neutral_diffusion_modes[iZ], neutral_prescribed_diffusion = neutral_prescribed_diffusions[iZ], rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusions[iZ], tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusions[iZ],
-            charged_advection_mode = charged_advection_modes[iZ], charged_prescribed_advection = charged_prescribed_advections[iZ], rChargedPrescribedAdvection = rChargedPrescribedAdvections[iZ], tChargedPrescribedAdvection = tChargedPrescribedAdvections[iZ],
-            neutral_advection_mode = neutral_advection_modes[iZ], neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ], tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ],
-            **kwargs)
-            
+            self.settings.eqsys.n_i.addIon(
+                name=ionNames[iZ], n=n, Z=Zs[iZ], isotope=isotopes[iZ], opacity_mode=opacity_modes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL,
+                SPIMolarFraction=SPIMolarFraction, charged_diffusion_mode = charged_diffusion_modes[iZ],
+                charged_prescribed_diffusion = charged_prescribed_diffusions[iZ], rChargedPrescribedDiffusion = rChargedPrescribedDiffusions[iZ],
+                tChargedPrescribedDiffusion = tChargedPrescribedDiffusions[iZ], neutral_diffusion_mode = neutral_diffusion_modes[iZ],
+                neutral_prescribed_diffusion = neutral_prescribed_diffusions[iZ], rNeutralPrescribedDiffusion = rNeutralPrescribedDiffusions[iZ],
+                tNeutralPrescribedDiffusion = tNeutralPrescribedDiffusions[iZ], charged_advection_mode = charged_advection_modes[iZ],
+                charged_prescribed_advection = charged_prescribed_advections[iZ], rChargedPrescribedAdvection = rChargedPrescribedAdvections[iZ],
+                tChargedPrescribedAdvection = tChargedPrescribedAdvections[iZ], neutral_advection_mode = neutral_advection_modes[iZ],
+                neutral_prescribed_advection = neutral_prescribed_advections[iZ], rNeutralPrescribedAdvection = rNeutralPrescribedAdvections[iZ],
+                tNeutralPrescribedAdvection = tNeutralPrescribedAdvections[iZ], **kwargs
+            )
             
               
         return kp
@@ -333,7 +337,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         else:
             self.xp=np.tile(shatterPoint,nShard)
             
-    def setShardVelocitiesUniform(self, nShard,abs_vp_mean,abs_vp_diff,alpha_max, t_delay = 0, nDim=2,add=True, shards=None):
+    def setShardVelocitiesUniform(self, nShard, abs_vp_mean, abs_vp_diff, alpha_max, tilt=0, t_delay = 0, nDim=2,add=True, shards=None):
         """
         Sets self.vp to a vector storing the (x,y,z)-components of nShard shard velosities,
         assuming a uniform velocity distribution over a nDim-dimensional cone whose axis
@@ -343,6 +347,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         :param float abs_vp_mean: Mean of the magnitude of the shard velocities
         :param float abs_vp_diff: width of the uniform distribution of the magnitude of the shard velocities
         :param float alpha_max: Span of divergence angle (ie twice the opening angle of the cone)
+        :param float tilt: Tilt angle of the SPI w.r.t. the x-axis (in radians; positive angle is up).
         :param int nDim: number of dimensions into which the shards should be spread
         :param bool add: If 'True', add the new pellet shard velocities to the existing ones, otherwise 
              existing shards are cleared
@@ -368,7 +373,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         elif nDim==2:
             # in 2D, the cone becomes a circle sector
-            alpha=alpha_max*(-1+2*np.random.uniform(size=nShard))
+            alpha=alpha_max*(-1+2*np.random.uniform(size=nShard)) + tilt
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
             vp_init[1::3]=abs_vp_init*np.sin(alpha)
             
@@ -415,7 +420,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs):
+    def setParamsVallhagenMSc(
+        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,
+        tilt=0, nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs
+    ):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
@@ -424,7 +432,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
-        self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,t_delay,nDim,add)
+        self.setShardVelocitiesUniform(
+            nShard=nShard, abs_vp_mean=abs_vp_mean, abs_vp_diff=abs_vp_diff,
+            alpha_max=alpha_max, tilt=tilt, t_delay=t_delay, nDim=nDim, add=add
+        )
         
         if add and self.nbrShiftGridCell is not None:
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))

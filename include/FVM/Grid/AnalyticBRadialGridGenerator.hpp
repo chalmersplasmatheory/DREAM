@@ -97,6 +97,14 @@ namespace DREAM::FVM {
 		virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
 		virtual void GetGradRCartesian(real_t*, real_t , real_t, real_t ) override;
 
+		virtual const real_t GetZ0() override { return 0; }
+		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNTheta() override { return 120; }
+		virtual const real_t *GetFluxSurfaceROverR0() override;
+		virtual const real_t *GetFluxSurfaceROverR0_f() override;
+		virtual const real_t *GetFluxSurfaceZ() override;
+		virtual const real_t *GetFluxSurfaceZ_f() override;
+		virtual const real_t *GetPoloidalAngle() override;
     };
 }
 
