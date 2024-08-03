@@ -10,6 +10,7 @@ from . IonHandler import IonHandler
 from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
 from . IonThermalEnergy import IonThermalEnergy
 from . PlasmaCurrent import PlasmaCurrent
+from . PoloidalFlux import PoloidalFlux
 from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
@@ -41,7 +42,7 @@ class EquationSystem:
         'n_re_neg':     RunawayElectronDensity,
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
-        'psi_p':        FluidQuantity,
+        'psi_p':        PoloidalFlux,
         'psi_trans':    ScalarQuantity,
         'psi_wall':     ScalarQuantity,
         'S_particle':   FluidQuantity,
