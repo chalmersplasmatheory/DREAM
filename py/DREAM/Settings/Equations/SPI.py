@@ -142,7 +142,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         """
         return kn(0,rp*kp)*kp**2*rp
         
-    def sampleRpDistrParksStatistical(self,N,kp):
+    def sampleRpDistrParksStatistical(self, N, kp, random=np.random):
         """
         Samples N shard radii according to the distribution function 
         given by rpDistrParksStatistical()
@@ -151,14 +151,21 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         # back to the corresponding radii at N randomly chosen points between 0 and 1
         rp_integrate=np.linspace(1e-10/kp,10/kp,5000)
         cdf=integrate.cumulative_trapezoid(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
-        return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
+        return np.interp(random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
-    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
-    charged_advection_modes = None, charged_prescribed_advections = None, rChargedPrescribedAdvections = None, tChargedPrescribedAdvections = None,
-    neutral_advection_modes = None, neutral_prescribed_advections = None, rNeutralPrescribedAdvections = None, tNeutralPrescribedAdvections = None,
-    charged_diffusion_modes = None, charged_prescribed_diffusions = None, rChargedPrescribedDiffusions = None, tChargedPrescribedDiffusions = None,
-    neutral_diffusion_modes = None, neutral_prescribed_diffusions = None, rNeutralPrescribedDiffusions = None, tNeutralPrescribedDiffusions = None,
-    **kwargs):
+    def setRpParksStatistical(
+        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
+        opacity_modes=None, add=True, n=1e0, random=np.random,
+        charged_advection_modes=None, charged_prescribed_advections=None,
+        rChargedPrescribedAdvections=None, tChargedPrescribedAdvections=None,
+        neutral_advection_modes=None, neutral_prescribed_advections=None,
+        rNeutralPrescribedAdvections=None, tNeutralPrescribedAdvections=None,
+        charged_diffusion_modes=None, charged_prescribed_diffusions=None,
+        rChargedPrescribedDiffusions=None, tChargedPrescribedDiffusions=None,
+        neutral_diffusion_modes=None, neutral_prescribed_diffusions=None,
+        rNeutralPrescribedDiffusions=None, tNeutralPrescribedDiffusions=None,
+        **kwargs
+    ):
         """
         sets (or adds) nShard shards with radii distributed accordin to 
         rpDistrParksStatistical(), with the characteristic inverse shard size kp 
@@ -208,7 +215,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         
         # Sample the shard sizes and rescale to get exactly the 
         # specified number of particles in the pellet
-        rp_init=self.sampleRpDistrParksStatistical(nShard,kp)
+        rp_init=self.sampleRpDistrParksStatistical(nShard, kp, random=random)
         Ninj_obtained=np.sum(4*np.pi*rp_init**(3)/3/molarVolume*N_A)
         rp_init*=(Ninj/Ninj_obtained)**(1/3)       
         
@@ -337,7 +344,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         else:
             self.xp=np.tile(shatterPoint,nShard)
             
-    def setShardVelocitiesUniform(self, nShard, abs_vp_mean, abs_vp_diff, alpha_max, tilt=0, t_delay = 0, nDim=2,add=True, shards=None):
+    def setShardVelocitiesUniform(
+        self, nShard, abs_vp_mean, abs_vp_diff, alpha_max, tilt=0,
+        t_delay = 0, nDim=2,add=True, shards=None, random=np.random
+    ):
         """
         Sets self.vp to a vector storing the (x,y,z)-components of nShard shard velosities,
         assuming a uniform velocity distribution over a nDim-dimensional cone whose axis
@@ -353,6 +363,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
              existing shards are cleared
         :param slice shards: indices of existing shards whose velocities should be updated. If not 'None', 
                 add is set to 'False' and nShard is set to the number of indices to be updated
+        :param random: Random number generator to use (default: numpy.random).
         """
         
         if shards is not None:
@@ -363,7 +374,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             t_delay = t_delay*np.ones(nShard)
         
         # Sample magnitude of velocities
-        abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*np.random.uniform(size=nShard)))
+        abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*random.uniform(size=nShard)))
         
         # Sample directions uniformly over a nDim-dimensional cone and set the velocity vectors
         vp_init=np.zeros(3*nShard)
@@ -373,7 +384,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         elif nDim==2:
             # in 2D, the cone becomes a circle sector
-            alpha=alpha_max*(-1+2*np.random.uniform(size=nShard)) + tilt
+            alpha=alpha_max*(-1+2*random.uniform(size=nShard)) + tilt
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
             vp_init[1::3]=abs_vp_init*np.sin(alpha)
             
@@ -383,10 +394,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             # becomes f(alpha)=sin(alpha)/(1-cos(alpha_max/2)). We sample from this
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
-            alpha=np.arccos(1-np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
+            alpha=np.arccos(1-random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
             
             # The angle in the yz-plane is simply drawn randomly
-            phi=2*np.pi*np.random.uniform(size=nShard)
+            phi=2*np.pi*random.uniform(size=nShard)
             
             # Finally calculate the velocity vectors
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
@@ -421,8 +432,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.t_delay = t_delay
             
     def setParamsVallhagenMSc(
-        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,
-        tilt=0, nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs
+        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
+        shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay=0,
+        tilt=0, nDim=2, add=True, opacity_modes=None, nbrShiftGridCell=0,
+        TDrift=None, random=np.random, **kwargs
     ):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
@@ -430,11 +443,12 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         (available at https://hdl.handle.net/20.500.12380/302296).
         """
         
-        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
+        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, random=random, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(
             nShard=nShard, abs_vp_mean=abs_vp_mean, abs_vp_diff=abs_vp_diff,
-            alpha_max=alpha_max, tilt=tilt, t_delay=t_delay, nDim=nDim, add=add
+            alpha_max=alpha_max, tilt=tilt, t_delay=t_delay, nDim=nDim, add=add,
+            random=random
         )
         
         if add and self.nbrShiftGridCell is not None:
