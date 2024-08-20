@@ -476,7 +476,7 @@ real_t SPIHandler::ThirdRow(){
 }
 
 // Function to collect all terms to evaluate equation A4
-real_t SPIHandler::Deltar(len_t ip){
+real_t SPIHandler::DriftRadius(len_t ip){
     real_t first = FirstRow();
     real_t second = SecondRow();
     real_t third = ThirdRow();
@@ -491,9 +491,7 @@ real_t SPIHandler::Deltar(len_t ip){
 	real_t r=0, theta=0, phi=0;
 	this->rGrid->GetRThetaPhiFromCartesian(&r, &theta, &phi, Rp, yp, 0, 0.01, Rp);
 
-	real_t Deltar = r - this->rCoordPNext[ip];
-
-    return Deltar;
+    return r;
 }
 
 /**
@@ -659,9 +657,9 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                         AssignShardSpecificDriftParameters(ip);
                         AssignDriftComputationParameters(ip);
                         AssignDriftTimeParameters(ip);
-                        shift_r[ip] = Deltar(ip);
+                        shift_r[ip] = DriftRadius(ip);
                         nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);// Negative if shift is towards smaller radii
-                        shift_store[ip] = shift_r[ip];
+                        shift_store[ip] = shift_r[ip] - rCoordPNext[ip];
                     }else{
                         nbrShiftGridCell[ip]=0;
                         shift_store[ip]=0;
@@ -906,14 +904,13 @@ void SPIHandler::CalculateIrp(){
 * Function used to calculate the number of grid cells to shift the deposition due to the drift
 * (the shift is only made in integer steps of the radial resolution)
 * ip: shard index
-* shift: the radial shift to be made (exact, not necessarilly an integer of radial grid cells), sign included
+* radius: the (minor) radial coordinate of the shifted shard (exact, not necessarily an integer of radial grid cells), sign included
 */
-int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
-    for(len_t ir=0; ir<nr;ir++){
-        if(abs(rCoordPNext[ip] + shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] + shift)>rGrid->GetR_f(ir)){
-            return (int_t)ir - (int_t)irp[ip];
-        }
-    }
+int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t radius) {
+    for(len_t ir=0; ir<nr;ir++)
+        if ((std::abs(radius) < rGrid->GetR_f(ir+1)) && (std::abs(radius) > rGrid->GetR_f(ir)))
+            return (int_t)ir - (int_t)this->irp[ip];
+
     return nr;
 }
 
