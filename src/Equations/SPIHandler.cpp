@@ -484,12 +484,14 @@ real_t SPIHandler::DriftRadius(len_t ip){
     real_t factor = (1+ZavgDrift[ip])*2*qe*TDrift[ip]*qBgDrift/(CSTDrift*pelletMolarMass[ip]/N_Avogadro)*tAccDrift;
 
 	real_t DeltaR = (term1 + factor * (first + second + third));
-	real_t Rp = hypot(this->xp[ip*3+0], this->xp[ip*3+2]) + DeltaR;
-	real_t yp = this->xp[ip*3+1];
+
+	real_t xpDrift = this->xp[ip*3] + DeltaR*cos(this->phiCoordPNext[ip]);
+	real_t ypDrift = this->xp[ip*3+1];
+	real_t zpDrift = this->xp[ip*3+2] + DeltaR*sin(this->phiCoordPNext[ip]);
 
 	// Locate flux surface to which the pellet drifts
 	real_t r=0, theta=0, phi=0;
-	this->rGrid->GetRThetaPhiFromCartesian(&r, &theta, &phi, Rp, yp, 0, 0.01, Rp);
+	this->rGrid->GetRThetaPhiFromCartesian(&r, &theta, &phi, xpDrift, ypDrift, zpDrift, 0.01, hypot(xpDrift, zpDrift));
 
     return r;
 }
