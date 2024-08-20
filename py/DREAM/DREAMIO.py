@@ -7,6 +7,7 @@ import numpy as np
 from packaging import version
 from pathlib import Path
 import os
+import types
 
 from . DataObject import DataObject
 
@@ -183,6 +184,8 @@ def dict2h5(f, data, path=''):
             f.create_dataset(key, (len(d),), data=d)
         elif type(d) == np.ndarray:
             f.create_dataset(key, d.shape, data=d)
+        elif type(d) == types.FunctionType:
+            f.create_dataset(key, (1,), data=1, dtype='i4')
         else:
             raise DREAMIOException("Unrecognized data type of entry '{}/{}': {}.".format(path, key, type(d)))
 
