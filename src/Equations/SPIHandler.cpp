@@ -482,12 +482,18 @@ real_t SPIHandler::Deltar(len_t ip){
     real_t third = ThirdRow();
     real_t term1 = vLabInitDrift * tAccDrift;
     real_t factor = (1+ZavgDrift[ip])*2*qe*TDrift[ip]*qBgDrift/(CSTDrift*pelletMolarMass[ip]/N_Avogadro)*tAccDrift;
-    return (term1 + factor * (first + second + third))*cosThetaDrift[ip];
-    // Factor cosThetaDrift is not included in the reference paper, but is included here
-    // to correct the projection onto the radial coordinates for shards which are not on the outboard midplane.
-    // Note, however, that we do not account for that this angular coordinate, and also not the background 
-    // plasma parameters at the location of the plasmoid, changes during the drift motion, so this is only approximate!
-    // (accounting for this would require a much more complicated model than this simple analytical expression)
+
+	real_t DeltaR = (term1 + factor * (first + second + third));
+	real_t Rp = hypot(this->xp[ip*3+0], this->xp[ip*3+2]) + DeltaR;
+	real_t yp = this->xp[ip*3+1];
+
+	// Locate flux surface to which the pellet drifts
+	real_t r=0, theta=0, phi=0;
+	this->rGrid->GetRThetaPhiFromCartesian(&r, &theta, &phi, Rp, yp, 0, 0.01, Rp);
+
+	real_t Deltar = r - this->rCoordPNext[ip];
+
+    return Deltar;
 }
 
 /**
