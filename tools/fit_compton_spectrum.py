@@ -47,7 +47,7 @@ def load_delim(filename, delim):
 
 def plot_data(E, G):
     """
-    Plot numerical data and fit.
+    Plot numerical data each data points index.
     """
     fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 
