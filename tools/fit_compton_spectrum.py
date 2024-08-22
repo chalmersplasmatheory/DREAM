@@ -45,24 +45,77 @@ def load_delim(filename, delim):
     return A[:,0], A[:,1]
     
 
+def plot_data(E, G):
+    """
+    Plot numerical data and fit.
+    """
+    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
+
+    En = np.logspace(np.log(E[0]), np.log(E[-1]))
+    ax[0].loglog(E, G, 'b.-')
+    for i in range(len(E)):
+        ax[0].text(E[i], G[i], str(i), horizontalalignment='center', verticalalignment='bottom').set_clip_on(True)
+    
+    ax[0].set_xlabel('Photon energy (MeV)')
+    ax[0].set_ylabel('Flux')
+
+    ymx = np.ceil(np.log10(np.amax(G)))
+    ymn = np.floor(np.log10(np.amin(G)))
+    xmx = np.ceil(np.log10(np.amax(E)))
+    xmn = np.floor(np.log10(np.amin(E)))
+    ax[0].set_ylim([10**(ymn), 10**ymx])
+    ax[0].set_xlim([10**xmn, 10**xmx])
+
+    ax[1].semilogx(E, G, 'b.-')
+    for i in range(len(E)):
+        ax[1].text(E[i], G[i], str(i), horizontalalignment='center', verticalalignment='bottom').set_clip_on(True)
+
+    ax[1].set_xlabel('Photon energy (MeV)')
+    ax[1].set_ylabel('Flux')
+
+    ymx = np.ceil(np.log10(np.amax(G)))
+    xmx = np.ceil(np.log10(np.amax(E)))
+    xmn = np.floor(np.log10(np.amin(E)))
+    ax[1].set_ylim([0, 10**ymx])
+    ax[1].set_xlim([10**xmn, 10**xmx])
+
+    fig.tight_layout()
+    plt.show()
+
+
 def plot_spectrum(E, G, phi, c1, c2, c3, I):
     """
     Plot numerical data and fit.
     """
-    fig, ax = plt.subplots(1, 1, figsize=(6, 4))
+    fig, ax = plt.subplots(1, 2, figsize=(10, 4))
 
     En = np.logspace(np.log(E[0]), np.log(E[-1]))
-    ax.loglog(E, G, 'k-.')
-    ax.loglog(En, np.exp(func(En, phi, c1, c2, c3)), 'r-')
+    ax[0].loglog(E, G, 'k-.')
+    ax[0].loglog(En, np.exp(func(En, phi, c1, c2, c3)), 'r-')
 
-    ax.set_xlabel('Photon energy (MeV)')
-    ax.set_ylabel('Flux')
+    ax[0].set_xlabel('Photon energy (MeV)')
+    ax[0].set_ylabel('Flux')
 
-    mx = np.ceil(np.log10(np.amax(G)))
-    ax.set_ylim([10**(mx-10), 10**mx])
+    ymx = np.ceil(np.log10(np.amax(G)))
+    ymn = np.floor(np.log10(np.amin(G)))
+    xmx = np.ceil(np.log10(np.amax(E)))
+    xmn = np.floor(np.log10(np.amin(E)))
+    ax[0].set_ylim([10**(ymn), 10**ymx])
+    ax[0].set_xlim([10**xmn, 10**xmx])
 
-    ax.set_title(f'phi={np.exp(phi)*I:.3e}, c1={c1:.3f}, c2={c2:.3f}, c3={c3:.3f}')
+    ax[1].semilogx(E, G, 'k-.')
+    ax[1].semilogx(En, np.exp(func(En, phi, c1, c2, c3)), 'r-')
 
+    ax[1].set_xlabel('Photon energy (MeV)')
+    ax[1].set_ylabel('Flux')
+
+    ymx = np.ceil(np.log10(np.amax(G)))
+    xmx = np.ceil(np.log10(np.amax(E)))
+    xmn = np.floor(np.log10(np.amin(E)))
+    ax[1].set_ylim([0, 10**ymx])
+    ax[1].set_xlim([10**xmn, 10**xmx])
+
+    fig.suptitle(f'phi={np.exp(phi)*I:.3e}, c1={c1:.3f}, c2={c2:.3f}, c3={c3:.3f}')
     fig.tight_layout()
     plt.show()
 
@@ -82,6 +135,7 @@ second column. By default, the script assumes that photon fluxes are given as
     parser.add_argument('-n', '--no-normalize-per-bin', help="Do not normalize the energy spectrum to the energy bin size.", action='store_true')
     parser.add_argument('-p', '--plot', help="Plot the fit and numerical data.", action='store_true')
     parser.add_argument('-s', '--scale', help="Factor by which to multiply the input data.", nargs='?', default=1, type=float)
+    parser.add_argument('--plot-data', help="Plot the numerical data with indices.", action='store_true')
     parser.add_argument('--skip', help="Skip elements with the specified indices.", nargs='*', type=int, default=[])
     parser.add_argument('--skip-below', help="Skip all values below this index.", nargs='?', type=int, default=0)
     parser.add_argument('--skip-above', help="Skip all values above this index.", nargs='?', type=int, default=-1)
@@ -98,6 +152,16 @@ def main():
         E, G = load_tsv(args.spectrum)
     else:
         raise Exception("Unrecognized file type of spectrum file.")
+
+    if args.plot_data:
+        plot_data(E, G)
+
+    # Normalize the spectrum to the bin size
+    if not args.no_normalize_per_bin:
+        dE = np.zeros(E.size)
+        dE[0] = E[0]
+        dE[1:] = E[1:] - E[0:-1]
+        G /= dE
 
     # Remove data points?
     E = E[args.skip_below:]
@@ -122,15 +186,6 @@ def main():
         G = np.delete(G, l)
 
     G *= args.scale
-
-    print(G)
-
-    # Normalize the spectrum to the bin size
-    if not args.no_normalize_per_bin:
-        dE = np.zeros(E.size)
-        dE[0] = E[0]
-        dE[1:] = E[1:] - E[0:-1]
-        G /= dE
 
     params = fit_spectrum(E, G)
     I = eval_integral(*params) / np.exp(params[0])
