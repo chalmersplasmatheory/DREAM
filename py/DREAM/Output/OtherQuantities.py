@@ -111,8 +111,6 @@ class OtherQuantities:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             elif data.ndim == 4 and self.momentumgrid is not None:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
-            elif self.name == 'fluid' and name == "kinioniz_vsigma":
-                o = OtherQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
             else:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)
         else:

@@ -59,8 +59,9 @@ def generate_base(nre, temperature, electric_field):
 
 def generate_fluid(nre, temperature, electric_field):
     ds = generate_base(nre, temperature, electric_field)
+    ds.eqsys.n_re.setAvalanche(2)
     ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_FLUID_RE)
-    ds.other.include(["fluid/Zeff", "fluid/kinioniz_vsigma"])
+    ds.other.include(["fluid/Zeff", "fluid/reioniz_vsigma", "fluid/GammaAva"])
     return ds
 
 
