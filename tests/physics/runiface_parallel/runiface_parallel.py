@@ -115,7 +115,7 @@ def check_timeout():
     try:
         out = DREAM.runiface_parallel(ds, output, quiet=True, njobs=4, timeout=0.5)
         result = "timeout" in str(out[0].exception) and out[0].errorCode == 3
-    except:
+    except Exception as ex:
         result = False
 
     if result:
