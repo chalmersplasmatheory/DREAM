@@ -109,7 +109,10 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 #endif
 								p *= RR[k] / II[k-1];
 							}
-
+#if !defined(NDEBUG) && defined(__linux__)
+							if (OUFLOW(s, 1e16))
+								break;
+#endif
 							s += p;
 						}
 					}
@@ -124,11 +127,13 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 #endif
 								p *= II[k] / RR[k+1];
 							}
-
+#if !defined(NDEBUG) && defined(__linux__)
+							if (OUFLOW(s, 1e16))
+								break;
+#endif
 							s += p;
 						}
 					}
-
 					ni[iZ][l*Nr+ir] = Ntot[ir] / (1 + s);
 				}
 			}
