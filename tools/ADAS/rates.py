@@ -64,7 +64,10 @@ class ADASRate:
         exp = r(ln, lT)
 
         if exp.size == 1:
-            return 10**exp[0]
+            if exp.ndim == 2:
+                return 10**exp[0,0]
+            else:
+                return 10**exp[0]
         else:
             return 10**exp
 
@@ -111,7 +114,10 @@ class ADASRate:
             iv = 1/T
 
         if exp.size == 1:
-            return 10**exp[0] * expd * iv
+            if exp.ndim == 2:
+                return 10**exp[0,0] * expd[0,0] * iv
+            else:
+                return 10**exp[0] * expd[0] * iv
         else:
             return 10**exp * expd * iv
 
