@@ -54,7 +54,7 @@ namespace DREAM {
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
         OptionConstants::eqterm_compton_mode compton_mode;
-        FVM::Interpolator1D *compton_photon_flux;
+        FVM::Interpolator1D *compton_photon_flux=nullptr;
         real_t integratedComptonSpectrum; // Integral of the photon flux spectrum over all Eg (in units of mc2).
         real_t  C1_Compton, C2_Compton, C3_Compton; // Shaping parameters for photon flux spectrum
 

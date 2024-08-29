@@ -13,10 +13,14 @@ where angle brackets :math:`\langle\cdot\rangle` denote a flux-surface average,
 magnetic field and :math:`\varphi` the toroidal angle.
 
 The electric field can be solved for
-in two different ways:
+in three different ways:
 
 (1) By prescribing the electric field profile in time :math:`E_\parallel = \tilde{E}(t,r)` (``TYPE_PRESCRIBED``)
 (2) By solving the induction equation (``TYPE_SELFCONSISTENT``):
+(3) By requiring Ohm's law to be satisfied, :math:`j_\Omega=\sigma E_\parallel`,
+    and providing the ohmic current density profile :math:`j_\Omega`, along with
+    the temperature and density required to determine the plasma conductivity
+    :math:`\sigma`.
 
    .. math::
       :label: eq_E_field
@@ -97,6 +101,20 @@ call to :py:meth:`~DREAM.Settings.Equations.ElectricField.setInitialProfile`:
 where ``E_field`` is a vector of size ``nr`` giving the initial electric field
 profile, and ``E_field_r`` is a vector representing the radial grid on which the
 initial electrc field profile is defined.
+
+Alternatively, the electric field can be initialized such that it gives the
+desired ohmic current density profile (achieved by inverting Ohm's law):
+
+.. code-block:: python
+
+   ds.eqsys.j_ohm.setInitialProfile(j=j_ohm, radius=j_ohm_r, Ip0=Ip0)
+
+where ``j_ohm`` is the desired current density profile and ``j_ohm_r`` its grid.
+If the optional parameter ``Ip0`` is provided, the given current density
+profile is rescaled such that the prescribed ohmic current density profile
+yields exactly a total plasma current ``Ip0`` when integrated on the internal
+DREAM grid (which is not necessarily the same as the grid on which ``j_ohm`` is
+given).
 
 Boundary condition
 ******************
@@ -179,6 +197,34 @@ axis of symmetry at :math:`R=0`).
    tokamak wall (i.e. the distance of the wall from the center of the plasma).
    This is done via the call ``ds.radialgrid.setWallRadius(b)``, where ``b`` is
    the desired wall radius.
+
+
+Prescribed ohmic current
+------------------------
+If the desired ohmic current density profile :math:`j_\Omega` is known, the
+corresponding electric field can be found by inverting Ohm's law
+
+.. math::
+
+   \frac{j_\Omega}{B} = \sigma \frac{\left\langle\boldsymbol{E}\cdot\boldsymbol{B}\right\rangle}{\left\langle B^2 \right\rangle}
+
+where :math:`\sigma` denotes the plasma conductivity, which depends on primarily
+the electron density and temperature. To evaluate the electric field from this
+law, the following configuration can be made:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.ElectricField as ElectricField
+
+   ds.eqsys.E_field.setType(ElectricField.TYPE_PRESCRIBED_OHMIC_CURRENT)
+   ds.eqsys.j_ohm.setCurrentProfile(j=j_ohm, radius=r, times=t, Ip0=Ip0)
+
+where ``j_ohm`` is the desired current density profile, ``r`` is the radial
+grid on which the profile is specified, and ``t`` is its time grid. If no time
+evolving current density is needed, ``j_ohm`` can be given as a 1D array. If the
+optional scalar parameter ``Ip0`` is given, the current density profile is
+rescaled such that, when integrated over the plasma cross-section, it yields
+exactly the total plasma current ``Ip0``.
 
 Class documentation
 -------------------

@@ -33,7 +33,7 @@ void OutputGenerator::Save(bool current) {
 
     // Save grids
     this->SaveGrids("grid", current);
-    
+
     // Save unknowns
     this->SaveUnknowns("eqsys", current);
 
