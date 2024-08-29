@@ -69,7 +69,9 @@ namespace DREAM {
 			DREAM::ComptonSource *comptonSource_hottail=nullptr;
 			DREAM::ComptonSource *comptonSource_runaway=nullptr;
 			DREAM::ComptonSource *comptonSource_fluid=nullptr;
-			std::vector<DREAM::TritiumSource*> tritiumSource;
+			std::vector<DREAM::TritiumSource*> tritiumSource_hottail;
+			std::vector<DREAM::TritiumSource*> tritiumSource_runaway;
+			std::vector<DREAM::TritiumSource*> tritiumSource_fluid;
 			// Pitch angle advection due to time varying B
 			DREAM::TimeVaryingBTerm *f_hot_timevaryingb=nullptr;
 			DREAM::TimeVaryingBTerm *f_re_timevaryingb=nullptr;
