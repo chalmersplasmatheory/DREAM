@@ -5,9 +5,7 @@ import sys
 import eqhelpers
 
 try:
-    sys.path.append('/afs/ipp/aug/ads-diags/common/python/lib')
-    from sf2equ_20200525 import EQU
-    import mapeq_20200507 as meq
+    import aug_sfutils as sf
 
     AVAILABLE = True
 except:
@@ -23,7 +21,7 @@ def isAvailable():
     return AVAILABLE
 
 
-def getLUKE(shot, time, npsi=80, ntheta=80, filename=None):
+def getLUKE(shot, time, diag="EQH", npsi=80, ntheta=80, filename=None):
     """
     Returns magnetic equilibrium data for the given time of the specified 
     AUG shot. If ``filename`` is provided, the data is also saved to the
@@ -35,7 +33,7 @@ def getLUKE(shot, time, npsi=80, ntheta=80, filename=None):
     :param time: Time to fetch equilibrium data for.
     :param filename: Name of file to store data in.
     """
-    equ = EQU(shot)
+    equ = sf.EQU(shot, diag=diag)
 
     # Radial grid (in normalized poloidal flux)
     rhop = np.linspace(0, 1, npsi+1)[1:]
@@ -43,15 +41,15 @@ def getLUKE(shot, time, npsi=80, ntheta=80, filename=None):
     theta = np.linspace(0, 2*np.pi, ntheta)
 
     # Flux surface (R, Z) coordinates
-    R, Z = meq.rhoTheta2rz(equ, rhop, theta, t_in=time, coord_in='rho_pol')
+    R, Z = sf.rhoTheta2rz(equ, rhop, theta, t_in=time, coord_in='rho_pol')
     R = R[0,:]
     Z = Z[0,:]
 
     # Poloidal flux psi
-    psi = meq.rho2rho(equ, rhop, t_in=time, coord_in='rho_pol', coord_out='Psi')[0,:]
+    psi = sf.rho2rho(equ, rhop, t_in=time, coord_in='rho_pol', coord_out='Psi')[0,:]
 
     # Calculate aspect ratio and normalize poloidal flux
-    tidx = meq.get_nearest_index(equ.time, [time])[0][0]
+    tidx = sf.get_nearest_index(equ.time, [time])[0][0]
     Rp   = equ.Rmag[tidx]
     Zp   = equ.Zmag[tidx]
     a    = R[0,-1]-Rp
@@ -60,7 +58,7 @@ def getLUKE(shot, time, npsi=80, ntheta=80, filename=None):
     psi_apRp = psi / ieps
 
     # Magnetic field components
-    Br, Bz, Bphi = meq.rz2brzt(equ, r_in=R.flatten(), z_in=Z.flatten(), t_in=time)
+    Br, Bz, Bphi = sf.rz2brzt(equ, r_in=R.flatten(), z_in=Z.flatten(), t_in=time)
     Br = Br[0,:].reshape(R.shape)
     Bz = Bz[0,:].reshape(R.shape)
     Bphi = Bphi[0,:].reshape(R.shape)
@@ -95,7 +93,7 @@ def getVolume(shot, time, filename=None):
     """
     Returns the plasma volume enclosed by a given flux surface.
     """
-    tidx = meq.get_nearest_index(equ.time, [time])[0][0]
+    tidx = sf.get_nearest_index(equ.time, [time])[0][0]
 
     data = {'psiN': equ.psiN[tidx,:], 'vol': equ.vol[tidx,:]}
 
