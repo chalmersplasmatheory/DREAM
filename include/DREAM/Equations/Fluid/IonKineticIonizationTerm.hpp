@@ -23,16 +23,11 @@ namespace DREAM {
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
         real_t *tmpVec;
-        
-        // number of parameters used in the fit
-        static const len_t nParamsForFit;
+
         // ionization rate atomic data
         static const len_t kinetic_rate_n;
-        static struct kinetic_ionization_rate kinetic_rate_table[];
 
         static real_t EvaluateBCGSingleSubshell(real_t p, real_t C, real_t I_pot_eV, real_t betaStar);
-        static real_t EvaluateIonizationCrossSection(real_t p, const real_t *params);
-        static int_t GetTableIndex(len_t Z);
 
         void Allocate();
         void Deallocate();
@@ -45,12 +40,21 @@ namespace DREAM {
 
     public:
         IonKineticIonizationTerm(
-            FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 
-            IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, 
-            bool isPXiGrid, const len_t id_nf, 
+            FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*,
+            IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode,
+            bool isPXiGrid, const len_t id_nf,
             real_t pThreshold = 0, FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
         );
         virtual ~IonKineticIonizationTerm();
+
+        // number of parameters used in the fit
+        static const len_t nParamsForFit;
+        // ionization rate atomic data
+        static struct kinetic_ionization_rate kinetic_rate_table[];
+
+
+        static real_t EvaluateIonizationCrossSection(real_t p, const real_t *params);
+        static int_t GetTableIndex(len_t Z);
 
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
             len_t nnz = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
@@ -79,4 +83,3 @@ namespace DREAM {
 }
 
 #endif/*_DREAM_EQUATION_ION_KINETIC_IONIZATION_TERM_HPP*/
-
