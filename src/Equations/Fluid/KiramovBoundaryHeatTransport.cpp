@@ -42,7 +42,7 @@ void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::Unkn
 
     real_t c_s = sqrt(adb_index * T / Constants::me);
 
-    Fr(nr,0,0) += - gamma * n * c_s * T; 
+    Fr(nr,0,0) += gamma * n * c_s * T; 
 
     T_cold = T_cold_term;
     n_cold = n_cold_term;    
@@ -57,32 +57,11 @@ void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t 
 
     real_t c_s = sqrt(adb_index * T / Constants::me);
 
-
     if(derivId == id_T_cold){
-        dFr(nr,0,0,0) += - n * gamma * sqrt(adb_index/Constants::me) * 0.5 * T / sqrt(T) ;
+        dFr(nr,0,0,0) += n * gamma * sqrt(adb_index/Constants::me) * 0.5 * T / sqrt(T) ;
         
     } else if(derivId == id_n_cold){
-        dFr(nr,0,0,0) += - gamma * c_s * T;
-        
+        dFr(nr,0,0,0) += gamma * c_s * T;
     }
-
-    
-    
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
 
