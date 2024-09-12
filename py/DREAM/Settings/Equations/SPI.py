@@ -496,7 +496,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.setShift(shift)
         if TDrift is not None:
             if add and self.TDrift is not None:
-                self.TDrift = np.concatenate((self.TDrift,TDrift))
+                if np.isscalar(TDrift):
+                    self.TDrift = np.concatenate((self.TDrift, [TDrift]))
+                else:
+                    self.TDrift = np.concatenate((self.TDrift, TDrift))
             else:
                 self.TDrift = TDrift
         self.T0Drift = T0Drift
