@@ -409,9 +409,9 @@ real_t SPIHandler::Epsiloni(real_t a, real_t b){
         F.function = &Integrand;
         F.params = &paramstruct;
         if (b>0){
-            gsl_integration_qags(&F, 0, b, 0, 1e-7, 1000, workspace, &sum, &error);
+            gsl_integration_qags(&F, 0, b, 1e-7, 1e-7, 1000, workspace, &sum, &error);
         }else{
-            gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
+            gsl_integration_qags(&F, b, 0, 1e-7, 1e-7, 1000, workspace, &sum, &error);
             sum = -sum;
         }
         gsl_integration_workspace_free(workspace);
