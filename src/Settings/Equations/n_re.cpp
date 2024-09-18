@@ -216,6 +216,23 @@ void SimulationGenerator::ConstructEquation_n_re(
      * called with a null-pointer which results in n_re=0 at t=0
      */
     real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    
+    enum OptionConstants::uqty_f_re_inittype inittype =
+        (enum OptionConstants::uqty_f_re_inittype)s->GetInteger("eqsys/f_re/inittype");
+    
+    if (inittype == OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
+        for (len_t ir = 0; ir < fluidGrid->GetRadialGrid()->GetNr(); ir++) 
+            if (n_re_init[ir] > 0.) {
+                DREAM::IO::PrintWarning(
+                    DREAM::IO::WARNING_INCONSISTENT_RE_TRANSPORT,
+                    "Inconsistent initialization of the RE population. You can not "
+                    "prescribe the initial profiles of both 'n_re' and 'f_re'. "
+                    "When the initial profile of 'f_re' is prescribed, the runaway "
+                    "density is set automatically."
+                );
+                break;
+            }
+    }
     eqsys->SetInitialValue(id_n_re, n_re_init);
     delete [] n_re_init;
 }
