@@ -887,6 +887,17 @@ void OtherQuantityHandler::DefineQuantities() {
         qd->Store(&v);
     );
 
+	if (this->tracked_terms->T_cold_advective_bc != nullptr)
+		DEF_SC("scalar/Wcold_Tcold_Ar", "Advection coefficient of W_cold transport boundary condition. [s^-1 m^-2]",
+			real_t v = this->tracked_terms->T_cold_advective_bc->GetBoundaryCoefficient()[0];
+			qd->Store(&v);
+		);
+	if (this->tracked_terms->T_cold_diffusive_bc != nullptr)
+		DEF_SC("scalar/Wcold_Tcold_Drr", "Diffusion coefficient of W_cold transport boundary condition. [s^-1 m^-2]",
+			real_t v = this->tracked_terms->T_cold_diffusive_bc->GetBoundaryCoefficient()[0];
+			qd->Store(&v);
+		);
+
     if(this->tracked_terms->f_re_advective_bc != nullptr || this->tracked_terms->f_re_diffusive_bc != nullptr ) {
         DEF_SC("scalar/radialloss_f_re", "Rate of particle number loss through plasma edge from f_re transport, normalized to R0 [s^-1 m^-1]",
             real_t v = integratedKineticBoundaryTerm( 

@@ -61,6 +61,8 @@ namespace DREAM {
         virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) override {}
         virtual void SetVectorElements(real_t*, const real_t*) override {}
 
+		const real_t *GetBoundaryCoefficient() { return this->GetCoefficient(this->grid->GetNr()); }
+
         void SetPartialJacobianContribution(
             const int_t, const len_t, DREAM::FVM::Matrix*, const real_t*,
             jacobian_interp_mode, const real_t *const*
