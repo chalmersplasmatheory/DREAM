@@ -182,7 +182,8 @@ enum uqty_f_re_inittype {
     UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
     UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
     UQTY_F_RE_INIT_ISOTROPIC=4,         // Distribute all particles isotropically in p=pMin
-	UQTY_F_RE_INIT_AVALANCHE=5			// Distribute particles according to an analytical avalanche distribution
+    UQTY_F_RE_INIT_AVALANCHE=5,			// Distribute particles according to an analytical avalanche distribution
+    UQTY_F_RE_INIT_PRESCRIBED=6			// Set prescribed distribution through f_re.setInitialValue
 };
 
 enum uqty_V_loop_wall_eqn {
