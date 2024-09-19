@@ -506,7 +506,7 @@ bool SimulationGenerator::ConstructTransportTerm(
     
     if (heat && bc==OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV){
 
-        TransportAdvectiveBC * t = new KiramovBoundaryHeatTransportBC(grid, eqsys->GetUnknownHandler());
+        TransportAdvectiveBC * t = new KiramovBoundaryHeatTransportBC(grid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler());
         oprtr->AddBoundaryCondition(t);  
 
         if (advective_bc != nullptr)

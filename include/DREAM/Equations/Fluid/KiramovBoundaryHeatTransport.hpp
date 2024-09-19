@@ -17,19 +17,22 @@ namespace DREAM {
     private:
         len_t id_T_cold, id_n_cold;
         real_t *T_cold, *n_cold;
-        const real_t gamma = 7.0; // Heat transmission coefficient in the Kiramov model
-        const real_t adb_index = 2.0; // Adiabatic index
+        real_t mi; // Ion mass [kg]
+        len_t Z; // Ion charge number 
+
+        const real_t gamma = 7.0; // Heat transmission coefficient in the Kiramov model [-]
+        const real_t adb_index = 1.0; // Adiabatic index [-]
         virtual void SetPartialAdvectionTerm(len_t derivId, len_t nMultiples) override;
     public:
-        KiramovBoundaryHeatTransport(FVM::Grid*,FVM::UnknownQuantityHandler*);
+        KiramovBoundaryHeatTransport(FVM::Grid*,FVM::UnknownQuantityHandler*, IonHandler*);
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     }; 
     class KiramovBoundaryHeatTransportBC: public TransportAdvectiveBC{
         public:
-            KiramovBoundaryHeatTransportBC(FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns)
-            : TransportAdvectiveBC(grid, new KiramovBoundaryHeatTransport(grid, unknowns) , TRANSPORT_BC_F0){
+            KiramovBoundaryHeatTransportBC(FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, IonHandler *ions)
+            : TransportAdvectiveBC(grid, new KiramovBoundaryHeatTransport(grid, unknowns, ions) , TRANSPORT_BC_F0){
             }
             virtual bool Rebuild(const real_t time, FVM::UnknownQuantityHandler *unknowns) override{
                 this -> transportOperator -> Rebuild(time, 0, unknowns); 

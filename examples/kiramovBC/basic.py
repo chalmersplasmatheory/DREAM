@@ -43,8 +43,8 @@ n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
 # Grid parameters
-tMax = 2 # simulation time in seconds
-Nt   = 1000   # number of time steps
+tMax = 20e-3 # simulation time in seconds
+Nt   = 20# number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(0)
@@ -57,6 +57,8 @@ ds.eqsys.E_field.setPrescribedData(0)
 #ds.eqsys.T_cold.setPrescribedData(temperature=T)
 ds.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds.eqsys.T_cold.setInitialProfile(T)
+
+ds.eqsys.E_field.setPrescribedData(0.0001)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
