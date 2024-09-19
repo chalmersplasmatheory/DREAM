@@ -150,9 +150,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
             const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
             //const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
             RunawayFluid *REFluid = eqsys->GetREFluid();
-
             
-
             eqsys->initializer->AddRule(
                 id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
                 [id_f_re,inittype,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
