@@ -28,11 +28,10 @@ KiramovBoundaryHeatTransport::KiramovBoundaryHeatTransport(FVM::Grid *g, FVM::Un
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     
     for(len_t i = 0; i < ions->GetNZ(); i++){
-        this -> Z = ions->GetZ(i);
-        if (Z == 1){
-            this-> mi = ions-> GetIonSpeciesMass(i);
+        this->Z = ions->GetZ(i);
+        if (Z == 1) {
+            this->mi = ions->GetIonSpeciesMass(i);
             break;
-
         }
     }
 }
@@ -49,12 +48,8 @@ void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::Unkn
     real_t n = (1-deltaRadialFlux[nr]) * n_cold_term[nr-1];
 
     real_t c_s = sqrt(adb_index * Z * T / mi); // Ions sound speed 
-    printf("T = %e\n", T);
-    printf("c_s = %e\n", c_s);
 
-    Fr(nr,0,0) += gamma * n * c_s * T * 1e-5; 
-    printf("Fr = %e\n", Fr(nr,0,0));
-    printf("Z = %e\n", Z);
+    Fr(nr,0,0) += gamma * n * c_s * Constants::ec; 
 
     T_cold = T_cold_term;
     n_cold = n_cold_term;    
@@ -69,16 +64,10 @@ void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t 
 
     real_t c_s = sqrt(adb_index * Z * T / mi);
 
-    
-
-    if(derivId == id_T_cold){
-        dFr(nr,0,0,0) += n * gamma * sqrt(adb_index *Z /mi) * 0.5 * T / sqrt(T) ;
-                
-    } else if(derivId == id_n_cold){
-        dFr(nr,0,0,0) += gamma * c_s * T;
-    
-    
-        
+    if (derivId == id_T_cold) {
+        dFr(nr,0,0,0) += n * gamma * sqrt(adb_index *Z /mi) * 0.5 * Constants::ec / sqrt(T) ;
+    } else if (derivId == id_n_cold) {
+        dFr(nr,0,0,0) += gamma * c_s * Constants::ec;
     }
 }
 
