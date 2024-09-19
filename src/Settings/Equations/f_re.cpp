@@ -141,7 +141,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
     // but when the hot-tail grid is disabled and an initial n_re profile
     // is prescribed, we would like to make sure that f_re integrates
     // properly to n_re.
-    if (!eqsys->HasHotTailGrid()) {
+    // if (!eqsys->HasHotTailGrid()) {
         enum OptionConstants::uqty_f_re_inittype inittype =
             (enum OptionConstants::uqty_f_re_inittype)s->GetInteger(MODULENAME "/inittype");
         
@@ -214,7 +214,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
                 id_n_re, id_E_field, id_n_i
             );
         }
-    }
+    //}
 }
 
 /**

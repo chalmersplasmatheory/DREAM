@@ -232,8 +232,40 @@ void SimulationGenerator::ConstructEquation_n_re(
                 );
                 break;
             }
+        len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+        RunawayFluid *REFluid = eqsys->GetREFluid();
+        eqsys->initializer->AddRule(
+            id_n_re,
+            EqsysInitializer::INITRULE_EVAL_FUNCTION,
+            [id_f_re,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *ninit){
+                const real_t *f_re = unknowns->GetUnknownData(OptionConstants::UQTY_F_RE);
+                FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
+                const len_t nr = runawayGrid->GetNr();
+                for (len_t ir = 0, offset = 0; ir < nr; ir++) {
+                    FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
+                    const len_t np1 = mg->GetNp1();
+                    const len_t np2 = mg->GetNp2();
+                    real_t p1, dp, dxi;
+                    real_t VpVol = runawayGrid->GetVpVol(ir);
+                    ninit[ir] = 0;
+                    for (len_t j = 0; j < np2; j++) {
+                        for (len_t i = 0; i < np1; i++) {
+                            p1 = mg->GetP1(i);
+                            dp = mg->GetDp1(i);
+                            dxi = mg->GetDp2(j);
+                            real_t Vp = runawayGrid->GetVp(ir, i, j);
+                            ninit[ir] += f_re[offset + j*np1 + i] * Vp/VpVol * dp * dxi;
+                        }
+                    }
+                    offset += np1*np2;
+                }
+            },
+            // Dependencies
+            id_f_re
+        );
+    } else {
+        eqsys->SetInitialValue(id_n_re, n_re_init);
     }
-    eqsys->SetInitialValue(id_n_re, n_re_init);
     delete [] n_re_init;
 }
 
