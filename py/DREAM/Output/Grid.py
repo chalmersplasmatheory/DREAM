@@ -115,7 +115,9 @@ class Grid:
         self.r_f = grid['r_f']
         self.dr = grid['dr']
         self.VpVol = grid['VpVol']
-        self.VpVol_f = grid['VpVol_f']
+
+        if 'VpVol_f' in grid:
+            self.VpVol_f = grid['VpVol_f']
 
         if 'R0' in grid:
             self.R0 = grid['R0']
