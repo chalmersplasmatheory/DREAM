@@ -349,6 +349,8 @@ class KineticQuantity(UnknownQuantity):
         elif coordinates == 'cylindrical'[:len(coordinates)]:
             if data.shape[1] == self.momentumgrid.PPAR.shape[1] + 1:
                 data = (data[:,1:] + data[:,:-1]) / 2
+            if data.shape[0] == self.momentumgrid.PPAR.shape[0] + 1:
+                data = (data[1:,:] + data[:-1, :]) / 2
             
             if interpolateCylindrical:
                 pperp = np.concatenate((self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
