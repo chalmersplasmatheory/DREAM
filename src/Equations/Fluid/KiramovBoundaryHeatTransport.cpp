@@ -49,7 +49,14 @@ void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::Unkn
 
     real_t c_s = sqrt(adb_index * Z * T / mi); // Ions sound speed 
 
-    Fr(nr,0,0) += gamma * n * c_s * Constants::ec; 
+	// NOTE: Here we DON'T want to add to the coefficient, as we would
+	// normally want. There is AdvectionDiffusion term corresponding to
+	// this B.C. which would be responsible for re-setting the coefficient,
+	// and so we can manually reset it by doing this.
+	// (adding is only needed when we have multiple terms writing to the
+	// coefficient, but for a boundary condition that should not be the
+	// case as we should only have 1 on BC in the radial direction)
+    Fr(nr,0,0) = gamma * n * c_s * Constants::ec; 
 
     T_cold = T_cold_term;
     n_cold = n_cold_term;    

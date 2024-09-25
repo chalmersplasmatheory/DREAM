@@ -44,7 +44,7 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 tMax = 20e-3 # simulation time in seconds
-Nt   = 20# number of time steps
+Nt   = 20000# number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(0)
