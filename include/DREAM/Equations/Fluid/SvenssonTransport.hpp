@@ -65,13 +65,13 @@ namespace DREAM {
 
     public:
         // Constructor
-        SvenssonTransport<T>( 
+        SvenssonTransport( 
             FVM::Grid*, real_t, enum SvenssonTransport<T>::svensson_interp1d_param,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
             struct dream_4d_data*
             );
         
-        virtual ~SvenssonTransport<T>();
+        virtual ~SvenssonTransport();
 
         const real_t *GetCoefficient(const len_t ir);
 

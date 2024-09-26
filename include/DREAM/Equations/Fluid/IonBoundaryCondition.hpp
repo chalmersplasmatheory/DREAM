@@ -17,11 +17,11 @@ namespace DREAM {
 
     public:
         template<typename ... Args>
-        IonBoundaryCondition<T>(
+        IonBoundaryCondition(
             FVM::Grid*, IonHandler*, const len_t iIon,
             Args&& ... args
         );
-        virtual ~IonBoundaryCondition<T>();
+        virtual ~IonBoundaryCondition();
 
         /**
          * Implemented in BoundaryCondition and empty here:
