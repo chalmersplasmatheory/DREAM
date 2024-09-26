@@ -1,5 +1,5 @@
 
-import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 
@@ -22,7 +22,7 @@ def register():
     """
     Register the perceptually uniform colormap 'GeriMap' with matplotlib.
     """
-    plt.register_cmap(cmap=get(False))
-    plt.register_cmap(cmap=get(True))
+    mpl.colormaps.register(cmap=get(False))
+    mpl.colormaps.register(cmap=get(True))
 
 
