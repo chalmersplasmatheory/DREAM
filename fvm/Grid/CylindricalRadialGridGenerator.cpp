@@ -149,3 +149,99 @@ real_t CylindricalRadialGridGenerator::FindClosestApproach(
     return sqrt((x1+tc*(x2-x1))*(x1+tc*(x2-x1))+(y1+tc*(y2-y1))*(y1+tc*(y2-y1)));
 }
 
+
+/**
+ * Returns a list flux surface R coordinates
+ * on the simulation grid.
+ */
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *R = new real_t[nr*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			R[i] = 1 + this->x[ir] * cos(theta);
+	}
+
+	return R;
+}
+
+
+/**
+ * Returns a list flux surface R coordinates
+ * on the simulation grid.
+ */
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0_f() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *R = new real_t[(nr+1)*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			R[i] = 1 + this->x_f[ir] * cos(theta);
+	}
+
+	return R;
+}
+
+
+/**
+ * Returns a list flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZ() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *Z = new real_t[nr*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			Z[i] = this->x[ir] * sin(theta);
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZ_f() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *Z = new real_t[(nr+1)*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			Z[i] = this->x_f[ir] * sin(theta);
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns the poloidal angle array corresponding
+ * to the 'GetFluxSurface()' methods.
+ */
+const real_t *CylindricalRadialGridGenerator::GetPoloidalAngle() {
+	const len_t ntheta = this->GetNTheta();
+	real_t *theta = new real_t[ntheta];
+
+	for (len_t i = 0; i < ntheta; i++)
+		theta[i] = 2*M_PI*i / ntheta;
+	
+	return theta;
+}
+
+

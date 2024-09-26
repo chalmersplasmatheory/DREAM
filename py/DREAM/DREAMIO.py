@@ -42,8 +42,8 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
 
     user, host, port, rpath = None, None, 22, None
     if SSHSUPPORT:
-        m1 = re.search('(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
-        m2 = re.search('(.+@)*([\w\-\_\d\.]+):(.*)', filename)
+        m1 = re.search(r'(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
+        m2 = re.search(r'(.+@)*([\w\-\_\d\.]+):(.*)', filename)
 
         if m1 is not None:
             user = m1.group(2)
@@ -228,7 +228,9 @@ def getData(f, key):
     Returns data from an h5py.File object, correctly transforming
     it (in case it is a string for example).
     """
-    if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
+    if type(f[key]) == str:
+        return f[key]
+    elif (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
         return f[key][:].tostring().decode('utf-8')
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
@@ -241,7 +243,10 @@ def getData(f, key):
         else:
             return f[key][:][0].decode()
     else:
-        return f[key][:]
+        if f[key].shape == ():
+            return f[key][()]
+        else:
+            return f[key][:]
 
 
 def unlazy(s):
