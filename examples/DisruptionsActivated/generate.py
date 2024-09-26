@@ -398,7 +398,7 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
     # Start from the state obtained in the init simulation
     ds1.fromOutput(INITFILE, ignore=ignorelist)
 
-    if not fluid:
+    if mode != MODE_FLUID:
         ds1.other.include('fluid', 'scalar', 'hottail/S_ava', 'hottail/S_compton', 'hottail/S_tritium')
 
     ds1.save('settingsdebug.h5')
