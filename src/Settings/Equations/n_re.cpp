@@ -245,12 +245,11 @@ void SimulationGenerator::ConstructEquation_n_re(
                     FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
                     const len_t np1 = mg->GetNp1();
                     const len_t np2 = mg->GetNp2();
-                    real_t p1, dp, dxi;
+                    real_t dp, dxi;
                     real_t VpVol = runawayGrid->GetVpVol(ir);
                     ninit[ir] = 0;
                     for (len_t j = 0; j < np2; j++) {
                         for (len_t i = 0; i < np1; i++) {
-                            p1 = mg->GetP1(i);
                             dp = mg->GetDp1(i);
                             dxi = mg->GetDp2(j);
                             real_t Vp = runawayGrid->GetVp(ir, i, j);
