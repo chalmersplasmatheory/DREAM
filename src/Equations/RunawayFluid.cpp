@@ -132,6 +132,9 @@ RunawayFluid::~RunawayFluid(){
 		delete this->lnLambdaEE;
 	if (this->lnLambdaEI != nullptr)
 		delete this->lnLambdaEI;
+	
+	if (this->compton_photon_flux != nullptr)
+		delete this->compton_photon_flux;
 
     delete effectiveCriticalFieldObject;
 

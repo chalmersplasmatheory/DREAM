@@ -1,0 +1,67 @@
+\documentclass{notes}
+\usepackage{physics}
+\usepackage{nth}
+
+\renewcommand{\ne}{n_{\rm cold}}
+\newcommand{\fre}{f_{\rm re}}
+\newcommand{\nre}{n_{\rm re}}
+\newcommand{\nij}[2]{n_{#1}^{(#2)}}
+\newcommand{\Iij}[2]{I_{#1}^{(#2)}}
+\newcommand{\Rij}[2]{R_{#1}^{(#2)}}
+\newcommand{\kinIij}[2]{\mathcal{I}_{#1}^{(#2)}}
+\newcommand{\sigmaij}{\sigma_i^{(j)}}
+\newcommand{\Vp}{\mathcal{V}'}
+\newcommand{\VpVol}{V'}
+
+\begin{document}
+
+\title{Approximate RE kinetic ionization}
+\author{Peter Halldestam}
+    \maketitle
+
+    \noindent
+    This document contains details on how impact ionization due to runaway electrons can be approximated in \DREAM\: without having to evolve an electron distribution function.
+
+    Ions are modelled through their ion charge state densities $\nij{i}{j}$, for each ion $i$ with $Z_i$ number of protons, and charge state $j$ with charge number $Z_{0j}$.
+    In \DREAM\:, individual ion charge densities are evolved via a prescribed advective/diffusive transport and via atomic processes, namely ionisation and recombination.
+    This change in $\nij{i}{j}$ due to atomic processes is given by
+    \begin{align}
+        \pdv{\nij{i}{j}}{t}\bigg|_{\rm atomic}
+        =\big(\Iij{i}{j-1} \ne + \kinIij{i}{j-1}\big) &\nij{i}{j-1}
+        -\big(\Iij{i}{j} \ne + \kinIij{i}{j}\big) \nij{i}{j}\\
+        &+\Rij{i}{j+1} \ne \nij{i}{j+1}
+        -\Rij{i}{j} \ne \nij{i}{j}.
+        \label{eq:ion_evolution}
+   \end{align}
+   Here, $I$ and $R$ are ionization and recombination coefficients, that are obtained from the OpenADAS database, and $\mathcal{I}$ denote the kinetic ionization rate.
+   Given an distribution function $\fre$, the kinetic ionisation rates due to collisions with runaway electrons is calculated in DREAM as
+   \begin{align}
+       \kinIij{i}{j}
+       =\int\dd{p}\int_{-1}^1\dd{\xi_0}\frac{\Vp}{\VpVol}v\sigmaij\fre,
+       \label{eq:impact_ionisation}
+   \end{align}
+   where $\sigmaij$ is the electron impact ionisation cross section, as described by the Garland model (see the DREAM paper for references).
+   It is a function of electron momentum $p$ and scales as $\sigmaij\sim\log p$, and is thus expected to only weakly depend on $p$ at runaway electron relevant energies.
+
+   One could approximate the term in Eq.~\eqref{eq:impact_ionisation}, by assuming a population of runaways all with the same momentum $p=p_*$ and pitch $\xi_{0*}$, which using delta functions can be expressed as
+   \begin{align}
+       \fre=\frac{\VpVol}{\Vp}\nre\delta(p-p_*)\delta(\xi_0-\xi_{0*}).
+   \end{align}
+   The factor of $\VpVol/\Vp$ ensures that the \nth{0} moment of $\fre$ yields the runaway density $\nre$.
+   Put into Eq.~\eqref{eq:impact_ionisation}, this distribution function gives the following expression for the ionisation rate
+   \begin{align}
+        \kinIij{i}{j}
+        &=\int\dd{p}\int_{-1}^1\dd{\xi_0}\frac{p}{\sqrt{1+p^2}}\sigmaij(p)\nre\delta(p-p_*)\delta(\xi_0-\xi_{0*})\\
+        &=\frac{p_*}{\sqrt{1+p_*^2}}\sigmaij(p_*)\nre\\
+        &\equiv K_i^{(j)}\nre.
+    \end{align}
+    Eq.~\eqref{eq:ion_evolution} can thus be rewritten as
+    \begin{align}
+        \pdv{\nij{i}{j}}{t}\bigg|_{\rm atomic}
+        =\big(\Iij{i}{j-1} \ne + K_i^{(j-1)}\nre\big) &\nij{i}{j-1}
+        -\big(\Iij{i}{j} \ne + K_i^{(j)}\nre\big) \nij{i}{j}\\
+        &+\Rij{i}{j+1} \ne \nij{i}{j+1}
+        -\Rij{i}{j} \ne \nij{i}{j}.
+   \end{align}
+
+\end{document}

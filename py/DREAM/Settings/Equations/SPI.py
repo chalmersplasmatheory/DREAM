@@ -37,6 +37,10 @@ CLOUD_RADIUS_MODE_SELFCONSISTENT=3
 MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT = 1
 MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK = 2
 
+SHIFT_MODE_NEGLECT=1
+SHIFT_MODE_PRESCRIBED=2
+SHIFT_MODE_ANALYTICAL=3
+
 ZMolarMassList=[1,1,10]
 isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
 molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
@@ -48,7 +52,8 @@ solidDensityList=[205.9,86,1444]# kg/m^3
 class SPI(UnknownQuantity):
     
 
-    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL):
+    def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
+SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift = None, ZavgDriftArray = None, ZsDrift = None, isotopesDrift = None):
         """
         Constructor.
         
@@ -68,6 +73,7 @@ class SPI(UnknownQuantity):
         :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
         :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
         :param int magneticFieldDependenceMode: Mode used for calculating the magnetic field dependence of the albation
+        :param int shift: Model used for determining the cloud drift
         """
         super().__init__(settings=settings)
 
@@ -80,15 +86,24 @@ class SPI(UnknownQuantity):
         self.rclPrescribedConstant       = rclPrescribedConstant
         self.magneticFieldDependenceMode = int(magneticFieldDependenceMode)
         self.abl_ioniz                   = int(abl_ioniz)
+        self.shift                       = int(shiftMode)
 
         self.rp       = None
         self.vp       = None
         self.xp       = None
         self.t_delay  = None 
         self.nbrShiftGridCell = None
-    
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None):
+        self.TDrift        = None
+        self.T0Drift       = 0
+        self.DeltaYDrift  = 0
+        self.RmDrift       = -1
+        self.ZavgDriftArray= [0.]
+        self.ZsDrift       = [0]
+        self.isotopesDrift = [0]
+
+
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, TDrift = None):
 
         if rp is not None:
             if np.isscalar(rp):
@@ -114,7 +129,12 @@ class SPI(UnknownQuantity):
             if np.isscalar(nbrShiftGridCell):
                 self.nbrShiftGridCell = np.asarray([nbrShiftGridCell])
             else: self.nbrShiftGridCell = np.asarray(nbrShiftGridCell)
-        
+
+        if TDrift is not None:
+            if np.isscalar(TDrift):
+                self.TDrift = np.asarray([TDrift])
+            else: self.TDrift = np.asarray(TDrift)
+
     def rpDistrParksStatistical(self,rp,kp):
         """
         Evaluates the shard size distribution function referred to as the 
@@ -130,7 +150,7 @@ class SPI(UnknownQuantity):
         # First we calculate the cdf, and then interpolate the cdf-values 
         # back to the corresponding radii at N randomly chosen points between 0 and 1
         rp_integrate=np.linspace(1e-10/kp,10/kp,5000)
-        cdf=integrate.cumtrapz(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
+        cdf=integrate.cumulative_trapezoid(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
         return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
     def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
@@ -166,13 +186,18 @@ class SPI(UnknownQuantity):
         # Calculate solid particle density of the pellet (needed to calculate the 
         # inverse characteristic shard size)
         molarVolume=0
+        counter=0
         for iZ in range(len(Zs)):
             for iList in range(len(solidDensityList)):
                 if Zs[iZ]==ZSolidDensityList[iList] and isotopes[iZ]==isotopesSolidDensityList[iList]:
                     solidDensityIZ=solidDensityList[iList]
                 if Zs[iZ]==ZMolarMassList[iList] and isotopes[iZ]==isotopesMolarMassList[iList]:
                     molarMassIZ=molarMassList[iList]
-            
+                else:
+                    counter+=1
+            if counter==len(solidDensityList):
+                raise EquationException("spi: Pellet type is not recognized. Currently only neon and deuterium pellets are supported. To support other types fill in the material data in src/Equations/SPIHandler.cpp and py/DREAM/Settings/Equations/SPI.py")
+            counter=0
             molarVolume+=molarFractions[iZ]*molarMassIZ/solidDensityIZ
             
         solidParticleDensity=N_A/molarVolume
@@ -390,23 +415,71 @@ class SPI(UnknownQuantity):
             self.vp=vp_init
             self.t_delay = t_delay
             
-    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, **kwargs):
+    def setParamsVallhagenMSc(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
-        (available at https://hdl.handle.net/20.500.12380/302296)
+        (available at https://hdl.handle.net/20.500.12380/302296).
         """
         
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(nShard,abs_vp_mean,abs_vp_diff,alpha_max,t_delay,nDim,add)
         
-        if self.nbrShiftGridCell is None:
-            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
-        else:
+        if add and self.nbrShiftGridCell is not None:
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))
-      
+        else:
+            self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
+            
+        # Perhaps it would be better to force the user to explicitly set the shift mode,
+        # but this helps to ensure backwards compatibility with scripts relying on that 
+        # setting nbrShiftGridCell>0 automatically gives a corresponding prescribed shift
+        if nbrShiftGridCell>0:
+            self.setShift(SHIFT_MODE_PRESCRIBED)
+            
+        if TDrift is not None:
+            if np.isscalar(TDrift):
+                TDrift = TDrift*np.ones(nShard)
+            if add and self.TDrift is not None:
+                self.TDrift = np.concatenate((self.TDrift,TDrift))
+            else:
+                self.TDrift = TDrift
+            
         return kp
+        
+    def setShiftParamsPrescribed(self, shift = SHIFT_MODE_PRESCRIBED, nbrShiftGridCell=None, add=True):
+        self.setShift(shift)
+        if nbrShiftGridCell is not None:
+            if add and self.nbrShiftGridCell is not None:
+                self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell))
+            else:
+                self.nbrShiftGridCell = nbrShiftGridCell
+        
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0.], ZsDrift=[0], isotopesDrift=[0], add=True):
+        """
+        Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
+        
+        :param int shift: Model used for determining the cloud drift
+        :param float T0Drift: cloud temperature close to the pellet (before the cloud has drifted away from the pellet)
+        :param numpy.ndarray TDrift: representative cloud temperature during the drift motion for each shard
+        :param float DeltaYDrift: characteristic half-thickness of the drifting cloud (should be similar to the radius of the neutral cloud around the pellet)
+        :param float RmDrift: major radius of the magnetic axis, only used if the major radius is otherwise infinite in the simulation
+        :param list ZavgDriftArray: average charge states inside the drifting cloud of all drifting ion species. These can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. Note that his list does NOT neccessarily have the same shape as the list of atomic numbers and isotopes included in the simulation, but instead the ZavgDriftArray-list and the ZsDrift and isotopesDrift-lists below will instead be used to look up the average charge state inside the drifting cloud for all the simulated ion species included in the pellet.
+        :param list ZsDrift: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
+        :param list isotopesDrift: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
+        """
+        self.setShift(shift)
+        if TDrift is not None:
+            if add and self.TDrift is not None:
+                self.TDrift = np.concatenate((self.TDrift,TDrift))
+            else:
+                self.TDrift = TDrift
+        self.T0Drift = T0Drift
+        self.DeltaYDrift = DeltaYDrift
+        self.RmDrift = RmDrift
+        self.ZavgDriftArray = ZavgDriftArray
+        self.ZsDrift = ZsDrift
+        self.isotopesDrift = isotopesDrift
         
     def setVpVolNormFactor(self,VpVolNormFactor):
         self.VpVolNormFactor=VpVolNormFactor
@@ -441,7 +514,7 @@ class SPI(UnknownQuantity):
         deposition of ablated material.
         """
         self.deposition = int(deposition)
-
+        
     def setHeatAbsorbtion(self, heatAbsorbtion):
         """
         Specifies which model to use for calculating the
@@ -470,7 +543,13 @@ class SPI(UnknownQuantity):
         ablated material is deposited
         """
         self.abl_ioniz = int(abl_ioniz)
-
+        
+    def setShift(self, shift):
+        """
+        Specifies which model to use for calculating the
+        ablation cloud drift
+        """
+        self.shift = int(shift)
 
     def fromdict(self, data):
         """
@@ -482,7 +561,23 @@ class SPI(UnknownQuantity):
             self.ablation       = int(data['ablation'])
         if 'deposition' in data:
             self.deposition     = int(data['deposition'])
-        if 'heatAbsorption' in data:
+        if 'shift' in data:
+            self.shift          = int(data['shift'])
+        if 'TDrift' in data:
+            self.TDrift              = [float(x) for x in data['TDrift']]
+        if 'T0Drift' in data:
+            self.T0Drift             = float(data['T0Drift'])
+        if 'DeltaYDrift' in data:
+            self.DeltaYDrift        = float(data['DeltaYDrift'])
+        if 'RmDrift' in data:
+            self.RmDrift             = float(data['RmDrift'])
+        if 'ZavgDriftArray' in data:
+            self.ZavgDriftArray      = [float(x) for x in data['ZavgDriftArray']]
+        if 'ZsDrift' in data:        
+            self.ZsDrift             = [float(x) for x in data['ZsDrift']]
+        if 'isotopesDrift' in data:        
+            self.isotopesDrift             = [float(x) for x in data['isotopesDrift']]
+        if 'heatAbsorbtion' in data:
             self.heatAbsorbtion = int(data['heatAbsorbtion'])
         if 'cloudRadiusMode' in data:
             self.cloudRadiusMode = int(data['cloudRadiusMode'])
@@ -524,7 +619,6 @@ class SPI(UnknownQuantity):
                 self.t_delay=np.zeros(self.rp.shape)
             else:
                 self.t_delay=np.array([0])
-
         # t_delay is expected to be an array with one element per shard
         else:
             if np.isscalar(self.t_delay):
@@ -538,11 +632,25 @@ class SPI(UnknownQuantity):
                 self.nbrShiftGridCell = np.zeros(self.rp.shape)
             else:
                 self.nbrShiftGridCell = np.array([0])
+        
+        if self.TDrift is None:
+            if self.rp is not None:
+                self.TDrift = np.zeros(self.rp.shape)
+            else:
+                self.TDrift=np.array([0])
             
         data = {
             'velocity': self.velocity,
             'ablation': self.ablation,
             'deposition': self.deposition,
+            'shift': self.shift,
+            'TDrift': self.TDrift,
+            'T0Drift': self.T0Drift,
+            'DeltaYDrift': self.DeltaYDrift,
+            'RmDrift': self.RmDrift,
+            'ZavgDriftArray': self.ZavgDriftArray,
+            'ZsDrift': self.ZsDrift,
+            'isotopesDrift': self.isotopesDrift,
             'heatAbsorbtion': self.heatAbsorbtion,
             'cloudRadiusMode': self.cloudRadiusMode,
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
@@ -578,6 +686,23 @@ class SPI(UnknownQuantity):
             raise EquationException("spi: Invalid value assigned to 'ablation'. Expected integer.")
         if type(self.deposition) != int:
             raise EquationException("spi: Invalid value assigned to 'deposition'. Expected integer.")
+        if type(self.shift) != int:
+            raise EquationException("spi: Invalid value assigned to 'shift'. Expected integer.")
+        if self.shift == SHIFT_MODE_ANALYTICAL:
+            if self.T0Drift<0: 
+                raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
+            if any(self.TDrift)<0:
+                raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
+            if self.DeltaYDrift<0:
+                raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
+            if self.RmDrift<0 and self.RmDrift!=-1:
+                raise EquationException("spi: Invalid value assigned to 'RmDrift'. Expected positive float.")
+            if len(self.ZavgDriftArray)!=len(self.ZsDrift):
+                raise EquationException("spi: Invalid value assigned to 'ZavgDriftArray'. Expected array of positive floats with the same shape as 'ZsDrift'.")
+            if len(self.isotopesDrift)!=len(self.ZsDrift):
+                raise EquationException("spi: Invalid value assigned to 'isotopesDrift'. Expected array of positive floats with the same shape as 'ZsDrift'.")
+            if self.deposition!=DEPOSITION_MODE_LOCAL:
+                raise EquationException("spi: Invalid value assigned to 'shift'. To enable shift activate deposition.")
         if type(self.heatAbsorbtion) != int:
             raise EquationException("spi: Invalid value assigned to 'heatAbsorbtion'. Expected integer.")
 

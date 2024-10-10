@@ -304,7 +304,7 @@ class KineticQuantity(UnknownQuantity):
         return q
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, **kwargs):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, **kwargs):
         """
         Visualize this kinetic quantity at one time and radius using a filled
         contour plot.
@@ -344,12 +344,27 @@ class KineticQuantity(UnknownQuantity):
         # Accept 'spherical' or 'spherica' or 'spheric' or ... 's':
         elif coordinates == 'spherical'[:len(coordinates)]:
             cp = ax.contourf(self.momentumgrid.P, self.momentumgrid.XI, data, cmap='GeriMap', **kwargs)
-            ax.set_xlabel(r'$p$')
+            ax.set_xlabel(r'$p/mc$')
             ax.set_ylabel(r'$\xi$')
         elif coordinates == 'cylindrical'[:len(coordinates)]:
-            cp = ax.contourf(self.momentumgrid.PPAR, self.momentumgrid.PPERP, data, cmap='GeriMap', **kwargs)
-            ax.set_xlabel(r'$p_\parallel$')
-            ax.set_ylabel(r'$p_\perp$')
+            if data.shape[1] == self.momentumgrid.PPAR.shape[1] + 1:
+                data = (data[:,1:] + data[:,:-1]) / 2
+            if data.shape[0] == self.momentumgrid.PPAR.shape[0] + 1:
+                data = (data[1:,:] + data[:-1, :]) / 2
+            
+            if interpolateCylindrical:
+                pperp = np.concatenate((self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
+                
+                ppar_new = (self.momentumgrid.PPAR[-1,:] + (self.momentumgrid.PPAR[-1,:] - self.momentumgrid.PPAR[-2,:])/2).reshape((1,-1))
+                ppar = np.concatenate((self.momentumgrid.PPAR, ppar_new), axis=0)
+                
+                data_int = np.concatenate((data, data[-1,:].reshape((1,-1))), axis=0)
+                
+                cp = ax.contourf(ppar, pperp, data_int, cmap='GeriMap', **kwargs)
+            else:
+                cp = ax.contourf(self.momentumgrid.PPAR, self.momentumgrid.PPERP, data, cmap='GeriMap', **kwargs)
+            ax.set_xlabel(r'$p_\parallel/mc$')
+            ax.set_ylabel(r'$p_\perp/mc$')
         else:
             raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
 
@@ -360,7 +375,7 @@ class KineticQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
 
-        return ax
+        return ax, cp
         
         
         

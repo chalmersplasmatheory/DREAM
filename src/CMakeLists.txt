@@ -33,7 +33,7 @@ set(dream_core
 set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionHottail.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"  
+    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ConnorHastie.cpp"
@@ -58,6 +58,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTermHighZ.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/LCFSLossRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedDiffusionStochasticBTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedAdvectionTerm.cpp"
@@ -72,6 +73,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatFluxFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonFluidRunawayIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceTerm.cpp"
@@ -111,7 +113,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTermHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Scalar/ConstantSPIVelocityPositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"  
+    "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
 )
@@ -284,4 +286,3 @@ if (PETSC_FOUND)
     target_link_libraries(dream PUBLIC "${PETSC_LIBRARIES}")
     add_definitions(${PETSC_DEFINITIONS})
 endif()
-

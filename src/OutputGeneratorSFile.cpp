@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include <DREAM/IO.hpp>
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SFile.hpp"
@@ -46,6 +47,8 @@ void OutputGeneratorSFile::Save(bool current) {
     if (close) {
         this->sf->Close();
         delete this->sf;
+
+		IO::PrintInfo("Saved output file to '%s'.", this->filename.c_str());
     }
 }
 

@@ -133,10 +133,10 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
             throw NotImplementedException("f_hot: Kinetic Compton source only implemented for p-xi grid.");
 
         FVM::Operator *Op_compton = new FVM::Operator(hottailGrid);
-        oqty_terms->comptonSource = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), 
+        oqty_terms->comptonSource_hottail = new ComptonSource(hottailGrid, eqsys->GetUnknownHandler(), LoadDataT("eqsys/n_re/compton", s, "flux"), 
             s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
             hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0)), -1.0);
-        Op_compton->AddTerm(oqty_terms->comptonSource);
+        Op_compton->AddTerm(oqty_terms->comptonSource_hottail);
         len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
         eqsys->SetOperator(id_f_hot, id_n_tot, Op_compton);
     }
@@ -150,8 +150,8 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
         FVM::Operator *Op_tritium = new FVM::Operator(hottailGrid);    
         const len_t *ti = eqsys->GetIonHandler()->GetTritiumIndices();
         for(len_t iT=0; iT<eqsys->GetIonHandler()->GetNTritiumIndices(); iT++){
-            oqty_terms->tritiumSource.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
-            Op_tritium->AddTerm(oqty_terms->tritiumSource[iT]);
+            oqty_terms->tritiumSource_hottail.push_back(new TritiumSource(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(), ti[iT], 0., -1.0));
+            Op_tritium->AddTerm(oqty_terms->tritiumSource_hottail[iT]);
         }
         len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
         eqsys->SetOperator(id_f_hot, id_n_i, Op_tritium);

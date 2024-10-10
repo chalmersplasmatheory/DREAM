@@ -184,28 +184,29 @@ class DistributionFunction(KineticQuantity):
         :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
         """
         if t is None:
-            t = range(len(self.time))
-        elif np.isscalar(t):
-            t = np.array([t])
-
+            t = np.arange(len(self.time))
+        else:
+            t = np.arange(len(self.time))[t]
+        
         if r is None:
-            r = range(len(self.grid.r))
-        elif np.isscalar(r):
-            r = np.array([r])
+            r = np.arange(len(self.grid.r))
+        else:
+            t = np.arange(len(self.grid.r[:]))[r]
 
         data = None
         if model == 'total':
+            data = np.zeros((len(t), len(r), self.data.shape[-2], self.data.shape[-1]))
             pperp2 = self.momentumgrid.PPERP**2
             m2c2   = (scipy.constants.m_e * scipy.constants.c)**2
-            data = pperp2 * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
+            for i in range(len(t)):
+                for j in range(len(r)):
+                    data[i,j,:,:] = pperp2 * self.data[t[i],r[j],:,:] * self.momentumgrid.Vprime_VpVol[r[j],:,:]
         elif model == 'spectrum':
             S = []
             W = Bekefi.synchrotron(self.momentumgrid.P, self.momentumgrid.XI, wavelength, B)
             data = W * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
         else:
             raise OutputException("Unrecognized model for calculating synchrotron moment with: '{}'.".format(model))
-
-        data = data.reshape((len(t), len(r), data.shape[-2], data.shape[-1]))
         return KineticQuantity('synchrotron({})'.format(self.name), data=data, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid, attr={'description': 'Synchrotron moment of {}'.format(self.name), 'equation': 'synchrotron({})'.format(self.name)})
 
 
@@ -226,7 +227,7 @@ class DistributionFunction(KineticQuantity):
         return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, **kwargs):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, interpolateCylindrical=False, **kwargs):
         """
         Make a contour plot of this quantity.
 
@@ -238,7 +239,7 @@ class DistributionFunction(KineticQuantity):
         :param str coordinates:  Name of coordinates to use (either 'spherical' (p/xi) or 'cylindrical' (ppar/pperp)).
         :param kwargs:           Keyword arguments passed on to matplotlib.contourf().
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, **kwargs)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, interpolateCylindrical=interpolateCylindrical, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None, **kwargs):

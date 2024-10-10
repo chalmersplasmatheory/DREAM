@@ -6,6 +6,7 @@
 #include "DREAM/ADAS.hpp"
 #include "DREAM/AMJUEL.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/Settings.hpp"
@@ -62,6 +63,8 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     sim->SetEquationSystem(eqsys);
 
     LoadOutput(s, sim);
+
+	IO::Init(sim);
 
     return sim;
 }
