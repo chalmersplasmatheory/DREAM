@@ -144,7 +144,7 @@ void dreampy_load_bool(Settings *s, const string& name, PyObject *obj) {
 		if (PyErr_Occurred()) {
 			PyErr_PrintEx(1);
 			throw DREAM::DREAMException(
-				"Setting '%s': Conversion error.", name.c_str()
+				"Setting '%s': Conversion error. (1)", name.c_str()
 			);
 		}
         s->SetSetting(name, reinterpret_cast<bool>(l != 0));
@@ -194,7 +194,7 @@ void dreampy_load_int(Settings *s, const string& name, PyObject *obj) {
 		if (PyErr_Occurred()) {
 			PyErr_PrintEx(1);
 			throw DREAM::DREAMException(
-				"Setting '%s': Conversion error.", name.c_str()
+				"Setting '%s': Conversion error. (2)", name.c_str()
 			);
 		}
 
@@ -245,7 +245,7 @@ void dreampy_load_real(Settings *s, const string& name, PyObject *obj) {
 		if (PyErr_Occurred()) {
 			PyErr_PrintEx(1);
 			throw DREAM::DREAMException(
-				"Setting '%s': Conversion error.", name.c_str()
+				"Setting '%s': Conversion error. (3)", name.c_str()
 			);
 		}
         s->SetSetting(name, static_cast<real_t>(d));
@@ -254,7 +254,7 @@ void dreampy_load_real(Settings *s, const string& name, PyObject *obj) {
 		if (PyErr_Occurred()) {
 			PyErr_PrintEx(1);
 			throw DREAM::DREAMException(
-				"Setting '%s': Conversion error.", name.c_str()
+				"Setting '%s': Conversion error. (4)", name.c_str()
 			);
 		}
         s->SetSetting(name, static_cast<real_t>(l));
@@ -351,6 +351,8 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
 
             if (PyLong_Check(li))
                 v[i] = PyLong_AsLong(li);
+			else if (PyFloat_Check(li))
+				v[i] = (int_t)PyFloat_AsDouble(li);
             else if (PyArray_IsAnyScalar(li)) {
                 PyArray_Descr *type = PyArray_DescrFromType(NPY_INT64);
                 PyArray_CastScalarToCtype(li, v+i, type);
@@ -364,7 +366,8 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
 			if (PyErr_Occurred()) {
 				PyErr_PrintEx(1);
 				throw DREAM::DREAMException(
-					"Setting '%s': Conversion error.", name.c_str()
+					"Setting '%s': Conversion error at index %zu. (5)",
+					name.c_str(), i
 				);
 			}
         }
@@ -447,7 +450,7 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
 			if (PyErr_Occurred()) {
 				PyErr_PrintEx(1);
 				throw DREAM::DREAMException(
-					"Setting '%s': Conversion error.", name.c_str()
+					"Setting '%s': Conversion error. (6)", name.c_str()
 				);
 			}
         }
@@ -476,7 +479,7 @@ void dreampy_load_string(Settings *s, const string& name, PyObject *obj) {
 		if (PyErr_Occurred()) {
 			PyErr_PrintEx(1);
 			throw DREAM::DREAMException(
-				"Setting '%s': Conversion error.", name.c_str()
+				"Setting '%s': Conversion error. (7)", name.c_str()
 			);
 		}
         s->SetSetting(name, str);
