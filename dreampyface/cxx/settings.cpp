@@ -36,6 +36,9 @@ DREAM::Settings *dreampy_loadsettings(PyObject *dict) {
 
     dreampy_load_dict(set, "", dict);
 
+	if (PyErr_Occurred())
+		return NULL;
+
     return set;
 }
 
@@ -56,6 +59,9 @@ void dreampy_load_dict(DREAM::Settings *s, const string& path, PyObject *dict) {
         PyObject *key = PyList_GetItem(keys, i);
         const char *keyname = PyUnicode_AsUTF8(key);
 
+		if (PyErr_Occurred())
+			throw DREAM::DREAMException("When loading path '%s': unable to load key name.", path.c_str());
+
         // Construct full name of setting
         string sname;
         if (path.size() == 0)
@@ -72,6 +78,9 @@ void dreampy_load_dict(DREAM::Settings *s, const string& path, PyObject *dict) {
         // if it represents another dictionary
         if (PyDict_Check(val)) {
             dreampy_load_dict(s, sname, val);
+
+			if (PyErr_Occurred())
+				return;
         } else {
             if (!s->HasSetting(sname))
                 continue;
@@ -94,6 +103,9 @@ void dreampy_load_dict(DREAM::Settings *s, const string& path, PyObject *dict) {
                         sname.c_str(), tp
                     );
             }
+
+			if (PyErr_Occurred())
+				return;
         }
     }
 }
@@ -129,6 +141,12 @@ void dreampy_load_bool(Settings *s, const string& name, PyObject *obj) {
         s->SetSetting(name, reinterpret_cast<bool>(obj == Py_True));
     } else if (PyLong_Check(obj)) {
         long l = PyLong_AsLong(obj);
+		if (PyErr_Occurred()) {
+			PyErr_PrintEx(1);
+			throw DREAM::DREAMException(
+				"Setting '%s': Conversion error.", name.c_str()
+			);
+		}
         s->SetSetting(name, reinterpret_cast<bool>(l != 0));
     } else if (PyArray_Check(obj)) {
         PyArrayObject *ao = reinterpret_cast<PyArrayObject*>(obj);
@@ -173,6 +191,13 @@ void dreampy_load_bool(Settings *s, const string& name, PyObject *obj) {
 void dreampy_load_int(Settings *s, const string& name, PyObject *obj) {
     if (PyLong_Check(obj)) {
         long l = PyLong_AsLong(obj);
+		if (PyErr_Occurred()) {
+			PyErr_PrintEx(1);
+			throw DREAM::DREAMException(
+				"Setting '%s': Conversion error.", name.c_str()
+			);
+		}
+
         s->SetSetting(name, static_cast<int_t>(l));
     } else if (PyArray_Check(obj)) {
         PyArrayObject *ao = reinterpret_cast<PyArrayObject*>(obj);
@@ -217,9 +242,21 @@ void dreampy_load_int(Settings *s, const string& name, PyObject *obj) {
 void dreampy_load_real(Settings *s, const string& name, PyObject *obj) {
     if (PyFloat_Check(obj)) {
         double d = PyFloat_AsDouble(obj);
+		if (PyErr_Occurred()) {
+			PyErr_PrintEx(1);
+			throw DREAM::DREAMException(
+				"Setting '%s': Conversion error.", name.c_str()
+			);
+		}
         s->SetSetting(name, static_cast<real_t>(d));
     } else if (PyLong_Check(obj)) {
         long l = PyLong_AsLong(obj);
+		if (PyErr_Occurred()) {
+			PyErr_PrintEx(1);
+			throw DREAM::DREAMException(
+				"Setting '%s': Conversion error.", name.c_str()
+			);
+		}
         s->SetSetting(name, static_cast<real_t>(l));
     } else if (PyArray_Check(obj)) {
         PyArrayObject *ao = reinterpret_cast<PyArrayObject*>(obj);
@@ -323,6 +360,13 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
                     "Setting '%s': Unrecognized type of list element: %s",
                     name.c_str(), li->ob_type->tp_name
                 );
+
+			if (PyErr_Occurred()) {
+				PyErr_PrintEx(1);
+				throw DREAM::DREAMException(
+					"Setting '%s': Conversion error.", name.c_str()
+				);
+			}
         }
 
         len_t nel = n;
@@ -399,6 +443,13 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
                     "Setting '%s': Unrecognized type of list element: %s",
                     name.c_str(), li->ob_type->tp_name
                 );
+
+			if (PyErr_Occurred()) {
+				PyErr_PrintEx(1);
+				throw DREAM::DREAMException(
+					"Setting '%s': Conversion error.", name.c_str()
+				);
+			}
         }
 
         len_t nel = n;
@@ -422,6 +473,12 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
 void dreampy_load_string(Settings *s, const string& name, PyObject *obj) {
     if (PyUnicode_Check(obj)) {
         string str = PyUnicode_AsUTF8(obj);
+		if (PyErr_Occurred()) {
+			PyErr_PrintEx(1);
+			throw DREAM::DREAMException(
+				"Setting '%s': Conversion error.", name.c_str()
+			);
+		}
         s->SetSetting(name, str);
     } else {
         throw DREAM::DREAMException(
