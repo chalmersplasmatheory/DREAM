@@ -77,8 +77,6 @@ def setup_simulation(ds, returnraw=False):
     elif type(ds) != dict:
         raise DREAMException("The input object 'ds' must be of type 'DREAMSettings' or 'dict'.")
 
-    #ds['eqsys']['spi']['ZsDrift'] = [int(0)]
-    print(ds['eqsys']['spi']['ZsDrift'])
     s = libdreampy.setup_simulation(ds)
     if returnraw:
         return s
