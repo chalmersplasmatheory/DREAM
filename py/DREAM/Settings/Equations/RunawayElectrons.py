@@ -30,15 +30,12 @@ COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
 COMPTON_RATE_ITER_DMS = -1
-COMPTON_RATE_ITER_DMS_FLUID = -1
 COMPTON_RATE_ITER_DMS_KINETIC = -2
 COMPTON_MACHINE_ITER = 1
 ITER_PHOTON_FLUX_DENSITY = 1e18
-# Compton photon spectrum fitted values corresponding to the
-# photon spectrum in [Martin-Solis et al, NF 57 (2017)]
-C1_COMPTON_MS2017 = 1.2
-C2_COMPTON_MS2017 = 0.8
-C3_COMPTON_MS2017 = 0.
+C1_COMPTON = 1.2
+C2_COMPTON = 0.8
+C3_COMPTON = 0.
 
 TRITIUM_MODE_NEGLECT = 1
 TRITIUM_MODE_FLUID = 2
@@ -79,7 +76,7 @@ def GammafluxProfil(E, C1, C2, C3):
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
   
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON_MS2017, C2_compton=C2_COMPTON_MS2017, C3_Compton=C3_COMPTON_MS2017, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON, C2_compton=C2_COMPTON, C3_Compton=C3_COMPTON, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED):
         """
         Constructor.
         """
@@ -155,6 +152,23 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.lcfs_user_input_psi = bool(user_input_active)
         self.lcfs_psi_edge_t0 = psi_edge_t0
 
+    def setPsiEdgefromOutput(self, do = None):
+        """Helper function to find the location of the 
+        LCFS through the extrapolation 
+        of the poloidal magnetic flux until the LCFS
+       
+        :param do: DREAM output file 
+        """
+        psi_high_t0 = do.eqsys.psi_p.data[0,-1]
+        psi_low_t0 = do.eqsys.psi_p.data[0,-2]
+        r_high_psi = do.other.fluid.grid.r.data[-1]
+        r_low_psi = do.other.fluid.grid.r.data[-2]
+        r_edge_psi = do.other.fluid.grid.r_f.data[-1]
+        slope_psi = (psi_high_t0 - psi_low_t0) / (r_high_psi - r_low_psi)
+        psi_edge_t0 = psi_high_t0 + slope_psi * (r_edge_psi - r_high_psi)
+
+        return psi_edge_t0
+
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
         """
@@ -186,7 +200,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if compton == False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
-            if compton == COMPTON_RATE_ITER_DMS_FLUID:
+            if compton == COMPTON_RATE_ITER_DMS:
                 # set fluid compton source and standard ITER flux of 1e18
                 compton = COMPTON_MODE_FLUID
                 if photonFlux is None:
@@ -211,11 +225,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 C3 = 0.
             else:
                 if C1 is None:
-                    C1 = C1_COMPTON_MS2017
+                    C1 = C1_COMPTON
                 if C2 is None:
-                    C2 = C2_COMPTON_MS2017
+                    C2 = C2_COMPTON
                 if C3 is None:
-                    C3 = C3_COMPTON_MS2017
+                    C3 = C3_COMPTON
 
 
             self.compton = int(compton)
@@ -284,6 +298,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
+       
 
 
     def fromdict(self, data):
