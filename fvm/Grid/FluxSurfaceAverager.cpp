@@ -328,6 +328,11 @@ real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
  */
 #include "FluxSurfaceAverager.avalancheDelta.cpp"
 
+/** 
+ * Calculations related to the bounce average of the Chiu-Harvey
+ * avalanche source
+ */
+#include "FluxSurfaceAverager.avalancheChiu.cpp"
 
 /**
  * Evalutes the singular product sqrt(g) * sqrt(theta-theta_b1)*sqrt(theta_b2-theta)

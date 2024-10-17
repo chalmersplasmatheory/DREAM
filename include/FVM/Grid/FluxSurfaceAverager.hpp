@@ -199,6 +199,7 @@ namespace DREAM::FVM {
             real_t BOverBmin, real_t ROverR0, real_t NablaR2, const int_t *Flist
         );
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
+        real_t EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_l, real_t p_u, real_t p_max, real_t xi_l, real_t xi_u, int_t RESign,  fluxGridType fgt, real_t Vp, real_t VpVol)
     };
 }
 
