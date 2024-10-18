@@ -18,7 +18,7 @@ class SolverNonLinear(Solver):
         super().__init__(solverdata, output)
 
         if 'solvertime' in solverdata:
-            self.solvertime = [int(x) for x in solverdata['solvertime'][:]]
+            self.solvertime = np.array([float(x) for x in solverdata['solvertime'][:]])
         if 'iterations' in solverdata:
             self.iterations = [int(x) for x in solverdata['iterations'][:]]
         if 'backupinverter' in solverdata:
