@@ -18,11 +18,11 @@ class SolverNonLinear(Solver):
         super().__init__(solverdata, output)
 
         if 'solvertime' in solverdata:
-            self.solvertime = np.array([float(x) for x in solverdata['solvertime'][:]])
+            self.solvertime = solverdata['solvertime'][:]
         if 'iterations' in solverdata:
-            self.iterations = [int(x) for x in solverdata['iterations'][:]]
+            self.iterations = solverdata['iterations'][:].astype(int)
         if 'backupinverter' in solverdata:
-            self.backupinverter = [x==1 for x in solverdata['backupinverter'][:]]
+            self.backupinverter = solverdata['backupinverter'][:].astype(bool)#[x==1 for x in solverdata['backupinverter'][:]]
         if 'nontrivials' in solverdata:
             self.nontrivials = solverdata['nontrivials'][:].split(';')[:-1]
         if 'unknowns' in solverdata:
