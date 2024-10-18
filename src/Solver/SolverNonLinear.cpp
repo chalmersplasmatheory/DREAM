@@ -266,6 +266,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
     // Save basic statistics for step
     this->nIterations.push_back(this->iteration);
+	this->solver_time.push_back(this->t);
     this->usedBackupInverter.push_back(this->inverter == this->backupInverter);
 
     this->timeKeeper->StopTimer(timerTot);
@@ -728,6 +729,9 @@ void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
 
 	// Number of iterations per time step
 	sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
+
+	// Time array
+	sf->WriteList(name+"/solvertime", this->solver_time.data(), this->solver_time.size());
 
 	// Whether or not backup inverter was used for a given time step
 	len_t nubi = this->usedBackupInverter.size();

@@ -17,6 +17,8 @@ class SolverNonLinear(Solver):
         """
         super().__init__(solverdata, output)
 
+        if 'solvertime' in solverdata:
+            self.solvertime = [int(x) for x in solverdata['solvertime'][:]]
         if 'iterations' in solverdata:
             self.iterations = [int(x) for x in solverdata['iterations'][:]]
         if 'backupinverter' in solverdata:
@@ -100,10 +102,10 @@ class SolverNonLinear(Solver):
                 show = True
 
         if time:
-            t = self.output.grid.t[1:]
+            t = self.solvertime[:]
             xlbl = r'Simulation time (s)'
         else:
-            t = np.linspace(1, self.output.grid.t.size-1, self.output.grid.t.size-1)
+            t = np.linspace(1, self.solvertime.size, self.solvertime.size)
             xlbl = r'Time step'
 
         ax.plot(t, self.iterations, linewidth=2, **kwargs)
@@ -158,16 +160,16 @@ class SolverNonLinear(Solver):
             if showtimesteps:
                 tarr = np.array([t])
             else:
-                tarr = np.array([self.output.grid.t[t]])
+                tarr = np.array([self.solvertime[t-1]])
 
             for i in range(len(uids)):
                 _d[i,0] = data[uids[i],t]
         else:
             _d = np.zeros((len(uids), data.shape[1]))
             if showtimesteps:
-                tarr = np.array(range(self.output.grid.t.size))
+                tarr = np.array(range(self.solvertime.size))+1
             else:
-                tarr = self.output.grid.t[:]
+                tarr = self.solvertime[:]
             for i in range(len(uids)):
                 _d[i,:] = data[uids[i],:]
 

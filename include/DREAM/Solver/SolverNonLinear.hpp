@@ -39,6 +39,7 @@ namespace DREAM {
 
         std::vector<len_t> nIterations;
         std::vector<bool> usedBackupInverter;
+        std::vector<real_t> solver_time;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
