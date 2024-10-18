@@ -22,7 +22,7 @@ class SolverNonLinear(Solver):
         if 'iterations' in solverdata:
             self.iterations = solverdata['iterations'][:].astype(int)
         if 'backupinverter' in solverdata:
-            self.backupinverter = solverdata['backupinverter'][:].astype(bool)#[x==1 for x in solverdata['backupinverter'][:]]
+            self.backupinverter = solverdata['backupinverter'][:].astype(bool)
         if 'nontrivials' in solverdata:
             self.nontrivials = solverdata['nontrivials'][:].split(';')[:-1]
         if 'unknowns' in solverdata:
