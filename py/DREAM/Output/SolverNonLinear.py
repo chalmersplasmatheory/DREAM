@@ -69,7 +69,7 @@ class SolverNonLinear(Solver):
         This method returns an array of tuples, where each tuple denotes a
         single range of time steps where the backup solver was used.
         """
-        r = np.linspace(1, self.output.grid.t.size, self.output.grid.t.size)[np.where(self.backupinverter)]
+        r = np.linspace(1, self.solvertime.size, self.solvertime.size)[np.where(self.backupinverter)]
         if not r:
             return []
 
@@ -120,13 +120,13 @@ class SolverNonLinear(Solver):
         xr = self.getBackupRanges()
         for rg in xr:
             if time:
-                ts1 = 0.5*self.output.grid.t[int(rg[0])] + 0.5*self.output.grid.t[int(rg[0])-1]
-                ts2 = 0.5*self.output.grid.t[int(rg[1])]
+                ts1 = 0.5*self.solvertime[int(rg[0])] + 0.5*self.solvertime[int(rg[0])-1]
+                ts2 = 0.5*self.solvertime[int(rg[1])]
 
-                if rg[1]+1 < self.output.grid.t.size:
-                    ts2 += 0.5*self.output.grid.t[int(rg[1])+1]
+                if rg[1]+1 < self.solvertime.size:
+                    ts2 += 0.5*self.solvertime[int(rg[1])+1]
                 else:
-                    ts2 += 2*ts2 - 0.5*self.output.grid.t[int(rg[1])-1]
+                    ts2 += 2*ts2 - 0.5*self.solvertime[int(rg[1])-1]
             else:
                 ts1, ts2 = rg[0]-0.5, rg[1]+0.5
 
