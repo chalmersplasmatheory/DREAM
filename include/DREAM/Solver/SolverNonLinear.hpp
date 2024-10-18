@@ -37,9 +37,9 @@ namespace DREAM {
             savevector = false, savenumjac = false, savesystem = false, debugrescaled = false;
         len_t savetimestep = 0, saveiteration = 1;
 
+        std::vector<real_t> solver_time;
         std::vector<len_t> nIterations;
         std::vector<bool> usedBackupInverter;
-        std::vector<real_t> solver_time;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
