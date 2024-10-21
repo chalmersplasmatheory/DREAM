@@ -236,7 +236,7 @@ real_t integrandP_passing_test(real_t p, void *par){
  *           Is used to flip the pitch of the source
  *      fgt: fluxGridType object needed for bounce averaging.
  */
-real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_l, real_t p_u, real_t p_max, real_t xi_l, real_t xi_u, int_t RESign,  fluxGridType fgt, real_t Vp, real_t VpVol){
+real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_l, real_t p_u, real_t p_max, real_t xi_l, real_t xi_u,  fluxGridType fgt, real_t Vp, real_t VpVol, int_t RESign){
     real_t theta_Bmin=0, theta_Bmax=0;
     real_t Bmin = GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);

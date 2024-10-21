@@ -67,6 +67,14 @@ Grid::~Grid() {
         delete [] avalancheDeltaHat;
         delete [] avalancheDeltaHatNegativePitch;
     }
+    if(avalancheCHBounceAverage != nullptr){
+        for(len_t ir=0; ir<nr; ir++){
+            delete [] avalancheCHBounceAverage[ir];
+            delete [] avalancheCHBounceAverageNegativePitch[ir];
+        }
+        delete [] avalancheCHBounceAverage;
+        delete [] avalancheCHBounceAverageNegativePitch;
+    }
 }
 
 /*****************************
@@ -280,6 +288,7 @@ void Grid::RebuildBounceAveragedQuantities(){
         BA_xi2B2_f1,BA_xi2B2_f2);
 
     CalculateAvalancheDeltaHat();
+    CalculateAvalancheCHBounceAverage();
 
 }
 
@@ -418,6 +427,61 @@ void Grid::CalculateAvalancheDeltaHat(){
                 real_t Vp = this->Vp[ir][j_tmp*np1+i];
                 avalancheDeltaHat[ir][j_tmp*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
                 avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
+            }        
+    }
+
+}
+
+/**
+ * Evaluates and stores the bounce- and cell average factor 
+ * that appears in the Chiu-Harvey avalanche source.
+ */
+void Grid::CalculateAvalancheCHBounceAverage(){ // TODO: fluxgridtype
+    if(avalancheCHBounceAverage != nullptr){
+        for(len_t ir=0; ir<GetNr(); ir++){
+            delete [] avalancheCHBounceAverage[ir];
+            delete [] avalancheCHBounceAverageNegativePitch[ir];
+        }
+        delete [] avalancheCHBounceAverage;
+        delete [] avalancheCHBounceAverageNegativePitch;
+    }
+
+    avalancheCHBounceAverage = new real_t*[GetNr()];
+    avalancheCHBounceAverageNegativePitch = new real_t*[GetNr()];
+
+    for(len_t ir=0; ir<GetNr(); ir++){
+        MomentumGrid *mg = momentumGrids[ir];
+        real_t VpVol = GetVpVol(ir);
+        len_t np1 = GetNp1(ir);
+        len_t np2 = GetNp2(ir);
+        real_t p_max =  mg->GetP1(np1-1); // TODO: OK?
+        avalancheCHBounceAverage[ir] = new real_t[np1*np2];        
+        avalancheCHBounceAverageNegativePitch[ir] = new real_t[np1*np2]; 
+        for(len_t i=0; i<np1*np2; i++){
+            avalancheCHBounceAverage[ir][i] = 0;
+            avalancheCHBounceAverageNegativePitch[ir][i] = 0;
+        }  
+        for(len_t i=0; i<np1; i++)
+            for(len_t j=0; j<np2; j++){
+                real_t p_l = mg->GetP1_f(i); // TODO: OK?
+                real_t p_u = mg->GetP1_f(i+1); // TODO: OK?
+                real_t xi_l = mg->GetP2_f(j);
+                real_t xi_u = mg->GetP2_f(j+1);
+                
+                // TODO: Is this really needed? Probably only for RP-source? 
+                // if negative-pitch trapped boundary, find index containing 
+                // mirrored (-xi) cell to which we instead add the contribution
+                /*
+                len_t j_tmp=j;
+                if(IsNegativePitchTrappedIgnorableCell(ir,j))
+                    while(mg->GetP2_f(j_tmp+1)<=-mg->GetP2(j) && j_tmp<np2)
+                        j_tmp++;    
+                */
+                // normalize contribution with dxi in new cell
+                real_t fac = 1;//mg->GetDp2(j)/mg->GetDp2(j_tmp);// TODO: Remove?
+                real_t Vp = this->Vp[ir][j_tmp*np1+i];
+                avalancheCHBounceAverage[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_l, p_u, p_max, xi_l, xi_u, fgt, Vp, VpVol);
+                avalancheCHBounceAverageNegativePitch[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_l, p_u, p_max, xi_l, xi_u, fgt, Vp, VpVol, -1);
             }        
     }
 

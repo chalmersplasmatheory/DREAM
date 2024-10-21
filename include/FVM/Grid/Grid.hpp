@@ -31,7 +31,9 @@ namespace DREAM::FVM {
         // bounce averaged pitch delta function for RP avalanche source
         real_t 
             **avalancheDeltaHat = nullptr,
-            **avalancheDeltaHatNegativePitch = nullptr;
+            **avalancheDeltaHatNegativePitch = nullptr,
+            **avalancheCHBounceAverage = nullptr,
+            **avalancheCHBounceAverageNegativePitch = nullptr;
         
         // Orbit-averaged metric V'. Size Nr+ x (Np1+ x Np2+).
         real_t
@@ -231,8 +233,18 @@ namespace DREAM::FVM {
                 return avalancheDeltaHat[ir][pind]; // placeholder for avalanche calculation
             else
                 return avalancheDeltaHatNegativePitch[ir][pind];
-    }
+        }
+        const real_t GetAvalancheCHBounceAverage(const len_t ir, const len_t i, const len_t j, int_t RESign=1)
+        {
+            len_t pind = GetNp1(ir)*j+i;
+            if(RESign>=0)
+                return avalancheCHBounceAverage[ir][pind]; // placeholder for avalanche calculation
+            else
+                return avalancheCHBounceAverageNegativePitch[ir][pind];
+        }
+        
         void CalculateAvalancheDeltaHat();
+        void CalculateAvalancheCHBounceAverage();
 
         real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
