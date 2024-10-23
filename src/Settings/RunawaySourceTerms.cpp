@@ -37,7 +37,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
         rsth->AddSourceTerm(eqnSign + "n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
 
-    else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+    else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_RP) {
         if (hottailGrid || runawayGrid != nullptr) {
             // XXX: assume same momentum grid at all radii
             real_t pCut;
@@ -55,6 +55,20 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                         rsth->AddSourceTerm(eqnSign + "external avalanche", new ExternalAvalancheTerm(grid, pCut, -2.0, REFluid, unknowns, -1.0)  );
                     else  // use regular external RE growth (RP integrated over p>pCut)
                         rsth->AddSourceTerm(eqnSign + "external avalanche", new AvalancheSourceRP(grid, unknowns, pCut, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
+                }
+        } else
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic avalanche term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");
+    } else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_CH) {
+        if (hottailGrid || runawayGrid != nullptr) {
+            // XXX: assume same momentum grid at all radii
+            real_t pCut;
+            if (hottailGrid != nullptr)
+                pCut = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+            else if (runawayGrid != nullptr)
+                pCut = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
+
+                if (grid == runawayGrid) {
+                    rsth->AddSourceTerm(eqnSign + "avalanche", new AvalancheSourceCH(grid, unknowns, pCut, -1.0, AvalancheSourceCH::RP_SOURCE_PITCH_POSITIVE) );
                 }
         } else
             DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic avalanche term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");

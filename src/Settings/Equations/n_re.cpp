@@ -12,6 +12,7 @@
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceCH.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"

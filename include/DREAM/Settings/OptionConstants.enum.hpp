@@ -278,7 +278,8 @@ enum eqterm_avalanche_mode {                        // Avalanche generation is..
     EQTERM_AVALANCHE_MODE_NEGLECT = 1,              // neglected
     EQTERM_AVALANCHE_MODE_FLUID = 2,                // modelled with fluid growth rate formula
     EQTERM_AVALANCHE_MODE_FLUID_HESSLOW = 3,        // modelled with fluid growth rate formula published by Hesslow et al NF 2019
-    EQTERM_AVALANCHE_MODE_KINETIC = 4               // modelled kinetically with RP avalanche source
+    EQTERM_AVALANCHE_MODE_KINETIC_RP = 4,           // modelled kinetically with RP avalanche source
+    EQTERM_AVALANCHE_MODE_KINETIC_CH = 5            // modelled kinetically with CH avalanche source
 };
 
 enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...
