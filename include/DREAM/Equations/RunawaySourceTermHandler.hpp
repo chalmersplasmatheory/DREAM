@@ -9,6 +9,7 @@
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceCH.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
@@ -44,6 +45,7 @@ namespace DREAM {
         void AddSourceTerm(const std::string& desc, AvalancheSourceRP *t) { this->description += desc; this->avalanche = t; }
         void AddAvalancheNreNeg(AvalancheSourceRP *t) { this->avalanche_neg = t; }
         void AddAvalancheNreNegPos(AvalancheSourceRP *t) { this->avalanche_negpos = t; }
+        void AddSourceTerm(const std::string& desc, AvalancheSourceCH *t) { this->description += desc; this->avalanche = t; }
         void AddSourceTerm(const std::string& desc, ExternalAvalancheTerm *t) { this->description += desc; this->avalanche = t; }
         void AddSourceTerm(const std::string& desc, ComptonRateTerm *t) { this->description += desc; this->compton = t; }
         void AddSourceTerm(const std::string& desc, ComptonSource *t)   { this->description += desc; this->compton = t; }

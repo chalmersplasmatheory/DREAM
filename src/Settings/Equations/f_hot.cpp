@@ -115,7 +115,7 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
 
     // Add avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_RP) {
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
 
@@ -124,6 +124,18 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
+    } else if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_CH) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
+        Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
+        if (eqsys->HasRunawayGrid()){
+		    len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+            eqsys->SetOperator(id_f_hot, id_f_re, Op_ava);
+        } else
+            eqsys->SetOperator(id_f_hot, id_f_hot, Op_ava);
     }
     
     // Add Compton source
@@ -236,10 +248,10 @@ void SimulationGenerator::ConstructEquation_f_hot_prescribed(
 	);
 }
 
-/**
+/** TODO: Do we need the same thing for CH source?
  * Implementation of an equation term which represents the total
  * number of electrons created by the kinetic Rosenbluth-Putvinski source
- */
+ */ 
 namespace DREAM {
     class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
     public:
@@ -362,7 +374,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     
     // Add contribution from kinetic avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_RP) {
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
 

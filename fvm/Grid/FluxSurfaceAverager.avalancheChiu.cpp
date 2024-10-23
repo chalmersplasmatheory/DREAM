@@ -25,15 +25,25 @@ real_t ximax(real_t gamma, int_t RESign){
 /*
  * Integrand of each bounce average calculation term.
  */
-struct avParams {real_t xi0; real_t gamma; int_t term}; // Dubbeltänk
+struct avParams {real_t xi0; real_t gamma; int_t term; int_t RESign;}; // Dubbeltänk
 real_t BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void *par){
-    if (xiOverXi0 <= 0)
-        return 0;
-    
     struct avParams *params = (struct avParams *) par;
     real_t xi0 = params->xi0;
     real_t gamma = params->gamma;
     int_t term = params->term;
+    int_t RESign = params->RESign;
+    
+    if (RESign >= 0) {
+        if (xiOverXi0 <= 0)
+            return 0;
+        if (ximax(gamma, RESign) < xiOverXi0*abs(xi0))
+            return 0;
+    } else {
+        if (xiOverXi0 >= 0)
+            return 0;
+        if (ximax(gamma, RESign) > xiOverXi0*abs(xi0))
+            return 0;
+    }
 
     real_t xi2 = 1. - (1. - xi0*xi0) * BOverBmin;
     real_t denom = xi2 * (gamma + 1.) - (gamma - 1.);
@@ -76,16 +86,12 @@ real_t integrandXi(real_t xi0, void *par){
     if(RESign>=0){
         if(xi0 < ximin(gamma, gamma_max, RESign))
             return 0;
-        else if(xi0 > ximax(gamma, RESign))
-            return 0;
     } else {
-        if(xi0 < ximax(gamma, RESign))
-            return 0;
-        else if(xi0 > ximin(gamma, gamma_max, RESign))
+        if(xi0 > ximin(gamma, gamma_max, RESign))
             return 0;
     }
 
-    avParams avg_params = {xi0, gamma, term};
+    avParams avg_params = {xi0, gamma, term, RESign};
     real_t factor_BA = CalculatePXiBounceAverageAtP(ir, xi0, fgt, &BA_CH, avg_params);
     
     if (term < 3)
@@ -128,13 +134,23 @@ real_t integrandP(real_t p, void *par){
 
 // TODO: Remove
 real_t FSA_CH(real_t BOverBmin, real_t, real_t, void *par){
-    if (xiOverXi0 <= 0)
-        return 0;
-    
     struct avParams *params = (struct avParams *) par;
     real_t xi0 = params->xi0;
     real_t gamma = params->gamma;
     int_t term = params->term;
+    int_t RESign = params->RESign;
+    
+    if (RESign >= 0) {
+        if (xiOverXi0 <= 0)
+            return 0;
+        if (ximax(gamma, RESign) < xiOverXi0*abs(xi0))
+            return 0;
+    } else {
+        if (xiOverXi0 >= 0)
+            return 0;
+        if (ximax(gamma, RESign) > xiOverXi0*abs(xi0))
+            return 0;
+    }
 
     real_t xi2 = 1. - (1. - xi0*xi0) * BOverBmin;
     real_t denom = xi2 * (gamma + 1.) - (gamma - 1.);
@@ -173,12 +189,8 @@ real_t integrandXi_passing_test(real_t xi0, void *par){
     if(RESign>=0){
         if(xi0 < ximin(gamma, gamma_max, RESign))
             return 0;
-        else if(xi0 > ximax(gamma, RESign))
-            return 0;
     } else {
-        if(xi0 < ximax(gamma, RESign))
-            return 0;
-        else if(xi0 > ximin(gamma, gamma_max, RESign))
+        if(xi0 > ximin(gamma, gamma_max, RESign))
             return 0;
     }
 
@@ -242,23 +254,28 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
     real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BminOverBmax;
     real_t xi_u_max; 
-    // TODO: DO!
+    
     if(Bmin==Bmax) {
         BminOverBmax=1;
-        //xi_u_max = xi_u; 
+        xi_u_max = xi_u; 
     } else {
         BminOverBmax = Bmin/Bmax;
-        //xi_u_max = sqrt(1 - (1 - xi_u*xi_u)*)
+        xi_u_max = sqrt(1 - (1 - xi_u*xi_u)/BminOverBmax);
+        if (xi_u < 0)
+            xi_u_max =* -1.;
+        xi_l_max = sqrt(1 - (1 - xi_l*xi_l)/BminOverBmax);
+        if (xi_l < 0)
+            xi_l_max =* -1.;
     }
     if(RESign>=0){
-        if( ximax(gamma, RESign) <= xi_l )
+        if( ximax(gamma, RESign) <= xi_l_max )
             return 0;
         else if( ximin(gamma, gamma_max, RESign) >= xi_u )
             return 0;
     } else {
         if( ximin(gamma, gamma_max, RESign) <= xi_l )
             return 0;
-        else if( ximax(gamma, RESign) >= xi_u )
+        else if( ximax(gamma, RESign) >= xi_u_max )
             return 0;
     }
     
@@ -271,24 +288,26 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
     real_t avaCH_BA; 
     intPParams intP_params = {ir, fgt, p_max, RESign};
     gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&avaCH_BA, &error);
-
+    avaCH_BA *= 1 / (p_i*p_i * Delta_p * xi_j * Delta_xi);
+    
     if  ( (1-xi0*xi0) >  BminOverBmax){
         gsl_function int_gsl_func;
         term_gsl_func.function = &(integrandP_passing_test);
 
-        real_t avaCH_FVA_passing_test, avaCH_BA_passing_test; 
+        real_t avaCH_FVA_passing_test; 
         intPParams intP_params = {ir, fgt, p_max, RESign};
         gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&avaCH_FVA_passing_test, &error);
 
         real_t p_i  =  (p_l + p_u)  / 2.;
         real_t xi_j = (xi_l + xi_u) / 2.;
 
-        avaCH_FVA_passing_test *= 1 / (p_i*p_i * xi_j);
+        real_t Delta_p  = p_u - p_l;
+        real_t Delta_xi = xi_u - xi_l;
 
-        avaCH_BA_passing_test = VpVol / Vp * avaCH_BA;
+        avaCH_FVA_passing_test *= VpVol / (Vp * Delta_p * Delta_xi);
 
-        printf("\nBA=%.4e, FVA=%.4e, diff=%.4e\n", avaCH_BA_passing_test, avaCH_FVA_passing_test, abs(avaCH_BA_passing_test - avaCH_FVA_passing_test));
-    }
+        printf("\nBA=%.4e, FVA=%.4e, diff=%.4e\n", avaCH_BA, avaCH_FVA_passing_test, abs(avaCH_BA_passing_test - avaCH_FVA_passing_test));
+    } 
     
     return avaCH_BA;
 }

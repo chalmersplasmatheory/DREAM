@@ -15,10 +15,8 @@ using namespace DREAM;
  */
 AvalancheSourceCH::AvalancheSourceCH(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t scaleFactor, CHSourceMode sm,
-    CHSourcePitchMode sxm
-) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceMode(sm),
-    sourceXiMode(sxm)
+    real_t pCutoff, real_t scaleFactor, CHSourcePitchMode sxm
+) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceXiMode(sxm)
 {
     SetName("AvalancheSourceCH");
 
@@ -36,17 +34,17 @@ AvalancheSourceCH::AvalancheSourceCH(
  * Evaluates the constant (only grid dependent) source-shape function S(r,p)
  */
 real_t AvalancheSourceCH::EvaluatCHSource(len_t ir, len_t i, len_t j){
-    //if(sourceMode == CH_SOURCE_MODE_FLUID)
-    //    return scaleFactor*EvaluateNormalizedTotalKnockOnNumber(pCutoff);
-
+    real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
     real_t pp = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
     
     // if pCutoff lies above this cell, return 0.
-    // if pCutoff lies inside this cell, set pm to pCutoff.
+    // if pCutoff lies inside this cell, use only the corresping fraction 
+    // (pp - pCutoff)/(pp - pm) of the source.
+    real_t cutFactor = 1.;
     if(pp<=pCutoff)
         return 0;
     else if(pm<pCutoff)
-        pm = pCutoff; // TODO: Have to fix this in FluxSurfaceAverager!
+        cutFactor = (pp - pCutoff)/(pp - pm); 
          
     int_t RESign;
     if (this->sourceXiMode == CH_SOURCE_PITCH_ADAPTIVE) {
@@ -58,7 +56,7 @@ real_t AvalancheSourceCH::EvaluatCHSource(len_t ir, len_t i, len_t j){
         RESign = -1;
 
     const real_t BA = grid->GetAvalancheCHBounceAverage(ir,i,j, RESign);
-    return scaleFactor * preFactor * deltaHat;
+    return scaleFactor * preFactor * cutFactor * BA;
 }
 
 /**
@@ -80,29 +78,60 @@ real_t AvalancheSourceCH::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
         return 0;
 }
 
-/** TODO: This?!
- * Returns the flux-surface averaged avalanche source integrated over 
- * all xi and momenta pLower < p < pUpper, normalized to n_re*n_tot. 
- */
-real_t AvalancheSourceCH::EvaluateNormalizedTotalKnockOnNumber(real_t pLower, real_t pUpper){
-    if(pLower==0)
-        return std::numeric_limits<real_t>::infinity();
-    real_t e = Constants::ec;
-    real_t epsmc = Constants::eps0 * Constants::me * Constants::c;
-    real_t preFactor = (e*e*e*e)/(2*M_PI*epsmc*epsmc*Constants::c);
-    
-    // IOverG = 1/(gamma-1)
-    real_t pLo2 = pLower*pLower;
-    real_t gLower = sqrt(1+pLo2);
-    real_t IOverGLo = (gLower+1)/pLo2;
 
-    real_t IOverGUp;
-    if(pUpper == std::numeric_limits<real_t>::infinity())
-        IOverGUp = 0;
-    else { 
-        real_t pUp2 = pUpper*pUpper;
-        real_t gUpper = sqrt(1+pUp2);
-        IOverGUp = (gUpper+1)/pUp2;
-    }
-    return 2*M_PI*preFactor*(IOverGLo - IOverGUp);
+/** 
+ * Set matrix elements. 
+ */
+void AvalancheSourceCH::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
+    len_t offset = 0;
+    for(len_t ir=0; ir<nr; ir++){
+        for(len_t i=0; i<n1[ir]; i++)
+            for(len_t j=0; j<n2[ir]; j++){
+                len_t ind = offset + n1[ir]*j + i;
+                mat->SetElement(ind, ir, sourceVec[ind] * this->grid->GetMomentumGrid(i)->GetDp2(j) / 2.);
+            }
+        offset += n1[ir]*n2[ir];
+    }        
 }
+
+
+/**
+ * Set vector elements.
+ */
+void AvalancheSourceCH::SetVectorElements(real_t *vec, const real_t *x){
+    len_t offset = 0;
+    for(len_t ir=0; ir<nr; ir++){
+        for(len_t i=0; i<n1[ir]; i++)
+            for(len_t j=0; j<n2[ir]; j++){
+                len_t ind = offset + n1[ir]*j + i;
+                real_t f_re_PA = 0;
+                for(len_t j_int=0; j_int<n2[ir]; j_int++){
+                    f_re_PA += x[offset + n1[ir]*j_int + i] * this->grid->GetMomentumGrid(i)->GetDp2(j_int) / 2.;
+                }
+                vec[ind] += sourceVec[ind]*f_re_PA;
+            }
+        offset += n1[ir]*n2[ir];
+    }
+}
+
+
+/**
+ * Set jacobian matrix elements.
+ */
+ /* Not needed: the same as in FluidSource
+bool AvalancheSourceCH::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*){
+    if(derivId != uqtyId){
+        len_t offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            for(len_t i=0; i<n1[ir]; i++)
+                for(len_t j=0; j<n2[ir]; j++){
+                    real_t dS = GetSourceFunctionJacobian(ir,i,j,derivId);
+                    jac->SetElement(offset + n1[ir]*j + i, ir, dS*x[ir]);
+                }
+            offset += n1[ir]*n2[ir];
+        }
+    }
+    SetMatrixElements(jac, nullptr);
+    return true;
+}
+*/

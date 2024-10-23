@@ -35,7 +35,9 @@ namespace DREAM {
         AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourceMode sm = CH_SOURCE_MODE_KINETIC, CHSourcePitchMode sem = CH_SOURCE_PITCH_ADAPTIVE);
 
         real_t EvaluateCHSource(len_t ir, len_t i, len_t j);
-        static real_t EvaluateNormalizedTotalKnockOnNumber(real_t pLower, real_t pUpper=std::numeric_limits<real_t>::infinity());
+        
+        virtual void  SetVectorElements(real_t*, const real_t*) override;
+        virtual void  SetMatrixElements(FVM::Matrix*, real_t*) override;
     };
 }
 
