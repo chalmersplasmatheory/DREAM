@@ -69,6 +69,8 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
 
                 if (grid == runawayGrid) {
                     rsth->AddSourceTerm(eqnSign + "avalanche", new AvalancheSourceCH(grid, unknowns, pCut, -1.0, AvalancheSourceCH::RP_SOURCE_PITCH_POSITIVE) );
+                    rsth->AddAvalancheNreNeg(new AvalancheSourceCH(grid, unknowns, pCut, +1.0, AvalancheSourceCH::RP_SOURCE_PITCH__POSITIVE));
+                    rsth->AddAvalancheNreNegPos(new AvalancheSourceCH(grid, unknowns, pCut, -1.0, AvalancheSourceCH::RP_SOURCE_PITCH__NEGATIVE));
                 }
         } else
             DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_AVALANCHE_NO_HOT_GRID, "A kinetic avalanche term is used, but the hot-tail grid is disabled. Ignoring avalanche source...");
