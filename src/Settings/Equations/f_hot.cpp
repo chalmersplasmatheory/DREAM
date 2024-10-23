@@ -248,7 +248,7 @@ void SimulationGenerator::ConstructEquation_f_hot_prescribed(
 	);
 }
 
-/** TODO: Do we need the same thing for CH source?
+/**
  * Implementation of an equation term which represents the total
  * number of electrons created by the kinetic Rosenbluth-Putvinski source
  */ 

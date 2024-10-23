@@ -46,6 +46,8 @@ namespace DREAM {
         void AddAvalancheNreNeg(AvalancheSourceRP *t) { this->avalanche_neg = t; }
         void AddAvalancheNreNegPos(AvalancheSourceRP *t) { this->avalanche_negpos = t; }
         void AddSourceTerm(const std::string& desc, AvalancheSourceCH *t) { this->description += desc; this->avalanche = t; }
+        void AddAvalancheNreNeg(AvalancheSourceCH *t) { this->avalanche_neg = t; }
+        void AddAvalancheNreNegPos(AvalancheSourceCH *t) { this->avalanche_negpos = t; }
         void AddSourceTerm(const std::string& desc, ExternalAvalancheTerm *t) { this->description += desc; this->avalanche = t; }
         void AddSourceTerm(const std::string& desc, ComptonRateTerm *t) { this->description += desc; this->compton = t; }
         void AddSourceTerm(const std::string& desc, ComptonSource *t)   { this->description += desc; this->compton = t; }
