@@ -73,6 +73,12 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 		const real_t *Bmin_f = rGrid->GetBmin_f();
 		const real_t R0 = rGrid->GetR0();
 
+		if (std::isinf(R0))
+			throw SettingsException(
+				"Cannot re-scale current density profile in cylindrical geometry. "
+				"A finite major radius R0 is required to do so."
+			);
+
 		FVM::Interpolator1D *iGR0 = new FVM::Interpolator1D(
 			nr_f, 1, r_f, GR0_f, FVM::Interpolator1D::INTERP_LINEAR, false
 		);
@@ -103,6 +109,12 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 		const real_t *BOverBmin2_f = rGrid->GetFSA_B2_f();
 		const real_t *Bmin_f = rGrid->GetBmin_f();
 		const real_t R0 = rGrid->GetR0();
+
+		if (std::isinf(R0))
+			throw SettingsException(
+				"Cannot re-scale current density profile in cylindrical geometry. "
+				"A finite major radius R0 is required to do so."
+			);
 
 		FVM::Interpolator1D *iGR0 = new FVM::Interpolator1D(
 			nr_f, 1, r_f, GR0_f, FVM::Interpolator1D::INTERP_LINEAR, false
@@ -197,6 +209,12 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 			const real_t *Bmin = rGrid->GetBmin();
 			const real_t R0 = rGrid->GetR0();
 
+			if (std::isinf(R0))
+				throw SettingsException(
+					"Cannot re-scale current density profile in cylindrical geometry. "
+					"A finite major radius R0 is required to do so."
+				);
+
 			for (len_t ir = 0; ir < nr; ir++)
 				jtot_init[ir] *= Bmin[ir] * R0*R0*R0 / (GR0[ir] * R02OverR2[ir]);
 
@@ -209,8 +227,14 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 			const real_t *Bmin = rGrid->GetBmin();
 			const real_t R0 = rGrid->GetR0();
 			
+			if (std::isinf(R0))
+				throw SettingsException(
+					"Cannot re-scale current density profile in cylindrical geometry. "
+					"A finite major radius R0 is required to do so."
+				);
+
 			for (len_t ir = 0; ir < nr; ir++)
-				jtot_init[ir] = GR0[ir] * R02OverR2[ir] / (BOverBmin2[ir] * Bmin[ir] * R0);
+				jtot_init[ir] *= GR0[ir] * R02OverR2[ir] / (BOverBmin2[ir] * Bmin[ir] * R0);
 		}
 
 		// Re-scale to get right plasma current (Ip)?
