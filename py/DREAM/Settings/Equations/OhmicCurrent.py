@@ -16,6 +16,9 @@ PROFILE_TYPE_J_PARALLEL = 1
 PROFILE_TYPE_J_DOT_GRADPHI = 2
 PROFILE_TYPE_JTOR_OVER_R = 3
 
+# 'CORSICA' is a synonym for 'JTOR_OVER_R'
+PROFILE_TYPE_CORSICA = PROFILE_TYPE_JTOR_OVER_R
+
 
 class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
