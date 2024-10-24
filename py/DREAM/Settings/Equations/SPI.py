@@ -88,6 +88,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.abl_ioniz                   = int(abl_ioniz)
         self.shift                       = int(shiftMode)
 
+        self.Ninj     = None
         self.rp       = None
         self.vp       = None
         self.xp       = None
@@ -103,7 +104,13 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.isotopesDrift = [0]
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, TDrift = None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, Ninj=None, nbrShiftGridCell = None, TDrift = None):
+
+        if Ninj is not None:
+            if np.isscalar(Ninj):
+                self.Ninj = np.asarray([Ninj])
+            else:
+                self.Ninj = np.asarray(Ninj)
 
         if rp is not None:
             if np.isscalar(rp):
@@ -173,7 +180,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         settings with the appropriate molar fractions contributing to each ion species
         
         :param int nShard: Number of shards into which the pellet is shattered
-        :param float Ninj: Numbr of particles contained in the pellet
+        :param float Ninj: Number of particles contained in the pellet
         :param list Zs: List of charge numbers for every ion species the pellet consists of
         :param list isotopes: List of isotopes for every ion species the pellet consists of
         :param numpy.ndarray molarFractions: Molar fraction with which each ion species contribute
@@ -209,6 +216,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         solidParticleDensity=N_A/molarVolume
        
+        if add and self.Ninj is not None:
+            self.Ninj = np.concatenate((self.Ninj, [Ninj]))
+        else:
+            self.Ninj = np.array([Ninj])
        
         # Calculate inverse characteristic shard size
         kp=(6*np.pi**2*solidParticleDensity*nShard/Ninj)**(1/3)
@@ -623,6 +634,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.nbrShiftGridCell = data['nbrShiftGridCell']
 
         if 'init' in data:
+            if 'Ninj' in data['init']:
+                self.Ninj            = data['init']['Ninj']
             if 'rp' in data['init']:
                 self.rp              = data['init']['rp']
             if 'vp' in data['init']:
@@ -670,6 +683,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         data['init'] = {}
         
+        if self.Ninj is not None:
+            data['init']['Ninj'] = self.Ninj
         if self.rp is not None:
             data['init']['rp']=self.rp
         if self.vp is not None:

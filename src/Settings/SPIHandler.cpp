@@ -24,11 +24,11 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/ZsDrift","Ion charges correspnding to ZavgDriftArray", 0, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/isotopesDrift","Ion isotopes correspnding to ZavgDriftArray", 0, (int_t*)nullptr);
 
-
-    s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/init/xp", "initial shard positions",0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/init/vp", "shard velocities",0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/init/t_delay", "time delay before the shards start moving",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/Ninj", "Number of particles contained in pellet", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/rp", "Initial number of shard particles",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/xp", "Initial shard positions",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/vp", "Shard velocities",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/t_delay", "Time delay before the shards start moving",0, (real_t*)nullptr);
 
     s->DefineSetting(MODULENAME "/VpVolNormFactor", "Norm factor for VpVol=1/R to be used when having an otherwise cylindrical geometry, to get a finita volume of the flux tubes with the correct unit",1.0);
     s->DefineSetting(MODULENAME "/rclPrescribedConstant", "Precribed, constant radius for the neutral cloud surrounding the pellet shards",0.01);
