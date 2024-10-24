@@ -239,8 +239,6 @@ const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
     return n_i[nr*Zind + ir];
 }
 
-
-
 // Returns the densities of ions which have Z index "ir" at radial index ir, for each Z0 (size Z0+1).
 const real_t* IonHandler::GetIonDensity(len_t ir, len_t iZ) const{
     real_t *niReturn = new real_t[1+Zs[iZ]];
