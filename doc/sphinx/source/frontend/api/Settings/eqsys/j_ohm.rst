@@ -101,7 +101,7 @@ The conductivity corretion used in DREAM is controlled with the following settin
 
 
 Example
--------
+*******
 
 The conductivity mode and correction can be set according to the following example:
 
@@ -113,5 +113,95 @@ The conductivity mode and correction can be set according to the following examp
 
     ds.eqsys.j_ohm.setConductivityMode(JOhm.CONDUCTIVITY_MODE_SAUTER_COLLISIONAL)
     ds.eqsys.j_ohm.setCorrectedConductivity(JOhm.CORRECTED_CONDUCTIVITY_ENABLED)
+
+
+Set initial current density
+---------------------------
+.. _ds-eqsys-j_ohm-init:
+To solve Faraday's law, an initial condition on :math:`E_\parallel` is required.
+This is usually taken to be a value such that a desired current density profile
+is obtained. Since this is such a common way of initializing the electric field,
+functionality exists in DREAM to initialize :math:`E_\parallel` based on a given
+current density profile.
+
+To initialize the electric field :math:`E_\parallel` according to a given
+current density profile, you can use the ``j_ohm.setInitialProfile()`` method:
+
+.. code-block:: python
+
+    import numpy as np
+
+    ds = DREAMSettings()
+    ...
+
+    # Plasma minor radius
+    a = 1.5
+    r = np.linspace(0, a)
+    j0 = 1e6 * (1 - (1-0.001**(1/0.41))*(r/a)**2)**0.41
+
+    # Set initial value for j_tot
+    ds.eqsys.j_ohm.setInitialProfile(j0, radius=r)
+
+.. warning::
+
+   Although the unknown quantity which the setting is made on is ``j_ohm``, it
+   is actually the total current density profile ``j_tot`` which is set with
+   the above code. This means that any initial runaway current is also counted
+   as part of the value set with ``j_ohm.setInitialProfile(j0 ,r)``. The actual
+   ohmic current density will thus be ``j0 - j_re``.
+
+Re-scaling profile to Ip
+************************
+Another common situation is that in which you know the shape of the desired
+current profile, and what total current :math:`I_{\rm p}` it should integrate
+to, but not the appropriate normalization coefficient to use to achieve this.
+In this situation, the ``j_ohm.setInitialProfile()`` function provides the
+``Ip0`` argument, which allows you to specify the plasma current to which the
+profile should integrate. DREAM will then calculate the appropriate
+normalization to use in the kernel, and normalize the profile accordingly:
+
+.. code-block:: python
+    
+    ...
+    Ip0 = 10e6  # 10 MA current
+    ds.eqsys.j_ohm.setInitialProfile(j0, r, Ip0=Ip0)
+
+Initializing from other current densities
+*****************************************
+Current densities in DREAM are formally the parallel current density in the
+point where :math:`B=B_{\rm min}` along a flux surface. Other codes, or
+experiments, tend to work with different current densities, and as such one must
+be cautious when using current density profiles obtained from other
+codes/experiments in DREAM. Since other definitions of current densities are
+usually related to the DREAM definition via a product of geometrical factors,
+DREAM can automatically re-scale the given current density profile, assuming it
+uses one of the supported definitions.
+
+The definitions of current density supported (for the initial current density
+profile) in DREAM are as follows:
+
++--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------+
+| **Option name**                | **Mathematical expression**                                                                                                                                      | **Comment**                                        |
++--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------+
+| ``PROFILE_TYPE_J_PARALLEL``    | :math:`j_\parallel = j_\parallel`                                                                                                                                | Parallel current density. Same as used internally. |
++--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------+
+| ``PROFILE_TYPE_J_DOT_GRADPHI`` | :math:`\left\langle\boldsymbol{j}\cdot\nabla\phi\right\rangle = \frac{j_{\parallel,\rm min}}{B_{\rm min}}\left[ G\left\langle\frac{1}{R^2}\right\rangle \right]` | Flux-surface averaged toroidal current density.    |
++--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------+
+| ``PROFILE_TYPE_JTOR_OVER_R``   | :math:`\bar{J}_\phi = \frac{j_{\parallel,\rm min}}{B_{\rm min}}\frac{\left\langle B^2\right\rangle}{G\left\langle 1/R^2\right\rangle}`                           | Normalized toroidal current density.               |
++--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------+
+| ``PROFILE_TYPE_CORSICA``       | (see above)                                                                                                                                                      | Synonym for ``PROFILE_TYPE_JTOR_OVER_R``.          |
++--------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------+
+
+To use these re-scalings, just add the argument ``profile_type`` with one of the
+options above:
+
+.. code-block:: python
+
+    import DREAM.Settings.Equations.OhmicCurrent as JOhm
+    ...
+    ds.eqsys.j_ohm.setInitialProfile(
+        j0, r, Ip0,
+        profile_type=JOhm.PROFILE_TYPE_CORSICA
+    )
 
 
