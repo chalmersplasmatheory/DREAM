@@ -152,7 +152,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.lcfs_user_input_psi = bool(user_input_active)
         self.lcfs_psi_edge_t0 = psi_edge_t0
 
-    def setPsiEdgefromOutput(self, do = None):
+    def setPsiEdgeFromOutput(self, do = None):
         """Helper function to find the location of the 
         LCFS through the extrapolation 
         of the poloidal magnetic flux until the LCFS
