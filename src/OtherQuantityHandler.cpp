@@ -479,12 +479,16 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     if (tracked_terms->T_cold_radiation != nullptr)
         DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
-            real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_radiation->SetVectorElements(vec, ncold);
+            const real_t *Prad = this->tracked_terms->T_cold_radiation->GetRadiationPower();
+			qd->Store(Prad);
+        );	
+    if (tracked_terms->T_cold_radiation != nullptr)
+        DEF_FL("fluid/Tcold_binding_energy", "Rate of change in potential energy due to ionisation/recombination [J s^-1 m^-3]",
+            const real_t *Pion = this->tracked_terms->T_cold_radiation->GetRateOfChangeBindingEnergy();
+			qd->Store(Pion);
         );
+
+
     if (tracked_terms->T_cold_ion_coll != nullptr)
         DEF_FL("fluid/Tcold_ion_coll", "Collisional heating power density by ions [J s^-1 m^-3]",
             real_t *vec = qd->StoreEmpty();
