@@ -10,7 +10,7 @@
  *                          * (gamma_{in,max} + 1) / (gamma_{in,max} - 1))
  */
 real_t ximin(real_t gamma, real_t gamma_max, int_t RESign){
-    return RESign*sqrt((gamma - 1) / (gamma + 1) * (gamma_max + 1) / (gamma_max - 1));
+    return RESign*sqrt((gamma - 1) / (gamma + 1));// * (gamma_max + 1) / (gamma_max - 1));
 }
 
 /**

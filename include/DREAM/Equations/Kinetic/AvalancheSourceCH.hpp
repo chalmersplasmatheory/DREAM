@@ -21,23 +21,30 @@ namespace DREAM {
             CH_SOURCE_PITCH_NEGATIVE
         };
     private:
-        len_t id_ntot;
+        //len_t id_ntot;
+        len_t id_fre, id_fhot;
         len_t id_Efield;
         real_t scaleFactor;
         real_t preFactor;
         real_t pCutoff;
         CHSourcePitchMode sourceXiMode;
+        FVM::Grid* runawayGrid;
+        
+        len_t *pIn_Indices;
+        std::vector<len_t> *f_pIndices;
+        std::vector<len_t> *f_xiIndices;
+        std::vector<len_t> *f_re_pIndices;
+        std::vector<len_t> *f_re_xiIndices;
+
+        bool htgridWithREgrid = false; // If the quantity is a hot-tail source, but there is a runaway grid availabel, this will be true
 
     protected:
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
     public:
-        AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourceMode sm = CH_SOURCE_MODE_KINETIC, CHSourcePitchMode sem = CH_SOURCE_PITCH_ADAPTIVE);
+        AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourcePitchMode sxm = CH_SOURCE_PITCH_ADAPTIVE, bool isRunawayGrid=true, FVM::Grid* runawayGrid=nullptr);
 
         real_t EvaluateCHSource(len_t ir, len_t i, len_t j);
-        
-        virtual void  SetVectorElements(real_t*, const real_t*) override;
-        virtual void  SetMatrixElements(FVM::Matrix*, real_t*) override;
     };
 }
 

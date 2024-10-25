@@ -115,7 +115,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
     }
 
     rsth->AddToOperators(Op_nRE, Op_nTot, Op_ni, Op_nREn);
-
+    
     if (!Op_nRE->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_re, Op_nRE);
     if (!Op_nTot->IsEmpty())
