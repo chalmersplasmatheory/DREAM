@@ -130,12 +130,12 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
-        Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
-        if (eqsys->HasRunawayGrid()){
-		    len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
-            eqsys->SetOperator(id_f_hot, id_f_re, Op_ava);
-        } else
-            eqsys->SetOperator(id_f_hot, id_f_hot, Op_ava);
+        
+        if (eqsys->HasRunawayGrid())
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, false, eqsys->GetRunawayGrid()));
+        else
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, false));
+        eqsys->SetOperator(id_f_hot, id_n_tot, Op_ava);
     }
     
     // Add Compton source
@@ -253,15 +253,63 @@ void SimulationGenerator::ConstructEquation_f_hot_prescribed(
  * number of electrons created by the kinetic Rosenbluth-Putvinski source
  */ 
 namespace DREAM {
-    class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
+    class TotalElectronDensityFromKineticAvalancheRP : public FVM::DiagonalQuadraticTerm {
     public:
         real_t pLower, pUpper, scaleFactor;
-        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+        TotalElectronDensityFromKineticAvalancheRP(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
             : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
 
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
                 weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pLower, pUpper);
+        }
+    };
+}
+
+/**
+ * Implementation of an equation term which represents the total
+ * number of electrons created by the kinetic Chiu-Harvey source
+ */ 
+namespace DREAM {
+    class TotalElectronDensityFromKineticAvalancheCH : public FVM::DiagonalQuadraticTerm {
+    public:
+        real_t pCutoff, scaleFactor;
+        TotalElectronDensityFromKineticAvalancheCH(FVM::Grid* g, real_t pCutoff, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pCutoff(pCutoff), scaleFactor(scaleFactor) {}
+
+        virtual void SetWeights() override {
+            for(len_t ir=0; ir<grid->GetNr(); ir++){
+                len_t np1 = grid->GetNp1(ir);
+                len_t np2 = grid->GetNp2(ir);
+                for(len_t i=0; i<np1; i++)
+                    real_t cutFactor = 1.;
+                    if (grid->GetP1_f(i+1) < this->pCutoff)
+                        cutFactor = 0.;
+                    else if (grid->GetP1_f(i) < this->pCutoff)
+                        cutFactor = (grid->GetP1_f(i+1) - pCutoff) / (grid->GetP1_f(i+1) - grid->GetP1_f(i));
+                    for(len_t j=0; j<np2; j++){
+                        len_t ind = offset + np1*j + i;
+                        weights[ind] = scaleFactor * cutFactor * AvalancheSourceCH::GetSourceFunction(ir, i, j);
+                    }
+                offset += np1*np2;
+            }   
+        }
+
+        virtual void SetVectorElements(real_t *vec, const real_t *x) override {
+            for(len_t ir=0; ir<grid->GetNr(); ir++){
+                len_t np1 = grid->GetNp1(ir);
+                len_t np2 = grid->GetNp2(ir);
+                for(len_t i=0; i<np1; i++)
+                    for(len_t j=0; j<np2; j++){
+                        len_t ind = offset + np1*j + i;
+                        real_t f_re_PA = 0.;
+                        for(len_t j_int=0; j_int<np2; j_int++){
+                            f_re_PA += x[offset + np1*j_int + i] * grid->GetDp2(j_int) / 2.;
+                        }
+                        vec[ir] += weights[ind] * f_re_PA * grid->GetDp1(i); // TODO: Dubbeltänk
+                    }
+                offset += np1*np2;
+            }   
         }
     };
 }
@@ -381,7 +429,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_Nre->AddTerm(
-            new TotalElectronDensityFromKineticAvalanche(fluidGrid, pCutoff, pMax, unknowns, -1.0)
+            new TotalElectronDensityFromKineticAvalancheRP(fluidGrid, pCutoff, pMax, unknowns, -1.0)
         );
         desc += " - internal avalanche";
     }
