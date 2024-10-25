@@ -38,7 +38,7 @@ function install_petsc {
 function install_dream {
 	echo $DREAMPATH
 	cd "$DREAMPATH" && rm -rf build && mkdir build && cd build &&
-	cmake .. -DPETSC_DIR=$PETSC_DIR -DPETSC_ARCH=$PETSC_ARCH -DPETSC_EXECUTABLE_RUNS=YES &&
+	cmake .. -DPETSC_DIR=$PETSC_DIR -DPETSC_ARCH=$PETSC_ARCH -DPETSC_EXECUTABLE_RUNS=YES -DDREAM_BUILD_PYFACE=YES &&
 	make -j8
 }
 
