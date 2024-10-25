@@ -7,7 +7,7 @@ from .OutputException import OutputException
 class AvalancheGrowthRate(OtherFluidQuantity):
     
 
-    def __init__(self, name, data, description, grid, output):
+    def __init__(self, name, data, description, grid, output, momentumgrid):
         """
         Constructor.
         """
