@@ -63,7 +63,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 	enum OptionConstants::current_profile_type prof_type =
 		(enum OptionConstants::current_profile_type)s->GetInteger("eqsys/j_ohm/j_type");
 
-	// TODO re-scale if not j_parallel
+	// Re-scale if not j_parallel
 	if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_J_DOT_GRADPHI) {
 		// Conversion from <j . grad phi>  -->  j_||
 		const len_t nr_f = rGrid->GetNr()+1;
