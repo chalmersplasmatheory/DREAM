@@ -30,6 +30,10 @@ namespace DREAM {
             bremsRel2;
             
         bool includePRB = true;
+
+		real_t *Prad;
+		real_t *Pion;
+
     protected:
         virtual len_t GetNumberOfWeightsElements() override 
             {return ionHandler->GetNzs() * grid->GetNCells();}
@@ -40,9 +44,21 @@ namespace DREAM {
         void SetWeights(const real_t*, real_t *w=nullptr);
         void SetDiffWeights(len_t derivId, len_t nMultiples, const real_t*);
 
+
     public:
         RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, AMJUEL*,enum OptionConstants::ion_opacity_mode*, bool);
-    };
+		~RadiatedPowerTerm();
+
+
+		const real_t* GetRadiationPower() const
+			{return Prad;}
+		const real_t* GetRateOfChangeBindingEnergy() const
+			{return Pion;}
+   };
+
+
+
+
 }
 
 
