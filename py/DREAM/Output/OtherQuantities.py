@@ -112,7 +112,7 @@ class OtherQuantities:
             elif data.ndim == 4 and self.momentumgrid is not None:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
-                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)
+                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         else:
             if self.name == 'scalar':
                 o = OtherScalarQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
