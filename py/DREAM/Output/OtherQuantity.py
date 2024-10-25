@@ -11,7 +11,7 @@ from . UnknownQuantity import UnknownQuantity
 class OtherQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, description, grid, output):
+    def __init__(self, name, data, description, grid, output, momentumgrid=None):
         """
         Constructor.
         """
