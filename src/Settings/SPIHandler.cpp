@@ -67,7 +67,8 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
         isotopes[i]=(len_t)_isotopes[i];
     }
     
-    const real_t *_TDrift = s->GetRealArray(MODULENAME "/TDrift", 1, &nShard);
+	len_t nShardTDrift;
+    const real_t *_TDrift = s->GetRealArray(MODULENAME "/TDrift", 1, &nShardTDrift);
     const real_t *_ZavgDriftArray = s->GetRealArray(MODULENAME "/ZavgDriftArray", 1, &nZavgDrift);
     const int_t *_ZsDrift = s->GetIntegerArray(MODULENAME "/ZsDrift", 1, &nZavgDrift);
     const int_t *_isotopesDrift = s->GetIntegerArray(MODULENAME "/isotopesDrift", 1, &nZavgDrift);
@@ -79,6 +80,12 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
 		if (_TDrift == nullptr)
 			throw SettingsException(
 				"Using analytical drift shift mode, but no plasmoid temperature 'TDrift' has been specified."
+			);
+		else if (nShardTDrift != nShard)
+			throw SettingsException(
+				"Using analytical drift shift mode, but TDrift has not been specified for each shard. "
+				"Expected " LEN_T_PRINTF_FMT " elements, but TDrift had " LEN_T_PRINTF_FMT " elements.",
+				nShard, nShardTDrift
 			);
 		else if (_ZavgDriftArray == nullptr)
 			throw SettingsException(
@@ -100,7 +107,10 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
             ZsDrift[i] = (len_t)_ZsDrift[i];
             isotopesDrift[i] = (len_t)_isotopesDrift[i];
         }
-    }
+    } else {
+		for (len_t ip = 0; ip < nShard; ip++)
+			TDrift[ip] = 0;
+	}
 
     SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, TDrift, T0Drift, DeltaYDrift, RmDrift, ZavgDriftArray, nZavgDrift, ZsDrift, isotopesDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
 
