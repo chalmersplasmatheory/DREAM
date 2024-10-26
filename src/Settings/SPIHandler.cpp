@@ -102,14 +102,15 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
 			
         for (len_t i = 0; i < nShard; i++)
             TDrift[i] = (real_t)_TDrift[i];
-        for (len_t i = 0; i < nZavgDrift; i++){
-            ZavgDriftArray[i] = (real_t)_ZavgDriftArray[i];
-            ZsDrift[i] = (len_t)_ZsDrift[i];
-            isotopesDrift[i] = (len_t)_isotopesDrift[i];
-        }
     } else {
 		for (len_t ip = 0; ip < nShard; ip++)
 			TDrift[ip] = 0;
+	}
+
+	for (len_t i = 0; i < nZavgDrift; i++){
+		ZavgDriftArray[i] = (real_t)_ZavgDriftArray[i];
+		ZsDrift[i] = (len_t)_ZsDrift[i];
+		isotopesDrift[i] = (len_t)_isotopesDrift[i];
 	}
 
     SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, TDrift, T0Drift, DeltaYDrift, RmDrift, ZavgDriftArray, nZavgDrift, ZsDrift, isotopesDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);

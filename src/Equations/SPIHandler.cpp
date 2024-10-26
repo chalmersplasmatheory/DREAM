@@ -164,11 +164,13 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
                     solidDensity=solidDensityList[i];
                 }
             }
-            for(len_t i=0;i<nZavgDrift;i++){
-                if(Z[iZ]==ZsDrift[i] && isotopes[iZ]==isotopesDrift[i]){
-                    ZavgDriftList=ZavgDriftArray[i];
-                }
-            }
+			if (spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL) {
+				for(len_t i=0;i<nZavgDrift;i++){
+					if(Z[iZ]==ZsDrift[i] && isotopes[iZ]==isotopesDrift[i]){
+						ZavgDriftList=ZavgDriftArray[i];
+					}
+				}
+			}
             for(len_t ip=0;ip<nShard;ip++){
 		        pelletMolarMass[ip]+=molarMass*molarFraction[offset+ip];
 		        pelletMolarVolume[ip]+=molarMass/solidDensity*molarFraction[offset+ip];
@@ -214,8 +216,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	    for(len_t ip=0;ip<nShard;ip++){
 	        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
         }
-	
-		delete [] nbrShiftGridCell;
 	}
 
 	delete [] ZsDrift;
@@ -272,6 +272,10 @@ void SPIHandler::AllocateQuantities(){
     ZavgDrift=new real_t[nShard];
     plasmoidAbsorbtionFactor=new real_t[nShard];
     cosThetaDrift = new real_t[nShard];
+
+	for (len_t ip = 0; ip < nShard; ip++) {
+		nbrShiftGridCell[ip] = 0;
+	}
 }
 
 /**
