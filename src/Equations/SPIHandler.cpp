@@ -275,6 +275,7 @@ void SPIHandler::AllocateQuantities(){
 
 	for (len_t ip = 0; ip < nShard; ip++) {
 		nbrShiftGridCell[ip] = 0;
+		shift_store[ip] = 0;
 	}
 }
 
