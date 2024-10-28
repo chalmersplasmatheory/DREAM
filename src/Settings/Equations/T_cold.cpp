@@ -19,6 +19,7 @@
 #include "DREAM/Equations/Fluid/ElectronHeatTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "DREAM/Equations/Fluid/ParallelHeatLossTerm.hpp"
 
 
 using namespace DREAM;
@@ -27,6 +28,7 @@ using namespace DREAM;
 #define MODULENAME "eqsys/T_cold"
 #define MODULENAME_SPI "eqsys/spi"
 #define MODULENAME_ION "eqsys/n_i"
+#define MODULENAME_NRE "eqsys/n_re"
 
 
 /**
@@ -35,7 +37,7 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-     s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)false);
+    s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)false);
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
@@ -123,9 +125,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
 
     // Check if parallel losses should be included
+    bool lcfs_user_input_psi = (len_t)s->GetInteger(MODULENAME_NRE  "/lcfs_user_input_psi");
+	real_t lcfs_psi_edge_t0 = s->GetReal(MODULENAME_NRE "/lcfs_psi_edge_t0");
+
     bool parallel_losses = s->GetBool(MODULENAME "/parallel_losses");
     if (parallel_losses) {
-        Op1->AddTerm(new FVM::ParallelHeatLossTerm(fluidGrid)); // Add the term for parallel losses
+        Op1->AddTerm(new ParallelHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0)); // Add the term for parallel losses
     }
 
 

@@ -111,6 +111,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         """
         self.recombination = recombination
 
+
     def setParallelLosses(self, parallel_losses=PARALLEL_LOSSES_INCLUDED):
         """
         Specify whether or not to include parallel losses when evolving
@@ -118,7 +119,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         """
         self.parallel_losses = parallel_losses
 
-    
+
     def fromdict(self, data):
         self.type = data['type']
 

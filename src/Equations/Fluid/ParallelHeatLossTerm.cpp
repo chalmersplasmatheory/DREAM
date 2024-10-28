@@ -11,14 +11,12 @@ using namespace DREAM;
  * Constructor.
  */
 ParallelHeatLossTerm::ParallelHeatLossTerm(
-	FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns,
-	FVM::Grid *operandGrid, real_t sf,
-	bool userGivenPsiEdge_t0, real_t PsiEdge_t0
-) : RunawaySourceTerm(grid, unknowns),
-	FVM::DiagonalComplexTerm(grid, unknowns, operandGrid),
-	unknowns(unknowns), scaleFactor(sf), 
+	FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, IonHandler *ions,
+    real_t sf, bool userGivenPsiEdge_t0, real_t PsiEdge_t0
+) : FVM::DiagonalComplexTerm(grid, unknowns, grid),
+	unknowns(unknowns), ions(ions), scaleFactor(sf), 
     userGivenPsiEdge_t0(userGivenPsiEdge_t0), psi_edge_t0(PsiEdge_t0), 
-    id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)) {
+    id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)){
 
     SetName("ParallelHeatLossTerm");
     this->rGrid = grid->GetRadialGrid();
@@ -30,12 +28,9 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
     // Assuming the highest possible value for Z at the beginning (or use a specific large constant)
-    len_t minIndex = -1;
+    int_t minIndex = -1;
     int minZ = std::numeric_limits<int>::max(); // Initialize minZ to the maximum possible integer
 
-    real_t *n_i = x->GetUnknownData(id_N_i); // Ions density
-    real_t *W_i = x->GetUnknownData(id_W_i); // Ions thermal energy
-    real_t *T_i = 2. / 3. * W_i / n_i; // Ions temperature
 
     // Loop through all ions to get the one with the minimum Z
     for (len_t i = 0; i < ions->GetNZ(); i++) {
@@ -79,21 +74,22 @@ bool ParallelHeatLossTerm::GridRebuilt(){
 /**
 * Set weights for term to be multiplied with unknown (n_RE). 
 */
-void ParallelHeatLossTerm::SetHeatLoss(){
+void ParallelHeatLossTerm::SetHeatLoss() {
     
     FindRadiusOfLCFS(); // Find ir_LCFS
 
-    real_t T_e = unknowns->GetUnknownData(id_T_cold)[nr] * Constants::ec;
-    real_t W = unknowns->GetUnknownData(id_W_cold)[nr];  
+    real_t *T_e = unknowns->GetUnknownData(id_T_cold); 
+    real_t *W = unknowns->GetUnknownData(id_W_cold); 
 
-    real_t *n_i = x->GetUnknownData(id_N_i)[nr]; // Ions density
-    real_t *W_i = x->GetUnknownData(id_W_i)[nr]; // Ions thermal energy
-    real_t *T_i = 2. / 3. * W_i / n_i; // Ions temperature  
+    real_t *N_i = unknowns->GetUnknownData(id_N_i); 
+    real_t *W_i = unknowns->GetUnknownData(id_W_i); 
 
-    for (len_t ir = 0; ir < nr; ir++){
-        this-> HeatLoss[ir] = StepFunction(ir) * kappa * 2. / 3. * W(ir) * sqrt((T_e(ir) + gamma * T_i(ir)) / m_i); // Change HeatLoss from 0 if ir>ir_LCFS
+    for (len_t ir = 0; ir < nr; ir++) {
+        real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; // Calculate ion temperature for each index 'ir'
+        this->HeatLoss[ir] = StepFunction(ir) * kappa * 2. / 3. * W[ir] * sqrt((T_e[ir] + gamma * T_i) / m_i); // Compute HeatLoss
     }
 }
+
 
 
 /**
@@ -189,41 +185,53 @@ real_t ParallelHeatLossTerm::StepFunction(len_t ir){
 */
 void ParallelHeatLossTerm::SetWeights() {
 
-    SetHeatLoss(); // Set HeatLoss to be the weights on the radial grid
+    FindRadiusOfLCFS(); // Find ir_LCFS
 
-    Fr(nr,0,0) = 2. / 3. * W * kappa * sqrt((T_e + gamma * 2. / 3 * W_i / n_i)  m_i);
-    
-    len_t offset = 0;
-    for (len_t ir = 0; ir < nr; ir++){
-        const real_t V = this->GetVolumeScaleFactor(ir);
-        
-        for (len_t j = 0; j < n2[ir]; j++){
-	        for (len_t i = 0; i < n1[ir]; i++){
-                weights[offset + n1[ir]*j+i] = scaleFactor * this->HeatLoss[ir] * V;
-                offset += n1[ir]*n2[ir];
-            }
-        }   
+    real_t *T_e = unknowns->GetUnknownData(id_T_cold); 
+    real_t *W = unknowns->GetUnknownData(id_W_cold); 
+
+    real_t *N_i = unknowns->GetUnknownData(id_N_i); 
+    real_t *W_i = unknowns->GetUnknownData(id_W_i); 
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; // Calculate ion temperature for each index 'ir'
+        this->weights[ir] = StepFunction(ir) * kappa * 2. / 3. * W[ir] * sqrt((T_e[ir] + gamma * T_i) / m_i); // Compute HeatLoss
     }
 }
 
 
 /** 
-* SETDIFFWEIGHTS: Needed for DiagonalComplexTerm: derivative of cs with respect to Te and Ti
+* SETDIFFWEIGHTS: Needed for DiagonalComplexTerm
 */
-void ParalleHeatLossTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
+void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
+    // Retrieve necessary arrays from the unknowns handler
+    real_t *T_cold = unknowns->GetUnknownData(id_T_cold);
+    real_t *W = unknowns->GetUnknownData(id_W_cold);
+    real_t *W_i = unknowns->GetUnknownData(id_W_i);
+    real_t *N_i = unknowns->GetUnknownData(id_N_i);
+
+    // Calculate the electron temperature at the radial index 'nr'
     real_t T_e = T_cold[nr] * Constants::ec;
-    real_t W = unknowns->GetUnknownData(id_W_cold)[nr];  
-    real_t W_i = unknowns->GetUnknownData(id_W_i)[nr];
-    
 
-    if (derivId == id_n_i) {
-        dFr(nr,0,0,0) += (kappa * W) / (3 . * m_i * sqrt( (T_e + gamma * 2. / 3. * W_i / n_i) / m_i));
+    // Derivatives of the weights with respect to the unknowns
+
+    if (derivId == id_N_i) {
+        for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++){
+            for (len_t ir = 0; ir < nr; ir++){
+                this->diffWeights[i_ion*nr+ir] = StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
+            }
+        }
     } else if (derivId == id_T_cold) {
-        dFr(nr,0,0,0) += (kappa * gamma * W * W_i) / (m_i * n_i^2 * sqrt( (T_e + gamma * 2. / 3. * W_i / n_i) / m_i));
+        for (len_t ir = 0; ir < nr; ir++){
+            this->diffWeights[ir] = StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
+        }
     } else if (derivId == id_W_i) {
-        dFr(nr,0,0,0) += (kappa * gamma * W) / (m_i * n_i * sqrt( (T_e + gamma * 2. / 3. * W_i / n_i) / m_i));
+        for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++){
+            for (len_t ir = 0; ir < nr; ir++){
+                this->diffWeights[i_ion*nr+ir] = StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
+            }
+        } 
     }
-
 }
 
 
