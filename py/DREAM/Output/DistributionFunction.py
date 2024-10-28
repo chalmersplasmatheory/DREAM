@@ -79,7 +79,7 @@ class DistributionFunction(KineticQuantity):
 
 
     def pressure(self, t=None, r=None):
-        """
+        r"""
         Evaluates the parallel and perpendicular pressure moments of the
         distribution function according to
 

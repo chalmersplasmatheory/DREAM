@@ -17,10 +17,12 @@ class SolverNonLinear(Solver):
         """
         super().__init__(solverdata, output)
 
+        if 'solvertime' in solverdata:
+            self.solvertime = solverdata['solvertime'][:]
         if 'iterations' in solverdata:
-            self.iterations = [int(x) for x in solverdata['iterations'][:]]
+            self.iterations = solverdata['iterations'][:].astype(int)
         if 'backupinverter' in solverdata:
-            self.backupinverter = [x==1 for x in solverdata['backupinverter'][:]]
+            self.backupinverter = solverdata['backupinverter'][:].astype(bool)
         if 'nontrivials' in solverdata:
             self.nontrivials = solverdata['nontrivials'][:].split(';')[:-1]
         if 'unknowns' in solverdata:
@@ -67,7 +69,7 @@ class SolverNonLinear(Solver):
         This method returns an array of tuples, where each tuple denotes a
         single range of time steps where the backup solver was used.
         """
-        r = np.linspace(1, self.output.grid.t.size, self.output.grid.t.size)[np.where(self.backupinverter)]
+        r = np.linspace(1, self.solvertime.size, self.solvertime.size)[np.where(self.backupinverter)]
         if not r:
             return []
 
@@ -100,10 +102,10 @@ class SolverNonLinear(Solver):
                 show = True
 
         if time:
-            t = self.output.grid.t[1:]
+            t = self.solvertime[:]
             xlbl = r'Simulation time (s)'
         else:
-            t = np.linspace(1, self.output.grid.t.size-1, self.output.grid.t.size-1)
+            t = np.linspace(1, self.solvertime.size, self.solvertime.size)
             xlbl = r'Time step'
 
         ax.plot(t, self.iterations, linewidth=2, **kwargs)
@@ -118,13 +120,13 @@ class SolverNonLinear(Solver):
         xr = self.getBackupRanges()
         for rg in xr:
             if time:
-                ts1 = 0.5*self.output.grid.t[int(rg[0])] + 0.5*self.output.grid.t[int(rg[0])-1]
-                ts2 = 0.5*self.output.grid.t[int(rg[1])]
+                ts1 = 0.5*self.solvertime[int(rg[0])] + 0.5*self.solvertime[int(rg[0])-1]
+                ts2 = 0.5*self.solvertime[int(rg[1])]
 
-                if rg[1]+1 < self.output.grid.t.size:
-                    ts2 += 0.5*self.output.grid.t[int(rg[1])+1]
+                if rg[1]+1 < self.solvertime.size:
+                    ts2 += 0.5*self.solvertime[int(rg[1])+1]
                 else:
-                    ts2 += 2*ts2 - 0.5*self.output.grid.t[int(rg[1])-1]
+                    ts2 += 2*ts2 - 0.5*self.solvertime[int(rg[1])-1]
             else:
                 ts1, ts2 = rg[0]-0.5, rg[1]+0.5
 
@@ -158,16 +160,16 @@ class SolverNonLinear(Solver):
             if showtimesteps:
                 tarr = np.array([t])
             else:
-                tarr = np.array([self.output.grid.t[t]])
+                tarr = np.array([self.solvertime[t-1]])
 
             for i in range(len(uids)):
                 _d[i,0] = data[uids[i],t]
         else:
             _d = np.zeros((len(uids), data.shape[1]))
             if showtimesteps:
-                tarr = np.array(range(self.output.grid.t.size))
+                tarr = np.array(range(self.solvertime.size))+1
             else:
-                tarr = self.output.grid.t[:]
+                tarr = self.solvertime[:]
             for i in range(len(uids)):
                 _d[i,:] = data[uids[i],:]
 
