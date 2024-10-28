@@ -35,7 +35,7 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-
+     s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)false);
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
@@ -121,6 +121,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
+
+    // Check if parallel losses should be included
+    bool parallel_losses = s->GetBool(MODULENAME "/parallel_losses");
+    if (parallel_losses) {
+        Op1->AddTerm(new FVM::ParallelHeatLossTerm(fluidGrid)); // Add the term for parallel losses
+    }
+
+
     oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
 

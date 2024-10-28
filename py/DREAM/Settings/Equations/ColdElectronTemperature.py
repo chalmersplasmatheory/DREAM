@@ -14,9 +14,14 @@ TYPE_SELFCONSISTENT = 2
 RECOMBINATION_RADIATION_INCLUDED = True
 RECOMBINATION_RADIATION_NEGLECTED = False
 
+PARALLEL_LOSSES_INCLUDED = True
+PARALLEL_LOSSES_NEGLECTED = False
+
+
 class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
-    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, recombination=RECOMBINATION_RADIATION_NEGLECTED):
+    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, 
+                 recombination=RECOMBINATION_RADIATION_NEGLECTED, parallel_losses = PARALLEL_LOSSES_INCLUDED):
         """
         Constructor.
         """
@@ -30,6 +35,8 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
         self.transport = TransportSettings(kinetic=False)
         self.recombination = recombination
+
+        self.parallel_losses = parallel_losses
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)
@@ -103,6 +110,13 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         the temperature self-consistently.
         """
         self.recombination = recombination
+
+    def setParallelLosses(self, parallel_losses=PARALLEL_LOSSES_INCLUDED):
+        """
+        Specify whether or not to include parallel losses when evolving
+        the temperature self-consistently.
+        """
+        self.parallel_losses = parallel_losses
 
     
     def fromdict(self, data):

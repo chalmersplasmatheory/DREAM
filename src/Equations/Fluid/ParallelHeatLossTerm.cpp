@@ -1,5 +1,5 @@
 /**
- * Some comments here
+ * Heat flux parallel loss term in the plasma HALO region.
  */
 
 #include "DREAM/DREAMException.hpp"
@@ -28,7 +28,6 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
     this->id_W_cold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     this->id_N_i = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-    /** IONS ?? */
 
     // Assuming the highest possible value for Z at the beginning (or use a specific large constant)
     len_t minIndex = -1;
@@ -97,7 +96,6 @@ void ParallelHeatLossTerm::SetHeatLoss(){
 }
 
 
-
 /**
 * Find current radial point of last closed flux surface
 * and find psi_edge_t0 if not provided in input
@@ -136,7 +134,6 @@ void ParallelHeatLossTerm::FindRadiusOfLCFS(){
 }
 
 
-
 /**
 * Difference between psi_p at ir+1/2 and the edge psi_p
 */
@@ -146,8 +143,6 @@ real_t ParallelHeatLossTerm::PsiDiff(len_t ir){
     real_t psi_f = InterpolatePsi(ir); 
     return psi_f - this->psi_edge_t0;
 }
-
-
 
 
 /**
@@ -196,7 +191,7 @@ void ParallelHeatLossTerm::SetWeights() {
 
     SetHeatLoss(); // Set HeatLoss to be the weights on the radial grid
 
-    Fr(nr,0,0) = 2. / 3. * W * kappa * sqrt((T_e + gamma * 2. / 3 * W_i / n_i)/m_i);
+    Fr(nr,0,0) = 2. / 3. * W * kappa * sqrt((T_e + gamma * 2. / 3 * W_i / n_i)  m_i);
     
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++){
@@ -207,11 +202,9 @@ void ParallelHeatLossTerm::SetWeights() {
                 weights[offset + n1[ir]*j+i] = scaleFactor * this->HeatLoss[ir] * V;
                 offset += n1[ir]*n2[ir];
             }
-        }
-        
+        }   
     }
 }
-
 
 
 /** 
@@ -232,7 +225,6 @@ void ParalleHeatLossTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
     }
 
 }
-
 
 
 /**
