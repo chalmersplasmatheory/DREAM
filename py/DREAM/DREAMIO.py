@@ -42,8 +42,8 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
 
     user, host, port, rpath = None, None, 22, None
     if SSHSUPPORT:
-        m1 = re.search('(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
-        m2 = re.search('(.+@)*([\w\-\_\d\.]+):(.*)', filename)
+        m1 = re.search(r'(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
+        m2 = re.search(r'(.+@)*([\w\-\_\d\.]+):(.*)', filename)
 
         if m1 is not None:
             user = m1.group(2)

@@ -34,6 +34,17 @@ class IonHandler(UnknownQuantity):
             iidx += Z+1
 
 
+    def __contains__(self, name):
+        """
+        Check if this list of ions contains an ion with the given name.
+        """
+        for ion in self.ions:
+            if ion.getName() == name:
+                return True
+
+        return False
+
+
     def __getitem__(self, i):
         """
         If i is a string, retrieves an 'IonSpecies' object by name.
@@ -48,7 +59,7 @@ class IonHandler(UnknownQuantity):
         if type(i) == str:
             ion = self.getIonByName(i)
         else:
-            if len(i) == 2:
+            if type(i) == tuple or type(i) == list:
                 idx = i[0]
                 Z0 = i[1]
             else:

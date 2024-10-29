@@ -12,6 +12,14 @@ CONDUCTIVITY_MODE_SAUTER_COLLISIONAL = 3
 CORRECTED_CONDUCTIVITY_DISABLED = 1
 CORRECTED_CONDUCTIVITY_ENABLED  = 2
 
+PROFILE_TYPE_J_PARALLEL = 1
+PROFILE_TYPE_J_DOT_GRADPHI = 2
+PROFILE_TYPE_JTOR_OVER_R = 3
+
+# 'CORSICA' is a synonym for 'JTOR_OVER_R'
+PROFILE_TYPE_CORSICA = PROFILE_TYPE_JTOR_OVER_R
+
+
 class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
     def __init__(self, settings, condMode=CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS, corrCond=CORRECTED_CONDUCTIVITY_ENABLED):
@@ -26,10 +34,12 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres        = None
         self.jpres_radius = None
         self.jpres_times  = None
+        self.jpres_type   = PROFILE_TYPE_J_PARALLEL
         self.jpres_Ip0    = None
 
         self.jpres0        = None
         self.jpres0_radius = None
+        self.jpres0_type   = PROFILE_TYPE_J_PARALLEL
         self.jpres0_Ip0    = None
 
 
@@ -71,7 +81,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.condMode = int(mode)
 
 
-    def setCurrentProfile(self, j, radius=0, times=0, Ip0=None):
+    def setCurrentProfile(self, j, radius=0, times=0, Ip0=None, profile_type=PROFILE_TYPE_J_PARALLEL):
         """
         Prescribes a current profile evolution in time and space.
 
@@ -83,6 +93,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres  = _j
         self.jpres_radius = _rad
         self.jpres_times  = _tim
+        self.jpres_type = profile_type
         self.jpres_Ip0 = Ip0
 
         self.jpres0 = None
@@ -90,7 +101,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.verifySettingsPrescribedData()
 
 
-    def setInitialProfile(self, j, radius=0, Ip0=None):
+    def setInitialProfile(self, j, radius=0, Ip0=None, profile_type=PROFILE_TYPE_J_PARALLEL):
         """
         Prescribes the desired initial current profile j_tot=j_tot(r), for
         when the electric field evolves self-consistently in time.
@@ -100,6 +111,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
         self.jpres0 = _data
         self.jpres0_radius = _rad
         self.jpres0_Ip0 = Ip0
+        self.jpres0_type = profile_type
         
         self.jpres = None
 
@@ -120,11 +132,17 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
             self.jpres_radius = data['data']['r']
             self.jpres_times = data['data']['t']
 
+            if 'j_type' in data:
+                self.jpres_type = int(data['j_type'])
+
             if 'Ip0' in data:
                 self.jpres_Ip0 = data['Ip0']
         if 'init' in data:
             self.jpres0 = data['init']['x']
             self.jpres0_radius = data['init']['r']
+
+            if 'j_type' in data:
+                self.jpres0_type = int(data['j_type'])
 
             if 'Ip0' in data:
                 self.jpres0_Ip0 = data['Ip0']
@@ -146,6 +164,8 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
                 'r': self.jpres_radius,
                 't': self.jpres_times
             }
+
+            data['j_type'] = self.jpres_type
             
             if self.jpres_Ip0 is not None:
                 data['Ip0'] = self.jpres_Ip0
@@ -154,6 +174,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
                 'x': self.jpres0,
                 'r': self.jpres0_radius
             }
+            data['j_type'] = self.jpres0_type
 
             if self.jpres0_Ip0 is not None:
                 data['Ip0'] = self.jpres0_Ip0

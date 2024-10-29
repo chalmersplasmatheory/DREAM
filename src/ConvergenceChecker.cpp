@@ -57,15 +57,6 @@ ConvergenceChecker::ConvergenceChecker(
 			this->convergence_dx[id].push_back({0.0});
 		}
 	}
-
-	// Initialize residual convergence map
-	for (len_t id : nontrivials) {
-		std::vector<bool> &c = this->residual_conv[id];
-		c.push_back(true);
-
-		std::vector<real_t> &e = this->residual_conv_maxerr[id];
-		e.push_back(0);
-	}
 }
 
 /**

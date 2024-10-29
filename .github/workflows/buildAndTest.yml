@@ -55,7 +55,7 @@ jobs:
       
       # Install Python packages
       - name: Install Python packages
-        run: pip3 install --break-system-packages setuptools && pip3 install --break-system-packages h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc
+        run: pip3 install setuptools && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc
         
       # Download PETSc
       #- name: Download PETSc
@@ -79,7 +79,7 @@ jobs:
         working-directory: ${{ github.workspace }}/build
         shell: bash
         #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.8/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
-        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.12/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.10/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
 
       - name: Examine configuration
         working-directory: ${{ github.workspace }}/build

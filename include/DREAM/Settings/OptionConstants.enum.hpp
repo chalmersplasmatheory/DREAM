@@ -168,6 +168,17 @@ enum corrected_conductivity {
 
 /////////////////////////////////////
 ///
+/// CURRENT DENSITY OPTIONS
+///
+/////////////////////////////////////
+enum current_profile_type {
+	CURRENT_PROFILE_TYPE_J_PARALLEL = 1,
+	CURRENT_PROFILE_TYPE_J_DOT_GRADPHI = 2,
+	CURRENT_PROFILE_TYPE_JTOR_OVER_R = 3
+};
+
+/////////////////////////////////////
+///
 /// UNKNOWN QUANTITY OPTIONS
 ///
 /////////////////////////////////////
