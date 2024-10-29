@@ -8,7 +8,7 @@ from .ScalarQuantity import ScalarQuantity
 
 class LCFSLoss(OtherFluidQuantity):
 
-    def __init__(self, name, data, description, grid, output):
+    def __init__(self, name, data, description, grid, output, momentumgrid):
         """
         Constructor.
         """
@@ -52,6 +52,6 @@ class LCFSLoss(OtherFluidQuantity):
         jreScrapedOff = CurrentDensity(name = 'scraped-off $J_{re}$ [A/m$^2$]', data = self.calcScrapedOffJre(), grid = self.grid, output=self.output)
         return jreScrapedOff.plot(r=r, t=t, **kwargs)
         
-    def plotScrapedOffIre(self, r=None, t=None, **kwargs):
+    def plotScrapedOffIre(self, t=None, **kwargs):
         jreScrapedOff = ScalarQuantity(name = 'scraped-off $I_{re}$ [A]', data = self.calcScrapedOffIre(), grid = self.grid, output=self.output)
-        return jreScrapedOff.plot(r=r, t=t, **kwargs)
+        return jreScrapedOff.plot(t=t, **kwargs)
