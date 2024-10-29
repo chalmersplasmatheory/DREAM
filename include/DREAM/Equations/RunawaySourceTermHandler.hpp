@@ -28,6 +28,8 @@ namespace DREAM {
         DreicerRateTerm *dreicer=nullptr;
         HottailRateTerm *hottail=nullptr;
         LCFSLossRateTerm *lcfs_loss=nullptr;
+
+        bool useAvalancheCH = false;
         // There can be multiple tritium species in the simulation...
         std::vector<FVM::EquationTerm*> tritium;
 
@@ -45,7 +47,7 @@ namespace DREAM {
         void AddSourceTerm(const std::string& desc, AvalancheSourceRP *t) { this->description += desc; this->avalanche = t; }
         void AddAvalancheNreNeg(AvalancheSourceRP *t) { this->avalanche_neg = t; }
         void AddAvalancheNreNegPos(AvalancheSourceRP *t) { this->avalanche_negpos = t; }
-        void AddSourceTerm(const std::string& desc, AvalancheSourceCH *t) { this->description += desc; this->avalanche = t; }
+        void AddSourceTerm(const std::string& desc, AvalancheSourceCH *t) { this->description += desc; this->avalanche = t; useAvalancheCH = true;}
         void AddAvalancheNreNeg(AvalancheSourceCH *t) { this->avalanche_neg = t; }
         void AddAvalancheNreNegPos(AvalancheSourceCH *t) { this->avalanche_negpos = t; }
         void AddSourceTerm(const std::string& desc, ExternalAvalancheTerm *t) { this->description += desc; this->avalanche = t; }
