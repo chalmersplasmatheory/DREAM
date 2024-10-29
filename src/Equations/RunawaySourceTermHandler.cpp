@@ -75,24 +75,44 @@ void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::Equation
  */
 void RunawaySourceTermHandler::AddToOperators(
     FVM::Operator *op_nRE, FVM::Operator *op_nTot,
-    FVM::Operator *op_ni, FVM::Operator *op_nRE_neg
+    FVM::Operator *op_ni, FVM::Operator *op_Ava_neg
 ) {
     // n_re
     if (this->avalanche != nullptr) {
-        if (op_nRE == nullptr)
-            throw DREAMException(
-                "RunawaySourceTermHandler: Avalanche generation enabled, but no operator "
-                "for n_re provided."
-            );
-        else
-            op_nRE->AddTerm(this->avalanche);
+        if (useAvalancheCH)
+            if (op_nTot == nullptr)
+                throw DREAMException(
+                    "RunawaySourceTermHandler: Avalanche generation enabled, but no operator "
+                    "for n_re provided."
+                );
+            else{
+                op_nTot->AddTerm(this->avalanche);
+                op_nTot->AddTerm(this->avalanche_negpos);
+            }
 
-        if (op_nRE_neg != nullptr &&
-            this->avalanche_neg != nullptr &&
-            this->avalanche_negpos != nullptr) {
-            
-            op_nRE_neg->AddTerm(this->avalanche_neg);
-            op_nRE_neg->AddTerm(this->avalanche_negpos);
+            /*if (op_nTot_neg != nullptr &&
+                this->avalanche_neg != nullptr &&
+                this->avalanche_negpos != nullptr) {
+                
+                op_Ava_neg->AddTerm(this->avalanche_neg);
+                op_Ava_neg->AddTerm(this->avalanche_negpos);
+            }*/
+        else {
+            if (op_nRE == nullptr)
+                throw DREAMException(
+                    "RunawaySourceTermHandler: Avalanche generation enabled, but no operator "
+                    "for n_re provided."
+                );
+            else
+                op_nRE->AddTerm(this->avalanche);
+
+            if (op_Ava_neg != nullptr &&
+                this->avalanche_neg != nullptr &&
+                this->avalanche_negpos != nullptr) {
+                
+                op_Ava_neg->AddTerm(this->avalanche_neg);
+                op_Ava_neg->AddTerm(this->avalanche_negpos);
+            }
         }
     }
     if (this->dreicer != nullptr) {

@@ -72,7 +72,7 @@ real_t BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void *par){
  */
 struct intXiParams {len_t ir; fluxGridType fgt; real_t gamma; real_t gamma_max; int_t RESign; int_t term;};
 real_t integrandXi(real_t xi0, void *par){
-    if (xi0 < 0.) {
+    if ((RESign>=0 && xi0 < 0.) && (RESign<0 && xi0 > 0.)) { 
         return 0.;
     }
     struct intXiParams *params = (struct intXiParams *) par;

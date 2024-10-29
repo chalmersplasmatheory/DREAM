@@ -130,11 +130,14 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
-        
-        if (eqsys->HasRunawayGrid())
-            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, false, eqsys->GetRunawayGrid()));
-        else
-            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, false));
+        if (eqsys->HasRunawayGrid()){
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid()));
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid()));
+        } else{
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false));
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false));
+        }
+        len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
         eqsys->SetOperator(id_f_hot, id_n_tot, Op_ava);
     }
     
@@ -271,45 +274,89 @@ namespace DREAM {
  * number of electrons created by the kinetic Chiu-Harvey source
  */ 
 namespace DREAM {
-    class TotalElectronDensityFromKineticAvalancheCH : public FVM::DiagonalQuadraticTerm {
+    class TotalElectronDensityFromKineticAvalancheCH : public FVM::DiagonalComplexTerm {
     public:
         real_t pCutoff, scaleFactor;
-        TotalElectronDensityFromKineticAvalancheCH(FVM::Grid* g, real_t pCutoff, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pCutoff(pCutoff), scaleFactor(scaleFactor) {}
-
+        AvalancheSourceCH *avaCH;
+        TotalElectronDensityFromKineticAvalancheCH(FVM::Grid* grid, FVM::Grid* og, real_t pCutoff, FVM::UnknownQuantityHandler *u, AvalancheSourceCH *avaCH, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalComplexTerm(g,u,og), pCutoff(pCutoff), avaCH(avaCH), scaleFactor(scaleFactor) {}
+        
         virtual void SetWeights() override {
             for(len_t ir=0; ir<grid->GetNr(); ir++){
-                len_t np1 = grid->GetNp1(ir);
-                len_t np2 = grid->GetNp2(ir);
-                for(len_t i=0; i<np1; i++)
+                weights[ir] = 0;
+                len_t np1 = this->operandGrid(ir)->GetNp1(ir);
+                len_t np2 = this->operandGrid(ir)->GetNp2(ir);
+                for(len_t i=0; i<np1; i++){
                     real_t cutFactor = 1.;
-                    if (grid->GetP1_f(i+1) < this->pCutoff)
+                    if (this->operandGrid(ir)->GetP1_f(i+1) < this->pCutoff)
                         cutFactor = 0.;
-                    else if (grid->GetP1_f(i) < this->pCutoff)
-                        cutFactor = (grid->GetP1_f(i+1) - pCutoff) / (grid->GetP1_f(i+1) - grid->GetP1_f(i));
+                    else if (this->operandGrid(ir)->GetP1_f(i) < this->pCutoff)
+                        cutFactor = (this->operandGrid(ir)->GetP1_f(i+1) - pCutoff) / (this->operandGrid(ir)->GetP1_f(i+1) - this->operandGrid(ir)->GetP1_f(i));
                     for(len_t j=0; j<np2; j++){
-                        len_t ind = offset + np1*j + i;
-                        weights[ind] = scaleFactor * cutFactor * AvalancheSourceCH::GetSourceFunction(ir, i, j);
+                        weights[ir] += scaleFactor * cutFactor * this->avaCH->GetSourceFunction(ir, i, j)
+                                         * this->operandGrid(ir)->GetDp1(i) * this->operandGrid(ir)->GetDp2(j);
                     }
-                offset += np1*np2;
+                }
             }   
         }
 
-        virtual void SetVectorElements(real_t *vec, const real_t *x) override {
-            for(len_t ir=0; ir<grid->GetNr(); ir++){
-                len_t np1 = grid->GetNp1(ir);
-                len_t np2 = grid->GetNp2(ir);
-                for(len_t i=0; i<np1; i++)
-                    for(len_t j=0; j<np2; j++){
-                        len_t ind = offset + np1*j + i;
-                        real_t f_re_PA = 0.;
-                        for(len_t j_int=0; j_int<np2; j_int++){
-                            f_re_PA += x[offset + np1*j_int + i] * grid->GetDp2(j_int) / 2.;
-                        }
-                        vec[ir] += weights[ind] * f_re_PA * grid->GetDp1(i); // TODO: Dubbeltänk
+        bool AddWeightsJacobian(
+            const len_t /*uqtyId*/, const len_t derivId, Matrix *jac, const real_t* x
+        ) override {
+            if ((derivId==id_fhot && !isrunawayGrid) || (derivId==id_fre && isrunawayGrid)){ 
+                for(len_t ir=0; ir<grid->GetNr(); ir++){
+                    len_t np1 = this->operandGrid(ir)->GetNp1(ir);
+                    len_t np2 = this->operandGrid(ir)->GetNp2(ir);
+                    for(len_t i=0; i<np1; i++){
+                        real_t cutFactor = 1.;
+                        if (this->operandGrid(ir)->GetP1_f(i+1) < this->pCutoff)
+                            cutFactor = 0.;
+                        else if (this->operandGrid(ir)->GetP1_f(i) < this->pCutoff)
+                            cutFactor = (this->operandGrid(ir)->GetP1_f(i+1) - pCutoff) / (this->operandGrid(ir)->GetP1_f(i+1) - this->operandGrid(ir)->GetP1_f(i));
+                        
+                        real_t derivTerm = scaleFactor * cutFactor * this->avaCH->GetSourceFunctionJacobian(ir, i, j, derivId)
+                                                * this->operandGrid(ir)->GetDp1(i) * this->operandGrid(ir)->GetDp2(j);
+                        jac->SetElement(ir, ir*np2*np1 + j*np1 + i, derivTerm * x[ir]);
                     }
-                offset += np1*np2;
-            }   
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+        * Set the linear operator matrix elements corresponding to this term.
+        */
+        void SetMatrixElements(Matrix *mat, real_t*) override {
+            len_t N = this->grid->GetNCells();
+            for (len_t i = 0; i < N; i++)
+                mat->SetElement(i, i, weights[i]);
+        }
+
+        /**
+        * Set function vector for this term.
+        */
+        void SetVectorElements(real_t *vec, const real_t *x) {
+            len_t N = grid->GetNCells();
+            for (len_t ir = 0; ir < grid->GetNCells(); ir++)
+                vec[ir] += weights[ir] * x[ir];
+        }
+
+
+        bool DiagonalTerm::SetJacobianBlock(
+            const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
+        )  override {
+            bool contributes = false;
+            if (derivId == uqtyId) {
+                this->SetMatrixElements(jac, nullptr);
+                contributes = true;
+            }
+
+            contributes |= AddWeightsJacobian(uqtyId, derivId, jac, x);
+
+            return contributes;
         }
     };
 }
@@ -416,7 +463,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
     // FREE ELECTRON TERM
     Op_Ni->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
-    eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
+    eqsys->SetOperator(id_Sp, id_ni, Op_Ni); 
 
     // N_RE SOURCES
     
@@ -432,6 +479,27 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             new TotalElectronDensityFromKineticAvalancheRP(fluidGrid, pCutoff, pMax, unknowns, -1.0)
         );
         desc += " - internal avalanche";
+    } else if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_CH) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        
+        AvalancheSourceCH *avaCH, *avaCH_neg;
+        if (eqsys->GetRunawayGrid()) {
+            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutOff, -1.0, AvalancheSourceCH::RP_SOURCE_PITCH_POSITIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
+            avaCH_neg = new AvalancheSourceCH(hottailGrid, unknowns, pCutOff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
+        } else 
+            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutOff, -1.0, AvalancheSourceCH::RP_SOURCE_PITCH_POSITIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
+            avaCH_neg = new AvalancheSourceCH(hottailGrid, unknowns, pCutOff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
+
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticAvalancheCH(fluidGrid, hottailGrid, pCutoff, unknowns, avaCH, -1.0)
+        );
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticAvalancheCH(fluidGrid, hottailGrid, pCutoff, unknowns, avaCH_neg, -1.0)
+        );
+        desc += " - internal avalanche";
     }
     
     // Add contribution from kinetic Compton source
@@ -441,7 +509,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
-
+        
         Op_Nre->AddTerm(
             new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), 
                 s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), 
@@ -465,7 +533,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             );
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
-
+        
         Op_Nre->AddTerm(
             new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, -1.0)
         );

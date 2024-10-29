@@ -42,7 +42,7 @@ namespace DREAM {
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
     public:
-        AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourcePitchMode sxm = CH_SOURCE_PITCH_ADAPTIVE, bool isRunawayGrid=true, FVM::Grid* runawayGrid=nullptr);
+        AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourceMode sm = CH_SOURCE_MODE_KINETIC, CHSourcePitchMode sxm = CH_SOURCE_PITCH_ADAPTIVE, bool isRunawayGrid=true, FVM::Grid* runawayGrid=nullptr);
 
         real_t EvaluateCHSource(len_t ir, len_t i, len_t j);
     };
