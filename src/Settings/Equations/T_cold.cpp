@@ -37,7 +37,7 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)false);
+    s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)true);
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
@@ -129,6 +129,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 	real_t lcfs_psi_edge_t0 = s->GetReal(MODULENAME_NRE "/lcfs_psi_edge_t0");
 
     bool parallel_losses = s->GetBool(MODULENAME "/parallel_losses");
+    std::cout << "Parallel losses setting in C++: " << parallel_losses << std::endl;
     if (parallel_losses) {
         Op1->AddTerm(new ParallelHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0)); // Add the term for parallel losses
     }

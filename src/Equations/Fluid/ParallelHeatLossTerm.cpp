@@ -44,7 +44,8 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
     // Check if a valid minimum Z was found and set the ion quantities
     if (minIndex != -1) {
         this-> m_i = ions->GetIonSpeciesMass(minIndex); 
-        this-> Z = minZ;                                
+        this-> Z = minZ;  
+                                     
     }
 }
 
