@@ -356,7 +356,6 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
     // FREE ELECTRON TERM
     Op_Ni->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
-    eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
 
     // N_RE SOURCES
     
@@ -382,7 +381,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
 
-        Op_Nre->AddTerm(
+        Op_Ntot->AddTerm(
             new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), 
                 s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), 
                 s->GetReal("eqsys/n_re/compton/C3"), -1.0)
@@ -406,7 +405,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
 
-        Op_Nre->AddTerm(
+        Op_Ni->AddTerm(
             new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, -1.0)
         );
         desc += " - internal Tritium";
@@ -433,6 +432,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
     eqsys->SetOperator(id_Sp, id_nre, Op_Nre);
     eqsys->SetOperator(id_Sp, id_ntot, Op_Ntot);
+    eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
 
     // F_HOT TRANSPORT TERM
     FVM::Operator *Op_fhot_tmp = new FVM::Operator(eqsys->GetHotTailGrid()); // add all kinetic terms not conserving local electron density in this operator
