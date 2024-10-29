@@ -72,27 +72,6 @@ bool ParallelHeatLossTerm::GridRebuilt(){
 
 
 /**
-* Set weights for term to be multiplied with unknown (n_RE). 
-*/
-void ParallelHeatLossTerm::SetHeatLoss() {
-    
-    FindRadiusOfLCFS(); // Find ir_LCFS
-
-    real_t *T_e = unknowns->GetUnknownData(id_T_cold); 
-    real_t *W = unknowns->GetUnknownData(id_W_cold); 
-
-    real_t *N_i = unknowns->GetUnknownData(id_N_i); 
-    real_t *W_i = unknowns->GetUnknownData(id_W_i); 
-
-    for (len_t ir = 0; ir < nr; ir++) {
-        real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; // Calculate ion temperature for each index 'ir'
-        this->HeatLoss[ir] = StepFunction(ir) * kappa * 2. / 3. * W[ir] * sqrt((T_e[ir] + gamma * T_i) / m_i); // Compute HeatLoss
-    }
-}
-
-
-
-/**
 * Find current radial point of last closed flux surface
 * and find psi_edge_t0 if not provided in input
 */
