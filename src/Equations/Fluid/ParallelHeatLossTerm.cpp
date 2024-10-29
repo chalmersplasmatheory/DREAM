@@ -167,15 +167,15 @@ void ParallelHeatLossTerm::SetWeights() {
 
     FindRadiusOfLCFS(); // Find ir_LCFS
 
-    real_t *T_e = unknowns->GetUnknownData(id_T_cold); 
+    real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
     real_t *W = unknowns->GetUnknownData(id_W_cold); 
-
     real_t *N_i = unknowns->GetUnknownData(id_N_i); 
     real_t *W_i = unknowns->GetUnknownData(id_W_i); 
 
     for (len_t ir = 0; ir < nr; ir++) {
-        real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; // Calculate ion temperature for each index 'ir'
-        this->weights[ir] = StepFunction(ir) * kappa * 2. / 3. * W[ir] * sqrt((T_e[ir] + gamma * T_i) / m_i); // Compute HeatLoss
+        real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
+        real_t T_e = T_cold[ir] * Constants::ec; 
+        this->weights[ir] = - StepFunction(ir) * kappa * 2. / 3. * W[ir] * sqrt((T_e + gamma * T_i) / m_i) / 10000;
     }
 }
 
@@ -198,7 +198,7 @@ void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     if (derivId == id_N_i) {
         for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++){
             for (len_t ir = 0; ir < nr; ir++){
-                this->diffWeights[i_ion*nr+ir] = StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
+                this->diffWeights[i_ion*nr+ir] = - StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
             }
         }
     } else if (derivId == id_T_cold) {
@@ -208,7 +208,7 @@ void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     } else if (derivId == id_W_i) {
         for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++){
             for (len_t ir = 0; ir < nr; ir++){
-                this->diffWeights[i_ion*nr+ir] = StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
+                this->diffWeights[i_ion*nr+ir] = - StepFunction(ir)*(kappa * gamma * W[ir] * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
             }
         } 
     }
