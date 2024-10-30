@@ -12,6 +12,9 @@ namespace DREAM {
         : public FVM::DiffusionTerm {
     private:
         FVM::Interpolator1D *Lambda; 
+	
+	protected:
+		const real_t *EvaluateLambda(const real_t t) { return this->Lambda->Eval(t); }
 
     public:
         HyperresistiveDiffusionTerm(FVM::Grid*, FVM::Interpolator1D*);

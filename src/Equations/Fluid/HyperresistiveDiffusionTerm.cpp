@@ -23,7 +23,7 @@ HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(
  */
 void HyperresistiveDiffusionTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *){
     FVM::RadialGrid *rGrid = grid->GetRadialGrid(); 
-    const real_t *Lmbd  = this->Lambda->Eval(t);
+    const real_t *Lmbd  = this->EvaluateLambda(t);
 
     // XXX: here we assume that all radii have the same momentum grids
     const len_t np1 = n1[0], np2 = n2[0];
