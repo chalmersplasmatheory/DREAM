@@ -4,6 +4,7 @@
 
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/Fluid/ParallelHeatLossTerm.hpp"
+#include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
 using namespace DREAM;
 
@@ -26,6 +27,7 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
     this->id_W_cold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     this->id_N_i = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+    this->id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     // Assuming the highest possible value for Z at the beginning (or use a specific large constant)
     int_t minIndex = -1;
@@ -171,46 +173,59 @@ void ParallelHeatLossTerm::SetWeights() {
     real_t *N_i = unknowns->GetUnknownData(id_N_i); 
     real_t *W_i = unknowns->GetUnknownData(id_W_i); 
 
+    const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
+
     for (len_t ir = 0; ir < nr; ir++) {
+        real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->grid->GetRadialGrid(),jtot);
+        real_t qR0 = this->grid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
         real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
         real_t T_e = T_cold[ir] * Constants::ec; 
-        this->weights[ir] = - StepFunction(ir) * kappa * 2. / 3. * sqrt((T_e + gamma * T_i) / m_i) / 20; // the 20 is a a geometric factor (NOT DEFINITIVE)
+        this->weights[ir] = - StepFunction(ir) * kappa * 2. / 3. * sqrt((T_e + gamma * T_i) / m_i) / (2 * M_PI * qR0); // the 20 is a a geometric factor (NOT DEFINITIVE)
     }
 }
 
 
-/** 
-* SETDIFFWEIGHTS: Needed for DiagonalComplexTerm
-*/
+/**
+ * SETDIFFWEIGHTS: Needed for DiagonalComplexTerm
+ */
 void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     // Retrieve necessary arrays from the unknowns handler
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold);
     real_t *W_i = unknowns->GetUnknownData(id_W_i);
     real_t *N_i = unknowns->GetUnknownData(id_N_i);
+    const real_t *jtot = unknowns->GetUnknownData(id_jtot);
 
     // Calculate the electron temperature at the radial index 'nr'
     real_t T_e = T_cold[nr] * Constants::ec;
 
-    // Derivatives of the weights with respect to the unknowns
+    auto calculateMu0Ip = [&](len_t ir) {
+        return Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, grid->GetRadialGrid(), jtot);
+    };
 
-    if (derivId == id_N_i) {
-        for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++){
-            for (len_t ir = 0; ir < nr; ir++){
-                this->diffWeights[i_ion*nr+ir] = - StepFunction(ir)*(kappa * gamma * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
+    auto calculateQ = [&](len_t ir) {
+        return grid->GetRadialGrid()->SafetyFactorNormalized(ir, calculateMu0Ip(ir));
+    };
+
+    auto calculateWeight = [&](len_t ir, real_t qR0, real_t coeff) {
+        return -StepFunction(ir) * coeff / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i)) / (2 * M_PI * qR0);
+    };
+
+    real_t coeff = (derivId == id_T_cold) ? (2. / 3.) : (4. / 9. * kappa * gamma);
+    
+    for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++) {
+        for (len_t ir = 0; ir < nr; ir++) {
+            real_t qR0 = calculateQ(ir);
+            if (derivId == id_N_i) {
+                this->diffWeights[i_ion * nr + ir] = calculateWeight(ir, qR0, coeff * W_i[ir]);
+            } else if (derivId == id_T_cold) {
+                this->diffWeights[ir] = - calculateWeight(ir, qR0, coeff * W_i[ir]);
+            } else if (derivId == id_W_i){
+                this->diffWeights[i_ion * nr + ir] = - calculateWeight(ir, qR0, coeff);
             }
         }
-    } else if (derivId == id_T_cold) {
-        for (len_t ir = 0; ir < nr; ir++){
-            this->diffWeights[ir] = StepFunction(ir)*(kappa * gamma * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
-        }
-    } else if (derivId == id_W_i) {
-        for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++){
-            for (len_t ir = 0; ir < nr; ir++){
-                this->diffWeights[i_ion*nr+ir] = - StepFunction(ir)*(kappa * gamma * W_i[ir]) / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i));
-            }
-        } 
     }
 }
+
 
 
 /**

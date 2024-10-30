@@ -131,7 +131,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool parallel_losses = s->GetBool(MODULENAME "/parallel_losses");
     std::cout << "Parallel losses setting in C++: " << parallel_losses << std::endl;
     if (parallel_losses) {
-        Op1->AddTerm(new ParallelHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0)); // Add the term for parallel losses
+        ParallelHeatLossTerm* Par = new ParallelHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
+        oqty_terms->T_cold_parallel = Par;
+        Op1->AddTerm(Par); // Add the term for parallel losses
     }
 
 

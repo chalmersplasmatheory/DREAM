@@ -14,7 +14,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
-        len_t id_T_cold, id_W_cold, id_N_i, id_W_i;
+        len_t id_T_cold, id_W_cold, id_N_i, id_W_i, id_jtot;
 
         real_t scaleFactor;
         bool userGivenPsiEdge_t0;
