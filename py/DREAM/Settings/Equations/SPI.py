@@ -216,10 +216,15 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         solidParticleDensity=N_A/molarVolume
        
+        # Evaluate the number of injected particles
+        N = []
+        for f in molarFractions:
+            N.append(Ninj * f)
+
         if add and self.Ninj is not None:
-            self.Ninj = np.concatenate((self.Ninj, [Ninj]))
+            self.Ninj = np.concatenate((self.Ninj, N))
         else:
-            self.Ninj = np.array([Ninj])
+            self.Ninj = np.array(N)
        
         # Calculate inverse characteristic shard size
         kp=(6*np.pi**2*solidParticleDensity*nShard/Ninj)**(1/3)
