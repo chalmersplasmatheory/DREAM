@@ -18,6 +18,15 @@ HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(
     SetName("HyperresistiveDiffusionTerm");
 }
 
+
+/**
+ * Destructor.
+ */
+HyperresistiveDiffusionTerm::~HyperresistiveDiffusionTerm() {
+	if (this->Lambda != nullptr)
+		delete this->Lambda;
+}
+
 /**
  * Build the coefficients of this diffusion term.
  */
