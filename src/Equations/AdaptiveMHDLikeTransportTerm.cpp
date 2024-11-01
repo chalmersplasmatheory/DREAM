@@ -17,7 +17,7 @@ using namespace DREAM;
 AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, const real_t min_duration
-) : EquationTerm(grid), uqh(uqh),
+) : grid(grid), uqh(uqh),
 	grad_j_tot_max(grad_j_tot_max), min_duration(min_duration),
 	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {}
 

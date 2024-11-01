@@ -5,8 +5,9 @@
 
 
 namespace DREAM {
-	class AdaptiveMHDLikeTransportTerm : public FVM::EquationTerm {
+	class AdaptiveMHDLikeTransportTerm {
 	protected:
+		FVM::Grid *grid;
 		FVM::UnknownQuantityHandler *uqh;
 
 		// Maximum current density gradient

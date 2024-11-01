@@ -352,6 +352,12 @@ enum eqterm_ionization_mode {                       // Ionization is modelled wi
     EQTERM_IONIZATION_MODE_FLUID_RE=4,              // approximation of the kinetic ionization rate assuming a mono-energetic RE distribution at 20mc, can be used in both fluid and kinetic mode
 };
 
+enum eqterm_hyperresistivity_mode {
+	EQTERM_HYPERRESISTIVITY_MODE_NEGLECT=1,			// No hyper-resistive term
+	EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED=2,		// Hyper-resistive term with prescribed diffusion coefficient Lambda = Lambda(t,r)
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE=3			// Hyper-resistive term with adaptive diffusion coefficient
+};
+
 enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source)
     EQTERM_PARTICLE_SOURCE_ZERO     = 1,            // S_particle = 0
     EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation

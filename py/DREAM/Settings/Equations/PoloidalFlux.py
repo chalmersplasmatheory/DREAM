@@ -5,20 +5,21 @@ from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
 
 
-HYPERRESISTIVITY_TYPE_NEGLECT = 1
-HYPERRESISTIVITY_TYPE_PRESCRIBED = 2
-HYPERRESISTIVITY_TYPE_ADAPTIVE = 3
+HYPERRESISTIVITY_MODE_NEGLECT = 1
+HYPERRESISTIVITY_MODE_PRESCRIBED = 2
+HYPERRESISTIVITY_MODE_ADAPTIVE = 3
 
 
 class PoloidalFlux(UnknownQuantity,PrescribedParameter):
     
+
     def __init__(self, settings):
         """
         Constructor.
         """
         super().__init__(settings=settings)
 
-        self.hyperresistivity_type = HYPERRESISTIVITY_TYPE_PRESCRIBED
+        self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_NEGLECT
         self.hyperresistivity_Lambda_x = None
         self.hyperresistivity_Lambda_r = None
         self.hyperresistivity_Lambda_t = None
@@ -26,24 +27,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         self.hyperresistivity_grad_j_tot_max = None
         self.hyperresistivity_Lambda0 = None
         self.hyperresistivity_min_duration = None
-
-
-    def fromdict(self, data):
-        """
-        Set all options from a dictionary.
-        """
-        if 'hyperresistivity' in data:
-            hyp = data['hyperresistivity']
-            self.hyperresistivity_type = int(hyp['type'])
-
-            if 'Lambda' in hyp:
-                self.hyperresistivity_Lambda_x = hyp['Lambda']['x']
-                self.hyperresistivity_Lambda_r = hyp['Lambda']['r']
-                self.hyperresistivity_Lambda_t = hyp['Lambda']['t']
-            elif 'Lambda0' in hyp:
-                self.hyperresistivity_Lambda0 = float(hyp['Lambda0'])
-                self.hyperresistivity_grad_j_tot_max = float(hyp['grad_j_tot_max'])
-                self.hyperresistivity_min_duration = float(hyp['min_duration'])
 
 
     def setHyperresistivity(self, Lambda, radius=None, times=None):
@@ -57,7 +40,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         """
         d, r, t = self._setPrescribedData(data=Lambda, radius=radius, times=times)
 
-        self.hyperresistivity_type = HYPERRESISTIVITY_TYPE_PRESCRIBED
+        self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_PRESCRIBED
         self.hyperresistivity_Lambda_x = d
         self.hyperresistivity_Lambda_r = r
         self.hyperresistivity_Lambda_t = t
@@ -76,10 +59,28 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         :param Lambda0:        Value of hyperresistivity to apply.
         :param min_duration:   Minimum duration of the hyperresistive term (in seconds).
         """
-        self.hyperresistivity_type = HYPERRESISTIVITY_TYPE_ADAPTIVE
+        self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_ADAPTIVE
         self.hyperresistivity_grad_j_tot_max = grad_j_tot_max
         self.hyperresistivity_Lambda0 = Lambda0
         self.hyperresistivity_min_duration = min_duration
+
+
+    def fromdict(self, data):
+        """
+        Set all options from a dictionary.
+        """
+        if 'hyperresistivity' in data:
+            hyp = data['hyperresistivity']
+            self.hyperresistivity_mode = int(hyp['mode'])
+
+            if 'Lambda' in hyp:
+                self.hyperresistivity_Lambda_x = hyp['Lambda']['x']
+                self.hyperresistivity_Lambda_r = hyp['Lambda']['r']
+                self.hyperresistivity_Lambda_t = hyp['Lambda']['t']
+            elif 'Lambda0' in hyp:
+                self.hyperresistivity_Lambda0 = float(hyp['Lambda0'])
+                self.hyperresistivity_grad_j_tot_max = float(hyp['grad_j_tot_max'])
+                self.hyperresistivity_min_duration = float(hyp['min_duration'])
 
 
     def todict(self):
@@ -87,35 +88,31 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         Returns a Python dictionary containing all settings of
         this PoloidalFlux object.
         """
-        data = {
-            'hyperresistivity': {
-                'type': self.hyperresistivity_type
-            }
-        }
+        hypres = { 'mode': self.hyperresistivity_mode }
 
-        if self.hyperresistivity_type == HYPERRESISTIVITY_TYPE_PRESCRIBED:
-            data['hyperresistivity']['Lambda'] = {
+        if self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_PRESCRIBED:
+            hypres['Lambda'] = {
                 'x': self.hyperresistivity_Lambda_x,
                 'r': self.hyperresistivity_Lambda_r,
                 't': self.hyperresistivity_Lambda_t
             }
-        elif self.hyperresistivity_type == HYPERRESISTIVITY_TYPE_ADAPTIVE:
-            data['hyperresistivity']['Lambda0'] = self.hyperresistivity_Lambda0
-            data['hyperresistivity']['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
-            data['hyperresistivity']['min_duration'] = self.hyperresistivity_min_duration
+        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE:
+            hypres['Lambda0'] = self.hyperresistivity_Lambda0
+            hypres['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
+            hypres['min_duration'] = self.hyperresistivity_min_duration
 
-        return data
+        return { 'hyperresistivity': hypres }
 
 
     def verifySettings(self):
         """
         Verify that the settings of this unknown are correctly set.
         """
-        if self.hyperresistivity_type == HYPERRESISTIVITY_TYPE_NEGLECT:
+        if self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_NEGLECT:
             pass
-        elif self.hyperresistivity_type == HYPERRESISTIVITY_TYPE_PRESCRIBED:
+        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_PRESCRIBED:
             self._verifySettingsPrescribedData('psi_p hyperresistivity', data=self.hyperresistivity_Lambda_x, radius=self.hyperresistivity_Lambda_r, times=self.hyperresistivity_Lambda_t)
-        elif self.hyperresistivity_type == HYPERRESISTIVITY_TYPE_ADAPTIVE:
+        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE:
             if not np.isscalar(self.hyperresistivity_Lambda0):
                 raise EquationException(f"The hyperresistivity parameter 'Lambda0' must be a scalar. Current value: {self.hyperresistivity_Lambda0}.")
             if not np.isscalar(self.hyperresistivity_grad_j_tot_max):
@@ -123,6 +120,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             if not np.isscalar(self.hyperresistivity_min_duration):
                 raise EquationException(f"The hyperresistivity parameter 'Lambda0' must be a scalar. Current value: {self.hyperresistivity_min_duration}.")
         else:
-            raise EquationException(f"Invalid option for hyperresistivity type: {self.hyperresistivity_type}.")
+            raise EquationException(f"Invalid option for hyperresistivity mode: {self.hyperresistivity_mode}.")
 
 
