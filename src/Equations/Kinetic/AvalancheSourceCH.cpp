@@ -10,6 +10,12 @@
 
 using namespace DREAM;
 
+
+/** TODO: 
+    * remove comments
+    * break up too long lines
+    * remove printf and Vp, VpVol check terms in FluxSurfaceAverager.avalancheChiu.cpp
+*/
 /**
  * Constructor.
  */

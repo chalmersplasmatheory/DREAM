@@ -25,7 +25,7 @@ real_t ximax(real_t gamma, int_t RESign){
 /*
  * Integrand of each bounce average calculation term.
  */
-struct avParams {real_t xi0; real_t gamma; int_t term; int_t RESign;}; // Dubbeltänk
+struct avParams {real_t xi0; real_t gamma; int_t term; int_t RESign;};
 real_t BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void *par){
     struct avParams *params = (struct avParams *) par;
     real_t xi0 = params->xi0;
