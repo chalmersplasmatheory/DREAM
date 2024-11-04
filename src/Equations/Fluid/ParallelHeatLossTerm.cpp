@@ -29,11 +29,6 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
-    // Assuming the highest possible value for Z at the beginning (or use a specific large constant)
-    int_t minIndex = -1;
-    int minZ = std::numeric_limits<int>::max(); // Initialize minZ to the maximum possible integer
-
-
     // Loop through all ions to get the one with the minimum Z
     for (len_t i = 0; i < ions->GetNZ(); i++) {
         int currentZ = ions->GetZ(i); 
@@ -180,7 +175,7 @@ void ParallelHeatLossTerm::SetWeights() {
         real_t qR0 = this->grid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
         real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
         real_t T_e = T_cold[ir] * Constants::ec; 
-        this->weights[ir] = - StepFunction(ir) * kappa * 2. / 3. * sqrt((T_e + gamma * T_i) / m_i) / (2 * M_PI * qR0); // the 20 is a a geometric factor (NOT DEFINITIVE)
+        this->weights[ir] =  StepFunction(ir) * kappa * 2. / 3. * sqrt((T_e + gamma * T_i) / m_i) / (M_PI * qR0);
     }
 }
 
@@ -207,7 +202,7 @@ void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     };
 
     auto calculateWeight = [&](len_t ir, real_t qR0, real_t coeff) {
-        return -StepFunction(ir) * coeff / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i)) / (2 * M_PI * qR0);
+        return - StepFunction(ir) * coeff / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i)) / (2 * M_PI * qR0);
     };
 
     real_t coeff = (derivId == id_T_cold) ? (2. / 3.) : (4. / 9. * kappa * gamma);
