@@ -4,6 +4,7 @@
 
 #include "DREAM/Equations/Fluid/HeatTransportDiffusion.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
+#include "DREAM/Equations/Fluid/HeatTransportRRAdaptiveMHDLike.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
@@ -25,6 +26,13 @@ using namespace std;
 void SimulationGenerator::DefineOptions_Transport(
     const string& mod, Settings *s, bool kinetic, const string& subname
 ) {
+	// Transport type
+	s->DefineSetting(
+		mod + "/" + subname + "/type",
+		"Type of transport to apply.",
+		(int_t)OptionConstants::EQTERM_TRANSPORT_NONE
+	);
+
     // Advection
     if (kinetic)
         DefineDataTR2P(mod + "/" + subname, s, "ar");
@@ -51,6 +59,23 @@ void SimulationGenerator::DefineOptions_Transport(
 
     // Rechester-Rosenbluth diffusion
     DefineDataRT(mod + "/" + subname, s, "dBB");
+
+	// Adaptive MHD-like transport options
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_dBB0",
+		"Magnetic perturbation for adaptive MHD-like Rechester-Rosenbluth transport.",
+		(real_t)0.0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_grad_j_tot_max",
+		"Maximum current density gradient prior to activation of hyperresistive term",
+		(real_t)0.0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/min_duration",
+		"Minimum duration of the adaptive hyperresistive term",
+		(real_t)0.5e-3
+	);
 
 	// Frozen current mode
 	s->DefineSetting(
@@ -278,6 +303,8 @@ bool SimulationGenerator::ConstructTransportTerm(
         return (c!=nullptr);
     };
 
+	enum OptionConstants::eqterm_transport_type type =
+		(enum OptionConstants::eqterm_transport_type)s->GetInteger(path + "/type");
     enum OptionConstants::eqterm_transport_bc bc =
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
@@ -368,7 +395,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             dt = rrt;
         } else {
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
-                grid, momtype, dBB, eqsys->GetUnknownHandler()
+                grid, dBB, eqsys->GetUnknownHandler()
             );
             oprtr->AddTerm(htrr);
 
@@ -385,6 +412,44 @@ bool SimulationGenerator::ConstructTransportTerm(
         if (diffusive_bc != nullptr)
             *diffusive_bc = dbc;
     }
+
+	// MHD-like Rechester-Rosenbluth heat transport
+	if (type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE) {
+        if (hasNonTrivialTransport)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_INCOMPATIBLE_TRANSPORT,
+                "Rechester-Rosenbluth transport applied alongside other transport model."
+            );
+
+        if (!heat)
+            throw SettingsException(
+                "%s: Adaptive Rechester-Rosenbluth diffusion can only be applied to heat.",
+                path.c_str()
+            );
+
+		hasNonTrivialTransport = true;
+
+		real_t dBB0 = s->GetReal(mod + "/" + subname + "/mhdlike_dBB0");
+		real_t grad_j_tot_max = s->GetReal(mod + "/" + subname + "/mhdlike_grad_j_tot_max");
+		real_t min_duration = s->GetReal(mod + "/" + subname + "/mhdlike_min_duration");
+
+		HeatTransportRRAdaptiveMHDLike *hrr = new HeatTransportRRAdaptiveMHDLike(
+			grid, eqsys->GetUnknownHandler(),
+			grad_j_tot_max, min_duration, dBB0
+		);
+
+		oprtr->AddTerm(hrr);
+
+        // Add boundary condition...
+        TransportDiffusiveBC *dbc =
+            ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+                bc, hrr, oprtr, path, grid
+            );
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
+	}
 
     bool hasSvenssonA = false;
     if (hasCoeff("s_ar", 4)) {
