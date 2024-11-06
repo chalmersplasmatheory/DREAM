@@ -5,6 +5,7 @@
 #include "DREAM/Equations/Fluid/HeatTransportDiffusion.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRRAdaptiveMHDLike.hpp"
+#include "DREAM/Equations/Fluid/RunawayTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
@@ -372,12 +373,6 @@ bool SimulationGenerator::ConstructTransportTerm(
                 "Rechester-Rosenbluth transport applied alongside other transport model."
             );
 
-        if (!kinetic && !heat)
-            throw SettingsException(
-                "%s: Rechester-Rosenbluth diffusion can only be applied to kinetic quantities and heat.",
-                path.c_str()
-            );
-
         hasNonTrivialTransport = true;
 
         FVM::Interpolator1D *dBB = LoadDataRT_intp(
@@ -386,21 +381,28 @@ bool SimulationGenerator::ConstructTransportTerm(
         );
 
         FVM::DiffusionTerm *dt;
-        if (not heat) { // Particle transport
+        if (kinetic) { // Particle transport
             RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
                 grid, momtype, dBB
             );
             oprtr->AddTerm(rrt);
 
             dt = rrt;
-        } else {
+        } else if (heat) {	// Heat transport
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
                 grid, dBB, eqsys->GetUnknownHandler()
             );
             oprtr->AddTerm(htrr);
 
             dt = htrr;
-        }
+        } else {	// Fluid transport
+			RunawayTransportRechesterRosenbluth *rtrr = new RunawayTransportRechesterRosenbluth(
+				grid, dBB
+			);
+			oprtr->AddTerm(rtrr);
+
+			dt = rtrr;
+		}
 
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
