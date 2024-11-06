@@ -11,7 +11,7 @@ namespace DREAM {
 	protected:
 		FVM::Interpolator1D *dBB;
 
-		const real_t *EvaluateDeltaBOverB(const real_t t) { return dBB->Eval(t); }
+		virtual const real_t *EvaluateDeltaBOverB(const real_t t) { return dBB->Eval(t); }
 
 	public:
 		RunawayTransportRechesterRosenbluth(
