@@ -266,12 +266,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.negative_re = negative_re
         
+
     def setExtrapolateDreicer(self, extrapolateDreicer=False):
         """
         Extrapolates the result from the neural network for small electric fields
         such that the Dreicer generation rate is continuous and has continuous derivative.
         """
         self.extrapolateDreicer = extrapolateDreicer
+
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
@@ -284,6 +286,22 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
+    
+
+    def setAdaptiveMHDLikeTransport(self, grad_j_tot_max, dBB0, Lambda0, min_duration=0.5e-3):
+        """
+        Enable adaptive MHD-like transport on ``n_re``, ``psi_p`` and ``T_cold``
+        simultaneously.
+        """
+        self.transport.setMHDLikeRechesterRosenbluth(
+            dBB0=dBB0, grad_j_tot_max=grad_j_tot_max, min_duration=min_duration
+        )
+        self.settings.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
+            dBB0=dBB0, grad_j_tot_max=grad_j_tot_max, min_duration=min_duration
+        )
+        self.settings.eqsys.psi_p.setHyperresistivityAdaptive(
+            Lambda0=Lambda0, grad_j_tot_max=grad_j_tot_max, min_duration=min_duration
+        )
 
 
     def fromdict(self, data):
