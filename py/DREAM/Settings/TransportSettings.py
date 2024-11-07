@@ -607,6 +607,8 @@ class TransportSettings:
         elif self.type == TRANSPORT_FROZEN_CURRENT:
             self.verifyFrozenCurrent()
             self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_MHD_LIKE:
+            self.verifyBoundaryCondition()
         else:
             raise TransportException("Unrecognized transport type: {}".format(self.type))
 

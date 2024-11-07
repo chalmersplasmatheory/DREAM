@@ -74,7 +74,7 @@ void SimulationGenerator::DefineOptions_Transport(
 		(real_t)0.0
 	);
 	s->DefineSetting(
-		mod + "/" + subname + "/min_duration",
+		mod + "/" + subname + "/mhdlike_min_duration",
 		"Minimum duration of the adaptive hyperresistive term",
 		(real_t)0.5e-3
 	);
