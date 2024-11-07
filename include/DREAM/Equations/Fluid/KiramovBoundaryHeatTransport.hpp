@@ -20,6 +20,9 @@ namespace DREAM {
         real_t mi; // Ion mass [kg]
         len_t Z; // Ion charge number 
 
+        int_t minIndex = -1;
+        int minZ = std::numeric_limits<int>::max(); // Initialize minZ to the maximum possible integer
+
         const real_t gamma = 7.0; // Heat transmission coefficient in the Kiramov model [-]
         const real_t adb_index = 1.0; // Adiabatic index [-]
         virtual void SetPartialAdvectionTerm(len_t derivId, len_t nMultiples) override;

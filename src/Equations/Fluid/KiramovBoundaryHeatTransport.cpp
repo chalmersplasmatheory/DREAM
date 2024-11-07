@@ -26,13 +26,23 @@ KiramovBoundaryHeatTransport::KiramovBoundaryHeatTransport(FVM::Grid *g, FVM::Un
 
     this->id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+
     
-    for(len_t i = 0; i < ions->GetNZ(); i++){
-        this->Z = ions->GetZ(i);
-        if (Z == 1) {
-            this->mi = ions->GetIonSpeciesMass(i);
-            break;
+    
+// Loop through all ions to get the one with the minimum Z
+    for (len_t i = 0; i < ions->GetNZ(); i++) {
+        int currentZ = ions->GetZ(i); 
+        if (currentZ < minZ) {        
+            minZ = currentZ;          
+            minIndex = i;             
         }
+    }
+
+    // Check if a valid minimum Z was found and set the ion quantities
+    if (minIndex != -1) {
+        this-> mi = ions->GetIonSpeciesMass(minIndex); 
+        this-> Z = minZ;  
+                                     
     }
 }
 
