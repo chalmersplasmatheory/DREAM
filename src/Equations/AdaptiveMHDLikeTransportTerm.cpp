@@ -100,8 +100,10 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded(const len_t ir) {
 	else
 		gradj = (j_tot[ir]-j_tot[ir-1]) / dr_f[ir-1];
 	
-	if (this->gradient_normalized)
-		gradj /= this->javg;
+	if (this->gradient_normalized) {
+		const real_t a = this->grid->GetRadialGrid()->GetMinorRadius();
+		gradj *= a / this->javg;
+	}
 	
 	return (std::abs(gradj) >= this->grad_j_tot_max);
 }
