@@ -17,12 +17,23 @@ using namespace DREAM;
 AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	const real_t min_duration
+	const real_t min_duration, bool localized
 ) : grid(grid), uqh(uqh),
 	grad_j_tot_max(grad_j_tot_max),
 	gradient_normalized(gradient_normalized),
-	min_duration(min_duration),
-	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {}
+	min_duration(min_duration), localized(localized),
+	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {
+	
+	this->mask = new real_t[grid->GetNr()];
+}
+
+
+/*
+ * Destructor.
+ */
+AdaptiveMHDLikeTransportTerm::~AdaptiveMHDLikeTransportTerm() {
+	delete [] this->mask;
+}
 
 
 /**
@@ -68,8 +79,24 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded() {
 	const len_t nr = this->grid->GetNr();
 	bool exceeded = false;
 
-	for (len_t ir = 0; ir < nr && !exceeded; ir++)
-		exceeded = this->IsCurrentGradientExceeded(ir);
+	for (len_t ir = 0; ir < nr && !exceeded; ir++) {
+		bool e = this->IsCurrentGradientExceeded(ir);
+
+		if (this->localized) {
+			if (e) {
+				this->mask[ir] = 1;
+				if (ir > 0)
+					this->mask[ir-1] = 1;
+				if (ir < nr-1)
+					this->mask[ir+1] = 1;
+
+				exceeded = true;
+			} else
+				this->mask[ir] = 0;
+		} else
+			// Apply uniformly everywhere
+			this->mask[ir] = 1;
+	}
 	
 	return exceeded;
 }

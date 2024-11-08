@@ -8,6 +8,7 @@ from .. TransportSettings import TransportSettings
 HYPERRESISTIVITY_MODE_NEGLECT = 1
 HYPERRESISTIVITY_MODE_PRESCRIBED = 2
 HYPERRESISTIVITY_MODE_ADAPTIVE = 3
+HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL = 4
 
 
 class PoloidalFlux(UnknownQuantity,PrescribedParameter):
@@ -49,7 +50,8 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
 
     def setHyperresistivityAdaptive(
         self, Lambda0, grad_j_tot_max=None,
-        grad_j_tot_max_norm=None, min_duration=0.5e-3
+        grad_j_tot_max_norm=None, min_duration=0.5e-3,
+        localized=False
     ):
         """
         Enable the adaptive hyperresistive diffusion term, which triggers when
@@ -61,8 +63,12 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         :param grad_j_tot_max:      Maximum current density gradient which must be exceeded for the term to be triggered.
         :param grad_j_tot_max_norm: Maximum current density gradient (normalized to average current density) which must be exceeded.
         :param min_duration:        Minimum duration of the hyperresistive term (in seconds).
+        :param localized:           Apply localized transport.
         """
-        self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_ADAPTIVE
+        if localized:
+            self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL
+        else:
+            self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_ADAPTIVE
 
         if grad_j_tot_max:
             self.hyperresistivity_grad_j_tot_max = grad_j_tot_max

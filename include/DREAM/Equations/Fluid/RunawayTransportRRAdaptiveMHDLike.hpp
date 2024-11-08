@@ -18,7 +18,7 @@ namespace DREAM {
 	public:
 		RunawayTransportRRAdaptiveMHDLike(
 			FVM::Grid*, FVM::UnknownQuantityHandler*,
-			const real_t, bool, const real_t, const real_t
+			const real_t, bool, const real_t, const real_t, bool
 		);
 		virtual ~RunawayTransportRRAdaptiveMHDLike();
 	};

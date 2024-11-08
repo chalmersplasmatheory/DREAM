@@ -12,8 +12,8 @@ using namespace DREAM;
 RunawayTransportRRAdaptiveMHDLike::RunawayTransportRRAdaptiveMHDLike(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	const real_t min_duration, const real_t dBB0
-) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, min_duration),
+	const real_t min_duration, const real_t dBB0, bool localized
+) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, min_duration, localized),
 	RunawayTransportRechesterRosenbluth(grid, nullptr), dBOverB(dBB0) {
 		
 	this->dB = new real_t[grid->GetNr()];
@@ -39,7 +39,7 @@ const real_t *RunawayTransportRRAdaptiveMHDLike::EvaluateDeltaBOverB(const real_
 	
 	const len_t nr = this->AdaptiveMHDLikeTransportTerm::grid->GetNr();
 	for (len_t ir = 0; ir < nr; ir++)
-		this->dB[ir] = v;
+		this->dB[ir] = v * this->mask[ir];
 	
 	return this->dB;
 }

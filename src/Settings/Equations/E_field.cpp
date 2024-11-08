@@ -246,17 +246,22 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 
         eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hypTerm);
         eqn += " + hyperresistivity";
-    } else if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE) {
+    } else if (
+		hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE ||
+		hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL
+	) {
 		real_t grad_j_tot_max = s->GetReal(MODULENAME_HYPRES "/grad_j_tot_max");
 		bool gradient_normalized = s->GetBool(MODULENAME_HYPRES "/gradient_normalized");
 		real_t Lambda0 = s->GetReal(MODULENAME_HYPRES "/Lambda0");
 		real_t min_duration = s->GetReal(MODULENAME_HYPRES "/min_duration");
 
+		bool localized = (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL);
+
 		FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
 		AdaptiveHyperresistiveDiffusionTerm *ahrdt = new AdaptiveHyperresistiveDiffusionTerm(
 			fluidGrid, eqsys->GetUnknownHandler(),
 			grad_j_tot_max, gradient_normalized,
-			Lambda0, min_duration
+			Lambda0, min_duration, localized
 		);
 
 		hypTerm->AddTerm(ahrdt);

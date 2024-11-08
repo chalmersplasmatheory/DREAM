@@ -11,6 +11,7 @@ TRANSPORT_RECHESTER_ROSENBLUTH = 3
 TRANSPORT_SVENSSON = 4
 TRANSPORT_FROZEN_CURRENT = 5
 TRANSPORT_MHD_LIKE = 6
+TRANSPORT_MHD_LIKE_LOCAL = 7
 
 INTERP3D_NEAREST     = 0
 INTERP3D_LINEAR      = 1
@@ -288,12 +289,16 @@ class TransportSettings:
 
     def setMHDLikeRechesterRosenbluth(
         self, dBB0, grad_j_tot_max=None,
-        grad_j_tot_max_norm=None, min_duration=0.5e-3
+        grad_j_tot_max_norm=None, min_duration=0.5e-3,
+        localized=False
     ):
         """
         Enable the MHD-like Rechester-Rosenbluth heat transport model.
         """
-        self.type = TRANSPORT_MHD_LIKE
+        if localized:
+            self.type = TRANSPORT_MHD_LIKE_LOCAL
+        else:
+            self.type = TRANSPORT_MHD_LIKE
 
         self.mhdlike_dBB0 = dBB0
         self.mhdlike_min_duration = min_duration

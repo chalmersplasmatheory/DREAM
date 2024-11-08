@@ -290,7 +290,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
     def setAdaptiveMHDLikeTransport(
         self, dBB0, Lambda0, grad_j_tot_max=None,
-        grad_j_tot_max_norm=None, min_duration=0.5e-3
+        grad_j_tot_max_norm=None, min_duration=0.5e-3,
+        localized=False
     ):
         """
         Enable adaptive MHD-like transport on ``n_re``, ``psi_p`` and ``T_cold``
@@ -305,13 +306,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
 
         self.transport.setMHDLikeRechesterRosenbluth(
-            dBB0=dBB0, min_duration=min_duration, **kwargs
+            dBB0=dBB0, min_duration=min_duration, localized=localized, **kwargs
         )
         self.settings.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
-            dBB0=dBB0, min_duration=min_duration, **kwargs
+            dBB0=dBB0, min_duration=min_duration, localized=localized, **kwargs
         )
         self.settings.eqsys.psi_p.setHyperresistivityAdaptive(
-            Lambda0=Lambda0, min_duration=min_duration, **kwargs
+            Lambda0=Lambda0, min_duration=min_duration, localized=localized, **kwargs
         )
 
 

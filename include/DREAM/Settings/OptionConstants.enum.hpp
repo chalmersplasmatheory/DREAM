@@ -339,7 +339,8 @@ enum eqterm_transport_type {
 	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH=3,		// Diffusive transport with a Rechester-Rosenbluth coefficient
 	EQTERM_TRANSPORT_SVENSSON=4,					// Svensson transport model (only n_re)
 	EQTERM_TRANSPORT_FROZEN_CURRENT=5,				// Frozen current transport (only n_re)
-	EQTERM_TRANSPORT_MHD_LIKE=6						// MHD-like adaptive heat transport (only T_cold)
+	EQTERM_TRANSPORT_MHD_LIKE=6,					// MHD-like adaptive transport (n_re and T_cold)
+	EQTERM_TRANSPORT_MHD_LIKE_LOCAL=7				// MHD-like adaptive transport, applied locally (n_re and T_cold)
 };
 
 enum eqterm_frozen_current_mode {
@@ -364,7 +365,8 @@ enum eqterm_ionization_mode {                       // Ionization is modelled wi
 enum eqterm_hyperresistivity_mode {
 	EQTERM_HYPERRESISTIVITY_MODE_NEGLECT=1,			// No hyper-resistive term
 	EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED=2,		// Hyper-resistive term with prescribed diffusion coefficient Lambda = Lambda(t,r)
-	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE=3			// Hyper-resistive term with adaptive diffusion coefficient
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE=3,		// Hyper-resistive term with adaptive diffusion coefficient
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL=4 	// Hyper-resistive term with adaptive diffusion coefficient, applied locally
 };
 
 enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source)

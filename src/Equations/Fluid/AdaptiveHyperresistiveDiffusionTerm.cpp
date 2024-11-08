@@ -15,8 +15,8 @@ using namespace DREAM;
 AdaptiveHyperresistiveDiffusionTerm::AdaptiveHyperresistiveDiffusionTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	const real_t Lambda0, const real_t min_duration
-) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, min_duration),
+	const real_t Lambda0, const real_t min_duration, bool localized
+) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, min_duration, localized),
 	HyperresistiveDiffusionTerm(grid, nullptr), Lambda0(Lambda0) {
 	
 	this->Lambda = new real_t[grid->GetNr()];
@@ -43,7 +43,7 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 	
 	const len_t nr = this->AdaptiveMHDLikeTransportTerm::grid->GetNr();
 	for (len_t ir = 0; ir < nr; ir++)
-		this->Lambda[ir] = v;
+		this->Lambda[ir] = v * this->mask[ir];
 	
 	return this->Lambda;
 }
