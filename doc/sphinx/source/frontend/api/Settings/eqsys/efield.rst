@@ -199,6 +199,19 @@ axis of symmetry at :math:`R=0`).
    the desired wall radius.
 
 
+Initial value
+*************
+The initial value of the electric field can be set either using the
+``setInitialProfile()`` method, as shown above, or by specifying the desired
+initial current density profile. The electric field will then be initialized to
+whatever profile gives the necessary ohmic current density profile, so that the
+prescribed total current density profile is obtained.
+
+More details about how to initialize the electric field via a current density
+profile can be found on the page for
+:ref:`the ohmic current density<ds-eqsys-j_ohm-init>`.
+
+
 Prescribed ohmic current
 ------------------------
 If the desired ohmic current density profile :math:`j_\Omega` is known, the
