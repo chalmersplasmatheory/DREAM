@@ -22,15 +22,7 @@ AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
 	grad_j_tot_max(grad_j_tot_max),
 	gradient_normalized(gradient_normalized),
 	min_duration(min_duration),
-	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {
-	
-	// Evaluate plasma volume
-	const real_t *dr = grid->GetRadialGrid()->GetDr();
-	const real_t *Vp = grid->GetVpVol();
-	this->volume = 0;
-	for (len_t ir = 0; ir < grid->GetNr(); ir++)
-		this->volume += Vp[ir] * dr[ir];
-}
+	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {}
 
 
 /**
@@ -43,12 +35,12 @@ bool AdaptiveMHDLikeTransportTerm::CheckTransportEnabled(const real_t t) {
 	if (this->gradient_normalized) {
 		const real_t *j_tot = this->uqh->GetUnknownDataPrevious(this->id_j_tot);
 		const real_t *dr = grid->GetRadialGrid()->GetDr();
-		const real_t *Vp = grid->GetVpVol();
+		const real_t a = grid->GetRadialGrid()->GetMinorRadius();
 		this->javg = 0;
 		for (len_t ir = 0; ir < grid->GetNr(); ir++)
-			this->javg += j_tot[ir] * Vp[ir] * dr[ir];
+			this->javg += j_tot[ir] * dr[ir];
 
-		this->javg /= this->volume;
+		this->javg /= a;
 	}
 
 	if (this->transport_enabled) {

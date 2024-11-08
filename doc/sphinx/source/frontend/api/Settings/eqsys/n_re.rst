@@ -1025,7 +1025,7 @@ seconds. After this, the transport coefficients are set to zero again.
 
    .. math::
 
-      \left\langle j_{\rm tot} \right\rangle = \frac{1}{V'}\int_0^a \mathrm{d}r\,V' j_{\rm tot}.
+      \left\langle j_{\rm tot} \right\rangle = \frac{1}{a}\int_0^a \mathrm{d}r\,j_{\rm tot}.
 
    and :math:`a` is the plasma minor radius.
 

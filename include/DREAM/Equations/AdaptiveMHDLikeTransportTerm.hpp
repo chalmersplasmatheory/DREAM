@@ -20,7 +20,6 @@ namespace DREAM {
 
 		len_t id_j_tot;
 
-		real_t volume = 0;
 		real_t javg = 0;
 
 		bool IsCurrentGradientExceeded(const len_t);
