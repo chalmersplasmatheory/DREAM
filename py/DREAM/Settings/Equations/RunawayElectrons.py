@@ -288,19 +288,30 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
     
 
-    def setAdaptiveMHDLikeTransport(self, grad_j_tot_max, dBB0, Lambda0, min_duration=0.5e-3):
+    def setAdaptiveMHDLikeTransport(
+        self, dBB0, Lambda0, grad_j_tot_max=None,
+        grad_j_tot_max_norm=None, min_duration=0.5e-3
+    ):
         """
         Enable adaptive MHD-like transport on ``n_re``, ``psi_p`` and ``T_cold``
         simultaneously.
         """
+        kwargs = {}
+        if grad_j_tot_max:
+            kwargs['grad_j_tot_max'] = grad_j_tot_max
+        elif grad_j_tot_max_norm:
+            kwargs['grad_j_tot_max_norm'] = grad_j_tot_max_norm
+        else:
+            raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
+
         self.transport.setMHDLikeRechesterRosenbluth(
-            dBB0=dBB0, grad_j_tot_max=grad_j_tot_max, min_duration=min_duration
+            dBB0=dBB0, min_duration=min_duration, **kwargs
         )
         self.settings.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
-            dBB0=dBB0, grad_j_tot_max=grad_j_tot_max, min_duration=min_duration
+            dBB0=dBB0, min_duration=min_duration, **kwargs
         )
         self.settings.eqsys.psi_p.setHyperresistivityAdaptive(
-            Lambda0=Lambda0, grad_j_tot_max=grad_j_tot_max, min_duration=min_duration
+            Lambda0=Lambda0, min_duration=min_duration, **kwargs
         )
 
 

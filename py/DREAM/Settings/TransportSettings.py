@@ -99,6 +99,7 @@ class TransportSettings:
         # MHD-like Rechester-Rosenbluth (diffusive) heat transport
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
+        self.mhdlike_gradient_normalized = False
         self.mhdlike_min_duration = None
 
         # Frozen current mode transport
@@ -285,15 +286,26 @@ class TransportSettings:
         self.dBB   = dBB
 
 
-    def setMHDLikeRechesterRosenbluth(self, dBB0, grad_j_tot_max, min_duration=0.5e-3):
+    def setMHDLikeRechesterRosenbluth(
+        self, dBB0, grad_j_tot_max=None,
+        grad_j_tot_max_norm=None, min_duration=0.5e-3
+    ):
         """
         Enable the MHD-like Rechester-Rosenbluth heat transport model.
         """
         self.type = TRANSPORT_MHD_LIKE
 
         self.mhdlike_dBB0 = dBB0
-        self.mhdlike_grad_j_tot_max = grad_j_tot_max
         self.mhdlike_min_duration = min_duration
+
+        if grad_j_tot_max:
+            self.mhdlike_grad_j_tot_max = grad_j_tot_max
+            self.mhdlike_gradient_normalized = False
+        elif grad_j_tot_max_norm:
+            self.mhdlike_grad_j_tot_max = grad_j_tot_max_norm
+            self.mhdlike_gradient_normalized = True
+        else:
+            raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
 
 
     def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000):
@@ -384,6 +396,7 @@ class TransportSettings:
 
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
+        self.mhdlike_gradient_normalized = False
         self.mhdlike_min_duration = None
 
         if 'type' in data:
@@ -458,6 +471,7 @@ class TransportSettings:
         if 'mhdlike_dBB0' in data:
             self.mhdlike_dBB0 = float(data['mhdlike_dBB0'])
             self.mhdlike_grad_j_tot_max = float(data['mhdlike_grad_j_tot_max'])
+            self.mhdlike_gradient_normalized = bool(data['mhdlike_gradient_normalized'])
             self.mhdlike_min_duration = float(data['mhdlike_min_duration'])
 
         if 'frozen_current_mode' in data:
@@ -568,6 +582,7 @@ class TransportSettings:
         if self.type == TRANSPORT_MHD_LIKE and self.mhdlike_dBB0 is not None:
             data['mhdlike_dBB0'] = self.mhdlike_dBB0
             data['mhdlike_grad_j_tot_max'] = self.mhdlike_grad_j_tot_max
+            data['mhdlike_gradient_normalized'] = 1 if self.mhdlike_gradient_normalized else 0
             data['mhdlike_min_duration'] = self.mhdlike_min_duration
 
         data['frozen_current_mode'] = self.frozen_current_mode

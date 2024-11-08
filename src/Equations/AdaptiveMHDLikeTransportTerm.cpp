@@ -16,10 +16,21 @@ using namespace DREAM;
  */
 AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
-	const real_t grad_j_tot_max, const real_t min_duration
+	const real_t grad_j_tot_max, bool gradient_normalized,
+	const real_t min_duration
 ) : grid(grid), uqh(uqh),
-	grad_j_tot_max(grad_j_tot_max), min_duration(min_duration),
-	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {}
+	grad_j_tot_max(grad_j_tot_max),
+	gradient_normalized(gradient_normalized),
+	min_duration(min_duration),
+	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {
+	
+	// Evaluate plasma volume
+	const real_t *dr = grid->GetRadialGrid()->GetDr();
+	const real_t *Vp = grid->GetVpVol();
+	this->volume = 0;
+	for (len_t ir = 0; ir < grid->GetNr(); ir++)
+		this->volume += Vp[ir] * dr[ir];
+}
 
 
 /**
@@ -29,6 +40,17 @@ AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
  * at least 'min_duration' seconds.
  */
 bool AdaptiveMHDLikeTransportTerm::CheckTransportEnabled(const real_t t) {
+	if (this->gradient_normalized) {
+		const real_t *j_tot = this->uqh->GetUnknownDataPrevious(this->id_j_tot);
+		const real_t *dr = grid->GetRadialGrid()->GetDr();
+		const real_t *Vp = grid->GetVpVol();
+		this->javg = 0;
+		for (len_t ir = 0; ir < grid->GetNr(); ir++)
+			this->javg += j_tot[ir] * Vp[ir] * dr[ir];
+
+		this->javg /= this->volume;
+	}
+
 	if (this->transport_enabled) {
 		// Disable transport?
 		// (we disable transport if 'min_duration' has been exceeded,
@@ -77,6 +99,9 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded(const len_t ir) {
 		gradj = (j_tot[1]-j_tot[0]) / dr_f[0];
 	else
 		gradj = (j_tot[ir]-j_tot[ir-1]) / dr_f[ir-1];
+	
+	if (this->gradient_normalized)
+		gradj /= this->javg;
 	
 	return (std::abs(gradj) >= this->grad_j_tot_max);
 }

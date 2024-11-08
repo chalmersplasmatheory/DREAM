@@ -25,6 +25,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         self.hyperresistivity_Lambda_t = None
 
         self.hyperresistivity_grad_j_tot_max = None
+        self.hyperresistivity_gradient_normalized = False
         self.hyperresistivity_Lambda0 = None
         self.hyperresistivity_min_duration = None
 
@@ -47,7 +48,8 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
 
 
     def setHyperresistivityAdaptive(
-        self, grad_j_tot_max, Lambda0, min_duration=0.5e-3
+        self, Lambda0, grad_j_tot_max=None,
+        grad_j_tot_max_norm=None, min_duration=0.5e-3
     ):
         """
         Enable the adaptive hyperresistive diffusion term, which triggers when
@@ -55,12 +57,22 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         term is applied until the current density drops below the threshold,
         and at least for ``min_duration`` seconds.
 
-        :param grad_j_tot_max: Maximum current density gradient which must be exceeded for the term to be triggered.
-        :param Lambda0:        Value of hyperresistivity to apply.
-        :param min_duration:   Minimum duration of the hyperresistive term (in seconds).
+        :param Lambda0:             Value of hyperresistivity to apply.
+        :param grad_j_tot_max:      Maximum current density gradient which must be exceeded for the term to be triggered.
+        :param grad_j_tot_max_norm: Maximum current density gradient (normalized to average current density) which must be exceeded.
+        :param min_duration:        Minimum duration of the hyperresistive term (in seconds).
         """
         self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_ADAPTIVE
-        self.hyperresistivity_grad_j_tot_max = grad_j_tot_max
+
+        if grad_j_tot_max:
+            self.hyperresistivity_grad_j_tot_max = grad_j_tot_max
+            self.hyperresistivity_gradient_normalized = False
+        elif grad_j_tot_max_norm:
+            self.hyperresistivity_grad_j_tot_max = grad_j_tot_max_norm
+            self.hyperresistivity_gradient_normalized = True
+        else:
+            raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
+
         self.hyperresistivity_Lambda0 = Lambda0
         self.hyperresistivity_min_duration = min_duration
 
@@ -80,6 +92,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             elif 'Lambda0' in hyp:
                 self.hyperresistivity_Lambda0 = float(hyp['Lambda0'])
                 self.hyperresistivity_grad_j_tot_max = float(hyp['grad_j_tot_max'])
+                self.hyperresistivity_gradient_normalized = bool(hyp['gradient_normalized'])
                 self.hyperresistivity_min_duration = float(hyp['min_duration'])
 
 
@@ -99,6 +112,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE:
             hypres['Lambda0'] = self.hyperresistivity_Lambda0
             hypres['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
+            hypres['gradient_normalized'] = self.hyperresistivity_gradient_normalized
             hypres['min_duration'] = self.hyperresistivity_min_duration
 
         return { 'hyperresistivity': hypres }
@@ -116,9 +130,9 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             if not np.isscalar(self.hyperresistivity_Lambda0):
                 raise EquationException(f"The hyperresistivity parameter 'Lambda0' must be a scalar. Current value: {self.hyperresistivity_Lambda0}.")
             if not np.isscalar(self.hyperresistivity_grad_j_tot_max):
-                raise EquationException(f"The hyperresistivity parameter 'Lambda0' must be a scalar. Current value: {self.hyperresistivity_grad_j_tot_max}.")
+                raise EquationException(f"The hyperresistivity parameter 'grad_j_tot_max' must be a scalar. Current value: {self.hyperresistivity_grad_j_tot_max}.")
             if not np.isscalar(self.hyperresistivity_min_duration):
-                raise EquationException(f"The hyperresistivity parameter 'Lambda0' must be a scalar. Current value: {self.hyperresistivity_min_duration}.")
+                raise EquationException(f"The hyperresistivity parameter 'min_duration' must be a scalar. Current value: {self.hyperresistivity_min_duration}.")
         else:
             raise EquationException(f"Invalid option for hyperresistivity mode: {self.hyperresistivity_mode}.")
 

@@ -123,6 +123,7 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     // Settings for hyperresistive term
     s->DefineSetting(MODULENAME_HYPRES "/mode", "Mode for the hyperresistive term", (int_t)OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_NEGLECT);
 	s->DefineSetting(MODULENAME_HYPRES "/grad_j_tot_max", "Maximum current density gradient prior to activation of hyperresistive term", (real_t)0.0);
+	s->DefineSetting(MODULENAME_HYPRES "/gradient_normalized", "Flag indicating whether or not 'grad_j_tot_max' is normalized to the average j_tot", (bool)false);
 	s->DefineSetting(MODULENAME_HYPRES "/Lambda0", "Value of adaptive diffusion coefficient when enabled", (real_t)0.0);
 	s->DefineSetting(MODULENAME_HYPRES "/min_duration", "Minimum duration of the adaptive hyperresistive term", (real_t)0.5e-3);
     DefineDataRT(MODULENAME_HYPRES, s, "Lambda");
@@ -247,13 +248,15 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         eqn += " + hyperresistivity";
     } else if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE) {
 		real_t grad_j_tot_max = s->GetReal(MODULENAME_HYPRES "/grad_j_tot_max");
+		bool gradient_normalized = s->GetBool(MODULENAME_HYPRES "/gradient_normalized");
 		real_t Lambda0 = s->GetReal(MODULENAME_HYPRES "/Lambda0");
 		real_t min_duration = s->GetReal(MODULENAME_HYPRES "/min_duration");
 
 		FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
 		AdaptiveHyperresistiveDiffusionTerm *ahrdt = new AdaptiveHyperresistiveDiffusionTerm(
 			fluidGrid, eqsys->GetUnknownHandler(),
-			grad_j_tot_max, Lambda0, min_duration
+			grad_j_tot_max, gradient_normalized,
+			Lambda0, min_duration
 		);
 
 		hypTerm->AddTerm(ahrdt);
