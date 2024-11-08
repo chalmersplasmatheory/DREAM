@@ -1007,9 +1007,27 @@ Rechester-Rosenbluth diffusion operator is used, so that the user specifies the
 desired magnetic perturbation strength :math:`\delta B/B`.
 
 When the current density gradient exceeds the prescribed value,
-``grad_j_tot_max``, all transport operators are enabled until the current
-gradient is restored, or for at least ``min_duration`` seconds. After this, the
-transport coefficients are set to zero again.
+``grad_j_tot_max`` or ``grad_j_tot_max_norm``, all transport operators are
+enabled until the current gradient is restored, or for at least ``min_duration``
+seconds. After this, the transport coefficients are set to zero again.
+
+.. note::
+
+   The option ``grad_j_tot_max`` sets the absolute value of the current density
+   gradient threshold, while ``grad_j_tot_max_norm`` sets the value normalized
+   to the average value of ``j_tot`` and minor radius. Specifically, we have
+
+   .. math::
+
+      \text{grad_j_tot_max_norm} = \frac{a}{\left\langle j_{\rm tot}\right\rangle}\frac{\partial j_{\rm tot}}{\partial r}
+   
+   where
+
+   .. math::
+
+      \left\langle j_{\rm tot} \right\rangle = \frac{1}{V'}\int_0^a \mathrm{d}r\,V' j_{\rm tot}.
+
+   and :math:`a` is the plasma minor radius.
 
 Example
 *******
@@ -1023,6 +1041,8 @@ The adaptive MHD-like transport can either be set using the unified interface:
    ...
    # Maximum allowed gradient (dj/dr) in j_tot
    grad_j_tot_max = 3e6 # A/m^2
+   # ...or
+   grad_j_tot_max_norm = 10
    # Minimum duration of the transport event
    min_duration = 0.5e-3 # s
    # Magnetic perturbation amplitude (for n_re and W_cold transport)
@@ -1031,9 +1051,18 @@ The adaptive MHD-like transport can either be set using the unified interface:
    Lambda0 = 4e-3
 
    ds.eqsys.n_re.setAdaptiveMHDLikeTransport(
-       grad_j_tot_max=grad_j_tot_max, min_duration=min_duration,
-       dBB0=dBB0, Lambda0=Lambda0
+       dBB0=dBB0, Lambda0=Lambda0,
+       grad_j_tot_max=grad_j_tot_max,
+       min_duration=min_duration,
    )
+
+   # ...or with the normalized gradient instead:
+   ds.eqsys.n_re.setAdaptiveMHDLikeTransport(
+       dBB0=dBB0, Lambda0=Lambda0,
+       grad_j_tot_max_norm=grad_j_tot_max_norm,
+       min_duration=min_duration,
+   )
+
 
 Alternatively, the transport can be set separately for each quantity:
 
