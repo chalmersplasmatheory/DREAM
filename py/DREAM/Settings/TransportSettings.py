@@ -629,6 +629,8 @@ class TransportSettings:
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_MHD_LIKE:
             self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_MHD_LIKE_LOCAL:
+            self.verifyBoundaryCondition()
         else:
             raise TransportException("Unrecognized transport type: {}".format(self.type))
 

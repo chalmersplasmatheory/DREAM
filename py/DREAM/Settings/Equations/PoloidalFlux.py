@@ -132,7 +132,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             pass
         elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_PRESCRIBED:
             self._verifySettingsPrescribedData('psi_p hyperresistivity', data=self.hyperresistivity_Lambda_x, radius=self.hyperresistivity_Lambda_r, times=self.hyperresistivity_Lambda_t)
-        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE:
+        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE or self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL:
             if not np.isscalar(self.hyperresistivity_Lambda0):
                 raise EquationException(f"The hyperresistivity parameter 'Lambda0' must be a scalar. Current value: {self.hyperresistivity_Lambda0}.")
             if not np.isscalar(self.hyperresistivity_grad_j_tot_max):
