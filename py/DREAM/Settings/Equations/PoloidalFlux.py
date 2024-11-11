@@ -115,7 +115,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
                 'r': self.hyperresistivity_Lambda_r,
                 't': self.hyperresistivity_Lambda_t
             }
-        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE:
+        elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE or self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL:
             hypres['Lambda0'] = self.hyperresistivity_Lambda0
             hypres['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
             hypres['gradient_normalized'] = self.hyperresistivity_gradient_normalized

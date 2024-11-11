@@ -79,12 +79,14 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded() {
 	const len_t nr = this->grid->GetNr();
 	bool exceeded = false;
 
-	for (len_t ir = 0; ir < nr && !exceeded; ir++) {
+	for (len_t ir = 0; ir < nr; ir++) {
+		
 		bool e = this->IsCurrentGradientExceeded(ir);
 
-		if (this->localized) {
+		if (this->localized) {	
 			if (e) {
 				this->mask[ir] = 1;
+				
 				if (ir > 0)
 					this->mask[ir-1] = 1;
 				if (ir < nr-1)
@@ -96,6 +98,7 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded() {
 		} else
 			// Apply uniformly everywhere
 			this->mask[ir] = 1;
+			if (e) exceeded = true;
 	}
 	
 	return exceeded;

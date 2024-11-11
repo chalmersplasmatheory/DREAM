@@ -584,7 +584,7 @@ class TransportSettings:
                 't': self.dBB_t
             }
 
-        if self.type == TRANSPORT_MHD_LIKE and self.mhdlike_dBB0 is not None:
+        if self.type == TRANSPORT_MHD_LIKE or self.type == TRANSPORT_MHD_LIKE_LOCAL and self.mhdlike_dBB0 is not None:
             data['mhdlike_dBB0'] = self.mhdlike_dBB0
             data['mhdlike_grad_j_tot_max'] = self.mhdlike_grad_j_tot_max
             data['mhdlike_gradient_normalized'] = 1 if self.mhdlike_gradient_normalized else 0

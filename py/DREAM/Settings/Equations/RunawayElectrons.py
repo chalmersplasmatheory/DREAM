@@ -297,6 +297,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Enable adaptive MHD-like transport on ``n_re``, ``psi_p`` and ``T_cold``
         simultaneously.
         """
+
+        
         kwargs = {}
         if grad_j_tot_max:
             kwargs['grad_j_tot_max'] = grad_j_tot_max
@@ -314,6 +316,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.settings.eqsys.psi_p.setHyperresistivityAdaptive(
             Lambda0=Lambda0, min_duration=min_duration, localized=localized, **kwargs
         )
+
 
 
     def fromdict(self, data):
