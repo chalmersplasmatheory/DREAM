@@ -57,7 +57,6 @@ class Equilibrium:
 
         # Flux surfaces
         ax.plot(R0*self.ROverR0-rn, self.Z-zn, color=gray, linewidth=1, **kwargs)
-        #ax.plot(R0*self.ROverR0_f, self.Z_f, color=gray, linewidth=1, **kwargs)
         # Limiter
         ax.plot(R0*self.ROverR0_f[:,-1]-rn, self.Z_f[:,-1]-zn, color=black, linewidth=2, **kwargs)
         # Magnetic axis 
