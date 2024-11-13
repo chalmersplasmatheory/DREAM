@@ -134,9 +134,7 @@ class SPIShardPositions(ScalarQuantity):
         black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
-        genax = ax is None
-
-        if genax:
+        if ax is None:
             ax = plt.axes()
 
             if show is None:
@@ -179,9 +177,7 @@ class SPIShardPositions(ScalarQuantity):
         black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
-        genax = ax is None
-
-        if genax:
+        if ax is None:
             ax = plt.axes()
 
             if show is None:

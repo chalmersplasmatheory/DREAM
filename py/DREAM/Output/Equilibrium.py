@@ -40,9 +40,8 @@ class Equilibrium:
         gray = (190/255, 190/255, 190/255)
 
         # Set up axes (if not already done)
-        genax = ax is None
 
-        if genax:
+        if ax is None:
             ax = plt.axes()
 
             if show is None:
