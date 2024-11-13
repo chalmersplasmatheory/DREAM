@@ -111,10 +111,10 @@ namespace DREAM::FVM {
 		virtual const real_t GetZ0() override { return this->Zp; }
 		virtual const len_t GetNPsi() override { return this->GetNr(); }
 		virtual const len_t GetNTheta() override { return this->ntheta; }
-		virtual const real_t *GetFluxSurfaceROverR0() override;
-		virtual const real_t *GetFluxSurfaceROverR0_f() override;
-		virtual const real_t *GetFluxSurfaceZ() override;
-		virtual const real_t *GetFluxSurfaceZ_f() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
 		virtual const real_t *GetPoloidalAngle() override;
 
         // Debugging method

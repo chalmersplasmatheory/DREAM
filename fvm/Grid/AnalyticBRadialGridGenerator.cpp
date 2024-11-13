@@ -740,7 +740,7 @@ void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, re
  * Returns a list flux surface R coordinates
  * on the simulation grid.
  */
-const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceROverR0() {
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *R = new real_t[nr*ntheta];
@@ -749,7 +749,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceROverR0() {
 		real_t theta = 2*M_PI*j / ntheta;
 
 		for (len_t ir = 0; ir < nr; ir++, i++)
-			R[i] = ROverR0AtTheta(ir, theta);
+			R[i] = ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
 	}
 
 	return R;
@@ -760,7 +760,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceROverR0() {
  * Returns a list flux surface R coordinates
  * on the simulation grid.
  */
-const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceROverR0_f() {
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *R = new real_t[(nr+1)*ntheta];
@@ -769,7 +769,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceROverR0_f() {
 		real_t theta = 2*M_PI*j / ntheta;
 
 		for (len_t ir = 0; ir < nr+1; ir++, i++)
-			R[i] = ROverR0AtTheta_f(ir, theta);
+			R[i] = ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
 	}
 
 	return R;
@@ -780,7 +780,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceROverR0_f() {
  * Returns a list flux surface Z coordinates
  * on the simulation grid.
  */
-const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZ() {
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *Z = new real_t[nr*ntheta];
@@ -800,7 +800,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZ() {
  * Returns a list flux surface Z coordinates
  * on the simulation grid.
  */
-const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZ_f() {
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *Z = new real_t[(nr+1)*ntheta];

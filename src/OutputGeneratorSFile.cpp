@@ -156,18 +156,18 @@ void OutputGeneratorSFile::SaveEquilibrium(
 	len_t npsi = rg->GetNPsi();
 	len_t ntheta = rg->GetNTheta();
 
-	const real_t *R = rg->GetFluxSurfaceROverR0();
-	const real_t *R_f = rg->GetFluxSurfaceROverR0_f();
-	const real_t *Z = rg->GetFluxSurfaceZ();
-	const real_t *Z_f = rg->GetFluxSurfaceZ_f();
+	const real_t *R = rg->GetFluxSurfaceRMinusR0();
+	const real_t *R_f = rg->GetFluxSurfaceRMinusR0_f();
+	const real_t *Z = rg->GetFluxSurfaceZMinusZ0();
+	const real_t *Z_f = rg->GetFluxSurfaceZMinusZ0_f();
 	const real_t *theta = rg->GetPoloidalAngle();
 
 	sfilesize_t dims[2] = {ntheta, npsi};
 	sfilesize_t dims_f[2] = {ntheta, npsi+1};
-	sf->WriteMultiArray(group + "ROverR0", R, 2, dims);
-	sf->WriteMultiArray(group + "ROverR0_f", R_f, 2, dims_f);
-	sf->WriteMultiArray(group + "Z", Z, 2, dims);
-	sf->WriteMultiArray(group + "Z_f", Z_f, 2, dims_f);
+	sf->WriteMultiArray(group + "RMinusR0", R, 2, dims);
+	sf->WriteMultiArray(group + "RMinusR0_f", R_f, 2, dims_f);
+	sf->WriteMultiArray(group + "ZMinusZ0", Z, 2, dims);
+	sf->WriteMultiArray(group + "ZMinusZ0_f", Z_f, 2, dims_f);
 	sf->WriteList(group + "theta", theta, ntheta);
 
 	delete [] theta;

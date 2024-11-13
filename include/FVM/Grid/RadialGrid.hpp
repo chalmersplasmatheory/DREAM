@@ -272,10 +272,10 @@ namespace DREAM::FVM {
 		virtual const real_t GetZ0() { return this->generator->GetZ0(); }
 		virtual const len_t GetNPsi() { return this->generator->GetNPsi(); }
 		virtual const len_t GetNTheta() { return this->generator->GetNTheta(); }
-		virtual const real_t *GetFluxSurfaceROverR0() { return this->generator->GetFluxSurfaceROverR0(); }
-		virtual const real_t *GetFluxSurfaceROverR0_f() { return this->generator->GetFluxSurfaceROverR0_f(); }
-		virtual const real_t *GetFluxSurfaceZ() { return this->generator->GetFluxSurfaceZ(); }
-		virtual const real_t *GetFluxSurfaceZ_f() { return this->generator->GetFluxSurfaceZ_f(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0() { return this->generator->GetFluxSurfaceRMinusR0(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() { return this->generator->GetFluxSurfaceRMinusR0_f(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
 		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
         
         /**

@@ -24,14 +24,11 @@ class SPIShardPositions(ScalarQuantity):
         if 'eq' not in self.grid:
             raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
 
-        R0 = self.grid.eq.R0
-        if np.isinf(R0): R0 = 1
-
-        ROverR0 = self.grid.eq.ROverR0_f*R0 - R0
-        Z = self.grid.eq.Z_f - self.grid.eq.Z0
+        RMinusR0 = self.grid.eq.RMinusR0_f
+        Z = self.grid.eq.ZMinusZ0_f
         ntheta = self.grid.eq.theta.size
 
-        vertices = [(ROverR0[i,-1], Z[i,-1]) for i in range(ntheta)]
+        vertices = [(RMinusR0[i,-1], Z[i,-1]) for i in range(ntheta)]
         p = path.Path(vertices)
 
         xp = self.data[:,0::3,0]
@@ -45,7 +42,7 @@ class SPIShardPositions(ScalarQuantity):
         imax = np.argmax(np.abs(xp[1,:] - xp[0,:]))
 
         # Roughly estimate when the fastest pellet reaches the plasma edge
-        it_est = np.argmin(np.abs(ROverR0[0,-1] - xp[:,imax]))
+        it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,imax]))
 
         # Determine if the first pellet arrives before or after
         # the estimated time
@@ -157,7 +154,7 @@ class SPIShardPositions(ScalarQuantity):
         ax.plot(xp[t,shards], yp[t,shards], 'k.')
 
         ax.set_xlabel('Radius $R-R_0$ (m)')
-        ax.set_ylabel('Height $Z$ (m)')
+        ax.set_ylabel('Height $Z-Z_0$ (m)')
         ax.axis('equal')
 
         if show:
@@ -204,7 +201,7 @@ class SPIShardPositions(ScalarQuantity):
             ax.plot(xp[:,shards], yp[:,shards], color=color)
 
         ax.set_xlabel('Radius $R-R_0$ (m)')
-        ax.set_ylabel('Height $Z$ (m)')
+        ax.set_ylabel('Height $Z-Z_0$ (m)')
         ax.axis('equal')
 
         if show:
