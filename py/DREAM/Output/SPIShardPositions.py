@@ -42,7 +42,7 @@ class SPIShardPositions(ScalarQuantity):
             return 0
 
         # Find the pellet which is travelling the fastest in the x direction
-        imax = np.argmax(np.abs(xp[-1,:] - xp[0,:]))
+        imax = np.argmax(np.abs(xp[1,:] - xp[0,:]))
 
         # Roughly estimate when the fastest pellet reaches the plasma edge
         it_est = np.argmin(np.abs(ROverR0[0,-1] - xp[:,imax]))
@@ -156,11 +156,7 @@ class SPIShardPositions(ScalarQuantity):
         ax.plot(xp[0,0], yp[0,0], 'o', color=red)
         ax.plot(xp[t,shards], yp[t,shards], 'k.')
 
-        if np.isinf(eq.R0):
-            ax.set_xlabel('Radius $R-R_0$ (m)')
-        else:
-            ax.set_xlabel('Major radius $R$ (m)')
-
+        ax.set_xlabel('Radius $R-R_0$ (m)')
         ax.set_ylabel('Height $Z$ (m)')
         ax.axis('equal')
 
@@ -199,7 +195,6 @@ class SPIShardPositions(ScalarQuantity):
             if color is None:
                 color = red
 
-        #ax.plot(R0*eq.ROverR0_f[:,-1] - R0, eq.Z_f[:,-1] - eq.Z0, color=black, linewidth=2)
         eq.visualize(ax=ax, shifted=True, maxis=False)
 
         ax.plot(xp[0,0], yp[0,0], 'o', color=red)
@@ -208,11 +203,7 @@ class SPIShardPositions(ScalarQuantity):
         else:
             ax.plot(xp[:,shards], yp[:,shards], color=color)
 
-        if np.isinf(eq.R0):
-            ax.set_xlabel('Radius $R-R_0$ (m)')
-        else:
-            ax.set_xlabel('Major radius $R$ (m)')
-
+        ax.set_xlabel('Radius $R-R_0$ (m)')
         ax.set_ylabel('Height $Z$ (m)')
         ax.axis('equal')
 
