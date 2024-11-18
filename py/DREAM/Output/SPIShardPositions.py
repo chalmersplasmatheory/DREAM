@@ -35,8 +35,9 @@ class SPIShardPositions(ScalarQuantity):
         yp = self.data[:,1::3,0]
 
         # Check if the shards start within the plasma
-        if p.contains_point((xp[0,0], yp[0,0])):
-            return 0
+        for i in range(xp.shape[0]):
+            if p.contains_point((xp[0,i], yp[0,i])):
+                return 0
 
         # Find the pellet which is travelling the fastest in the x direction
         imax = np.argmax(np.abs(xp[1,:] - xp[0,:]))
@@ -150,7 +151,11 @@ class SPIShardPositions(ScalarQuantity):
 
         eq.visualize(ax=ax, shifted=True, maxis=False)
 
-        ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+        if (xp[0,0] != xp[0,1]) or (yp[0,0] != yp[0,1]):
+            print('WARNING: Pellet shards do not start from the same position. Skipping plot of origin.')
+        else:
+            ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+
         ax.plot(xp[t,shards], yp[t,shards], 'k.')
 
         ax.set_xlabel('Radius $R-R_0$ (m)')
