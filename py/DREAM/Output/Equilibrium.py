@@ -75,7 +75,7 @@ class Equilibrium:
             ax.plot(rn, zn, 'x', color=red)
         ax.axis('equal')
 
-        if np.isinf(self.R0):
+        if shifted or np.isinf(self.R0):
             ax.set_xlabel('Major radius $R-R_0$ (m)')
         else:
             ax.set_xlabel('Major radius $R$ (m)')
