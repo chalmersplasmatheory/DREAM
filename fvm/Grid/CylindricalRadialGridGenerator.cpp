@@ -20,8 +20,9 @@ using namespace DREAM::FVM;
  */
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
      len_t nx,  real_t B0,
-     real_t x0, real_t xa
-) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {
+     real_t x0, real_t xa,
+	 len_t ntheta_out
+) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0), ntheta_out(ntheta_out) {
     isUpDownSymmetric = true;
     ntheta_interp = 1;
 }
@@ -34,8 +35,10 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  * B0: Magnetic field strength.
  */
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
-     const real_t *x_f_input, len_t nx,  real_t B0
-) : RadialGridGenerator(nx), xMin(x_f_input[0]), xMax(x_f_input[nx]), B0(B0) {
+     const real_t *x_f_input, len_t nx,  real_t B0, len_t ntheta_out
+) : RadialGridGenerator(nx), xMin(x_f_input[0]), xMax(x_f_input[nx]),
+	B0(B0), ntheta_out(ntheta_out) {
+
     isUpDownSymmetric = true;
     ntheta_interp = 1;
 

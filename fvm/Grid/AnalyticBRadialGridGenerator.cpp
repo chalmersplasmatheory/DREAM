@@ -25,8 +25,10 @@ using namespace std;
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const len_t nr,  real_t r0,  real_t ra, real_t R0, len_t ntheta_interp,
-     struct shape_profiles *profiles
-) : RadialGridGenerator(nr), rMin(r0), rMax(ra), providedProfiles(profiles) {
+     struct shape_profiles *profiles, len_t ntheta_out
+) : RadialGridGenerator(nr), rMin(r0), rMax(ra), providedProfiles(profiles),
+	ntheta_out(ntheta_out) {
+
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
@@ -45,8 +47,9 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const real_t *r_f_input, const len_t nr, real_t R0, len_t ntheta_interp,
-     struct shape_profiles *profiles
-) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]), providedProfiles(profiles) {
+     struct shape_profiles *profiles, len_t ntheta_out
+) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]),
+	providedProfiles(profiles), ntheta_out(ntheta_out) {
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
