@@ -19,6 +19,7 @@ namespace DREAM {
 		virtual void SaveTimings(const std::string&) override;
 		virtual void SaveUnknowns(const std::string&, bool) override;
 
+		void SaveEquilibrium(SFile*, const std::string&);
         void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
         void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
