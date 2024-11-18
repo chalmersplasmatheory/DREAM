@@ -16,6 +16,17 @@ class Equilibrium:
             self.setEquilibrium(eq)
 
 
+    def __repr__(self):
+        """
+        Convert this object to an "official" string.
+        """
+        s  = f'TOKAMAK EQUILIBRIUM (ntheta = {self.RMinusR0.shape[0]}, npsi = {self.RMinusR0.shape[1]})\n'
+        s += f'  Axis at ({self.R0[0]}, {self.Z0[0]})\n'
+        s += f'  Minor radius a = {self.RMinusR0_f[0,-1]} m\n'
+
+        return s
+
+
     def setEquilibrium(self, eq):
         """
         Set equilibrium data based on output from DREAM.
@@ -54,8 +65,11 @@ class Equilibrium:
 
         # Flux surfaces
         ax.plot(self.RMinusR0+rn, self.ZMinusZ0+zn, color=gray, linewidth=1, **kwargs)
+        # ...close the flux surfaces
+        ax.plot(np.array([self.RMinusR0[-1,:], self.RMinusR0[0,:]])+rn, np.array([self.ZMinusZ0[-1,:], self.ZMinusZ0[0,:]])+zn, color=gray, linewidth=1, **kwargs)
         # Limiter
         ax.plot(self.RMinusR0_f[:,-1]+rn, self.ZMinusZ0_f[:,-1]+zn, color=black, linewidth=2, **kwargs)
+        ax.plot(self.RMinusR0_f[(0,-1),-1]+rn, self.ZMinusZ0_f[(0,-1),-1]+zn, color=black, linewidth=2, **kwargs)
         # Magnetic axis 
         if maxis:
             ax.plot(rn, zn, 'x', color=red)
