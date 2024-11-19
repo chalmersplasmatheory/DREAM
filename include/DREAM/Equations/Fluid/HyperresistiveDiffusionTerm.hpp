@@ -16,7 +16,7 @@ namespace DREAM {
 	protected:
 		virtual const real_t *EvaluateLambda(const real_t t) { return this->Lambda->Eval(t); }
 
-		void BuildCoefficient(const real_t, FVM::UnknownQuantityHandler*, const real_t*, const real_t**);
+		void BuildCoefficient(const real_t*, const real_t**);
 
     public:
         HyperresistiveDiffusionTerm(FVM::Grid*, FVM::Interpolator1D*);

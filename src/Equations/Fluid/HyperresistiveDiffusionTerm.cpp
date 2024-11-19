@@ -71,7 +71,6 @@ void HyperresistiveDiffusionTerm::Rebuild(
  * Set diffusion coefficient, or derivative of, diffusion coefficient.
  */
 void HyperresistiveDiffusionTerm::BuildCoefficient(
-	const real_t t, FVM::UnknownQuantityHandler*,
 	const real_t *coeff, const real_t **diffusion_coeff
 ) {
     FVM::RadialGrid *rGrid = grid->GetRadialGrid(); 
