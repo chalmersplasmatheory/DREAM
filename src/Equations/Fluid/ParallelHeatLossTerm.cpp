@@ -175,7 +175,7 @@ void ParallelHeatLossTerm::SetWeights() {
         real_t qR0 = this->grid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
         real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
         real_t T_e = T_cold[ir] * Constants::ec; 
-        this->weights[ir] =  StepFunction(ir) * kappa * 2. / 3. * sqrt((T_e + gamma * T_i) / m_i) / (M_PI * qR0);
+        this->weights[ir] =  StepFunction(ir) * 2. / 3. * kappa  * sqrt((T_e + gamma * T_i) / m_i) / (M_PI * 1 * 6.2); // *1.12 
     }
 }
 

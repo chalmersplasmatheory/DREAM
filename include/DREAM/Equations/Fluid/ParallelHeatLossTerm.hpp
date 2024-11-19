@@ -30,8 +30,8 @@ namespace DREAM {
         int minZ = std::numeric_limits<int>::max(); // Initialize minZ to the maximum possible integer
 
 
-        real_t kappa = 8;
-        real_t gamma = 1.0;
+        real_t kappa = 8.;
+        real_t gamma = 5./3.;
 
         real_t m_i, Z;
         
