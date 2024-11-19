@@ -289,7 +289,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
     
 
     def setAdaptiveMHDLikeTransport(
-        self, dBB0, Lambda0, grad_j_tot_max=None,
+        self, dBB0, grad_j_tot_max=None,
         grad_j_tot_max_norm=None, min_duration=0.5e-3,
         localized=False
     ):

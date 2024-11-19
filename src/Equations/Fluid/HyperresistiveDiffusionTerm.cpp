@@ -33,7 +33,6 @@ HyperresistiveDiffusionTerm::~HyperresistiveDiffusionTerm() {
 void HyperresistiveDiffusionTerm::Rebuild(
 	const real_t t, const real_t, FVM::UnknownQuantityHandler*
 ) {
-    //FVM::RadialGrid *rGrid = grid->GetRadialGrid(); 
     const real_t *Lmbd  = this->EvaluateLambda(t);
 	this->BuildCoefficient(Lmbd, this->drr);
 }
@@ -71,7 +70,6 @@ void HyperresistiveDiffusionTerm::BuildCoefficient(
 
         for (len_t j = 0; j < np2; j++) 
             for (len_t i = 0; i < np1; i++) 
-                //Drr(ir, i, j) += drr;
 				diffusion_coeff[ir][j*np1 + i] += drr;
     }
 }
