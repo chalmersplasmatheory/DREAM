@@ -78,11 +78,6 @@ void SimulationGenerator::DefineOptions_Transport(
 		"Flag indicating whether or not 'mhdlike_grad_j_tot_max' is normalized to the average j_tot",
 		(bool)false
 	);
-	s->DefineSetting(
-		mod + "/" + subname + "/mhdlike_min_duration",
-		"Minimum duration of the adaptive hyperresistive term",
-		(real_t)0.5e-3
-	);
 
 	// Frozen current mode
 	s->DefineSetting(
@@ -435,7 +430,6 @@ bool SimulationGenerator::ConstructTransportTerm(
 		real_t dBB0 = s->GetReal(mod + "/" + subname + "/mhdlike_dBB0");
 		real_t grad_j_tot_max = s->GetReal(mod + "/" + subname + "/mhdlike_grad_j_tot_max");
 		bool gradient_normalized = s->GetBool(mod + "/" + subname + "/mhdlike_gradient_normalized");
-		real_t min_duration = s->GetReal(mod + "/" + subname + "/mhdlike_min_duration");
 		bool localized = (type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE_LOCAL);
 
         if (heat) {
@@ -444,7 +438,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 			HeatTransportRRAdaptiveMHDLike *hrr = new HeatTransportRRAdaptiveMHDLike(
 				grid, eqsys->GetUnknownHandler(),
 				grad_j_tot_max, gradient_normalized,
-				min_duration, dBB0, localized
+				dBB0, localized
 			);
 
 			oprtr->AddTerm(hrr);
@@ -464,7 +458,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 			RunawayTransportRRAdaptiveMHDLike *rrr = new RunawayTransportRRAdaptiveMHDLike(
 				grid, eqsys->GetUnknownHandler(),
 				grad_j_tot_max, gradient_normalized,
-				min_duration, dBB0, localized
+				dBB0, localized
 			);
 			oprtr->AddTerm(rrr);
 

@@ -16,13 +16,13 @@ using namespace DREAM;
 AdaptiveHyperresistiveDiffusionTerm::AdaptiveHyperresistiveDiffusionTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh, IonHandler *ions,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	const real_t dBB0, const real_t min_duration, bool localized
-) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, min_duration, localized),
+	const real_t dBB0, bool localized
+) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, localized),
 	HyperresistiveDiffusionTerm(grid, nullptr), ions(ions), dBB0(dBB0) {
 	
-	this->Lambda0 = new real_t[grid->GetNr()];
-	this->Lambda = new real_t[grid->GetNr()];
-	this->dLambda = new real_t[grid->GetNr() * ions->GetNzs()];
+	this->Lambda0 = new real_t[grid->GetNr()+1];
+	this->Lambda = new real_t[grid->GetNr()+1];
+	this->dLambda = new real_t[(grid->GetNr()+1) * ions->GetNzs()];
 
 	this->id_n_i = uqh->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 }
@@ -52,7 +52,7 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 
 		if (isinf(R0)) {
 			// In toroidal geometry, Lambda = inf
-			for (len_t ir = 0; ir < nr; ir++)
+			for (len_t ir = 0; ir < nr+1; ir++)
 				this->Lambda0[ir] = 100;
 		} else {
 			real_t qR0 = R0;
@@ -63,7 +63,7 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 			//
 			//   <Lambda> = ... * <V_A> = ... * <B>.
 			//
-			for (len_t ir = 0; ir < nr; ir++) {
+			for (len_t ir = 0; ir < nr+1; ir++) {
 				real_t Bavg = rg->GetFSA_B(ir) * rg->GetBmin(ir);
 				real_t V_A = Bavg / (sqrt(Constants::mu0) * this->ions->GetTotalIonMassDensity(ir));
 				real_t a = rg->GetMinorRadius();
@@ -78,15 +78,15 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 		}
 	}
 	
-	for (len_t ir = 0; ir < nr; ir++)
+	for (len_t ir = 0; ir < nr+1; ir++)
 		this->Lambda[ir] = Lambda0[ir] * this->mask[ir];
 
 	// Set ion density derivative of Lambda
 	const len_t nZs = this->ions->GetNzs();
 	const real_t *n_i = uqh->GetUnknownData(this->id_n_i);
 	for (len_t iZs = 0; iZs < nZs; iZs++) {
-		for (len_t ir = 0; ir < nr; ir++) {
-			this->dLambda[iZs*nr + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + ir]);
+		for (len_t ir = 0; ir < nr+1; ir++) {
+			this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*(nr+1) + ir]);
 		}
 	}
 	
@@ -106,7 +106,7 @@ void AdaptiveHyperresistiveDiffusionTerm::SetPartialDiffusionTerm(
 	ResetDifferentiationCoefficients();
 
 	for (len_t iZs = 0; iZs < nMultiples; iZs++)
-		this->BuildCoefficient(this->dLambda + iZs*nr, this->ddrr + iZs*nr);
+		this->BuildCoefficient(this->dLambda + iZs*(nr+1), this->ddrr + iZs*(nr+1));
 }
 
 

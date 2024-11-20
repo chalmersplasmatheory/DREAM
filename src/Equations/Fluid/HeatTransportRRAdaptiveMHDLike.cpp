@@ -15,8 +15,8 @@ using namespace DREAM;
 HeatTransportRRAdaptiveMHDLike::HeatTransportRRAdaptiveMHDLike(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	const real_t min_duration, const real_t dBOverB, bool localized
-) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, min_duration, localized),
+	const real_t dBOverB, bool localized
+) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, localized),
 	HeatTransportRechesterRosenbluth(grid, nullptr, uqh),
 	dBOverB(dBOverB) {
 

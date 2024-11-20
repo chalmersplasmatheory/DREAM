@@ -17,11 +17,11 @@ using namespace DREAM;
 AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	const real_t min_duration, bool localized
+	bool localized
 ) : grid(grid), uqh(uqh),
 	grad_j_tot_max(grad_j_tot_max),
 	gradient_normalized(gradient_normalized),
-	min_duration(min_duration), localized(localized),
+	localized(localized),
 	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {
 	
 	this->mask = new real_t[grid->GetNr()];
@@ -39,8 +39,7 @@ AdaptiveMHDLikeTransportTerm::~AdaptiveMHDLikeTransportTerm() {
 /**
  * Check if the transport should be enabled. This routine returns
  * true from when the current density gradient exceeds the threshold
- * value, until the gradient has been sufficiently reduced, or for
- * at least 'min_duration' seconds.
+ * value, until the gradient has been sufficiently reduced.
  */
 bool AdaptiveMHDLikeTransportTerm::CheckTransportEnabled(const real_t t) {
 	if (this->gradient_normalized) {
@@ -56,10 +55,9 @@ bool AdaptiveMHDLikeTransportTerm::CheckTransportEnabled(const real_t t) {
 
 	if (this->transport_enabled) {
 		// Disable transport?
-		// (we disable transport if 'min_duration' has been exceeded,
-		// AND the current density gradient remains high)
-		real_t dt = t - this->transport_enabled_t;
-		if (dt > this->min_duration)
+		// (we disable transport when the current gradient has been
+		// reduced to 10% of the threshold value)
+		if (this->IsCurrentGradientSuppressed())
 			this->transport_enabled = IsCurrentGradientExceeded();
 	} else {
 		// Enable transport
@@ -112,6 +110,36 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded() {
  * ir: Radial grid point to check current density gradient in.
  */
 bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded(const len_t ir) {
+	real_t gradj = this->GetCurrentGradient(ir);
+	return (std::abs(gradj) >= this->grad_j_tot_max);
+}
+
+
+/**
+ * Checks whether the current density gradient has been
+ * fully suppressed.
+ */
+bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientSuppressed() {
+	const len_t nr = this->grid->GetNr();
+	bool suppressed = true;
+
+	for (len_t ir = 0; ir < nr; ir++)
+		suppressed = suppressed && this->IsCurrentGradientSuppressed(ir);
+	
+	return suppressed;
+}
+
+
+/**
+ * Check if the current density gradient has been suppressed.
+ */
+bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientSuppressed(const len_t ir) {
+	real_t gradj = this->GetCurrentGradient(ir);
+	return (std::abs(gradj) <= this->grad_j_tot_max*0.1);
+}
+
+
+real_t AdaptiveMHDLikeTransportTerm::GetCurrentGradient(const len_t ir) {
 	const real_t *j_tot = this->uqh->GetUnknownDataPrevious(this->id_j_tot);
 	const real_t *dr_f = this->grid->GetRadialGrid()->GetDr_f();
 
@@ -127,7 +155,7 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded(const len_t ir) {
 		gradj *= a / this->javg;
 	}
 	
-	return (std::abs(gradj) >= this->grad_j_tot_max);
+	return gradj;
 }
 
 
