@@ -68,7 +68,7 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 				real_t V_A = Bavg / (sqrt(Constants::mu0) * this->ions->GetTotalIonMassDensity(ir));
 				real_t a = rg->GetMinorRadius();
 				// Total enclosed toroidal flux
-				real_t psit = rg->GetToroidalFlux(nr-1);
+				real_t psit = rg->GetToroidalFlux_f(nr);
 
 				this->Lambda0[ir] =
 					M_PI * Constants::mu0 * qR0 * R0 * V_A * (psit*psit)
