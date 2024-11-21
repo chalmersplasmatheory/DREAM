@@ -64,8 +64,15 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 			//   <Lambda> = ... * <V_A> = ... * <B>.
 			//
 			for (len_t ir = 0; ir < nr+1; ir++) {
-				real_t Bavg = rg->GetFSA_B(ir) * rg->GetBmin(ir);
-				real_t V_A = Bavg / (sqrt(Constants::mu0) * this->ions->GetTotalIonMassDensity(ir));
+				real_t Bavg = rg->GetFSA_B_f(ir) * rg->GetBmin_f(ir);
+
+				real_t rho;
+				if (ir < nr)
+					rho = this->ions->GetTotalIonMassDensity(ir);
+				else
+					rho = this->ions->GetTotalIonMassDensity(nr-1);
+
+				real_t V_A = Bavg / (sqrt(Constants::mu0 * rho));
 				real_t a = rg->GetMinorRadius();
 				// Total enclosed toroidal flux
 				real_t psit = rg->GetToroidalFlux_f(nr);
@@ -79,14 +86,20 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 	}
 	
 	for (len_t ir = 0; ir < nr+1; ir++)
-		this->Lambda[ir] = Lambda0[ir] * this->mask[ir];
+		if (ir < nr)
+			this->Lambda[ir] = Lambda0[ir] * this->mask[ir];
+		else
+			this->Lambda[ir] = Lambda0[ir] * this->mask[nr-1];
 
 	// Set ion density derivative of Lambda
 	const len_t nZs = this->ions->GetNzs();
 	const real_t *n_i = uqh->GetUnknownData(this->id_n_i);
 	for (len_t iZs = 0; iZs < nZs; iZs++) {
 		for (len_t ir = 0; ir < nr+1; ir++) {
-			this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*(nr+1) + ir]);
+			if (ir < nr)
+				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*(nr+1) + ir]);
+			else
+				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*(nr+1) + nr-1]);
 		}
 	}
 	
