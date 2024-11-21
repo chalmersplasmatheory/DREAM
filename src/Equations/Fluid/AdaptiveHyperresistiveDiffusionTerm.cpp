@@ -77,10 +77,11 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 				// Total enclosed toroidal flux
 				real_t psit = rg->GetToroidalFlux_f(nr);
 
+
 				this->Lambda0[ir] =
 					M_PI * Constants::mu0 * qR0 * R0 * V_A * (psit*psit)
-					/ (288*a*a)
-					* this->dBB0*this->dBB0;
+					/ (288*a*a)* this->dBB0*this->dBB0;
+					printf("Lambda0[%d] = %e\n", ir, this->Lambda0[ir]);
 			}
 		}
 	}
@@ -97,9 +98,9 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 	for (len_t iZs = 0; iZs < nZs; iZs++) {
 		for (len_t ir = 0; ir < nr+1; ir++) {
 			if (ir < nr)
-				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*(nr+1) + ir]);
+				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + ir]);
 			else
-				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*(nr+1) + nr-1]);
+				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + nr-1]);
 		}
 	}
 	

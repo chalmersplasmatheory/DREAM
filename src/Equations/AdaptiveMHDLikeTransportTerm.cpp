@@ -73,37 +73,45 @@ bool AdaptiveMHDLikeTransportTerm::CheckTransportEnabled(const real_t t) {
  * Checks whether the current density gradient is
  * exceeded anywhere on the grid.
  */
+/**
+ * Checks whether the current density gradient is
+ * exceeded anywhere on the grid.
+ */
 bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded() {
-	const len_t nr = this->grid->GetNr();
-	bool exceeded = false;
+    const len_t nr = this->grid->GetNr();
+    bool exceeded = false;
 
-	for (len_t ir = 0; ir < nr; ir++) {
-		
-		bool e = this->IsCurrentGradientExceeded(ir);
+    if (this->localized) {
+        // Localized behavior: mask is updated for points exceeding the threshold and their neighbors
+        for (len_t ir = 0; ir < nr; ir++) {
+            bool e = this->IsCurrentGradientExceeded(ir);
+            if (e) {
+                exceeded = true;
+                this->mask[ir] = 1;
+                if (ir > 0) this->mask[ir - 1] = 1;
+                if (ir < nr - 1) this->mask[ir + 1] = 1;
+            } else {
+                this->mask[ir] = 0;
+            }
+        }
+    } else {
+        // Global behavior: mask is set to 1 everywhere if any point exceeds the threshold
+        for (len_t ir = 0; ir < nr; ir++) {
+            if (this->IsCurrentGradientExceeded(ir)) {
+                exceeded = true;
+                break; // Exit early once an exceedance is found
+            }
+        }
 
-		if (this->localized) {	
-			if (e) {
-				this->mask[ir] = 1;
-				
-				if (ir > 0)
-					this->mask[ir-1] = 1;
-				if (ir < nr-1)
-					this->mask[ir+1] = 1;
+        // Update the mask globally
+        for (len_t ir = 0; ir < nr; ir++) {
+            this->mask[ir] = exceeded ? 1 : 0;
+        }
+    }
 
-				exceeded = true;
-			} else
-				this->mask[ir] = 0;
-		} else
-			// Apply uniformly everywhere
-			if (e) {
-				this->mask[ir] = 1;
-				exceeded = true;
-			} else
-				this->mask[ir] = 0;
-	}
-	
-	return exceeded;
+    return exceeded;
 }
+
 
 
 /**
