@@ -95,8 +95,11 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientExceeded() {
 				this->mask[ir] = 0;
 		} else
 			// Apply uniformly everywhere
-			this->mask[ir] = 1;
-			if (e) exceeded = true;
+			if (e) {
+				this->mask[ir] = 1;
+				exceeded = true;
+			} else
+				this->mask[ir] = 0;
 	}
 	
 	return exceeded;
