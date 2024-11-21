@@ -23,6 +23,7 @@ namespace DREAM::FVM {
     private:
         real_t rMin, rMax;
         struct shape_profiles *providedProfiles;
+		len_t ntheta_out = 120;
 
         real_t *psi = nullptr, *kappa, *delta, *Delta,
             *GPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
@@ -73,11 +74,13 @@ namespace DREAM::FVM {
     public:
         AnalyticBRadialGridGenerator(
             const len_t nr, real_t r0, real_t ra, real_t R0,
-            len_t ntheta_interp, struct shape_profiles*
+            len_t ntheta_interp, struct shape_profiles*,
+			len_t ntheta_out=120
         );
         AnalyticBRadialGridGenerator(
             const real_t *r_f, const len_t nr, real_t R0,
-            len_t ntheta_interp, struct shape_profiles*
+            len_t ntheta_interp, struct shape_profiles*,
+			len_t ntheta_out=120
         );
         ~AnalyticBRadialGridGenerator();
 
@@ -99,11 +102,11 @@ namespace DREAM::FVM {
 
 		virtual const real_t GetZ0() override { return 0; }
 		virtual const len_t GetNPsi() override { return this->GetNr(); }
-		virtual const len_t GetNTheta() override { return 120; }
-		virtual const real_t *GetFluxSurfaceROverR0() override;
-		virtual const real_t *GetFluxSurfaceROverR0_f() override;
-		virtual const real_t *GetFluxSurfaceZ() override;
-		virtual const real_t *GetFluxSurfaceZ_f() override;
+		virtual const len_t GetNTheta() override { return this->ntheta_out; }
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
 		virtual const real_t *GetPoloidalAngle() override;
     };
 }

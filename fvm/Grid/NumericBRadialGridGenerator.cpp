@@ -796,13 +796,13 @@ void NumericBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, rea
  * Return a list of flux surface R coordinates
  * on the simulation radial grid.
  */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceROverR0() {
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 	const len_t nr = this->GetNr();
 	real_t *R = new real_t[nr * this->ntheta];
 
 	for (len_t j = 0, i = 0; j < ntheta; j++)
 		for (len_t ir = 0; ir < nr; ir++, i++)
-			R[i] = ROverR0AtTheta(ir, this->theta[j]);
+			R[i] = ROverR0AtTheta(ir, this->theta[j]) * this->Rp - this->Rp;
 
 	return R;
 }
@@ -812,13 +812,13 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceROverR0() {
  * Return a list of flux surface R coordinates
  * on the simulation radial grid.
  */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceROverR0_f() {
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 	const len_t nr = this->GetNr();
 	real_t *R = new real_t[(nr+1) * this->ntheta];
 
 	for (len_t j = 0, i = 0; j < ntheta; j++)
 		for (len_t ir = 0; ir < nr+1; ir++, i++)
-			R[i] = ROverR0AtTheta_f(ir, this->theta[j]);
+			R[i] = ROverR0AtTheta_f(ir, this->theta[j]) * this->Rp - this->Rp;
 
 	return R;
 }
@@ -828,7 +828,7 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceROverR0_f() {
  * Returns a list of flux surface Z coordinates
  * on the simulation grid.
  */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZ() {
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
 	const len_t nr = this->GetNr();
 	real_t *Z = new real_t[nr * this->ntheta];
 
@@ -837,7 +837,7 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZ() {
 			Z[i] = gsl_spline2d_eval(
 				this->spline_Z, this->r[ir], this->theta[j],
 				this->acc_r, this->acc_theta
-			);
+			) - this->Zp;
 		}
 	}
 
@@ -849,7 +849,7 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZ() {
  * Returns a list of flux surface Z coordinates
  * on the simulation grid.
  */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZ_f() {
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 	const len_t nr = this->GetNr();
 	real_t *Z = new real_t[(nr+1) * this->ntheta];
 
@@ -858,7 +858,7 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZ_f() {
 			Z[i] = gsl_spline2d_eval(
 				this->spline_Z, this->r_f[ir], this->theta[j],
 				this->acc_r, this->acc_theta
-			);
+			) - this->Zp;
 		}
 	}
 

@@ -16,16 +16,27 @@ class Equilibrium:
             self.setEquilibrium(eq)
 
 
+    def __repr__(self):
+        """
+        Convert this object to an "official" string.
+        """
+        s  = f'TOKAMAK EQUILIBRIUM (ntheta = {self.RMinusR0.shape[0]}, npsi = {self.RMinusR0.shape[1]})\n'
+        s += f'  Axis at ({self.R0[0]}, {self.Z0[0]})\n'
+        s += f'  Minor radius a = {self.RMinusR0_f[0,-1]} m\n'
+
+        return s
+
+
     def setEquilibrium(self, eq):
         """
         Set equilibrium data based on output from DREAM.
         """
         self.R0 = eq['R0']
         self.Z0 = eq['Z0']
-        self.ROverR0 = eq['ROverR0']
-        self.ROverR0_f = eq['ROverR0_f']
-        self.Z = eq['Z']
-        self.Z_f = eq['Z_f']
+        self.RMinusR0 = eq['RMinusR0']
+        self.RMinusR0_f = eq['RMinusR0_f']
+        self.ZMinusZ0 = eq['ZMinusZ0']
+        self.ZMinusZ0_f = eq['ZMinusZ0_f']
         self.theta = eq['theta']
 
 
@@ -40,32 +51,31 @@ class Equilibrium:
         gray = (190/255, 190/255, 190/255)
 
         # Set up axes (if not already done)
-        genax = ax is None
 
-        if genax:
+        if ax is None:
             ax = plt.axes()
 
             if show is None:
                 show = True
 
-        R0 = self.R0 if not np.isinf(self.R0) else 1
-
         rn, zn = 0, 0
-        if shifted:
-            rn = R0
+        if not shifted and not np.isinf(self.R0):
+            rn = self.R0
             zn = self.Z0
 
         # Flux surfaces
-        ax.plot(R0*self.ROverR0-rn, self.Z-zn, color=gray, linewidth=1, **kwargs)
-        #ax.plot(R0*self.ROverR0_f, self.Z_f, color=gray, linewidth=1, **kwargs)
+        ax.plot(self.RMinusR0+rn, self.ZMinusZ0+zn, color=gray, linewidth=1, **kwargs)
+        # ...close the flux surfaces
+        ax.plot(np.array([self.RMinusR0[-1,:], self.RMinusR0[0,:]])+rn, np.array([self.ZMinusZ0[-1,:], self.ZMinusZ0[0,:]])+zn, color=gray, linewidth=1, **kwargs)
         # Limiter
-        ax.plot(R0*self.ROverR0_f[:,-1]-rn, self.Z_f[:,-1]-zn, color=black, linewidth=2, **kwargs)
+        ax.plot(self.RMinusR0_f[:,-1]+rn, self.ZMinusZ0_f[:,-1]+zn, color=black, linewidth=2, **kwargs)
+        ax.plot(self.RMinusR0_f[(0,-1),-1]+rn, self.ZMinusZ0_f[(0,-1),-1]+zn, color=black, linewidth=2, **kwargs)
         # Magnetic axis 
         if maxis:
-            ax.plot(R0-rn, self.Z0-zn, 'x', color=red)
+            ax.plot(rn, zn, 'x', color=red)
         ax.axis('equal')
 
-        if np.isinf(self.R0):
+        if shifted or np.isinf(self.R0):
             ax.set_xlabel('Major radius $R-R_0$ (m)')
         else:
             ax.set_xlabel('Major radius $R$ (m)')

@@ -24,26 +24,24 @@ class SPIShardPositions(ScalarQuantity):
         if 'eq' not in self.grid:
             raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
 
-        R0 = self.grid.eq.R0
-        if np.isinf(R0): R0 = 1
-
-        ROverR0 = self.grid.eq.ROverR0_f*R0 - R0
-        Z = self.grid.eq.Z_f - self.grid.eq.Z0
+        RMinusR0 = self.grid.eq.RMinusR0_f
+        Z = self.grid.eq.ZMinusZ0_f
         ntheta = self.grid.eq.theta.size
 
-        vertices = [(ROverR0[i,-1], Z[i,-1]) for i in range(ntheta)]
+        vertices = [(RMinusR0[i,-1], Z[i,-1]) for i in range(ntheta)]
         p = path.Path(vertices)
 
         xp = self.data[:,0::3,0]
         yp = self.data[:,1::3,0]
 
         # Check if the shards start within the plasma
-        if p.contains_point((xp[0,0], yp[0,0])):
-            return 0
+        for i in range(xp.shape[0]):
+            if p.contains_point((xp[0,i], yp[0,i])):
+                return 0
 
         # Find the pellet which is travelling the fastest in the x direction
         if shard is None:
-            shard = np.argmax(np.abs(xp[-1,:] - xp[0,:]))
+            shard = np.argmax(np.abs(xp[1,:] - xp[0,:]))
             # Roughly estimate when the fastest pellet reaches the plasma edge
             it_est = np.argmin(np.abs(ROverR0[0,-1] - xp[:,shard]))
         else:
@@ -139,9 +137,7 @@ class SPIShardPositions(ScalarQuantity):
         black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
-        genax = ax is None
-
-        if genax:
+        if ax is None:
             ax = plt.axes()
 
             if show is None:
@@ -160,15 +156,15 @@ class SPIShardPositions(ScalarQuantity):
 
         eq.visualize(ax=ax, shifted=True, maxis=False)
 
-        ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+        if (xp[0,0] != xp[0,1]) or (yp[0,0] != yp[0,1]):
+            print('WARNING: Pellet shards do not start from the same position. Skipping plot of origin.')
+        else:
+            ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+
         ax.plot(xp[t,shards], yp[t,shards], 'k.')
 
-        if np.isinf(eq.R0):
-            ax.set_xlabel('Radius $R-R_0$ (m)')
-        else:
-            ax.set_xlabel('Major radius $R$ (m)')
-
-        ax.set_ylabel('Height $Z$ (m)')
+        ax.set_xlabel('Radius $R-R_0$ (m)')
+        ax.set_ylabel('Height $Z-Z_0$ (m)')
         ax.axis('equal')
 
         if show:
@@ -184,9 +180,7 @@ class SPIShardPositions(ScalarQuantity):
         black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
-        genax = ax is None
-
-        if genax:
+        if ax is None:
             ax = plt.axes()
 
             if show is None:
@@ -208,7 +202,6 @@ class SPIShardPositions(ScalarQuantity):
             if color is None:
                 color = red
 
-        #ax.plot(R0*eq.ROverR0_f[:,-1] - R0, eq.Z_f[:,-1] - eq.Z0, color=black, linewidth=2)
         eq.visualize(ax=ax, shifted=True, maxis=False)
 
         ax.plot(xp[0,0], yp[0,0], 'o', color=red)
@@ -217,12 +210,8 @@ class SPIShardPositions(ScalarQuantity):
         else:
             ax.plot(xp[:,shards], yp[:,shards], color=color)
 
-        if np.isinf(eq.R0):
-            ax.set_xlabel('Radius $R-R_0$ (m)')
-        else:
-            ax.set_xlabel('Major radius $R$ (m)')
-
-        ax.set_ylabel('Height $Z$ (m)')
+        ax.set_xlabel('Radius $R-R_0$ (m)')
+        ax.set_ylabel('Height $Z-Z_0$ (m)')
         ax.axis('equal')
 
         if show:

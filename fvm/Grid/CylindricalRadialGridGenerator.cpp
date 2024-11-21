@@ -20,8 +20,9 @@ using namespace DREAM::FVM;
  */
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
      len_t nx,  real_t B0,
-     real_t x0, real_t xa
-) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {
+     real_t x0, real_t xa,
+	 len_t ntheta_out
+) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0), ntheta_out(ntheta_out) {
     isUpDownSymmetric = true;
     ntheta_interp = 1;
 }
@@ -34,8 +35,10 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  * B0: Magnetic field strength.
  */
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
-     const real_t *x_f_input, len_t nx,  real_t B0
-) : RadialGridGenerator(nx), xMin(x_f_input[0]), xMax(x_f_input[nx]), B0(B0) {
+     const real_t *x_f_input, len_t nx,  real_t B0, len_t ntheta_out
+) : RadialGridGenerator(nx), xMin(x_f_input[0]), xMax(x_f_input[nx]),
+	B0(B0), ntheta_out(ntheta_out) {
+
     isUpDownSymmetric = true;
     ntheta_interp = 1;
 
@@ -154,7 +157,7 @@ real_t CylindricalRadialGridGenerator::FindClosestApproach(
  * Returns a list flux surface R coordinates
  * on the simulation grid.
  */
-const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0() {
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *R = new real_t[nr*ntheta];
@@ -163,7 +166,7 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0() {
 		real_t theta = 2*M_PI*j / ntheta;
 
 		for (len_t ir = 0; ir < nr; ir++, i++)
-			R[i] = 1 + this->x[ir] * cos(theta);
+			R[i] = this->x[ir] * cos(theta);
 	}
 
 	return R;
@@ -174,7 +177,7 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0() {
  * Returns a list flux surface R coordinates
  * on the simulation grid.
  */
-const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0_f() {
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *R = new real_t[(nr+1)*ntheta];
@@ -183,7 +186,7 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0_f() {
 		real_t theta = 2*M_PI*j / ntheta;
 
 		for (len_t ir = 0; ir < nr+1; ir++, i++)
-			R[i] = 1 + this->x_f[ir] * cos(theta);
+			R[i] = this->x_f[ir] * cos(theta);
 	}
 
 	return R;
@@ -194,7 +197,7 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceROverR0_f() {
  * Returns a list flux surface Z coordinates
  * on the simulation grid.
  */
-const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZ() {
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *Z = new real_t[nr*ntheta];
@@ -214,7 +217,7 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZ() {
  * Returns a list flux surface Z coordinates
  * on the simulation grid.
  */
-const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZ_f() {
+const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 	const len_t nr = this->GetNPsi();
 	const len_t ntheta = this->GetNTheta();
 	real_t *Z = new real_t[(nr+1)*ntheta];

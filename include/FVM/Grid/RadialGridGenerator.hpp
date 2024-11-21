@@ -103,10 +103,10 @@ namespace DREAM::FVM {
 		virtual const real_t GetZ0() = 0;
 		virtual const len_t GetNPsi() = 0;
 		virtual const len_t GetNTheta() = 0;
-		virtual const real_t *GetFluxSurfaceROverR0() = 0;
-		virtual const real_t *GetFluxSurfaceROverR0_f() = 0;
-		virtual const real_t *GetFluxSurfaceZ() = 0;
-		virtual const real_t *GetFluxSurfaceZ_f() = 0;
+		virtual const real_t *GetFluxSurfaceRMinusR0() = 0;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() = 0;
+		virtual const real_t *GetFluxSurfaceZMinusZ0() = 0;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() = 0;
 		virtual const real_t *GetPoloidalAngle() = 0;
         
     };
