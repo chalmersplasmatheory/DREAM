@@ -79,7 +79,7 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 
 				this->Lambda0[ir] =
 					M_PI * Constants::mu0 * qR0 * R0 * V_A * (psit*psit)
-					/ (144*a*a)
+					/ (288*a*a)
 					* this->dBB0*this->dBB0;
 			}
 		}
