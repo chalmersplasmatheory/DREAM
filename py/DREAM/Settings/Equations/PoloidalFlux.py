@@ -28,7 +28,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         self.hyperresistivity_grad_j_tot_max = None
         self.hyperresistivity_gradient_normalized = False
         self.hyperresistivity_dBB0 = None
-        self.hyperresistivity_min_duration = None
 
 
     def setHyperresistivity(self, Lambda, radius=None, times=None):
@@ -50,19 +49,18 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
 
     def setHyperresistivityAdaptive(
         self, dBB0, grad_j_tot_max=None,
-        grad_j_tot_max_norm=None, min_duration=0.5e-3,
+        grad_j_tot_max_norm=None,
         localized=False
     ):
         """
         Enable the adaptive hyperresistive diffusion term, which triggers when
         the current density gradient grows above a given threshold locally. The
         term is applied until the current density drops below the threshold,
-        and at least for ``min_duration`` seconds.
+        and at least untile the gradient reaches the 10% of the threshold.
 
         :param dBB0:                Value of hyperresistivity to apply.
         :param grad_j_tot_max:      Maximum current density gradient which must be exceeded for the term to be triggered.
         :param grad_j_tot_max_norm: Maximum current density gradient (normalized to average current density) which must be exceeded.
-        :param min_duration:        Minimum duration of the hyperresistive term (in seconds).
         :param localized:           Apply localized transport.
         """
         if localized:
@@ -80,7 +78,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
 
         self.hyperresistivity_dBB0 = dBB0
-        self.hyperresistivity_min_duration = min_duration
 
 
     def fromdict(self, data):
@@ -99,7 +96,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
                 self.hyperresistivity_dBB0 = float(hyp['dBB0'])
                 self.hyperresistivity_grad_j_tot_max = float(hyp['grad_j_tot_max'])
                 self.hyperresistivity_gradient_normalized = bool(hyp['gradient_normalized'])
-                self.hyperresistivity_min_duration = float(hyp['min_duration'])
 
 
     def todict(self):
@@ -119,7 +115,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             hypres['dBB0'] = self.hyperresistivity_dBB0
             hypres['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
             hypres['gradient_normalized'] = self.hyperresistivity_gradient_normalized
-            hypres['min_duration'] = self.hyperresistivity_min_duration
 
         return { 'hyperresistivity': hypres }
 
@@ -137,8 +132,6 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
                 raise EquationException(f"The hyperresistivity parameter 'dBB0' must be a scalar. Current value: {self.hyperresistivity_dBB0}.")
             if not np.isscalar(self.hyperresistivity_grad_j_tot_max):
                 raise EquationException(f"The hyperresistivity parameter 'grad_j_tot_max' must be a scalar. Current value: {self.hyperresistivity_grad_j_tot_max}.")
-            if not np.isscalar(self.hyperresistivity_min_duration):
-                raise EquationException(f"The hyperresistivity parameter 'min_duration' must be a scalar. Current value: {self.hyperresistivity_min_duration}.")
         else:
             raise EquationException(f"Invalid option for hyperresistivity mode: {self.hyperresistivity_mode}.")
 

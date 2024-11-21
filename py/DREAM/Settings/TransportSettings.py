@@ -101,7 +101,6 @@ class TransportSettings:
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
         self.mhdlike_gradient_normalized = False
-        self.mhdlike_min_duration = None
 
         # Frozen current mode transport
         self.frozen_current_mode = FROZEN_CURRENT_MODE_DISABLED
@@ -289,7 +288,7 @@ class TransportSettings:
 
     def setMHDLikeRechesterRosenbluth(
         self, dBB0, grad_j_tot_max=None,
-        grad_j_tot_max_norm=None, min_duration=0.5e-3,
+        grad_j_tot_max_norm=None,
         localized=False
     ):
         """
@@ -301,7 +300,6 @@ class TransportSettings:
             self.type = TRANSPORT_MHD_LIKE
 
         self.mhdlike_dBB0 = dBB0
-        self.mhdlike_min_duration = min_duration
 
         if grad_j_tot_max:
             self.mhdlike_grad_j_tot_max = grad_j_tot_max
@@ -402,7 +400,6 @@ class TransportSettings:
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
         self.mhdlike_gradient_normalized = False
-        self.mhdlike_min_duration = None
 
         if 'type' in data:
             self.type = data['type']
@@ -477,7 +474,6 @@ class TransportSettings:
             self.mhdlike_dBB0 = float(data['mhdlike_dBB0'])
             self.mhdlike_grad_j_tot_max = float(data['mhdlike_grad_j_tot_max'])
             self.mhdlike_gradient_normalized = bool(data['mhdlike_gradient_normalized'])
-            self.mhdlike_min_duration = float(data['mhdlike_min_duration'])
 
         if 'frozen_current_mode' in data:
             self.frozen_current_mode = int(data['frozen_current_mode'])
@@ -588,7 +584,6 @@ class TransportSettings:
             data['mhdlike_dBB0'] = self.mhdlike_dBB0
             data['mhdlike_grad_j_tot_max'] = self.mhdlike_grad_j_tot_max
             data['mhdlike_gradient_normalized'] = 1 if self.mhdlike_gradient_normalized else 0
-            data['mhdlike_min_duration'] = self.mhdlike_min_duration
 
         data['frozen_current_mode'] = self.frozen_current_mode
         data['D_I_min'] = self.frozen_current_D_I_min
