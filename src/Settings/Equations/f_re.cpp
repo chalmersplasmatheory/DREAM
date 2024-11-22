@@ -41,7 +41,7 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
     s->DefineSetting(MODULENAME "/inittype", "Specifies how to initialize f_re from n_re.", (int_t)OptionConstants::UQTY_F_RE_INIT_FORWARD);
 	//s->DefineSetting(MODULENAME "/initavag0", "Gamma0 parameter in analytical avalanche distribution when initializing using this distribution.", (real_t)20.0);
 	
-	DefineDataR(MODULENAME, s, "/E_init");
+	DefineDataR(MODULENAME, s, "E_init");
 }
 
 /**
