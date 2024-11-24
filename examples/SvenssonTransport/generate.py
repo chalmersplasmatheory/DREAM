@@ -98,7 +98,7 @@ ds.radialgrid.setWallRadius(a0*1.1)
 # Set Svensson transport coefficients
 ds.eqsys.n_re.transport.setSvenssonPstar(pstar)
 
-ds.eqsys.n_re.transport.setSvenssonInterp1dParam(Transport.SVENSSON_INTERP1D_PARAM_IP)
+ds.eqsys.n_re.transport.setSvenssonInterp1dParam(Transport.SVENSSON_INTERP1D_PARAM_TIME)
 
 ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,t=t_data,r=r_data,p=p_data,xi=xi_data)
 ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,t=t_data,r=r_data,p=p_data,xi=xi_data,

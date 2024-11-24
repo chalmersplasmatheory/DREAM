@@ -42,7 +42,8 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
 
     // AnalyticBRadialGridGenerator
     s->DefineSetting(RADIALGRID "/R0", "Tokamak major radius", (real_t)2.0);
-    s->DefineSetting(RADIALGRID "/ntheta", "Number of poloidal angles grid points to use for bounce averages", (int_t)30);
+    s->DefineSetting(RADIALGRID "/ntheta", "Number of poloidal angle grid points to use for bounce averages", (int_t)30);
+	s->DefineSetting(RADIALGRID "/ntheta_out", "Number of poloidal angle grid points to use on output flux surface grid", (int_t)120);
 
     DefineDataR(RADIALGRID, s, "delta");    // Triangularity
     DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
@@ -147,16 +148,17 @@ FVM::Grid *SimulationGenerator::ConstructScalarGrid() {
  */
 FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_t nr, Settings *s) {
     real_t B0 = s->GetReal(RADIALGRID "/B0");
+	len_t ntheta_out = s->GetInteger(RADIALGRID "/ntheta_out");
 
     FVM::CylindricalRadialGridGenerator *crgg;
     if(nr!=0){
         real_t a  = s->GetReal(RADIALGRID "/a");
         real_t r0 = s->GetReal(RADIALGRID "/r0");
-        crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a);
+        crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a, ntheta_out);
     } else {
         len_t len_rf; // equals nr+1 of the simulation
         const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
-        crgg = new FVM::CylindricalRadialGridGenerator(r_f,len_rf-1, B0);
+        crgg = new FVM::CylindricalRadialGridGenerator(r_f, len_rf-1, B0, ntheta_out);
     }
     return new FVM::RadialGrid(crgg);
 }
@@ -171,6 +173,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
 FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(const int_t nr, Settings *s) {
     real_t R0 = s->GetReal(RADIALGRID "/R0");
     len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
+	len_t ntheta_out = s->GetInteger(RADIALGRID "/ntheta_out");
 
     FVM::AnalyticBRadialGridGenerator::shape_profiles *shapes =
         new FVM::AnalyticBRadialGridGenerator::shape_profiles;
@@ -191,13 +194,13 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
         real_t a  = s->GetReal(RADIALGRID "/a");
         real_t r0 = s->GetReal(RADIALGRID "/r0");
         abrg = new FVM::AnalyticBRadialGridGenerator(
-            nr, r0, a, R0, ntheta_interp, shapes
+            nr, r0, a, R0, ntheta_interp, shapes, ntheta_out
         );
     } else {
         len_t len_rf; // equals nr+1 of the simulation
         const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
         abrg = new FVM::AnalyticBRadialGridGenerator(
-            r_f, len_rf-1, R0, ntheta_interp, shapes
+            r_f, len_rf-1, R0, ntheta_interp, shapes, ntheta_out
         );
     }
 

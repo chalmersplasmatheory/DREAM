@@ -5,6 +5,7 @@
 #include <string>
 #include <softlib/SFile.h>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
 
 
 using namespace DREAM;
@@ -53,5 +54,12 @@ void EquationSystem::SaveSolverData(SFile *sf, const string& name) {
 
 	sf->WriteString(name + "/unknowns", unkn);
 	sf->WriteString(name + "/nontrivials", nontriv);
+
+	// Save emitted warning messages
+	string warnings;
+	for (auto s : IO::emitted_warning_messages)
+		warnings += s + ";";
+
+	sf->WriteString(name + "/warnings", warnings);
 }
 

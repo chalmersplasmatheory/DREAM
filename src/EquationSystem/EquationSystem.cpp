@@ -310,6 +310,8 @@ void EquationSystem::Solve() {
         this->solver->PrintTimings();
         this->REFluid->PrintTimings();
     }
+
+	DREAM::IO::Deinit();
 }
 
 /**

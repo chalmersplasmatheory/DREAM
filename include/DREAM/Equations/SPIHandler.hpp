@@ -15,6 +15,8 @@ namespace DREAM { class SPIHandler; }
 #include "DREAM/Constants.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/NotImplementedException.hpp"
+#include "DREAM/Constants.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM{
     class SPIHandler{
@@ -22,9 +24,11 @@ namespace DREAM{
         //FVM::ScalarGrid *sGrid;
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
+        RunawayFluid *rf = nullptr;
         len_t nShard;
         len_t nr;
         real_t dt;
+        len_t NZ;
 
         len_t spi_velocity_mode;
         len_t spi_ablation_mode;
@@ -32,6 +36,7 @@ namespace DREAM{
         len_t spi_heat_absorbtion_mode;
         len_t spi_cloud_radius_mode;
         len_t spi_magnetic_field_dependence_mode;
+        len_t spi_shift_mode;
         
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
@@ -66,6 +71,8 @@ namespace DREAM{
         real_t *Whot;
         real_t *qhot;
         real_t *ntot;
+        real_t *ni;
+
 
         real_t *Ypdot=nullptr;
         real_t *rCld=nullptr;
@@ -87,7 +94,14 @@ namespace DREAM{
         real_t *pelletDensity=nullptr;
         real_t *lambda=nullptr;
         real_t *NGSConstantFactor=nullptr;
-        len_t *nbrShiftGridCell=nullptr;
+        int_t *nbrShiftGridCell=nullptr;
+        int_t *nbrShiftGridCellPrescribed=nullptr;
+        real_t *shift_store=nullptr;
+        real_t *ncoldPrevious=nullptr;
+        real_t *TcoldPrevious=nullptr;
+        real_t *YpdotPrevious=nullptr;
+        real_t *plasmoidAbsorbtionFactor=nullptr;
+        real_t *cosThetaDrift=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
@@ -97,6 +111,26 @@ namespace DREAM{
         static const len_t ZSolidDensityList[];
         static const len_t isotopesSolidDensityList[];
         static const real_t solidDensityList[];
+
+        //Parameters for the shift calculation
+        real_t *TDrift=nullptr;
+        real_t *ZavgDriftArray;
+        real_t *pelletDeuteriumFraction=nullptr;
+        real_t* rp=nullptr;
+        real_t* rpdot=nullptr;
+        real_t* shift_r=nullptr;
+        real_t* ZavgDrift=nullptr;
+        len_t* isotopesDrift=nullptr;
+        real_t T0Drift, DeltaYDrift, RmDrift;
+        real_t tAccDrift, tPolDrift, tPeDrift, tExpDrift, tPolDriftPrime, tPeDriftPrime, tExpDriftPrime;
+        real_t v0Drift, neBgDrift, niBgDrift, TeBgDrift, BBgDrift, sigmaBgDrift, qBgDrift;
+        real_t CSTDrift, CST0Drift, G, n0Drift, a0Drift, tDetachDrift, LcInitDrift, nBarDrift, vLabInitDrift, ReffBgDrift;
+        
+        // We store the time at the end of the time step for the previous iteration 
+        // to be able to tell if the current iteration is the first one on the current time step
+        // This is useful for e.g. the drift calculation, which is only rebuilt in the first iteration
+        // of every time step to avoid a discontinuity in the jacobian when using a delta fucntion kernel
+        real_t t_old=-1;
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
@@ -110,6 +144,7 @@ namespace DREAM{
         real_t CalculateRDotDepositionLocal(len_t ir);
 
         void CalculateIrp();
+        int_t CalculateDriftIrp(len_t ip, real_t shift);
         void CalculateRCld();
         real_t CalculateLambda(real_t X);
 
@@ -120,12 +155,39 @@ namespace DREAM{
             OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode,
             OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode,
             OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode, 
-            OptionConstants::eqterm_spi_magnetic_field_dependence_mode, real_t VpVolNormFactor, real_t rclPrescribedConstant, len_t *nbrShiftGridCell);
+            OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
+            OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
+            real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray,
+			len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
+            real_t VpVolNormFactor, real_t rclPrescribedConstant, const int_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
         void DeallocateQuantities();
 
-        void Rebuild(real_t dt);
+        struct integrand_struct {real_t a;};
+        // Functions for the drift calculation
+        void YpConversion(len_t ip);
+        void AssignShardSpecificDriftParameters(len_t ip);
+        void AssignDriftComputationParameters(len_t ip);
+        void AssignDriftTimeParameters(len_t ip);
+        static real_t Integrand(real_t x, void * params);
+        real_t Epsiloni(real_t a, real_t b);
+        real_t BisFunction(real_t t_prim);
+        real_t PrimitiveFirstRow(real_t t_prim);
+        real_t PrimitiveSecondRow(real_t t_prim);
+        real_t PrimitiveThirdRow(real_t t_prim);
+        real_t FirstRow();
+        real_t SecondRow();
+        real_t ThirdRow();
+        real_t Deltar(len_t ip);
+        
+        void SetREFluid(RunawayFluid *REF) 
+        { this->rf = REF; }
+
+        real_t* GetDrift()
+        { return this->shift_store; }
+
+        void Rebuild(real_t dt, real_t t);
 
         bool setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         bool setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);

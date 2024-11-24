@@ -1,6 +1,7 @@
 
 import numpy as np
 import DREAM.Settings.MomentumGrid as MomentumGrid
+from .Equilibrium import Equilibrium
 from .OutputException import OutputException
 from .PXiGrid import PXiGrid
 from .PparPperpGrid import PparPperpGrid
@@ -20,6 +21,7 @@ class Grid:
         self.r_f = None
         self.dr = None
         self.VpVol = None
+        self.eq = None
         self.hottail = None
         self.runaway = None
 
@@ -30,6 +32,13 @@ class Grid:
 
         if grid is not None:
             self.setGrid(grid)
+
+
+    def __contains__(self, item):
+        """
+        Overrides the Python 'in' operator.
+        """
+        return item in self.__dict__
 
 
     def __str__(self):
@@ -132,6 +141,9 @@ class Grid:
             self.FSA_BOverBmin = geom['FSA_BOverBmin']
             self.FSA_R02OverR2 = geom['FSA_R02OverR2']
             self.FSA_NablaR2_R02OverR2 = geom['FSA_NablaR2_R02OverR2']
+
+        if 'eq' in grid:
+            self.eq = Equilibrium(grid['eq'])
         
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)

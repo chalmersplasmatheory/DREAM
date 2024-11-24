@@ -94,7 +94,7 @@ ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 ds.eqsys.E_field.setBoundaryCondition()
 
 # Set runaway generation rates
-# ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
+# ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS_FLUID)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
 
 # Set temperature

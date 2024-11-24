@@ -792,6 +792,94 @@ void NumericBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, rea
 }
 
 
+/**
+ * Return a list of flux surface R coordinates
+ * on the simulation radial grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
+	const len_t nr = this->GetNr();
+	real_t *R = new real_t[nr * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++)
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			R[i] = ROverR0AtTheta(ir, this->theta[j]) * this->Rp - this->Rp;
+
+	return R;
+}
+
+
+/**
+ * Return a list of flux surface R coordinates
+ * on the simulation radial grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
+	const len_t nr = this->GetNr();
+	real_t *R = new real_t[(nr+1) * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++)
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			R[i] = ROverR0AtTheta_f(ir, this->theta[j]) * this->Rp - this->Rp;
+
+	return R;
+}
+
+
+/**
+ * Returns a list of flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
+	const len_t nr = this->GetNr();
+	real_t *Z = new real_t[nr * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		for (len_t ir = 0; ir < nr; ir++, i++) {
+			Z[i] = gsl_spline2d_eval(
+				this->spline_Z, this->r[ir], this->theta[j],
+				this->acc_r, this->acc_theta
+			) - this->Zp;
+		}
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list of flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
+	const len_t nr = this->GetNr();
+	real_t *Z = new real_t[(nr+1) * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		for (len_t ir = 0; ir < nr+1; ir++, i++) {
+			Z[i] = gsl_spline2d_eval(
+				this->spline_Z, this->r_f[ir], this->theta[j],
+				this->acc_r, this->acc_theta
+			) - this->Zp;
+		}
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list of poloidal angles on which the flux
+ * surfaces returned by 'GetFluxSurfaceR()' and 'GetFluxSurfaceZ()'
+ * are defined.
+ */
+const real_t *NumericBRadialGridGenerator::GetPoloidalAngle() {
+	real_t *theta = new real_t[ntheta];
+	for (len_t i = 0; i < ntheta; i++)
+		theta[i] = this->theta[i];
+	
+	return theta;
+}
+
+
 /*
  * Save the magnitude of the magnetic field vector to the named
  * output file (saved using the 'SFile' API).

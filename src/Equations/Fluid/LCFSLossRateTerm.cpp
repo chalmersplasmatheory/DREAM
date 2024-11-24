@@ -12,8 +12,13 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-LCFSLossRateTerm::LCFSLossRateTerm(FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, FVM::Grid *operandGrid, real_t sf, real_t* t_loss, bool userGivenPsiEdge_t0, real_t PsiEdge_t0) : 
-    RunawaySourceTerm(grid, unknowns), FVM::DiagonalComplexTerm(grid, unknowns, operandGrid), unknowns(unknowns), scaleFactor(sf), t_loss(t_loss), 
+LCFSLossRateTerm::LCFSLossRateTerm(
+	FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns,
+	FVM::Grid *operandGrid, real_t sf, real_t* t_loss,
+	bool userGivenPsiEdge_t0, real_t PsiEdge_t0
+) : RunawaySourceTerm(grid, unknowns),
+	FVM::DiagonalComplexTerm(grid, unknowns, operandGrid),
+	unknowns(unknowns), scaleFactor(sf), t_loss(t_loss), 
     userGivenPsiEdge_t0(userGivenPsiEdge_t0), psi_edge_t0(PsiEdge_t0), 
     id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)) {
 
@@ -28,6 +33,8 @@ LCFSLossRateTerm::LCFSLossRateTerm(FVM::Grid *grid, FVM::UnknownQuantityHandler 
  */
 LCFSLossRateTerm::~LCFSLossRateTerm(){
     Deallocate();
+
+	delete [] this->t_loss;
 }           
 
 

@@ -11,6 +11,7 @@ INIT_XI_NEGATIVE = 2
 INIT_XI_POSITIVE = 3
 INIT_ISOTROPIC = 4
 INIT_AVALANCHE = 5
+INIT_PRESCRIBED = 6
 
 
 class RunawayElectronDistribution(DistributionFunction):
@@ -37,6 +38,22 @@ class RunawayElectronDistribution(DistributionFunction):
 
         self.inittype = INIT_FORWARD
 
+    def setInitialValue(self, f, r, p=None, xi=None, ppar=None, pperp=None):
+        """
+        Set the initial value of this electron distribution function. Only one
+        of the pairs (p, xi) and (ppar, pperp) of momentum grids need to be
+        given.
+
+        :param f:     Array representing the distribution function value on the grid (must have size (nr, nxi, np) or (nr, npperp, nppar))
+        :param r:     Radial grid on which the initial distribution is given.
+        :param p:     Momentum grid.
+        :param xi:    Pitch grid.
+        :param ppar:  Parallel momentum grid.
+        :param pperp: Perpendicular momentum grid.
+        """
+        super().setInitialValue(f, r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+
+        self.setInitType(INIT_PRESCRIBED)
 
     def setInitType(self, inittype):
         """

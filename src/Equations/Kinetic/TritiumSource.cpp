@@ -14,8 +14,9 @@ using namespace DREAM;
  * Constructor.
  */
 TritiumSource::TritiumSource(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, IonHandler *ions, len_t iIon, real_t pc, real_t scaleFactor, SourceMode sm
-) : FluidSourceTerm(kineticGrid, u), pc(pc), scaleFactor(scaleFactor), sourceMode(sm)
+    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, IonHandler *ions, 
+    len_t iIon, real_t pLower, real_t scaleFactor, SourceMode sm, RunawayFluid *REFluid
+) : FluidSourceTerm(kineticGrid, u), pLower(pLower), scaleFactor(scaleFactor), sourceMode(sm), REFluid(REFluid)
 {
     SetName("TritiumSource");
     this->id_nT = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -100,8 +101,8 @@ real_t TritiumSource::integrand(real_t p, void *){
  * Evaluates the constant (only grid dependent) source-shape function S(r,p)
  */
 real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
-    if(sourceMode == SOURCE_MODE_FLUID)
-        return scaleFactor*EvaluateTotalTritiumNumber(pc);
+    if(sourceMode == SOURCE_MODE_FLUID) 
+       return 0.;
     real_t tau_T = 3.888e8; // 4500 days, in seconds
 
     real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
@@ -117,7 +118,7 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
 
         real_t integral;
         real_t abserr;
-        len_t neval;
+        size_t neval;
         gsl_function F;
         F.function = &(TritiumSource::integrand);
         gsl_integration_qng(&F, pm, pp, 0, 1e-8, &integral, &abserr, &neval);
@@ -130,6 +131,14 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
  * Returns the source at grid point (ir,i,j).
  */
 real_t TritiumSource::GetSourceFunction(len_t ir, len_t i, len_t j){
+    if(sourceMode == SOURCE_MODE_FLUID){
+        real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
+        if (pc == std::numeric_limits<real_t>::infinity())
+            return 0.;
+        if (pc < pLower)
+            pc = pLower;
+        return scaleFactor * EvaluateTotalTritiumNumber(pc);
+    }
     len_t offset = 0;
     for(len_t iir = 0; iir < ir; iir++)
         offset += n1[iir]*n2[iir];
@@ -206,7 +215,7 @@ real_t TritiumSource::EvaluateTotalTritiumNumber(real_t pLower, real_t pUpper){
                 
     real_t integral;
     real_t abserr;
-    len_t neval;
+    size_t neval;
     gsl_function F;
     F.function = &(integrand);
     gsl_integration_qng(&F, pLower, pUpper, 0, 1e-8, &integral, &abserr, &neval);

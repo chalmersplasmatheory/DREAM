@@ -131,12 +131,14 @@ class EqView(QtWidgets.QMainWindow):
             try:
                 self.load_LUKE(filename)
             except Exception as ex:
+                traceback.print_exception(ex)
                 QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n{ex}')
                 return False
         else:
             try:
                 self.load_EQDSK(filename, **params)
             except Exception as ex:
+                traceback.print_exception(ex)
                 rst = QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n"{ex}"\n\nWould you like to try again with adjusted configuration parameters?', QMessageBox.Yes | QMessageBox.No)
                 
                 if rst == QMessageBox.Yes:
@@ -157,7 +159,7 @@ class EqView(QtWidgets.QMainWindow):
         self.equil = LUKEMagneticField(filename)
         self.equil_type = EQTYPE_LUKE
 
-        self.ui.lblMagneticAxis.setText(f'({self.equil.Rp[0]:.3f}, {self.equil.Zp[0]:.3f})')
+        self.ui.lblMagneticAxis.setText(f'({self.equil.Rp:.3f}, {self.equil.Zp:.3f})')
         self.ui.lblMinorRadius.setText(f'{self.equil.getMinorRadius():.3f} m')
         self.ui.lblB0.setText(f'{np.mean(self.equil.ptBPHI[:,0]):.3f} T')
 

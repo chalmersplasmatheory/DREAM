@@ -1,5 +1,7 @@
 # Special implementation for 'x_p'
 
+from matplotlib import path
+import matplotlib.pyplot as plt
 import numpy as np
 
 from . ScalarQuantity import ScalarQuantity
@@ -14,6 +16,68 @@ class SPIShardPositions(ScalarQuantity):
         """
         super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
         
+
+    def arrivalTime(self):
+        """
+        Estimate the time at which the pellet arrives to the plasma edge.
+        """
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        RMinusR0 = self.grid.eq.RMinusR0_f
+        Z = self.grid.eq.ZMinusZ0_f
+        ntheta = self.grid.eq.theta.size
+
+        vertices = [(RMinusR0[i,-1], Z[i,-1]) for i in range(ntheta)]
+        p = path.Path(vertices)
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        # Check if the shards start within the plasma
+        for i in range(xp.shape[0]):
+            if p.contains_point((xp[0,i], yp[0,i])):
+                return 0
+
+        # Find the pellet which is travelling the fastest in the x direction
+        imax = np.argmax(np.abs(xp[1,:] - xp[0,:]))
+
+        # Roughly estimate when the fastest pellet reaches the plasma edge
+        it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,imax]))
+
+        # Determine if the first pellet arrives before or after
+        # the estimated time
+        arrives_before = False
+        for ip in range(xp.shape[1]):
+            if p.contains_point((xp[it_est,ip], yp[it_est,ip])):
+                arrives_before = True
+                break
+        
+        if arrives_before:
+            for it in range(it_est-1, -1, -1):
+                inside = False
+                for ip in range(xp.shape[1]):
+                    if p.contains_point((xp[it,ip], yp[it,ip])):
+                        # One pellet has arrived
+                        # => break out and go to one time step earlier...
+                        inside = True
+                        break
+
+                if not inside:
+                    return it+1
+        else:
+            for it in range(it_est+1, self.grid.t.size):
+                inside = False
+                for ip in range(xp.shape[1]):
+                    if p.contains_point((xp[it,ip], yp[it,ip])):
+                        inside = True
+                        break
+
+                if inside:
+                    return it
+
+        return np.nan
+
 
     def plotRadialCoordinate(self, shards=None,**kwargs):
         """ 
@@ -59,6 +123,96 @@ class SPIShardPositions(ScalarQuantity):
         thetap = np.arctan2(yp[t,shards],xp[t,shards])
 
         return rhop, thetap
+
+
+    def plotAtTime(self, t=-1, shards=None, ax=None, show=None):
+        """
+        Plot the pellet shards over the poloidal cross-section at a given time.
+        """
+        black = (87/255, 117/255, 144/255)
+        red = (249/255, 65/255, 68/255)
+
+        if ax is None:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        if shards is None:
+            shards = slice(None)
+
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        eq = self.grid.eq
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        eq.visualize(ax=ax, shifted=True, maxis=False)
+
+        if (xp[0,0] != xp[0,1]) or (yp[0,0] != yp[0,1]):
+            print('WARNING: Pellet shards do not start from the same position. Skipping plot of origin.')
+        else:
+            ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+
+        ax.plot(xp[t,shards], yp[t,shards], 'k.')
+
+        ax.set_xlabel('Radius $R-R_0$ (m)')
+        ax.set_ylabel('Height $Z-Z_0$ (m)')
+        ax.axis('equal')
+
+        if show:
+            plt.show()
+
+        return ax
+
+
+    def plotTrajectoryPoloidal(self, shards=None, ax=None, show=None, color=None):
+        """
+        Plot the trajectory of one or more shards in a poloidal cross-section.
+        """
+        black = (87/255, 117/255, 144/255)
+        red = (249/255, 65/255, 68/255)
+
+        if ax is None:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        eq = self.grid.eq
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        if shards is None:
+            i1 = np.argmin(yp[-1,:])
+            i2 = np.argmax(yp[-1,:])
+            shards = (i1, i2)
+
+            if color is None:
+                color = red
+
+        eq.visualize(ax=ax, shifted=True, maxis=False)
+
+        ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+        if color is None:
+            ax.plot(xp[:,shards], yp[:,shards])
+        else:
+            ax.plot(xp[:,shards], yp[:,shards], color=color)
+
+        ax.set_xlabel('Radius $R-R_0$ (m)')
+        ax.set_ylabel('Height $Z-Z_0$ (m)')
+        ax.axis('equal')
+
+        if show:
+            plt.show()
+
+        return ax
         
         
     def getMultiples(self):

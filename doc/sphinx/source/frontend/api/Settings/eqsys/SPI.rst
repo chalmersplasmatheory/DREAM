@@ -10,11 +10,12 @@ DREAM includes support for introducing ions to the plasma through Shattered Pell
    
 SPI Model Settings
 ------------------
-There are five types of modes with various options for the SPI modelling: 
+There are six types of modes with various options for the SPI modelling: 
 
 * the :ref:`ablation mode<ds-eqsys-spi-ablation>`, which determines the model used for the evolution of the shard radii
 * the :ref:`velocity mode<ds-eqsys-spi-velocity>`, which determines the motion of the shards
 * the :ref:`deposition mode<ds-eqsys-spi-deposition>`, which determines the spread of the ablated material around the shards
+* the :ref:`shift mode<ds-eqsys-spi-shift>`, which determines the mode used for the shift of the ablated material due to the plasmoid drift effect
 * the :ref:`heat absorbtion mode<ds-eqsys-spi_heatabsorbtion>`, which determines the absorbtion of heat flowing into the neutral cloud surrounding the shards
 * the :ref:`cloud radius mode<ds-eqsis-spi-cloudradius>`, which determines the calculation of the radius of the neutral cloud. This radius is used to determine the cross section for the heat absorbtion (if included), and also determines the length scale of the deposition kernel (if the deposition kernel used has a finit width).
 
@@ -57,7 +58,7 @@ The available velocity modes are
 | ``VELOCITY_MODE_PRESCRIBED`` | Prescribed (and constant) shard velocities   |
 +------------------------------+----------------------------------------------+
 
-.. _ds-eqsys-spi-velocity:
+.. _ds-eqsys-spi-deposition:
 
 Deposition Modes
 ^^^^^^^^^^^^^^^^
@@ -85,6 +86,21 @@ The available deposition modes are
 |                                          | distance than the radius of the neutral cloud during a single    |
 |                                          | time step!                                                       |
 +------------------------------------------+------------------------------------------------------------------+ 
+
+.. _ds-eqsys-spi-shift:
+
+Shift Modes
+^^^^^^^^^^^^^^^^
+The available shift modes are
+
++------------------------------------------+---------------------------------------------------------------------------+
+| Name                                     | Description                                                               |
++==========================================+===========================================================================+
+| ``SHIFT_MODE_NEGLECT``                   | No shift (default)                                                        |  
++------------------------------------------+---------------------------------------------------------------------------+
+| ``SHIFT_MODE_ANALYTICAL``                | Calculate the shift using the analytical model derived by                 |
+|                                          | `Vallhagen et al, JPP 2023 <https://doi.org/10.1017/S0022377823000466>`_  |
++------------------------------------------+---------------------------------------------------------------------------+  
 
 .. _ds-eqsys-spi-heatabsorbtion:
 
@@ -209,6 +225,7 @@ If one instead wants to specify :math:`N_\mathrm{s}`, :math:`N_\mathrm{inj}` and
 
 As earlier, an extra argument ``add=False`` resets the shard radii instead of adding new ones.
 
+
 Example: staggered injection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The code block below illustrates how to set up staggered Deuterium-Neon injections similar to those investigated in `O. Vallhagens MSc thesis <https://ft.nephy.chalmers.se/files/publications/606ddcbc08804.pdf>`_, using the wrapper function setParamsVallhagenMSc() to set the initial positions, velocities and radii of the shards on the same line.
@@ -258,6 +275,19 @@ The code block below illustrates how to set up staggered Deuterium-Neon injectio
    ds2.eqsys.spi.xp[-3*nShardNe:]=ds2.eqsys.spi.xp[-3*nShardNe:]+ds2.eqsys.spi.vp[-3*nShardNe:]*t_edge
 
    runiface(ds2, 'output_Ne_inj.h5')
+   
+Plasmoid drift
+--------------
+The effect of plasmoid drifts can be accounted for using the analytical model given by equation (A4) in `Vallhagen et al, JPP 2023 <https://doi.org/10.1017/S0022377823000466>`_. To use this model, the following model parameters have to be speified: representative temperature :math:`T` during the drift duration; the initial temperature :math:`T_0` close to the pellet (before the cloud has drifted away from the pellet); the characteristic half-thickness of the drifting cloud :math:`\Delta y` (should be similar to the radius of the neutral cloud around the pellet); the major radius :math:`R_\mathrm{m}` at the magnetic axis (only used if the major radius is otherwise infinite in the simulation); the average charge states :math:`Z_\mathrm{avg}^{(i)}` inside the drifting cloud for all ion species include in the pellets. Note that the average charge states can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. These estimates should be given as a look-up table in the form of the lists ``ZavgArray``, ``Zs`` and ``isotopes``, where ``ZavgArray`` provides the average charge states to be used for ion species with atomic numbers ``Zs`` and isotopes ``isotopes``.
+
+
+Below is an example showing how to include the analytical drift model for a mixed D+Ne SPI with typical settings. The values of the model parameters are motivated by e.g. numerical studies by `Matsuyama <https://doi.org/10.1063/5.0084586>`_ and experimental studies by `Müller et al <https://doi.org/10.1088/0029-5515/42/3/311>`_. In particular, these studies indicate that the representative temperature :math:`T` is significantly different for purely hydrogenic pellets and impurity doped pellets, as the doped pellets will have much stronger radiation losses. Therefore, different temperatures can be set
+for different shards as long as they are in the correct order. The following example includes ``nShardD``
+deuterium shards (atomic number 1, isotope 2)  with :math:`T=30\,\rm eV` and ``nShardNe`` number of neon doped shards (atomic number 10, isotope 0 i.e. naturally occuring mix) with :math:`T=5\,\rm eV`.
+
+.. code-block:: python
+
+    ds.eqsys.spi.setShiftParamsAnalytical(shift = SHIFT_MODE_ANALYTICAL, T = np.concatenate([30*np.ones(nShardD), 5*np.ones(nShardNe)]), T0 = 2, delta_y = 0.0125, Rm = R0 , ZavgArray =[1 , 2], Zs, [1,10], isotopes = [2,0]):
 
 Class documentation
 -------------------

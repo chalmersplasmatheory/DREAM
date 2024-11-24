@@ -295,7 +295,7 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
 	real_t comptonFlux = 0.0, comptonFlux_t = 0.0;
 	DREAM::FVM::Interpolator1D *comptonFlux_i = new DREAM::FVM::Interpolator1D(
 		1, 1, &comptonFlux_t, &comptonFlux,
-		DREAM::FVM::Interpolator1D::INTERP_NEAREST
+		DREAM::FVM::Interpolator1D::INTERP_NEAREST, false
 	);
     real_t integratedComptonSpectrum = 5.8844190260298, C1_Compton = 1.2, C2_Compton = 0.8, C3_Compton = 0.;
     bool extrapolateDreicer = true;

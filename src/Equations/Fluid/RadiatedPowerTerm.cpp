@@ -16,7 +16,9 @@
 
 using namespace DREAM;
 
-
+/**
+ * Constructor.
+ */
 RadiatedPowerTerm::RadiatedPowerTerm(
     FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, 
 	ADAS *adas, NIST *nist, AMJUEL* amjuel,
@@ -48,6 +50,18 @@ RadiatedPowerTerm::RadiatedPowerTerm(
         * sqrt(Constants::me*c*c*Constants::ec*2.0/M_PI);
     this->bremsRel1 = 19.0/24.0; // relativistic-maxwellian correction
     this->bremsRel2 = 5.0/(8.0*M_SQRT2)*(44.0-3.0*M_PI*M_PI); // e-e brems correction
+
+	// used for storing as OtherQuantities
+	Prad = new real_t[grid->GetNCells()];
+	Pion = new real_t[grid->GetNCells()];
+}
+
+/**
+ * Destructor.
+ */
+RadiatedPowerTerm::~RadiatedPowerTerm() {
+	delete [] Prad;
+	delete [] Pion;
 }
 
 
@@ -79,8 +93,11 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t *n_i    = unknowns->GetUnknownData(id_ni);
     
-    for (len_t i = 0; i < NCells; i++)
-            weights[i] = 0;
+    for (len_t i = 0; i < NCells; i++) {
+        weights[i] = 0;
+		Prad[i] = 0;
+		Pion[i] = 0;
+	}
 
     for(len_t iz = 0; iz<nZ; iz++){
         ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
@@ -139,11 +156,17 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 
                 }
 
-                real_t cont = n_i[indZ*NCells + i]*(Li+Bi);
-                if (ionScaleFactor != nullptr)
-                    weights[i] += ionScaleFactor[indZ] * cont;
-                else
-                    weights[i] += cont;
+				real_t nij = n_i[indZ*NCells + i];
+
+                if (ionScaleFactor != nullptr) {
+                    weights[i] += ionScaleFactor[indZ] * nij * (Li + Bi);
+					Prad[i] += ionScaleFactor[indZ] * n_cold[i] * nij * Li;
+					Pion[i] += ionScaleFactor[indZ] * n_cold[i] * nij * Bi;
+                }else{
+                    weights[i] += nij * (Li + Bi);
+					Prad[i] += n_cold[i] * nij * Li;
+					Pion[i] += n_cold[i] * nij * Bi;
+				}
             }
         }
     }
@@ -160,7 +183,9 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
         for(len_t i=0; i<NCells; i++){
             real_t ionTerm = ionHandler->GetZeff(i)*ionHandler->GetFreeElectronDensityFromQuasiNeutrality(i);
             real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i];
-            weights[i] += bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
+            real_t L = bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
+			weights[i] += L;
+			Prad[i] += L * n_cold[i];
         }
 }
 

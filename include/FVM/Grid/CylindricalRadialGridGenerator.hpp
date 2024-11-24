@@ -14,13 +14,14 @@ namespace DREAM::FVM {
         real_t B0=0;
         real_t *xf_provided=nullptr;
         real_t *x, *x_f=nullptr;
+		len_t ntheta_out;
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
 
     public:
-        CylindricalRadialGridGenerator(const len_t nx, const real_t B0, const real_t x0=0, const real_t xa=1);
-        CylindricalRadialGridGenerator(const real_t *x_f, const len_t nx, const real_t B0);
+        CylindricalRadialGridGenerator(const len_t nx, const real_t B0, const real_t x0=0, const real_t xa=1, const len_t ntheta_out=120);
+        CylindricalRadialGridGenerator(const real_t *x_f, const len_t nx, const real_t B0, const len_t ntheta_out=120);
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
@@ -45,6 +46,15 @@ namespace DREAM::FVM {
             {Jacobian=x[ir]; B=B0; NablaR2 = 1; ROverR0 = 1;}
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override
             {Jacobian=x_f[ir]; B=B0; NablaR2 = 1; ROverR0 = 1;}
+
+		virtual const real_t GetZ0() override { return 0; }
+		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNTheta() override { return this->ntheta_out; }
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
+		virtual const real_t *GetPoloidalAngle() override;
     };
 }
 
