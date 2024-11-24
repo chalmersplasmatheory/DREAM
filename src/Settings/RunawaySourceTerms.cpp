@@ -115,7 +115,12 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                     oqty_terms->comptonSource_runaway = comptonSource;
             }
         } else {
-            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_COMPTON_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid and runaway grids are disabled. Ignoring Compton source...");
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_COMPTON_NO_HOT_GRID, "A kinetic Compton term is used, but the hot-tail grid and runaway grids are disabled. Integrating kinetic Compton source.");
+            oqty_terms->comptonSource_fluid = new ComptonSource(grid, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"),
+                s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), s->GetReal("eqsys/n_re/compton/C3"), 
+                0., -1.0, ComptonSource::SOURCE_MODE_FLUID, REFluid);
+            rsth->AddSourceTerm(eqnSign + "fluid Compton", oqty_terms->comptonSource_fluid);
+ 
         }
     }
     
@@ -136,15 +141,24 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             
             if(grid == fluidGrid) {
                 for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
-                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID));
+		    oqty_terms->tritiumSource_fluid.push_back(new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid));
+                    rsth->AddSourceTerm(eqnSign + "fluid tritium", oqty_terms->tritiumSource_fluid[iT]);
                 }
             } else {
                 for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
-                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_KINETIC));
+		    TritiumSource *tritiumSource = new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_KINETIC);
+                    rsth->AddSourceTerm(eqnSign + "kinetic tritium", tritiumSource);
+		    if (grid == runawayGrid)
+                        oqty_terms->tritiumSource_runaway.push_back(tritiumSource);
                 }
             }
         } else {
-            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail and runaway grids are disabled. Ignoring tritium source...");
+            DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail and runaway grids are disabled. Integrating kinetic tritium source.");
+	    const len_t *ti = ions->GetTritiumIndices();
+            for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
+                    oqty_terms->tritiumSource_fluid.push_back(new TritiumSource(grid, unknowns, ions, ti[iT], 0., -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid));
+                    rsth->AddSourceTerm(eqnSign + "fluid tritium", oqty_terms->tritiumSource_fluid[iT]);
+            }
         }
     } 
 
@@ -164,19 +178,33 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
      
     // Add LCFS loss term (add exception if (nr==1 and lcfs_mode != LCFS_LOSS_MODE_DISABLED)...)
     OptionConstants::eqterm_lcfs_loss_mode lcfs_mode = (enum OptionConstants::eqterm_lcfs_loss_mode)s->GetInteger(mod + "/lcfs_loss");
-    if (lcfs_mode != OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED && grid->GetNr() == 1){
-        throw SettingsException(
-            "The LCFS loss term is not compatible with using only one radial grid point."
-        );
-    }
-    bool lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
-    real_t lcfs_psi_edge_t0 = s->GetReal(mod + "/lcfs_psi_edge_t0");
-    if(lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_FLUID){
-    	oqty_terms->lcfsLossRate_fluid = new LCFSLossRateTerm(grid, unknowns, fluidGrid, -1.0, LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss"), lcfs_user_input_psi, lcfs_psi_edge_t0);
-        rsth->AddSourceTerm(eqnSign + "n_re*lcfs_loss", oqty_terms->lcfsLossRate_fluid);
-    } else if (lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_KINETIC){
-        rsth->AddSourceTerm(eqnSign + "n_re*lcfs_loss", new LCFSLossRateTerm(grid, unknowns, runawayGrid, -1.0, LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss"), lcfs_user_input_psi, lcfs_psi_edge_t0));
-    }
+	if (lcfs_mode != OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED) {
+		if (grid->GetNr() == 1){
+			throw SettingsException(
+				"The LCFS loss term is not compatible with using only one radial grid point."
+			);
+		}
+
+		bool lcfs_user_input_psi = (len_t)s->GetInteger(mod + "/lcfs_user_input_psi");
+		real_t lcfs_psi_edge_t0 = s->GetReal(mod + "/lcfs_psi_edge_t0");
+		real_t *lcfs_t_loss = LoadDataR("eqsys/n_re", grid->GetRadialGrid(), s, "lcfs_t_loss");
+
+		if(lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_FLUID){
+			oqty_terms->lcfsLossRate_fluid = new LCFSLossRateTerm(
+				grid, unknowns, fluidGrid, -1.0, lcfs_t_loss,
+				lcfs_user_input_psi, lcfs_psi_edge_t0
+			);
+			rsth->AddSourceTerm(eqnSign + "n_re*lcfs_loss", oqty_terms->lcfsLossRate_fluid);
+		} else if (lcfs_mode == OptionConstants::EQTERM_LCFS_LOSS_MODE_KINETIC){
+			rsth->AddSourceTerm(
+				eqnSign + "n_re*lcfs_loss",
+				new LCFSLossRateTerm(
+					grid, unknowns, runawayGrid, -1.0, lcfs_t_loss,
+					lcfs_user_input_psi, lcfs_psi_edge_t0
+				)
+			);
+		}
+	}
     
     
     return rsth;

@@ -305,7 +305,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
 
     solver_timeKeeper->StartTimer(timerSPIHandler);
     if(this->SPI!=nullptr){
-        this->SPI-> Rebuild(dt);
+        this->SPI-> Rebuild(dt, t);
     }
     solver_timeKeeper->StopTimer(timerSPIHandler);
 

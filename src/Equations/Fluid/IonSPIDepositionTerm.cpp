@@ -55,6 +55,7 @@ IonSPIDepositionTerm::IonSPIDepositionTerm(
  */
 IonSPIDepositionTerm::~IonSPIDepositionTerm() {
 	delete [] weights;
+	delete [] weightsCS;
 	delete [] SPIMolarFraction;
 }
 

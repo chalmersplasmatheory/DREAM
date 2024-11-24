@@ -41,7 +41,11 @@ namespace DREAM {
         
     public:
     
-        LCFSLossRateTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Grid* /*operandGrid*/, real_t, real_t*, bool userGivenPsiEdge_t0=0, real_t PsiEdge_t0=0);
+        LCFSLossRateTerm(
+			FVM::Grid*, FVM::UnknownQuantityHandler*, FVM::Grid*
+			/*operandGrid*/, real_t, real_t*, bool userGivenPsiEdge_t0=0,
+			real_t PsiEdge_t0=0
+		);
         ~LCFSLossRateTerm();
         // USES REBUILD, SETVECTORELEMENT, SETJACOBIANBLOCK FROM PARENT CLASSES
         

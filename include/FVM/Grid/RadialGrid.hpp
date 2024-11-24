@@ -267,6 +267,16 @@ namespace DREAM::FVM {
         const real_t  GetDr_f(const len_t i) const { return this->dr_f[i]; }
         
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
+
+		// Routines used for saving equilibrium to output file
+		virtual const real_t GetZ0() { return this->generator->GetZ0(); }
+		virtual const len_t GetNPsi() { return this->generator->GetNPsi(); }
+		virtual const len_t GetNTheta() { return this->generator->GetNTheta(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0() { return this->generator->GetFluxSurfaceRMinusR0(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() { return this->generator->GetFluxSurfaceRMinusR0_f(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
+		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
         
         /**
          * Returns q*R0 on the distribution grid where q 
