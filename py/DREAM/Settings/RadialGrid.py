@@ -35,6 +35,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.B0 = 0.0
         self.nr = int(0)
         self.r0 = 0.0
+        self.ntheta_out = 120
 
         # Analytic toroidal settings
         self.R0 = None
@@ -184,6 +185,18 @@ class RadialGrid(PrescribedScalarParameter):
             raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}".format(ntheta))
 
         self.ntheta = ntheta
+
+
+    def setNthetaOut(self, ntheta):
+        """
+        (Cylindrical and analytic toroidal)
+        Set the number of poloidal grid points to use for the flux surfaces
+        which are saved to the output file.
+        """
+        if ntheta <= 0:
+            raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {ntheta}.")
+
+        self.ntheta_out = ntheta_out
 
 
     def setShapeParameter(self, name, data, r=0.0):
@@ -341,6 +354,7 @@ class RadialGrid(PrescribedScalarParameter):
         else:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
     
+
     def getMajorRadius(self):
         if self.type==TYPE_CYLINDRICAL:
             return np.inf
@@ -353,6 +367,7 @@ class RadialGrid(PrescribedScalarParameter):
         else: 
             raise Exception('Unrecognized radial grid type')
         
+
     def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None, **kwargs):
         """
         Visualize an analytic toroidal magnetic field.
@@ -456,9 +471,15 @@ class RadialGrid(PrescribedScalarParameter):
 
         if self.type == TYPE_CYLINDRICAL:
             self.B0 = data['B0']
+
+            if 'ntheta_out' in data:
+                self.ntheta_out = data['ntheta_out']
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
             self.R0 = data['R0']
             self.ntheta = data['ntheta']
+
+            if 'ntheta_out' in data:
+                self.ntheta_out = data['ntheta_out']
 
             self.Delta = data['Delta']['x']
             self.Delta_r = data['Delta']['r']
@@ -519,9 +540,11 @@ class RadialGrid(PrescribedScalarParameter):
 
         if self.type == TYPE_CYLINDRICAL:
             data['B0'] = self.B0
+            data['ntheta_out'] = self.ntheta_out
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
             data['R0'] = self.R0
             data['ntheta'] = self.ntheta
+            data['ntheta_out'] = self.ntheta_out
 
             data['Delta']   = {'x': self.Delta, 'r': self.Delta_r}
             data['delta']   = {'x': self.delta, 'r': self.delta_r}
@@ -578,12 +601,16 @@ class RadialGrid(PrescribedScalarParameter):
 
         if self.type == TYPE_CYLINDRICAL:
             if self.B0 is None or self.B0 <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to 'B0': {}".format(self.B0))
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'B0': {self.B0}")
+            elif self.ntheta_out <= 0:
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {self.ntheta_out}. Must be > 0.")
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
             if self.R0 is None or self.R0 <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to tokamak major radius 'R0': {}".format(self.R0))
+                raise DREAMException(f"RadialGrid: Invalid value assigned to tokamak major radius 'R0': {self.R0}")
             elif self.ntheta <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}. Must be > 0.".format(self.ntheta))
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta': {self.ntheta}. Must be > 0.")
+            elif self.ntheta_out <= 0:
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {self.ntheta_out}. Must be > 0.")
 
             self.verifySettingsShapeParameter('Delta')
             self.verifySettingsShapeParameter('delta')
