@@ -329,10 +329,11 @@ class KineticQuantity(UnknownQuantity):
                 show = True
 
         data = None
+        sign = ''
         if logarithmic:
             if np.max(self.data[t,r,:]) <=0:
+                sign = '$-$'
                 data = np.log10(-self.data[t,r,:])
-                print('Warning: This quantity is negative, but for the purpose of logarithmic plotting it has been turned positive.')
             else:
                 data = np.log10(self.data[t,r,:])
         else:
@@ -371,6 +372,8 @@ class KineticQuantity(UnknownQuantity):
             ax.set_ylabel(r'$p_\perp/mc$')
         else:
             raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
+
+        ax.set_title(f'{sign}{self.getTeXName()}')
 
         cb = None
         if genax:
