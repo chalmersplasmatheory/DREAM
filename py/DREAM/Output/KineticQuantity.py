@@ -299,7 +299,7 @@ class KineticQuantity(UnknownQuantity):
         q = np.zeros((len(t), len(r)))
         for iT in range(len(t)):
             for iR in range(len(r)):
-                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[0]
+                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[iR]
         
         return q
 
@@ -330,7 +330,11 @@ class KineticQuantity(UnknownQuantity):
 
         data = None
         if logarithmic:
-            data = np.log10(self.data[t,r,:])
+            if np.max(self.data[t,r,:]) <=0:
+                data = np.log10(-self.data[t,r,:])
+                print('Warning: This quantity is negative, but for the purpose of logarithmic plotting it has been turned positive.')
+            else:
+                data = np.log10(self.data[t,r,:])
         else:
             data = self.data[t,r,:]
 
@@ -338,6 +342,7 @@ class KineticQuantity(UnknownQuantity):
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
 
         if coordinates is None:
+            print(self.p1.shape)
             cp = ax.contourf(self.p1, self.p2, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(self.momentumgrid.getP1TeXName())
             ax.set_ylabel(self.momentumgrid.getP2TeXName())
