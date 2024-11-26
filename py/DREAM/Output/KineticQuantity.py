@@ -342,7 +342,6 @@ class KineticQuantity(UnknownQuantity):
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
 
         if coordinates is None:
-            print(self.p1.shape)
             cp = ax.contourf(self.p1, self.p2, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(self.momentumgrid.getP1TeXName())
             ax.set_ylabel(self.momentumgrid.getP2TeXName())
