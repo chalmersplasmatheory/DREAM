@@ -331,7 +331,7 @@ class KineticQuantity(UnknownQuantity):
         data = None
         sign = ''
         if logarithmic:
-            if np.all(self.data[t,r,:] <=0 ):
+            if np.all(self.data[t,r,:] <=0):
                 sign = '$-$'
                 data = np.log10(-self.data[t,r,:])
             else:
