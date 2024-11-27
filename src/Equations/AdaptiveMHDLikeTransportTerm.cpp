@@ -146,7 +146,7 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientSuppressed() {
  */
 bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientSuppressed(const len_t ir) {
 	real_t gradj = this->GetCurrentGradient(ir);
-	return (std::abs(gradj) <= this->grad_j_tot_max*0.1);
+	return (std::abs(gradj) <= this->grad_j_tot_max*0.9);
 }
 
 
