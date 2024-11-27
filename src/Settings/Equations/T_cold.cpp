@@ -37,7 +37,7 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)true);
+    s->DefineSetting(MODULENAME "/parallel_losses", "Whether to include parallel losses (true) or not (false)", (bool)false);
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
