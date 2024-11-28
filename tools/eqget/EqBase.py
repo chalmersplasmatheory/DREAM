@@ -135,7 +135,17 @@ class EqBase:
         if iClosedContour is not None:
             R, Z = vertices[iClosedContour][:,0], vertices[iClosedContour][:,1]
         else:
-            raise ValueError('No closed flux surface was found for psi_n={}'.format(psi_n))
+            plotted = False
+            for i in range(len(vertices)):
+                if len(vertices[i].shape)==2:
+                    plt.plot(vertices[i][:,0], vertices[i][:,1])
+                    plotted = True
+
+            msg = f'No closed flux surface was found for psi_n={psi_n}'
+            if plotted:
+                plt.title(msg)
+                plt.show()
+            raise ValueError(msg)
 
         if theta is not None:
             _theta = np.arctan2(R-self.R0, Z-self.Z0)
