@@ -67,10 +67,10 @@ bool IonFluidRunawayIonizationTerm::SetCSJacobianBlock(
     if (derivId == id_nre)
         for (len_t ir = 0; ir < nr; ir++){
             real_t nion = ions->GetIonDensity(ir, iIon, Z0);
-            jac->SetElement(rOffset+ir, rOffset+ir, -weights[ir*(Zion+1)+Z0] * nion);
+            jac->SetElement(rOffset+ir, ir, -weights[ir*(Zion+1)+Z0] * nion);
             if (Z0 > 0) {
                 nion = ions->GetIonDensity(ir, iIon, Z0-1);
-                jac->SetElement(rOffset+ir, rOffset+ir-nr, weights[ir*(Zion+1)+Z0-1] * nion);
+                jac->SetElement(rOffset+ir, ir, weights[ir*(Zion+1)+Z0-1] * nion);
             }
         }
     return true;
