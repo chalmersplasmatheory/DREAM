@@ -44,7 +44,7 @@ jobs:
 
       # Install PETSc
       - name: Install Python packages
-        run: pip3 install setuptools && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc
+        run: pip3 install setuptools==75.5.0 && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc
       
       # Generate build files with CMake
       - name: Configure 
