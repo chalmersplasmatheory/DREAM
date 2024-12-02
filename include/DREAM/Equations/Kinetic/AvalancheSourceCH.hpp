@@ -28,9 +28,11 @@ namespace DREAM {
         real_t preFactor;
         real_t pCutoff;
         CHSourcePitchMode sourceXiMode;
+        CHSourceMode sourceMode;
+        bool isRunawayGrid;
         FVM::Grid* runawayGrid;
         
-        len_t *pIn_Indices;
+        int_t *pIn_Indices;
         std::vector<len_t> *f_pIndices;
         std::vector<len_t> *f_xiIndices;
         std::vector<len_t> *f_re_pIndices;
@@ -38,11 +40,15 @@ namespace DREAM {
 
         bool htgridWithREgrid = false; // If the quantity is a hot-tail source, but there is a runaway grid availabel, this will be true
 
-    protected:
+        void SetPinIndices();
+
+    //protected: //TODO: ok?
+    public:
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
-    public:
-        AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourceMode sm = CH_SOURCE_MODE_KINETIC, CHSourcePitchMode sxm = CH_SOURCE_PITCH_ADAPTIVE, bool isRunawayGrid=true, FVM::Grid* runawayGrid=nullptr);
+    //public: // TODO: above
+        AvalancheSourceCH(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, CHSourcePitchMode sxm = CH_SOURCE_PITCH_ADAPTIVE, CHSourceMode sm = CH_SOURCE_MODE_KINETIC, bool isRunawayGrid=true, FVM::Grid* runawayGrid=nullptr);
+        ~AvalancheSourceCH();
 
         real_t EvaluateCHSource(len_t ir, len_t i, len_t j);
     };

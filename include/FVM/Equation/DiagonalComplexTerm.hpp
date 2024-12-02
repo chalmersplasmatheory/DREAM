@@ -15,7 +15,6 @@ namespace DREAM::FVM {
         // Grid on which the operand (i.e. quantity on which this term operates)
         // of this term lives. May be a nullptr, in which case it is assumed to
         // be the same as 'grid'.
-        Grid *operandGrid;
 
         void ResetJacobianColumn();
         void SetPartialWeights(len_t derivId, len_t nMultiples);
@@ -23,7 +22,8 @@ namespace DREAM::FVM {
         void SetElementsInternal(std::function<void(const len_t, const len_t, const real_t)>);
 
             
-    protected:        
+    protected:      
+        Grid *operandGrid;//TODO: ok?  
         real_t *diffWeights = nullptr;
         UnknownQuantityHandler *unknowns;
 
