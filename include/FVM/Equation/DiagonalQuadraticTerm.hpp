@@ -6,6 +6,7 @@
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "FVM/Equation/DiagonalTerm.hpp"
+#include "FVM/Equation/EvaluableEquationTerm.hpp"
 
 
 namespace DREAM::FVM {
