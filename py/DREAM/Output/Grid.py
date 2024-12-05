@@ -21,6 +21,7 @@ class Grid:
         self.r_f = None
         self.dr = None
         self.VpVol = None
+        self.VpVol_f = None
         self.eq = None
         self.hottail = None
         self.runaway = None
@@ -123,6 +124,9 @@ class Grid:
         self.r_f = grid['r_f']
         self.dr = grid['dr']
         self.VpVol = grid['VpVol']
+
+        if 'VpVol_f' in grid:
+            self.VpVol_f = grid['VpVol_f']
 
         if 'R0' in grid:
             self.R0 = grid['R0']
