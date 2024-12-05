@@ -359,10 +359,8 @@ class RadialGrid(PrescribedScalarParameter):
         if self.type==TYPE_CYLINDRICAL:
             return np.inf
         elif self.type==TYPE_ANALYTIC_TOROIDAL:
-            print('analytic toroidal')
             return self.R0
         elif self.type==TYPE_NUMERICAL:
-            print('type numerical')
             return self.num_magneticfield.Rp
         else: 
             raise Exception('Unrecognized radial grid type')

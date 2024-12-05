@@ -7,6 +7,7 @@ import numpy as np
 import os
 import DREAM.DREAMIO as DREAMIO
 import sys
+import pathlib
 from .helpers import merge_dicts
 
 from .DREAMSettings import DREAMSettings
@@ -102,6 +103,9 @@ class DREAMOutput:
         if type(filename) == str:
             self.filename = filename
             od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnhandle=True, returnsize=True, lazy=lazy)
+        elif isinstance(filename, pathlib.PurePath):
+            self.filename = str(filename)
+            od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(str(filename), path=path, returnhandle=True, returnsize=True, lazy=lazy)
         elif type(filename) == dict:
             self.filename = "<dict>"
             od = filename
