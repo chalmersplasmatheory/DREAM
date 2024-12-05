@@ -21,7 +21,7 @@ HALO_REGION_LOSSES_NEGLECTED = False
 class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
     def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, 
-                 recombination=RECOMBINATION_RADIATION_NEGLECTED, halo_region_losses = HALO_REGION_LOSSES_INCLUDED):
+                 recombination=RECOMBINATION_RADIATION_NEGLECTED, halo_region_losses = HALO_REGION_LOSSES_NEGLECTED):
         """
         Constructor.
         """
