@@ -44,6 +44,7 @@ namespace DREAM {
         struct eqn_terms {
             // Terms in the heat equation:
             DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr;
+			DREAM::RadiatedPowerTerm *T_cold_binding_energy=nullptr;
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;

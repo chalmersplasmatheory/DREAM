@@ -304,13 +304,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     /**
      * Load initial electron temperature profile.
-     * If the input profile is not explicitly set, then 'SetInitialValue()' is
-     * called with a null-pointer which results in T=0 at t=0
      */
     real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    if (Tcold_init == nullptr)
+        throw SettingsException("No initial data loaded for T_cold (from " MODULENAME "/init). Perhaps it has not been provided correctly?" );
     eqsys->SetInitialValue(id_T_cold, Tcold_init);
     delete [] Tcold_init;
-
 
     ConstructEquation_W_cold(eqsys, s);
 }

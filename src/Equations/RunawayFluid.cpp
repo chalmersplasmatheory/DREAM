@@ -783,6 +783,9 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         real_t lnLee = 31.3 - log(sqrt(ncold)/Tcold);
         real_t nuEStar = 6.921e-18*ncold*lnLee*Zeff * qR0/(eps*sqrt(eps) * Tcold*Tcold);
 
+        if (Zeff < 1)
+            Zeff = 1;
+
         // SAUTER MODEL: X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
         X /= 1 + 0.25*(1.0 - 0.7*ft)*sqrt(nuEStar)*(1+0.45*sqrt(Zeff-1)) 
             + 0.61*(1.0 - 0.41*ft) * nuEStar/sqrt(Zeff);
