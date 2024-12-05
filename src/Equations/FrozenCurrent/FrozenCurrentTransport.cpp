@@ -4,7 +4,7 @@
  * total plasma current meaures a prescribed value.
  */
 
-#include "DREAM/Equations/FrozenCurrentTransport.hpp"
+#include "DREAM/Equations/FrozenCurrent/FrozenCurrentTransport.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Interpolator1D.hpp"
 
