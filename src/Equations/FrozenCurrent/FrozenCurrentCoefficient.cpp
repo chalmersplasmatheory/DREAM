@@ -2,7 +2,7 @@
  * Implementation of the equation for the frozen current coefficient.
  */
 
-#include "DREAM/Equations/FrozenCurrentCoefficient.hpp"
+#include "DREAM/Equations/FrozenCurrent/FrozenCurrentCoefficient.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Matrix.hpp"
 
