@@ -161,18 +161,13 @@ real_t ParallelHeatLossTerm::StepFunction(len_t ir){
 * SETWEIGHTS: Needed for DiagonalTerm, defined similar to AvalancheGrowthTerm 
 */
 void ParallelHeatLossTerm::SetWeights() {
-
     FindRadiusOfLCFS(); // Find ir_LCFS
 
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
     real_t *N_i = unknowns->GetUnknownData(id_N_i); 
     real_t *W_i = unknowns->GetUnknownData(id_W_i); 
 
-    const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
-
     for (len_t ir = 0; ir < nr; ir++) {
-        real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->grid->GetRadialGrid(),jtot);
-        real_t qR0 = this->grid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
         real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
         real_t T_e = T_cold[ir] * Constants::ec; 
         this->weights[ir] =  StepFunction(ir) * 2. / 3. * kappa  * sqrt((T_e + gamma * T_i) / m_i) / (M_PI * 1 * 6.2); // *1.12 

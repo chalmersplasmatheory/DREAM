@@ -14,14 +14,14 @@ TYPE_SELFCONSISTENT = 2
 RECOMBINATION_RADIATION_INCLUDED = True
 RECOMBINATION_RADIATION_NEGLECTED = False
 
-PARALLEL_LOSSES_INCLUDED = True
-PARALLEL_LOSSES_NEGLECTED = False
+HALO_REGION_LOSSES_INCLUDED = True
+HALO_REGION_LOSSES_NEGLECTED = False
 
 
 class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
     def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, 
-                 recombination=RECOMBINATION_RADIATION_NEGLECTED, parallel_losses = PARALLEL_LOSSES_INCLUDED):
+                 recombination=RECOMBINATION_RADIATION_NEGLECTED, halo_region_losses = HALO_REGION_LOSSES_INCLUDED):
         """
         Constructor.
         """
@@ -36,7 +36,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.transport = TransportSettings(kinetic=False)
         self.recombination = recombination
 
-        self.parallel_losses = parallel_losses
+        self.halo_region_losses = halo_region_losses
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)
@@ -112,12 +112,12 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.recombination = recombination
 
 
-    def setParallelLosses(self, parallel_losses=PARALLEL_LOSSES_INCLUDED):
+    def setHaloRegionLosses(self, halo_region_losses=HALO_REGION_LOSSES_INCLUDED):
         """
-        Specify whether or not to include parallel losses when evolving
-        the temperature self-consistently.
+        Specify whether or not to include heat losses in the halo region when
+        evolving the temperature self-consistently.
         """
-        self.parallel_losses = parallel_losses
+        self.halo_region_losses = halo_region_losses
 
 
     def fromdict(self, data):
@@ -133,6 +133,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
             if 'transport' in data:
                 self.transport.fromdict(data['transport'])
+            
+            if 'halo_region_losses' in data:
+                self.halo_region_losses = int(data['halo_region_losses'])
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
         if 'recombination' in data:
@@ -155,6 +158,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 't': self.times
             }
         elif self.type == TYPE_SELFCONSISTENT:
+            data['halo_region_losses'] = self.halo_region_losses
             data['init'] = {
                 'x': self.temperature,
                 'r': self.radius
