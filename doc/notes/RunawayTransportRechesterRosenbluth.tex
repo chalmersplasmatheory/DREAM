@@ -1,0 +1,124 @@
+\documentclass{notes}
+
+\title{Rechester-Rosenbluth-like transport for fluid runaways}
+\author{Mathias Hoppe}
+\date{2024-11-05}
+
+\newcommand{\Vp}{\mathcal{V}'}
+
+\begin{document}
+	\maketitle
+
+	Runaway transport in ergodic magnetic fields can be treated using the
+	Rechester-Rosenbluth model. This can already be done in \DREAM\ when the
+	runaways are treated kinetically. For fluid runaways, however, no model
+	is currently implemented in the code. In this document, we derive a
+	Rechester-Rosenbluth transport term for the runaway electron density
+	evolution equation.
+
+	\section*{Derivation}
+	The Rechester-Rosenbluth model prescribes a diffusion coefficient
+	\begin{equation}
+		\left\{D_{rr}\right\} = \pi q R_{\rm m}\left(
+			\frac{\delta B}{B}
+		\right)^2
+		v\left|\xi_0\right|
+		\left\{\frac{\xi}{\xi_0}\right\},
+	\end{equation}
+	where $q$ is the safety factor, $R_{\rm m}$ the plasma major radius,
+	$\delta B/B$ the magnetic perturbation magnitude, $v_\parallel$ the parallel
+	speed of the electron, and $\mathcal{H}$ a step function defined such that
+	\begin{equation}
+		\mathcal{H}\left(\xi_0\right) =
+		\begin{cases}
+			1, \quad &\left|\xi_0\right| > \xi_{\rm T}\\
+			0, \quad &\left|\xi_0\right|\leq \xi_{\rm T}
+		\end{cases}.
+	\end{equation}
+	The corresponding operator for the kinetic equation is
+	\begin{equation}\label{eq:dfre}
+		\frac{\partial f}{\partial t} =
+			\frac{1}{\Vp}\frac{\partial}{\partial r}\left(
+				\Vp \left\{D_{rr}\right\}\frac{\partial f}{\partial r}
+			\right),
+	\end{equation}
+	where $f$ is the distribution function. To obtain a transport operator for
+	the evolution equation of the runaway density, $n_{\rm re}$, we first assume
+	that $f$ describes only the runaway electrons, and that all runaway
+	electrons have momentum $p=p_{\rm re}$ (in normalized units) and pitch
+	$\xi_0=1$. Mathematically, $f$ then takes the form
+	\begin{equation}
+		f\equiv f_{\rm re}\left(p,\xi_0\right) =
+			\frac{V'}{\Vp}n_{\rm re}\delta\left(p-p_{\rm re}\right)
+				\delta\left(\xi_0-1\right).
+	\end{equation}
+	With $n_{\rm re}$ defined as the density moment of $f_{\rm re}$, we can then
+	find the time variation of $n_{\rm re}$ from equation~\eqref{eq:dfre} as
+	\begin{equation}
+		\int_0^\infty\dd p\int_{-1}^1\dd\xi_0\,\frac{\Vp}{V'}\frac{\partial f_{\rm re}}{\partial t} =
+		\int_0^\infty\dd p\int_{-1}^1\dd\xi_0\,\frac{1}{V'}\frac{\partial}{\partial r}\left(
+			\Vp \left\{D_{rr}\right\}\frac{\partial f_{\rm re}}{\partial r}
+		\right).
+	\end{equation}
+	On the LHS we can use the definition of $n_{\rm re}$ and obtain a partial
+	time derivative on $n_{\rm re}$. The RHS can in turn be re-ordered as
+	follows:
+	\begin{equation}\label{eq:momentRHS}
+		\begin{gathered}
+			\int_0^\infty\dd p\int_{-1}^1\dd\xi_0\,\frac{1}{V'}\frac{\partial}{\partial r}\left(
+				\Vp \left\{D_{rr}\right\}\frac{\partial f_{\rm re}}{\partial r}
+			\right) =
+			%
+			\frac{1}{V'}\frac{\partial}{\partial r}\left(
+				\int_0^\infty\dd p\int_{-1}^1\dd\xi_0\,
+				\Vp\left\{ D_{rr} \right\} \frac{\partial f_{\rm re}}{\partial r}
+			\right) =\\
+			%
+			=
+			\frac{1}{V'}\frac{\partial}{\partial r}\left[
+				\pi q R_{\rm m}\left(
+					\frac{\delta B}{B}
+				\right)^2
+				\int_0^\infty\dd p\int_{-1}^1\dd\xi_0\,
+				\Vp \frac{cp\left|\xi_0\right|}{\sqrt{1+p^2}}
+				\left\{\frac{\xi}{\xi_0}\right\}
+				\frac{\partial}{\partial r}\left(
+					\frac{V'}{\Vp}
+					n_{\rm re}
+					\delta\left(p-p_{\rm re}\right)
+					\delta\left(\xi_0-1\right)
+				\right)
+			\right].
+		\end{gathered}
+	\end{equation}
+	Before proceeding, we note that since
+	\begin{equation}
+		\xi = \pm\sqrt{1 - \frac{B}{B_{\rm min}}\left(1-\xi_0^2\right)},
+	\end{equation}
+	which for $\xi_0=1$ is identically $\xi=1$, the $\xi_0$ delta function
+	causes the factor in the bounce average to be one, so that the entire bounce
+	average evaluates to one. Allowing the delta functions to act on the other
+	factors, we find that
+	\begin{equation}
+		\eqref{eq:momentRHS} =
+			\frac{1}{V'}\frac{\partial}{\partial r}\left[
+				V'\pi q R_{\rm m}
+				\left(\frac{\delta B}{B}\right)^2
+				v_{\rm re}
+				\frac{\partial n_{\rm re}}{\partial r}
+			\right],
+	\end{equation}
+	where $v_{\rm re}=cp_{\rm re}/\sqrt{1+p_{\rm re}^2}\approx c$. We therefore
+	find that the runaway electron transport term becomes
+	\begin{equation}
+		\frac{\partial n_{\rm re}}{\partial t} =
+			\frac{1}{V'}\frac{\partial}{\partial r}\left[
+				V' D_{rr}^{(n)} \frac{\partial n_{\rm re}}{\partial r}
+			\right],
+	\end{equation}
+	with the diffusion coefficient
+	\begin{equation}
+		D_{rr}^{(n)} =
+			\pi q R_{\rm m}c\left(\frac{\delta B}{B}\right)^2.
+	\end{equation}
+\end{document}
