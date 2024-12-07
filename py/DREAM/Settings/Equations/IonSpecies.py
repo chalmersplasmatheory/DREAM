@@ -1048,7 +1048,7 @@ class IonSpecies:
                     c0=Drr_0, cf=Drr_f, co=Drr_o,
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
-                
+
             self.initialize_neutral_prescribed_diffusion(
                 neutral_prescribed_diffusion=Drr, rNeutralPrescribedDiffusion=r,
                 tNeutralPrescribedDiffusion=t, interpr=interpr, interpt=interpt
@@ -1163,10 +1163,7 @@ class IonSpecies:
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
         if r is None:
-            if self.settings.radialgrid.r_f is not None:
-                r = self.settings.radialgrid.r_f
-            else:
-                r = np.linspace(0,self.settings.radialgrid.a)
+            r = np.array([0])
         if np.isscalar(c0):
             Nr = len(r)
             c0 = c0*np.ones((1,Nr))

@@ -299,7 +299,7 @@ class KineticQuantity(UnknownQuantity):
         q = np.zeros((len(t), len(r)))
         for iT in range(len(t)):
             for iR in range(len(r)):
-                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[0]
+                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[iR]
         
         return q
 
@@ -329,8 +329,13 @@ class KineticQuantity(UnknownQuantity):
                 show = True
 
         data = None
+        sign = ''
         if logarithmic:
-            data = np.log10(self.data[t,r,:])
+            if np.all(self.data[t,r,:] <=0):
+                sign = '$-$'
+                data = np.log10(-self.data[t,r,:])
+            else:
+                data = np.log10(self.data[t,r,:])
         else:
             data = self.data[t,r,:]
 
@@ -367,6 +372,8 @@ class KineticQuantity(UnknownQuantity):
             ax.set_ylabel(r'$p_\perp/mc$')
         else:
             raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
+
+        ax.set_title(f'{sign}{self.getTeXName()}')
 
         cb = None
         if genax:

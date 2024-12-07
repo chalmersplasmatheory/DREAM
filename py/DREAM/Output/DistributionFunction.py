@@ -75,7 +75,8 @@ class DistributionFunction(KineticQuantity):
         this distribution function.
         """
         j = self.currentDensity(t=t)
-        return self.grid.integrate(j)
+        geom = self.grid.GR0/self.grid.Bmin * self.grid.FSA_R02OverR2
+        return self.grid.integrate(j, geom)/ (2*np.pi)
 
 
     def pressure(self, t=None, r=None):

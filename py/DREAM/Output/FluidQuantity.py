@@ -276,7 +276,7 @@ class FluidQuantity(UnknownQuantity):
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
             if logscale:
-                cb.ax.set_ylabel('$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
+                cb.ax.set_ylabel(r'$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
             else:
                 cb.ax.set_ylabel('{}'.format(self.getTeXName()))
             
