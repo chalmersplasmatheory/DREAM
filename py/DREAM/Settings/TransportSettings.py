@@ -25,6 +25,7 @@ SVENSSON_INTERP1D_PARAM_IP   = 2
 FROZEN_CURRENT_MODE_DISABLED = 1
 FROZEN_CURRENT_MODE_CONSTANT = 2
 FROZEN_CURRENT_MODE_BETAPAR = 3
+FROZEN_CURRENT_MODE_N_RE = 4
 
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
@@ -659,7 +660,7 @@ class TransportSettings:
         """
         Verify consistency of the frozen current mode settings.
         """
-        if self.frozen_current_mode not in [FROZEN_CURRENT_MODE_DISABLED,FROZEN_CURRENT_MODE_CONSTANT,FROZEN_CURRENT_MODE_BETAPAR]:
+        if self.frozen_current_mode not in [FROZEN_CURRENT_MODE_DISABLED,FROZEN_CURRENT_MODE_CONSTANT,FROZEN_CURRENT_MODE_BETAPAR,FROZEN_CURRENT_MODE_N_RE]:
             raise TransportException(f"Frozen current mode: Invalid type of transport operator: {self.frozen_current_mode}.")
         elif self.frozen_current_Ip_presc.ndim != 1:
             raise TransportException(f"Frozen current mode: Invalid dimensions of prescribed plasma current: {self.frozen_current_Ip_presc.shape}.")

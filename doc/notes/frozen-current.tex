@@ -45,7 +45,7 @@
 		I_{\rm p} = I_{\rm p,presc}.
 	\end{equation}
 
-	\section{Implementation}
+	\section{Implementation}\label{sec:implementation}
 	The frozen current mode should be implemented in the non-linear solver by
 	adding the condition~\eqref{eq:Ip} as the equation for $D_0$. However, doing
 	so results in numerical instabilities which prevent the solver from
@@ -231,6 +231,196 @@
 			\frac{\dd I_{\rm p} / \dd t}
 			{\partial j_\parallel/\partial r}.
 	\end{equation}
+
+	\section{Runaway density constraint}
+	An alternative method can be obtained by adjusting the diffusion coefficient
+	based on the runaway rate. The downside with the method presented in
+	section~\ref{sec:implementation} is that it does not allow the value for
+	$D_0$ to calculated explicitly, but requires it to be calculated
+	iteratively.
+
+	Given that the runaway electron density changes according to
+	\begin{equation}
+		\frac{\partial n_{\rm re}}{\partial t} =
+			\gamma_{\rm primary} + \Gamma_{\rm ava}n_{\rm re} -
+			\frac{1}{V'}\frac{\partial}{\partial r}\left(
+				V' D_0 \frac{\partial n_{\rm re}}{\partial r}
+			\right),
+	\end{equation}
+	a suitable value for $D_0$ can be evaluated by prescribing a desired
+	$\partial n_{\rm re}/\partial t$. We could therefore, for example, prescribe
+	that 
+
+	\red{We could use $\gamma_{\rm primary}+\Gamma_{\rm ava}n_{\rm re}$ as floor
+	value otherwise\ldots By taking $D_0$ such that the transport exactly
+	balances the generation, and then applying
+	$D=D_0+\delta D(I_{\rm p}-I_{\rm p,presc})$, for some function $\delta D$ of
+	the $\Delta I_{\rm p}$}.
+
+	When in steady state, the change in runaway density at $r=a$ satisfies
+	\begin{equation}
+		D_0\left.\frac{\partial n_{\rm re}}{\partial r}\right|_{r=a} =
+			\frac{1}{V'}\int_0^a \left(
+				\gamma_{\rm primary} + \Gamma_{\rm ava}n_{\rm re}
+			\right)\,\dd r'.
+	\end{equation}
+	\begin{equation}
+		\begin{aligned}
+			j_{\rm re} &= ec n_{\rm re},\\
+			I_{\rm p} &= \frac{1}{2\pi}\int_0^a
+				V'\frac{j_\Omega + j_{\rm re}}{B_{\rm min}}G
+				\left\langle\frac{1}{R^2}\right\rangle\,\dd r
+		\end{aligned}
+	\end{equation}
+	This implies that
+	\begin{equation}
+		\begin{aligned}
+			\frac{\partial I_{\rm p}}{\partial t} &=
+				\frac{ec}{2\pi}\int_0^a
+				V'\frac{G}{B_{\rm min}}\left\langle\frac{1}{R^2}\right\rangle
+				\left[
+					\gamma_{\rm primary} + \Gamma_{\rm ava}n_{\rm re} -
+					\frac{1}{V'}\frac{\partial}{\partial r}
+					\left( V'D_0\frac{\partial n_{\rm re}}{\partial r}\right)
+				\right]\,\dd r =\\
+			%
+			&= S_{\rm gen} - D_0\frac{ec}{2\pi}\int_0^a
+				\frac{G}{B_{\rm min}}\left\langle\frac{1}{R^2}\right\rangle
+				\frac{\partial}{\partial r}\left(
+					V'\frac{\partial n_{\rm re}}{\partial r}
+				\right)\,\dd r =\\
+			%
+			&= S_{\rm gen} - S_{\rm loss}.
+		\end{aligned}
+	\end{equation}
+	When the plasma current remains fixed, the diffusion coefficient (expressed
+	here in terms of its inverse, for convenience) is therefore
+	\begin{equation}\label{eq:1OverD0}
+		\frac{1}{D_0^{(0)}} =
+			\frac{1}{S_{\rm gen}}
+			\int_0^a \frac{G}{B_{\rm min}}\left\langle\frac{1}{R^2}\right\rangle
+			\frac{\partial}{\partial r}\left(
+				V'\frac{\partial n_{\rm re}}{\partial r}
+			\right)\,\dd r.
+	\end{equation}
+	We can now prescribe a diffusion coefficient which will approach the steady
+	state at a desired rate. We take this diffusion coefficient to be
+	\begin{equation}
+		D_0 = D_0^{(0)} + \delta D.
+	\end{equation}
+	The correction $\delta D$ should be limited to not take too large values.
+	Reasonable bounds are, for example, $\delta D\in[-D_0, D_0]$, as this
+	prevents both negative diffusion and unreasonably strong transport. When
+	$I_{\rm p}$ is close to the prescribed value $I_{\rm p,presc}$, it can
+	however be estimated further, based on the current time step.
+
+	\subsection{Small deviation case}
+	Assuming that $\Delta I_{\rm p}/I_{\rm p}\ll 1$, so that the effect of
+	the transport term is approximately linear in time, we obtain
+	\begin{equation}
+		\frac{\Delta I_{\rm p}}{\Delta t}\approx
+			\delta D S_{\rm loss} = -\delta D\frac{S_{\rm gen}}{D_0^{(0)}},
+	\end{equation}
+	where in the last equality we consider only the case where $S_{\rm gen}>0$.
+	Ideally, to have $I_{\rm p} = I_{\rm p,presc}$ after the next time step, we
+	should take
+	\begin{equation}
+		\delta D = \frac{\Delta I_{\rm p}}{S_{\rm loss}\Delta t} = -D_0^{(0)} \frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t}.
+	\end{equation}
+
+	%
+	% - D0 + dD when Ip is close (but not equal to) prescribed value
+	% - Under which circumstances does equation (17) become infinite?
+	%
+
+	\subsection{No runaway losses case}
+	In contrast to the volume integral of the loss term $S_{\rm loss}$, the
+	integral in equation~\eqref{eq:1OverD0} is not positive definite, due to the
+	geometrical factor $G\langle 1/R^2\rangle/B$. Whereas in the volume
+	integral, all contributions from within the plasma cancel and leave only the
+	loss rate on the edge, the integral in~\eqref{eq:1OverD0} gives different
+	weighting to transport on different flux surfaces, preventing the
+	contributions from cancelling exactly.
+
+	We can study this case in circular geometry, where $G=R_0B_0$,
+	$B_{\rm min}=B_0/(1+\epsilon)$, and
+	$\langle 1/R^2\rangle=1/R_0^2\sqrt{1-\epsilon^2}$. The integral
+	in~\eqref{eq:1OverD0} then becomes
+	\begin{equation}
+		\begin{gathered}
+			\int_0^a \frac{G}{B_{\rm min}}\left\langle \frac{1}{R^2} \right\rangle
+				\frac{\partial}{\partial r}\left(
+					V'\frac{\partial n_{\rm re}}{\partial r}
+				\right)\,\dd r =
+				%
+				\int_0^{\epsilon_a} \frac{1+\epsilon}{R_0^2\sqrt{1-\epsilon^2}}
+				\frac{1}{R_0}
+				\frac{\partial}{\partial\epsilon}\left(
+					V'\frac{\partial n_{\rm re}}{\partial\epsilon}
+				\right)
+				\,\dd\epsilon =\\
+				%
+				= \frac{1}{R_0^3}\int_0^{\epsilon_a} \frac{1+\epsilon}{\sqrt{1-\epsilon^2}}
+				\frac{\partial}{\partial\epsilon}\left(
+					V'\frac{\partial n_{\rm re}}{\partial\epsilon}
+				\right)
+				\,\dd\epsilon
+				%
+				\\
+				%
+				= \frac{1}{R_0^3}\left[
+					\frac{1+\epsilon}{\sqrt{1-\epsilon^2}}
+					V'\frac{\partial n_{\rm re}}{\partial\epsilon}
+				\right]_0^{\epsilon_a}
+				-
+				\frac{1}{R_0^3}\int_0^{\epsilon_a} \left[
+					\frac{2\epsilon + 1 - \epsilon^2 + 2\epsilon^2}{\left(1-\epsilon^2\right)^{3/2}}
+				\right] V'\frac{\partial n_{\rm re}}{\partial\epsilon} =\\
+				%= \frac{1}{R_0^3}\left[\arcsin{\epsilon} - \sqrt{1-\epsilon^2}\right]_{\epsilon=0}^1
+				%
+				= \frac{V'\left(\epsilon_a\right)}{R_0^3}
+				\frac{1+\epsilon_a}{\sqrt{1-\epsilon_a^2}}
+				\left.\frac{\partial n_{\rm re}}{\partial\epsilon}\right|_{r=a} -
+				\frac{1}{R_0^3}\int_0^{\epsilon_a}
+					V'\frac{\left(1+\epsilon\right)^2}{\left(1-\epsilon^2\right)^{3/2}}
+					\frac{\partial n_{\rm re}}{\partial\epsilon}\,\dd\epsilon
+		\end{gathered}
+	\end{equation}
+
+	If the integral in equation~\eqref{eq:1OverD0} becomes negative we should
+	prescribe $D_0^{(0)}=0$ until it turns positive.
+
+	\subsection{Jacobian elements}
+	To use implicit time stepping, the jacobian block matrix for $D_0$ must be
+	computed. We find that the derivative of $D_0$ with respect to an arbitrary
+	unknown quantity $x_i$ is
+	\begin{equation}
+		\frac{\partial D_0}{\partial x_i} =
+			\frac{\partial D_0^{(0)}}{\partial x_i} +
+			\frac{\partial \delta D}{\partial x_i},
+	\end{equation}
+	where
+	\begin{align}
+		\frac{\partial D_0^{(0)}}{\partial x_i} &=
+			\frac{1}{S_{\rm loss}}\left(
+				\frac{\partial S_{\rm gen}}{\partial x_i} -
+				D_0^{(0)}
+				\frac{\partial S_{\rm loss}}{\partial x_i}
+			\right),\\
+		%
+		\frac{\partial\delta D}{\partial x_i} &=
+			\frac{1}{S_{\rm loss}}\left(
+				\frac{\partial I_{\rm p}}{\partial x_i}
+				- \delta D
+				\frac{\partial S_{\rm loss}}{\partial x_i}.
+			\right)
+		\label{eq:deriv_dD}
+	\end{align}
+	The diffusion quantity will depend on different other quantities depending
+	on which runaway source terms are included, but at present the possible
+	derivatives that may appear will be taken with respect to $n_{\rm re}$,
+	$n_{\rm tot}$, and $n_i$. A derivative with respect to $I_{\rm p}$ will
+	also contribute to~\eqref{eq:deriv_dD}.
 
 	\appendix
 

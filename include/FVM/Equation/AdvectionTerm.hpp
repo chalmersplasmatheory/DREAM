@@ -58,7 +58,7 @@ namespace DREAM::FVM {
         void DeallocateDifferentiationCoefficients();
         void DeallocateInterpolationCoefficients();        
         
-        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
+        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*, bool);
         void ResetJacobianColumn();
 
         AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
