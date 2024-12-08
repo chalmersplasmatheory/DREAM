@@ -9,6 +9,7 @@
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/Equations/FrozenCurrent/FrozenCurrentCoefficient.hpp"
+#include "DREAM/Equations/FrozenCurrent/FrozenCurrentNreCoefficient.hpp"
 #include "DREAM/Equations/FrozenCurrent/FrozenCurrentTransport.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -237,6 +238,59 @@ void SimulationGenerator::ConstructEquation_D_I(
 
 	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &D_I_min);
 }
+
+
+/**
+ * Construct the equation for the frozen current coefficient 'D_I',
+ * based on predicdtions of the runaway electron density.
+ */
+FrozenCurrentNreCoefficient *SimulationGenerator::ConstructEquation_D_I_n_re(
+	EquationSystem *eqsys, Settings *s, const string& path,
+	struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
+	if (eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_D_I))
+		return nullptr;
+
+	FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
+	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+
+	// Define unknown quantity
+	eqsys->SetUnknown(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I_DESC,
+		scalarGrid
+	);
+
+	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
+
+	RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
+		fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
+		fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
+		eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(),
+		oqty_terms, s
+	);
+	eqsys->AddRunawaySourceTermHandler(rsth);
+
+	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
+	FrozenCurrentNreCoefficient *fcc =
+		new FrozenCurrentNreCoefficient(
+			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
+			eqsys->GetREFluid(), rsth
+		);
+	eqn->AddTerm(fcc);
+
+	eqsys->SetOperator(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I,
+		eqn,
+		"I_p = I_p_presc (from n_re)"
+	);
+
+	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), nullptr);
+
+	return fcc;
+}
+
 
 /**
  * Construct the transport term(s) to add to the given operator.
@@ -470,15 +524,30 @@ bool SimulationGenerator::ConstructTransportTerm(
 			(enum OptionConstants::eqterm_frozen_current_mode)
 				s->GetInteger(path + "/frozen_current_mode");
 
+		FrozenCurrentNreCoefficient *fcnc = nullptr;
 		enum FrozenCurrentTransport::TransportMode ts;
 		switch (mode) {
 			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_CONSTANT:
 				ts = FrozenCurrentTransport::TRANSPORT_MODE_CONSTANT;
+				// Add D_I to system of equations
+				ConstructEquation_D_I(eqsys, s, path);
 				break;
 
 			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_BETAPAR:
 				ts = FrozenCurrentTransport::TRANSPORT_MODE_BETAPAR;
+				// Add D_I to system of equations
+				ConstructEquation_D_I(eqsys, s, path);
 				break;
+
+			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_N_RE: {
+				if (heat || kinetic)
+					throw SettingsException(
+						"Frozen current transport: N_RE type transport is only available for fluid n_re."
+					);
+				ts = FrozenCurrentTransport::TRANSPORT_MODE_CONSTANT;
+				// Add D_I to system of equations
+				fcnc = ConstructEquation_D_I_n_re(eqsys, s, path, oqty_terms);
+			} break;
 
 			default:
 				throw SettingsException(
@@ -486,9 +555,6 @@ bool SimulationGenerator::ConstructTransportTerm(
 					mode
 				);
 		}
-
-		// Add D_I to system of equations
-		ConstructEquation_D_I(eqsys, s, path);
 
 		// Add transport operator
 		if (!heat) {
@@ -504,6 +570,9 @@ bool SimulationGenerator::ConstructTransportTerm(
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
 					bc, fct, oprtr, path, grid
 				);
+
+			if (fcnc != nullptr)
+				fcnc->SetTransportOperators(fct, dbc);
 
 			// Store B.C. for OtherQuantityHandler
 			if (diffusive_bc != nullptr)
