@@ -718,25 +718,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if self.t_delay is not None: 
             data['init']['t_delay']=self.t_delay
             
-        if self.nbrShiftGridCell is not None:
-            data['nbrShiftGridCell'] = self.nbrShiftGridCell
-        """
-        else:
-            if self.rp is not None:
-                self.nbrShiftGridCell = np.zeros(self.rp.shape)
-            else:
-                self.nbrShiftGridCell = np.array([0])
-        """
-
-        if self.TDrift is not None:
-            data['TDrift'] = self.TDrift
-        """
-        else:
-            if self.rp is not None:
-                self.TDrift = np.zeros(self.rp.shape)
-            else:
-                self.TDrift=np.array([0])
-        """
+        data['nbrShiftGridCell'] = self.nbrShiftGridCell
+        data['TDrift'] = self.TDrift
 
         return data
 

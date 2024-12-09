@@ -911,7 +911,7 @@ void SPIHandler::CalculateIrp(){
 * Function used to calculate the number of grid cells to shift the deposition due to the drift
 * (the shift is only made in integer steps of the radial resolution)
 * ip: shard index
-* radius: the (minor) radial coordinate of the shifted shard (exact, not necessarily an integer of radial grid cells), sign included
+* radius: the (minor) radial coordinate of the shifted shard (exact, not necessarily an integer of radial grid cells)
 */
 int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t radius) {
     for(len_t ir=0; ir<nr;ir++)

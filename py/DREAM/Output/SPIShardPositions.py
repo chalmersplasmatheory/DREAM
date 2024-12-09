@@ -43,12 +43,12 @@ class SPIShardPositions(ScalarQuantity):
         if shard is None:
             shard = np.argmax(np.abs(xp[1,:] - xp[0,:]))
             # Roughly estimate when the fastest pellet reaches the plasma edge
-            it_est = np.argmin(np.abs(ROverR0[0,-1] - xp[:,shard]))
+            it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,shard]))
         else:
             xp = xp[:,shard].reshape((xp.shape[0], 1))
             yp = yp[:,shard].reshape((yp.shape[0], 1))
             # Roughly estimate when the fastest pellet reaches the plasma edge
-            it_est = np.argmin(np.abs(ROverR0[0,-1] - xp[:,0]))
+            it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,0]))
 
         # Determine if the first pellet arrives before or after
         # the estimated time
