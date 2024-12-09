@@ -278,6 +278,7 @@ FrozenCurrentNreCoefficient *SimulationGenerator::ConstructEquation_D_I_n_re(
 			eqsys->GetREFluid(), rsth
 		);
 	eqn->AddTerm(fcc);
+	oqty_terms->n_re_frozen_current = fcc;
 
 	eqsys->SetOperator(
 		OptionConstants::UQTY_D_I,

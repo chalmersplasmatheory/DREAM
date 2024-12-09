@@ -276,6 +276,7 @@
 	\begin{equation}
 		\begin{aligned}
 			\frac{\partial I_{\rm p}}{\partial t} &=
+				\frac{\partial I_\Omega}{\partial t} +
 				\frac{ec}{2\pi}\int_0^a
 				V'\frac{G}{B_{\rm min}}\left\langle\frac{1}{R^2}\right\rangle
 				\left[
@@ -284,20 +285,21 @@
 					\left( V'D_0\frac{\partial n_{\rm re}}{\partial r}\right)
 				\right]\,\dd r =\\
 			%
-			&= S_{\rm gen} - D_0\frac{ec}{2\pi}\int_0^a
+			&= \frac{\partial I_\Omega}{\partial t} +
+				S_{\rm gen} - D_0\frac{ec}{2\pi}\int_0^a
 				\frac{G}{B_{\rm min}}\left\langle\frac{1}{R^2}\right\rangle
 				\frac{\partial}{\partial r}\left(
 					V'\frac{\partial n_{\rm re}}{\partial r}
 				\right)\,\dd r =\\
 			%
-			&= S_{\rm gen} - S_{\rm loss}.
+			&= \frac{\partial I_\Omega}{\partial t} + S_{\rm gen} - D_0S_{\rm loss}.
 		\end{aligned}
 	\end{equation}
-	When the plasma current remains fixed, the diffusion coefficient (expressed
+	When the runaway current remains fixed, the diffusion coefficient (expressed
 	here in terms of its inverse, for convenience) is therefore
 	\begin{equation}\label{eq:1OverD0}
 		\frac{1}{D_0^{(0)}} =
-			\frac{1}{S_{\rm gen}}
+			\frac{ec}{2\pi S_{\rm gen}}
 			\int_0^a \frac{G}{B_{\rm min}}\left\langle\frac{1}{R^2}\right\rangle
 			\frac{\partial}{\partial r}\left(
 				V'\frac{\partial n_{\rm re}}{\partial r}
@@ -317,16 +319,27 @@
 	\subsection{Small deviation case}
 	Assuming that $\Delta I_{\rm p}/I_{\rm p}\ll 1$, so that the effect of
 	the transport term is approximately linear in time, we obtain
-	\begin{equation}
+	\begin{equation}\label{eq:dD}
 		\frac{\Delta I_{\rm p}}{\Delta t}\approx
-			\delta D S_{\rm loss} = -\delta D\frac{S_{\rm gen}}{D_0^{(0)}},
+			-\delta D S_{\rm loss} = \delta D\frac{S_{\rm gen}}{D_0^{(0)}},
 	\end{equation}
 	where in the last equality we consider only the case where $S_{\rm gen}>0$.
 	Ideally, to have $I_{\rm p} = I_{\rm p,presc}$ after the next time step, we
 	should take
 	\begin{equation}
-		\delta D = \frac{\Delta I_{\rm p}}{S_{\rm loss}\Delta t} = -D_0^{(0)} \frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t}.
+		\delta D = -\frac{\Delta I_{\rm p}}{S_{\rm loss}\Delta t} = D_0^{(0)} \frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t}.
 	\end{equation}
+
+	\subsection{Continuous coefficient}
+	The coefficient~\eqref{eq:dD} should provide a good estimate for $\delta D$,
+	but it suffers from the fact that its derivative is discontinuous (when the
+	limitations discussed above are applied. To make this coefficient smoot, we
+	can instead use the $\tanh{x}$ function, with $\delta D/D_0^{(0)}$ of
+	equation~\eqref{eq:dD} as its argument. We thus have
+	\begin{equation}\label{eq:dD_tanh}
+		\delta D = D_0^{(0)}\tanh\frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t}.
+	\end{equation}
+	This function ranges between $[-D_0^{(0)}, D_0^{(0)}]$ and is smooth.
 
 	%
 	% - D0 + dD when Ip is close (but not equal to) prescribed value
@@ -420,7 +433,43 @@
 	on which runaway source terms are included, but at present the possible
 	derivatives that may appear will be taken with respect to $n_{\rm re}$,
 	$n_{\rm tot}$, and $n_i$. A derivative with respect to $I_{\rm p}$ will
-	also contribute to~\eqref{eq:deriv_dD}.
+	also contribute to~\eqref{eq:deriv_dD}. All combined, the jacobian becomes
+	\begin{equation}
+		\frac{\partial D_0}{\partial x_i} =
+			\frac{1}{S_{\rm loss}}\left(
+				\frac{\partial S_{\rm gen}}{\partial x_i} +
+				\frac{\partial I_{\rm p}}{\partial x_i} -
+				D_0\frac{\partial S_{\rm loss}}{\partial x_i}
+			\right).
+	\end{equation}
+
+	If the correction~\eqref{eq:dD_tanh} is used instead, we find that
+	\begin{equation}
+		\begin{aligned}
+			\frac{\partial\delta D}{\partial x_i} &=
+				\frac{\partial D_0^{(0)}}{\partial x_i}\tanh\frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t} +
+				D_0^{(0)}\left(1-\tanh^2\frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t}\right)
+				\frac{\partial}{\partial x_i}\left(
+					\frac{\Delta I_{\rm p}}{S_{\rm gen}\Delta t}
+				\right) =\\
+			%
+			&= \frac{\delta D}{D_0^{(0)}}\frac{\partial D_0^{(0)}}{\partial x_i} +
+			D_0^{(0)}\left(1-\frac{\delta D^2}{\left(D_0^{(0)}\right)^2}\right)
+			\left(
+				\frac{1}{S_{\rm gen}\Delta t}\frac{\partial I_{\rm p}}{\partial x_i} -
+				\frac{\Delta I_{\rm p}}{S_{\rm gen}^2\Delta t}\frac{\partial S_{\rm gen}}{\partial x_i}
+			\right) =\\
+			%
+			&= \frac{\delta D}{D_0^{(0)}}\frac{\partial D_0^{(0)}}{\partial x_i} +
+			\frac{1}{S_{\rm loss}\Delta t}\left(
+				1-\frac{\delta D^2}{\left(D_0^{(0)}\right)^2}
+			\right)\left(
+				\frac{\partial I_{\rm p}}{\partial x_i} - 
+				\frac{\Delta I_{\rm p}}{S_{\rm gen}}
+				\frac{\partial S_{\rm gen}}{\partial x_i}
+			\right).
+		\end{aligned}
+	\end{equation}
 
 	\appendix
 

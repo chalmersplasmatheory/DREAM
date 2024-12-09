@@ -1033,6 +1033,29 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     );
 
+	if (this->tracked_terms->n_re_frozen_current != nullptr) {
+		DEF_SC("scalar/frozen_D0", "Baseline diffusion coefficient in n_re-adapted frozen current mode (= radial diffusion coefficient required for RE losses to balance RE generation) [m^2 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			v[0] = this->tracked_terms->n_re_frozen_current->GetD0();
+		);
+		DEF_SC("scalar/frozen_dD", "Correction term to diffusion coefficient in n_re-adapted frozen current mode [m^2 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			v[0] = this->tracked_terms->n_re_frozen_current->GetDD();
+		);
+		DEF_SC("scalar/frozen_dIp", "Deviation of plasma current from prescribed Ip value, I_p-I_p0 [A]",
+			real_t *v = qd->StoreEmpty();
+			v[0] = this->tracked_terms->n_re_frozen_current->GetDIp();
+		);
+		DEF_SC("scalar/frozen_Sgen", "Total current generation rate due to RE generation [A s^-1]",
+			real_t *v = qd->StoreEmpty();
+			v[0] = this->tracked_terms->n_re_frozen_current->GetSgen();
+		);
+		DEF_SC("scalar/frozen_Sloss", "Total current loss rate due to RE radial losses [A s^-1]",
+			real_t *v = qd->StoreEmpty();
+			v[0] = this->tracked_terms->n_re_frozen_current->GetSloss();
+		);
+	}
+
 	if (this->tracked_terms->f_hot_kin_rates.size() > 0) {
 		DEF_HT_MUL("hottail/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
 			real_t *v = qd->StoreEmpty();
