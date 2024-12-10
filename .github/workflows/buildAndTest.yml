@@ -55,7 +55,7 @@ jobs:
       
       # Install Python packages
       - name: Install Python packages
-        run: pip3 install setuptools==75.5.0 && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc && PETSC_DIR="$(pip3 show petsc | grep Location | cut -d' ' -f2)/petsc"
+        run: pip3 install setuptools==75.5.0 && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc && export PETSC_DIR="$(pip3 show petsc | grep Location | cut -d' ' -f2)/petsc"
         
       # Download PETSc
       #- name: Download PETSc
