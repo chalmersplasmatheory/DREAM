@@ -502,9 +502,10 @@ bool SimulationGenerator::ConstructTransportTerm(
 			);
 		}
 	}
-    
+            
     return hasNonTrivialTransport;
 }
+
 
 template<class T1, class T2>
 T1 *SimulationGenerator::ConstructTransportBoundaryCondition(

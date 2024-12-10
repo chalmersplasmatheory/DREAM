@@ -251,13 +251,15 @@ class TransportCoefficientReader:
         
         # Estimate the diffusion coefficient at the representative temperature
         Drr_vrepr = t_duration_over_t_diffusion * a**2/(t_duration * x1**2)
+        
          
         # Set the p-dependent diffusion coefficient
         p_dep = self.p/(1+self.p**2)
         p_dep.reshape(1,1,1,-1)
         self.Drr = Drr_vrepr / vrepr * c * p_dep * np.ones((len(self.t), len(self.r), len(self.xi), len(self.p)))
+   
         
-        # Set islands and time before onset, if any, and append zeros to turn of the transport after the desired duration
+        # Set islands and time before onset, if any, and append zeros to turn off the transport after the desired duration
         self.setRIsland(r_island)
         self.setTBeforeOnset(t_before_onset, t_ramp)
         self.appendRemnantTransport(D0_remnant*p_dep, t_ramp)
