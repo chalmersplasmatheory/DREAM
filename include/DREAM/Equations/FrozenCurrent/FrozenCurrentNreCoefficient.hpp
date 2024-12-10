@@ -17,6 +17,8 @@ namespace DREAM {
 		RunawayFluid *REfluid = nullptr;
 		FVM::UnknownQuantityHandler *unknowns = nullptr;
 
+		real_t t_adjust = 0.01;
+
 		real_t
 			S_gen, S_loss,
 			*gamma_gen = nullptr,
@@ -32,7 +34,7 @@ namespace DREAM {
 		// Current value for D_I
 		real_t D0, dD;
 		real_t D_I = 0;
-		real_t lastDt, dIp;
+		real_t lastDt, dIp, dIohm_dt;
 
 		FVM::Operator
 			*op_n_re,
@@ -42,15 +44,15 @@ namespace DREAM {
 		FVM::DiffusionTerm *op_transport=nullptr;
 		TransportDiffusiveBC *bc_transport=nullptr;
 
-		len_t id_D_I, id_I_p, id_n_re, id_n_tot, id_n_i;
+		len_t id_D_I, id_I_p, id_n_re, id_n_tot, id_n_i, id_j_ohm;
 
-		real_t EvaluateCurrentIntegral(const real_t*);
+		real_t EvaluateCurrentIntegral(const real_t*, bool densityToCurrent=true);
 	
 	public:
 		FrozenCurrentNreCoefficient(
 			FVM::Grid*, FVM::Grid*, FVM::Interpolator1D*,
 			FVM::UnknownQuantityHandler*, RunawayFluid*,
-			RunawaySourceTermHandler*
+			RunawaySourceTermHandler*, const real_t
 		);
 		virtual ~FrozenCurrentNreCoefficient();
 

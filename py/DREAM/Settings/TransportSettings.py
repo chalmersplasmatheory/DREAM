@@ -282,7 +282,10 @@ class TransportSettings:
         self.dBB   = dBB
 
 
-    def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000, dDdt_D_max=0, D_I_floor=1e-3):
+    def setFrozenCurrentMode(
+        self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000,
+        dDdt_D_max=0, D_I_floor=1e-3, t_adjust=0.01
+    ):
         """
         Enable the frozen current mode and specify the target plasma current.
         """
@@ -304,6 +307,7 @@ class TransportSettings:
         self.frozen_current_D_I_max = D_I_max
         self.frozen_current_dDdt_D_max = dDdt_D_max
         self.frozen_current_D_I_floor = D_I_floor
+        self.frozen_current_t_adjust = t_adjust
 
 
     def setBoundaryCondition(self, bc):

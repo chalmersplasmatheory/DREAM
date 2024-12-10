@@ -15,9 +15,10 @@ using namespace DREAM;
 FrozenCurrentNreCoefficient::FrozenCurrentNreCoefficient(
 	FVM::Grid *scalarGrid, FVM::Grid *fluidGrid, FVM::Interpolator1D *I_p,
 	FVM::UnknownQuantityHandler *unknowns, RunawayFluid *REfluid,
-	RunawaySourceTermHandler *rsth
+	RunawaySourceTermHandler *rsth, const real_t t_adjust
 ) : EquationTerm(scalarGrid), fluidGrid(fluidGrid),
-	I_p_presc(I_p), REfluid(REfluid), unknowns(unknowns) {
+	I_p_presc(I_p), REfluid(REfluid), unknowns(unknowns),
+	t_adjust(t_adjust) {
 	
 	const len_t nr = fluidGrid->GetNCells();
 
@@ -26,6 +27,7 @@ FrozenCurrentNreCoefficient::FrozenCurrentNreCoefficient(
 	this->id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
 	this->id_n_tot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
 	this->id_n_i   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+	this->id_j_ohm = unknowns->GetUnknownID(OptionConstants::UQTY_J_OHM);
 
 	this->op_n_re = new FVM::Operator(fluidGrid);
 	this->op_n_tot = new FVM::Operator(fluidGrid);
@@ -83,6 +85,8 @@ void FrozenCurrentNreCoefficient::Rebuild(
 	const real_t *n_re = unknowns->GetUnknownData(this->id_n_re);
 	const real_t *n_tot = unknowns->GetUnknownData(this->id_n_tot);
 	const real_t *n_i = unknowns->GetUnknownData(this->id_n_i);
+	const real_t *j_ohm = unknowns->GetUnknownData(this->id_j_ohm);
+	const real_t *j_ohm_prev = unknowns->GetUnknownDataPrevious(this->id_j_ohm);
 
 	// Evaluate runaway source rate
 	this->op_n_re->RebuildTerms(t, dt, unknowns);
@@ -145,19 +149,22 @@ void FrozenCurrentNreCoefficient::Rebuild(
 	}
 	this->S_loss = S_loss * Constants::ec * Constants::c / (2*M_PI);*/
 	this->S_loss = EvaluateCurrentIntegral(d2ndr2);
-	this->lastDt = 0.01;
+	this->lastDt = dt;
 
 	/*if (t > 0.3450000000000001)
 		fprintf(stderr, "%.12e,%.12e\n", this->S_gen, this->S_loss);*/
 
 	// Set diffusion coefficient
-	if (S_loss > 0) {
-		this->D0 = S_gen / S_loss;
+	if (S_loss > 0 && S_gen > 0) {
+		real_t Iohm = EvaluateCurrentIntegral(j_ohm, false);
+		real_t Iohm_p = EvaluateCurrentIntegral(j_ohm_prev, false);
+		this->dIohm_dt = (Iohm - Iohm_p) / dt;
+		this->D0 = (S_gen + dIohm_dt) / S_loss;
 
 		real_t Ip = unknowns->GetUnknownData(this->id_I_p)[0];
 		this->dIp = Ip - this->I_p_presc->Eval(t)[0];
 
-		real_t x = this->dIp / (this->lastDt * S_gen);
+		real_t x = this->dIp / (this->t_adjust * S_gen);
 		this->dD = this->D0 * tanh(x);
 
 		/*if (this->dD > this->D0) {
@@ -179,7 +186,7 @@ void FrozenCurrentNreCoefficient::Rebuild(
  * weight for converting a density to a current.
  */
 real_t FrozenCurrentNreCoefficient::EvaluateCurrentIntegral(
-	const real_t *intg
+	const real_t *intg, bool densityToCurrent
 ) {
 	FVM::RadialGrid *rgrid = this->fluidGrid->GetRadialGrid();
 	const real_t *Vp = this->fluidGrid->GetVpVol();
@@ -198,7 +205,10 @@ real_t FrozenCurrentNreCoefficient::EvaluateCurrentIntegral(
 			);
 	}
 
-	return S * Constants::ec * Constants::c / (2*M_PI);
+	if (densityToCurrent)
+		return S * Constants::ec * Constants::c / (2*M_PI);
+	else
+		return S / (2*M_PI);
 }
 
 
@@ -247,7 +257,7 @@ bool FrozenCurrentNreCoefficient::SetJacobianBlock(
 		return true;
 	}
 
-	if (this->S_loss == 0 || this->D_I == 0)
+	if (this->S_loss <= 0 || this->S_gen <=0 || this->D_I == 0)
 		return false;
 	
 	const real_t *n_re = this->unknowns->GetUnknownData(this->id_n_re);
@@ -283,7 +293,10 @@ bool FrozenCurrentNreCoefficient::SetJacobianBlock(
 		contributes_loss = true;
 	if (bc_transport->AddToJacobianBlock(uqtyId, derivId, op_mat, x))
 		contributes_loss = true;
+
 	if (derivId == this->id_I_p)
+		contributes_loss = true;
+	else if (derivId == this->id_j_ohm)
 		contributes_loss = true;
 	
 	if (contributes_loss) {
@@ -316,10 +329,30 @@ bool FrozenCurrentNreCoefficient::SetJacobianBlock(
 			v += 1;
 		v /= S_loss;
 		*/
-		real_t dD0_dx = (dSgen_dx[id] - D0 * dSloss_dx[id]) / S_loss;
+		real_t dD0_dx = (
+			dSgen_dx[id] - (D0 + dIohm_dt/S_loss) * dSloss_dx[id]
+		);
+		if (derivId == this->id_j_ohm) {
+			FVM::RadialGrid *rgrid = this->fluidGrid->GetRadialGrid();
+			const real_t *Vp = this->fluidGrid->GetVpVol();
+			const real_t *dr = rgrid->GetDr();
+			const real_t *GR0 = rgrid->GetBTorG();
+			const real_t *Bmin = rgrid->GetBmin();
+			const real_t *FSA_R02OverR2 = rgrid->GetFSA_1OverR2();
+
+			real_t dIohm_dt_dx =
+				Vp[id] * dr[id]
+				* std::abs(
+					GR0[id] / Bmin[id] * FSA_R02OverR2[id]
+				) / this->lastDt;
+
+			dD0_dx += dIohm_dt_dx;
+		}
+
+		dD0_dx /= S_loss;
 		real_t T1 = dD0_dx * (1 + dD_D0);
 
-		real_t pf = 1/(S_loss * this->lastDt) * (1 - dD_D0*dD_D0);
+		real_t pf = 1/(S_loss * this->t_adjust) * (1 - dD_D0*dD_D0);
 		real_t T2 = -this->dIp / S_gen * dSgen_dx[id];
 		if (derivId == this->id_I_p)
 			T2 += 1;
