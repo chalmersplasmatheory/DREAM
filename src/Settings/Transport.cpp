@@ -79,6 +79,11 @@ void SimulationGenerator::DefineOptions_Transport(
 		"Lowest amount by which (1/D)*(dD/dt) should be limited.",
 		(real_t)1e-3
 	);
+	s->DefineSetting(
+		mod + "/" + subname + "/t_adjust",
+		"Current adjustment time scale to use for n_re-adaptive frozen current mode.",
+		(real_t)1e-2
+	);
 	DefineDataT(mod + "/" + subname, s, "I_p_presc");
 }
 
@@ -242,7 +247,7 @@ void SimulationGenerator::ConstructEquation_D_I(
 
 /**
  * Construct the equation for the frozen current coefficient 'D_I',
- * based on predicdtions of the runaway electron density.
+ * based on predictions of the runaway electron density.
  */
 FrozenCurrentNreCoefficient *SimulationGenerator::ConstructEquation_D_I_n_re(
 	EquationSystem *eqsys, Settings *s, const string& path,
@@ -262,6 +267,7 @@ FrozenCurrentNreCoefficient *SimulationGenerator::ConstructEquation_D_I_n_re(
 	);
 
 	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
+	real_t t_adjust = s->GetReal(path + "/t_adjust");
 
 	RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
 		fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
@@ -275,7 +281,7 @@ FrozenCurrentNreCoefficient *SimulationGenerator::ConstructEquation_D_I_n_re(
 	FrozenCurrentNreCoefficient *fcc =
 		new FrozenCurrentNreCoefficient(
 			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
-			eqsys->GetREFluid(), rsth
+			eqsys->GetREFluid(), rsth, t_adjust
 		);
 	eqn->AddTerm(fcc);
 	oqty_terms->n_re_frozen_current = fcc;
