@@ -179,7 +179,7 @@ namespace DREAM{
         real_t FirstRow();
         real_t SecondRow();
         real_t ThirdRow();
-        real_t Deltar(len_t ip);
+        real_t DriftRadius(len_t ip);
         
         void SetREFluid(RunawayFluid *REF) 
         { this->rf = REF; }

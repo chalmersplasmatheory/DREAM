@@ -88,6 +88,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.abl_ioniz                   = int(abl_ioniz)
         self.shift                       = int(shiftMode)
 
+        self.Ninj     = None
         self.rp       = None
         self.vp       = None
         self.xp       = None
@@ -103,7 +104,13 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.isotopesDrift = [0]
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, nbrShiftGridCell = None, TDrift = None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, Ninj=None, nbrShiftGridCell = None, TDrift = None):
+
+        if Ninj is not None:
+            if np.isscalar(Ninj):
+                self.Ninj = np.asarray([Ninj])
+            else:
+                self.Ninj = np.asarray(Ninj)
 
         if rp is not None:
             if np.isscalar(rp):
@@ -142,7 +149,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         """
         return kn(0,rp*kp)*kp**2*rp
         
-    def sampleRpDistrParksStatistical(self,N,kp):
+    def sampleRpDistrParksStatistical(self, N, kp, random=np.random):
         """
         Samples N shard radii according to the distribution function 
         given by rpDistrParksStatistical()
@@ -151,14 +158,21 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         # back to the corresponding radii at N randomly chosen points between 0 and 1
         rp_integrate=np.linspace(1e-10/kp,10/kp,5000)
         cdf=integrate.cumulative_trapezoid(y=self.rpDistrParksStatistical(rp_integrate,kp),x=rp_integrate)
-        return np.interp(np.random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
+        return np.interp(random.uniform(size=N),np.hstack((0.0,cdf)),rp_integrate)
         
-    def setRpParksStatistical(self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,  opacity_modes = None, add=True, n=1e0,
-    charged_advection_modes = None, charged_prescribed_advections = None, rChargedPrescribedAdvections = None, tChargedPrescribedAdvections = None,
-    neutral_advection_modes = None, neutral_prescribed_advections = None, rNeutralPrescribedAdvections = None, tNeutralPrescribedAdvections = None,
-    charged_diffusion_modes = None, charged_prescribed_diffusions = None, rChargedPrescribedDiffusions = None, tChargedPrescribedDiffusions = None,
-    neutral_diffusion_modes = None, neutral_prescribed_diffusions = None, rNeutralPrescribedDiffusions = None, tNeutralPrescribedDiffusions = None,
-    **kwargs):
+    def setRpParksStatistical(
+        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
+        opacity_modes=None, add=True, n=1e0, random=np.random,
+        charged_advection_modes=None, charged_prescribed_advections=None,
+        rChargedPrescribedAdvections=None, tChargedPrescribedAdvections=None,
+        neutral_advection_modes=None, neutral_prescribed_advections=None,
+        rNeutralPrescribedAdvections=None, tNeutralPrescribedAdvections=None,
+        charged_diffusion_modes=None, charged_prescribed_diffusions=None,
+        rChargedPrescribedDiffusions=None, tChargedPrescribedDiffusions=None,
+        neutral_diffusion_modes=None, neutral_prescribed_diffusions=None,
+        rNeutralPrescribedDiffusions=None, tNeutralPrescribedDiffusions=None,
+        **kwargs
+    ):
         """
         sets (or adds) nShard shards with radii distributed accordin to 
         rpDistrParksStatistical(), with the characteristic inverse shard size kp 
@@ -166,7 +180,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         settings with the appropriate molar fractions contributing to each ion species
         
         :param int nShard: Number of shards into which the pellet is shattered
-        :param float Ninj: Numbr of particles contained in the pellet
+        :param float Ninj: Number of particles contained in the pellet
         :param list Zs: List of charge numbers for every ion species the pellet consists of
         :param list isotopes: List of isotopes for every ion species the pellet consists of
         :param numpy.ndarray molarFractions: Molar fraction with which each ion species contribute
@@ -202,13 +216,22 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         solidParticleDensity=N_A/molarVolume
        
+        # Evaluate the number of injected particles
+        N = []
+        for f in molarFractions:
+            N.append(Ninj * f)
+
+        if add and self.Ninj is not None:
+            self.Ninj = np.concatenate((self.Ninj, N))
+        else:
+            self.Ninj = np.array(N)
        
         # Calculate inverse characteristic shard size
         kp=(6*np.pi**2*solidParticleDensity*nShard/Ninj)**(1/3)
         
         # Sample the shard sizes and rescale to get exactly the 
         # specified number of particles in the pellet
-        rp_init=self.sampleRpDistrParksStatistical(nShard,kp)
+        rp_init=self.sampleRpDistrParksStatistical(nShard, kp, random=random)
         Ninj_obtained=np.sum(4*np.pi*rp_init**(3)/3/molarVolume*N_A)
         rp_init*=(Ninj/Ninj_obtained)**(1/3)       
         
@@ -337,7 +360,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         else:
             self.xp=np.tile(shatterPoint,nShard)
             
-    def setShardVelocitiesUniform(self, nShard, abs_vp_mean, abs_vp_diff, alpha_max, tilt=0, t_delay = 0, nDim=2,add=True, shards=None):
+    def setShardVelocitiesUniform(
+        self, nShard, abs_vp_mean, abs_vp_diff, alpha_max, tilt=0,
+        t_delay = 0, nDim=2,add=True, shards=None, random=np.random
+    ):
         """
         Sets self.vp to a vector storing the (x,y,z)-components of nShard shard velosities,
         assuming a uniform velocity distribution over a nDim-dimensional cone whose axis
@@ -353,6 +379,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
              existing shards are cleared
         :param slice shards: indices of existing shards whose velocities should be updated. If not 'None', 
                 add is set to 'False' and nShard is set to the number of indices to be updated
+        :param random: Random number generator to use (default: numpy.random).
         """
         
         if shards is not None:
@@ -363,7 +390,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             t_delay = t_delay*np.ones(nShard)
         
         # Sample magnitude of velocities
-        abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*np.random.uniform(size=nShard)))
+        abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*random.uniform(size=nShard)))
         
         # Sample directions uniformly over a nDim-dimensional cone and set the velocity vectors
         vp_init=np.zeros(3*nShard)
@@ -373,7 +400,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             
         elif nDim==2:
             # in 2D, the cone becomes a circle sector
-            alpha=alpha_max*(-1+2*np.random.uniform(size=nShard)) + tilt
+            alpha=alpha_max*(-1+2*random.uniform(size=nShard)) + tilt
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
             vp_init[1::3]=abs_vp_init*np.sin(alpha)
             
@@ -383,10 +410,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             # becomes f(alpha)=sin(alpha)/(1-cos(alpha_max/2)). We sample from this
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
-            alpha=np.arccos(1-np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
+            alpha=np.arccos(1-random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
             
             # The angle in the yz-plane is simply drawn randomly
-            phi=2*np.pi*np.random.uniform(size=nShard)
+            phi=2*np.pi*random.uniform(size=nShard)
             
             # Finally calculate the velocity vectors
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
@@ -421,8 +448,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.t_delay = t_delay
             
     def setParamsVallhagenMSc(
-        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames, shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay = 0,
-        tilt=0, nDim=2, add=True, opacity_modes = None, nbrShiftGridCell = 0, TDrift = None, **kwargs
+        self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
+        shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay=0,
+        tilt=0, nDim=2, add=True, opacity_modes=None, nbrShiftGridCell=0,
+        TDrift=None, random=np.random, **kwargs
     ):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
@@ -430,11 +459,12 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         (available at https://hdl.handle.net/20.500.12380/302296).
         """
         
-        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, **kwargs)
+        kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, random=random, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(
             nShard=nShard, abs_vp_mean=abs_vp_mean, abs_vp_diff=abs_vp_diff,
-            alpha_max=alpha_max, tilt=tilt, t_delay=t_delay, nDim=nDim, add=add
+            alpha_max=alpha_max, tilt=tilt, t_delay=t_delay, nDim=nDim, add=add,
+            random=random
         )
         
         if add and self.nbrShiftGridCell is not None:
@@ -455,7 +485,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.TDrift = np.concatenate((self.TDrift,TDrift))
             else:
                 self.TDrift = TDrift
-            
+
         return kp
         
     def setShiftParamsPrescribed(self, shift = SHIFT_MODE_PRESCRIBED, nbrShiftGridCell=None, add=True):
@@ -482,7 +512,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.setShift(shift)
         if TDrift is not None:
             if add and self.TDrift is not None:
-                self.TDrift = np.concatenate((self.TDrift,TDrift))
+                if np.isscalar(TDrift):
+                    self.TDrift = np.concatenate((self.TDrift, [TDrift]))
+                else:
+                    self.TDrift = np.concatenate((self.TDrift, TDrift))
             else:
                 self.TDrift = TDrift
         self.T0Drift = T0Drift
@@ -606,6 +639,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.nbrShiftGridCell = data['nbrShiftGridCell']
 
         if 'init' in data:
+            if 'Ninj' in data['init']:
+                self.Ninj            = data['init']['Ninj']
             if 'rp' in data['init']:
                 self.rp              = data['init']['rp']
             if 'vp' in data['init']:
@@ -655,7 +690,6 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             'ablation': self.ablation,
             'deposition': self.deposition,
             'shift': self.shift,
-            'TDrift': self.TDrift,
             'T0Drift': self.T0Drift,
             'DeltaYDrift': self.DeltaYDrift,
             'RmDrift': self.RmDrift,
@@ -667,13 +701,14 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             'magneticFieldDependenceMode': self.magneticFieldDependenceMode,
             'abl_ioniz': self.abl_ioniz,
             'VpVolNormFactor': self.VpVolNormFactor,
-            'rclPrescribedConstant': self.rclPrescribedConstant,
-            'nbrShiftGridCell': self.nbrShiftGridCell
+            'rclPrescribedConstant': self.rclPrescribedConstant
         }
         
             
         data['init'] = {}
         
+        if self.Ninj is not None:
+            data['init']['Ninj'] = self.Ninj
         if self.rp is not None:
             data['init']['rp']=self.rp
         if self.vp is not None:
@@ -683,6 +718,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if self.t_delay is not None: 
             data['init']['t_delay']=self.t_delay
             
+        data['nbrShiftGridCell'] = self.nbrShiftGridCell
+        data['TDrift'] = self.TDrift
 
         return data
 
@@ -702,7 +739,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if self.shift == SHIFT_MODE_ANALYTICAL:
             if self.T0Drift<0: 
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
-            if any(self.TDrift)<0:
+            if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")

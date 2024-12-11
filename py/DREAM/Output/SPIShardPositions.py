@@ -17,7 +17,7 @@ class SPIShardPositions(ScalarQuantity):
         super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
         
 
-    def arrivalTime(self):
+    def arrivalTime(self, shard=None):
         """
         Estimate the time at which the pellet arrives to the plasma edge.
         """
@@ -40,10 +40,15 @@ class SPIShardPositions(ScalarQuantity):
                 return 0
 
         # Find the pellet which is travelling the fastest in the x direction
-        imax = np.argmax(np.abs(xp[1,:] - xp[0,:]))
-
-        # Roughly estimate when the fastest pellet reaches the plasma edge
-        it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,imax]))
+        if shard is None:
+            shard = np.argmax(np.abs(xp[1,:] - xp[0,:]))
+            # Roughly estimate when the fastest pellet reaches the plasma edge
+            it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,shard]))
+        else:
+            xp = xp[:,shard].reshape((xp.shape[0], 1))
+            yp = yp[:,shard].reshape((yp.shape[0], 1))
+            # Roughly estimate when the fastest pellet reaches the plasma edge
+            it_est = np.argmin(np.abs(RMinusR0[0,-1] - xp[:,0]))
 
         # Determine if the first pellet arrives before or after
         # the estimated time

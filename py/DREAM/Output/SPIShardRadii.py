@@ -75,6 +75,13 @@ class SPIShardRadii(ScalarQuantity):
             
         Vp_tot=np.sum(4*np.pi/3*(self.data[t,shards,0]*(self.data[t,shards,0]>0))**(9.0/5.0),axis=-1)
         return Vp_tot
+
+
+    def calcTotalParticles(self, shards=None, t=None):
+        """
+        Calculates the total number of particles in the specified shards.
+        """
+        return self.calcTotalVolume(shards=shards, t=t) / molarVolume * N_A
         
         
     def plotTotalVolume(self, shards=None, **kwargs):

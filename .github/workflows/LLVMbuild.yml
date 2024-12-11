@@ -44,7 +44,7 @@ jobs:
 
       # Install PETSc
       - name: Install Python packages
-        run: pip3 install setuptools==75.5.0 && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc
+        run: pip3 install setuptools==75.5.0 && pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy petsc packaging && pip3 show petsc && echo "PETSC_DIR=$(pip3 show petsc | grep Location | cut -d' ' -f2)/petsc" >> $GITHUB_ENV
       
       # Generate build files with CMake
       - name: Configure 
@@ -53,8 +53,7 @@ jobs:
         env:
           CC: mpicc -cc=clang
           CXX: mpicxx -cxx=clang++
-        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.10/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
-        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.10/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=${{ env.PETSC_DIR }} -DPETSC_EXECUTABLE_RUNS=ON
       
       - name: Examine configuration
         working-directory: ${{ github.workspace }}/build
