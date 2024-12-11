@@ -814,11 +814,14 @@ real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, r
  */
 void FluxSurfaceAverager::PrintBOfTheta(const len_t ir, const len_t N, enum fluxGridType fgt) {
 	printf("B(theta) at ir = " LEN_T_PRINTF_FMT "\n", ir);
-	for (len_t i = 0; i < N; i++)
-		printf("%.12e,", 2*M_PI * (i/((real_t)N)) - M_PI);
-	printf("\n");
+	printf("theta = [%.12e", -M_PI);
+	for (len_t i = 1; i < N; i++)
+		printf(",%.12e", 2*M_PI * (i/((real_t)N)) - M_PI);
+	printf("]\n");
 		
+	printf("B = [%.12e", BAtTheta(ir, -M_PI, fgt));
 	for (len_t i = 0; i < N; i++)
-		printf("%.12e,", BAtTheta(ir, 2*M_PI * (i/((real_t)N)) - M_PI, fgt));
-	printf("\n");
+		printf(",%.12e", BAtTheta(ir, 2*M_PI * (i/((real_t)N)) - M_PI, fgt));
+	printf("]\n");
 }
+
