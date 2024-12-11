@@ -34,7 +34,7 @@ namespace DREAM {
 		// Current value for D_I
 		real_t D0, dD;
 		real_t D_I = 0;
-		real_t lastDt, dIp, dIohm_dt;
+		real_t lastDt, dIp, dIohm_dt, IpTimescale;
 
 		FVM::Operator
 			*op_n_re,
