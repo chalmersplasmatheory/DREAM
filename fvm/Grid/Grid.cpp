@@ -454,7 +454,7 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
         //real_t VpVol = GetVpVol(ir);
         len_t np1 = GetNp1(ir);
         len_t np2 = GetNp2(ir);
-        //real_t p_max =  mg->GetP1(np1-1); // TODO: Remove?
+        real_t p_max =  mg->GetP1_f(np1); // TODO: Remove?
         avalancheCHBounceAverage[ir] = new real_t[np1*np2];        
         avalancheCHBounceAverageNegativePitch[ir] = new real_t[np1*np2]; 
         for(len_t i=0; i<np1*np2; i++){
@@ -463,8 +463,7 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
         }  
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
-                real_t p_l = mg->GetP1_f(i); // TODO: OK?
-                real_t p_u = mg->GetP1_f(i+1); // TODO: OK?
+                real_t p_i = mg->GetP1(i); // TODO: OK?
                 real_t xi_l = mg->GetP2_f(j);
                 real_t xi_u = mg->GetP2_f(j+1);
                 
@@ -480,7 +479,7 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
                 // normalize contribution with dxi in new cell
                 real_t fac = 1;//mg->GetDp2(j)/mg->GetDp2(j_tmp);// TODO: Remove?
                 //real_t Vp = this->Vp[ir][j*np1+i];
-                avalancheCHBounceAverage[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_l, p_u, /*p_max,*/ xi_l, xi_u, fgt/*, Vp, VpVol*/);
+                avalancheCHBounceAverage[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, p_max, xi_l, xi_u, fgt/*, Vp, VpVol*/);
                 // TODO: Double check this, but probably not needed
                 //avalancheCHBounceAverageNegativePitch[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_l, p_u, /*p_max,*/ xi_l, xi_u, fgt, Vp, VpVol, -1);
             }        

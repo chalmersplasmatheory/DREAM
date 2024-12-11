@@ -91,29 +91,24 @@ void AvalancheSourceCH::SetPinIndices(){
                 if (htgridWithREgrid 
                         && p_in > this->grid->GetMomentumGrid(ir)->GetP1_f(n1[ir]) 
                         && p_in < this->runawayGrid->GetMomentumGrid(ir)->GetP1_f(this->runawayGrid->GetMomentumGrid(ir)->GetNp1())){ 
-                            
-                    real_t dp = abs(p_in - this->runawayGrid->GetMomentumGrid(ir)->GetP1(0));
+                    
+                    i_in = 0;
                     for(len_t i_temp=1; i_temp<this->runawayGrid->GetMomentumGrid(ir)->GetNp1(); i_temp++){
-                        real_t dp_temp = abs(p_in - this->runawayGrid->GetMomentumGrid(ir)->GetP1(i_temp));
-                        if (dp_temp > dp){
-                            i_in = i_temp - 1;
-                            break;
+                        if (p_in > this->runawayGrid->GetMomentumGrid(ir)->GetP1_f(i_temp) ){
+                            i_in = i_temp;
                         }
-                        dp = dp_temp;
                     }
                     
                     this->pIn_Indices[ind] = i_in + n1[ir];
                     this->f_re_pIndices[i_in].push_back(i);
                     this->f_re_xiIndices[i_in].push_back(j);
                 } else if (p_in < this->grid->GetMomentumGrid(ir)->GetP1_f(n1[ir])) {
-                    real_t dp = abs(p_in - this->grid->GetMomentumGrid(ir)->GetP1(0));
+
+                    i_in = 0;
                     for(len_t i_temp=1; i_temp<n1[ir]; i_temp++){
-                        real_t dp_temp = abs(p_in - this->grid->GetMomentumGrid(ir)->GetP1(i_temp));
-                        if (dp_temp > dp){
-                            i_in = i_temp - 1;
-                            break;
+                        if (p_in > this->grid->GetMomentumGrid(ir)->GetP1_f(i_temp) ){
+                            i_in = i_temp;
                         }
-                        dp = dp_temp;
                     }
                     
                     this->pIn_Indices[ind] = i_in;
@@ -190,12 +185,6 @@ real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
         real_t S, fre, fhot;
         len_t offset = ir*n1[ir]*n2[ir];
         for (len_t ii=0; ii<n1[ir]; ii++){
-            real_t cutFactor = 1.;
-            if (this->grid->GetMomentumGrid(ir)->GetP1_f(i+1) < this->pCutoff)
-                cutFactor = 0.;
-            else if (this->grid->GetMomentumGrid(ir)->GetP1_f(i) < this->pCutoff)
-                cutFactor = (this->grid->GetMomentumGrid(ir)->GetP1_f(i+1) - pCutoff) / (this->grid->GetMomentumGrid(ir)->GetP1_f(i+1) - this->grid->GetMomentumGrid(ir)->GetP1_f(i));
-            
             for (len_t jj=0; jj<n2[ir]; jj++){
                 S = EvaluateCHSource(ir,ii,jj);
                 len_t ind = offset + n1[ir]*jj + ii;
@@ -221,7 +210,7 @@ real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
                         }
                     }
                 }
-                S_f += cutFactor * S * f_re_PAA * this->grid->GetMomentumGrid(ir)->GetDp1(ii) * this->grid->GetMomentumGrid(ir)->GetDp2(jj);
+                S_f += S * f_re_PAA * this->grid->GetMomentumGrid(ir)->GetDp1(ii) * this->grid->GetMomentumGrid(ir)->GetDp2(jj);
             }
         }
         return S_f;
@@ -261,18 +250,13 @@ real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
  * Returns the source function at (ir,i,j) differentiated with respect to the unknown x_derivId at (ir,i,j)
  */
 real_t AvalancheSourceCH::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
-    real_t cutFactor = 1.;
-    if (this->grid->GetMomentumGrid(ir)->GetP1_f(i+1) < this->pCutoff)
-        cutFactor = 0.;
-    else if (this->grid->GetMomentumGrid(ir)->GetP1_f(i) < this->pCutoff)
-        cutFactor = (this->grid->GetMomentumGrid(ir)->GetP1_f(i+1) - pCutoff) / (this->grid->GetMomentumGrid(ir)->GetP1_f(i+1) - this->grid->GetMomentumGrid(ir)->GetP1_f(i));
     if ((derivId==id_fhot && !isRunawayGrid) || (derivId==id_fre && isRunawayGrid)){
         real_t derivTerm = 0;
         len_t iter_j_gen = 0, j_gen;
         std::vector<len_t> f_xiIndices_i = f_xiIndices[ir*this->grid->GetMomentumGrid(ir)->GetNp1() + i];
         for (auto i_gen : f_pIndices[ir*this->grid->GetMomentumGrid(ir)->GetNp1() + i]) {
             j_gen = f_xiIndices_i[iter_j_gen];
-            derivTerm += cutFactor * EvaluateCHSource(ir,i_gen,j_gen) * this->grid->GetMomentumGrid(ir)->GetDp2(j) / 2.;
+            derivTerm += EvaluateCHSource(ir,i_gen,j_gen) * this->grid->GetMomentumGrid(ir)->GetDp2(j) / 2.;
             iter_j_gen++;
         }
         return derivTerm;
@@ -284,7 +268,7 @@ real_t AvalancheSourceCH::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
         std::vector<len_t> f_xiIndices_i = f_re_xiIndices[ir*this->runawayGrid->GetMomentumGrid(ir)->GetNp1() + i];
         for (auto i_gen : f_re_pIndices[ir*this->runawayGrid->GetMomentumGrid(ir)->GetNp1() + i]) {
             j_gen = f_xiIndices_i[iter_j_gen];
-            derivTerm += cutFactor * EvaluateCHSource(ir,i_gen,j_gen) * this->runawayGrid->GetMomentumGrid(ir)->GetDp2(j) / 2.;
+            derivTerm += EvaluateCHSource(ir,i_gen,j_gen) * this->runawayGrid->GetMomentumGrid(ir)->GetDp2(j) / 2.;
             iter_j_gen++;
         }
         return derivTerm;

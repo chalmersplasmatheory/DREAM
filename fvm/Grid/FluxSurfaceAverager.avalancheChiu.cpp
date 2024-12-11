@@ -9,8 +9,8 @@
  * xi0_min = RESign * sqrt((gamma - 1) / (gamma + 1) 
  *                          * (gamma_{in,max} + 1) / (gamma_{in,max} - 1))
  */
-real_t ximin(real_t gamma, /*real_t gamma_max,*/ int_t RESign){
-    return RESign*sqrt((gamma - 1) / (gamma + 1));// * (gamma_max + 1) / (gamma_max - 1));
+real_t ximin(real_t gamma, real_t gamma_max/*, int_t RESign*/){
+    return /*RESign**/sqrt((gamma - 1) / (gamma + 1) * (gamma_max + 1) / (gamma_max - 1));
 }
 
 /**
@@ -18,8 +18,8 @@ real_t ximin(real_t gamma, /*real_t gamma_max,*/ int_t RESign){
  * returns the function 
  * xi0_max = RESign * sqrt(gamma / (gamma + 1))
  */
-real_t ximax(real_t gamma, int_t RESign){
-    return RESign*sqrt(gamma / (gamma + 1));
+real_t ximax(real_t gamma/*, int_t RESign*/){
+    return /*RESign**/sqrt(gamma / (gamma + 1));
 }
 
 /*
@@ -29,24 +29,16 @@ real_t FluxSurfaceAverager::BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, re
     struct avParams *params = (struct avParams *) par;
     real_t xi0 = params->xi0;
     real_t gamma = params->gamma;
+    real_t gamma_max = params->gamma_max;
     int_t iTerm = params->iTerm;
-    int_t RESign = params->RESign;
+    real_t BminOverBmax = params->BminOverBmax;
     
-    if (RESign >= 0) {
-        if (xiOverXi0 <= 0)
-            return 0;
-        if (ximax(gamma, RESign) < xiOverXi0*abs(xi0))
-            return 0;
-        if (ximin(gamma, RESign) > xiOverXi0*abs(xi0))
-            return 0;
-    } else {
-        if (xiOverXi0 >= 0)
-            return 0;
-        if (ximax(gamma, RESign) > xiOverXi0*abs(xi0))
-            return 0;
-        if (ximin(gamma, RESign) < xiOverXi0*abs(xi0))
-            return 0;
-    }
+    if (ximax(gamma/*, 1*/) < ximin(gamma, gamma_max/*, 1*/))
+        return 0;
+    if (ximax(gamma/*, 1*/) < xiOverXi0*abs(xi0))
+        return 0;
+    if (ximin(gamma, gamma_max/*, 1*/) > xiOverXi0*abs(xi0))
+        return 0;
 
     real_t xi2 = 1. - (1. - xi0*xi0) * BOverBmin;
     real_t denom = xi2 * (gamma + 1.) - (gamma - 1.);
@@ -73,6 +65,8 @@ real_t FluxSurfaceAverager::BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, re
         default:
             throw FVMException("There is no '%d'th term in bounce average of Chiu-Harvey avalanche operator.", term);
     }
+    if ((1-xi0*xi0) > BminOverBmax)
+        return 0.5*term;
     return term;
 }
 
@@ -84,23 +78,27 @@ real_t FluxSurfaceAverager::integrandXi(real_t xi0, void *par){
     len_t ir = params->ir;
     fluxGridType fgt = params->fgt;
     real_t gamma = params->gamma;
-    //real_t gamma_max = params->gamma_max;
-    int_t RESign = params->RESign;
+    real_t gamma_max = params->gamma_max;
+    real_t BminOverBmax = params->BminOverBmax;
+    //int_t RESign = params->RESign;
     int_t iTerm = params->iTerm;
     FluxSurfaceAverager *FSA = params->FSA;
-
-    if ((RESign>=0 && xi0 < 0.) || (RESign<0 && xi0 > 0.)) { 
+    if (xi0 < 0.)
+        return 0;
+    if(xi0 < ximin(gamma, gamma_max/*, RESign*/))
+        return 0;
+    /*if ((RESign>=0 && xi0 < 0.) || (RESign<0 && xi0 > 0.)) { 
         return 0.;
     }
     if(RESign>=0){
-        if(xi0 < ximin(gamma, /*gamma_max,*/ RESign))
+        if(xi0 < ximin(gamma, gamma_max, RESign))
             return 0;
     } else {
-        if(xi0 > ximin(gamma, /*gamma_max,*/ RESign))
+        if(xi0 > ximin(gamma, gamma_max, RESign))
             return 0;
-    }
+    }*/
     
-    avParams avg_params[4] = {xi0, gamma, iTerm, RESign};
+    avParams avg_params[5] = {xi0, gamma, gamma_max, iTerm, BminOverBmax};
     real_t factor_BA = FSA->CalculatePXiBounceAverageAtP(ir, xi0, fgt, &BA_CH, avg_params);
     
     if (iTerm < 3)
@@ -111,35 +109,23 @@ real_t FluxSurfaceAverager::integrandXi(real_t xi0, void *par){
 /*
  * Integrand from discretization in momentum.
  */
-real_t FluxSurfaceAverager::integrandP(real_t p, void *par){
-    struct intPParams *params = (struct intPParams *) par;
-    len_t ir = params->ir;
-    real_t xi_l = params->xi_l;
-    real_t xi_u = params->xi_u;
-    fluxGridType fgt = params->fgt;
-    //real_t p_max = params->p_max;
-    int_t RESign = params->RESign;
-    FluxSurfaceAverager *FSA = params->FSA;
-    gsl_integration_workspace *gsl_adaptive = params->gsl_adaptive;
-    int QAG_KEY = params->QAG_KEY;
-
+real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, real_t xi_l, real_t xi_u, real_t BminOverBmax, fluxGridType fgt/*, int_t RESign*/){
     real_t gamma = sqrt(1+p*p);
-    //real_t gamma_max = sqrt(1+p_max*p_max);
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+    real_t epsabs = 0, epsrel = 1e-8, lim = gsl_ws_CH->limit, error;
     
     gsl_function int_gsl_func;
     int_gsl_func.function = &(integrandXi);
 
     real_t terms[6]; 
     for(int_t i=1; i<6; i++){
-        intXiParams intXi_params = {ir, fgt, gamma, /*gamma_max,*/ RESign, i, FSA};
+        intXiParams intXi_params = {ir, fgt, gamma, gamma_max, BminOverBmax, /*RESign, */i, this};
         int_gsl_func.params = &intXi_params;
-        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&terms[i], &error);
+        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&terms[i], &error);
     }
 
 
 
-    return p/gamma*
+    return 1/(gamma*p)*
             (4*(gamma-1)/(gamma+1)*terms[0]
               +8*terms[1]
               +4*(gamma+1)/(gamma-1)*terms[2]
@@ -231,7 +217,7 @@ real_t FluxSurfaceAverager::integrandP_passing_test(real_t p, void *par){
 
     real_t gamma = sqrt(1+p*p);
     //real_t gamma_max = sqrt(1+p_max*p_max);
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_ws_CH->limit, error;
     
     gsl_function int_gsl_func;
     int_gsl_func.function = &(integrandXi_passing_test);
@@ -239,7 +225,7 @@ real_t FluxSurfaceAverager::integrandP_passing_test(real_t p, void *par){
     real_t terms[6]; 
     for(int_t i=1; i<6; i++){
         intXiParams intXi_params = {ir, fgt, gamma, RESign, i, FSA};
-        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&terms[i], &error);
+        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&terms[i], &error);
     }
 
     return p/gamma*
@@ -269,19 +255,28 @@ real_t FluxSurfaceAverager::integrandP_passing_test(real_t p, void *par){
  *           Is used to flip the pitch of the source
  *      fgt: fluxGridType object needed for bounce averaging.
  */
-real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_l, real_t p_u, /*real_t p_max,*/ real_t xi_l, real_t xi_u,  fluxGridType fgt, /*real_t Vp, real_t VpVol,*/ int_t RESign){
+real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_max, real_t xi_l, real_t xi_u,  fluxGridType fgt/*real_t Vp, real_t VpVol,*/){
     real_t theta_Bmin=0, theta_Bmax=0;
     real_t Bmin = GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BminOverBmax;
     real_t xi_u_max, xi_l_max; 
-    real_t p_i = (p_u + p_l) / 2.;
-    real_t Delta_p = p_u - p_l;
     real_t Delta_xi = xi_u - xi_l;
     real_t xi_j = (xi_u + xi_l) / 2.;
-    real_t gamma_u = sqrt(1+p_u*p_u);
-    real_t gamma_l = sqrt(1+p_l*p_l);
+    real_t gamma_i = sqrt(1+p_i*p_i);
+    real_t gamma_max = sqrt(1+p_max*p_max);
+    //printf("\nximin=%.4f, ximax=%.4f", ximin(gamma_i, gamma_max/*, 1*/), ximax(gamma_i/*, 1*/));
+    //printf("\np=%.4f, gamma=%.4f, xi=%.4f, xi_l=%.4f, xi_u=%.4f, p_max=%.4f, gamma_max=%.4f\n",p_i, gamma_i, xi_j, xi_l, xi_u, p_max, gamma_max);
     
+    // TODO: Ok?
+    //int_t RESign = 1;
+    if (xi_j < 0){
+        real_t xi_l_temp = xi_l;
+        xi_l = -xi_u;
+        xi_u = -xi_l_temp;
+        xi_j = -xi_j;
+        //RESign = -1;
+    }
     // TODO: Dubbetänk här: var ska det vara max och var ska det vara min (0 (ingen label))?
     if(Bmin==Bmax) {
         BminOverBmax=1;
@@ -296,30 +291,30 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
         if (xi_l < 0)
             xi_l_max *= -1.;
     }
-    if(RESign>=0){
-        if( ximax(gamma_l, RESign) <= xi_l )
+    //if(RESign>=0){
+        if( ximax(gamma_i/*, RESign*/) <= xi_l )
             return 0;
-        else if( ximin(gamma_u, /*gamma_max,*/ RESign) >= xi_u_max )
+        else if( ximin(gamma_i, gamma_max/*, RESign*/) >= xi_u_max )
             return 0;
-    } else {
-        if( ximin(gamma_u, /*gamma_max,*/ RESign) <= xi_l_max )
+    /*} else {
+        if( ximin(gamma_i, gamma_max, RESign) <= xi_l_max )
             return 0;
-        else if( ximax(gamma_l, RESign) >= xi_u )
+        else if( ximax(gamma_i, RESign) >= xi_u )
             return 0;
-    }
+    }*/
     
-    
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+    /*
+    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_ws_CH->limit, error;
 
     gsl_function int_gsl_func;
     int_gsl_func.function = &(integrandP);
 
     real_t avaCH_BA; 
-    intPParams intP_params = {ir, xi_l, xi_u, fgt, /*p_max,*/ RESign, this, gsl_adaptive, QAG_KEY};
-    int_gsl_func.params = &intP_params;
-    gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&avaCH_BA, &error);
-    avaCH_BA *= 1 / (p_i*p_i * Delta_p * xi_j * Delta_xi);
-
+    intPParams intP_params = {ir, xi_l, xi_u, fgt, RESign, this, gsl_ws_CH, QAG_KEY};
+    gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&avaCH_BA, &error);
+    */
+    real_t avaCH_BA = 1 / (abs(xi_j) * Delta_xi) * integrandP(p_i, gamma_max, ir, xi_l, xi_u, BminOverBmax, fgt/*, RESign*/);
+    printf("BA=%.8e\n", avaCH_BA);
     if (avaCH_BA < 0)// TODO: remove
         printf("\nNegative BA! BA=%.4e, xi_j=%.4e\n", avaCH_BA, xi_j);
     /*
@@ -329,7 +324,7 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
 
         real_t avaCH_FVA_passing_test; 
         intPParams intP_params = {ir, fgt, xi_l, xi_u, RESign, this};
-        gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&avaCH_FVA_passing_test, &error);
+        gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&avaCH_FVA_passing_test, &error);
 
         real_t p_i  =  (p_l + p_u)  / 2.;
         real_t xi_j = (xi_l + xi_u) / 2.;
