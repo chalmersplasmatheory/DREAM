@@ -104,6 +104,7 @@ class TransportSettings:
         self.frozen_current_D_I_max = 1000
         self.frozen_current_dDdt_D_max = 0
         self.frozen_current_D_I_floor = 1e-3
+        self.frozen_current_t_adjust = 0.01
 
         self.boundarycondition = BC_CONSERVATIVE
 
@@ -456,6 +457,8 @@ class TransportSettings:
         if 'I_p_presc' in data:
             self.frozen_current_Ip_presc = data['I_p_presc']['x']
             self.frozen_current_Ip_presc_t = data['I_p_presc']['t']
+        if 't_adjust' in data:
+            self.frozen_current_t_adjust = float(data['t_adjust'])
 
 
     def todict(self):
@@ -557,6 +560,7 @@ class TransportSettings:
         data['D_I_max'] = self.frozen_current_D_I_max
         data['dDdt_D_max'] = self.frozen_current_dDdt_D_max
         data['D_I_floor'] = self.frozen_current_D_I_floor
+        data['t_adjust'] = self.frozen_current_t_adjust
         if self.frozen_current_Ip_presc is not None:
             data['I_p_presc'] = {
                 'x': self.frozen_current_Ip_presc,
