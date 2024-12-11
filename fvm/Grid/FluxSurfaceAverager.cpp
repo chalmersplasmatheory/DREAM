@@ -819,7 +819,7 @@ void FluxSurfaceAverager::PrintBOfTheta(const len_t ir, const len_t N, enum flux
 		printf(",%.12e", 2*M_PI * (i/((real_t)N)) - M_PI);
 	printf("]\n");
 		
-	printf("B = [%.12e", BAtTheta(ir, -M_PI, fgt));
+	printf("B     = [%.12e", BAtTheta(ir, -M_PI, fgt));
 	for (len_t i = 0; i < N; i++)
 		printf(",%.12e", BAtTheta(ir, 2*M_PI * (i/((real_t)N)) - M_PI, fgt));
 	printf("]\n");
