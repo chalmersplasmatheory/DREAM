@@ -336,7 +336,8 @@ enum eqterm_compton_mode {
 enum eqterm_frozen_current_mode {
 	EQTERM_FROZEN_CURRENT_MODE_DISABLED=1,			// Disable the frozen current mode transport
 	EQTERM_FROZEN_CURRENT_MODE_CONSTANT=2,			// Assume momentum-independent radial transport
-	EQTERM_FROZEN_CURRENT_MODE_BETAPAR=3			// Assume v_|| scaling of radial transport
+	EQTERM_FROZEN_CURRENT_MODE_BETAPAR=3,			// Assume v_|| scaling of radial transport
+	EQTERM_FROZEN_CURRENT_MODE_N_RE=4				// Predict diffusion coefficient based on n_re
 };
 
 enum eqterm_transport_bc {
