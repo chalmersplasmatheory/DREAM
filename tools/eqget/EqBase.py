@@ -444,7 +444,7 @@ class EqBase:
         self.ff_prime = InterpolatedUnivariateSpline(psi_n, data["ffprime"])
         self.q        = InterpolatedUnivariateSpline(psi_n, data["q"])
         self.pressure = InterpolatedUnivariateSpline(psi_n, data["p"])
-        self.p_prime  = self.pressure.derivative()
+        self.p_prime  = InterpolatedUnivariateSpline(psi_n, data["pprime"])
 
         self.R0 = data['raxis']
         self.Z0 = data['zaxis']
