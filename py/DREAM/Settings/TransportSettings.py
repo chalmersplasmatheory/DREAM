@@ -28,7 +28,7 @@ FROZEN_CURRENT_MODE_BETAPAR = 3
 
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
-BC_DF_CONST = 3         # Assume that df/dr is constant on the plasma boundary
+BC_DF_CONST = 3         # Assume that df/dr is constant on the plasma boundary 
 
 
 class TransportSettings:

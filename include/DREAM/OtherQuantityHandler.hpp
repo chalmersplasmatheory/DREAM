@@ -36,6 +36,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -50,6 +51,7 @@ namespace DREAM {
             DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
+            DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -96,6 +98,8 @@ namespace DREAM {
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
             // List of approximated RE impact ionization rates for teach ion species
             std::vector<IonFluidRunawayIonizationTerm*> n_re_kin_rates;
+
+            
         };
 
     protected:
