@@ -130,7 +130,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     bool parallel_losses = s->GetBool(MODULENAME "/halo_region_losses");
     if (parallel_losses) {
-        ParallelHeatLossTerm* Par = new ParallelHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
+        HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
         oqty_terms->T_cold_halo = Par;
         Op1->AddTerm(Par); // Add the term for parallel losses
     }

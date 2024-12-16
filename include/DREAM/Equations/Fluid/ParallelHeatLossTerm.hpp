@@ -1,5 +1,5 @@
-#ifndef _DREAM_EQUATION_FLUID_PARALLEL_HEAT_LOSS_TERM_HPP
-#define _DREAM_EQUATION_FLUID_PARALLEL_HEAT_LOSS_TERM_HPP
+#ifndef _DREAM_EQUATION_FLUID_HALO_REGION_HEAT_LOSS_TERM_HPP
+#define _DREAM_EQUATION_FLUID_HALO_REGION_HEAT_LOSS_TERM_HPP
 
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
@@ -8,7 +8,7 @@
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 
 namespace DREAM {
-    class ParallelHeatLossTerm : public FVM::DiagonalComplexTerm {
+    class HaloRegionHeatLossTerm : public FVM::DiagonalComplexTerm {
     private:
     
         FVM::UnknownQuantityHandler *unknowns;
@@ -52,16 +52,16 @@ namespace DREAM {
         
     public:
     
-        ParallelHeatLossTerm(
+        HaloRegionHeatLossTerm(
 			FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
             real_t, bool userGivenPsiEdge_t0=0,
 			real_t PsiEdge_t0=0
 		);
-        ~ParallelHeatLossTerm();
+        ~HaloRegionHeatLossTerm();
         // USES REBUILD, SETVECTORELEMENT, SETJACOBIANBLOCK FROM PARENT CLASSES
         
         virtual bool GridRebuilt() override;
-        virtual const real_t *GetParallelHeatLossWeights();
+        virtual const real_t *GetHaloRegionHeatLossWeights();
     
     };
 }

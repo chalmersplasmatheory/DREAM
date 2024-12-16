@@ -11,7 +11,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ParallelHeatLossTerm::ParallelHeatLossTerm(
+HaloRegionHeatLossTerm::HaloRegionHeatLossTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, IonHandler *ions,
     real_t sf, bool userGivenPsiEdge_t0, real_t PsiEdge_t0
 ) : FVM::DiagonalComplexTerm(grid, unknowns, grid),
@@ -19,7 +19,7 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
     userGivenPsiEdge_t0(userGivenPsiEdge_t0), psi_edge_t0(PsiEdge_t0), 
     id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)){
 
-    SetName("ParallelHeatLossTerm");
+    SetName("HaloRegionHeatLossTerm");
     this->rGrid = grid->GetRadialGrid();
     this->GridRebuilt();
 
@@ -49,7 +49,7 @@ ParallelHeatLossTerm::ParallelHeatLossTerm(
 /**
  * Destructor
  */
-ParallelHeatLossTerm::~ParallelHeatLossTerm(){
+HaloRegionHeatLossTerm::~HaloRegionHeatLossTerm(){
     Deallocate();
 
 }           
@@ -59,7 +59,7 @@ ParallelHeatLossTerm::~ParallelHeatLossTerm(){
  * Called after the grid is rebuilt; (re)allocates memory
  * for all quantities
  */
-bool ParallelHeatLossTerm::GridRebuilt(){
+bool HaloRegionHeatLossTerm::GridRebuilt(){
 
     this->DiagonalComplexTerm::GridRebuilt();
     Deallocate();
@@ -73,7 +73,7 @@ bool ParallelHeatLossTerm::GridRebuilt(){
 * Find current radial point of last closed flux surface
 * and find psi_edge_t0 if not provided in input
 */
-void ParallelHeatLossTerm::FindRadiusOfLCFS(){
+void HaloRegionHeatLossTerm::FindRadiusOfLCFS(){
     
     if(this->userGivenPsiEdge_t0 == 0) {
         
@@ -92,7 +92,7 @@ void ParallelHeatLossTerm::FindRadiusOfLCFS(){
     if(this->signFixed == false) { 
         real_t psi_mid_init = unknowns->GetUnknownInitialData(id_psi)[0];
         real_t psi_edge_init = unknowns->GetUnknownInitialData(id_psi)[nr-1];
-        if(psi_mid_init-psi_edge_init > 0) { this->sign = 1; }
+        if(psi_mid_init-psi_edge_init > 0)  this->sign = 1; 
         this->signFixed = true;
     }
     
@@ -103,14 +103,14 @@ void ParallelHeatLossTerm::FindRadiusOfLCFS(){
             exists = true;
         }
     }
-    if ( exists == false ) { this->ir_LCFS = -1; } // No flux surface is closed
+    if ( exists == false )  this->ir_LCFS = -1;  // No flux surface is closed
 }
 
 
 /**
 * Difference between psi_p at ir+1/2 and the edge psi_p
 */
-real_t ParallelHeatLossTerm::PsiDiff(len_t ir){
+real_t HaloRegionHeatLossTerm::PsiDiff(len_t ir){
     // Interpolate (extrapolate for ir=0) psi for estimate of psi at inner 
     // radial grid cell wall of current grid cell
     real_t psi_f = InterpolatePsi(ir); 
@@ -122,7 +122,7 @@ real_t ParallelHeatLossTerm::PsiDiff(len_t ir){
 * Interpolate flux between ir:s to get psi at radial grid cell walls 
 * (Doesn't work for nr=1, add warning / if...else... with old condition in PsiDiff?)
 */
-real_t ParallelHeatLossTerm::InterpolatePsi(len_t jr){
+real_t HaloRegionHeatLossTerm::InterpolatePsi(len_t jr){
 
     // jr index for grid cell walls
     len_t ir_j; // Helper index, lowest ir for which to find psi 
@@ -131,7 +131,8 @@ real_t ParallelHeatLossTerm::InterpolatePsi(len_t jr){
     } else {
         ir_j = jr-1;
     }
-    
+    if (nr==1)
+		throw DREAMException("ParallelHeatLossTerm: the halo region loss term requires nr > 1");
     // Need special solution if nr=1(0)?
     real_t Rlow = this->rGrid->GetR(ir_j);
     real_t Rhigh = this->rGrid->GetR(ir_j+1);
@@ -148,7 +149,7 @@ real_t ParallelHeatLossTerm::InterpolatePsi(len_t jr){
 /**
 * Currently a step function at ir_LCFS, could be changed to continuous
 */
-real_t ParallelHeatLossTerm::StepFunction(len_t ir){
+real_t HaloRegionHeatLossTerm::StepFunction(len_t ir){
     if ((int_t)ir > this->ir_LCFS) { 
         return 1.; 
     } else { 
@@ -160,15 +161,13 @@ real_t ParallelHeatLossTerm::StepFunction(len_t ir){
 /** 
 * SETWEIGHTS: Needed for DiagonalTerm, defined similar to AvalancheGrowthTerm 
 */
-void ParallelHeatLossTerm::SetWeights() {
+void HaloRegionHeatLossTerm::SetWeights() {
     FindRadiusOfLCFS(); // Find ir_LCFS
     const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
 	
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
     real_t *N_i = unknowns->GetUnknownData(id_N_i); 
     real_t *W_i = unknowns->GetUnknownData(id_W_i); 
-
-
 
     for (len_t ir = 0; ir < nr; ir++) {
 	   	real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
@@ -179,12 +178,10 @@ void ParallelHeatLossTerm::SetWeights() {
         this->weights[ir] =  StepFunction(ir) * 2. / 3. * kappa  * sqrt((T_e + gamma * T_i) / m_i) / (M_PI * qR0); 
     }
 }
-
-
 /**
  * SETDIFFWEIGHTS: Needed for DiagonalComplexTerm
  */
-void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
+void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     // Retrieve necessary arrays from the unknowns handler
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold);
     real_t *W_i = unknowns->GetUnknownData(id_W_i);
@@ -229,7 +226,7 @@ void ParallelHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
 /**
 * Return the weights on the radial grid
 */
-const real_t* ParallelHeatLossTerm::GetParallelHeatLossWeights(){
+const real_t* HaloRegionHeatLossTerm::GetHaloRegionHeatLossWeights(){
     return this->HeatLoss;
 }
 
@@ -237,8 +234,8 @@ const real_t* ParallelHeatLossTerm::GetParallelHeatLossWeights(){
 /**
 * Deallocate HeatLoss
 */
-void ParallelHeatLossTerm::Deallocate(){
-    if(this->HeatLoss != nullptr){ delete [] this->HeatLoss; }
+void HaloRegionHeatLossTerm::Deallocate(){
+    if(this->HeatLoss != nullptr) delete [] this->HeatLoss; 
 }
 
 

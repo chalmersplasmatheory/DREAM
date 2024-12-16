@@ -51,7 +51,7 @@ namespace DREAM {
             DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
-            DREAM::ParallelHeatLossTerm *T_cold_halo=nullptr;
+            DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
