@@ -36,7 +36,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
-#include "DREAM/Equations/Fluid/ParallelHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {

@@ -3,7 +3,7 @@
  */
 
 #include "DREAM/DREAMException.hpp"
-#include "DREAM/Equations/Fluid/ParallelHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
 using namespace DREAM;
@@ -132,7 +132,7 @@ real_t HaloRegionHeatLossTerm::InterpolatePsi(len_t jr){
         ir_j = jr-1;
     }
     if (nr==1)
-		throw DREAMException("ParallelHeatLossTerm: the halo region loss term requires nr > 1");
+		throw DREAMException("HaloRegionHeatLossTerm: the halo region loss term requires nr > 1");
     // Need special solution if nr=1(0)?
     real_t Rlow = this->rGrid->GetR(ir_j);
     real_t Rhigh = this->rGrid->GetR(ir_j+1);

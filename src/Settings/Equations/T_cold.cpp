@@ -19,7 +19,7 @@
 #include "DREAM/Equations/Fluid/ElectronHeatTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/Equations/Fluid/ParallelHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 
 
 using namespace DREAM;
