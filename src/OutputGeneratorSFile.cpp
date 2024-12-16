@@ -89,6 +89,8 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     // Volume elements
     const real_t *VpVol = this->fluidGrid->GetVpVol();
     this->sf->WriteList(group + "VpVol", VpVol, nr);
+	const real_t *VpVol_f = this->fluidGrid->GetVpVol_f();
+	this->sf->WriteList(group + "VpVol_f", VpVol_f, nr+1);
 
     // Plasma size
     const real_t R0 = rgrid->GetR0();
