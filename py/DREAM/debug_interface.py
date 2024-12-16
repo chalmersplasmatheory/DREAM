@@ -71,7 +71,7 @@ def plotConvergenceOutput(do):
 
         Delta = np.abs((u.data[:]/ u.data[-1,:])-1)
 
-        v = np.sum(Delta, axis=tuple(range(1,u.data.ndim))) / retol
+        v = np.sum(Delta, axis=tuple(range(1,u.data.ndim))) / reltol
         l, = ax.semilogy(do.grid.t, v, label=uname)
         lines.append(l)
 
