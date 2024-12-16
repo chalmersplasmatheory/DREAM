@@ -19,6 +19,7 @@
 #include "DREAM/Equations/Fluid/ElectronHeatTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 
 
 using namespace DREAM;
@@ -27,6 +28,7 @@ using namespace DREAM;
 #define MODULENAME "eqsys/T_cold"
 #define MODULENAME_SPI "eqsys/spi"
 #define MODULENAME_ION "eqsys/n_i"
+#define MODULENAME_NRE "eqsys/n_re"
 
 
 /**
@@ -35,7 +37,7 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-
+    s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
@@ -121,6 +123,19 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
+
+    // Check if halo region heat losses should be included
+    bool lcfs_user_input_psi = (len_t)s->GetInteger(MODULENAME_NRE  "/lcfs_user_input_psi");
+	real_t lcfs_psi_edge_t0 = s->GetReal(MODULENAME_NRE "/lcfs_psi_edge_t0");
+
+    bool parallel_losses = s->GetBool(MODULENAME "/halo_region_losses");
+    if (parallel_losses) {
+        HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
+        oqty_terms->T_cold_halo = Par;
+        Op1->AddTerm(Par); // Add the term for parallel losses
+    }
+
+
     oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
 

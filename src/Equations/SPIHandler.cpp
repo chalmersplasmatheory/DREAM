@@ -164,11 +164,13 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
                     solidDensity=solidDensityList[i];
                 }
             }
-            for(len_t i=0;i<nZavgDrift;i++){
-                if(Z[iZ]==ZsDrift[i] && isotopes[iZ]==isotopesDrift[i]){
-                    ZavgDriftList=ZavgDriftArray[i];
-                }
-            }
+			if (spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL) {
+				for(len_t i=0;i<nZavgDrift;i++){
+					if(Z[iZ]==ZsDrift[i] && isotopes[iZ]==isotopesDrift[i]){
+						ZavgDriftList=ZavgDriftArray[i];
+					}
+				}
+			}
             for(len_t ip=0;ip<nShard;ip++){
 		        pelletMolarMass[ip]+=molarMass*molarFraction[offset+ip];
 		        pelletMolarVolume[ip]+=molarMass/solidDensity*molarFraction[offset+ip];
@@ -214,8 +216,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	    for(len_t ip=0;ip<nShard;ip++){
 	        this->nbrShiftGridCellPrescribed[ip] = nbrShiftGridCell[ip];
         }
-	
-		delete [] nbrShiftGridCell;
 	}
 
 	delete [] ZsDrift;
@@ -272,6 +272,11 @@ void SPIHandler::AllocateQuantities(){
     ZavgDrift=new real_t[nShard];
     plasmoidAbsorbtionFactor=new real_t[nShard];
     cosThetaDrift = new real_t[nShard];
+
+	for (len_t ip = 0; ip < nShard; ip++) {
+		nbrShiftGridCell[ip] = 0;
+		shift_store[ip] = 0;
+	}
 }
 
 /**
@@ -409,9 +414,9 @@ real_t SPIHandler::Epsiloni(real_t a, real_t b){
         F.function = &Integrand;
         F.params = &paramstruct;
         if (b>0){
-            gsl_integration_qags(&F, 0, b, 0, 1e-7, 1000, workspace, &sum, &error);
+            gsl_integration_qags(&F, 0, b, 1e-7, 1e-7, 1000, workspace, &sum, &error);
         }else{
-            gsl_integration_qags(&F, b, 0, 0, 1e-7, 1000, workspace, &sum, &error);
+            gsl_integration_qags(&F, b, 0, 1e-7, 1e-7, 1000, workspace, &sum, &error);
             sum = -sum;
         }
         gsl_integration_workspace_free(workspace);
@@ -476,18 +481,24 @@ real_t SPIHandler::ThirdRow(){
 }
 
 // Function to collect all terms to evaluate equation A4
-real_t SPIHandler::Deltar(len_t ip){
+real_t SPIHandler::DriftRadius(len_t ip){
     real_t first = FirstRow();
     real_t second = SecondRow();
     real_t third = ThirdRow();
     real_t term1 = vLabInitDrift * tAccDrift;
     real_t factor = (1+ZavgDrift[ip])*2*qe*TDrift[ip]*qBgDrift/(CSTDrift*pelletMolarMass[ip]/N_Avogadro)*tAccDrift;
-    return (term1 + factor * (first + second + third))*cosThetaDrift[ip];
-    // Factor cosThetaDrift is not included in the reference paper, but is included here
-    // to correct the projection onto the radial coordinates for shards which are not on the outboard midplane.
-    // Note, however, that we do not account for that this angular coordinate, and also not the background 
-    // plasma parameters at the location of the plasmoid, changes during the drift motion, so this is only approximate!
-    // (accounting for this would require a much more complicated model than this simple analytical expression)
+
+	real_t DeltaR = (term1 + factor * (first + second + third));
+
+	real_t xpDrift = this->xp[ip*3] + DeltaR*cos(this->phiCoordPNext[ip]);
+	real_t ypDrift = this->xp[ip*3+1];
+	real_t zpDrift = this->xp[ip*3+2] + DeltaR*sin(this->phiCoordPNext[ip]);
+
+	// Locate flux surface to which the pellet drifts
+	real_t r=0, theta=0, phi=0;
+	this->rGrid->GetRThetaPhiFromCartesian(&r, &theta, &phi, xpDrift, ypDrift, zpDrift, 0.01, hypot(xpDrift, zpDrift));
+
+    return r;
 }
 
 /**
@@ -653,9 +664,9 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                         AssignShardSpecificDriftParameters(ip);
                         AssignDriftComputationParameters(ip);
                         AssignDriftTimeParameters(ip);
-                        shift_r[ip] = Deltar(ip);
+                        shift_r[ip] = DriftRadius(ip);
                         nbrShiftGridCell[ip] = CalculateDriftIrp(ip, shift_r[ip]);// Negative if shift is towards smaller radii
-                        shift_store[ip] = shift_r[ip];
+                        shift_store[ip] = shift_r[ip] - rCoordPNext[ip];
                     }else{
                         nbrShiftGridCell[ip]=0;
                         shift_store[ip]=0;
@@ -900,14 +911,13 @@ void SPIHandler::CalculateIrp(){
 * Function used to calculate the number of grid cells to shift the deposition due to the drift
 * (the shift is only made in integer steps of the radial resolution)
 * ip: shard index
-* shift: the radial shift to be made (exact, not necessarilly an integer of radial grid cells), sign included
+* radius: the (minor) radial coordinate of the shifted shard (exact, not necessarily an integer of radial grid cells)
 */
-int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t shift){
-    for(len_t ir=0; ir<nr;ir++){
-        if(abs(rCoordPNext[ip] + shift)<rGrid->GetR_f(ir+1) && abs(rCoordPNext[ip] + shift)>rGrid->GetR_f(ir)){
-            return (int_t)ir - (int_t)irp[ip];
-        }
-    }
+int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t radius) {
+    for(len_t ir=0; ir<nr;ir++)
+        if ((std::abs(radius) < rGrid->GetR_f(ir+1)) && (std::abs(radius) > rGrid->GetR_f(ir)))
+            return (int_t)ir - (int_t)this->irp[ip];
+
     return nr;
 }
 
