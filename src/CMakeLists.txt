@@ -85,6 +85,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HaloRegionHeatLossTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SvenssonTransport.cpp"
@@ -116,6 +117,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
+    
 )
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/AnalyticDistribution.hpp"
