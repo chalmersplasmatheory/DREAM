@@ -111,7 +111,7 @@ real_t FluxSurfaceAverager::integrandXi(real_t xi0, void *par){
  */
 real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, real_t xi_l, real_t xi_u, real_t BminOverBmax, fluxGridType fgt/*, int_t RESign*/){
     real_t gamma = sqrt(1+p*p);
-    real_t epsabs = 0, epsrel = 1e-8, lim = gsl_ws_CH->limit, error;
+    real_t epsabs = 0, epsrel = 1e-5, lim = gsl_ws_CH->limit, error;
     
     gsl_function int_gsl_func;
     int_gsl_func.function = &(integrandXi);
@@ -120,7 +120,7 @@ real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, rea
     for(int_t i=1; i<6; i++){
         intXiParams intXi_params = {ir, fgt, gamma, gamma_max, BminOverBmax, /*RESign, */i, this};
         int_gsl_func.params = &intXi_params;
-        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&terms[i], &error);
+        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,GSL_INTEG_GAUSS61,gsl_ws_CH,&terms[i], &error);
     }
 
 
@@ -266,7 +266,7 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
     real_t gamma_i = sqrt(1+p_i*p_i);
     real_t gamma_max = sqrt(1+p_max*p_max);
     //printf("\nximin=%.4f, ximax=%.4f", ximin(gamma_i, gamma_max/*, 1*/), ximax(gamma_i/*, 1*/));
-    //printf("\np=%.4f, gamma=%.4f, xi=%.4f, xi_l=%.4f, xi_u=%.4f, p_max=%.4f, gamma_max=%.4f\n",p_i, gamma_i, xi_j, xi_l, xi_u, p_max, gamma_max);
+    printf("\np=%.4f, gamma=%.4f, xi=%.4f, xi_l=%.4f, xi_u=%.4f, p_max=%.4f, gamma_max=%.4f\n",p_i, gamma_i, xi_j, xi_l, xi_u, p_max, gamma_max);
     
     // TODO: Ok?
     //int_t RESign = 1;
@@ -296,12 +296,15 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
             return 0;
         else if( ximin(gamma_i, gamma_max/*, RESign*/) >= xi_u_max )
             return 0;
+        else if ( ximax(gamma_i/*, RESign*/) < ximin(gamma_i, gamma_max/*, RESign*/))
+            return 0;
     /*} else {
         if( ximin(gamma_i, gamma_max, RESign) <= xi_l_max )
             return 0;
         else if( ximax(gamma_i, RESign) >= xi_u )
             return 0;
     }*/
+
     
     /*
     real_t epsabs = 0, epsrel = 1e-4, lim = gsl_ws_CH->limit, error;
@@ -313,8 +316,10 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
     intPParams intP_params = {ir, xi_l, xi_u, fgt, RESign, this, gsl_ws_CH, QAG_KEY};
     gsl_integration_qag(&int_gsl_func,p_l,p_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&avaCH_BA, &error);
     */
+
+    
     real_t avaCH_BA = 1 / (abs(xi_j) * Delta_xi) * integrandP(p_i, gamma_max, ir, xi_l, xi_u, BminOverBmax, fgt/*, RESign*/);
-    printf("BA=%.8e\n", avaCH_BA);
+    printf("BA=%.8e\n\n", avaCH_BA);
     if (avaCH_BA < 0)// TODO: remove
         printf("\nNegative BA! BA=%.4e, xi_j=%.4e\n", avaCH_BA, xi_j);
     /*
