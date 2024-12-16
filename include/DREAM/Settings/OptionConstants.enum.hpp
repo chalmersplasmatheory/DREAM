@@ -333,6 +333,16 @@ enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_KINETIC=3,                  // Kinetic Compton source
 };
 
+enum eqterm_transport_type {
+	EQTERM_TRANSPORT_NONE=1,						// No transport
+	EQTERM_TRANSPORT_PRESCRIBED=2,					// Prescribed advection-diffusion coefficient(s)
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH=3,		// Diffusive transport with a Rechester-Rosenbluth coefficient
+	EQTERM_TRANSPORT_SVENSSON=4,					// Svensson transport model (only n_re)
+	EQTERM_TRANSPORT_FROZEN_CURRENT=5,				// Frozen current transport (only n_re)
+	EQTERM_TRANSPORT_MHD_LIKE=6,					// MHD-like adaptive transport (n_re and T_cold)
+	EQTERM_TRANSPORT_MHD_LIKE_LOCAL=7				// MHD-like adaptive transport, applied locally (n_re and T_cold)
+};
+
 enum eqterm_frozen_current_mode {
 	EQTERM_FROZEN_CURRENT_MODE_DISABLED=1,			// Disable the frozen current mode transport
 	EQTERM_FROZEN_CURRENT_MODE_CONSTANT=2,			// Assume momentum-independent radial transport
@@ -350,6 +360,13 @@ enum eqterm_ionization_mode {                       // Ionization is modelled wi
     EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
     EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
     EQTERM_IONIZATION_MODE_FLUID_RE=4,              // approximation of the kinetic ionization rate assuming a mono-energetic RE distribution at 20mc, can be used in both fluid and kinetic mode
+};
+
+enum eqterm_hyperresistivity_mode {
+	EQTERM_HYPERRESISTIVITY_MODE_NEGLECT=1,			// No hyper-resistive term
+	EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED=2,		// Hyper-resistive term with prescribed diffusion coefficient Lambda = Lambda(t,r)
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE=3,		// Hyper-resistive term with adaptive diffusion coefficient
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL=4 	// Hyper-resistive term with adaptive diffusion coefficient, applied locally
 };
 
 enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source)
@@ -420,7 +437,8 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
 enum eqterm_lcfs_loss_mode {                        // Loss term
     EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
     EQTERM_LCFS_LOSS_MODE_FLUID = 2,
-    EQTERM_LCFS_LOSS_MODE_KINETIC = 3};
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3
+};
 
 enum eqterm_tritium_mode {                        // Tritium generation is...
     EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
