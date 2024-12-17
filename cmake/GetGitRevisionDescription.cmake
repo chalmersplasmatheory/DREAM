@@ -167,3 +167,35 @@ function(git_local_changes _var)
 	endif()
 endfunction()
 
+function(git_time _var)
+	if (NOT GIT_FOUND)
+		find_package(Git QUIET)
+	endif()
+	get_git_head_revision(refspec hash)
+	if (NOT GIT_FOUND)
+		set(${_var} "GIT-NOTFOUND" PARENT_SCOPE)
+		return()
+	endif()
+	if (NOT hash)
+		set(${_var} "HEAD-HASH-NOTFOUND" PARENT_SCOPE)
+		return()
+	endif()
+
+	execute_process(COMMAND
+		"${GIT_EXECUTABLE}"
+		show --no-patch --format=%ci HEAD --
+		WORKING_DIRECTORY
+		"${CMAKE_CURRENT_SOURCE_DIR}"
+		RESULT_VARIABLE
+		res
+		OUTPUT_VARIABLE
+		out
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (res EQUAL 0)
+		set(${_var} "${out}" PARENT_SCOPE)
+	else ()
+		set(${_var} "NO-DATE" PARENT_SCOPE)
+	endif ()
+endfunction()
+

@@ -44,6 +44,8 @@ check_petsc_requires_mpi(PETSC_WITH_MPI)
 # Get git commit hash
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+git_local_changes(GIT_HAS_CHANGES)
+git_time(GIT_TIME)
 
 # Generate 'config.h'
 configure_file(
