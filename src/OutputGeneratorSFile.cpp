@@ -3,6 +3,7 @@
  * SFile object.
  */
 
+#include <ctime>
 #include <string>
 #include <DREAM/IO.hpp>
 #include "DREAM/OutputGeneratorSFile.hpp"
@@ -67,6 +68,21 @@ void OutputGeneratorSFile::SaveCodeInfo(const std::string& name) {
 	
 	// Commit hash
 	sf->WriteString(group + "commit", DREAM_GIT_SHA1);
+
+	// Refspec
+	sf->WriteString(group + "refspec", DREAM_GIT_REFSPEC);
+
+	// Status of changes
+	sf->WriteString(group + "changes", DREAM_GIT_HAS_CHANGES);
+
+	// Time of commit
+	sf->WriteString(group + "datetime_commit", DREAM_GIT_TIME);
+
+	// Current date and time
+	char ts[26];
+	time_t now = time({});
+	if (strftime(data(ts), 26, "%F %T %z", localtime(&now)))
+		sf->WriteString(group + "datetime_simulation", ts);
 }
 
 

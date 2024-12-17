@@ -11,6 +11,7 @@ import pathlib
 from .helpers import merge_dicts
 
 from .DREAMSettings import DREAMSettings
+from .Output.Code import Code
 from .Output.EquationSystem import EquationSystem
 from .Output.Grid import Grid
 from .Output.IonMetaData import IonMetaData
@@ -39,6 +40,7 @@ class DREAMOutput:
         """
 
         # Default
+        self.code = None
         self.eqsys = None
         self.grid = None
         self.ionmeta = None
@@ -136,6 +138,10 @@ class DREAMOutput:
         # and more)
         if 'other' in od:
             self.other = OtherQuantityHandler(od['other'], grid=self.grid, output=self)
+
+        # Code information
+        if 'code' in od:
+            self.code = Code(od['code'], output=self)
 
         # Load settings for the run
         if 'settings' in od and loadsettings:
