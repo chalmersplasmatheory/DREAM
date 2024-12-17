@@ -54,6 +54,23 @@ void OutputGeneratorSFile::Save(bool current) {
 
 
 /**
+ * Save info about the code that generated the output file.
+ */
+void OutputGeneratorSFile::SaveCodeInfo(const std::string& name) {
+	this->sf->CreateStruct(name);
+
+	string group;
+	if (name.back() == '/')
+		group = name;
+	else
+		group = name + "/";
+	
+	// Commit hash
+	sf->WriteString(group + "commit", DREAM_GIT_SHA1);
+}
+
+
+/**
  * Save grid data.
  *
  * name:    Name of section under which the grid data should be saved.
