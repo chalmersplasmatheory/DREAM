@@ -245,6 +245,8 @@ void OtherQuantityHandler::DefineQuantities() {
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+	#define DEF_FL_T(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t t, QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_FL_MUL(NAME, MUL, DESC, FUNC) \
@@ -429,6 +431,22 @@ void OtherQuantityHandler::DefineQuantities() {
 
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
+
+	DEF_FL_T("fluid/tIoniz", "Estimate of the ionization time scale (as used by the adaptive ionization time stepper) [s]",
+		real_t *n = this->unknowns->GetUnknownData(this->id_ncold);
+		real_t *np = this->unknowns->GetUnknownDataPrevious(this->id_ncold);
+		real_t tp = this->unknowns->GetUnknownDataPreviousTime(this->id_ncold);
+		real_t dt = t - tp;
+
+		real_t *vec = qd->StoreEmpty();
+		for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++) {
+			real_t dn = n[ir] - np[ir];
+			if (dn != 0)
+				vec[ir] = std::abs(dt * np[ir] / dn);
+			else
+				vec[ir] = std::numeric_limits<real_t>::infinity();
+		}
+	);
 
     // Hyperresistive parameter
     if (tracked_terms->psi_p_hyperresistive != nullptr)
