@@ -21,6 +21,7 @@
 #include "tests/DREAM/IonRateEquation.hpp"
 #include "tests/DREAM/RunawayFluid.hpp"
 #include "tests/DREAM/AvalancheSourceRP.hpp"
+#include "tests/DREAM/AvalancheSourceCH.hpp"
 #include "tests/DREAM/MeanExcitationEnergy.hpp"
 
 #include "tests/FVM/AdvectionTerm.hpp"
@@ -41,7 +42,8 @@ void add_test(UnitTest *t) {
 	tests.push_back(t);
 }
 void init() {
-    add_test(new DREAMTESTS::_DREAM::AvalancheSourceRP("dream/avalanche"));
+    add_test(new DREAMTESTS::_DREAM::AvalancheSourceRP("dream/avalancheRP"));
+    add_test(new DREAMTESTS::_DREAM::AvalancheSourceCH("dream/avalancheCH"));
     add_test(new DREAMTESTS::_DREAM::BoundaryFlux("dream/boundaryflux"));
     add_test(new DREAMTESTS::_DREAM::IonRateEquation("dream/ionrateequation"));
     add_test(new DREAMTESTS::_DREAM::MeanExcitationEnergy("dream/meanexcitationenergy"));
