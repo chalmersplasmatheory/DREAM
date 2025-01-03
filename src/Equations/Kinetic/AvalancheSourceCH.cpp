@@ -21,9 +21,9 @@ using namespace DREAM;
  */
 AvalancheSourceCH::AvalancheSourceCH(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t scaleFactor, CHSourcePitchMode sxm, CHSourceMode sm, 
+    real_t pCutoff, real_t scaleFactor, /*CHSourcePitchMode sxm,*/ CHSourceMode sm, 
     bool isRunawayGrid, FVM::Grid* runawayGrid
-) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceXiMode(sxm), 
+) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), /*sourceXiMode(sxm), */
     sourceMode(sm), isRunawayGrid(isRunawayGrid), runawayGrid(runawayGrid)
 {
     SetName("AvalancheSourceCH");
@@ -37,28 +37,28 @@ AvalancheSourceCH::AvalancheSourceCH(
     this->preFactor = (e*e*e*e)/(2*M_PI*epsmc*epsmc*Constants::c);
 
     if (isRunawayGrid) {
-        id_fre = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
-        AddUnknownForJacobian(u, id_fre);
+        id_fgrid = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
+        AddUnknownForJacobian(u, id_fgrid);
     } else if (runawayGrid != nullptr) {
         htgridWithREgrid = true;
         id_fre = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);  
         AddUnknownForJacobian(u, id_fre);  
-        id_fhot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
-        AddUnknownForJacobian(u, id_fhot);
+        id_fgrid = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+        AddUnknownForJacobian(u, id_fgrid);
     } else {
-        id_fhot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
-        AddUnknownForJacobian(u, id_fhot);
+        id_fgrid = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+        AddUnknownForJacobian(u, id_fgrid);
     }
 
-    delete [] this->pIn_Indices;
+    //delete [] this->pIn_Indices;
     this->pIn_Indices = new int_t[this->grid->GetNCells()];
-    delete [] this->f_pIndices;
-    delete [] this->f_xiIndices;
+    //delete [] this->f_pIndices;
+    //delete [] this->f_xiIndices;
     this->f_pIndices = new std::vector<len_t>[nr*this->grid->GetMomentumGrid(0)->GetNp1()];
     this->f_xiIndices = new std::vector<len_t>[nr*this->grid->GetMomentumGrid(0)->GetNp1()];
     if (htgridWithREgrid){
-        delete [] this->f_re_pIndices;
-        delete [] this->f_re_xiIndices;
+        //delete [] this->f_re_pIndices;
+        //delete [] this->f_re_xiIndices;
         this->f_re_pIndices = new std::vector<len_t>[nr*this->runawayGrid->GetMomentumGrid(0)->GetNp1()];
         this->f_re_xiIndices = new std::vector<len_t>[nr*this->runawayGrid->GetMomentumGrid(0)->GetNp1()];
     }
@@ -83,9 +83,10 @@ void AvalancheSourceCH::SetPinIndices(){
                 len_t ind = offset + n1[ir]*j + i;
                 
                 real_t p = this->grid->GetMomentumGrid(ir)->GetP1(i);
-                real_t xi = this->grid->GetMomentumGrid(ir)->GetP2(j);
+                real_t xi = abs(this->grid->GetMomentumGrid(ir)->GetP2(j));
                 real_t gamma = sqrt(p*p + 1.);
                 real_t p_in = 2 * xi * p / (xi*xi * (gamma + 1) - gamma + 1);
+                
                 int_t i_in = -1;
                 // TODO: I thik this is the right way to do "if on the ht-grid and has RE-grid and p_in is on RE-grid"
                 if (htgridWithREgrid 
@@ -141,15 +142,20 @@ real_t AvalancheSourceCH::EvaluateCHSource(len_t ir, len_t i, len_t j){
     
          
     int_t RESign;
-    if (this->sourceXiMode == CH_SOURCE_PITCH_ADAPTIVE) {
+    /*if (this->sourceXiMode == CH_SOURCE_PITCH_ADAPTIVE) {
         const real_t E = unknowns->GetUnknownData(id_Efield)[ir];
         RESign = (E>=0) ? 1: -1;
     } else if (this->sourceXiMode == CH_SOURCE_PITCH_POSITIVE)
         RESign = 1;
     else
+        RESign = -1;*/
+    if (this->grid->GetMomentumGrid(ir)->GetP2(j) >= 0)
+        RESign = 1;
+    else
         RESign = -1;
     
     real_t p     = this->grid->GetMomentumGrid(ir)->GetP1(i);
+    real_t xi    = this->grid->GetMomentumGrid(ir)->GetP2(j);
     real_t gamma = sqrt(p*p + 1);
     real_t pMax  = this->grid->GetMomentumGrid(ir)->GetP1(grid->GetMomentumGrid(ir)->GetNp1()-1);
     if (htgridWithREgrid){
@@ -157,13 +163,12 @@ real_t AvalancheSourceCH::EvaluateCHSource(len_t ir, len_t i, len_t j){
     }
     real_t gammaMax = sqrt(pMax*pMax + 1);
     real_t ximin = sqrt((gamma - 1) / (gamma + 1) * (gammaMax + 1) / (gammaMax - 1));
-    
-    real_t xi = this->grid->GetMomentumGrid(ir)->GetP2(j);
-    if ((RESign >= 0 && xi < ximin) || (RESign < 0 && xi > ximin)){
-        return 0.;
-    }
+
+    if (abs(xi) < ximin)
+        return 0;
 
     const real_t BA = this->grid->GetAvalancheCHBounceAverage(ir,i,j);
+    //printf("BA=%.4e, ", BA);
     return scaleFactor * preFactor * cutFactor * BA;
 }
 
@@ -171,18 +176,24 @@ real_t AvalancheSourceCH::EvaluateCHSource(len_t ir, len_t i, len_t j){
  * Returns the source at grid point (ir,i,j).
  */
 real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
+    //printf("\n");
     int_t RESign;
-    if (this->sourceXiMode == CH_SOURCE_PITCH_ADAPTIVE) {
+    /*if (this->sourceXiMode == CH_SOURCE_PITCH_ADAPTIVE) {
         const real_t E = unknowns->GetUnknownData(id_Efield)[ir];
         RESign = (E>=0) ? 1: -1;
     } else if (this->sourceXiMode == CH_SOURCE_PITCH_POSITIVE)
         RESign = 1;
     else
         RESign = -1;
+    */
+    if (this->grid->GetMomentumGrid(ir)->GetP2(j) >= 0)
+        RESign = 1;
+    else
+        RESign = -1;
 
     if(sourceMode == CH_SOURCE_MODE_FLUID){
         real_t S_f = 0.;
-        real_t S, fre, fhot;
+        real_t S, fre, fgrid;
         len_t offset = ir*n1[ir]*n2[ir];
         for (len_t ii=0; ii<n1[ir]; ii++){
             for (len_t jj=0; jj<n2[ir]; jj++){
@@ -205,8 +216,8 @@ real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
                     for(len_t j_int=0; j_int<n2[ir]; j_int++){
                         if ((RESign >= 0 && this->grid->GetMomentumGrid(ir)->GetP2(j_int) >= 0)
                                 || (RESign < 0 && this->grid->GetMomentumGrid(ir)->GetP2(j_int) < 0)){
-                            fhot = unknowns->GetUnknownData(id_fhot)[offset + n1[ir]*j_int + i_in];
-                            f_re_PAA += fhot * this->grid->GetMomentumGrid(ir)->GetDp2(j_int) / 2.;
+                            fgrid = unknowns->GetUnknownData(id_fgrid)[offset + n1[ir]*j_int + i_in];
+                            f_re_PAA += fgrid * this->grid->GetMomentumGrid(ir)->GetDp2(j_int) / 2.;
                         }
                     }
                 }
@@ -217,32 +228,35 @@ real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
     }
     
     real_t S = EvaluateCHSource(ir,i,j);
-    real_t fre, fhot;
+    real_t fre, fgrid;
     len_t offset = ir*n1[ir]*n2[ir]; 
     len_t ind = offset + n1[ir]*j + i;
     
     real_t f_re_PAA = 0;
     
     int_t i_in = pIn_Indices[ind];
+    real_t p_in = 1000;
     if (htgridWithREgrid && i_in >= 0 && (len_t) i_in >= n1[ir]){
         i_in -= n1[ir];
+        p_in = this->runawayGrid->GetMomentumGrid(ir)->GetP1(i_in);
         for(len_t j_int=0; j_int<runawayGrid->GetMomentumGrid(ir)->GetNp2(); j_int++){
             if ((RESign >= 0 && this->runawayGrid->GetMomentumGrid(ir)->GetP2(j_int) >= 0)
                     || (RESign < 0 && this->runawayGrid->GetMomentumGrid(ir)->GetP2(j_int) < 0)){
-                fre = unknowns->GetUnknownData(id_fre)[nr*runawayGrid->GetMomentumGrid(ir)->GetNp1()*runawayGrid->GetMomentumGrid(ir)->GetNp2() + this->runawayGrid->GetMomentumGrid(ir)->GetNp1()*j_int + i_in];
+                fre = unknowns->GetUnknownData(id_fre)[ir*runawayGrid->GetMomentumGrid(ir)->GetNp1()*runawayGrid->GetMomentumGrid(ir)->GetNp2() + this->runawayGrid->GetMomentumGrid(ir)->GetNp1()*j_int + i_in];
                 f_re_PAA += fre * this->runawayGrid->GetMomentumGrid(ir)->GetDp2(j_int) / 2.;
             }
         }
     } else if (i_in >= 0) {
+        p_in = this->grid->GetMomentumGrid(ir)->GetP1(i_in);
         for(len_t j_int=0; j_int<n2[ir]; j_int++){
             if ((RESign >= 0 && this->grid->GetMomentumGrid(ir)->GetP2(j_int) >= 0)
                     || (RESign < 0 && this->grid->GetMomentumGrid(ir)->GetP2(j_int) < 0)){
-                fhot = unknowns->GetUnknownData(id_fhot)[offset + n1[ir]*j_int + i_in];
-                f_re_PAA += fhot * this->grid->GetMomentumGrid(ir)->GetDp2(j_int) / 2.;
+                fgrid = unknowns->GetUnknownData(id_fgrid)[offset + n1[ir]*j_int + i_in];
+                f_re_PAA += fgrid * this->grid->GetMomentumGrid(ir)->GetDp2(j_int) / 2.;
             }
         }
     }
-     
+    //printf("S=%.4e, p_in=%.4f, f_re_PAA=%.4e", S, p_in, f_re_PAA);
     return S * f_re_PAA;
 }
 
@@ -250,7 +264,7 @@ real_t AvalancheSourceCH::GetSourceFunction(len_t ir, len_t i, len_t j){
  * Returns the source function at (ir,i,j) differentiated with respect to the unknown x_derivId at (ir,i,j)
  */
 real_t AvalancheSourceCH::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
-    if ((derivId==id_fhot && !isRunawayGrid) || (derivId==id_fre && isRunawayGrid)){
+    if (derivId==id_fgrid){
         real_t derivTerm = 0;
         len_t iter_j_gen = 0, j_gen;
         std::vector<len_t> f_xiIndices_i = f_xiIndices[ir*this->grid->GetMomentumGrid(ir)->GetNp1() + i];
@@ -262,7 +276,7 @@ real_t AvalancheSourceCH::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
         return derivTerm;
         // if hot-tail grid, return sum of GetSourceFunction for indices in f_pIndices[i] and f_xiIndices[j], multiply by this->grid->GetMomentumGrid(ir)->GetDp2(j_int) / 2., else return 0
     }
-    else if (derivId==id_fre && htgridWithREgrid) {
+    else if (htgridWithREgrid && derivId==id_fre) {
         real_t derivTerm = 0;
         len_t iter_j_gen = 0, j_gen;
         std::vector<len_t> f_xiIndices_i = f_re_xiIndices[ir*this->runawayGrid->GetMomentumGrid(ir)->GetNp1() + i];

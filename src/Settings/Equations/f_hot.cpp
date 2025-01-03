@@ -135,11 +135,11 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
         if (eqsys->HasRunawayGrid()){
-            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid()));
-            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid()));
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, /*AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE,*/ AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid()));
+            //Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid()));
         } else{
-            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false));
-            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false));
+            Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, /*AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE,*/ AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false));
+            //Op_ava->AddTerm(new AvalancheSourceCH(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false));
         }
         len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
         eqsys->SetOperator(id_f_hot, id_n_tot, Op_ava);
@@ -330,20 +330,20 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         
-        AvalancheSourceCH *avaCH, *avaCH_neg;
+        AvalancheSourceCH *avaCH;//, *avaCH_neg;
         if (eqsys->GetRunawayGrid()) {
-            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
-            avaCH_neg = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
+            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, /*AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE,*/ AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
+            //avaCH_neg = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
         } else 
-            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
-            avaCH_neg = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
+            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, /*AvalancheSourceCH::CH_SOURCE_PITCH_POSITIVE,*/ AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
+            //avaCH_neg = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_PITCH_NEGATIVE, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
 
         Op_Nre->AddTerm(
             new TotalElectronDensityFromKineticAvalancheCH(fluidGrid, hottailGrid, pCutoff, unknowns, avaCH, -1.0)
         );
-        Op_Nre->AddTerm(
+        /*Op_Nre->AddTerm(
             new TotalElectronDensityFromKineticAvalancheCH(fluidGrid, hottailGrid, pCutoff, unknowns, avaCH_neg, -1.0)
-        );
+        );*/
         desc += " - internal avalanche";
     }
     
