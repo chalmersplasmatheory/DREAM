@@ -128,7 +128,17 @@ FVM::Grid *SimulationGenerator::ConstructHotTailGrid(
             );
     }
 
-    return new FVM::Grid(rgrid, mg);
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    bool avalancheChiuHarvey = false;
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_CH) 
+        avalancheChiuHarvey = true;
+    
+    real_t p_max = s->GetReal(HOTTAILGRID "/pmax");
+    if (s->GetBool(RUNAWAYGRID "/enabled"))
+        p_max = s->GetReal(RUNAWAYGRID "/pmax");
+    
+
+    return new FVM::Grid(rgrid, mg, avalancheChiuHarvey, p_max);
 }
 
 /**
@@ -174,7 +184,15 @@ FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
             );
     }
 
-    return new FVM::Grid(rgrid, mg);
+
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    bool avalancheChiuHarvey = false;
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC_CH) 
+        avalancheChiuHarvey = true;
+    
+    real_t p_max = s->GetReal(RUNAWAYGRID "/pmax");
+    
+    return new FVM::Grid(rgrid, mg, avalancheChiuHarvey, p_max);
 }
 
 /**

@@ -254,8 +254,8 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
     real_t B0 = 1.0;
 
     auto *grid_fl = InitializeFluidGrid(nr);
-    auto *grid_hot = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_hot,pMax_hot);
-    auto *grid_re  = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_re,pMax_re);
+    auto *grid_hot = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_hot,pMax_hot,true,pMax_re);
+    auto *grid_re  = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_re,pMax_re,true,pMax_re);
 
     real_t n_re = 1e15;
     real_t n_tot = 1e20;
@@ -293,7 +293,6 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
         int_gsl_func.params = &par_P;
         gsl_integration_qag(&int_gsl_func,pCutoff,pMax_hot,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_hot, &error);
         gsl_integration_qag(&int_gsl_func,pMin_re,pMax_re,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_re, &error);
-        
         deltas[ir] = abs(sourceIntegralAnalytic_hot - sourceIntegralNumerical_hot) / sourceIntegralAnalytic_hot
                         + abs(sourceIntegralAnalytic_re - sourceIntegralNumerical_re) / sourceIntegralAnalytic_re;
         
