@@ -199,21 +199,17 @@ namespace DREAM::FVM {
             real_t BOverBmin, real_t ROverR0, real_t NablaR2, const int_t *Flist
         );
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
-        real_t EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_max, real_t xi_l, real_t xi_u,  fluxGridType fgt/*real_t Vp, real_t VpVol,*/);
+        real_t EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_max, real_t xi_l, real_t xi_u,  fluxGridType fgt);
 
     
     private: 
         gsl_integration_workspace *gsl_ws_CH;
         struct avParams {real_t xi0; real_t gamma; real_t gamma_max; int_t iTerm; real_t BminOverBmax;};
         static real_t BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void *par);
-        struct intXiParams {len_t ir; fluxGridType fgt; real_t gamma; real_t gamma_max; real_t BminOverBmax; /*int_t RESign;*/ int_t iTerm; FluxSurfaceAverager *FSA;};
+        struct intXiParams {len_t ir; fluxGridType fgt; real_t gamma; real_t gamma_max; real_t BminOverBmax; int_t iTerm; FluxSurfaceAverager *FSA;};
         static real_t integrandXi(real_t xi0, void *par);
-        struct intPParams {len_t ir; real_t xi_l; real_t xi_u; fluxGridType fgt; real_t p_max; /*int_t RESign;*/ FluxSurfaceAverager *FSA; gsl_integration_workspace *gsl_adaptive; int QAG_KEY;};
-        real_t integrandP(real_t p, real_t gamma_max, len_t ir, real_t xi_l, real_t xi_u, real_t BminOverBmax, fluxGridType fgt/*, int_t RESign*/);
-        // TODO: Remove
-        //real_t FSA_CH(real_t BOverBmin, real_t, real_t, void *par);
-        //real_t integrandXi_passing_test(real_t xi0, void *par);
-        //real_t integrandP_passing_test(real_t p, void *par);
+        struct intPParams {len_t ir; real_t xi_l; real_t xi_u; fluxGridType fgt; real_t p_max; FluxSurfaceAverager *FSA; gsl_integration_workspace *gsl_adaptive; int QAG_KEY;};
+        real_t integrandP(real_t p, real_t gamma_max, len_t ir, real_t xi_l, real_t xi_u, real_t BminOverBmax, fluxGridType fgt);
     };
 }
 

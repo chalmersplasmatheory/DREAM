@@ -21,15 +21,8 @@ void TotalElectronDensityFromKineticAvalancheCH::SetWeights() {
         len_t np1 = this->operandGrid->GetMomentumGrid(ir)->GetNp1();
         len_t np2 = this->operandGrid->GetMomentumGrid(ir)->GetNp2();
         for(len_t i=0; i<np1; i++){
-            /* TODO: Remove this, it is already done in GetSourceFunction, doublecheck
-            real_t cutFactor = 1.;
-            if (this->operandGrid->GetMomentumGrid(ir)->GetP1_f(i+1) < this->pCutoff)
-                cutFactor = 0.;
-            else if (this->operandGrid->GetMomentumGrid(ir)->GetP1_f(i) < this->pCutoff)
-                cutFactor = (this->operandGrid->GetMomentumGrid(ir)->GetP1_f(i+1) - pCutoff) / (this->operandGrid->GetMomentumGrid(ir)->GetP1_f(i+1) - this->operandGrid->GetMomentumGrid(ir)->GetP1_f(i));
-            */
             for(len_t j=0; j<np2; j++){
-                weights[ir] += scaleFactor /* * cutFactor*/ * this->avaCH->GetSourceFunction(ir, i, j)
+                weights[ir] += scaleFactor * this->avaCH->GetSourceFunction(ir, i, j)
                                     * this->operandGrid->GetMomentumGrid(ir)->GetDp1(i) * this->operandGrid->GetMomentumGrid(ir)->GetDp2(j);
             }
         }

@@ -207,6 +207,56 @@ real_t Grid::IntegralMomentumAtRadius(const len_t ir, const real_t *vec) const {
 }
 
 /**
+ * Integrate the given vector numerically over the momentum
+ * grid corresponding to the specified radius for positive 
+ *.pitch angles
+ *
+ * ir:  Index of radius to integrate over.
+ * vec: Vector to integrate of size np1*np2.
+ */
+real_t Grid::IntegralMomentumAtRadiusForward(const len_t ir, const real_t *vec) const {
+    MomentumGrid *mg = this->GetMomentumGrid(ir);
+    const len_t   np1 = mg->GetNp1(),  np2 = mg->GetNp2();
+    const real_t *dp1 = mg->GetDp1(), *dp2 = mg->GetDp2();
+    const real_t *Vp = this->GetVp(ir);
+    const real_t VpVol = this->GetVpVol(ir);
+
+    real_t I = 0;
+    for (len_t j = len_t(np2 / 2); j < np2; j++) 
+        for (len_t i = 0; i < np1; i++) {
+            len_t idx = j*np1 + i;
+            I += vec[idx]*Vp[idx] * dp1[i]*dp2[j];
+        }
+    
+    return I/VpVol;
+}
+
+/**
+ * Integrate the given vector numerically over the momentum
+ * grid corresponding to the specified radius for negative 
+ *.pitch angles
+ *
+ * ir:  Index of radius to integrate over.
+ * vec: Vector to integrate of size np1*np2.
+ */
+real_t Grid::IntegralMomentumAtRadiusBackward(const len_t ir, const real_t *vec) const {
+    MomentumGrid *mg = this->GetMomentumGrid(ir);
+    const len_t   np1 = mg->GetNp1(),  np2 = mg->GetNp2();
+    const real_t *dp1 = mg->GetDp1(), *dp2 = mg->GetDp2();
+    const real_t *Vp = this->GetVp(ir);
+    const real_t VpVol = this->GetVpVol(ir);
+
+    real_t I = 0;
+    for (len_t j = 0; j < len_t(np2 / 2); j++) 
+        for (len_t i = 0; i < np1; i++) {
+            len_t idx = j*np1 + i;
+            I += vec[idx]*Vp[idx] * dp1[i]*dp2[j];
+        }
+    
+    return I/VpVol;
+}
+
+/**
  * Rebuilds any non-static (i.e. time dependent) grids
  * used. This can be used if, for example, a dynamically
  * evolving magnetic equilibrium is used, or if some
@@ -288,7 +338,7 @@ void Grid::RebuildBounceAveragedQuantities(){
         BA_xi2B2_f1,BA_xi2B2_f2);
 
     CalculateAvalancheDeltaHat();
-    CalculateAvalancheCHBounceAverage(FLUXGRIDTYPE_DISTRIBUTION); // TODO: I think it's fine as long as I don't use FLUXGRIDTYPE_RADIAL, but is this ok?
+    CalculateAvalancheCHBounceAverage(FLUXGRIDTYPE_DISTRIBUTION); 
 
 }
 
@@ -451,10 +501,9 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
 
     for(len_t ir=0; ir<GetNr(); ir++){
         MomentumGrid *mg = momentumGrids[ir];
-        //real_t VpVol = GetVpVol(ir);
         len_t np1 = GetNp1(ir);
         len_t np2 = GetNp2(ir);
-        real_t p_max =  1000; // TODO: Just to make it converge
+        real_t p_max =  5000; // Should be ~inf, but =inf gives divergence problems
         avalancheCHBounceAverage[ir] = new real_t[np1*np2];        
         avalancheCHBounceAverageNegativePitch[ir] = new real_t[np1*np2]; 
         for(len_t i=0; i<np1*np2; i++){
@@ -463,27 +512,11 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
         }  
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
-                real_t p_i = mg->GetP1(i); // TODO: OK?
+                real_t p_i = mg->GetP1(i);
                 real_t xi_l = mg->GetP2_f(j);
                 real_t xi_u = mg->GetP2_f(j+1);
                 
-                // TODO: Is this really needed? Probably only for RP-source? 
-                // if negative-pitch trapped boundary, find index containing 
-                // mirrored (-xi) cell to which we instead add the contribution
-                /*
-                len_t j_tmp=j;
-                if(IsNegativePitchTrappedIgnorableCell(ir,j))
-                    while(mg->GetP2_f(j_tmp+1)<=-mg->GetP2(j) && j_tmp<np2)
-                        j_tmp++;    
-                */
-                // normalize contribution with dxi in new cell
-                real_t fac = 1;//mg->GetDp2(j)/mg->GetDp2(j_tmp);// TODO: Remove?
-                //real_t Vp = this->Vp[ir][j*np1+i];
-
-                // TODO: Only do this if use it!
-                avalancheCHBounceAverage[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, p_max, xi_l, xi_u, fgt/*, Vp, VpVol*/);
-                // TODO: Double check this, but probably not needed
-                //avalancheCHBounceAverageNegativePitch[ir][j*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_l, p_u, /*p_max,*/ xi_l, xi_u, fgt, Vp, VpVol, -1);
+                avalancheCHBounceAverage[ir][j*np1+i] += rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, p_max, xi_l, xi_u, fgt);
             }        
     }
 
