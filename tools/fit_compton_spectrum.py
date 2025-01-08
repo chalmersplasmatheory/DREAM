@@ -83,7 +83,7 @@ def plot_data(E, G):
     plt.show()
 
 
-def plot_spectrum(E, G, E_old, G_old, phi, c1, c2, c3, I):
+def plot_spectrum(E, G, phi, c1, c2, c3, I):
     """
     Plot numerical data and fit.
     """
@@ -91,8 +91,7 @@ def plot_spectrum(E, G, E_old, G_old, phi, c1, c2, c3, I):
 
     En = np.logspace(np.log(E[0]), np.log(E[-1]))
     ax[0].loglog(E, G, 'k-.')
-    ax[0].loglog(E_old, G_old, ':', color='silver')
-    ax[0].loglog(En, np.exp(func(En, phi, c1, c2, c3))/ 3.57e20, 'r-')
+    ax[0].loglog(En, np.exp(func(En, phi, c1, c2, c3)), 'r-')
 
     ax[0].set_xlabel('Photon energy (MeV)')
     ax[0].set_ylabel('Flux')
@@ -105,8 +104,7 @@ def plot_spectrum(E, G, E_old, G_old, phi, c1, c2, c3, I):
     ax[0].set_xlim([10**xmn, 10**xmx])
 
     ax[1].semilogx(E, G, 'k-.')
-    ax[1].semilogx(E_old, G_old, ':', color='silver')
-    ax[1].semilogx(En, np.exp(func(En, phi, c1, c2, c3))/ 3.57e20, 'r-')
+    ax[1].semilogx(En, np.exp(func(En, phi, c1, c2, c3)), 'r-')
 
     ax[1].set_xlabel('Photon energy (MeV)')
     ax[1].set_ylabel('Flux')
@@ -155,19 +153,15 @@ def main():
     else:
         raise Exception("Unrecognized file type of spectrum file.")
 
+    if args.plot_data:
+        plot_data(E, G)
 
-    print(np.sum(G) * args.scale / 3.57e20)
     # Normalize the spectrum to the bin size
     if not args.no_normalize_per_bin:
         dE = np.zeros(E.size)
         dE[0] = E[0]
         dE[1:] = E[1:] - E[0:-1]
         G /= dE
-    G_old = G
-    E_old = E
-
-    if args.plot_data:
-        plot_data(E, G)
 
     # Remove data points?
     E = E[args.skip_below:]
@@ -192,11 +186,8 @@ def main():
         G = np.delete(G, l)
 
     G *= args.scale
-    G_old *= args.scale
-    params = fit_spectrum(E, G)
 
-    G /= 3.57e20
-    G_old /= 3.57e20
+    params = fit_spectrum(E, G)
     I = eval_integral(*params) / np.exp(params[0])
 
     print('Best fitting parameters:')
@@ -206,7 +197,7 @@ def main():
     print(f'   C3 = {params[3]:.3f}')
 
     if args.plot:
-        plot_spectrum(E, G, E_old, G_old, *params, I=I)
+        plot_spectrum(E, G, *params, I=I)
 
     return 0
 
