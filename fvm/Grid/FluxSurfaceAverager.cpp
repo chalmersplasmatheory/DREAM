@@ -178,7 +178,7 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
 void FluxSurfaceAverager::DeallocateQuadrature(){
     gsl_integration_workspace_free(gsl_adaptive);
     gsl_integration_workspace_free(gsl_adaptive_outer);
-    gsl_integration_workspace_free(gsl_ws_CH); // TODO: Ok place?
+    gsl_integration_workspace_free(gsl_ws_CH); 
     gsl_integration_qaws_table_free(qaws_table);
     if(gsl_w != nullptr)
         gsl_integration_fixed_free(gsl_w);
@@ -199,7 +199,7 @@ void FluxSurfaceAverager::DeallocateQuadrature(){
 void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
     gsl_adaptive = gsl_integration_workspace_alloc(1000);
     gsl_adaptive_outer = gsl_integration_workspace_alloc(1000);
-    gsl_ws_CH = gsl_integration_workspace_alloc(100000); // TODO: Ok place?
+    gsl_ws_CH = gsl_integration_workspace_alloc(100000); 
     std::function<real_t(real_t,real_t,real_t)>  QuadWeightFunction;
     if(geometryIsSymmetric)
         theta_max = M_PI;

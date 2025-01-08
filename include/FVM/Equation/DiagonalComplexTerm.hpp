@@ -23,7 +23,7 @@ namespace DREAM::FVM {
 
             
     protected:      
-        Grid *operandGrid;//TODO: ok?  
+        Grid *operandGrid;  
         real_t *diffWeights = nullptr;
         UnknownQuantityHandler *unknowns;
 

@@ -94,6 +94,8 @@ namespace DREAM::FVM {
         real_t Integral(const real_t*) const;
         real_t *IntegralMomentum(const real_t*, real_t *I=nullptr) const;
         real_t IntegralMomentumAtRadius(const len_t, const real_t*) const;
+        real_t IntegralMomentumAtRadiusForward(const len_t, const real_t*) const;
+        real_t IntegralMomentumAtRadiusBackward(const len_t, const real_t*) const;
 
         // Returns pointer to the momentum grid with the specified index
         MomentumGrid *GetMomentumGrid(const len_t i) const { return this->momentumGrids[i]; }
@@ -237,11 +239,7 @@ namespace DREAM::FVM {
         const real_t GetAvalancheCHBounceAverage(const len_t ir, const len_t i, const len_t j)
         {
             len_t pind = GetNp1(ir)*j+i;
-            // TODO: Double check this
-            //if(RESign>=0)
-            return avalancheCHBounceAverage[ir][pind]; // placeholder for avalanche calculation
-            //else
-            //    return avalancheCHBounceAverageNegativePitch[ir][pind];
+            return avalancheCHBounceAverage[ir][pind]; 
         }
         
         void CalculateAvalancheDeltaHat();
