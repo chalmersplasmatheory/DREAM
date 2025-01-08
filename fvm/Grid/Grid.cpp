@@ -70,10 +70,8 @@ Grid::~Grid() {
     if(avalancheCHBounceAverage != nullptr){
         for(len_t ir=0; ir<nr; ir++){
             delete [] avalancheCHBounceAverage[ir];
-            delete [] avalancheCHBounceAverageNegativePitch[ir];
         }
         delete [] avalancheCHBounceAverage;
-        delete [] avalancheCHBounceAverageNegativePitch;
     }
 }
 
@@ -490,14 +488,11 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
     if(avalancheCHBounceAverage != nullptr){
         for(len_t ir=0; ir<GetNr(); ir++){
             delete [] avalancheCHBounceAverage[ir];
-            delete [] avalancheCHBounceAverageNegativePitch[ir];
         }
         delete [] avalancheCHBounceAverage;
-        delete [] avalancheCHBounceAverageNegativePitch;
     }
 
     avalancheCHBounceAverage = new real_t*[GetNr()];
-    avalancheCHBounceAverageNegativePitch = new real_t*[GetNr()];
 
     for(len_t ir=0; ir<GetNr(); ir++){
         MomentumGrid *mg = momentumGrids[ir];
@@ -505,10 +500,8 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
         len_t np2 = GetNp2(ir);
         real_t p_max =  5000; // Should be ~inf, but =inf gives divergence problems
         avalancheCHBounceAverage[ir] = new real_t[np1*np2];        
-        avalancheCHBounceAverageNegativePitch[ir] = new real_t[np1*np2]; 
         for(len_t i=0; i<np1*np2; i++){
             avalancheCHBounceAverage[ir][i] = 0;
-            avalancheCHBounceAverageNegativePitch[ir][i] = 0;
         }  
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){

@@ -32,8 +32,7 @@ namespace DREAM::FVM {
         real_t 
             **avalancheDeltaHat = nullptr,
             **avalancheDeltaHatNegativePitch = nullptr,
-            **avalancheCHBounceAverage = nullptr,
-            **avalancheCHBounceAverageNegativePitch = nullptr;
+            **avalancheCHBounceAverage = nullptr;
         
         // Orbit-averaged metric V'. Size Nr+ x (Np1+ x Np2+).
         real_t
