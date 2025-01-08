@@ -330,7 +330,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         
         AvalancheSourceCH *avaCH;
         if (eqsys->GetRunawayGrid()) {
-            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());´
+            avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, eqsys->GetRunawayGrid());
         } else 
             avaCH = new AvalancheSourceCH(hottailGrid, unknowns, pCutoff, -1.0, AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false);
 
