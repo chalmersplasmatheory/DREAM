@@ -51,6 +51,9 @@ namespace DREAM::FVM {
             **isTrapped_f1 = nullptr,
             **isTrapped_f2 = nullptr;
 
+        bool avalancheChiuHarvey;
+        real_t p_max;
+
         // If isTrapped, contains poloidal-angle bounce point 
         // theta_b1 or theta_b2, otherwise empty.
         // Size Nr+ x (Np1+ x Np2+).
@@ -83,7 +86,7 @@ namespace DREAM::FVM {
 		MomentumGrid **momentumGrids;
 
     public:
-        Grid(RadialGrid*, MomentumGrid*, const real_t t0=0, 
+        Grid(RadialGrid*, MomentumGrid*, bool avalancheChiuHarvey=false, real_t p_max=1000, const real_t t0=0,
             FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV, len_t ntheta = 0);
         ~Grid();
 

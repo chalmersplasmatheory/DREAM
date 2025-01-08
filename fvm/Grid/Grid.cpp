@@ -13,7 +13,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/, FluxSurfaceAverager::quadrature_method qm_trapped, len_t ntheta_interp_trapped) {
+Grid::Grid(RadialGrid *rg, MomentumGrid *mg, bool avalancheChiuHarvey, real_t p_max, const real_t /*t0*/, FluxSurfaceAverager::quadrature_method qm_trapped, len_t ntheta_interp_trapped) {
     this->rgrid = rg;
     this->momentumGrids = new MomentumGrid*[rgrid->GetNr()];
 
@@ -28,6 +28,8 @@ Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/, FluxSurfaceAve
         ntheta_interp_trapped = FSA->GetNTheta();
 
     bounceAverager = new BounceAverager(this, FSA,ntheta_interp_trapped,qm_trapped);
+    this->avalancheChiuHarvey = avalancheChiuHarvey;
+    this->p_max = p_max;
 }
 
 /**
@@ -335,9 +337,10 @@ void Grid::RebuildBounceAveragedQuantities(){
     InitializeBAvg(BA_xi_fr,BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
         BA_xi2B2_f1,BA_xi2B2_f2);
 
-    CalculateAvalancheDeltaHat();
-    CalculateAvalancheCHBounceAverage(FLUXGRIDTYPE_DISTRIBUTION); 
-
+    if (this->avalancheChiuHarvey)
+        CalculateAvalancheCHBounceAverage(FLUXGRIDTYPE_DISTRIBUTION); 
+    else
+        CalculateAvalancheDeltaHat();
 }
 
 /**
@@ -498,7 +501,6 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
         MomentumGrid *mg = momentumGrids[ir];
         len_t np1 = GetNp1(ir);
         len_t np2 = GetNp2(ir);
-        real_t p_max =  5000; // Should be ~inf, but =inf gives divergence problems
         avalancheCHBounceAverage[ir] = new real_t[np1*np2];        
         for(len_t i=0; i<np1*np2; i++){
             avalancheCHBounceAverage[ir][i] = 0;
@@ -509,7 +511,7 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
                 real_t xi_l = mg->GetP2_f(j);
                 real_t xi_u = mg->GetP2_f(j+1);
                 
-                avalancheCHBounceAverage[ir][j*np1+i] += rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, p_max, xi_l, xi_u, fgt);
+                avalancheCHBounceAverage[ir][j*np1+i] += rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, this->p_max, xi_l, xi_u, fgt);
             }        
     }
 
