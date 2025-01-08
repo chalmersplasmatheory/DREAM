@@ -108,7 +108,7 @@ namespace DREAM::FVM {
 
         real_t GetVpVol(len_t ir, fluxGridType);
 
-    static real_t evaluatePXiBounceIntegralAtXi(real_t,void*); 
+    static real_t evaluatePXiBounceIntegralAtXi(real_t,void*);
 
     public:
         FluxSurfaceAverager(
