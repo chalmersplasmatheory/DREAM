@@ -160,10 +160,11 @@ static PyObject *dreampy_setup_simulation(
 
     try {
         settings = dreampy_loadsettings(dict);
-        sim = DREAM::SimulationGenerator::ProcessSettings(settings);
-        
-        
-        sim->GetEquationSystem()->GetTimeStepper()->SetPythonCaller(dreampy_callback_return_bool);
+		if (!PyErr_Occurred()) {
+			sim = DREAM::SimulationGenerator::ProcessSettings(settings);
+			sim->GetEquationSystem()->GetTimeStepper()->SetPythonCaller(dreampy_callback_return_bool);
+		} else
+			success = false;
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;

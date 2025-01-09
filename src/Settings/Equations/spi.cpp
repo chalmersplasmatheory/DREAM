@@ -25,6 +25,10 @@ void SimulationGenerator::ConstructEquation_SPI(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
+	// Mark the "/init/Ninj" setting as used, so that it
+	// appears in the output file.
+	s->MarkUsed(MODULENAME "/init/Ninj");
+
     // Get data for shard content
     len_t nShard;
     const real_t *rp_init = s->GetRealArray(MODULENAME "/init/rp", 1, &nShard);

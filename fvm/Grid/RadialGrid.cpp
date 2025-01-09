@@ -211,13 +211,13 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     this->psiToroidal_f = new real_t[nr+1];
 
     // Calculate psi_t by integrating using a trapezoidal rule.
-    real_t x, x_f = VpVol_f[0]*BtorGOverR0_f[0]*FSA_1OverR2_f[0];
+    real_t x, x_f = (1. /(2. * M_PI)) * VpVol_f[0]*BtorGOverR0_f[0]*FSA_1OverR2_f[0];
     psiToroidal_f[0] = 0;
     for (len_t ir = 0; ir < nr; ir++) {
-        x    = VpVol[ir]*BtorGOverR0[ir]*FSA_1OverR2[ir];
+        x    = (1. /(2. * M_PI)) * VpVol[ir]*BtorGOverR0[ir]*FSA_1OverR2[ir];
         psiToroidal[ir] = psiToroidal_f[ir] + 0.5*(x_f+x)*(r[ir]-r_f[ir]);
 
-        x_f  = VpVol_f[ir+1]*BtorGOverR0_f[ir+1]*FSA_1OverR2_f[ir+1];
+        x_f  = (1. /(2. * M_PI)) * VpVol_f[ir+1]*BtorGOverR0_f[ir+1]*FSA_1OverR2_f[ir+1];
         psiToroidal_f[ir+1] = psiToroidal[ir] + 0.5*(x_f+x)*(r_f[ir+1]-r[ir]);
     }
 }
