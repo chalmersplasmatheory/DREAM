@@ -689,8 +689,6 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
                 }else if(rCoordPNext[ip]<rCoordPPrevious[ip]){
                     nbrShiftGridCell[ip] = nbrShiftGridCellPrescribed[ip];
 			   }
-			   if (nbrShiftGridCell[ip] != 1)
-			   		printf("IP %lu, SHIFT %ld \n",ip, nbrShiftGridCell[ip]);
             }
         }
         // Shift the deposition profile
