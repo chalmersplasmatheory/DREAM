@@ -24,6 +24,7 @@ using namespace std;
 void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
 	s->DefineSetting(MODULENAME "/automaticstep", "Step length for the automatic determination of the time step in the ionization time stepper.", (real_t)1e-12);
     s->DefineSetting(MODULENAME "/checkevery", "Check the error every N'th step (0 = check error after _every_ time step)", (int_t)0);
+	s->DefineSetting(MODULENAME "/checkquantities", "List of quantities to adapt time step based on.", (const string)"");
     s->DefineSetting(MODULENAME "/constantstep", "Override the adaptive stepper and force a constant time step (DEBUG OPTION)", (bool)false);
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
 	s->DefineSetting(MODULENAME "/dtmax", "Maximum allowed time step for the adaptive ionization time stepper.", (real_t)0);
@@ -139,12 +140,22 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
 	EquationSystem *eqsys, vector<len_t> *nontrivials
 ) {
     int_t checkevery = s->GetInteger(MODULENAME "/checkevery");
+	vector<string> checkquantities = s->GetStringList(MODULENAME "/checkquantities");
     real_t tmax = s->GetReal(MODULENAME "/tmax");
     real_t dt = s->GetReal(MODULENAME "/dt");
     bool verbose = s->GetBool(MODULENAME "/verbose");
     bool conststep = s->GetBool(MODULENAME "/constantstep");
 
 	vector<UnknownQuantityEquation*> *eqns = eqsys->GetEquations();
+
+	// Get IDs of unknown quantities to check
+	vector<len_t> checkIds;
+	for (string s : checkquantities) {
+		if (u->HasUnknown(s))
+			checkIds.push_back(u->GetUnknownID(s));
+		else
+			throw SettingsException("TimeStepper: Unrecognized unknown quantity '%s'.", s.c_str());
+	}
 
     if (dt == 0)
         dt = 1;
@@ -153,7 +164,7 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
         MODULENAME, s, eqns, u, *nontrivials
     );
 
-    return new TimeStepperAdaptive(tmax, dt, u, eqsys, *nontrivials, eqns, cc, checkevery, verbose, conststep);
+    return new TimeStepperAdaptive(tmax, dt, u, eqsys, *nontrivials, eqns, checkIds, cc, checkevery, verbose, conststep);
 }
 
 /**

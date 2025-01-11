@@ -14,6 +14,8 @@ namespace DREAM {
 
         // List of non-trivial unknowns
         std::vector<len_t> nontrivials;
+		// List of unknown quantities to adapt time step based on
+		std::vector<len_t> toCheck;
         // Object used to evaluate norms of solution vectors
         ConvergenceChecker *convChecker;
         // Number of steps to take after checking for convergence
@@ -91,7 +93,8 @@ namespace DREAM {
         TimeStepperAdaptive(
             const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler*,
             EquationSystem*, std::vector<len_t>&, std::vector<UnknownQuantityEquation*>*,
-			ConvergenceChecker*, int_t checkEvery=0, bool verbose=false, bool constantStep=false
+			std::vector<len_t>&, ConvergenceChecker*, int_t checkEvery=0,
+			bool verbose=false, bool constantStep=false
         );
         ~TimeStepperAdaptive();
 
