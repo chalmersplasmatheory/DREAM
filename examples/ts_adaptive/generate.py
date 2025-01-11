@@ -70,12 +70,15 @@ ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setWallRadius(radius_wall)
 ds.radialgrid.setNr(Nr)
 # Set time stepper
-ds.timestep.setType(TimeStepper.TYPE_ADAPTIVE)
-ds.timestep.setTmax(Tmax_init)
-ds.timestep.setCheckInterval(0)
+ds.timestep.setAdaptive(
+    tmax=Tmax_init, dt=Tmax_init/100, checkevery=0,
+    verbose=False:q
+    
+ds.timestep.setAdaptive(
+    tmax=Tmax_init, dt=Tmax_init/100, checkevery=0,
+    verbose=False
+)
 ds.timestep.setRelativeTolerance(1e-2)
-ds.timestep.setVerbose(False)
-ds.timestep.setDt(Tmax_init/100)
 #ds.timestep.setConstantStep(True)
 #ds.timestep.setDt(1e-3)
 

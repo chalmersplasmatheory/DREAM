@@ -39,6 +39,7 @@ class TimeStepper:
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
         self.terminatefunc = terminatefunc
+        self.adaptive_quantities = []
 
         self.dtmax = None
         self.automaticstep = None
@@ -153,6 +154,31 @@ class TimeStepper:
 
         if ttype == TYPE_IONIZATION:
             self.setIonization(*args, **kwargs)
+
+
+    def setAdaptive(
+        self, tmax=None, dt=0, verbose=False, constantstep=False, checkevery=0,
+        quantities=[]
+    ):
+        """
+        Select and set parameters for the adaptive time stepper.
+        """
+        self.type = TYPE_ADAPTIVE
+        self.dt = dt
+        self.verbose = verbose
+        self.constantstep = constantstep
+        self.checkevery = checkevery
+        self.adaptive_quantities = quantities
+
+        if tmax is not None:
+            self.tmax = tmax
+
+
+    def setAdaptiveQuantities(self, *quantities):
+        """
+        Set the names of the unknown quantities to adapt the time step based on.
+        """
+        self.adaptive_quantities = quantities
 
 
     def setIonization(self, dt0=0, dtmax=0, tmax=None, automaticstep=1e-12, safetyfactor=50, alpha=0):
