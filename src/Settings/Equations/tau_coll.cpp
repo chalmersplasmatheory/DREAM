@@ -74,10 +74,5 @@ void SimulationGenerator::ConstructEquation_tau_coll(EquationSystem *eqsys) {
     eqsys->SetOperator(id_tau, id_ncold, Op2, "dtau_coll/dt = nu_c");
 
     // Always initialize tau to 0
-	const len_t nr = fluidGrid->GetNr();
-	real_t *init = new real_t[nr];
-	for (len_t i = 0; i < nr; i++)
-		init[i] = 0.0451;
-
-    eqsys->SetInitialValue(id_tau, init);
+    eqsys->SetInitialValue(id_tau,nullptr);
 }

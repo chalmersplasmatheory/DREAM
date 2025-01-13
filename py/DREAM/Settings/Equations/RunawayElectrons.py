@@ -255,10 +255,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         if tritium == True or tritium == TRITIUM_MODE_FLUID:
             self.tritium = TRITIUM_MODE_FLUID
-        elif tritium == False or tritium == TRITIUM_MODE_NEGLECT:
+        if tritium == False or tritium == TRITIUM_MODE_NEGLECT:
             self.tritium = TRITIUM_MODE_NEGLECT
-        else:
-            self.tritium = int(tritium)
+        self.tritium = int(tritium)
 
 
     def setHottail(self, hottail):

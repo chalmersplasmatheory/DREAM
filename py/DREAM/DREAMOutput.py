@@ -25,7 +25,7 @@ from .Settings import Solver as SettingsSolver
 class DREAMOutput:
     
 
-    def __init__(self, filename=None, path="", lazy=True, loadsettings=True, tOffset=0):
+    def __init__(self, filename=None, path="", lazy=True, loadsettings=True):
         """
         Construct a new ``DREAMOutput`` object. If ``filename`` is given, the
         object is read from the (HDF5) file with that name. If ``path`` is also
@@ -36,7 +36,6 @@ class DREAMOutput:
         :param str path:          Path to group in HDF5 file containing the output.
         :param bool lazy:         If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
         :param bool loadsettings: If ``True``, load the settings stored in the output object.
-        :param float tOffset:     Time by which to translate the time vector of the output file.
         """
 
         # Default
@@ -53,7 +52,7 @@ class DREAMOutput:
         self.h5handle = None
 
         if filename is not None:
-            self.load(filename=filename, path=path, lazy=lazy, loadsettings=loadsettings, tOffset=tOffset)
+            self.load(filename=filename, path=path, lazy=lazy, loadsettings=loadsettings)
 
 
     def __contains__(self, item):
@@ -90,7 +89,7 @@ class DREAMOutput:
             return None
 
 
-    def load(self, filename, path="", lazy=True, loadsettings=True, tOffset=0):
+    def load(self, filename, path="", lazy=True, loadsettings=True):
         """
         Loads DREAM output from the specified file. If 'path' is
         given, this indicates which group path in the file to load
@@ -100,7 +99,6 @@ class DREAMOutput:
         :param str path:          Path to subsect of HDF5 file containing DREAM output.
         :param bool lazy:         If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
         :param bool loadsettings: If ``True``, load the settings stored in the output object.
-        :param float tOffset:     Time by which to translate the time vector of the output file.
         """
         if type(filename) == str:
             self.filename = filename
@@ -115,7 +113,7 @@ class DREAMOutput:
             self.filesize = sys.getsizeof(od)
 
         if 'grid' in od:
-            self.grid = Grid(od['grid'], tOffset=tOffset)
+            self.grid = Grid(od['grid'])
         else:
             print("WARNING: No grid found in '{}'.".format(filename))
         

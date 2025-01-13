@@ -10,7 +10,7 @@ from .PparPperpGrid import PparPperpGrid
 class Grid:
     
 
-    def __init__(self, grid=None, tOffset=0):
+    def __init__(self, grid=None):
         """
         Constructor.
 
@@ -32,7 +32,7 @@ class Grid:
         self.toroidalFlux = None
 
         if grid is not None:
-            self.setGrid(grid, tOffset=tOffset)
+            self.setGrid(grid)
 
 
     def __contains__(self, item):
@@ -115,11 +115,11 @@ class Grid:
         return s
 
 
-    def setGrid(self, grid, tOffset=0):
+    def setGrid(self, grid):
         """
         Set grid data based on output from DREAM.
         """
-        self.t = grid['t'][:] + tOffset
+        self.t = grid['t']
         self.r = grid['r']
         self.r_f = grid['r_f']
         self.dr = grid['dr']
