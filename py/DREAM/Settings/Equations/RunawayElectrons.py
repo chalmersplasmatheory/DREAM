@@ -257,7 +257,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             self.tritium = TRITIUM_MODE_FLUID
         elif tritium == False or tritium == TRITIUM_MODE_NEGLECT:
             self.tritium = TRITIUM_MODE_NEGLECT
-        else
+        else:
             self.tritium = int(tritium)
 
 
