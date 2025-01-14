@@ -462,6 +462,14 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ohmic->SetVectorElements(vec, Eterm);
         );
+	if (tracked_terms->T_cold_halo != nullptr)
+        DEF_FL("fluid/Tcold_halo", "Power density escaping through the halo region [J s^-1 m^-3]",
+            real_t *Wcold = this->unknowns->GetUnknownData(this->id_Wcold);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_halo->SetVectorElements(vec, Wcold);
+		);
     if (tracked_terms->T_cold_fhot_coll != nullptr)
         DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
             real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);

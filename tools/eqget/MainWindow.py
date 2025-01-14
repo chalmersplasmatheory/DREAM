@@ -14,6 +14,7 @@ from DREAM import DREAMIO
 from pathlib import Path
 
 import AUG
+import TCV
 import EqFile
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -45,6 +46,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if AUG.isAvailable():
             self.ui.cbTokamak.addItem('ASDEX Upgrade', AUG)
+        if TCV.isAvailable():
+            self.ui.cbTokamak.addItem('TCV', TCV)
 
         self.ui.cbTokamak.addItem('File', EqFile)
         self.tokamakChanged()
@@ -163,7 +166,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.plotFluxSurfaces()
             self.toggleEnabled(True)
         except Exception as ex:
-            QMessageBox.critical(self, 'Error loading data', f"The specified data file could not be loaded:\n\n{ex}")
+            QMessageBox.critical(self, 'Error loading data', f"The specified data file could not be loaded:\n\n{traceback.format_exc()}")
 
 
     def calculateShaping(self):

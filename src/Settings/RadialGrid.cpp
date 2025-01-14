@@ -35,6 +35,7 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/r0", "Inner-most radius to simulate (on flux-grid)", (real_t)0.0);
     s->DefineSetting(RADIALGRID "/wall_radius",  "Tokamak wall minor radius", (real_t)0.5);
 
+	s->DefineSetting(RADIALGRID "/custom_grid", "Flag indicating whether to use a custom radial grid or not", (bool)false);
     s->DefineSetting(RADIALGRID "/r_f", "Grid points of the radial flux grid", 0, (real_t*) nullptr);
 
     // CylindricalRadialGrid
@@ -149,13 +150,15 @@ FVM::Grid *SimulationGenerator::ConstructScalarGrid() {
 FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_t nr, Settings *s) {
     real_t B0 = s->GetReal(RADIALGRID "/B0");
 	len_t ntheta_out = s->GetInteger(RADIALGRID "/ntheta_out");
+	bool custom_grid = s->GetBool(RADIALGRID "/custom_grid");
 
     FVM::CylindricalRadialGridGenerator *crgg;
-    if(nr!=0){
+    if(!custom_grid){
         real_t a  = s->GetReal(RADIALGRID "/a");
         real_t r0 = s->GetReal(RADIALGRID "/r0");
         crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a, ntheta_out);
     } else {
+		printf("CUSTOM GRID\n");
         len_t len_rf; // equals nr+1 of the simulation
         const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
         crgg = new FVM::CylindricalRadialGridGenerator(r_f, len_rf-1, B0, ntheta_out);
@@ -174,6 +177,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
     real_t R0 = s->GetReal(RADIALGRID "/R0");
     len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
 	len_t ntheta_out = s->GetInteger(RADIALGRID "/ntheta_out");
+	bool custom_grid = s->GetBool(RADIALGRID "/custom_grid");
 
     FVM::AnalyticBRadialGridGenerator::shape_profiles *shapes =
         new FVM::AnalyticBRadialGridGenerator::shape_profiles;
@@ -190,7 +194,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
     shapes->psi_r   = s->GetRealArray(RADIALGRID "/psi_p0/r", 1, &shapes->npsi);
 
     FVM::AnalyticBRadialGridGenerator*abrg;
-    if(nr!=0){
+    if(!custom_grid){
         real_t a  = s->GetReal(RADIALGRID "/a");
         real_t r0 = s->GetReal(RADIALGRID "/r0");
         abrg = new FVM::AnalyticBRadialGridGenerator(
@@ -217,6 +221,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
     const int_t nr, Settings *s
 ) {
     len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
+	bool custom_grid = s->GetBool(RADIALGRID "/custom_grid");
 
     const string filename = s->GetString(RADIALGRID "/filename");
     enum OptionConstants::radialgrid_numeric_format frmt =
@@ -238,7 +243,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
     FVM::NumericBRadialGridGenerator *nbrg;
 
     // Uniform radial grid
-    if (nr != 0) {
+    if (!custom_grid) {
         real_t a  = s->GetReal(RADIALGRID "/a");
         real_t r0 = s->GetReal(RADIALGRID "/r0");
 
