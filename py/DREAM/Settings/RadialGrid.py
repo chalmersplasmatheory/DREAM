@@ -68,6 +68,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.num_magneticfield = None   # Magnetic field class parsing data
 
         # prescribed arbitrary grid
+        self.custom_grid = False
         self.r_f = None 
 
 
@@ -90,7 +91,7 @@ class RadialGrid(PrescribedScalarParameter):
         if self.nr != 0 or self.a != 0 or self.r0 != 0:
             #raise EquationException("RadialGrid: Cannot assign custom grid points while prescribing 'nr', 'a' or 'r0'.")         
             print("*WARNING* RadialGrid: Prescibing custom radial grid overrides 'nr', 'a' and 'r0'.")
-            self.nr = r_f.size
+            self.nr = r_f.size - 1
             self.a  = max(r_f)
             self.r0 = min(r_f)
 
@@ -104,6 +105,7 @@ class RadialGrid(PrescribedScalarParameter):
         if np.min(r_f)<0:
             raise EquationException("RadialGrid: Custom grid points must be non-negative.")
         self.r_f = r_f
+        self.custom_grid = True
 
     def setB0(self, B0):
         """
@@ -126,6 +128,7 @@ class RadialGrid(PrescribedScalarParameter):
         if self.r_f is not None:
             print("*WARNING* RadialGrid: Prescibing 'Inner radius' r0 overrides the custom radial grid 'r_f'.")
             self.r_f = None
+            self.custom_grid = False
 
         self.r0 = r0
 
@@ -140,6 +143,7 @@ class RadialGrid(PrescribedScalarParameter):
         if self.r_f is not None:
             print("*WARNING* RadialGrid: Prescibing 'Minor radius' a overrides the custom radial grid 'r_f'.")
             self.r_f = None
+            self.custom_grid = False
 
         self.a = float(a)
 
@@ -171,6 +175,7 @@ class RadialGrid(PrescribedScalarParameter):
         if self.r_f is not None:
             print("*WARNING* RadialGrid: Prescibing 'Nr' overrides the custom radial grid 'r_f'.")
             self.r_f = None
+            self.custom_grid = False
             
         self.nr = int(nr)
 
@@ -466,6 +471,8 @@ class RadialGrid(PrescribedScalarParameter):
             self.r0 = data['r0']
             if 'r_f' in data:
                 self.r_f = data['r_f']
+            if 'custom_grid' in data:
+                self.custom_grid = bool(data['custom_grid'])
 
         if self.type == TYPE_CYLINDRICAL:
             self.B0 = data['B0']
@@ -535,6 +542,7 @@ class RadialGrid(PrescribedScalarParameter):
             data['wall_radius'] = self.b
             if self.r_f is not None:
                 data['r_f'] = self.r_f
+                data['custom_grid'] = int(self.custom_grid)
 
         if self.type == TYPE_CYLINDRICAL:
             data['B0'] = self.B0
