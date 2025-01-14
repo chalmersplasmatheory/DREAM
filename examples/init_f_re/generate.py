@@ -32,7 +32,7 @@ ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 
 # Physical parameters
-E = 1       # Electric field strength (V/m)
+E = 1.5     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
@@ -64,7 +64,7 @@ ds.runawaygrid.setNxi(40)
 ds.runawaygrid.setBiuniformGrid(thetasep=0.5, nthetasep_frac=0.8)
 
 # Set initial hot electron Maxwellian
-ds.eqsys.f_re.setInitialAvalancheDistribution()
+ds.eqsys.f_re.setInitialAvalancheDistribution(E=E)
 ds.eqsys.f_re.setAdvectionInterpolationMethod(DistFunc.AD_INTERP_UPWIND)
 
 # Set up radial grid
