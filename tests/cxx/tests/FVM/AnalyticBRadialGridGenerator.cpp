@@ -73,12 +73,12 @@ void AnalyticBRadialGridGenerator::Initialize(){
     len_t nr = 3;
     real_t pmin=0, pmax=10;
     grid = InitializeGridGeneralRPXi(
-        nr, np, nxi, ntheta_interp, nrProfiles, pmin, pmax,
+        nr, np, nxi, ntheta_interp, nrProfiles, pmin, pmax,false,pmax,
         DREAM::FVM::FluxSurfaceAverager::QUAD_FIXED_LEGENDRE,
         DREAM::FVM::FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV
     );
     grid_adaptive = InitializeGridGeneralRPXi(
-        nr, np, nxi, ntheta_interp, nrProfiles, pmin, pmax,
+        nr, np, nxi, ntheta_interp, nrProfiles, pmin, pmax,false,pmax,
         DREAM::FVM::FluxSurfaceAverager::QUAD_ADAPTIVE,
         DREAM::FVM::FluxSurfaceAverager::QUAD_ADAPTIVE
     );

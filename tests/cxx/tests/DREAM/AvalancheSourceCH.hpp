@@ -24,7 +24,7 @@ namespace DREAMTESTS::_DREAM {
         DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid *g_fl, DREAM::FVM::Grid *g_hot, DREAM::FVM::Grid *g_re, const real_t n_re, const real_t n_tot, const real_t E_field);
 
         bool CheckConservativityCylindrical();
-        //bool CheckConservativityGeneralAnalytic();
+        bool CheckConservativityGeneralAnalytic();
         virtual bool Run(bool) override;
     };
 }

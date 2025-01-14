@@ -31,18 +31,18 @@ bool AvalancheSourceCH::Run(bool) {
     gsl_ws3 = gsl_integration_workspace_alloc(1000);
 
     bool success = true;
-    if (CheckConservativityCylindrical())
-        this->PrintOK("The CH avalanche source creates the predicted total number of knock-ons in cylindrical geometry.");
-    else {
-        success = false;
-        this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created in cylindrical geometry.");
-    }
     /*if (CheckConservativityGeneralAnalytic())
         this->PrintOK("The CH avalanche source creates the predicted total number of knock-ons in general geometry.");
     else {
         success = false;
         this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created in general geometry.");
     }*/
+    if (CheckConservativityCylindrical())
+        this->PrintOK("The CH avalanche source creates the predicted total number of knock-ons in cylindrical geometry.");
+    else {
+        success = false;
+        this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created in cylindrical geometry.");
+    }
 
     gsl_integration_workspace_free(gsl_ws1);
     gsl_integration_workspace_free(gsl_ws2);
@@ -177,71 +177,13 @@ real_t AvalancheSourceCH::analyticIntegrandP(real_t p, void *par){
     return 2 * M_PI * p*p * n_tot * (2 * M_PI * DREAM::Constants::r0 * DREAM::Constants::r0 * DREAM::Constants::c) * 1 / (p * gamma) * intXi;
 }
 
-
-/**
- * Test particle number with a general inhomogeneous grid
- */
-/*bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
-    real_t successRelErrorThreshold = 1e-5;
-
-    len_t nr = 2;
-    len_t np  = 4;
-    len_t nxi = 5;
-    
-    len_t ntheta_interp = 100;
-    len_t nrProfiles    = 8;
-
-    real_t pMin_hot = 0;
-    real_t pMax_hot = 2;
-
-    real_t pMin_re = 2;
-    real_t pMax_re = 4;
-
-    auto *grid_hot  = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_hot, pMax_hot);
-    auto *grid_re   = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_re, pMax_re);
-    auto *fluidGrid = InitializeFluidGrid(nr);
-    
-    real_t f_re = 1e15;
-    real_t n_tot = 1e20;
-    real_t E_field = -1;
-
-    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, E_field);
-
-    real_t pCutoff = 0.13*pMax;
-    DREAM::AvalancheSourceCH *avaSourceTerm = new DREAM::AvalancheSourceCH(grid, uqh,pCutoff,1.0);
-
-    real_t *sourceVec = new real_t[np*nxi];
-    real_t *deltas = new real_t[nr];
-    for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<np; i++)
-            for(len_t j=0; j<nxi; j++)
-                sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateCHSource(ir,i,j);
-        real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(pCutoff, pMax);
-        deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
-        //cout << "numerical: " << sourceIntegralNumerical << endl;
-        //cout << "analytic: " << sourceIntegralAnalytic << endl;
-    }
-
-    bool success = true;
-    for(len_t ir=0; ir<nr; ir++){
-        if(deltas[ir]>successRelErrorThreshold){
-            success = false;
-            cout << "delta [rel error]: " << deltas[ir] << endl;
-        }
-    }
-
-    delete [] sourceVec;
-    return success;
-}*/
-
 /**
  * Test particle number with a homogeneous cylindrical grid
  */
 bool AvalancheSourceCH::CheckConservativityCylindrical(){
     real_t successRelErrorThreshold = 0.01;
 
-    len_t nr = 1;
+    len_t nr = 2;
     len_t np = 300;
     len_t nxi = 600;
 
@@ -295,9 +237,90 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
         gsl_integration_qag(&int_gsl_func,pMin_re,pMax_re,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_re, &error);
         deltas[ir] = abs(sourceIntegralAnalytic_hot - sourceIntegralNumerical_hot) / sourceIntegralAnalytic_hot
                         + abs(sourceIntegralAnalytic_re - sourceIntegralNumerical_re) / sourceIntegralAnalytic_re;
-        
+        //printf("\nNumerical: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralNumerical_hot,sourceIntegralNumerical_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
+        //printf("\n Analytic: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralAnalytic_hot,sourceIntegralAnalytic_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
     }
 
+
+    bool success = true;
+    for(len_t ir=0; ir<nr; ir++)
+        if(deltas[ir]>successRelErrorThreshold){
+            success = false;
+            cout << "delta [rel error]: " << deltas[ir] << endl;
+        }
+
+    delete [] sourceVec_hot;
+    delete [] sourceVec_re;
+    return success;
+}
+
+
+/**
+ * Test particle number with a general inhomogeneous grid
+ */
+bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
+    real_t successRelErrorThreshold = 0.01;
+
+    len_t nr = 2;
+    len_t np = 100;
+    len_t nxi = 200;
+    
+    len_t ntheta_interp = 100;
+    len_t nrProfiles    = 8;
+
+    real_t pMin_hot = 0;
+    real_t pMax_hot = 2;
+
+    real_t pMin_re = 2;
+    real_t pMax_re = 12;
+
+    auto *grid_fl = InitializeFluidGrid(nr);
+    auto *grid_hot  = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_hot, pMax_hot, true, pMax_re);
+    auto *grid_re   = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_re, pMax_re, true, pMax_re);
+    
+    real_t n_re = 1e15;
+    real_t n_tot = 1e20;
+    real_t E_field = 1;
+
+    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid_fl, grid_hot, grid_re, n_re, n_tot, E_field);
+
+    real_t pCutoff = 0.125;
+    DREAM::AvalancheSourceCH *avaSourceTerm_hot = new DREAM::AvalancheSourceCH(
+            grid_hot, uqh, pCutoff, 1.0, DREAM::AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, grid_re
+        );
+    
+    DREAM::AvalancheSourceCH *avaSourceTerm_re = new DREAM::AvalancheSourceCH(
+            grid_re, uqh, pCutoff, 1.0, DREAM::AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, true
+        );
+
+    real_t *sourceVec_hot = new real_t[nr*np*nxi];
+    real_t *sourceVec_re = new real_t[nr*np*nxi];
+    
+    real_t *deltas = new real_t[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        for(len_t i=0; i<np; i++){
+            for(len_t j=0; j<nxi; j++){
+                sourceVec_hot[ir*np*nxi + j*np + i] = n_tot * avaSourceTerm_hot->GetSourceFunction(ir,i,j);
+                sourceVec_re[ir*np*nxi + j*np + i] = n_tot * avaSourceTerm_re->GetSourceFunction(ir,i,j);
+            }
+        }
+        real_t sourceIntegralNumerical_hot = grid_hot->IntegralMomentumAtRadius(ir, sourceVec_hot);
+        real_t sourceIntegralNumerical_re  =  grid_re->IntegralMomentumAtRadius(ir, sourceVec_re);
+
+        printf("\nNumerical: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralNumerical_hot,sourceIntegralNumerical_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
+        /*
+        real_t sourceIntegralAnalytic_hot, sourceIntegralAnalytic_re, epsabs = 0, epsrel = 1e-12, lim = gsl_ws1->limit, error;
+        gsl_function int_gsl_func;
+        int_gsl_func.function = &(analyticIntegrandP);
+        intPParams par_P = {pMax_re, n_tot, n_re, QAG_KEY, gsl_ws2, gsl_ws3};
+        int_gsl_func.params = &par_P;
+        gsl_integration_qag(&int_gsl_func,pCutoff,pMax_hot,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_hot, &error);
+        gsl_integration_qag(&int_gsl_func,pMin_re,pMax_re,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_re, &error);
+        deltas[ir] = abs(sourceIntegralAnalytic_hot - sourceIntegralNumerical_hot) / sourceIntegralAnalytic_hot
+                        + abs(sourceIntegralAnalytic_re - sourceIntegralNumerical_re) / sourceIntegralAnalytic_re;
+        */
+        deltas[ir] = 0;
+    }
 
     bool success = true;
     for(len_t ir=0; ir<nr; ir++)
