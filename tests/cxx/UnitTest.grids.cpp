@@ -59,7 +59,7 @@ using namespace DREAMTESTS;
  */
 DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(
     const len_t nr, const len_t np, const len_t nxi, const real_t B0,
-    const real_t pMin, const real_t pMax, bool avalancheChiuHarvey, real_t p_max
+    const real_t pMin, const real_t pMax, bool avalancheChiuHarvey, real_t pInMaxCH
 ) {
     auto *crgg = new DREAM::FVM::CylindricalRadialGridGenerator(nr, B0);
     auto *rg   = new DREAM::FVM::RadialGrid(crgg);
@@ -70,7 +70,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(
 
     auto *mgg = new DREAM::FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
     auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, 0, rg);
-    auto *grid = new DREAM::FVM::Grid(rg, mg, avalancheChiuHarvey, p_max);
+    auto *grid = new DREAM::FVM::Grid(rg, mg, avalancheChiuHarvey, pInMaxCH);
 
     grid->Rebuild(0);
 
@@ -97,9 +97,9 @@ DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0)
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     const len_t nr, const len_t np, const len_t nxi,
     const len_t ntheta_interp, const len_t nrProfiles, const real_t pMin, const real_t pMax,
+    bool avalancheChiuHarvey, real_t pInMaxCH,
     DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_passing,
-    DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_trapped,
-    bool avalancheChiuHarvey, real_t p_max
+    DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_trapped
 ) {
     real_t r0 = 0;
     real_t ra = 2;
@@ -154,7 +154,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, 0, rg);
 
     // Assemble to full 'Grid' object...
-    auto *grid = new DREAM::FVM::Grid(rg, mg, 0, avalancheChiuHarvey, p_max, q_method_trapped);
+    auto *grid = new DREAM::FVM::Grid(rg, mg, avalancheChiuHarvey, pInMaxCH, 0, q_method_trapped);
     grid->Rebuild(0);
     return grid;
 }

@@ -10,6 +10,9 @@
 
 using namespace DREAM;
 
+// TODO: Think about trapped region again! F_re forward and F_re backward and somehow average.
+// TODO: Solution: Should add F_re forward and F_re backward for trapped cells
+
 /**
  * Constructor.
  */

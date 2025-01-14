@@ -31,7 +31,6 @@ real_t FluxSurfaceAverager::BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, re
     real_t gamma = params->gamma;
     real_t gamma_max = params->gamma_max;
     int_t iTerm = params->iTerm;
-    real_t BminOverBmax = params->BminOverBmax;
     
     if (ximax(gamma) < ximin(gamma, gamma_max))
         return 0;
@@ -39,9 +38,9 @@ real_t FluxSurfaceAverager::BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, re
         return 0;
     if (ximin(gamma, gamma_max) > xiOverXi0*abs(xi0))
         return 0;
-
+    
     real_t xi2 = 1. - (1. - xi0*xi0) * BOverBmin;
-    real_t denom = xi2 * (gamma + 1.) - (gamma - 1.);
+    real_t denom = xi2 - (gamma - 1.) / (gamma + 1.);
     real_t term; 
     switch(iTerm){
         case 0:
@@ -65,8 +64,6 @@ real_t FluxSurfaceAverager::BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, re
         default:
             throw FVMException("There is no '%d'th term in bounce average of Chiu-Harvey avalanche operator.", term);
     }
-    if ((1-xi0*xi0) > BminOverBmax)
-        return 0.5*term;
     return term;
 }
 
@@ -82,16 +79,23 @@ real_t FluxSurfaceAverager::integrandXi(real_t xi0, void *par){
     real_t BminOverBmax = params->BminOverBmax;
     int_t iTerm = params->iTerm;
     FluxSurfaceAverager *FSA = params->FSA;
-    if (xi0 < 0.)
-        return 0;
+    
     if(xi0 < ximin(gamma, gamma_max))
         return 0;
     
     avParams avg_params[5] = {xi0, gamma, gamma_max, iTerm, BminOverBmax};
-    real_t factor_BA = FSA->CalculatePXiBounceAverageAtP(ir, xi0, fgt, &BA_CH, avg_params);
     
-    if (iTerm < 3)
+    bool doQAGS = true;
+    
+    real_t factor_BA = FSA->CalculatePXiBounceAverageAtP(ir, xi0, fgt, &BA_CH, avg_params, nullptr, doQAGS);
+    
+    if ((1-xi0*xi0) > BminOverBmax)
+        factor_BA *= 0.5;
+    
+    if (iTerm < 3){
         return xi0*xi0 / ((1 - xi0*xi0) * (1 - xi0*xi0)) * factor_BA;
+    }
+
     return xi0*xi0 / (1 - xi0*xi0) * factor_BA;
 }
 
@@ -100,7 +104,7 @@ real_t FluxSurfaceAverager::integrandXi(real_t xi0, void *par){
  */
 real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, real_t xi_l, real_t xi_u, real_t BminOverBmax, fluxGridType fgt){
     real_t gamma = sqrt(1+p*p);
-    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_ws_CH->limit, error;
+    real_t epsabs = 0, epsrel = 1e-3, error;
     
     gsl_function int_gsl_func;
     int_gsl_func.function = &(integrandXi);
@@ -109,18 +113,21 @@ real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, rea
     for(int_t i=0; i<6; i++){
         intXiParams intXi_params = {ir, fgt, gamma, gamma_max, BminOverBmax, i, this};
         int_gsl_func.params = &intXi_params;
-        gsl_integration_qag(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,lim,QAG_KEY,gsl_ws_CH,&terms[i], &error);
+        gsl_integration_qags(&int_gsl_func,xi_l,xi_u,epsabs,epsrel, gsl_ws_CH->limit,gsl_ws_CH,&terms[i], &error);
+        //len_t nevals;
+        //gsl_integration_cquad(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,gsl_ws_CH,&terms[i],&error,&nevals);
+        
     }
 
 
 
     return 1/(gamma*p)*
-            (4*(gamma-1)/(gamma+1)*terms[0]
-              +8*terms[1]
-              +4*(gamma+1)/(gamma-1)*terms[2]
-              -1*(gamma-1)*(gamma*gamma-2)*terms[3]
-              +2*(gamma+1)*(gamma*gamma-gamma-3)*terms[4]
-              -(gamma+1)*(gamma+1)*(gamma*gamma-2*gamma+4)/(gamma-1)*terms[5]);
+            (4*(gamma-1)/((gamma+1)*(gamma+1)*(gamma+1)*(gamma+1)*(gamma+1))*terms[0]
+              +8/((gamma+1)*(gamma+1)*(gamma+1)*(gamma+1))*terms[1]
+              +4/((gamma-1)*(gamma+1)*(gamma+1)*(gamma+1))*terms[2]
+              -1*(gamma-1)*(gamma*gamma-2)/((gamma+1)*(gamma+1)*(gamma+1))*terms[3]
+              +2*(gamma*gamma-gamma-3)/((gamma+1)*(gamma+1))*terms[4]
+              -(gamma*gamma-2*gamma+4)/((gamma-1)*(gamma+1))*terms[5]);
 }
 /**
  * Returns the bounce and cell averaged Chiu-Harvey avalanche

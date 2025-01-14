@@ -31,16 +31,16 @@ namespace DREAMTESTS {
             virtual DREAM::FVM::Grid *InitializeGridRCylPXi(
 				len_t nr=10, len_t np=50, len_t nxi=30, 
 				real_t B0 = 2, real_t pMin=0, real_t pMax=10,
-				bool avalancheChiuHarvey=false, real_t p_max=1000
+				bool avalancheChiuHarvey=false, real_t pInMaxCH=1000
 			);
             virtual DREAM::FVM::Grid *InitializeFluidGrid(len_t nr=10, real_t B0 = 2);
 			virtual DREAM::FVM::Grid *InitializeGridGeneralRPXi(
 				const len_t nr=4, const len_t np=5, const len_t nxi=7,
                 const len_t ntheta_interp = 20, const len_t nrProfiles=20, 
 				const real_t pMin=0,const real_t pMax=10,
+				bool avalancheChiuHarvey=false, real_t pInMaxCH=1000,
 				DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_passing = DREAM::FVM::FluxSurfaceAverager::QUAD_FIXED_LEGENDRE,
-				DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_trapped = DREAM::FVM::FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV,
-				bool avalancheChiuHarvey=false, real_t p_max=1000
+				DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_trapped = DREAM::FVM::FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV
 			);
             virtual DREAM::FVM::Grid *InitializeGridGeneralFluid(
                 const len_t nr, const len_t ntheta_interp=20, const len_t nrProfiles=20
