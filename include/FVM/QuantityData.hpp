@@ -53,8 +53,8 @@ namespace DREAM::FVM {
 
         real_t *Get() { return this->data; }
         //real_t *GetPrevious() { return this->store.back(); }
-        real_t *GetPrevious() { return this->olddata[0]; }
-        real_t GetPreviousTime() { return this->oldtime[0]; }
+        real_t *GetPrevious(const len_t i=0) { return this->olddata[i]; }
+        real_t GetPreviousTime(const len_t i=0) { return this->oldtime[i]; }
         real_t *GetInitialData() { return this->store.front(); }
         len_t Size() { return this->nElements; }
 		len_t GetNumberOfSavedSteps() { return this->store.size(); }

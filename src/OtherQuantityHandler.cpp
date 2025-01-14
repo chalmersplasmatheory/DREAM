@@ -434,8 +434,8 @@ void OtherQuantityHandler::DefineQuantities() {
 
 	DEF_FL_T("fluid/tIoniz", "Estimate of the ionization time scale (as used by the adaptive ionization time stepper) [s]",
 		real_t *n = this->unknowns->GetUnknownData(this->id_ncold);
-		real_t *np = this->unknowns->GetUnknownDataPrevious(this->id_ncold);
-		real_t tp = this->unknowns->GetUnknownDataPreviousTime(this->id_ncold);
+		real_t *np = this->unknowns->GetUnknownDataPrevious(this->id_ncold, 1);
+		real_t tp = this->unknowns->GetUnknownDataPreviousTime(this->id_ncold, 1);
 		real_t dt = t - tp;
 
 		real_t *vec = qd->StoreEmpty();
