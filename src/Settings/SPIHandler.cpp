@@ -24,11 +24,11 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/ZsDrift","Ion charges correspnding to ZavgDriftArray", 0, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/isotopesDrift","Ion isotopes correspnding to ZavgDriftArray", 0, (int_t*)nullptr);
 
-
-    s->DefineSetting(MODULENAME "/init/rp", "initial number of shard particles",0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/init/xp", "initial shard positions",0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/init/vp", "shard velocities",0, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/init/t_delay", "time delay before the shards start moving",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/Ninj", "Number of particles contained in pellet", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/rp", "Initial number of shard particles",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/xp", "Initial shard positions",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/vp", "Shard velocities",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/init/t_delay", "Time delay before the shards start moving",0, (real_t*)nullptr);
 
     s->DefineSetting(MODULENAME "/VpVolNormFactor", "Norm factor for VpVol=1/R to be used when having an otherwise cylindrical geometry, to get a finita volume of the flux tubes with the correct unit",1.0);
     s->DefineSetting(MODULENAME "/rclPrescribedConstant", "Precribed, constant radius for the neutral cloud surrounding the pellet shards",0.01);
@@ -67,7 +67,8 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
         isotopes[i]=(len_t)_isotopes[i];
     }
     
-    const real_t *_TDrift = s->GetRealArray(MODULENAME "/TDrift", 1, &nShard);
+	len_t nShardTDrift;
+    const real_t *_TDrift = s->GetRealArray(MODULENAME "/TDrift", 1, &nShardTDrift);
     const real_t *_ZavgDriftArray = s->GetRealArray(MODULENAME "/ZavgDriftArray", 1, &nZavgDrift);
     const int_t *_ZsDrift = s->GetIntegerArray(MODULENAME "/ZsDrift", 1, &nZavgDrift);
     const int_t *_isotopesDrift = s->GetIntegerArray(MODULENAME "/isotopesDrift", 1, &nZavgDrift);
@@ -76,14 +77,41 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     len_t *ZsDrift = new len_t[nZavgDrift];
     len_t *isotopesDrift = new len_t[nZavgDrift];
     if(spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL){
+		if (_TDrift == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but no plasmoid temperature 'TDrift' has been specified."
+			);
+		else if (nShardTDrift != nShard)
+			throw SettingsException(
+				"Using analytical drift shift mode, but TDrift has not been specified for each shard. "
+				"Expected " LEN_T_PRINTF_FMT " elements, but TDrift had " LEN_T_PRINTF_FMT " elements.",
+				nShard, nShardTDrift
+			);
+		else if (_ZavgDriftArray == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but no plasmoid average charge 'ZavgDriftArray' has been specified."
+			);
+		else if (_ZsDrift == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but the vector 'ZsDrift' has not been specified."
+			);
+		else if (_isotopesDrift == nullptr)
+			throw SettingsException(
+				"Using analytical drift shift mode, but the vector 'isotopesDrift' has not been specified."
+			);
+			
         for (len_t i = 0; i < nShard; i++)
             TDrift[i] = (real_t)_TDrift[i];
-        for (len_t i = 0; i < nZavgDrift; i++){
-            ZavgDriftArray[i] = (real_t)_ZavgDriftArray[i];
-            ZsDrift[i] = (len_t)_ZsDrift[i];
-            isotopesDrift[i] = (len_t)_isotopesDrift[i];
-        }
-    }
+    } else {
+		for (len_t ip = 0; ip < nShard; ip++)
+			TDrift[ip] = 0;
+	}
+
+	for (len_t i = 0; i < nZavgDrift; i++){
+		ZavgDriftArray[i] = (real_t)_ZavgDriftArray[i];
+		ZsDrift[i] = (len_t)_ZsDrift[i];
+		isotopesDrift[i] = (len_t)_isotopesDrift[i];
+	}
 
     SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, TDrift, T0Drift, DeltaYDrift, RmDrift, ZavgDriftArray, nZavgDrift, ZsDrift, isotopesDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
 
