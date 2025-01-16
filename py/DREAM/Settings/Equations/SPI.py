@@ -458,7 +458,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         which combined are used to set up an SPI-scenario similar to those in Oskar Vallhagens MSc thesis
         (available at https://hdl.handle.net/20.500.12380/302296).
         """
-        
+
+
         kp=self.setRpParksStatistical(nShard, Ninj, Zs, isotopes, molarFractions, ionNames, opacity_modes, add, random=random, **kwargs)
         self.setShardPositionSinglePoint(nShard,shatterPoint,add)
         self.setShardVelocitiesUniform(
@@ -466,12 +467,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             alpha_max=alpha_max, tilt=tilt, t_delay=t_delay, nDim=nDim, add=add,
             random=random
         )
-        
         if add and self.nbrShiftGridCell is not None:
             self.nbrShiftGridCell = np.concatenate((self.nbrShiftGridCell,nbrShiftGridCell*np.ones(nShard, dtype=np.int64)))
         else:
             self.nbrShiftGridCell = nbrShiftGridCell*np.ones(nShard, dtype=np.int64)
-            
         # Perhaps it would be better to force the user to explicitly set the shift mode,
         # but this helps to ensure backwards compatibility with scripts relying on that 
         # setting nbrShiftGridCell>0 automatically gives a corresponding prescribed shift
@@ -673,18 +672,6 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 else:
                     self.t_delay = np.array([self.t_delay])
 
-        if self.nbrShiftGridCell is None:
-            if self.rp is not None:
-                self.nbrShiftGridCell = np.zeros(self.rp.shape)
-            else:
-                self.nbrShiftGridCell = np.array([0])
-        
-        if self.TDrift is None:
-            if self.rp is not None:
-                self.TDrift = np.zeros(self.rp.shape)
-            else:
-                self.TDrift=np.array([0])
-            
         data = {
             'velocity': self.velocity,
             'ablation': self.ablation,
@@ -718,9 +705,22 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if self.t_delay is not None: 
             data['init']['t_delay']=self.t_delay
             
-        data['nbrShiftGridCell'] = self.nbrShiftGridCell
-        data['TDrift'] = self.TDrift
-
+        if self.nbrShiftGridCell is None:
+            if self.rp is not None:
+                data['nbrShiftGridCell'] = np.zeros(self.rp.shape)
+            else:
+                data['nbrShiftGridCell'] = np.array([0])
+        else:
+            data['nbrShiftGridCell'] = self.nbrShiftGridCell
+        
+        if self.TDrift is None:
+            if self.rp is not None:
+                data['TDrift'] = np.zeros(self.rp.shape)
+            else:
+                data['TDrift'] = np.array([0])
+        else:
+            data['TDrift'] = self.TDrift
+            
         return data
 
 
