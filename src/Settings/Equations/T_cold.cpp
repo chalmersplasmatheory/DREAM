@@ -169,8 +169,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
 
     // SPI heat absorbtion
-    OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode = (enum OptionConstants::eqterm_spi_heat_absorbtion_mode)s->GetInteger(MODULENAME_SPI "/heatAbsorbtion");
-    if(spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+    OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorption_mode = (enum OptionConstants::eqterm_spi_heat_absorbtion_mode)s->GetInteger(MODULENAME_SPI "/heatAbsorbtion");
+    if(spi_heat_absorption_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
         Op4->AddTerm(new SPIHeatAbsorbtionTerm(fluidGrid,eqsys->GetSPIHandler(),-1));
     }
 
@@ -197,14 +197,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // Note that, when accounting for the heat absorbed in the neutral cloud,
     // this energy is currently being redeposited where the material is deposited,
     // and we therefore need these terms even when heat absorption is included.
-    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_abl_ioniz_mode!=OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL){
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_heat_absorption_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
         len_t offset=0;
         len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         const len_t nZ = ionHandler->GetNZ();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[offset]>0){
                 Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(),
-                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, spi_abl_ioniz_mode));
+                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT));
                 offset+=nShard;
             }else {
             	offset+=1;
@@ -218,7 +218,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     }
     
     if (spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT || 
-        spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT ||
+        spi_heat_absorption_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT ||
         hasTransport)
         eqsys->SetOperator(id_T_cold, id_T_cold,Op4); 
 
