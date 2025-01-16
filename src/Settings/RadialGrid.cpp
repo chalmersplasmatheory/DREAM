@@ -158,7 +158,6 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
         real_t r0 = s->GetReal(RADIALGRID "/r0");
         crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a, ntheta_out);
     } else {
-		printf("CUSTOM GRID\n");
         len_t len_rf; // equals nr+1 of the simulation
         const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
         crgg = new FVM::CylindricalRadialGridGenerator(r_f, len_rf-1, B0, ntheta_out);
