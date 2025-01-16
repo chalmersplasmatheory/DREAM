@@ -250,6 +250,7 @@ class TransportCoefficientReader:
         vrepr = np.sqrt(2*e*Trepr/m_e) # thermal velocity corresponding to the representative temperature in m/s
         
         # Estimate the diffusion coefficient at the representative temperature
+        # a=1.95821385
         Drr_vrepr = t_duration_over_t_diffusion * a**2/(t_duration * x1**2)
         
          
@@ -257,7 +258,6 @@ class TransportCoefficientReader:
         p_dep = self.p/(1+self.p**2)
         p_dep.reshape(1,1,1,-1)
         self.Drr = Drr_vrepr / vrepr * c * p_dep * np.ones((len(self.t), len(self.r), len(self.xi), len(self.p)))
-   
         
         # Set islands and time before onset, if any, and append zeros to turn off the transport after the desired duration
         self.setRIsland(r_island)
