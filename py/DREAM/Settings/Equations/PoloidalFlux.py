@@ -28,6 +28,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         self.hyperresistivity_grad_j_tot_max = None
         self.hyperresistivity_gradient_normalized = False
         self.hyperresistivity_dBB0 = None
+        self.hyperresistivity_suppression_level = 0.9
 
 
     def setHyperresistivity(self, Lambda, radius=None, times=None):
@@ -50,7 +51,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
     def setHyperresistivityAdaptive(
         self, dBB0, grad_j_tot_max=None,
         grad_j_tot_max_norm=None,
-        localized=False
+        localized=False, suppression_level=0.9
     ):
         """
         Enable the adaptive hyperresistive diffusion term, which triggers when
@@ -78,6 +79,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
 
         self.hyperresistivity_dBB0 = dBB0
+        self.hyperresistivity_suppression_level = suppression_level
 
 
     def fromdict(self, data):
@@ -96,6 +98,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
                 self.hyperresistivity_dBB0 = float(hyp['dBB0'])
                 self.hyperresistivity_grad_j_tot_max = float(hyp['grad_j_tot_max'])
                 self.hyperresistivity_gradient_normalized = bool(hyp['gradient_normalized'])
+                self.hyperresistivity_suppression_level = float(hyp['suppression_level'])
 
 
     def todict(self):
@@ -115,6 +118,7 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
             hypres['dBB0'] = self.hyperresistivity_dBB0
             hypres['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
             hypres['gradient_normalized'] = self.hyperresistivity_gradient_normalized
+            hypres['suppression_level'] = self.hyperresistivity_suppression_level 
 
         return { 'hyperresistivity': hypres }
 
@@ -132,6 +136,8 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
                 raise EquationException(f"The hyperresistivity parameter 'dBB0' must be a scalar. Current value: {self.hyperresistivity_dBB0}.")
             if not np.isscalar(self.hyperresistivity_grad_j_tot_max):
                 raise EquationException(f"The hyperresistivity parameter 'grad_j_tot_max' must be a scalar. Current value: {self.hyperresistivity_grad_j_tot_max}.")
+            if not np.isscalar(self.hyperresistivity_suppression_level):
+                raise EquationException(f"The hyperresistivity parameter 'suppression_level' must be a scalar. Current value: {self.hyperresistivity_suppression_level}.")
         else:
             raise EquationException(f"Invalid option for hyperresistivity mode: {self.hyperresistivity_mode}.")
 

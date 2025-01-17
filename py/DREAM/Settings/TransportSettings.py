@@ -101,6 +101,7 @@ class TransportSettings:
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
         self.mhdlike_gradient_normalized = False
+        self.mhdlike_suppression_level = 0.9
 
         # Frozen current mode transport
         self.frozen_current_mode = FROZEN_CURRENT_MODE_DISABLED
@@ -289,7 +290,7 @@ class TransportSettings:
     def setMHDLikeRechesterRosenbluth(
         self, dBB0, grad_j_tot_max=None,
         grad_j_tot_max_norm=None,
-        localized=False
+        localized=False, suppression_level=0.9
     ):
         """
         Enable the MHD-like Rechester-Rosenbluth heat transport model.
@@ -300,6 +301,7 @@ class TransportSettings:
             self.type = TRANSPORT_MHD_LIKE
 
         self.mhdlike_dBB0 = dBB0
+        self.mhdlike_suppression_level = suppression_level
 
         if grad_j_tot_max:
             self.mhdlike_grad_j_tot_max = grad_j_tot_max
@@ -400,6 +402,7 @@ class TransportSettings:
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
         self.mhdlike_gradient_normalized = False
+        self.mhdlike_suppression_level = 0.9
 
         if 'type' in data:
             self.type = data['type']
@@ -474,6 +477,7 @@ class TransportSettings:
             self.mhdlike_dBB0 = float(data['mhdlike_dBB0'])
             self.mhdlike_grad_j_tot_max = float(data['mhdlike_grad_j_tot_max'])
             self.mhdlike_gradient_normalized = bool(data['mhdlike_gradient_normalized'])
+            self.mhdlike_suppression_level = float(data['mhdlike_suppression_level'])
 
         if 'frozen_current_mode' in data:
             self.frozen_current_mode = int(data['frozen_current_mode'])
@@ -584,6 +588,7 @@ class TransportSettings:
             data['mhdlike_dBB0'] = self.mhdlike_dBB0
             data['mhdlike_grad_j_tot_max'] = self.mhdlike_grad_j_tot_max
             data['mhdlike_gradient_normalized'] = 1 if self.mhdlike_gradient_normalized else 0
+            data['mhdlike_suppression_level'] = self.mhdlike_suppression_level
 
         data['frozen_current_mode'] = self.frozen_current_mode
         data['D_I_min'] = self.frozen_current_D_I_min

@@ -13,6 +13,7 @@ namespace DREAM {
 		// Maximum current density gradient
 		real_t grad_j_tot_max;
 		bool gradient_normalized = false;
+		real_t suppression_level = 0.9;
 
 		bool transport_enabled = false;
 		real_t transport_enabled_t = 0;
@@ -28,7 +29,7 @@ namespace DREAM {
 	public:
 		AdaptiveMHDLikeTransportTerm(
 			FVM::Grid*, FVM::UnknownQuantityHandler*,
-			const real_t, bool, bool
+			const real_t, bool, const real_t, bool
 		);
 		virtual ~AdaptiveMHDLikeTransportTerm();
 

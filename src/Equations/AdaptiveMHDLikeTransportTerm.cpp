@@ -17,10 +17,11 @@ using namespace DREAM;
 AdaptiveMHDLikeTransportTerm::AdaptiveMHDLikeTransportTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
 	const real_t grad_j_tot_max, bool gradient_normalized,
-	bool localized
+	const real_t suppression_level,	bool localized
 ) : grid(grid), uqh(uqh),
 	grad_j_tot_max(grad_j_tot_max),
 	gradient_normalized(gradient_normalized),
+	suppression_level(suppression_level),
 	localized(localized),
 	id_j_tot(uqh->GetUnknownID(OptionConstants::UQTY_J_TOT)) {
 	
@@ -146,7 +147,7 @@ bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientSuppressed() {
  */
 bool AdaptiveMHDLikeTransportTerm::IsCurrentGradientSuppressed(const len_t ir) {
 	real_t gradj = this->GetCurrentGradient(ir);
-	return (std::abs(gradj) <= this->grad_j_tot_max*0.9);
+	return (std::abs(gradj) <= this->grad_j_tot_max*this->suppression_level);
 }
 
 

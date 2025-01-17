@@ -22,7 +22,7 @@ namespace DREAM {
 	public:
 		AdaptiveHyperresistiveDiffusionTerm(
 			FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
-			const real_t, bool, const real_t, bool
+			const real_t, bool, const real_t, const real_t, bool
 		);
 		virtual ~AdaptiveHyperresistiveDiffusionTerm();
 
