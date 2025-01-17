@@ -1002,14 +1002,17 @@ not accounted for, a module is available which enables three types of transport
 when the total current density gradient :math:`j_{\rm tot}` exceeds a prescribed
 value: runaway density (:math:`n_{\rm re}`) transport, heat
 (:math:`W_{\rm cold}`) transport, and hyper-resistive diffusion
-(:math:`\psi_{\rm p}`). For :math:`n_{\rm re}` and :math:`W_{\rm cold}`, the
-Rechester-Rosenbluth diffusion operator is used, so that the user specifies the
-desired magnetic perturbation strength :math:`\delta B/B`.
+(:math:`\psi_{\rm p}`). All operators are based on the Rechester-Rosenbluth
+transport model, and so the user must specify the desired magnetic perturbation
+strength :math:`\delta B/B`.
 
 When the current density gradient exceeds the prescribed value,
 ``grad_j_tot_max`` or ``grad_j_tot_max_norm``, all transport operators are
-enabled until the current gradient is restored, or for at least ``min_duration``
-seconds. After this, the transport coefficients are set to zero again.
+enabled until the current gradient is restored to user-prescribed level
+(90% of the original value by default). After this, the transport coefficients
+are set to zero again. The transport can either be applied to the full radial
+extent of the plasma, or just to a small region around the spike. This latter
+option is obtained by setting ``localized=True``.
 
 .. note::
 
@@ -1043,24 +1046,26 @@ The adaptive MHD-like transport can either be set using the unified interface:
    grad_j_tot_max = 3e6 # A/m^2
    # ...or
    grad_j_tot_max_norm = 10
-   # Minimum duration of the transport event
-   min_duration = 0.5e-3 # s
-   # Magnetic perturbation amplitude (for n_re and W_cold transport)
+   # Fraction of grad_j to reduce gradient to
+   suppression_level = 0.92
+   # Magnetic perturbation amplitude
    dBB0 = 1e-3
-   # Hyper-resistive diffusion coefficient
-   Lambda0 = 4e-3
+   # Localized transport around the spike?
+   localized=False
 
    ds.eqsys.n_re.setAdaptiveMHDLikeTransport(
-       dBB0=dBB0, Lambda0=Lambda0,
+       dBB0=dBB0,
        grad_j_tot_max=grad_j_tot_max,
-       min_duration=min_duration,
+       suppression_level=suppression_level,
+       localized=localized
    )
 
    # ...or with the normalized gradient instead:
    ds.eqsys.n_re.setAdaptiveMHDLikeTransport(
-       dBB0=dBB0, Lambda0=Lambda0,
+       dBB0=dBB0,
        grad_j_tot_max_norm=grad_j_tot_max_norm,
-       min_duration=min_duration,
+       suppression_level=suppression_level,
+       localized=localized
    )
 
 
@@ -1071,20 +1076,23 @@ Alternatively, the transport can be set separately for each quantity:
    ...
    # MHD-like hyper-resistive diffusion
    ds.eqsys.psi_p.setHyperresistivityAdaptive(
-       grad_j_tot_max=grad_j_tot_max, Lambda0=Lambda0,
-       min_duration=min_duration
+       dBB0=dBB0, grad_j_tot_max=grad_j_tot_max,
+       suppression_level=suppression_level,
+       localized=localized
    )
 
    # MHD-like RE transport
    ds.eqsys.n_re.transport.setMHDLikeRechesterRosenbluth(
        dBB0=dBB0, grad_j_tot_max=grad_j_tot_max,
-       min_duration=min_duration
+       suppression_level=suppression_level,
+       localized=localized
    )
 
    # MHD-like heat transport
    ds.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
        dBB0=dBB0, grad_j_tot_max=grad_j_tot_max,
-       min_duration=min_duration
+       suppression_level=suppression_level,
+       localized=localized
    )
 
 Class documentation
