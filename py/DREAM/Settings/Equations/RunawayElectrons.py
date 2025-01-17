@@ -281,12 +281,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.negative_re = negative_re
         
+
     def setExtrapolateDreicer(self, extrapolateDreicer=False):
         """
         Extrapolates the result from the neural network for small electric fields
         such that the Dreicer generation rate is continuous and has continuous derivative.
         """
         self.extrapolateDreicer = extrapolateDreicer
+
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
@@ -299,7 +301,34 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
-       
+    
+
+    def setAdaptiveMHDLikeTransport(
+        self, dBB0, grad_j_tot_max=None,
+        grad_j_tot_max_norm=None, suppression_level=0.9,
+        localized=False
+    ):
+        """
+        Enable adaptive MHD-like transport on ``n_re``, ``psi_p`` and ``T_cold``
+        simultaneously.
+        """
+        kwargs = {}
+        if grad_j_tot_max:
+            kwargs['grad_j_tot_max'] = grad_j_tot_max
+        elif grad_j_tot_max_norm:
+            kwargs['grad_j_tot_max_norm'] = grad_j_tot_max_norm
+        else:
+            raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
+
+        self.transport.setMHDLikeRechesterRosenbluth(
+            dBB0=dBB0, localized=localized, suppression_level=suppression_level, **kwargs
+        )
+        self.settings.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
+            dBB0=dBB0, localized=localized, suppression_level=suppression_level, **kwargs
+        )
+        self.settings.eqsys.psi_p.setHyperresistivityAdaptive(
+            dBB0=dBB0, localized=localized, suppression_level=suppression_level, **kwargs
+        )
 
 
     def fromdict(self, data):

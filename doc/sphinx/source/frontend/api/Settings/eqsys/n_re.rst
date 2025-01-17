@@ -988,8 +988,112 @@ unstable simulations, one may want to adjust the maximum diffusion coefficient:
        Ip_presc=Ip, D_I_max=200
    )
 
+Adaptive MHD-like transport
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+During the current quench of a disruption, ohmic current spikes may arise which
+heat the plasma locally and drive further ohmic current (as identified
+originally by
+`Putvinski et al (1997) <https://doi.org/10.1016/S0022-3115(97)80056-6>`_). Such
+solutions are generally undesirable, as in reality they would drive MHD 
+instabilities which rapidly destroy them.
+
+To emulate this behaviour also in DREAM, where MHD instabilities are otherwise
+not accounted for, a module is available which enables three types of transport
+when the total current density gradient :math:`j_{\rm tot}` exceeds a prescribed
+value: runaway density (:math:`n_{\rm re}`) transport, heat
+(:math:`W_{\rm cold}`) transport, and hyper-resistive diffusion
+(:math:`\psi_{\rm p}`). All operators are based on the Rechester-Rosenbluth
+transport model, and so the user must specify the desired magnetic perturbation
+strength :math:`\delta B/B`.
+
+When the current density gradient exceeds the prescribed value,
+``grad_j_tot_max`` or ``grad_j_tot_max_norm``, all transport operators are
+enabled until the current gradient is restored to user-prescribed level
+(90% of the original value by default). After this, the transport coefficients
+are set to zero again. The transport can either be applied to the full radial
+extent of the plasma, or just to a small region around the spike. This latter
+option is obtained by setting ``localized=True``.
+
+.. note::
+
+   The option ``grad_j_tot_max`` sets the absolute value of the current density
+   gradient threshold, while ``grad_j_tot_max_norm`` sets the value normalized
+   to the average value of ``j_tot`` and minor radius. Specifically, we have
+
+   .. math::
+
+      \text{grad_j_tot_max_norm} = \frac{a}{\left\langle j_{\rm tot}\right\rangle}\frac{\partial j_{\rm tot}}{\partial r}
+   
+   where
+
+   .. math::
+
+      \left\langle j_{\rm tot} \right\rangle = \frac{1}{a}\int_0^a \mathrm{d}r\,j_{\rm tot}.
+
+   and :math:`a` is the plasma minor radius.
+
+Example
+*******
+The adaptive MHD-like transport can either be set using the unified interface:
+
+.. code-block:: python
+
+   from DREAM import DREAMSettings
+
+   ds = DREAMSettings()
+   ...
+   # Maximum allowed gradient (dj/dr) in j_tot
+   grad_j_tot_max = 3e6 # A/m^2
+   # ...or
+   grad_j_tot_max_norm = 10
+   # Fraction of grad_j to reduce gradient to
+   suppression_level = 0.92
+   # Magnetic perturbation amplitude
+   dBB0 = 1e-3
+   # Localized transport around the spike?
+   localized=False
+
+   ds.eqsys.n_re.setAdaptiveMHDLikeTransport(
+       dBB0=dBB0,
+       grad_j_tot_max=grad_j_tot_max,
+       suppression_level=suppression_level,
+       localized=localized
+   )
+
+   # ...or with the normalized gradient instead:
+   ds.eqsys.n_re.setAdaptiveMHDLikeTransport(
+       dBB0=dBB0,
+       grad_j_tot_max_norm=grad_j_tot_max_norm,
+       suppression_level=suppression_level,
+       localized=localized
+   )
 
 
+Alternatively, the transport can be set separately for each quantity:
+
+.. code-block:: python
+
+   ...
+   # MHD-like hyper-resistive diffusion
+   ds.eqsys.psi_p.setHyperresistivityAdaptive(
+       dBB0=dBB0, grad_j_tot_max=grad_j_tot_max,
+       suppression_level=suppression_level,
+       localized=localized
+   )
+
+   # MHD-like RE transport
+   ds.eqsys.n_re.transport.setMHDLikeRechesterRosenbluth(
+       dBB0=dBB0, grad_j_tot_max=grad_j_tot_max,
+       suppression_level=suppression_level,
+       localized=localized
+   )
+
+   # MHD-like heat transport
+   ds.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
+       dBB0=dBB0, grad_j_tot_max=grad_j_tot_max,
+       suppression_level=suppression_level,
+       localized=localized
+   )
 
 Class documentation
 -------------------
