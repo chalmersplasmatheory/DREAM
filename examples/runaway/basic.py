@@ -94,4 +94,4 @@ ds.output.setFilename('output.h5')
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
 
-do = runiface(ds)
+do = runiface(ds, 'output.h5')
