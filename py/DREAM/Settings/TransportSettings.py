@@ -10,6 +10,8 @@ TRANSPORT_PRESCRIBED = 2
 TRANSPORT_RECHESTER_ROSENBLUTH = 3
 TRANSPORT_SVENSSON = 4
 TRANSPORT_FROZEN_CURRENT = 5
+TRANSPORT_MHD_LIKE = 6
+TRANSPORT_MHD_LIKE_LOCAL = 7
 
 INTERP3D_NEAREST     = 0
 INTERP3D_LINEAR      = 1
@@ -94,6 +96,12 @@ class TransportSettings:
         self.dBB   = None
         self.dBB_t = None
         self.dBB_r = None
+
+        # MHD-like Rechester-Rosenbluth (diffusive) heat transport
+        self.mhdlike_dBB0 = None
+        self.mhdlike_grad_j_tot_max = None
+        self.mhdlike_gradient_normalized = False
+        self.mhdlike_suppression_level = 0.9
 
         # Frozen current mode transport
         self.frozen_current_mode = FROZEN_CURRENT_MODE_DISABLED
@@ -279,6 +287,32 @@ class TransportSettings:
         self.dBB   = dBB
 
 
+    def setMHDLikeRechesterRosenbluth(
+        self, dBB0, grad_j_tot_max=None,
+        grad_j_tot_max_norm=None,
+        localized=False, suppression_level=0.9
+    ):
+        """
+        Enable the MHD-like Rechester-Rosenbluth heat transport model.
+        """
+        if localized:
+            self.type = TRANSPORT_MHD_LIKE_LOCAL
+        else:
+            self.type = TRANSPORT_MHD_LIKE
+
+        self.mhdlike_dBB0 = dBB0
+        self.mhdlike_suppression_level = suppression_level
+
+        if grad_j_tot_max:
+            self.mhdlike_grad_j_tot_max = grad_j_tot_max
+            self.mhdlike_gradient_normalized = False
+        elif grad_j_tot_max_norm:
+            self.mhdlike_grad_j_tot_max = grad_j_tot_max_norm
+            self.mhdlike_gradient_normalized = True
+        else:
+            raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
+
+
     def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000):
         """
         Enable the frozen current mode and specify the target plasma current.
@@ -365,6 +399,11 @@ class TransportSettings:
         self.dBB_r = None
         self.dBB_t = None
 
+        self.mhdlike_dBB0 = None
+        self.mhdlike_grad_j_tot_max = None
+        self.mhdlike_gradient_normalized = False
+        self.mhdlike_suppression_level = 0.9
+
         if 'type' in data:
             self.type = data['type']
 
@@ -433,6 +472,12 @@ class TransportSettings:
             self.dBB   = data['dBB']['x']
             self.dBB_r = data['dBB']['r']
             self.dBB_t = data['dBB']['t']
+
+        if 'mhdlike_dBB0' in data:
+            self.mhdlike_dBB0 = float(data['mhdlike_dBB0'])
+            self.mhdlike_grad_j_tot_max = float(data['mhdlike_grad_j_tot_max'])
+            self.mhdlike_gradient_normalized = bool(data['mhdlike_gradient_normalized'])
+            self.mhdlike_suppression_level = float(data['mhdlike_suppression_level'])
 
         if 'frozen_current_mode' in data:
             self.frozen_current_mode = int(data['frozen_current_mode'])
@@ -539,6 +584,12 @@ class TransportSettings:
                 't': self.dBB_t
             }
 
+        if self.type == TRANSPORT_MHD_LIKE or self.type == TRANSPORT_MHD_LIKE_LOCAL and self.mhdlike_dBB0 is not None:
+            data['mhdlike_dBB0'] = self.mhdlike_dBB0
+            data['mhdlike_grad_j_tot_max'] = self.mhdlike_grad_j_tot_max
+            data['mhdlike_gradient_normalized'] = 1 if self.mhdlike_gradient_normalized else 0
+            data['mhdlike_suppression_level'] = self.mhdlike_suppression_level
+
         data['frozen_current_mode'] = self.frozen_current_mode
         data['D_I_min'] = self.frozen_current_D_I_min
         data['D_I_max'] = self.frozen_current_D_I_max
@@ -575,6 +626,10 @@ class TransportSettings:
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_FROZEN_CURRENT:
             self.verifyFrozenCurrent()
+            self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_MHD_LIKE:
+            self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_MHD_LIKE_LOCAL:
             self.verifyBoundaryCondition()
         else:
             raise TransportException("Unrecognized transport type: {}".format(self.type))
