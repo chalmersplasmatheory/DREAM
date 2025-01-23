@@ -149,8 +149,8 @@ const len_t UnknownQuantityHandler::GetLongVectorSizeAll() {
  * and stored (but not necessarily saved) for the specified
  * unknown quantity.
  */
-real_t UnknownQuantityHandler::GetUnknownDataPreviousTime(const len_t qty, const len_t i) {
-    return unknowns[qty]->GetPreviousTime(i);
+real_t UnknownQuantityHandler::GetUnknownDataPreviousTime(const len_t qty) {
+    return unknowns[qty]->GetPreviousTime();
 }
 
 /**
@@ -178,14 +178,14 @@ real_t *UnknownQuantityHandler::GetUnknownData(const std::string& name) {
  *
  * qty: ID of quantity to get data of.
  */
-real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const len_t qty, const len_t i) {
-    return unknowns[qty]->GetDataPrevious(i);
+real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const len_t qty) {
+    return unknowns[qty]->GetDataPrevious();
 }
 /**
  * name: Name of unknown quantity.
  */
-real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const std::string& name, const len_t i) {
-    return GetUnknownDataPrevious(GetUnknownID(name), i);
+real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const std::string& name) {
+    return GetUnknownDataPrevious(GetUnknownID(name));
 }
 
 /**

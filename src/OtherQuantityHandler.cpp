@@ -432,20 +432,12 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
 
-	DEF_FL_T("fluid/tIoniz", "Estimate of the ionization time scale (as used by the adaptive ionization time stepper) [s]",
-		real_t *n = this->unknowns->GetUnknownData(this->id_ncold);
-		real_t *np = this->unknowns->GetUnknownDataPrevious(this->id_ncold, 1);
-		real_t tp = this->unknowns->GetUnknownDataPreviousTime(this->id_ncold, 1);
-		real_t dt = t - tp;
-
-		real_t *vec = qd->StoreEmpty();
-		for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++) {
-			real_t dn = n[ir] - np[ir];
-			if (dn != 0)
-				vec[ir] = std::abs(dt * np[ir] / dn);
-			else
-				vec[ir] = std::numeric_limits<real_t>::infinity();
-		}
+	DEF_FL("fluid/tIoniz", "Estimate of the ionization time scale (as used by the adaptive ionization time stepper) [s]",
+		qd->Store(this->postProcessor->GetIonizationTime());
+	);
+	DEF_SC("scalar/tIoniz", "Estimate of the shortest ionization time scale (as used by the adaptive ionization time stepper) [s]",
+		real_t ts = this->postProcessor->GetIonizationTimeScalar();
+		qd->Store(&ts);
 	);
 
     // Hyperresistive parameter

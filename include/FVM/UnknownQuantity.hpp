@@ -39,9 +39,9 @@ namespace DREAM::FVM {
             delete data;
         }
 
-        real_t GetPreviousTime(const len_t i=0) { return this->data->GetPreviousTime(i); }
+        real_t GetPreviousTime() { return this->data->GetPreviousTime(); }
         real_t *GetData() { return this->data->Get(); }
-        real_t *GetDataPrevious(const len_t i=0) { return this->data->GetPrevious(i); }
+        real_t *GetDataPrevious() { return this->data->GetPrevious(); }
         real_t *GetInitialData() { return this->data->GetInitialData(); }
         Grid *GetGrid() { return this->grid; }
         const std::string& GetDescription() const { return this->description; }
