@@ -19,19 +19,20 @@ sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.DistributionFunction as DistFunc
+import DREAM.Settings.Equations.RunawayElectronDistribution as FRe
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 
-from DREAM import DREAMSettings, DREAMOutput, DREAMException, runiface
+from DREAM import DREAMSettings, runiface
 
 ds = DREAMSettings()
-#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
+ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
+E = 1.5     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
@@ -53,23 +54,18 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 
 # Disable avalanche generation
 ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
+ds.eqsys.n_re.setInitialProfile(1e16)
 
 # Hot-tail grid settings
-ds.hottailgrid.setNxi(Nxi)
-ds.hottailgrid.setNp(Np)
-ds.hottailgrid.setPmax(pMax)
+ds.hottailgrid.setEnabled(False)
+ds.runawaygrid.setNp(100)
+ds.runawaygrid.setPmax(50)
+ds.runawaygrid.setNxi(40)
+ds.runawaygrid.setBiuniformGrid(thetasep=0.5, nthetasep_frac=0.8)
 
 # Set initial hot electron Maxwellian
-ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
-
-# Set boundary condition type at pMax
-#ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
-ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
-ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_NEGLECT)
-ds.eqsys.f_hot.setAdvectionInterpolationMethod(DistFunc.AD_INTERP_UPWIND)
-
-# Disable runaway grid
-ds.runawaygrid.setEnabled(False)
+ds.eqsys.f_re.setInitialAvalancheDistribution(E=E)
+ds.eqsys.f_re.setAdvectionInterpolationMethod(DistFunc.AD_INTERP_UPWIND)
 
 # Set up radial grid
 ds.radialgrid.setB0(5)
@@ -82,14 +78,11 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 ds.solver.preconditioner.setEnabled(False)
 
 # include otherquantities to save to output
-ds.other.include('fluid','nu_s','nu_D')
+ds.other.include('fluid')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)
 ds.timestep.setNt(Nt)
-
-ds.output.setTiming(stdout=True, file=True)
-ds.output.setFilename('output.h5')
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

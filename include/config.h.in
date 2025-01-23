@@ -23,5 +23,7 @@ typedef int64_t int_t;
 #define DREAM_GIT_REFSPEC "@GIT_REFSPEC@"
 #define DREAM_GIT_SHA1 "@GIT_SHA1@"
 #define DREAM_GIT_TAG "@GIT_TAG@"
+#define DREAM_GIT_HAS_CHANGES "@GIT_HAS_CHANGES@"
+#define DREAM_GIT_TIME "@GIT_TIME@"
 
 #endif/*_DREAM_CONFIG_H*/
