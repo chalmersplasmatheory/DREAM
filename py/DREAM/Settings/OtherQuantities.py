@@ -34,6 +34,7 @@ class OtherQuantities:
         'fluid/Tcold_binding_energy',
 #        'fluid/Tcold_radiationFromNuS',
         'fluid/Tcold_ion_coll',
+        'fluid/tIoniz',
         'fluid/W_hot',
         'fluid/W_re',
         'fluid/reioniz_vsigma',
@@ -76,6 +77,7 @@ class OtherQuantities:
         'scalar/radialloss_f_hot',
         'scalar/energyloss_f_re',
         'scalar/energyloss_f_hot',
+        'scalar/tIoniz',
         'scalar/Ypdot',
         'ripple',
         'transport'
