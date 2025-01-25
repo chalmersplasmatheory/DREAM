@@ -29,8 +29,6 @@ OutputGenerator::~OutputGenerator() {}
  *          iteration or time step.
  */
 void OutputGenerator::Save(bool current) {
-    // TODO Save settings
-
     // Save grids
     this->SaveGrids("grid", current);
 
@@ -53,5 +51,8 @@ void OutputGenerator::Save(bool current) {
     // Save "other" quantities (if any)
     if (oqty->GetNRegistered() > 0 && !current)
         this->SaveOtherQuantities("other");
+	
+	// Save information about the code
+	this->SaveCodeInfo("code");
 }
 

@@ -16,9 +16,9 @@ using namespace DREAM;
  * Constructor.
  */
 HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
-    FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
+    FVM::Grid *grid,
     FVM::Interpolator1D *dB_B, FVM::UnknownQuantityHandler *unknowns
-) : FVM::DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) {
+) : FVM::DiffusionTerm(grid), deltaBOverB(dB_B) {
 
     SetName("HeatTransportRechesterRosenbluth");
 
@@ -36,7 +36,8 @@ HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
  * Destructor.
  */
 HeatTransportRechesterRosenbluth::~HeatTransportRechesterRosenbluth() {
-    delete this->deltaBOverB;
+	if (this->deltaBOverB != nullptr)
+		delete this->deltaBOverB;
     delete [] this->dD;
 }
 
@@ -67,7 +68,7 @@ bool HeatTransportRechesterRosenbluth::GridRebuilt() {
 void HeatTransportRechesterRosenbluth::Rebuild(
     const real_t t, const real_t, FVM::UnknownQuantityHandler *unknowns
 ) {
-    const real_t *dB_B = this->deltaBOverB->Eval(t);
+    const real_t *dB_B = this->EvaluateDeltaBOverB(t);
     const len_t nr = this->grid->GetNr();
     const real_t mc2 = Constants::mc2inEV;
 

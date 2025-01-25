@@ -4,6 +4,9 @@
 
 #include "DREAM/Equations/Fluid/HeatTransportDiffusion.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
+#include "DREAM/Equations/Fluid/HeatTransportRRAdaptiveMHDLike.hpp"
+#include "DREAM/Equations/Fluid/RunawayTransportRechesterRosenbluth.hpp"
+#include "DREAM/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
@@ -26,6 +29,13 @@ using namespace std;
 void SimulationGenerator::DefineOptions_Transport(
     const string& mod, Settings *s, bool kinetic, const string& subname
 ) {
+	// Transport type
+	s->DefineSetting(
+		mod + "/" + subname + "/type",
+		"Type of transport to apply.",
+		(int_t)OptionConstants::EQTERM_TRANSPORT_NONE
+	);
+
     // Advection
     if (kinetic)
         DefineDataTR2P(mod + "/" + subname, s, "ar");
@@ -52,6 +62,28 @@ void SimulationGenerator::DefineOptions_Transport(
 
     // Rechester-Rosenbluth diffusion
     DefineDataRT(mod + "/" + subname, s, "dBB");
+
+	// Adaptive MHD-like transport options
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_dBB0",
+		"Magnetic perturbation for adaptive MHD-like Rechester-Rosenbluth transport.",
+		(real_t)0.0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_grad_j_tot_max",
+		"Maximum current density gradient prior to activation of hyperresistive term",
+		(real_t)0.0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_gradient_normalized",
+		"Flag indicating whether or not 'mhdlike_grad_j_tot_max' is normalized to the average j_tot",
+		(bool)false
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_suppression_level",
+		"Fraction of the maximum current density gradient below which the adaptive transport should be disabled",
+		(real_t)0.9
+	);
 
 	// Frozen current mode
 	s->DefineSetting(
@@ -350,6 +382,8 @@ bool SimulationGenerator::ConstructTransportTerm(
         return (c!=nullptr);
     };
 
+	enum OptionConstants::eqterm_transport_type type =
+		(enum OptionConstants::eqterm_transport_type)s->GetInteger(path + "/type");
     enum OptionConstants::eqterm_transport_bc bc =
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
@@ -417,12 +451,6 @@ bool SimulationGenerator::ConstructTransportTerm(
                 "Rechester-Rosenbluth transport applied alongside other transport model."
             );
 
-        if (!kinetic && !heat)
-            throw SettingsException(
-                "%s: Rechester-Rosenbluth diffusion can only be applied to kinetic quantities and heat.",
-                path.c_str()
-            );
-
         hasNonTrivialTransport = true;
 
         FVM::Interpolator1D *dBB = LoadDataRT_intp(
@@ -431,21 +459,28 @@ bool SimulationGenerator::ConstructTransportTerm(
         );
 
         FVM::DiffusionTerm *dt;
-        if (not heat) { // Particle transport
+        if (kinetic) { // Particle transport
             RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
                 grid, momtype, dBB
             );
             oprtr->AddTerm(rrt);
 
             dt = rrt;
-        } else {
+        } else if (heat) {	// Heat transport
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
-                grid, momtype, dBB, eqsys->GetUnknownHandler()
+                grid, dBB, eqsys->GetUnknownHandler()
             );
             oprtr->AddTerm(htrr);
 
             dt = htrr;
-        }
+        } else {	// Fluid transport
+			RunawayTransportRechesterRosenbluth *rtrr = new RunawayTransportRechesterRosenbluth(
+				grid, dBB
+			);
+			oprtr->AddTerm(rtrr);
+
+			dt = rtrr;
+		}
 
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
@@ -457,6 +492,68 @@ bool SimulationGenerator::ConstructTransportTerm(
         if (diffusive_bc != nullptr)
             *diffusive_bc = dbc;
     }
+
+	// MHD-like Rechester-Rosenbluth heat transport
+	if (
+		type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE ||
+		type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE_LOCAL
+	) {
+        if (hasNonTrivialTransport)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_INCOMPATIBLE_TRANSPORT,
+                "Rechester-Rosenbluth transport applied alongside other transport model."
+            );
+
+		real_t dBB0 = s->GetReal(mod + "/" + subname + "/mhdlike_dBB0");
+		real_t grad_j_tot_max = s->GetReal(mod + "/" + subname + "/mhdlike_grad_j_tot_max");
+		bool gradient_normalized = s->GetBool(mod + "/" + subname + "/mhdlike_gradient_normalized");
+		real_t suppression_level = s->GetReal(mod + "/" + subname + "/mhdlike_suppression_level");
+		bool localized = (type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE_LOCAL);
+
+        if (heat) {
+			hasNonTrivialTransport = true;
+
+			HeatTransportRRAdaptiveMHDLike *hrr = new HeatTransportRRAdaptiveMHDLike(
+				grid, eqsys->GetUnknownHandler(),
+				grad_j_tot_max, gradient_normalized,
+				dBB0, suppression_level, localized
+			);
+
+			oprtr->AddTerm(hrr);
+
+			// Add boundary condition...
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, hrr, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
+		} else if (!kinetic) {
+			hasNonTrivialTransport = true;
+
+			RunawayTransportRRAdaptiveMHDLike *rrr = new RunawayTransportRRAdaptiveMHDLike(
+				grid, eqsys->GetUnknownHandler(),
+				grad_j_tot_max, gradient_normalized,
+				dBB0, suppression_level, localized
+			);
+			oprtr->AddTerm(rrr);
+
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, rrr, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
+		} else
+            throw SettingsException(
+                "%s: Adaptive Rechester-Rosenbluth diffusion can only be applied to heat.",
+                path.c_str()
+            );
+	}
 
     bool hasSvenssonA = false;
     if (hasCoeff("s_ar", 4)) {
@@ -591,9 +688,10 @@ bool SimulationGenerator::ConstructTransportTerm(
 			);
 		}
 	}
-    
+            
     return hasNonTrivialTransport;
 }
+
 
 template<class T1, class T2>
 T1 *SimulationGenerator::ConstructTransportBoundaryCondition(

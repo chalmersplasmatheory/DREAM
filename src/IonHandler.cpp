@@ -262,6 +262,17 @@ const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
     return niReturn;
 }
 
+/**
+ * Calculates the total mass density of the ions.
+ */
+const real_t IonHandler::GetTotalIonMassDensity(const len_t ir) const {
+	real_t rho = 0;
+	for (len_t iZ = 0; iZ < this->nZ; iZ++)
+		for (len_t Z0 = 0; Z0 <= this->Zs[iZ]; Z0++)
+			rho += this->GetIonSpeciesMass(iZ) * this->GetIonDensity(ir, iZ, Z0);
+	
+	return rho;
+}
 
 /**
  * Calculates the density of tritium in the plasma.
