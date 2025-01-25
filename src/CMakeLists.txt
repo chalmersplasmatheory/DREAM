@@ -31,6 +31,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
+    "${PROJECT_SOURCE_DIR}/src/Equations/AdaptiveMHDLikeTransportTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionHottail.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
@@ -42,6 +43,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ComptonRateTerm.cpp"
@@ -54,6 +56,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/FreeElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportDiffusion.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRechesterRosenbluth.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRRAdaptiveMHDLike.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTermHighZ.cpp"
@@ -84,6 +87,9 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRechesterRosenbluth.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HaloRegionHeatLossTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SvenssonTransport.cpp"
@@ -117,6 +123,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
+    
 )
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/AnalyticDistribution.hpp"

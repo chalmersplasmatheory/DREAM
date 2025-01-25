@@ -224,6 +224,13 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
 real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *, real_t *){
     // implement avalanche distribution
     real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+	return evaluateEnergyDistributionWithE(ir, p, Eterm);
+}
+
+real_t AnalyticDistributionRE::evaluateEnergyDistributionWithE(
+	len_t ir, real_t p, real_t Eterm,
+	real_t*, real_t*
+) {
     real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
     real_t Eceff = REFluid->GetEffectiveCriticalField(ir);
     real_t GammaAva = REFluid->GetAvalancheGrowthRate(ir);
@@ -266,6 +273,16 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
     return D;
 }
 
+real_t AnalyticDistributionRE::evaluatePitchDistributionWithE(
+    len_t ir, real_t xi0, real_t p, real_t E,
+    real_t * /*dfdxi0*/, real_t * /*dfdp*/, real_t * /*dfdr*/
+    /*, real_t *dfdA */
+) {
+	real_t A = GetAatP(ir, p, this->collSettings, &E);
+	real_t D = evaluatePitchDistributionFromA(ir, xi0, A) * rGrid->GetVpVol(ir) / EvaluateVpREAtA(ir, A);
+	return D;
+}
+
 /**
  * Evaluates the pitch distribution width parameter 'A'
  */
@@ -275,6 +292,17 @@ real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::col
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(rGrid->GetFSA_B2(ir)); 
     real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);    
     return 2*E/pNuD;
+}
+
+/**
+ * Evaluate the full distribution function at the given electric field strength.
+ */
+real_t AnalyticDistributionRE::evaluateFullDistributionWithE(
+	len_t ir, real_t xi0, real_t p, real_t E,
+	real_t *dfdxi0, real_t *dfdp, real_t *dfdr
+) {
+	return evaluateEnergyDistributionWithE(ir, p, E, dfdp, dfdr) *
+		evaluatePitchDistributionWithE(ir, xi0, p, E, dfdxi0, dfdp, dfdr);
 }
 
 /**

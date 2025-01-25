@@ -21,6 +21,7 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
+#include "DREAM/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/EFieldFromConductivityTerm.hpp"
 
@@ -89,6 +90,7 @@ namespace DREAM {
 
 
 #define MODULENAME "eqsys/E_field"
+#define MODULENAME_HYPRES "eqsys/psi_p/hyperresistivity"
 
 
 /**
@@ -119,8 +121,12 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     DefineDataT(MODULENAME "/bc", s, "V_loop_wall");
 
     // Settings for hyperresistive term
-    s->DefineSetting("eqsys/psi_p/hyperresistivity/enabled", "Enable the hyperresistive diffusion term", (bool)false);
-    DefineDataRT("eqsys/psi_p/hyperresistivity", s, "Lambda");
+    s->DefineSetting(MODULENAME_HYPRES "/mode", "Mode for the hyperresistive term", (int_t)OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_NEGLECT);
+	s->DefineSetting(MODULENAME_HYPRES "/grad_j_tot_max", "Maximum current density gradient prior to activation of hyperresistive term", (real_t)0.0);
+	s->DefineSetting(MODULENAME_HYPRES "/gradient_normalized", "Flag indicating whether or not 'grad_j_tot_max' is normalized to the average j_tot", (bool)false);
+	s->DefineSetting(MODULENAME_HYPRES "/dBB0", "Magnetic perturbation value for calculating adaptive diffusion coefficient, when enabled", (real_t)0.0);
+	s->DefineSetting(MODULENAME_HYPRES "/suppression_level", "Fraction of the maximum current density gradient below which the adaptive transport should be disabled", (real_t)0.9);
+    DefineDataRT(MODULENAME_HYPRES, s, "Lambda");
 }
 
 /**
@@ -222,23 +228,48 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     Vloop->AddTerm(new VloopTerm(fluidGrid));
 
     // Add hyperresistive term
-    if (s->GetBool("eqsys/psi_p/hyperresistivity/enabled")) {
+	enum OptionConstants::eqterm_hyperresistivity_mode hypres_mode =
+		(enum OptionConstants::eqterm_hyperresistivity_mode)s->GetInteger(MODULENAME_HYPRES "/mode");
+    if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED) {
         FVM::Interpolator1D *Lambda = LoadDataRT_intp(
-            "eqsys/psi_p/hyperresistivity",
+            MODULENAME_HYPRES,
             eqsys->GetFluidGrid()->GetRadialGrid(),
             s, "Lambda", true
         );
 
-        FVM::Operator *hyperTerm = new FVM::Operator(fluidGrid);
+        FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
         HyperresistiveDiffusionTerm *hrdt = new HyperresistiveDiffusionTerm(
             fluidGrid, Lambda
         );
-        hyperTerm->AddTerm(hrdt);
+        hypTerm->AddTerm(hrdt);
         oqty_terms->psi_p_hyperresistive = hrdt;
 
-        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hyperTerm);
+        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hypTerm);
         eqn += " + hyperresistivity";
-    }
+    } else if (
+		hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE ||
+		hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL
+	) {
+		real_t grad_j_tot_max = s->GetReal(MODULENAME_HYPRES "/grad_j_tot_max");
+		bool gradient_normalized = s->GetBool(MODULENAME_HYPRES "/gradient_normalized");
+		real_t dBB0 = s->GetReal(MODULENAME_HYPRES "/dBB0");
+		real_t suppression_level = s->GetReal(MODULENAME_HYPRES "/suppression_level");
+
+		bool localized = (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL);
+
+		FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
+		AdaptiveHyperresistiveDiffusionTerm *ahrdt = new AdaptiveHyperresistiveDiffusionTerm(
+			fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(),
+			grad_j_tot_max, gradient_normalized,
+			dBB0, suppression_level, localized
+		);
+
+		hypTerm->AddTerm(ahrdt);
+		oqty_terms->psi_p_hyperresistive = ahrdt;
+
+		eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hypTerm);
+		eqn += " + hyperresistivity";
+	}
 
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, dtTerm, eqn);
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Vloop);

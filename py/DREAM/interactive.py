@@ -43,9 +43,12 @@ def setup_interactive(do, glob):
         return do.time2index(t)
 
     # Declare other useful stuff
+    glob['code'] = do.code
     glob['grid']  = do.grid
     glob['other'] = do.other
+    glob['settings'] = do.settings
     glob['solver'] = do.solver
+    glob['timings'] = do.timings
     glob['do'] = do
     glob['time2index'] = time2index
     glob['t2i'] = time2index

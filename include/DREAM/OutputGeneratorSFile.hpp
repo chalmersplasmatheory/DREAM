@@ -11,6 +11,7 @@ namespace DREAM {
         std::string filename;
 		SFile *sf=nullptr;
 
+		virtual void SaveCodeInfo(const std::string&) override;
 		virtual void SaveGrids(const std::string&, bool) override;
 		virtual void SaveIonMetaData(const std::string&) override;
 		virtual void SaveOtherQuantities(const std::string&) override;

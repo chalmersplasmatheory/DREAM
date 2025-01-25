@@ -309,9 +309,7 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
         // Get dimensions of array
         int ndim = PyArray_NDIM(ao);
         npy_intp *_dims = PyArray_DIMS(ao);
-
-        if (ndim == 1 && _dims[0] == 1) {
-        }
+		npy_intp *_strides = PyArray_STRIDES(ao);
 
         // Convert to 'len_t' (needed for DREAM Settings API)
         len_t *dims = new len_t[ndim];
@@ -325,12 +323,12 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
         if (dtype == NPY_INT) {
             v = dreampy_convert<int_t,int>(
                 reinterpret_cast<int*>(PyArray_DATA(ao)),
-                ndim, _dims
+                ndim, _dims, _strides
             );
         } else if (dtype == NPY_LONG) {
             v = dreampy_convert<int_t,long>(
                 reinterpret_cast<long*>(PyArray_DATA(ao)),
-                ndim, _dims
+                ndim, _dims, _strides
             );
         } else
             throw DREAM::DREAMException(
@@ -397,6 +395,7 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
         // Get dimensions of array
         int ndim = PyArray_NDIM(ao);
         npy_intp *_dims = PyArray_DIMS(ao);
+		npy_intp *_strides = PyArray_STRIDES(ao);
 
         // Convert to 'len_t' (needed for DREAM Settings API)
         len_t *dims = new len_t[ndim];
@@ -410,17 +409,17 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
         if (dtype == NPY_FLOAT) {
             v = dreampy_convert<real_t,float>(
                 reinterpret_cast<float*>(PyArray_DATA(ao)),
-                ndim, _dims
+                ndim, _dims, _strides
             );
         } else if (dtype == NPY_DOUBLE) {
             v = dreampy_convert<real_t,double>(
-                reinterpret_cast<double*>(PyArray_DATA(ao)),
-                ndim, _dims
+				reinterpret_cast<double*>(PyArray_DATA(ao)),
+                ndim, _dims, _strides
             );
         } else if (dtype == NPY_LONG) {
             v = dreampy_convert<real_t,long>(
                 reinterpret_cast<long*>(PyArray_DATA(ao)),
-                ndim, _dims
+                ndim, _dims, _strides
             );
         } else
             throw DREAM::DREAMException(

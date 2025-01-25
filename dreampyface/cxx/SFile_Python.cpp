@@ -176,6 +176,7 @@ T *SFile_Python::getMultiArrayLinear(
 
         sfilesize_t _ndim = PyArray_NDIM(ao);
         npy_intp *_dims = PyArray_DIMS(ao);
+		npy_intp *_strides = PyArray_STRIDES(ao);
 
         if (_ndim > nndims)
             return nullptr;
@@ -191,17 +192,17 @@ T *SFile_Python::getMultiArrayLinear(
         if (dtype == NPY_FLOAT) {
             v = dreampy_convert<T, float>(
                 reinterpret_cast<float*>(PyArray_DATA(ao)),
-                ndims, _dims
+                ndims, _dims, _strides
             );
         } else if (dtype == NPY_DOUBLE) {
             v = dreampy_convert<T, double>(
                 reinterpret_cast<double*>(PyArray_DATA(ao)),
-                ndims, _dims
+                ndims, _dims, _strides
             );
         } else if (dtype == NPY_LONG) {
             v = dreampy_convert<T, long>(
                 reinterpret_cast<long*>(PyArray_DATA(ao)),
-                ndims, _dims
+                ndims, _dims, _strides
             );
         } else
             throw DREAM::DREAMException(

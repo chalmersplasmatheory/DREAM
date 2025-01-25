@@ -9,12 +9,9 @@
 
 namespace DREAM {
     class HeatTransportRechesterRosenbluth : public FVM::DiffusionTerm {
-    private:
-        enum OptionConstants::momentumgrid_type mgtype;
-        FVM::Interpolator1D *deltaBOverB;
-
+    protected:
+        FVM::Interpolator1D *deltaBOverB=nullptr;
         FVM::UnknownQuantityHandler *unknowns;
-
         real_t *dD=nullptr;
 
         // IDs of unknown quantities used by the operator...
@@ -23,9 +20,11 @@ namespace DREAM {
         void AllocateDiffCoeff();
         virtual void SetPartialDiffusionTerm(len_t, len_t) override;
 
+		virtual const real_t *EvaluateDeltaBOverB(const real_t t) { return this->deltaBOverB->Eval(t); }
+
     public:
-        HeatTransportRechesterRosenbluth(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Interpolator1D*, FVM::UnknownQuantityHandler*);
-        ~HeatTransportRechesterRosenbluth();
+        HeatTransportRechesterRosenbluth(FVM::Grid*, FVM::Interpolator1D*, FVM::UnknownQuantityHandler*);
+        virtual ~HeatTransportRechesterRosenbluth();
 
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
