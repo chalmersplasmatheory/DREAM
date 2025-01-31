@@ -613,6 +613,7 @@ class Ions(UnknownQuantity):
             initialTi = data['initialTi']
         if 'init_equilibrium' in data:
             init_equilibrium = data['init_equilibrium']
+        if 'initialNi' in data:
             initialNi = data['initialNi']
 
         iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx = 0, 0, 0, 0, 0, 0, 0
