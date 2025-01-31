@@ -301,7 +301,7 @@ real_t AnalyticDistributionRE::evaluateFullDistributionWithE(
 	len_t ir, real_t xi0, real_t p, real_t E,
 	real_t *dfdxi0, real_t *dfdp, real_t *dfdr
 ) {
-	return evaluateEnergyDistributionWithE(ir, p, E, dfdp, dfdr) *
+	return evaluateEnergyDistribution(ir, p, dfdp, dfdr) *
 		evaluatePitchDistributionWithE(ir, xi0, p, E, dfdxi0, dfdp, dfdr);
 }
 
