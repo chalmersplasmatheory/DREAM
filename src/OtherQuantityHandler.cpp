@@ -1052,6 +1052,12 @@ void OtherQuantityHandler::DefineQuantities() {
     );
 
 	if (this->tracked_terms->f_hot_kin_rates.size() > 0) {
+		DEF_HT_MUL("hottail/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+			for (auto t : this->tracked_terms->f_hot_kin_rates)
+				t->SetVectorElements(v, n_i);
+		);
 		DEF_HT_MUL("hottail/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
 			real_t *v = qd->StoreEmpty();
 
@@ -1070,6 +1076,12 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
 	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
+		DEF_HT_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+			for (auto t : this->tracked_terms->f_re_kin_rates)
+				t->SetVectorElements(v, n_i);
+		);
 		DEF_RE_MUL("runaway/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
 			real_t *v = qd->StoreEmpty();
 
@@ -1088,6 +1100,12 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
     if (this->tracked_terms->n_re_kin_rates.size() > 0) {
+		DEF_FL_MUL("fluid/reioniz_rate", nChargeStates, "Ionization rate due to runaway impact ionization [m^-3 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+			for (auto t : this->tracked_terms->n_re_kin_rates)
+				t->SetVectorElements(v, n_i);
+		);
         DEF_FL_MUL("fluid/reioniz_vsigma", nChargeStates, "Approximated runaway impact ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
             real_t *v = qd->StoreEmpty();
             const len_t nr = this->fluidGrid->GetNr();
