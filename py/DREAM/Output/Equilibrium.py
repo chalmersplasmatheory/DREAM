@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from scipy.interpolate import RectBivariateSpline
 
 class Equilibrium:
     
@@ -85,5 +86,109 @@ class Equilibrium:
             plt.show()
 
         return ax
+        
+        
+    def getRThetaPhiFromCartesian(self, x, y, z, startingGuess = None, lengthScale=1e-2, tol=1e-4):
+        """
+        Calculate the flux surface coordinates corresponding to the given cartesian coordinates, centeread at the magnetic axis at phi=0 (same coordinates as used to track the SPI shards)
+        
+        :param x: x-coordinates for the desired points. May be an array.
+        :param y: y-coordinates for the desired points. May be an array.
+        :param z: z-coordinates for the desired points. May be an array.
+        :param startingGuess: Starting guesses for r, which may be given to speed up the convergence. If ``None``, the toroidal minor radius coordinate rho will be used as a starting guess.
+        :param lengthScale: Estimate of how far away from the starting guess the r-coordinates are likely to be. Used as a step size when looking for a range of r-values encapsulating the true values of r, to prepare for the bisection used to calculate r.
+        :param tol: Determines the accuracy to which the bisection is performed. The bisection will stop when the interval becomes smaller than tol*lengthScale.
+        """
+        # Major radius coordinate
+        R = np.hypot(x+self.R0,z)
+
+        #Position vector
+        rhox = x+self.R0 - self.R0*(x+self.R0)/R
+        rhoy = y
+        rhoz = z - self.R0*z/R
+
+        # Minor radius at poloidal angle
+        rho = np.sqrt(rhox**2 + rhoy**2 + rhoz**2)
+
+        # Poloidal angle
+        theta = np.zeros(R.shape)
+        theta[R>=self.R0] = np.arctan2(rhoy[R>=self.R0], np.hypot(rhox[R>=self.R0],rhoz[R>=self.R0]))
+        theta[R<self.R0] = np.arctan2(rhoy[R<self.R0], -np.hypot(rhox[R<self.R0], rhoz[R<self.R0]))
+        theta[theta<0] = theta[theta<0]+2*np.pi
+
+
+        # Bisection to find radial coordinate corresponding
+        # to 'r' at 'theta'...
+        # We make a guess for a valid search intervall of startingGuessR+/-lengthScale,
+        # and check if it has to be expanded before actually starting with the bisection
+        if startingGuess is None:
+            startingGuess = rho
+        ra_all = startingGuess-lengthScale
+        ra_all[ra_all<0] = 0
+        rb_all = ra_all + 2*lengthScale
+        rho_all = rho
+        theta_all = theta
+
+        getx = RectBivariateSpline(self.RMinusR0_f[0,:], self.theta, self.RMinusR0_f[:].T)
+        gety = RectBivariateSpline(self.RMinusR0_f[0,:], self.theta, self.ZMinusZ0_f[:].T)
+
+        # Check which points are actually inside the plasma
+        xxmax = getx(self.RMinusR0_f[0,-1], theta, grid=False)
+        yymax = gety(self.RMinusR0_f[0,-1], theta, grid=False)
+        rhomax = np.hypot(xxmax, yymax)
+        inside_plasma = rho<rhomax
+
+        ra = ra_all[inside_plasma]
+        rb = rb_all[inside_plasma]
+        theta = theta_all[inside_plasma]
+        rho = rho_all[inside_plasma]
+
+        # Shift ra and rb of rb is outside the grid
+        ra[rb>self.RMinusR0_f[0,-1]] -= (rb[rb>self.RMinusR0_f[0,-1]] - self.RMinusR0_f[0,-1])
+        ra[ra<0] = 0
+        rb[rb>self.RMinusR0_f[0,-1]] -= (rb[rb>self.RMinusR0_f[0,-1]] - self.RMinusR0_f[0,-1])
+
+        continueIntervalSearch=True
+
+        while continueIntervalSearch: 
+            xxa = getx(ra, theta, grid=False)
+            yya = gety(ra, theta, grid=False)
+
+            xxb = getx(rb, theta, grid=False)
+            yyb = gety(rb, theta, grid=False)
+
+            rhoa = np.hypot(xxa,yya)
+            rhob = np.hypot(xxb,yyb)
+
+            ra[(rhoa>rho) & (rhob>rho)] -= 2*lengthScale
+            ra[ra<0] = 0
+            rb = ra + 2*lengthScale
+
+            ra[(rhoa<rho) & (rhob<rho)]+=2*lengthScale
+            rb[(rhoa<rho) & (rhob<rho)]+=2*lengthScale
+            
+            # Shift ra and rb of rb is outside the grid
+            ra[rb>self.RMinusR0_f[0,-1]] -= (rb[rb>self.RMinusR0_f[0,-1]] - self.RMinusR0_f[0,-1])
+            ra[ra<0] = 0
+            rb[rb>self.RMinusR0_f[0,-1]] -= (rb[rb>self.RMinusR0_f[0,-1]] - self.RMinusR0_f[0,-1])
+
+            continueIntervalSearch = np.any(((rhoa<rho) & (rhob<rho)) | ((rhoa>rho) & (rhob>rho)))
+
+        continueBisect=True
+        while continueBisect:
+            r = (ra+rb)/2
+            xx = getx(r, theta, grid=False)
+            yy = gety(r, theta, grid=False)
+            rhor = np.hypot(xx,yy)
+            ra[rhor<rho] = r[rhor<rho]
+            rb[rhor>=rho] = r[rhor>=rho]
+            continueBisect=np.any(np.abs(ra-rb)>lengthScale*tol)
+
+        rb_all[inside_plasma] = r
+        rb_all[~inside_plasma] = self.RMinusR0_f[0,-1]+1e-2 # Arbitrary value outside the plasma
+
+        phi = np.arctan2(z,self.R0+x)
+
+        return rb_all, theta, phi
 
 
