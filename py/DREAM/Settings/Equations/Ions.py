@@ -53,6 +53,7 @@ class Ions(UnknownQuantity):
 
         self.ionization = ionization
         self.typeTi = IONS_T_I_NEGLECT
+        self.reioniz_scale = 1
 
         self.advectionInterpolationCharged = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.advectionInterpolationNeutral = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
@@ -236,13 +237,16 @@ class Ions(UnknownQuantity):
             raise EquationException("Invalid call to 'getIon()'.")
 
 
-    def setIonization(self, ionization=IONIZATION_MODE_FLUID):
+    def setIonization(self, ionization=IONIZATION_MODE_FLUID, reioniz_scale=1.0):
         """
         Sets which model to use for ionization.
 
         :param int ionization: Flag indicating which model to use for ionization.
         """
         self.ionization=ionization
+
+        if ionization == IONIZATION_MODE_FLUID_RE:
+            self.reioniz_scale = reioniz_scale
 
 
     def getHydrogenSpecies(self):
@@ -704,6 +708,9 @@ class Ions(UnknownQuantity):
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
 
+        if 'reioniz_scale' in data:
+            self.reioniz_scale = float(data['reioniz_scale'])
+
         self.verifySettings()
 
 
@@ -899,6 +906,7 @@ class Ions(UnknownQuantity):
         }
         data['ionization'] = self.ionization
         data['typeTi'] = self.typeTi
+        data['reioniz_scale'] = self.reioniz_scale
 
         # Initial equilibrium
         for i in range(len(initialNi)):
