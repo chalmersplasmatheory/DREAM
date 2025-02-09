@@ -55,7 +55,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
 	s->DefineSetting(MODULENAME "/init_equilibrium", "Flags indicating whether to initialize species in coronal equilibrium.", 1, dims, (int_t*)nullptr);
-	s->DefineSetting(MODULENAME "/reioniz_rescale", "Factor by which to rescale ion runaway ionization term.", (real_t)1.0);
+	s->DefineSetting(MODULENAME "/reioniz_scale", "Factor by which to rescale ion runaway ionization term.", (real_t)1.0);
 
     s->DefineSetting(MODULENAME "/SPIMolarFraction", "molar fraction of SPI injection (if any)",0, (real_t*)nullptr);
 
@@ -352,7 +352,7 @@ void SimulationGenerator::ConstructEquation_Ions(
                     }
                 }
                 else if (includeFluidREIonization) {
-					real_t scaleFactor = s->GetReal(MODULENAME "/reioniz_rescale");
+					real_t scaleFactor = s->GetReal(MODULENAME "/reioniz_scale");
                     IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, scaleFactor);
                     oqty_terms->n_re_kin_rates.push_back(ifrit);
                     eqn->AddTerm(ifrit);
