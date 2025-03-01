@@ -1,6 +1,7 @@
 #ifndef _DREAM_EQUATION_LY_OPAQUE_D_ION_RATE_EQUATION_HPP
 #define _DREAM_EQUATION_LY_OPAQUE_D_ION_RATE_EQUATION_HPP
 
+#include <vector>
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/AMJUEL.hpp"
 
@@ -11,8 +12,10 @@ namespace DREAM {
     public:
     	LyOpaqueDIonRateEquation(
     		FVM::Grid* g, IonHandler* ions, const len_t iIon,
-    		FVM::UnknownQuantityHandler* unknowns, bool addFluidIonization, bool addFluidJacobian, bool isAbl, AMJUEL* amjuel
-    	):IonRateEquation(g,ions,iIon,nullptr,unknowns,addFluidIonization, addFluidJacobian,isAbl), amjuel(amjuel){}
+    		FVM::UnknownQuantityHandler* unknowns, bool addFluidIonization,
+			bool addFluidJacobian, bool isAbl, AMJUEL* amjuel,
+			std::vector<len_t> &cxIons
+    	):IonRateEquation(g,ions,iIon,nullptr,unknowns,addFluidIonization, addFluidJacobian, cxIons, isAbl), amjuel(amjuel){}
  
     	virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{
     		const len_t Nr = this->grid->GetNr();

@@ -58,7 +58,8 @@ const real_t IonHandler::atomicMassInMu[nIonMass] =
  */
 IonHandler::IonHandler(
     FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
-    vector<string>& names, vector<string>& tritium, vector<string>& hydrogen
+    vector<string>& names, vector<string>& tritium, vector<string>& hydrogen,
+	vector<string>& cx
 ) {
     rGrid = rg;
     unknowns = u;
@@ -78,6 +79,10 @@ IonHandler::IonHandler(
 	this->hydrogenNames = hydrogen;
 	this->nHydrogen = hydrogen.size();
 	this->hydrogenIndices = new len_t[nHydrogen];
+
+	this->cxNames = cx;
+	this->nChargeExchange = cx.size();
+	this->cxIons = new len_t[nChargeExchange];
 
     // Find index of tritum ions
     len_t ti = 0;

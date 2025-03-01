@@ -20,6 +20,8 @@ namespace DREAM {
         bool isAbl;
         OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode;
 
+		std::vector<len_t> cxIons_dummy;
+
     public:
         IonSPIDepositionTerm(
             FVM::Grid *g, IonHandler *ihdl, const len_t iIon,  ADAS *adas, FVM::UnknownQuantityHandler *unknowns,bool addFluidIonization, bool addFluidJacobian,

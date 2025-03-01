@@ -170,6 +170,9 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
 		if(eqsys->HasRunawayGrid())
 			Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
 
+		// TODO
+		std::vector<len_t> cxIons;
+
 		// Construct dynamic equations
 		len_t nDynamic = 0, nEquil = 0;
 		for (len_t iZ = 0; iZ < nZ; iZ++) {
@@ -185,12 +188,13 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
 			        if(ih->GetZ(iZ)==1 && opacity_mode[iZ]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 					    eqn->AddTerm(new LyOpaqueDIonRateEquation(
 					        fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),
-					        addFluidIonization, addFluidJacobian, true, amjuel
+					        addFluidIonization, addFluidJacobian, true, amjuel,
+							cxIons
 					    ));		            
 			        }else{
 					    eqn->AddTerm(new IonRateEquation(
 					        fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-					        addFluidIonization, addFluidJacobian, true
+					        addFluidIonization, addFluidJacobian, cxIons, true
 					    ));
 			        }
 			        if(includeKineticIonization){
