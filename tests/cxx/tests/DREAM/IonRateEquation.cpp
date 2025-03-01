@@ -25,7 +25,7 @@ const char ION_NAMES[N_IONS][3] = {"H","Be","Ne","Ar"};
 DREAM::IonHandler *IonRateEquation::GetIonHandler(
     DREAM::FVM::Grid *g, DREAM::FVM::UnknownQuantityHandler *uqh
 ) {
-    vector<string> tritiumNames(0), hydrogenNames(0);
+    vector<string> tritiumNames(0), hydrogenNames(0), cxNames(0);
     vector<string> names(N_IONS);
     len_t *Z = new len_t[N_IONS];// The ion charge numbers must be provided to the IONHandler as a dynamically allocated array to avoid memory issues
     for (len_t i = 0; i < N_IONS; i++){
@@ -34,7 +34,7 @@ DREAM::IonHandler *IonRateEquation::GetIonHandler(
     }
 
     return new DREAM::IonHandler(
-        g->GetRadialGrid(), uqh, Z, N_IONS, names, tritiumNames, hydrogenNames
+        g->GetRadialGrid(), uqh, Z, N_IONS, names, tritiumNames, hydrogenNames, cxNames
     );
 }
 
@@ -93,6 +93,7 @@ bool IonRateEquation::CheckConservativity() {
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid);
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
     ih->Rebuild();
+	std::vector<len_t> cxIons;
     DREAM::ADAS *adas = new DREAM::ADAS();
     const len_t Nr = grid->GetNr();
 
@@ -112,7 +113,7 @@ bool IonRateEquation::CheckConservativity() {
     // Construct equation for each ion species
     DREAM::IonRateEquation *ire[N_IONS];
     for (len_t iIon = 0; iIon < N_IONS; iIon++)
-        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh, true, true,false);
+        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh, true, true, cxIons, false);
 
 
     // Check the equation for each ion species

@@ -1,6 +1,7 @@
 #ifndef _DREAM_EQUATION_ION_RATE_EQUATION_HPP
 #define _DREAM_EQUATION_ION_RATE_EQUATION_HPP
 
+#include <vector>
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -13,9 +14,10 @@ namespace DREAM {
         enum SetMode {MATRIX, JACOBIAN};
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
-        len_t id_ions, id_n_cold, id_n_tot, id_T_cold;
+        len_t id_ions, id_n_cold, id_n_tot, id_N_i, id_T_cold, id_W_i;
         bool addFluidIonization; // the full ADAS ionization rate is added in this equation term
         bool addFluidJacobian;   // only the jacobian of the ionization is set with this term
+		std::vector<len_t> cxIons;
         real_t
             **Rec,         // Radiative recombination rates (nZs x nr)
             **PartialNRec, // d/dn_cold of radiative recombination rates  (nZs x nr)
@@ -30,11 +32,16 @@ namespace DREAM {
             **posIonizTerm,
             **negIonizTerm,
             **posRecTerm,
-            **negRecTerm;
+            **negRecTerm,
+			**posCXTerm,
+			**negCXTerm;
+
+		ADASRateInterpolator *GetCCD(const len_t);
     public:
         IonRateEquation(
             FVM::Grid*, IonHandler*, const len_t, ADAS*, 
-            FVM::UnknownQuantityHandler*,bool,bool,bool
+            FVM::UnknownQuantityHandler*, bool, bool,
+			std::vector<len_t>&, bool isAbl=false
         );
         virtual ~IonRateEquation();
 
@@ -75,6 +82,8 @@ namespace DREAM {
         real_t **GetNegativeIonizationTerm() { return this->negIonizTerm; }
         real_t **GetPositiveRecombinationTerm() { return this->posRecTerm; }
         real_t **GetNegativeRecombinationTerm() { return this->negRecTerm; }
+		real_t **GetPositiveChargeExchangeTerm() { return this->posCXTerm; }
+		real_t **GetNegativeChargeExchangeTerm() { return this->negCXTerm; }
         
         len_t GetZ() { return this->Zion; }
     };

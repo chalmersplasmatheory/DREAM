@@ -3,7 +3,8 @@
  *
  *   d n_i^(j) / dt =
  *      I_i^(j-1) n_i^(j-1) n_cold - I_i^(j) n_i^(j) n_cold  +
- *      R_i^(j+1) n_i^(j+1) n_cold - R_i^(j) n_i^(j) n_cold
+ *      R_i^(j+1) n_i^(j+1) n_cold - R_i^(j) n_i^(j) n_cold  +
+ *      C_i^(j) n_k^(0)
  *
  * where
  *
@@ -11,6 +12,8 @@
  *              of ion species 'i'.
  *   R_i^(j)  = radiative recombination rate for charge state 'j'
  *              of ion species 'i'.
+ *   C_i^(j)  = charge-exchange rate for charge state 'j-1' of
+ *              ion species 'i', with neutrals of species 'k'.
  *
  * Note that this equation is applied to a single _ion species_,
  * (and to all its charge states).
@@ -19,6 +22,8 @@
  */
 
 #include "DREAM/ADAS.hpp"
+#include "DREAM/Constants.hpp"
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -34,9 +39,11 @@ using namespace DREAM;
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
-    bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
+    bool addFluidIonization, bool addFluidJacobian,
+	std::vector<len_t> &cxIons, bool isAbl
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), 
-    addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
+    addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian),
+	cxIons(cxIons) {
     
     SetName("IonRateEquation");
 
@@ -51,6 +58,17 @@ IonRateEquation::IonRateEquation(
 		this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
 		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     }
+
+	if (cxIons.size() > 0) {
+		if (!unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
+			throw DREAMException(
+				"Charge-exchange reactions require the ion temperature to be "
+				"evolved, but the unknown quantity 'W_i' has not been defined."
+			);
+
+		this->id_N_i = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+		this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+	}
 
     AllocateRateCoefficients();
 }
@@ -138,6 +156,19 @@ void IonRateEquation::DeallocateRateCoefficients() {
     delete [] this->negIonizTerm;
     delete [] this->posRecTerm;
     delete [] this->negRecTerm;
+}
+
+/**
+ * Return the appropriate charge-exchange rate for the given
+ * ion species.
+ */
+ADASRateInterpolator *IonRateEquation::GetCCD(const len_t iIon) {
+	if (this->ions->IsHydrogen(iIon))
+		return this->adas->GetCCD(1, 1);
+	else if (this->ions->IsTritium(iIon))
+		return this->adas->GetCCD(1, 3);
+	else
+		return this->adas->GetCCD(this->ions->GetZ(iIon));
 }
 
 /**

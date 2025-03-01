@@ -64,7 +64,7 @@ class Ions(UnknownQuantity):
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
         t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, 
-        r_expdecay_all_cs = None, t_expdecay_all_cs = None, init_equil=False, T=None, n=None, r=None, t=None, tritium=False, hydrogen=False):
+        r_expdecay_all_cs = None, t_expdecay_all_cs = None, init_equil=False, T=None, n=None, r=None, t=None, tritium=False, hydrogen=False, cx=False):
 
         """
         Adds a new ion species to the plasma.
@@ -82,6 +82,7 @@ class Ions(UnknownQuantity):
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
         :param bool hydrogen:   If ``True``, the ion species is treated as Hydrogen (single proton).
+        :param bool cx:         Account for charge-exchange reactions with this species.
         """
         if (self.r is not None) and (r is not None) and (np.any(self.r[:] != r[:])):
             if self.r.size == 1:
@@ -583,6 +584,11 @@ class Ions(UnknownQuantity):
         else:
             hydrogennames = []
 
+        if 'cxnames' in data:
+            cxnames = data['cxnames'].split(';')[:-1]
+        else:
+            cxnames = []
+
         initial    = None
         prescribed = None
         initialTi  = None
@@ -640,6 +646,7 @@ class Ions(UnknownQuantity):
                 spiidx+=1
             tritium = (names[i] in tritiumnames)
             hydrogen = (names[i] in hydrogennames)
+            cx = (names[i] in cxnames)
 
             if charged_diffusion_modes[i] == ION_CHARGED_DIFFUSION_MODE_PRESCRIBED:
                 cpd = charged_prescribed_diffusion['x'][cpdidx:(cpdidx+Z[i])]
@@ -699,7 +706,7 @@ class Ions(UnknownQuantity):
                 # Neutral advection
                 neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa,
                 rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
-                T=T, n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
+                T=T, n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, cx=cx, init_equil=init_equil)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
@@ -736,6 +743,7 @@ class Ions(UnknownQuantity):
 
         hydrogennames = ""
         tritiumnames = ""
+        cxnames = ""
 
         SPIMolarFraction = None
 
@@ -743,9 +751,12 @@ class Ions(UnknownQuantity):
             names += '{};'.format(ion.getName())
 
             if ion.tritium:
-                tritiumnames += '{};'.format(ion.getName())
+                tritiumnames += f'{ion.getName()};'
             elif ion.hydrogen:
-                hydrogennames += '{};'.format(ion.getName())
+                hydrogennames += f'{ion.getName()};'
+
+            if ion.cx:
+                cxnames += f'{ion.getName()};'
 
             # Set prescribed/initial density
             init_equil.append(1 if ion.initializeToEquilibrium() else 0)
@@ -835,6 +846,8 @@ class Ions(UnknownQuantity):
             data['tritiumnames'] = tritiumnames
         if len(hydrogennames) > 0:
             data['hydrogennames'] = hydrogennames
+        if len(cxnames) > 0:
+            data['cxnames'] = cxnames
 
         if initial is not None and len(initial) > 0:
             for i in range(len(initial)):

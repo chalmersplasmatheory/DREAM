@@ -52,6 +52,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/adv_interp_neutral/fluxlimiterdamping", "Underrelaxation parameter for the neutral advection term that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
     s->DefineSetting(MODULENAME "/hydrogennames", "Names of the hydrogen ion species", (const string)"");
+	s->DefineSetting(MODULENAME "/cxnames", "Names of the ion species undergoing charge-exchange reactions", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
 	s->DefineSetting(MODULENAME "/init_equilibrium", "Flags indicating whether to initialize species in coronal equilibrium.", 1, dims, (int_t*)nullptr);
@@ -139,6 +140,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     // Get list of tritium and hydrogen species
     vector<string> tritiumNames = s->GetStringList(MODULENAME "/tritiumnames");
 	vector<string> hydrogenNames = s->GetStringList(MODULENAME "/hydrogennames");
+	vector<string> cxNames = s->GetStringList(MODULENAME "/cxnames");
 
     // Verify that exactly one type per ion species is given
     if (nZ != ntypes)
@@ -258,7 +260,7 @@ void SimulationGenerator::ConstructEquation_Ions(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames, cxNames);
     eqsys->SetIonHandler(ih);
 
     // Initialize ion equations
@@ -283,6 +285,11 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     bool includeFluidREIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE);
 
+	// Get list of charge-exchange ions
+	const len_t *cx = ih->GetCXIndices();
+	len_t ncx = ih->GetNCXIndices();
+	std::vector<len_t> cxIons(cx, cx+ncx);
+
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
     len_t nDynamic = 0, nEquil = 0;
@@ -302,14 +309,15 @@ void SimulationGenerator::ConstructEquation_Ions(
                 if(ih->GetZ(iZ)==1 && opacity_mode[iZ]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            LyOpaqueDIonRateEquation *ire = new LyOpaqueDIonRateEquation(
 		                fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),
-		                addFluidIonization, addFluidJacobian, false, amjuel
+		                addFluidIonization, addFluidJacobian, false, amjuel,
+						cxIons
 					);
 					eqn->AddTerm(ire);
 					oqty_terms->ni_rates.push_back(ire);
                 }else{
 					IonRateEquation *ire = new IonRateEquation(
 						fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-						addFluidIonization, addFluidJacobian, false
+						addFluidIonization, addFluidJacobian, cxIons, false
 					);
 		            eqn->AddTerm(ire);
 					oqty_terms->ni_rates.push_back(ire);

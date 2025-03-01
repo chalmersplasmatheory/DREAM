@@ -29,9 +29,9 @@ namespace DREAM {
         static const real_t atomicMassInMu[nIonMass];
 
         std::vector<std::string> ionNames;
-        std::vector<std::string> tritiumNames, hydrogenNames;
-        len_t nTritium=0, nHydrogen=0;
-        len_t *tritiumIndices, *hydrogenIndices;
+        std::vector<std::string> tritiumNames, hydrogenNames, cxNames;
+        len_t nTritium=0, nHydrogen=0, nChargeExchange=0;
+        len_t *tritiumIndices, *hydrogenIndices, *cxIons;
 
 
         // DERIVED ION QUANTITIES
@@ -59,7 +59,8 @@ namespace DREAM {
 			FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u,
 			const len_t *Z, len_t NZ, std::vector<std::string>& ionNames,
 			std::vector<std::string>& tritiumNames,
-			std::vector<std::string>& hydrogenNames
+			std::vector<std::string>& hydrogenNames,
+			std::vector<std::string>& cxNames
 		);
         virtual ~IonHandler();
 
@@ -82,6 +83,8 @@ namespace DREAM {
         const std::vector<std::string>& GetTritiumNameList() { return this->tritiumNames; }
         const len_t *GetTritiumIndices() const { return this->tritiumIndices; }
         const len_t GetNTritiumIndices() const { return this->nTritium; }
+		const len_t *GetCXIndices() const { return this->cxIons; }
+		const len_t GetNCXIndices() const { return this->nChargeExchange; }
 
         bool IsTritium(const len_t) const;
 		bool IsHydrogen(const len_t) const;
