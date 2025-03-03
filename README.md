@@ -74,7 +74,7 @@ not very often, unless you're a DREAM developer).
 *If you're trying to install DREAM on a cluster which has previously been used
 to run DREAM, have a look in the
 [setup](https://github.com/chalmersplasmatheory/DREAM/tree/master/setup)
-directory to see a build script is already available.*
+directory to see if a build script is already available.*
 
 To compile DREAM, go to the root DREAM directory and run the following commands:
 ```bash
