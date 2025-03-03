@@ -1,6 +1,6 @@
 # DREAM
 
-![The DREAM logo](https://github.com/chalmersplasmatheory/media/logo1.png "The DREAM logo")
+![The DREAM logo](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/logo1.png "The DREAM logo")
 
 This directory contains the Disruption Runaway Electron Analysis Model (DREAM)
 code. The **online documentation** is available at https://ft.nephy.chalmers.se/dream.
@@ -124,7 +124,8 @@ for that functionality:
 ## Development
 DREAM development is overseen by the DREAM Developer Council which consists of
 
-![The DREAM Developer Council 2024](https://github.com/chalmersplasmatheory/media/DDC/Council-2024.jgp "The DREAM Developer Council in 2024)
+![The DREAM Developer Council 2024](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/DDC/Council-2024.jpg "The DREAM Developer Council in 2024")
+*The DREAM Developer Council in 2024. From left: Oskar Vallhagen, Mathias Hoppe, Lorenzo Votta, Peter Halldestam, Ida Ekmark.*
 
 - [Mathias Hoppe](https://www.kth.se/profile/mhop?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
 - [Ida Ekmark](https://ft.nephy.chalmers.se/?p=people&id=61), Chalmers University of Technology, Gothenburg, Sweden
