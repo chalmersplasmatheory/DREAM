@@ -922,8 +922,8 @@ int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t radius) {
         if ((std::abs(radius) < rGrid->GetR_f(ir+1)) && (std::abs(radius) > rGrid->GetR_f(ir)))
             return (int_t)ir - (int_t)this->irp[ip];
 
-    //return nr;
-    return nr-1-this->irp[ip];
+    return nr;
+    //return nr-1-this->irp[ip];
 }
 
 /**
