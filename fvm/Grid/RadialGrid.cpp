@@ -300,6 +300,17 @@ void RadialGrid::InitializeFSAvg(
     this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;   
 }
 
+
+real_t RadialGrid::GetFluxSurfaceR(len_t ir) {
+    return this->GetR0() + this->GetGridGenerator()->GetFluxSurfaceRMinusR0()[ir];
+}
+
+real_t RadialGrid::GetFluxSurfaceZ(len_t ir) {
+    return this->GetGridGenerator()->GetFluxSurfaceZMinusZ0()[ir];
+}
+
+
+
 /**
  * Deallocate flux surface averages
  */
