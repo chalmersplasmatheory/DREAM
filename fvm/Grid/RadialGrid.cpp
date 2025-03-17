@@ -7,6 +7,8 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
+#include "FVM/Grid/NumericBRadialGridGenerator.hpp"  
+#include <iostream>  
 
 using namespace std;
 using namespace DREAM::FVM;
@@ -301,14 +303,15 @@ void RadialGrid::InitializeFSAvg(
 }
 
 
-real_t RadialGrid::GetFluxSurfaceR(len_t ir) {
-    return this->GetR0() + this->GetGridGenerator()->GetFluxSurfaceRMinusR0()[ir];
+real_t RadialGrid::EvaluateFluxSurfaceR(len_t ir, real_t theta) {
+    auto* gridGen = dynamic_cast<NumericBRadialGridGenerator*>(this->generator);
+    return gridGen->GetFluxSurfaceR(ir, theta);
 }
 
-real_t RadialGrid::GetFluxSurfaceZ(len_t ir) {
-    return this->GetGridGenerator()->GetFluxSurfaceZMinusZ0()[ir];
+real_t RadialGrid::EvaluateFluxSurfaceZ(len_t ir, real_t theta) {
+    auto* gridGen = dynamic_cast<NumericBRadialGridGenerator*>(this->generator);
+    return gridGen->GetFluxSurfaceZ(ir, theta);
 }
-
 
 
 /**

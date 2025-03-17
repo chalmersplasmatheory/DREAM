@@ -73,12 +73,6 @@ namespace DREAM::FVM {
             BA_PARAM_B_CUBED[5] = {0,3,0,0,1},
             BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};
         
-        // Add methods to get flux surface positions
-     
-        DREAM::FVM::RadialGridGenerator* GetGridGenerator() { return this->generator; }
-
-        real_t GetFluxSurfaceR(len_t ir);
-        real_t GetFluxSurfaceZ(len_t ir);
 
 	private:
         // Flux-surface averaged quantities.
@@ -284,6 +278,8 @@ namespace DREAM::FVM {
 		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
 		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
+        real_t EvaluateFluxSurfaceR(len_t ir, real_t theta);
+        real_t EvaluateFluxSurfaceZ(len_t ir, real_t theta);
         
         /**
          * Returns q*R0 on the distribution grid where q 

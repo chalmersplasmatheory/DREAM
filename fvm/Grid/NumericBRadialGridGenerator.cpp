@@ -7,6 +7,7 @@
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline2d.h>
 #include "FVM/Grid/NumericBRadialGridGenerator.hpp"
+#include <iostream>
 
 
 using namespace DREAM::FVM;
@@ -823,6 +824,10 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 	return R;
 }
 
+real_t NumericBRadialGridGenerator::GetFluxSurfaceR(len_t ir, real_t theta) {
+    return ROverR0AtTheta(ir, theta) * this->Rp;
+}
+
 
 /**
  * Returns a list of flux surface Z coordinates
@@ -864,6 +869,13 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 
 	return Z;
 }
+real_t NumericBRadialGridGenerator::GetFluxSurfaceZ(len_t ir, real_t theta) {
+    return gsl_spline2d_eval(
+        this->spline_Z, this->r[ir], theta,
+        this->acc_r, this->acc_theta
+    ) - this->Zp;
+}
+
 
 
 /**
