@@ -7,7 +7,6 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
-#include "FVM/Grid/NumericBRadialGridGenerator.hpp"  
 #include <iostream>  
 
 using namespace std;
@@ -303,17 +302,6 @@ void RadialGrid::InitializeFSAvg(
 }
 
 
-real_t RadialGrid::EvaluateFluxSurfaceR(len_t ir, real_t theta) {
-    auto* gridGen = dynamic_cast<NumericBRadialGridGenerator*>(this->generator);
-    return gridGen->GetFluxSurfaceR(ir, theta);
-}
-
-real_t RadialGrid::EvaluateFluxSurfaceZ(len_t ir, real_t theta) {
-    auto* gridGen = dynamic_cast<NumericBRadialGridGenerator*>(this->generator);
-    return gridGen->GetFluxSurfaceZ(ir, theta);
-}
-
-
 /**
  * Deallocate flux surface averages
  */
@@ -332,3 +320,20 @@ void RadialGrid::DeallocateFSAvg(){
     delete [] this->FSA_1OverR2_f;
 }
 
+/**
+* Help function to import the numerical grid 
+*/
+real_t RadialGrid::GetFluxSurfaceR(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceR(ir, theta);
+}
+
+real_t RadialGrid::GetFluxSurfaceZ(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceZ(ir, theta);
+}
+
+/**
+* Help function to import the jacobian of the numerical grid 
+*/
+real_t RadialGrid::ComputeConfigurationSpaceJacobian(len_t ir, real_t theta) {
+    return this->generator->JacobianAtTheta(this->r[ir], theta);
+}

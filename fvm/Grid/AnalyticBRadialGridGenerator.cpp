@@ -757,6 +757,12 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 
 	return R;
 }
+//Linn
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceR(len_t ir, real_t theta) {
+    return ROverR0AtTheta(ir, theta) * this->R0;
+}
+
+
 
 
 /**
@@ -817,7 +823,9 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 
 	return Z;
 }
-
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceZ(len_t ir, real_t theta) {
+    return this->r[ir] * this->kappa[ir] * sin(theta);
+}
 
 /**
  * Returns the poloidal angle array corresponding
