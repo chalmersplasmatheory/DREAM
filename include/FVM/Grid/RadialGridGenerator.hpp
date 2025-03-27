@@ -108,6 +108,10 @@ namespace DREAM::FVM {
 		virtual const real_t *GetFluxSurfaceZMinusZ0() = 0;
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() = 0;
 		virtual const real_t *GetPoloidalAngle() = 0;
+
+        //Linn
+        virtual real_t GetFluxSurfaceR(len_t ir, real_t theta) = 0;
+        virtual real_t GetFluxSurfaceZ(len_t ir, real_t theta) = 0;
         
     };
 }

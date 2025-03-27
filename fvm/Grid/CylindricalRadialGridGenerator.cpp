@@ -191,6 +191,13 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 
 	return R;
 }
+real_t CylindricalRadialGridGenerator::GetFluxSurfaceR(len_t ir, real_t theta) {
+    return this->x[ir] * cos(theta);
+}
+
+real_t CylindricalRadialGridGenerator::GetFluxSurfaceZ(len_t ir, real_t theta) {
+    return this->x[ir] * sin(theta);
+}
 
 
 /**

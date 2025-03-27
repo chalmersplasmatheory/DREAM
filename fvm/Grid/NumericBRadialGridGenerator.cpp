@@ -870,10 +870,7 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 	return Z;
 }
 real_t NumericBRadialGridGenerator::GetFluxSurfaceZ(len_t ir, real_t theta) {
-    return gsl_spline2d_eval(
-        this->spline_Z, this->r[ir], theta,
-        this->acc_r, this->acc_theta
-    ) - this->Zp;
+    return gsl_spline2d_eval(spline_Z, r[ir], theta, acc_r, acc_theta);  // full Z
 }
 
 
