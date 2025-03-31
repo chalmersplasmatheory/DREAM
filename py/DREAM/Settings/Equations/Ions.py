@@ -709,8 +709,8 @@ class Ions(UnknownQuantity):
                 T=T, n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
 
             # Load ion source
-            if ion_source_types and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
-                self.addIonSource(names[i], dNdt=ion_source_x[i], t=ion_source_t[i])
+            if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
+                self.addIonSource(names[i], dNdt=ion_source_x[i,:], t=ion_source_t)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
