@@ -618,10 +618,14 @@ class Ions(UnknownQuantity):
 
         if 'ion_source_types' in data:
             ion_source_types = data['ion_source_types']
-            ion_source_t = data['ion_source']['t']
-            ion_source_x = data['ion_source']['x']
+            if len(ion_source_types) == 0:
+                ion_source_types = None
         else:
             ion_source_types = None
+
+        if 'ion_source' in data:
+            ion_source_t = data['ion_source']['t']
+            ion_source_x = data['ion_source']['x']
 
         iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx = 0, 0, 0, 0, 0, 0, 0
         for i in range(len(Z)):
