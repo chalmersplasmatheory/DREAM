@@ -21,6 +21,7 @@ alphabetical order):
 Adam Kit
 Alexandre Fil
 Andréas Sundström
+Björn Zaar
 Boel Brandström
 Esmée Berger
 Ferenc Lengyel
