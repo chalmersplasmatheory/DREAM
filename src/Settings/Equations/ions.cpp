@@ -446,11 +446,6 @@ void SimulationGenerator::ConstructEquation_Ions(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection", true
     );
 
-	// Load prescribed source term data
-	MultiInterpolator1D *source_data = LoadDataIonT(
-		MODULENAME, s, nZ0_dynamic+nZ0_prescribed, "ion_source"
-	);
-
     // Add diffusion terms
     len_t offsetChargedDiffusion = 0;
     len_t offsetNeutralDiffusion = 0;
@@ -493,6 +488,11 @@ void SimulationGenerator::ConstructEquation_Ions(
                     "ions: Ion species with prescribed time evolutions cannot contain source terms. Ion '%s' has non-zero source term.",
 					ionNames[iZ].c_str()
 				);
+
+			// Load prescribed source term data
+			MultiInterpolator1D *source_data = LoadDataIonT(
+				MODULENAME, s, nZ0_dynamic+nZ0_prescribed, "ion_source"
+			);
 
 			eqn->AddBoundaryCondition(new IonSourceBoundaryCondition(
 				fluidGrid, ih, source_data, iZ
