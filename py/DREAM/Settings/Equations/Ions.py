@@ -4,7 +4,7 @@ import numpy as np
 import scipy.interpolate
 from numpy.matlib import repmat
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
 
@@ -620,6 +620,17 @@ class Ions(UnknownQuantity):
         if 'initialNi' in data:
             initialNi = data['initialNi']
 
+        if 'ion_source_types' in data:
+            ion_source_types = data['ion_source_types']
+            if len(ion_source_types) == 0:
+                ion_source_types = None
+        else:
+            ion_source_types = None
+
+        if 'ion_source' in data:
+            ion_source_t = data['ion_source']['t']
+            ion_source_x = data['ion_source']['x']
+
         iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx = 0, 0, 0, 0, 0, 0, 0
         for i in range(len(Z)):
             if types[i] == IONS_PRESCRIBED:
@@ -704,6 +715,10 @@ class Ions(UnknownQuantity):
                 neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa,
                 rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
                 T=T, n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
+
+            # Load ion source
+            if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
+                self.addIonSource(names[i], dNdt=ion_source_x[i,:], t=ion_source_t)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
