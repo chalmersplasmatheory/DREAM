@@ -289,9 +289,12 @@ class EqView(QtWidgets.QMainWindow):
         elif self.equil_type == EQTYPE_EQDSK:
             psi_n = np.linspace(0, 1, 101)[1:]
             r = self.equil.get_r(psi_n)
-            pw.ax.plot(r, self.equil.get_Jtor_at_Bmin(psi_n)/1e6, lw=2, label=r'$J_{\varphi}$')
+            p0 = self.equil.psi_axis
+            pe = self.equil.psi_bdry
+            psi = psi_n * (pe-p0) + p0
+            pw.ax.plot(r, psi, lw=2, label=r'$J_{\varphi}$')
             pw.ax.set_xlabel(r'Minor radius $r$ (m)')
-            pw.ax.set_ylabel(r'Current density (MA$\,$m$^{-2}$)')
+            pw.ax.set_ylabel(r'Poloidal flux (Wb)')
             pw.ax.legend()
             pw.figure.tight_layout()
 
