@@ -200,6 +200,21 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverNonLinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
 )
+cmake_minimum_required(VERSION 3.10)
+project(DREAM CXX)
+
+find_package(OpenMP REQUIRED)
+
+if(OpenMP_CXX_FOUND)
+    message(STATUS "Found OpenMP")
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I/opt/homebrew/include")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY "/opt/homebrew/lib/libomp.dylib")
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L/opt/homebrew/lib -lomp")
+endif()
+
 
 add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")

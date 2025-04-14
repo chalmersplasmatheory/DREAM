@@ -37,6 +37,8 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIElectronHeatTerm.hpp"
+
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -52,6 +54,7 @@ namespace DREAM {
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
             DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
+            DREAM::NBIElectronHeatTerm *T_cold_NBI = nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;

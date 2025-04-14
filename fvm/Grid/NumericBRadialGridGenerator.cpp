@@ -825,7 +825,7 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 }
 
 real_t NumericBRadialGridGenerator::GetFluxSurfaceR(len_t ir, real_t theta) {
-    return ROverR0AtTheta(ir, theta) * this->Rp;
+    return ROverR0AtTheta(ir, theta) * this->Rp - this->Rp;
 }
 
 

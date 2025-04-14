@@ -2,6 +2,7 @@
  * Implementation of equation term to the heating of cold electrons from an NBI beam 
  */
 #include <cmath>
+#include <set>
 #include <array>
 #include "DREAM/Equations/Fluid/NBIElectronHeatTerm.hpp" 
 #include "FVM/Grid/RadialGrid.hpp"
@@ -11,10 +12,9 @@
 #include <tuple>
 #include <algorithm>
 #include "FVM/UnknownQuantityHandler.hpp"
-
-
-
-
+#include <omp.h>
+#include <unistd.h>  
+#include "FVM/Interpolator1D.hpp" 
 
 
 namespace DREAM{
@@ -26,27 +26,35 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid* grid, FVM::UnknownQuantityHa
     std::array<real_t, 3> P0, std::array<real_t, 3> n,
     real_t Ti_beam, real_t m_i_beam,
     real_t beamPower, real_t plasmaVolume,
-    real_t j_B, real_t I_B) : EquationTerm(grid) {
-
+    FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0) : EquationTerm(grid) {
+    
+    //Set grid    
+    this->radialGrid = grid->GetRadialGrid(); 
+    this->nr = grid->GetNr();
     this->NBIHeatTerm = new real_t[nr];
+
     //Get from other classes
     this->id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    this->id_ion_density = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    this->id_ion_density = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS); //UQTY_ION_SPECIES
     this->id_ion_temperature = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
+    this->adas = adas;
 
     // Tell DREAM these are dependencies
     this->AddUnknownForJacobian(unknowns, id_ncold);
     this->AddUnknownForJacobian(unknowns, id_Tcold);
     this->AddUnknownForJacobian(unknowns, id_ion_density);
     this->AddUnknownForJacobian(unknowns, id_ion_temperature);
-
-
-
-    this->radialGrid = grid->GetRadialGrid(); //we have not defined whcih grid to use
-    this->nr = grid->GetNr();
-
+    
+    //Set integration step size
     this->ds = ds;
+    this->unknowns = unknowns;
+    this-> ntheta = 100;
+    this-> dtheta = 2.0 * M_PI / ntheta;
+    this-> nphi = 100;
+    this-> dphi = 2.0*M_PI/nphi;
+    
+    //Set beam parameters
     this->s_max = s_max;
     this->r_beam = r_beam;
     this->P0 = P0;
@@ -55,103 +63,84 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid* grid, FVM::UnknownQuantityHa
     this->m_i_beam = m_i_beam;
     this->beamPower = beamPower;
     this->plasmaVolume = plasmaVolume;
-    this->j_B = j_B;
-    this->I_B = I_B;
+    this->Z0 = Z0;    
+    this->Zion = Zion;  
+    this->R0 = R0;
 
-    //Check that not beam direction so GS-work
-    this-> a  = {0, 0, 1}; 
-    if (n == a)
-        this-> a = {0, 1, 0};
-
-    //For the mean free path
-    this-> Z0 = 0;    // ex
-    this-> Zion = 1;  // ex
-
-    PrecomputeBeamIntersections(P0,n); 
+    this->j_B_profile = j_B_profile;
+    //Precompute the flux surfaces and the beam basis vectors
+    PrecomputeFluxSurfaces();
+    PrecomputeBeamBasisVectors(); 
     
-}
-/**
- * Pre-Computes all the intersections between the beam and the fluxsurface. 
- This to be used when intigrating along the beam and mapping each step to a step on the beam.
- */
+    
+    printf("NBIElectronHeatTerm: Initialized with parameters:\n");
+    printf("  ds = %e\n", ds);
+    printf("  s_max = %e\n", s_max);
+    printf("  r_beam = %e\n", r_beam);  
 
-void NBIElectronHeatTerm::PrecomputeBeamIntersections(const std::array<real_t, 3>& P0,
-    std::array<real_t, 3>& n) {
-    fluxSurfaceIntersectionPoints.clear(); //All flux surcafe intersections for total beam
-    fluxSurfaceToS.clear(); //Maps intersections to a flux surface
+    // Calculate I_B as integral of j_B over radius
+    this->I_B = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        const real_t* j_B_values = j_B_profile->Eval(ir);
+        real_t dr = (ir < nr-1) ? //diff calc
+            radialGrid->GetR(ir+1) - radialGrid->GetR(ir) : 
+            radialGrid->GetR(ir) - radialGrid->GetR(ir-1);
+        this->I_B += j_B_values[0] * dr;  // Integrate j_B over radius
+    }
 
-    real_t norm_n = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
-    for (int i = 0; i < 3; ++i)
-        n[i] /= norm_n;
-
-    const len_t ntheta = 200; 
-    const real_t dtheta = 2 * M_PI / ntheta;
-    //Walks though every flux surface and find the intersection point(s).
-    for (len_t ir = 0; ir < this->nr; ir++) {
-        for (len_t it = 0; it < ntheta - 1; it++) {
-            real_t theta1 = it * dtheta;
-            real_t theta2 = (it + 1) * dtheta;
-
-            real_t x1 = radialGrid->GetFluxSurfaceR(ir, theta1);
-            real_t z1 = radialGrid->GetFluxSurfaceZ(ir, theta1);
-            real_t x2 = radialGrid->GetFluxSurfaceR(ir, theta2);
-            real_t z2 = radialGrid->GetFluxSurfaceZ(ir, theta2);
-
-            real_t dz = z2 - z1;
-            real_t dxi = x2 - x1;
-            real_t zi_z0 = z1 - P0[2];
-            if (std::abs(dz) < 1e-12)
-                continue; //avoid 0 
-            real_t frac = dxi / dz;
-            real_t a2 = n[2]*n[2]*frac*frac - (n[0]*n[0] + n[1]*n[1]);
-            real_t a1 = 2 * n[0]*n[2]*frac;
-            real_t a0 = x1*x1 - P0[0]*P0[0] - P0[1]*P0[1] +
-                        2 * x1 * zi_z0 * frac +
-                        2 * n[2] * zi_z0 * frac +
-                        zi_z0*zi_z0 * frac*frac;
-            real_t discriminant = a1*a1 - 4*a2*a0;
-            if (discriminant < 0)
-                continue; //avoid 0 
-
-            real_t sqrt_disc = sqrt(discriminant);
-            for (int sign = -1; sign <= 1; sign += 2) 
-            {
-                real_t l = (-a1 + sign * sqrt_disc) / (2 * a2);
-                if (l < 0)
-                    continue;//avoid 0 
-                
-                real_t z_b = P0[2] + l * n[2];
-                real_t t = (z_b - z1) / dz;
-                if (t < 0 || t > 1)
-                    continue;//check if satisfies t
-
-                fluxSurfaceIntersectionPoints.push_back(l); 
-                fluxSurfaceToS[ir].push_back(l); 
-            }
-        }
-    } 
-
-    std::sort(fluxSurfaceIntersectionPoints.begin(), fluxSurfaceIntersectionPoints.end()); //Sort in length-order
-
-    // Sort the values for each key (flux surface ir)
-    for (auto& kv : fluxSurfaceToS)
-        std::sort(kv.second.begin(), kv.second.end());
+    printf("  Calculated I_B = %e\n", this->I_B);
 }
 
+
 /**
- * Help function that returns the flux surface index ir for a given beamline position s.
- * This performs a lookup in the precomputed fluxSurfaceToS map.
+ * Precomputes the flux surfaces in R and Z.
  */
-len_t NBIElectronHeatTerm::FindFluxSurfaceIndexForS(real_t s) {
-    for (const auto& [ir, s_list] : fluxSurfaceToS) { //Get Key,Value from fluxSurfaceToS
-        for (size_t i = 0; i + 1 < s_list.size(); i += 2) { //Go though pair
-            if (s >= s_list[i] && s <= s_list[i + 1]) //Check if in pair
-                return ir;
+void NBIElectronHeatTerm::PrecomputeFluxSurfaces() {
+    cachedFluxSurfaces.resize(nr);
+    for (len_t ir = 0; ir < nr; ir++) {
+        cachedFluxSurfaces[ir].resize(ntheta);
+        for (len_t itheta = 0; itheta < ntheta; itheta++) {
+            real_t theta = itheta * dtheta;
+            real_t R = R0 + radialGrid->GetFluxSurfaceR(ir, theta); 
+            real_t Z = radialGrid->GetFluxSurfaceZ(ir, theta);
+            cachedFluxSurfaces[ir][itheta] = { R, Z };
         }
     }
-    return static_cast<len_t>(-1);  // No find
 }
 
+/**
+ * Precomputes the beam basis vectors e1 and e2.
+ */
+void NBIElectronHeatTerm::PrecomputeBeamBasisVectors() {
+    // Normalize the beam direction vector 'n'
+    real_t norm_n = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
+    for (int i = 0; i < 3; ++i)
+        n_norm[i] = n[i] / norm_n;
+
+    // Choose 'a' to be perpendicular to the beam direction
+    std::array<real_t, 3> a;
+    if (std::abs(n_norm[2]) < 0.9) {
+        // If beam is not mostly vertical, use vertical direction
+        a = {0, 0, 1};
+    } else {
+        // If beam is mostly vertical, use horizontal direction
+        a = {1, 0, 0};
+    }
+
+    // Compute e1 (perpendicular to beam direction)
+    real_t a_dot_n = a[0]*n_norm[0] + a[1]*n_norm[1] + a[2]*n_norm[2];
+    for (int i = 0; i < 3; ++i)
+        e1[i] = a[i] - a_dot_n * n_norm[i];
+
+    real_t norm_e1 = sqrt(e1[0]*e1[0] + e1[1]*e1[1] + e1[2]*e1[2]);
+    for (int i = 0; i < 3; ++i)
+        e1[i] /= norm_e1;
+    
+    // Compute e2 as the cross product of n_norm and e1
+    e2[0] = n_norm[1]*e1[2] - n_norm[2]*e1[1];
+    e2[1] = n_norm[2]*e1[0] - n_norm[0]*e1[2];
+    e2[2] = n_norm[0]*e1[1] - n_norm[1]*e1[0];
+}
 
 /**
  * Destructor
@@ -166,65 +155,157 @@ NBIElectronHeatTerm::~NBIElectronHeatTerm() {
  */
 void NBIElectronHeatTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler* unknowns)
 {
-
+    printf("NBIElectronHeatTerm::Rebuild called.\n");
     for (len_t ir = 0; ir < nr;ir ++){
         real_t ncold = unknowns ->GetUnknownData(id_ncold)[ir];
         real_t Tcold = unknowns ->GetUnknownData(id_Tcold)[ir];
         real_t ni = unknowns ->GetUnknownData(id_ion_density)[ir];
         real_t Ti = unknowns ->GetUnknownData(id_ion_temperature)[ir];
 
-        
+        printf("Checking flux surface %llu...\n", ir);
         NBIHeatTerm[ir] = beamPower/plasmaVolume *ComputeDepositionProfile(ir,ncold,Tcold,Ti,ni, unknowns); //compute the NBI heating term * times the current density and beam intensisty
+        printf("[ir=%llu] Deposition = %e\n", ir, NBIHeatTerm[ir]);
+
     }
 }
 
 
 /**
- * Computes and intigrates  Mean Free Path
+ * Computes and intigrates the Mean Free Path variable for the NBI heating term
  */
 real_t NBIElectronHeatTerm::ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t Ti, real_t ni) {
     // Ionization rate coefficient (SCD)
     ADASRateInterpolator* scd = adas->GetSCD(Zion);
     // Charge-exchange rate coefficient (CCD)
     ADASRateInterpolator* ccd = adas->GetCCD(Zion);
-
     //Evaluate
     real_t I_ion = scd->Eval(Z0, ncold, Tcold);
     real_t I_CX = ccd->Eval(Z0, ni, Ti);
     real_t v_NBI = sqrt(2.0 * Ti_beam / m_i_beam); 
 
     real_t MeanFreePath = v_NBI /(ncold * (I_ion+I_CX));
-
     return MeanFreePath; 
 }
 
 /**
+ * Computes the flux surface index for a given pencil beam position (s_B, r_B, theta_B).
+ * This function checks if the pencil beam intersects with any flux surface and returns the index of the first one it finds.
+ */
+len_t NBIElectronHeatTerm::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t theta_B) {
+    // Convert the beam coordinates (s_B, r_B, theta_B) to Cartesian coordinates
+    real_t dx = r_B * cos(theta_B);
+    real_t dy = r_B * sin(theta_B);
+    std::array<real_t, 3> P0_current = {
+        P0[0] + dx*e1[0] + dy*e2[0],
+        P0[1] + dx*e1[1] + dy*e2[1],
+        P0[2] + dx*e1[2] + dy*e2[2]
+    };
+
+    const real_t tol_s = 2e-1;
+    for (len_t ir = 0; ir < nr; ir++) { //Loop through all flux surfaces
+        for (len_t i = 0; i < ntheta; i++) { //Loop thourgh theta and discretizise
+            len_t j = (i + 1) % ntheta;
+
+            const FluxSurfacePoint& pt1 = cachedFluxSurfaces[ir][i];
+            const FluxSurfacePoint& pt2 = cachedFluxSurfaces[ir][j];
+
+            real_t R1 = pt1.R, Z1 = pt1.Z;
+            real_t R2 = pt2.R, Z2 = pt2.Z;
+
+            real_t dZ = Z2 - Z1;
+            real_t dR = R2 - R1;
+
+            if (std::abs(dZ) < 1e-12)
+                continue;
+
+            real_t ratio = dR / dZ;
+
+            real_t a0 = R1*R1 - P0_current[0]*P0_current[0] - P0_current[1]*P0_current[1]
+                      + 2*R1*(P0_current[2]-Z1)*ratio
+                      + (P0_current[2]-Z1)*(P0_current[2]-Z1)*ratio*ratio;
+
+            real_t a1 = 2*R1*n[2]*ratio
+                      + 2*n[2]*(P0_current[2]-Z1)*ratio*ratio
+                      - 2*(P0_current[0]*n[0] + P0_current[1]*n[1]);
+
+            real_t a2 = n[2]*n[2]*ratio*ratio - n[0]*n[0] - n[1]*n[1];
+
+            if (std::abs(a2) < 1e-12)
+                continue;
+
+            real_t discriminant = a1*a1/(4*a2*a2) - a0/a2;
+            if (discriminant < 0)
+                continue;
+
+            real_t sqrt_disc = sqrt(discriminant);
+            real_t l1 = (-a1/(2*a2) + sqrt_disc);
+            real_t l2 = (-a1/(2*a2) - sqrt_disc);
+            
+            // Help function to check if the solutions are valid
+            auto check_solution = [&](real_t l) -> bool {
+                if (l < 0) return false;
+                real_t t = (P0_current[2] - Z1 + l * n[2]) / dZ;
+                return (t >= 0 && t <= 1);
+            };
+
+            // Check if the solutions are valid
+            std::vector<real_t> valid_s;
+            if (check_solution(l1)) valid_s.push_back(l1);
+            if (check_solution(l2)) valid_s.push_back(l2);
+            
+            // Check if any valid solution is close to s_B
+            for (real_t s_val : valid_s) {
+                if (std::fabs(s_val - s_B) < tol_s) {
+                    return ir;
+                }
+                
+            }
+        }
+    }
+    
+    return static_cast<len_t>(-1);
+}
+
+
+
+/**
  * Computes the survival probabiltiy at one flux surface point by intigrating the correspodning pencil beam up to that point 
  */
-real_t NBIElectronHeatTerm::ComputeSurvivalProbability(real_t ir, real_t s_B, FVM::UnknownQuantityHandler* unknowns) {
-    //For a flux surface point, but expressed in cylindrical/beam coordinates
+real_t NBIElectronHeatTerm::ComputeSurvivalProbability(real_t s_B, real_t r_B, real_t theta_B, FVM::UnknownQuantityHandler* unknowns) 
+{
+    std::vector<real_t> lambda_cache(nr, -1.0);  // -1 = not computed yet
     real_t I_s = 0.0; 
-    real_t s = 0.0;
-    while (s < s_B) {
-        // Find the corresponding flux surface for the current beam position
-        len_t ir_now = FindFluxSurfaceIndexForS(s);
-        if (ir_now == static_cast<len_t>(-1)) //Take previos one if do not find
-            ir_now = nr - 1;
+    real_t s_step = 0.0;
+
+    while (s_step <= s_B) {
+        len_t ir_now = CalculatePencilBeamFindFlux(s_step, r_B, theta_B);
+        if (ir_now == static_cast<len_t>(-1)) {
+        s_step += ds;  
+        continue;}
 
         real_t ncold_now = unknowns->GetUnknownData(id_ncold)[ir_now];
         real_t Tcold_now = unknowns->GetUnknownData(id_Tcold)[ir_now];
         real_t Ti_now = unknowns->GetUnknownData(id_ion_temperature)[ir_now];
         real_t ni_now = unknowns->GetUnknownData(id_ion_density)[ir_now];
+        
+        //Check if the values has been calculated and stored before
+        real_t lambda_now;
+        if (lambda_cache[ir_now] < 0) {
+            lambda_now = ComputeMeanFreePath(ir_now, ncold_now, Tcold_now, Ti_now, ni_now);
+            lambda_cache[ir_now] = lambda_now;
+        } else {
+            lambda_now = lambda_cache[ir_now];
+        }
 
-
-        real_t lambda_now = ComputeMeanFreePath(ir_now, ncold_now, Tcold_now, Ti_now, ni_now);
         I_s += (ds / lambda_now);
-        s += ds;  
+        s_step += ds;  
     }
-
+    if (I_s == 0) {
+    printf("⚠️  Warning: I_s = 0 → No contribution to survival probability (s_B = %.6e), (r_B = %.6e), (theta_B = %.6e). Some part of the beam is probabily outside the plasma \n", s_B, r_B, theta_B);
+    return 0;  
+}
     return exp(-I_s);  // Survival probability
 }
-
 
 /**
  * Takes in the beam paramaters and turns a point on a flux surface (in x y z) into the beam coordinate system 
@@ -236,28 +317,9 @@ void NBIElectronHeatTerm::CartesianToCylindrical(
     const std::array<real_t, 3>& a,  
     real_t &r, real_t &theta, real_t &s
 ) {
-    std::array<real_t, 3> n_norm = n;
-    real_t norm_n = sqrt(n[0]*n[0] + n[1]*n[1] + n[2]*n[2]);
-    for (int i = 0; i < 3; ++i)
-        n_norm[i] /= norm_n;
-
-    std::array<real_t, 3> e1;
-    real_t a_dot_n = a[0]*n_norm[0] + a[1]*n_norm[1] + a[2]*n_norm[2];
-    for (int i = 0; i < 3; ++i)
-        e1[i] = a[i] - a_dot_n * n_norm[i];
-
-    real_t norm_e1 = sqrt(e1[0]*e1[0] + e1[1]*e1[1] + e1[2]*e1[2]);
-    for (int i = 0; i < 3; ++i)
-        e1[i] /= norm_e1;
-
-    std::array<real_t, 3> e2 = {
-        n_norm[1]*e1[2] - n_norm[2]*e1[1],
-        n_norm[2]*e1[0] - n_norm[0]*e1[2],
-        n_norm[0]*e1[1] - n_norm[1]*e1[0]
-    };
-
+    
+   //Convert cartesian coordinates to beamline coordinates
     std::array<real_t, 3> d = {x - P0[0], y - P0[1], z - P0[2]};
-
     s = d[0]*n_norm[0] + d[1]*n_norm[1] + d[2]*n_norm[2]; //s
 
     std::array<real_t, 3> d_trans;
@@ -266,65 +328,59 @@ void NBIElectronHeatTerm::CartesianToCylindrical(
 
     real_t r_cos_theta = d_trans[0]*e1[0] + d_trans[1]*e1[1] + d_trans[2]*e1[2];
     real_t r_sin_theta = d_trans[0]*e2[0] + d_trans[1]*e2[1] + d_trans[2]*e2[2];
-    
-    r = sqrt(r_cos_theta*r_cos_theta + r_sin_theta*r_sin_theta); //r
+    r = sqrt(r_cos_theta*r_cos_theta + r_sin_theta*r_sin_theta);
     theta = atan2(r_sin_theta, r_cos_theta); //theta
+    if (theta < 0)
+        theta += 2 * M_PI; //Get the corresponding positive angle
 }
-
-
-
 
 /**
  * Computes the deposition profile for a flux surface
  */
-real_t NBIElectronHeatTerm::ComputeDepositionProfile(real_t ir, real_t ncold, real_t Tcold, real_t Ti, real_t ni, FVM::UnknownQuantityHandler* unknowns
+real_t NBIElectronHeatTerm::ComputeDepositionProfile(len_t ir, real_t ncold, real_t Tcold, real_t Ti, real_t ni, FVM::UnknownQuantityHandler* unknowns
 ){
-
-    len_t ntheta = 100;
-    len_t nphi = 100;
-    real_t dtheta = 2.0*M_PI /ntheta;
-    real_t dphi = 2.0*M_PI/nphi;
-    
     real_t total_deposition = 0.0;
     real_t volume_element = 0.0;
-
-    for (len_t itheta = 0; itheta < ntheta; itheta++){ //integrate by theta
+    real_t lambda_s = ComputeMeanFreePath(ir,ncold,Tcold,Ti,ni); // At current flux surface point
+    
+    for (len_t itheta = 0; itheta < ntheta; itheta++){ //Integrate by theta
+        const FluxSurfacePoint& pt = cachedFluxSurfaces[ir][itheta];
+        real_t R = pt.R;
+        real_t Z = pt.Z;
+        //Compute Configuration space Jacobian
         real_t theta = itheta*dtheta;
-        for (len_t iphi = 0; iphi < nphi; iphi++){ //integrate by phi
-        //For every point on that flux surface
+        
+        for (len_t iphi = 0; iphi < nphi; iphi++){ //Integrate by phi
+            //For every point on that flux surface
             real_t phi = iphi*dphi;
-
-            real_t R = radialGrid->GetFluxSurfaceR(ir, theta);
-            real_t Z = radialGrid->GetFluxSurfaceZ(ir, theta);
-
             real_t x = R * cos(phi); 
             real_t y = R * sin(phi);
             real_t z = Z;
-
+        
             // Compute the beamline coordinates r_B,theta_B,s_B for this/every point, so now we are in the beam system
             real_t r_B, theta_B, s_B;
-            CartesianToCylindrical(x, y, z, P0, n, a, r_B, theta_B, s_B); 
-            //Check if our flux surface point is within the beam
-            if (s_B < 0 || s_B > s_max)
-               continue;
+            CartesianToCylindrical(x, y, z, P0, n, a, r_B, theta_B, s_B);
 
-            if (r_B > r_beam)
+            //Check if the point is within the beam radius and beam length
+            if (r_B >= r_beam) 
                 continue;
-
-            real_t lambda_s = ComputeMeanFreePath(ir,ncold,Tcold,Ti,ni); // At current flux surface point
-            real_t survivalProb = ComputeSurvivalProbability(ir,s_B, unknowns); //Up to current flux surface point
-
-            // Compute deposition probability density H(r, theta, phi)
-            real_t H_r_theta_phi = (j_B / I_B) * (1.0 / lambda_s) * survivalProb;
-        
-
-            real_t J = ComputeConfigurationSpaceJacobian(ir, theta); 
-
-            // Integrate over poloidal and toroidal angles
+            if (s_B < 0 || s_B > s_max)
+                continue;
+            //Compute survival probability at this point
+            real_t survivalProb = ComputeSurvivalProbability(s_B,r_B,theta_B, unknowns);
+            const real_t* j_B_values = j_B_profile->Eval(ir);
+            real_t j_B_r = j_B_values[0];
+            real_t J = this->radialGrid->ComputeConfigurationSpaceJacobian(ir, theta); 
+            // Integrate the deposition profile over the flux surface
+            real_t H_r_theta_phi = (j_B_r / I_B) * (1.0 / lambda_s) * survivalProb;
             total_deposition += H_r_theta_phi * J * dtheta * dphi; 
             volume_element += J * dtheta * dphi; 
-
         }
+    }
+    // If the deposition or volume element is NaN or zero, return 0
+    if (std::isnan(total_deposition) || std::isnan(volume_element) || volume_element == 0) {
+        printf("⚠️  Warning: Invalid deposition result for flux surface %lu (total_deposition = %.3f, volume_element = %.3f). The beam is not depositing at this flux surface.\n", ir, total_deposition, volume_element);
+        return 0.0;
     }
     return total_deposition / volume_element;
 }
@@ -334,15 +390,14 @@ real_t NBIElectronHeatTerm::ComputeDepositionProfile(real_t ir, real_t ncold, re
  */
 bool NBIElectronHeatTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId,
-    FVM::Matrix *jac, const real_t *x,
-    FVM::UnknownQuantityHandler* unknowns
-) {
-    for (len_t ir = 0; ir < nr; ir++) {
+    FVM::Matrix *jac, const real_t *x
+)
+ {
+    for (len_t ir = 0; ir< nr; ir++) {
         auto [dP_dni, dP_dTi, dP_dTe, dP_dne] = Compute_dP_derivative(ir, unknowns);
 
         real_t dP_dX = 0.0;
-
-        if (derivId == id_ion_density) //TODO: HOW DO I KNOW THESE ARE THE CORRECT IDS?
+        if (derivId == id_ion_density)
             dP_dX = dP_dni;
         else if (derivId == id_ion_temperature)
             dP_dX = dP_dTi;
@@ -365,18 +420,26 @@ bool NBIElectronHeatTerm::SetJacobianBlock(
  * Set the non-linear function vector for this term.
  */
 void NBIElectronHeatTerm::SetVectorElements(real_t *rhs, const real_t *x) {
-    for (len_t ir = 0; ir < nr; ir++)
+    for (len_t ir = 0; ir < nr; ir++){
         rhs[ir] += NBIHeatTerm[ir];
+        printf("NBIHeatTerm[%d] = %e\n", ir, NBIHeatTerm[ir]);
+        }
+
 }
 
 /**
  * Sets the matrix elements for this term.
  */
 
-void NBIElectronHeatTerm::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
-    //TODO: I FELL LIKE THIS IS WRONG
-     for (len_t ir = 0; ir < nr; ir++) {
-        rhs[ir] += NBIHeatTerm[ir];  // Add heating to RHS
+ void NBIElectronHeatTerm::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
+    if (rhs == nullptr)
+        return;
+    const real_t *n_cold = unknowns->GetUnknownData(id_ncold);
+    
+    // Add heating contribution to each radial point
+    for (len_t ir = 0; ir < nr; ir++) {
+        real_t factor = 2.0 / (3.0 * n_cold[ir]);
+        rhs[ir] += factor * NBIHeatTerm[ir];
     }
 }
 

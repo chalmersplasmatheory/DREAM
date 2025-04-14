@@ -20,6 +20,8 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIElectronHeatTerm.hpp"
+
 
 
 using namespace DREAM;
@@ -38,6 +40,16 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
     s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
+    s->DefineSetting(MODULENAME "/include_NBI", "Whether to include NBI heating term in T_cold evolution", (bool)false);
+    //s->DefineSetting(MODULENAME "/NBI/ds", "Step length along beam for integration", (real_t)0.01);
+    DefineOptions_T_cold_NBI(s);
+    // Add NBI settings if enabled
+    //if (s->GetBool(MODULENAME "/include_NBI")) {
+    //    DefineOptions_T_cold_NBI(s);
+    //}
+    
+
+
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
@@ -138,6 +150,38 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
+
+    //Include NBI TERM
+    
+    bool includeNBI = s->GetBool(MODULENAME "/include_NBI");
+    printf("NBIElectronHeatTerm: includeNBI = %d\n", includeNBI);
+    if (includeNBI) {
+    real_t ds           = s->GetReal(MODULENAME "/NBI/ds");
+    real_t s_max        = s->GetReal(MODULENAME "/NBI/s_max");
+    real_t r_beam       = s->GetReal(MODULENAME "/NBI/r_beam");
+    real_t Ti_beam      = s->GetReal(MODULENAME "/NBI/Ti_beam");
+    real_t m_i_beam     = s->GetReal(MODULENAME "/NBI/m_i_beam");
+    real_t beamPower    = s->GetReal(MODULENAME "/NBI/beamPower");
+    real_t plasmaVolume = s->GetReal(MODULENAME "/NBI/plasmaVolume");
+    real_t Z0           = s->GetReal(MODULENAME "/NBI/Z0");
+    real_t Zion         = s->GetReal(MODULENAME "/NBI/Zion");
+    real_t R0         = s->GetReal(MODULENAME "/NBI/R0");
+    std::string P0_str = s->GetString(MODULENAME "/NBI/P0");
+    std::string n_str  = s->GetString(MODULENAME "/NBI/n");
+    std::array<real_t, 3> P0, n;
+    sscanf(P0_str.c_str(), "%lf,%lf,%lf", &P0[0], &P0[1], &P0[2]); //turn string vector into array
+    sscanf(n_str.c_str(),  "%lf,%lf,%lf", &n[0],  &n[1],  &n[2]);
+
+    // Load time-dependent j_B data
+    FVM::Interpolator1D *j_B_profile = LoadDataT(
+        MODULENAME "/NBI", s, "j_B"  // Now matches Python dictionary structure
+    );
+
+
+    NBIElectronHeatTerm *nbi = new NBIElectronHeatTerm(fluidGrid, unknowns, adas, ds, s_max, r_beam, P0, n, Ti_beam, m_i_beam, beamPower, plasmaVolume, j_B_profile, Z0, Zion, R0);
+    Op2->AddTerm(nbi);
+    oqty_terms->T_cold_NBI = nbi;
+}
 
     bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
     
@@ -345,4 +389,32 @@ void SimulationGenerator::ConstructEquation_W_cold(
     );
 
 
+}
+
+/**
+ * Define options for the NBI heating term.
+ */
+void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
+    const std::string NBI_PATH = std::string(MODULENAME) + "/NBI";
+    
+    // Beam geometry settings
+    s->DefineSetting(MODULENAME "/NBI/ds", "Step length along beam for integration", (real_t)0.01);
+    s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)10.0);
+    s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)3.0);
+    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", std::string("1.0,1.0,1.0"));
+    s->DefineSetting(MODULENAME "/NBI/n", "Beam direction vector", std::string("0.0,0.0,1.0"));
+    
+    // Beam physics settings
+    s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Ion temperature of beam [eV]", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/beamPower", "Beam power [W]", (real_t)1e6);
+    
+    // Plasma and beam parameters
+    s->DefineSetting(MODULENAME "/NBI/plasmaVolume", "Plasma volume [m³]", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/Z0", "Ionspecies", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/Zion", "Ionspecies", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/R0", "Major Radius", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/j_B/x", "Beam current density values", 0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
 }

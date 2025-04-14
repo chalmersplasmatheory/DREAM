@@ -136,10 +136,18 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             
             if 'halo_region_losses' in data:
                 self.halo_region_losses = int(data['halo_region_losses'])
+            if 'include_NBI' in data:
+                self.include_NBI = data['include_NBI']
+            if 'NBI' in data:
+                self.NBI = data['NBI']
+
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+        
         if 'recombination' in data:
             self.recombination = data['recombination']
+
+
 
         self.verifySettings()
 
@@ -163,7 +171,15 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 'x': self.temperature,
                 'r': self.radius
             }
+            
             data['transport'] = self.transport.todict()
+            print("1")
+            
+            if self.include_NBI:
+                data['include_NBI'] = True
+                data.update(self.NBI)
+
+        
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -200,4 +216,24 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
     def verifySettingsPrescribedInitialData(self):
         self._verifySettingsPrescribedInitialData('T_cold', data=self.temperature, radius=self.radius)
+
+    def setNBI(self, data):
+        """
+        Set NBI heating settings.
+        """
+        self.include_NBI = True
+        self.NBI = {}
+        for k, v in data.items():
+            self.NBI[f'NBI/{k}'] = v  # store with prefix to match internal C++ key
+
+
+
+
+
+
+
+
+
+
+
 

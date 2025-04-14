@@ -757,9 +757,9 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 
 	return R;
 }
-//Linn
+
 real_t AnalyticBRadialGridGenerator::GetFluxSurfaceR(len_t ir, real_t theta) {
-    return ROverR0AtTheta(ir, theta) * this->R0;
+    return ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
 }
 
 
