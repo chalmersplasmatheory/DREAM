@@ -135,7 +135,9 @@ void DiagonalPreconditioner::SetDefaultScalings() {
     for (len_t id : this->nontrivials) {
         const string &name = uqh->GetUnknown(id)->GetName();
 
-        if (name == OptionConstants::UQTY_E_FIELD) {
+		if (name == OptionConstants::UQTY_D_I) {
+			uqn_scales[id] = eqn_scales[id] = 1;
+        } else if (name == OptionConstants::UQTY_E_FIELD) {
             uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
         } else if (name == OptionConstants::UQTY_F_HOT) {
             uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
