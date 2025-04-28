@@ -45,7 +45,7 @@ void RunawayTransportRechesterRosenbluth::Rebuild(
 		qR0 = R0;
 
 	for (len_t ir = 0; ir < nr; ir++)
-		Drr(ir, 0, 0) += M_PI * qR0 * Constants::c * dB_B[ir];
+		Drr(ir, 0, 0) += M_PI * qR0 * Constants::c * dB_B[ir] * dB_B[ir];
 }
 
 
