@@ -7,7 +7,7 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
-#include <iostream>  
+
 
 using namespace std;
 using namespace DREAM::FVM;
@@ -321,14 +321,16 @@ void RadialGrid::DeallocateFSAvg(){
 }
 
 /**
-* Help function to import the numerical grid 
+* Evaluate the major radius  R coordinate the given (r, theta) point on a flux surface.
 */
-real_t RadialGrid::GetFluxSurfaceR(len_t ir, real_t theta) {
-    return this->generator->GetFluxSurfaceR(ir, theta);
+real_t RadialGrid::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceRMinusR0_theta(ir, theta);
 }
-
-real_t RadialGrid::GetFluxSurfaceZ(len_t ir, real_t theta) {
-    return this->generator->GetFluxSurfaceZ(ir, theta);
+/**
+* Evaluate the Z coordinate the given (r, theta) point on a flux surface.
+*/
+real_t RadialGrid::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceZMinusZ0_theta(ir, theta);
 }
 
 /**
