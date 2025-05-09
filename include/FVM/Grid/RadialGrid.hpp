@@ -278,8 +278,8 @@ namespace DREAM::FVM {
 		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
 		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
-        real_t GetFluxSurfaceR(len_t ir, real_t theta);
-        real_t GetFluxSurfaceZ(len_t ir, real_t theta);
+        real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta);
+        real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta);
         real_t ComputeConfigurationSpaceJacobian(len_t ir, real_t theta);
 
         
