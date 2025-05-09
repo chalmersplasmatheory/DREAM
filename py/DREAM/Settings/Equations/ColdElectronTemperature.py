@@ -6,6 +6,8 @@ from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
+from .NBISettings import NBISettings
+
 
 
 TYPE_PRESCRIBED = 1
@@ -42,6 +44,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)
         elif ttype == TYPE_SELFCONSISTENT:
             self.setInitialProfile(temperature=temperature, radius=radius)
+            self.nbi = NBISettings()
 
 
     ###################
@@ -173,8 +176,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             }
             
             data['transport'] = self.transport.todict()
-            print("1")
-            
+        
             if self.include_NBI:
                 data['include_NBI'] = True
                 data.update(self.NBI)
@@ -217,23 +219,16 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
     def verifySettingsPrescribedInitialData(self):
         self._verifySettingsPrescribedInitialData('T_cold', data=self.temperature, radius=self.radius)
 
-    def setNBI(self, data):
+    def setNBI(self, settings):
         """
-        Set NBI heating settings.
+        Set NBI configuration from an NBISettings instance.
         """
-        self.include_NBI = True
-        self.NBI = {}
-        for k, v in data.items():
-            self.NBI[f'NBI/{k}'] = v  # store with prefix to match internal C++ key
+        if not isinstance(settings, NBISettings):
+            raise ValueError("Expected an NBISettings instance")
 
-
-
-
-
-
-
-
-
-
-
-
+        if not settings.enabled:
+            self.include_NBI = False
+            self.NBI = {}
+        else:
+            self.include_NBI = True
+            self.NBI = settings.todict()
