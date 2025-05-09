@@ -27,10 +27,6 @@ cmake_policy(VERSION 3.12)
 set(PETSC_VALID_COMPONENTS
   C
   CXX)
-if(PETSC_INCLUDES AND PETSC_LIBRARIES)
-    set(PETSC_FOUND TRUE)
-    return()
-endif()
 
 if(NOT PETSc_FIND_COMPONENTS)
   get_property (_enabled_langs GLOBAL PROPERTY ENABLED_LANGUAGES)
