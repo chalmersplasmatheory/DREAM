@@ -191,6 +191,19 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 
 	return R;
 }
+/**
+ * Returns the flux surface R coordinates on the simulation grid, 
+ * not shifted by R0.
+ */
+real_t CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) {
+    return this->x[ir] * cos(theta);
+}
+/**
+ * Returns the flux surface Z coordinates on the simulation grid
+ */
+real_t CylindricalRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) {
+    return this->x[ir] * sin(theta);
+}
 
 
 /**

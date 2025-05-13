@@ -8,6 +8,7 @@
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
 
+
 using namespace std;
 using namespace DREAM::FVM;
 
@@ -300,6 +301,7 @@ void RadialGrid::InitializeFSAvg(
     this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;   
 }
 
+
 /**
  * Deallocate flux surface averages
  */
@@ -318,3 +320,22 @@ void RadialGrid::DeallocateFSAvg(){
     delete [] this->FSA_1OverR2_f;
 }
 
+/**
+* Evaluate the major radius  R coordinate the given (r, theta) point on a flux surface.
+*/
+real_t RadialGrid::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceRMinusR0_theta(ir, theta);
+}
+/**
+* Evaluate the Z coordinate the given (r, theta) point on a flux surface.
+*/
+real_t RadialGrid::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceZMinusZ0_theta(ir, theta);
+}
+
+/**
+* Help function to import the jacobian of the numerical grid 
+*/
+real_t RadialGrid::ComputeConfigurationSpaceJacobian(len_t ir, real_t theta) {
+    return this->generator->JacobianAtTheta(this->r[ir], theta);
+}
