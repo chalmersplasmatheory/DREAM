@@ -8,6 +8,7 @@
 #include "FVM/Matrix.hpp"
 #include <unordered_map>
 #include "FVM/Interpolator1D.hpp"
+#include "DREAM/IonHandler.hpp"
 
 namespace DREAM
 {
@@ -22,6 +23,7 @@ namespace DREAM
         FVM::RadialGrid *radialGrid;
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
+        IonHandler *ions;
 
         // Beam geometry parameters
         real_t P0[3];  // Beam entry point
@@ -31,15 +33,17 @@ namespace DREAM
         real_t s_max;  // Maximum beam length
         real_t r_beam; // Beam radius
         real_t s_start;
+        real_t s_stop;
 
         // Beam physics parameters
         real_t Ti_beam;   // Beam ion temperature
         real_t m_i_beam;  // Beam ion mass
         real_t beamPower; // Total beam power
         FVM::Interpolator1D *j_B_profile;
-        real_t I_B;  // Total beam current
-        real_t Z0;   // Initial charge state
-        real_t Zion; // Ion charge state
+        real_t I_B;       // Total beam current
+        real_t Z0;        // Initial charge state
+        real_t Zion;      // Ion charge state
+        bool TCVGaussian; // Flag for Gaussian profile
 
         // Tokamak parameters
         real_t R0;           // Major radius
@@ -60,6 +64,10 @@ namespace DREAM
         real_t *NBIHeatTerm; // Stored heating term values
         real_t *Deposition_profile;
         real_t *Deposition_profile_times_Vprime;
+        real_t *H_r_dTe;
+        real_t *H_r_dni;
+        real_t *H_r_dTi;
+        real_t *H_r_dne;
         real_t depositedFraction = 1.0;
         std::vector<real_t> dPdne, dPdTe, dPdni, dPdTi;
 
@@ -80,11 +88,11 @@ namespace DREAM
 
     public:
         NBIElectronHeatTerm(
-            FVM::Grid *, FVM::UnknownQuantityHandler *, ADAS *, real_t s_max, real_t r_beam,
+            FVM::Grid *, FVM::UnknownQuantityHandler *, ADAS *, IonHandler *ions, real_t s_max, real_t r_beam,
             const real_t P0[3], const real_t n[3],
             real_t Ti_beam, real_t m_i_beam,
             real_t beamPower,
-            FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0);
+            FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0, bool TCV_gaussian);
         ~NBIElectronHeatTerm();
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns) override;
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t *rhs) override;
@@ -94,11 +102,11 @@ namespace DREAM
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
 
         // Calculation methods
-        real_t ComputeMeanFreePath(len_t ir);
+        void ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t ni, real_t Ti, real_t &lambda_s, real_t &dlambda_dI, real_t &dlambda_dne);
         void ComputeDepositionProfile(FVM::UnknownQuantityHandler *unknowns);
-        real_t Compute_dP_derivative(len_t ir, len_t derivId, FVM::UnknownQuantityHandler *unknowns);
         int_t CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t theta_B);
-        void CartesianToCylindrical(real_t x, real_t y, real_t z, const real_t P0[3], const real_t n[3], const real_t a[3], real_t &r, real_t &theta, real_t &s);
+        void CartesianToCylindrical(real_t x, real_t y, real_t z, const real_t P0[3], const real_t n[3], real_t &r, real_t &theta, real_t &s);
+        real_t Calculate_jB_IB(real_t r_B, real_t theta_B);
     };
 
 }
