@@ -822,6 +822,13 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 
 	return R;
 }
+/**
+ * Returns the flux surface R coordinates on the simulation grid, 
+ * not shifted by R0.
+ */
+real_t NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) {
+    return ROverR0AtTheta(ir, theta) * this->Rp - this->Rp;
+}
 
 
 /**
@@ -864,7 +871,12 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
 
 	return Z;
 }
-
+/**
+ * Returns the flux surface Z coordinates on the simulation grid.
+ */
+real_t NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) {
+    return gsl_spline2d_eval(spline_Z, r[ir], theta, acc_r, acc_theta)- this->Zp ; 
+}
 
 /**
  * Returns a list of poloidal angles on which the flux
