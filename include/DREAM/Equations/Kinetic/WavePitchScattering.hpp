@@ -20,13 +20,11 @@ namespace DREAM {
             FVM::Grid*, enum OptionConstants::eqterm_wave_mode,
             enum OptionConstants::momentumgrid_type,
             DREAM::MultiInterpolator1D*, DREAM::MultiInterpolator1D*, DREAM::MultiInterpolator1D*
-            const real_t, const real_t
         );
         WavePitchScattering(
             FVM::Grid*, enum OptionConstants::eqterm_ripple_mode,
             enum OptionConstants::momentumgrid_type,
             DREAM::MultiInterpolator1D*, DREAM::MultiInterpolator1D*, DREAM::MultiInterpolator1D*
-            const real_t, const real_t
         );
         ~WavePitchScattering();
 
