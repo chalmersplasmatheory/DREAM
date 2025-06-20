@@ -108,6 +108,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PrescribedKineticParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RechesterRosenbluthTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RipplePitchScattering.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/WavePitchScattering.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"

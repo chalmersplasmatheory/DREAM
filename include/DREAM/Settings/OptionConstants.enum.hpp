@@ -310,6 +310,11 @@ enum eqterm_ripple_mode {                           // Magnetic ripple pitch sca
     EQTERM_RIPPLE_MODE_GAUSSIAN=3,                  // included with gaussian resonance region
 };
 
+enum eqterm_wave_mode {                             // Magnetic wave-injection pitch scattering
+    EQTERM_WAVE_MODE_NEGLECT=1,                     // neglected
+    EQTERM_WAVE_MODE_GAUSSIAN=2,                    // included with gaussian resonance region
+};
+
 enum eqterm_synchrotron_mode {                      // Synchrotron radiation reaction is...
     EQTERM_SYNCHROTRON_MODE_NEGLECT=1,              // neglected
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included

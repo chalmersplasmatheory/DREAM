@@ -12,6 +12,7 @@
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/PrescribedKineticParameter.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
+#include "DREAM/Equations/Kinetic/WavePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
@@ -52,6 +53,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
+    s->DefineSetting(mod + "/wavemode", "Enables/disables pitch scattering due to the wave injection", (int_t)OptionConstants::EQTERM_WAVE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 	s->DefineSetting(mod + "/timevaryingbmode", "Enables/disabled the adiabatic compression force caused by a time varying magnetic field strength", (int_t)OptionConstants::EQTERM_TIMEVARYINGB_MODE_NEGLECT);
 
@@ -88,6 +90,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
  * advective_bc:      Pointer to an object in which to store the advective transport boundary condition (if enabled).
  * diffusive_bc:      Pointer to an object in which to store the diffusive transport boundary condition (if enabled).
  * ripple_Dxx:        Pointer to an object in which to store the ripple pitch scattering term (if enabled).
+ * wave_Dxx:        Pointer to an object in which to store the wave pitch scattering term (if enabled).
  * rescaleMaxwellian: If true, rescales the initial distribution function so that it is consistent with the initial density.
  */
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
@@ -96,7 +99,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
     FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
-    RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
+    RipplePitchScattering **ripple_Dxx, WavePitchScattering **wave_Dxx, SynchrotronTerm **synchrotron,
 	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
@@ -140,6 +143,10 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         // Add ripple effects?
         if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
             eqn->AddTerm(*ripple_Dxx);
+        
+        // Add wave effects?
+        if ((*wave_Dxx = ConstructEquation_f_wave(s, mod, grid, gridtype)) != nullptr)
+            eqn->AddTerm(*wave_Dxx);
 
 		// Add pitch angle advection due to time-varying B?
 		if ((*timevaryingb = ConstructEquation_f_timevaryingb(s, mod, grid)) != nullptr)
@@ -320,6 +327,35 @@ RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
         );
 
     return rps;
+}
+
+/**
+ * Construct and add the wave pitch scattering
+ * term (if enabled).
+ */
+WavePitchScattering *SimulationGenerator::ConstructEquation_f_wave(
+    Settings *s, const std::string& mod, FVM::Grid *grid,
+    enum OptionConstants::momentumgrid_type mgtype
+) {
+    enum OptionConstants::eqterm_wave_mode rmode =
+        (enum OptionConstants::eqterm_wave_mode)s->GetInteger(mod + "/wavemode");
+    
+    // neglect wave term if demanded
+    if (rmode == OptionConstants::EQTERM_WAVE_MODE_NEGLECT)
+        return nullptr;
+    
+    // load wave injection setting (artifical 'mode' = 1)
+    MultiInterpolator1D *ppar_res = LoadDataIonRT("radialgrid", grid->GetRadialGrid(), s, 1, "wave/ppar_res");
+    MultiInterpolator1D *Delta_ppar_res = LoadDataIonRT("radialgrid", grid->GetRadialGrid(), s, 1, "wave/Delta_ppar_res");
+    MultiInterpolator1D *Dxx_int = LoadDataIonRT("radialgrid", grid->GetRadialGrid(), s, 1, "wave/Dxx_int");
+    
+    // construct wave scattering term
+    WavePitchScattering *wps;
+    wps = new WavePitchScattering(
+        grid, rmode, mgtype, ppar_res, Delta_ppar_res, Dxx_int
+    );
+
+    return wps;
 }
 
 /**
