@@ -30,7 +30,7 @@ WavePitchScattering::WavePitchScattering(
     FVM::Grid *grid, enum OptionConstants::eqterm_wave_mode mode,
     enum OptionConstants::momentumgrid_type mgtype,
     DREAM::MultiInterpolator1D *ppar_res, DREAM::MultiInterpolator1D *Delta_ppar_res, DREAM::MultiInterpolator1D *Dxx_int
-) : RipplePitchScattering(
+) : WavePitchScattering(
     grid, mode, mgtype, ppar_res, Delta_ppar_res, Dxx_int
 ) {
     SetName("WavePitchScattering");
@@ -55,7 +55,7 @@ WavePitchScattering::WavePitchScattering(
 /**
  * Allocate memory used by this term.
  */
-void RipplePitchScattering::Allocate() {
+void WavePitchScattering::Allocate() {
     // nothing to be allocated
 }
 
@@ -85,14 +85,10 @@ bool WavePitchScattering::GridRebuilt() {
 void WavePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) {
     const len_t nr = this->grid->GetNr();
     
-    // get natural constants
-    const real_t e  = Constants::ec;
-    const real_t me = Constants::me;
-    
     // evaluate wave quantities at this time
     const real_t *ppar_res_t =this->ppar_res->Eval(1, t);
     const real_t *Delta_ppar_res_t =this->Delta_ppar_res->Eval(1, t);
-    const real_t *Dxx_int_t =this->Dxx_ppar_res->Eval(1, t);
+    const real_t *Dxx_int_t =this->Dxx_int->Eval(1, t);
     
     // loop over radial coordinate
     for (len_t ir = 0; ir < nr; ir++) {
@@ -100,8 +96,6 @@ void WavePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQuan
         const len_t np    = mg->GetNp1();
         const len_t nxi   = mg->GetNp2();
         const real_t *p   = mg->GetP1();
-        const real_t *p_f = mg->GetP1_f();
-        const real_t *dp  = mg->GetDp1();
         const real_t *xi0 = mg->GetP2_f();
             
         // loop over pitch angle grid
@@ -110,9 +104,7 @@ void WavePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQuan
             
             // loop over momentum grid
             for (len_t i = 0; i < np; i++) {
-                const real_t ppar  = p[i]*absxi;
-                
-                real_t Hmn = 0.0;
+
                 if (mode == OptionConstants::EQTERM_WAVE_MODE_GAUSSIAN){
                     if (absxi != 0) {
                         // calculate resonant momentum and total diffusion strength at this pitch angle
