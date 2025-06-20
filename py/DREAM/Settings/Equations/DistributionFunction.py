@@ -67,6 +67,7 @@ class DistributionFunction(UnknownQuantity):
         
         self.mode = mode
         self.ripplemode = RIPPLE_MODE_NEGLECT
+        self.wavemode = WAVE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.timevaryingbmode = TIME_VARYING_B_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
@@ -247,6 +248,17 @@ class DistributionFunction(UnknownQuantity):
             self.ripplemode = RIPPLE_MODE_BOX if mode else RIPPLE_MODE_NEGLECT
         else:
             self.ripplemode = int(mode)
+    
+    def setWaveMode(self, mode):
+        """
+        Enables/disables inclusion of pitch scattering due to the wave injection.
+
+        :param int mode: Flag indicating whether or not to include wave injection effects.
+        """
+        if type(mode) == bool:
+            self.wavemode = WAVE_MODE_GAUSSIAN if mode else WAVE_MODE_NEGLECT
+        else:
+            self.wavemode = int(mode)
 
 
     def setTimeVaryingB(self, mode):
@@ -360,6 +372,9 @@ class DistributionFunction(UnknownQuantity):
 
         if 'ripplemode' in data:
             self.ripplemode = int(scal(data['ripplemode']))
+        
+        if 'wavemode' in data:
+            self.wavemode = int(scal(data['wavemode']))
 
         if 'timevaryingbmode' in data:
             self.timevaryingbmode = int(scal(data['timevaryingbmode']))
@@ -423,6 +438,7 @@ class DistributionFunction(UnknownQuantity):
                 data['T0'] = { 'r': self.rT0, 'x': self.T0 }
             
             data['ripplemode'] = self.ripplemode
+            data['wavemode'] = self.wavemode
             data['synchrotronmode'] = self.synchrotronmode
             data['timevaryingbmode'] = self.timevaryingbmode
             data['transport'] = self.transport.todict()
@@ -476,6 +492,15 @@ class DistributionFunction(UnknownQuantity):
                 opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_BOX, RIPPLE_MODE_GAUSSIAN]
                 if self.ripplemode not in opt:
                     raise EquationException("{}: Invalid option for ripple mode: {}.".format(self.name, self.ripplemode))
+            
+            if type(self.wavemode) == bool:
+                self.setWaveMode(self.wavemode)
+            elif type(self.wavemode) != int:
+                raise EquationException("{}: Invalid type of wave mode option: {}".format(self.name, type(self.wavemode)))
+            else:
+                opt = [WAVE_MODE_NEGLECT, WAVE_MODE_GAUSSIAN]
+                if self.wavemode not in opt:
+                    raise EquationException("{}: Invalid option for wave mode: {}.".format(self.name, self.wavemode))
  
             if type(self.synchrotronmode) == bool:
                 self.setSynchrotronMode(self.synchrotronmode)

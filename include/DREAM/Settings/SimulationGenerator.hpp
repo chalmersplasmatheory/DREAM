@@ -90,6 +90,7 @@ namespace DREAM {
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
         static void DefineOptions_f_ripple(const std::string&, Settings*);
+        static void DefineOptions_f_wave(const std::string&, Settings*);
 		static void DefineOptions_f_timevaryingb(const std::string&, Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Initializer(Settings*);
@@ -143,11 +144,12 @@ namespace DREAM {
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
             bool, bool, DREAM::FVM::Operator **transport=nullptr,
             DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
-            DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
+            DREAM::RipplePitchScattering **rps=nullptr, DREAM::WavePitchScattering **wps=nullptr , DREAM::SynchrotronTerm **st=nullptr,
 			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
         );
 		static void ConstructEquation_f_prescribed(const len_t, EquationSystem*, FVM::Grid*, Settings*, const std::string&);
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
+        static DREAM::WavePitchScattering *ConstructEquation_f_wave(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         static DREAM::TimeVaryingBTerm *ConstructEquation_f_timevaryingb(Settings*, const std::string&, FVM::Grid*);
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
