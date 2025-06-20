@@ -90,7 +90,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
         s, MODULENAME, eqsys, id_f_re, runawayGrid, eqsys->GetRunawayGridType(),
         eqsys->GetRunawayCollisionHandler(), addExternalBC, addInternalBC,
         transport, &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
-        &oqty_terms->f_re_ripple_Dxx, &oqty_terms->f_re_synchrotron,
+        &oqty_terms->f_re_ripple_Dxx, &oqty_terms->f_re_wave_Dxx, &oqty_terms->f_re_synchrotron,
 		&oqty_terms->f_re_timevaryingb
     );
 

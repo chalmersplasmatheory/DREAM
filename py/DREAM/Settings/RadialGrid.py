@@ -58,6 +58,12 @@ class RadialGrid(PrescribedScalarParameter):
         self.ripple_dB_B = None
         self.ripple_r = None
         self.ripple_t = None
+        # Wave parameters
+        self.wave_ppar_res = None
+        self.wave_Delta_ppar_res = None
+        self.wave_Dxx_int = None
+        self.wave_r = None
+        self.wave_t = None
         # Time-varying magnetic field parameter
         self.dlnB0dt_x = None
         self.dlnB0dt_t = None
@@ -296,6 +302,61 @@ class RadialGrid(PrescribedScalarParameter):
         self.ripple_dB_B = dB_B
         self.ripple_r = r
         self.ripple_t = t
+        
+        
+    def setWave(self, ppar_res, Delta_ppar_res, Dxx_int, r=[0], t=[0]):
+        """
+        Enable the wave pitch scattering term.
+
+        :param ppar_res:           Parallel resonant momentum (nt x nr)
+        :param Delta_ppar_res:           Resonance width in parallel momentum (nt x nr).
+        :param Dxx_int:          Integrated resonance strength (nt x nr)
+        :param r:                Radial grid on which the wave scattering is given.
+        :param t:                Time grid on which the wave scattering is given.
+        """
+        # time and radial grid
+        if type(r) == list: r = np.array(r)
+        elif np.isscalar(r): r = np.array([float(r)])
+
+        if type(t) == list: t = np.array(t)
+        elif np.isscalar(t): t = np.array([float(t)])
+        
+        # wave-injection quantities
+        # note that the first dimension is an artificial 'mode' number for consistency with cpp IonDataRT saver/loader
+        if type(ppar_res) == list: ppar_res = np.array(ppar_res)
+        elif np.isscalar(ppar_res): ppar_res = np.array([float(ppar_res)])
+        if type(ppar_res) == float or ppar_res.ndim == 1:
+            ppar_res = np.ones((1, t.size, r.size)) * ppar_res
+        elif ppar_res.ndim == 2:
+            ppar_res = np.reshape(ppar_res,(1, t.size, r.size))
+        
+        if type(Delta_ppar_res) == list: Delta_ppar_res = np.array(Delta_ppar_res)
+        elif np.isscalar(Delta_ppar_res): Delta_ppar_res = np.array([float(Delta_ppar_res)])
+        if type(Delta_ppar_res) == float or Delta_ppar_res.ndim == 1:
+            Delta_ppar_res = np.ones((1, t.size, r.size)) * Delta_ppar_res
+        elif Delta_ppar_res.ndim == 2:
+            Delta_ppar_res = np.reshape(Delta_ppar_res,(1, t.size, r.size))
+        
+        if type(Dxx_int) == list: Dxx_int = np.array(Dxx_int)
+        elif np.isscalar(Dxx_int): Dxx_int = np.array([float(Dxx_int)])
+        if type(Dxx_int) == float or Dxx_int.ndim == 1:
+            Dxx_int = np.ones((1, t.size, r.size)) * Dxx_int
+        elif Dxx_int.ndim == 2:
+            Dxx_int = np.reshape(Dxx_int,(1, t.size, r.size))
+        
+        # shape checker
+        if ppar_res.ndim != 3 or ppar_res.shape != (1, t.size, r.size):
+            raise EquationException("RadialGrid: Invalid dimensions of parameter 'ppar_res'. Expected {}, but array has {}.".format((1, t.size, r.size), ppar_res.shape))
+        if Delta_ppar_res.ndim != 3 or Delta_ppar_res.shape != (1, t.size, r.size):
+            raise EquationException("RadialGrid: Invalid dimensions of parameter 'Delta_ppar_res'. Expected {}, but array has {}.".format((1, t.size, r.size), Delta_ppar_res.shape))
+        if Dxx_int.ndim != 3 or Dxx_int.shape != (1, t.size, r.size):
+            raise EquationException("RadialGrid: Invalid dimensions of parameter 'Dxx_int'. Expected {}, but array has {}.".format((1, t.size, r.size), Dxx_int.shape))
+
+        self.wave_ppar_res = ppar_res
+        self.wave_Delta_ppar_res = Delta_ppar_res
+        self.wave_Dxx_int = Dxx_int
+        self.wave_r = r
+        self.wave_t = t
 
 
     def setTimeVaryingB(self, dB0dt_B0, t=0):
@@ -518,6 +579,13 @@ class RadialGrid(PrescribedScalarParameter):
             self.ripple_dB_B = data['ripple']['x']
             self.ripple_r = data['ripple']['r']
             self.ripple_t = data['ripple']['t']
+        
+        if 'wave' in data:
+            self.wave_ppar_res = data['wave']['ppar_res']['x']
+            self.wave_ppar_res = data['wave']['Delta_ppar_res']['x']
+            self.wave_ppar_res = data['wave']['Dxx_int']['x']
+            self.wave_r = data['wave']['ppar_res']['r']
+            self.wave_t = data['wave']['ppar_res']['t']
 
         if 'dlnB0dt' in data:
             self.dlnB0dt_x = data['dlnB0dt']['x']
@@ -575,6 +643,13 @@ class RadialGrid(PrescribedScalarParameter):
                 'x': self.ripple_dB_B,
                 'r': self.ripple_r,
                 't': self.ripple_t
+            }
+        
+        if self.wave_ppar_res is not None:
+            data['wave'] = {
+                'ppar_res': {'x': self.wave_ppar_res, 'r': self.wave_r, 't': self.wave_t},
+                'Delta_ppar_res': {'x': self.wave_Delta_ppar_res, 'r': self.wave_r, 't': self.wave_t},
+                'Dxx_int': {'x': self.wave_Dxx_int, 'r': self.wave_r, 't': self.wave_t},
             }
 
         if self.dlnB0dt_x is not None:
@@ -660,7 +735,19 @@ class RadialGrid(PrescribedScalarParameter):
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_t'.")
             elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_t.size, self.ripple_r.size):
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
-
+        
+        # Wave settings
+        if self.wave_ppar_res is not None:
+            if type(self.wave_ppar_res) != np.ndarray or self.wave_ppar_res.ndim != 2:
+                raise EquationException("RadialGrid: Invalid type or shape of 'wave_ppar_res'.")
+            elif type(self.wave_Delta_ppar_res) != np.ndarray or self.wave_Delta_ppar_res.ndim != 2:
+                raise EquationException("RadialGrid: Invalid type or shape of 'wave_Delta_ppar_res'.")
+            elif type(self.wave_Dxx_int) != np.ndarray or self.wave_Dxx_int.ndim != 2:
+                raise EquationException("RadialGrid: Invalid type or shape of 'wave_Dxx_int'.")
+            elif type(self.wave_r) != np.ndarray or self.wave_r.ndim != 1:
+                raise EquationException("RadialGrid: Invalid type or shape of 'wave_r'.")
+            elif type(self.wave_t) != np.ndarray or self.wave_t.ndim != 1:
+                raise EquationException("RadialGrid: Invalid type or shape of 'wave_t'.")
         
     def verifySettingsShapeParameter(self, shapeparam):
         """

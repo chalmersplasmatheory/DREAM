@@ -53,6 +53,8 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
     // Magnetic ripple effects
     DefineOptions_f_ripple(RADIALGRID, s);
+    // Wave injection effections
+    DefineOptions_f_wave(RADIALGRID, s);
 	// Time-varying B operator
 	DefineOptions_f_timevaryingb(RADIALGRID, s);
 
@@ -74,6 +76,18 @@ void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s)
     // Define perturbation data
     DefineDataIonRT(mod, s, "ripple");
 }
+
+/**
+ * Define options for wave injection modelling.
+ */
+void SimulationGenerator::DefineOptions_f_wave(const string& mod, Settings *s) {
+    // Get spatially and temporally resolved perturbation data: // has /x, /t and /r entries
+    DefineDataIonRT(mod, s, "wave/ppar_res");
+    DefineDataIonRT(mod, s, "wave/Delta_ppar_res");
+    DefineDataIonRT(mod, s, "wave/Dxx_int");
+}
+// !!!
+
 
 /**
  * Define options for the time-varying magnetic field operator.
