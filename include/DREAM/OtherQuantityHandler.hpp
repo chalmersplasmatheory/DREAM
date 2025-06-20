@@ -30,6 +30,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
+#include "DREAM/Equations/Kinetic/WavePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
@@ -68,6 +69,9 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+	    // Magnetic wave pitch scattering
+	    DREAM::WavePitchScattering *f_hot_wave_Dxx=nullptr;
+	    DREAM::WavePitchScattering *f_re_wave_Dxx=nullptr;
 			// Tritium and Compton source terms
 			DREAM::ComptonSource *comptonSource_hottail=nullptr;
 			DREAM::ComptonSource *comptonSource_runaway=nullptr;
