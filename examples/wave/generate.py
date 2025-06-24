@@ -103,7 +103,7 @@ ds.output.setFilename('outputs.h5')
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
 
-from DREAM import runiface
-ds.solver.setVerbose(True)
-do = runiface(ds)
+#from DREAM import runiface
+#ds.solver.setVerbose(True)
+#do = runiface(ds)
 
