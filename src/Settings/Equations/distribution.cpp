@@ -147,7 +147,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         // Add wave effects?
         if ((*wave_Dxx = ConstructEquation_f_wave(s, mod, grid, gridtype)) != nullptr)
             eqn->AddTerm(*wave_Dxx);
-
+ 
 		// Add pitch angle advection due to time-varying B?
 		if ((*timevaryingb = ConstructEquation_f_timevaryingb(s, mod, grid)) != nullptr)
 			eqn->AddTerm(*timevaryingb);

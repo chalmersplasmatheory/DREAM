@@ -11,6 +11,7 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Interpolator1D.hpp"
 #include <gsl/gsl_sf_erf.h>
+#include "DREAM/IO.hpp"
 using namespace DREAM;
 using namespace std;
 
@@ -87,9 +88,10 @@ void WavePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQuan
     const len_t nr = this->grid->GetNr();
     
     // evaluate wave quantities at this time
-    const real_t *ppar_res_t = this->ppar_res->Eval(1, t);
-    const real_t *Delta_ppar_res_t = this->Delta_ppar_res->Eval(1, t);
-    const real_t *Dxx_int_t = this->Dxx_int->Eval(1, t);
+    const len_t mode = 0;
+    const real_t *ppar_res_t = this->ppar_res->Eval(mode, t);
+    const real_t *Delta_ppar_res_t = this->Delta_ppar_res->Eval(mode, t);
+    const real_t *Dxx_int_t = this->Dxx_int->Eval(mode, t);
     
     // loop over radial coordinate
     for (len_t ir = 0; ir < nr; ir++) {
