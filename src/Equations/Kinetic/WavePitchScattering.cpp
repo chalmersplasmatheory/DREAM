@@ -22,9 +22,8 @@ using namespace std;
  * ppar_res:        Resonant momentum (vs minor radius)
  * Delta_ppar_res:       Resonance width (vs minor radius)
  * Dxx_int:     integrated pitch angle diffusion term (vs minor radius)
- * t_start:     starting time for wave scattering
- * t_end:       end time for wave scattering
  */
+/**
 WavePitchScattering::WavePitchScattering(
     FVM::Grid *grid, enum OptionConstants::eqterm_wave_mode mode,
     enum OptionConstants::momentumgrid_type mgtype,
@@ -35,6 +34,7 @@ WavePitchScattering::WavePitchScattering(
 ) {
     SetName("WavePitchScattering");
 }
+*/
 
 WavePitchScattering::WavePitchScattering(
     FVM::Grid *grid, enum OptionConstants::eqterm_wave_mode mode,

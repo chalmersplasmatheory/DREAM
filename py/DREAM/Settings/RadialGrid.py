@@ -738,11 +738,11 @@ class RadialGrid(PrescribedScalarParameter):
         
         # Wave settings
         if self.wave_ppar_res is not None:
-            if type(self.wave_ppar_res) != np.ndarray or self.wave_ppar_res.ndim != 2:
+            if type(self.wave_ppar_res) != np.ndarray or self.wave_ppar_res.ndim != 3:
                 raise EquationException("RadialGrid: Invalid type or shape of 'wave_ppar_res'.")
-            elif type(self.wave_Delta_ppar_res) != np.ndarray or self.wave_Delta_ppar_res.ndim != 2:
+            elif type(self.wave_Delta_ppar_res) != np.ndarray or self.wave_Delta_ppar_res.ndim != 3:
                 raise EquationException("RadialGrid: Invalid type or shape of 'wave_Delta_ppar_res'.")
-            elif type(self.wave_Dxx_int) != np.ndarray or self.wave_Dxx_int.ndim != 2:
+            elif type(self.wave_Dxx_int) != np.ndarray or self.wave_Dxx_int.ndim != 3:
                 raise EquationException("RadialGrid: Invalid type or shape of 'wave_Dxx_int'.")
             elif type(self.wave_r) != np.ndarray or self.wave_r.ndim != 1:
                 raise EquationException("RadialGrid: Invalid type or shape of 'wave_r'.")

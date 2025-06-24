@@ -10,10 +10,19 @@
 namespace DREAM {
     class WavePitchScattering : public FVM::DiffusionTerm {
     private:
+	OptionConstants::eqterm_wave_mode mode;
+
         DREAM::MultiInterpolator1D *ppar_res; // resonant parallel momentum
         DREAM::MultiInterpolator1D *Delta_ppar_res; // resonance width in parallel momentum
         DREAM::MultiInterpolator1D *Dxx_int; // integrated xi-xi diffusion term
     public:
+        	/**
+        WavePitchScattering(
+            FVM::Grid*, enum OptionConstants::eqterm_wave_mode,
+            enum OptionConstants::momentumgrid_type,
+            DREAM::MultiInterpolator1D*, DREAM::MultiInterpolator1D*, DREAM::MultiInterpolator1D*
+        );
+        	*/
         WavePitchScattering(
             FVM::Grid*, enum OptionConstants::eqterm_wave_mode,
             enum OptionConstants::momentumgrid_type,
