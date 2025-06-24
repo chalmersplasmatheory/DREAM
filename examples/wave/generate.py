@@ -64,14 +64,13 @@ ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_TCDF)
 ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 
 # wave settings (nt x nr)
-Nr = 3 # number of radial points
 r_wave = [0]
 t_wave = [0.0, 0.3, 0.4, 0.7]
-ppar_res = 0.5*np.ones((len(t), Nr)) # resonant momentum
-Delta_ppar_res = 0.05*np.ones((len(t), Nr)) # width of resonant momentum
-Dxx_int = np.zeros((len(t), Nr)) # strength of resonance
+ppar_res = 0.5*np.ones((len(t_wave), len(r_wave))) # resonant momentum
+Delta_ppar_res = 0.05*np.ones((len(t_wave), len(r_wave))) # width of resonant momentum
+Dxx_int = np.zeros((len(t_wave), len(r_wave))) # strength of resonance
 Dxx_int[1:3,:] = 1E-3 # only turn on wave in certain time interval
-# Magnetic ripple
+# Wave mode
 ds.radialgrid.setWave(ppar_res, Delta_ppar_res, Dxx_int, r=r_wave, t=t_wave)
 ds.eqsys.f_hot.setWaveMode(DistFunc.WAVE_MODE_GAUSSIAN)
 ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
@@ -80,6 +79,7 @@ ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
 ds.runawaygrid.setEnabled(False)
 
 # Set up radial grid
+Nr = 3 # number of radial points
 ds.radialgrid.setB0(1.4)
 ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setWallRadius(0.22)
@@ -91,7 +91,7 @@ ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setVerbose(False)
 
 # include otherquantities to save to output
-ds.other.include('fluid/runawayRate','ripple')
+#ds.other.include('fluid/runawayRate','ripple')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)

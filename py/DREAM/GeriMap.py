@@ -22,7 +22,8 @@ def register():
     """
     Register the perceptually uniform colormap 'GeriMap' with matplotlib.
     """
-    mpl.colormaps.register(cmap=get(False))
-    mpl.colormaps.register(cmap=get(True))
+    if 'GeriMap' not in mpl.colormaps:
+        mpl.colormaps.register(cmap=get(False))
+        mpl.colormaps.register(cmap=get(True))
 
 
