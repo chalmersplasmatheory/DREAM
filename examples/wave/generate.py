@@ -98,7 +98,12 @@ ds.timestep.setTmax(tMax)
 ds.timestep.setNt(Nt)
 
 ds.output.setTiming(stdout=True, file=True)
-ds.output.setFilename('output.h5')
+ds.output.setFilename('outputs.h5')
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
+
+from DREAM import runiface
+ds.solver.setVerbose(True)
+do = runiface(ds)
+
