@@ -30,11 +30,11 @@ T = 1000     # Temperature (eV)
 
 # Grid parameters
 pMax = 50    # maximum momentum in units of m_e*c
-Np   = 200   # number of momentum grid points
+Np   = 100   # number of momentum grid points
 Nxi  = 30    # number of pitch grid points
 tMax = 2.0   # simulation time in seconds
 Nt   = 100   # number of time steps
-Nr   = 5     # number of radial points
+Nr   = 3     # number of radial points
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -70,8 +70,8 @@ t_wave = [0.0, 1.0, 1.01, 1.49, 1.5, 2.0]
 ppar_res = 0.5*np.ones((len(t_wave), len(r_wave))) # resonant momentum
 Delta_ppar_res = 0.05*np.ones((len(t_wave), len(r_wave))) # width of resonant momentum
 Dxx_int = np.zeros((len(t_wave), len(r_wave))) # strength of resonance
-Dxx_int[2,:] = 1E-10 # start of ramp
-Dxx_int[3,:] = 1.0 # end of ramp
+Dxx_int[2,:] = 1E-3 # start of ramp
+Dxx_int[3,:] = 1E-3 # end of ramp
 # Wave mode
 ds.radialgrid.setWave(ppar_res, Delta_ppar_res, Dxx_int, r=r_wave, t=t_wave)
 ds.eqsys.f_hot.setWaveMode(DistFunc.WAVE_MODE_GAUSSIAN)
@@ -87,7 +87,8 @@ ds.radialgrid.setWallRadius(1.00)
 ds.radialgrid.setNr(Nr)
 
 # Set solver type
-ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
+# ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
+ds.solver.setType(Solver.LINEAR_IMPLICIT) # time stepping
 ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setVerbose(False)
 
@@ -104,7 +105,7 @@ ds.output.setFilename('outputs.h5')
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
 
-#from DREAM import runiface
-#ds.solver.setVerbose(True)
-#do = runiface(ds)
+from DREAM import runiface
+ds.solver.setVerbose(True)
+do = runiface(ds)
 
