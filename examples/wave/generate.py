@@ -24,20 +24,29 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-E = .1      # Electric field strength (V/m)
-n = 0.5e19    # Electron density (m^-3)
+E = .1   # Electric field strength (V/m)
+n = 0.8e19    # Electron density (m^-3)
 T = 1000     # Temperature (eV)
 
 # Grid parameters
-pMax = 50    # maximum momentum in units of m_e*c
+pMax = 15    # maximum momentum in units of m_e*c
 Np   = 100   # number of momentum grid points
 Nxi  = 30    # number of pitch grid points
-tMax = 2.0   # simulation time in seconds
-Nt   = 100   # number of time steps
+tMax = 0.5   # simulation time in seconds
+Nt   = 50   # number of time steps
 Nr   = 3     # number of radial points
 
+# Set up radial grid
+ds.radialgrid.setB0(2.2)
+ds.radialgrid.setMinorRadius(0.67)
+ds.radialgrid.setWallRadius(1.00)
+ds.radialgrid.setNr(Nr)
+
 # Set E_field
-ds.eqsys.E_field.setPrescribedData(E)
+t_E = np.array([0.0,0.45,0.46,0.5])
+E = E*np.ones(4)
+E[2:] = 1E3 # crash simultion
+ds.eqsys.E_field.setPrescribedData(E, times=t_E)
 
 # Set temperature
 ds.eqsys.T_cold.setPrescribedData(T)
@@ -53,7 +62,7 @@ ds.hottailgrid.setNxi(Nxi)
 ds.hottailgrid.setNp(Np)
 ds.hottailgrid.setPmax(pMax)
 ds.hottailgrid.setBiuniformGrid(
-    psep=0.5, npsep=50,
+    psep=1.0, npsep=int(Np/4),
     thetasep=np.pi/2,nthetasep_frac=.8)
 
 # Set initial hot electron Maxwellian
@@ -66,12 +75,12 @@ ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 
 # wave settings (nt x nr)
 r_wave = [0]
-t_wave = [0.0, 1.0, 1.01, 1.49, 1.5, 2.0]
+t_wave = [0.0, 0.2, 0.21, 0.39, 0.4, 0.5]
 ppar_res = 0.5*np.ones((len(t_wave), len(r_wave))) # resonant momentum
 Delta_ppar_res = 0.05*np.ones((len(t_wave), len(r_wave))) # width of resonant momentum
 Dxx_int = np.zeros((len(t_wave), len(r_wave))) # strength of resonance
-Dxx_int[2,:] = 1E-3 # start of ramp
-Dxx_int[3,:] = 1E-3 # end of ramp
+Dxx_int[2,:] = 1E5 # start of ramp
+Dxx_int[3,:] = 1E5 # end of ramp
 # Wave mode
 ds.radialgrid.setWave(ppar_res, Delta_ppar_res, Dxx_int, r=r_wave, t=t_wave)
 ds.eqsys.f_hot.setWaveMode(DistFunc.WAVE_MODE_GAUSSIAN)
@@ -79,12 +88,6 @@ ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
-
-# Set up radial grid
-ds.radialgrid.setB0(2.2)
-ds.radialgrid.setMinorRadius(0.67)
-ds.radialgrid.setWallRadius(1.00)
-ds.radialgrid.setNr(Nr)
 
 # Set solver type
 # ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
