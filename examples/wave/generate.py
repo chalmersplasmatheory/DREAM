@@ -24,16 +24,17 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-E = .2       # Electric field strength (V/m)
-n = 1.4e19    # Electron density (m^-3)
-T = 800     # Temperature (eV)
+E = .1      # Electric field strength (V/m)
+n = 0.5e19    # Electron density (m^-3)
+T = 1000     # Temperature (eV)
 
 # Grid parameters
 pMax = 50    # maximum momentum in units of m_e*c
 Np   = 200   # number of momentum grid points
 Nxi  = 30    # number of pitch grid points
-tMax = 0.7   # simulation time in seconds
-Nt   = 20    # number of time steps
+tMax = 2.0   # simulation time in seconds
+Nt   = 100   # number of time steps
+Nr   = 5     # number of radial points
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -65,11 +66,12 @@ ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 
 # wave settings (nt x nr)
 r_wave = [0]
-t_wave = [0.0, 0.3, 0.4, 0.7]
+t_wave = [0.0, 1.0, 1.01, 1.49, 1.5, 2.0]
 ppar_res = 0.5*np.ones((len(t_wave), len(r_wave))) # resonant momentum
 Delta_ppar_res = 0.05*np.ones((len(t_wave), len(r_wave))) # width of resonant momentum
 Dxx_int = np.zeros((len(t_wave), len(r_wave))) # strength of resonance
-Dxx_int[1:3,:] = 1E-3 # only turn on wave in certain time interval
+Dxx_int[2,:] = 1E-10 # start of ramp
+Dxx_int[3,:] = 1.0 # end of ramp
 # Wave mode
 ds.radialgrid.setWave(ppar_res, Delta_ppar_res, Dxx_int, r=r_wave, t=t_wave)
 ds.eqsys.f_hot.setWaveMode(DistFunc.WAVE_MODE_GAUSSIAN)
@@ -79,10 +81,9 @@ ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
 ds.runawaygrid.setEnabled(False)
 
 # Set up radial grid
-Nr = 3 # number of radial points
-ds.radialgrid.setB0(1.4)
-ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setWallRadius(0.22)
+ds.radialgrid.setB0(2.2)
+ds.radialgrid.setMinorRadius(0.67)
+ds.radialgrid.setWallRadius(1.00)
 ds.radialgrid.setNr(Nr)
 
 # Set solver type
