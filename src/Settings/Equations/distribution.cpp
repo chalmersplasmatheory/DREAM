@@ -337,11 +337,11 @@ WavePitchScattering *SimulationGenerator::ConstructEquation_f_wave(
     Settings *s, const std::string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type mgtype
 ) {
-    enum OptionConstants::eqterm_wave_mode rmode =
+    enum OptionConstants::eqterm_wave_mode wmode =
         (enum OptionConstants::eqterm_wave_mode)s->GetInteger(mod + "/wavemode");
     
     // neglect wave term if demanded
-    if (rmode == OptionConstants::EQTERM_WAVE_MODE_NEGLECT)
+    if (wmode == OptionConstants::EQTERM_WAVE_MODE_NEGLECT)
         return nullptr;
     
     // load wave injection setting (artifical 'mode' = 1)
@@ -352,7 +352,7 @@ WavePitchScattering *SimulationGenerator::ConstructEquation_f_wave(
     // construct wave scattering term
     WavePitchScattering *wps;
     wps = new WavePitchScattering(
-        grid, rmode, mgtype, ppar_res, Delta_ppar_res, Dxx_int
+        grid, wmode, mgtype, ppar_res, Delta_ppar_res, Dxx_int
     );
 
     return wps;
