@@ -79,8 +79,8 @@ t_wave = [0.0, 0.2, 0.21, 0.39, 0.4, 0.5]
 ppar_res = 3.5*np.ones((len(t_wave), len(r_wave))) # resonant momentum
 Delta_ppar_res = 0.1*np.ones((len(t_wave), len(r_wave))) # width of resonant momentum
 Dxx_int = np.zeros((len(t_wave), len(r_wave))) # strength of resonance
-Dxx_int[2,:] = 100.0 # start of ramp
-Dxx_int[3,:] = 100.0 # end of ramp
+Dxx_int[2,:] = 1. # start of ramp
+Dxx_int[3,:] = 1. # end of ramp
 # Wave mode
 ds.radialgrid.setWave(ppar_res, Delta_ppar_res, Dxx_int, r=r_wave, t=t_wave)
 ds.eqsys.f_hot.setWaveMode(DistFunc.WAVE_MODE_GAUSSIAN)
