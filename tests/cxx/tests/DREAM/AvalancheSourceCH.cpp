@@ -14,11 +14,12 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
 
+#include <chrono>
 #include <iostream>
 
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
-
+using namespace std::chrono;
 
 
 
@@ -31,12 +32,18 @@ bool AvalancheSourceCH::Run(bool) {
     gsl_ws3 = gsl_integration_workspace_alloc(1000);
 
     bool success = true;
-    /*if (CheckConservativityGeneralAnalytic())
+    
+    auto beg = high_resolution_clock::now();
+    if (CheckConservativityGeneralAnalytic())
         this->PrintOK("The CH avalanche source creates the predicted total number of knock-ons in general geometry.");
     else {
         success = false;
         this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created in general geometry.");
-    }*/
+    }
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<seconds>(end - beg);
+    std::cout << "Elapsed Time: " << duration.count() << "\n";
+
     if (CheckConservativityCylindrical())
         this->PrintOK("The CH avalanche source creates the predicted total number of knock-ons in cylindrical geometry.");
     else {
@@ -192,12 +199,14 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
 
     real_t pMin_re = 2;
     real_t pMax_re = 12;
+
+    real_t pCutoff = 0.125;
     
     real_t B0 = 1.0;
 
     auto *grid_fl = InitializeFluidGrid(nr);
-    auto *grid_hot = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_hot,pMax_hot,true,pMax_re);
-    auto *grid_re  = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_re,pMax_re,true,pMax_re);
+    auto *grid_hot = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_hot,pMax_hot,true,pMax_re, pCutoff);
+    auto *grid_re  = InitializeGridRCylPXi(nr,np,nxi,B0,pMin_re,pMax_re,true,pMax_re, pCutoff);
 
     real_t n_re = 1e15;
     real_t n_tot = 1e20;
@@ -205,7 +214,6 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
 
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid_fl, grid_hot, grid_re, n_re, n_tot, E_field);
 
-    real_t pCutoff = 0.125;
     DREAM::AvalancheSourceCH *avaSourceTerm_hot = new DREAM::AvalancheSourceCH(
             grid_hot, uqh, pCutoff, 1.0, DREAM::AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, grid_re
         );
@@ -227,6 +235,7 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
         }
         real_t sourceIntegralNumerical_hot = grid_hot->IntegralMomentumAtRadius(ir, sourceVec_hot);
         real_t sourceIntegralNumerical_re  =  grid_re->IntegralMomentumAtRadius(ir, sourceVec_re);
+        printf("\nNumerical: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralNumerical_hot,sourceIntegralNumerical_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
 
         real_t sourceIntegralAnalytic_hot, sourceIntegralAnalytic_re, epsabs = 0, epsrel = 1e-12, lim = gsl_ws1->limit, error;
         gsl_function int_gsl_func;
@@ -237,8 +246,7 @@ bool AvalancheSourceCH::CheckConservativityCylindrical(){
         gsl_integration_qag(&int_gsl_func,pMin_re,pMax_re,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_re, &error);
         deltas[ir] = abs(sourceIntegralAnalytic_hot - sourceIntegralNumerical_hot) / sourceIntegralAnalytic_hot
                         + abs(sourceIntegralAnalytic_re - sourceIntegralNumerical_re) / sourceIntegralAnalytic_re;
-        //printf("\nNumerical: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralNumerical_hot,sourceIntegralNumerical_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
-        //printf("\n Analytic: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralAnalytic_hot,sourceIntegralAnalytic_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
+        printf("\n Analytic: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralAnalytic_hot,sourceIntegralAnalytic_re,sourceIntegralAnalytic_hot+sourceIntegralAnalytic_re);
     }
 
 
@@ -262,8 +270,8 @@ bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
     real_t successRelErrorThreshold = 0.01;
 
     len_t nr = 2;
-    len_t np = 100;
-    len_t nxi = 200;
+    len_t np = 300;
+    len_t nxi = 600;
     
     len_t ntheta_interp = 100;
     len_t nrProfiles    = 8;
@@ -274,9 +282,11 @@ bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
     real_t pMin_re = 2;
     real_t pMax_re = 12;
 
+    real_t pCutoff = 0.125;
+
     auto *grid_fl = InitializeFluidGrid(nr);
-    auto *grid_hot  = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_hot, pMax_hot, true, pMax_re);
-    auto *grid_re   = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_re, pMax_re, true, pMax_re);
+    auto *grid_hot  = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_hot, pMax_hot, true, pMax_re, pCutoff);
+    auto *grid_re   = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin_re, pMax_re, true, pMax_re, pCutoff);
     
     real_t n_re = 1e15;
     real_t n_tot = 1e20;
@@ -284,7 +294,6 @@ bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
 
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid_fl, grid_hot, grid_re, n_re, n_tot, E_field);
 
-    real_t pCutoff = 0.125;
     DREAM::AvalancheSourceCH *avaSourceTerm_hot = new DREAM::AvalancheSourceCH(
             grid_hot, uqh, pCutoff, 1.0, DREAM::AvalancheSourceCH::CH_SOURCE_MODE_KINETIC, false, grid_re
         );
@@ -308,7 +317,7 @@ bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
         real_t sourceIntegralNumerical_re  =  grid_re->IntegralMomentumAtRadius(ir, sourceVec_re);
 
         printf("\nNumerical: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralNumerical_hot,sourceIntegralNumerical_re,sourceIntegralNumerical_hot+sourceIntegralNumerical_re);
-        /*
+        
         real_t sourceIntegralAnalytic_hot, sourceIntegralAnalytic_re, epsabs = 0, epsrel = 1e-12, lim = gsl_ws1->limit, error;
         gsl_function int_gsl_func;
         int_gsl_func.function = &(analyticIntegrandP);
@@ -316,10 +325,11 @@ bool AvalancheSourceCH::CheckConservativityGeneralAnalytic(){
         int_gsl_func.params = &par_P;
         gsl_integration_qag(&int_gsl_func,pCutoff,pMax_hot,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_hot, &error);
         gsl_integration_qag(&int_gsl_func,pMin_re,pMax_re,epsabs,epsrel,lim,QAG_KEY,gsl_ws1,&sourceIntegralAnalytic_re, &error);
-        deltas[ir] = abs(sourceIntegralAnalytic_hot - sourceIntegralNumerical_hot) / sourceIntegralAnalytic_hot
+        printf("\n Analytic: n_hot+n_re=%.4e+%.4e=%.4e\n", sourceIntegralAnalytic_hot,sourceIntegralAnalytic_re,sourceIntegralAnalytic_hot+sourceIntegralAnalytic_re);
+        /*deltas[ir] = abs(sourceIntegralAnalytic_hot - sourceIntegralNumerical_hot) / sourceIntegralAnalytic_hot
                         + abs(sourceIntegralAnalytic_re - sourceIntegralNumerical_re) / sourceIntegralAnalytic_re;
-        */
-        deltas[ir] = 0;
+        
+        deltas[ir] = 0;*/
     }
 
     bool success = true;
