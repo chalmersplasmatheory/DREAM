@@ -19,6 +19,8 @@ namespace DREAM {
 		//real_t D_I = 0, D_I_prev = 0;
 		real_t D_I_min = 0;
 		real_t D_I_max = 1e3;
+		real_t dDdt_D_max = 0;
+		real_t D_I_floor = 1e-3;
 
 		// Start by not prescribing plasma current
 		real_t Ip_presc;
@@ -35,7 +37,8 @@ namespace DREAM {
 		FrozenCurrentCoefficient(
 			FVM::Grid*, FVM::Grid*, FVM::Interpolator1D*,
 			FVM::UnknownQuantityHandler*, const real_t D_I_min=0,
-			const real_t D_I_max=1e3
+			const real_t D_I_max=1e3, const real_t dDdt_D_max=0,
+			const real_t D_I_floor=1e-3
 		);
 		virtual ~FrozenCurrentCoefficient();
 
