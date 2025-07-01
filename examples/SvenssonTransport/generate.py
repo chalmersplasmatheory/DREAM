@@ -34,12 +34,15 @@ pstar=0.5
 
 Nt = 3
 Nr = 11; a0=0.22
-Np = 60
-Nxi= 45
+#Np = 60
+#Nxi= 45
+Np = 200
+Nxi = 4000
 
 t_data  = np.linspace(0,1e-2,Nt)
 r_data  = np.linspace(0,a0,Nr)
-p_data  = np.linspace(0.0,1.5,Np)
+#p_data  = np.linspace(0.0,1.5,Np)
+p_data  = np.linspace(0.0,200,Np)
 xi_data = np.linspace(-1.0,1.0,Nxi)
 
 
@@ -48,8 +51,8 @@ Ar  = 1.0 * np.ones((Nt,Nr,Nxi,Np));
 Drr = 1.0e-2 * np.ones((Nt,Nr,Nxi,Np))
 
 ## Tests with differently set coefficients.
-Ar[:,r_data<0.05,:,:]  = 0.0
-Drr[:,r_data<0.05,:,:] = 0.0
+#Ar[:,r_data<0.05,:,:]  = 0.0
+#Drr[:,r_data<0.05,:,:] = 0.0
 
 
 
@@ -114,8 +117,10 @@ ds.solver.setVerbose(False)
 ds.other.include('fluid')
 
 # Set time stepper
-ds.timestep.setTmax(1e-3)
-ds.timestep.setNt(500)
+#ds.timestep.setTmax(1e-3)
+#ds.timestep.setNt(500)
+ds.timestep.setTmax(1e-5)
+ds.timestep.setNt(5)
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
