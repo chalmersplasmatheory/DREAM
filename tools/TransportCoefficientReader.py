@@ -118,7 +118,8 @@ class TransportCoefficientReader:
             ixi = np.argmax(self.xi)
          # 6.2/2 correction factor due to wrong major radius import
          # (see email from O. Vallhagen 2024-02-28)
-        dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        #dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        dBB = np.sqrt(self.Drr[:,:,ixi,ip]/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))
         print(f'R0 = {dsObj.radialgrid.R0}')
         print(f'dB/B = {np.amax(dBB)}')
         print(f'Drr  = {np.amax(self.Drr[:,:,ixi,ip])}')
@@ -239,8 +240,10 @@ class TransportCoefficientReader:
         else:
             self.t = np.array([0,t_duration])
         self.r = np.array([0,a+1e-6])
-        self.xi = np.array([-1,1])
-        self.p = np.linspace(1e-6,100)
+        #self.xi = np.array([-1,1])
+        self.xi = np.array([1])
+        #self.p = np.linspace(1e-6,100)
+        self.p = np.linspace(1e-6,1000,10000)
         
         # Assume no advection
         self.Ar = np.zeros((len(self.t), len(self.r), len(self.xi), len(self.p)))
