@@ -179,6 +179,7 @@ void FluxSurfaceAverager::DeallocateQuadrature(){
     gsl_integration_workspace_free(gsl_adaptive);
     gsl_integration_workspace_free(gsl_adaptive_outer);
     gsl_integration_cquad_workspace_free(gsl_cquad);
+    gsl_integration_cquad_workspace_free(gsl_ws_CH_cquad);
     gsl_integration_workspace_free(gsl_ws_CH); 
     gsl_integration_qaws_table_free(qaws_table);
     if(gsl_w != nullptr)
@@ -200,8 +201,9 @@ void FluxSurfaceAverager::DeallocateQuadrature(){
 void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
     gsl_adaptive = gsl_integration_workspace_alloc(1000);
     gsl_adaptive_outer = gsl_integration_workspace_alloc(1000);
-    gsl_cquad = gsl_integration_cquad_workspace_alloc(1000);
-    gsl_ws_CH = gsl_integration_workspace_alloc(100); 
+    gsl_cquad = gsl_integration_cquad_workspace_alloc(100);
+    gsl_ws_CH_cquad = gsl_integration_cquad_workspace_alloc(100);
+    gsl_ws_CH = gsl_integration_workspace_alloc(10000);
     std::function<real_t(real_t,real_t,real_t)>  QuadWeightFunction;
     if(geometryIsSymmetric)
         theta_max = M_PI;
@@ -412,7 +414,7 @@ real_t FluxSurfaceAverager::BounceIntegralFunction(real_t theta, void *par){
  * Evaluates the bounce integral normalized to p^2 of the function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2)  
  * at radial grid point ir and pitch xi0, using an adaptive quadrature.
  */
-real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F_ref)(real_t,real_t,real_t,real_t,void*), void *F_ref_par, const int_t *Flist, bool doQAGS){
+real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F_ref)(real_t,real_t,real_t,real_t,void*), void *F_ref_par, const int_t *Flist, bool doCQUAD){
     real_t theta_Bmin, theta_Bmax;
     real_t Bmin = GetBmin(ir,fluxGridType, &theta_Bmin);
     real_t Bmax = GetBmax(ir,fluxGridType, &theta_Bmax);
@@ -493,10 +495,17 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
 		bounceIntegral = 0;
     else if(params.integrateQAWS)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
-    else if(isTrapped && doQAGS) {
+    else if(doCQUAD) {
         len_t nevals;
-        gsl_integration_cquad(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,gsl_cquad,&bounceIntegral,&error,&nevals);
-        //gsl_integration_qags(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
+        real_t intResult;
+        len_t ntheta = 4;
+        real_t dtheta = (theta_b2-theta_b1)/ntheta;
+        bounceIntegral = 0;
+        for (len_t it = 0; it < ntheta; it++){
+            gsl_integration_cquad(&GSL_func,theta_b1+dtheta*it,theta_b1+dtheta*(it+1),epsabs,epsrel,gsl_cquad,&intResult,&error,&nevals);
+            bounceIntegral += intResult;
+            intResult = 0;
+        }
     } else
         gsl_integration_qag(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&bounceIntegral,&error);
     
@@ -506,9 +515,9 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2) on grid point (ir,i,j). 
 real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
     len_t ir, real_t xi0, fluxGridType fluxGridType, 
-    real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list, bool doQAGS
+    real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list, bool doCQUAD
 ){    
-    real_t BI = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, F, par, F_list, doQAGS);
+    real_t BI = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, F, par, F_list, doCQUAD);
     if(!BI)
         return 0;
     real_t Vp = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, RadialGrid::BA_FUNC_UNITY, nullptr, RadialGrid::BA_PARAM_UNITY);
