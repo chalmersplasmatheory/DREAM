@@ -107,7 +107,7 @@ real_t LCFSLossRateTerm::GetRadiusOfLCFS() {
     FindRadiusOfLCFS();
     if (ir_LCFS>-1)
         return this->rGrid->GetR(ir_LCFS);
-    return this->rGrid->GetR(nr-1);
+    return 0;
 }
 
 
