@@ -13,7 +13,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-Grid::Grid(RadialGrid *rg, MomentumGrid *mg, bool avalancheChiuHarvey, real_t pInMaxCH, const real_t /*t0*/, FluxSurfaceAverager::quadrature_method qm_trapped, len_t ntheta_interp_trapped) {
+Grid::Grid(RadialGrid *rg, MomentumGrid *mg, bool avalancheChiuHarvey, real_t pInMaxCH, real_t pCutCH, const real_t /*t0*/, FluxSurfaceAverager::quadrature_method qm_trapped, len_t ntheta_interp_trapped) {
     this->rgrid = rg;
     this->momentumGrids = new MomentumGrid*[rgrid->GetNr()];
 
@@ -30,6 +30,7 @@ Grid::Grid(RadialGrid *rg, MomentumGrid *mg, bool avalancheChiuHarvey, real_t pI
     bounceAverager = new BounceAverager(this, FSA,ntheta_interp_trapped,qm_trapped);
     this->avalancheChiuHarvey = avalancheChiuHarvey;
     this->pInMaxCH = pInMaxCH;
+    this->pCutCH = pCutCH;
 }
 
 /**
@@ -508,10 +509,11 @@ void Grid::CalculateAvalancheCHBounceAverage(fluxGridType fgt){
         for(len_t i=0; i<np1; i++){
             for(len_t j=0; j<np2; j++){
                 
+                real_t p_u = mg->GetP1_f(i+1);
                 real_t p_i = mg->GetP1(i);
                 real_t xi_l = mg->GetP2_f(j);
                 real_t xi_u = mg->GetP2_f(j+1);
-                avalancheCHBounceAverage[ir][j*np1+i] += rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, this->pInMaxCH, xi_l, xi_u, fgt);
+                avalancheCHBounceAverage[ir][j*np1+i] += rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheCHBounceAverage(ir, p_i, p_u, this->pInMaxCH, this->pCutCH, xi_l, xi_u, fgt);
             }
         }
     }

@@ -134,11 +134,13 @@ FVM::Grid *SimulationGenerator::ConstructHotTailGrid(
         avalancheChiuHarvey = true;
     
     real_t p_max = s->GetReal(HOTTAILGRID "/pmax");
-    if (s->GetBool(RUNAWAYGRID "/enabled"))
+    if (s->GetBool(RUNAWAYGRID "/enabled")){
         p_max = s->GetReal(RUNAWAYGRID "/pmax");
+    }
+    real_t p_cut = s->GetReal("eqsys/n_re/pCutAvalanche");
     
 
-    return new FVM::Grid(rgrid, mg, avalancheChiuHarvey, p_max);
+    return new FVM::Grid(rgrid, mg, avalancheChiuHarvey, p_max, p_cut);
 }
 
 /**
@@ -191,8 +193,9 @@ FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
         avalancheChiuHarvey = true;
     
     real_t p_max = s->GetReal(RUNAWAYGRID "/pmax");
+    real_t p_cut = s->GetReal("eqsys/n_re/pCutAvalanche");
     
-    return new FVM::Grid(rgrid, mg, avalancheChiuHarvey, p_max);
+    return new FVM::Grid(rgrid, mg, avalancheChiuHarvey, p_max, p_cut);
 }
 
 /**

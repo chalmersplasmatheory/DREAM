@@ -122,8 +122,8 @@ namespace DREAM::FVM {
 
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr, bool doQAGS=false);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr, bool doQAGS=false);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr, bool doCQUAD=false);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr, bool doCQUAD=false);
 
         real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         bool shouldCellAverageBounceIntegral(len_t ir, real_t xi_lower, real_t xi_upper, fluxGridType);
@@ -200,14 +200,15 @@ namespace DREAM::FVM {
             real_t BOverBmin, real_t ROverR0, real_t NablaR2, const int_t *Flist
         );
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
-        real_t EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_max, real_t xi_l, real_t xi_u,  fluxGridType fgt);
+        real_t EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_u, real_t p_max, real_t p_cut, real_t xi_l, real_t xi_u,  fluxGridType fgt);
 
     
     private: 
         gsl_integration_workspace *gsl_ws_CH;
+        gsl_integration_cquad_workspace *gsl_ws_CH_cquad;
         struct avParams {real_t xi0; real_t gamma; real_t gamma_max; int_t iTerm; real_t BminOverBmax;};
         static real_t BA_CH(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void *par);
-        struct intXiParams {len_t ir; fluxGridType fgt; real_t gamma; real_t gamma_max; real_t BminOverBmax; int_t iTerm; FluxSurfaceAverager *FSA;};
+        struct intXiParams {len_t ir; fluxGridType fgt; real_t gamma; real_t gamma_max; real_t BminOverBmax; int_t iTerm; FluxSurfaceAverager *FSA;};//; bool doCQUAD
         static real_t integrandXi(real_t xi0, void *par);
         struct intPParams {len_t ir; real_t xi_l; real_t xi_u; fluxGridType fgt; real_t p_max; FluxSurfaceAverager *FSA; gsl_integration_workspace *gsl_adaptive; int QAG_KEY;};
         real_t integrandP(real_t p, real_t gamma_max, len_t ir, real_t xi_l, real_t xi_u, real_t BminOverBmax, fluxGridType fgt);

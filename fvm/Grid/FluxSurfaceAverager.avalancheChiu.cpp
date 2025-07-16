@@ -85,9 +85,9 @@ real_t FluxSurfaceAverager::integrandXi(real_t xi0, void *par){
     
     avParams avg_params[5] = {xi0, gamma, gamma_max, iTerm, BminOverBmax};
     
-    bool doQAGS = true;
+    bool doCQUAD = true;
     
-    real_t factor_BA = FSA->CalculatePXiBounceAverageAtP(ir, xi0, fgt, &BA_CH, avg_params, nullptr, doQAGS);
+    real_t factor_BA = FSA->CalculatePXiBounceAverageAtP(ir, xi0, fgt, &BA_CH, avg_params, nullptr, doCQUAD);
     
     if ((1-xi0*xi0) > BminOverBmax)
         factor_BA *= 0.5;
@@ -113,9 +113,15 @@ real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, rea
     for(int_t i=0; i<6; i++){
         intXiParams intXi_params = {ir, fgt, gamma, gamma_max, BminOverBmax, i, this};
         int_gsl_func.params = &intXi_params;
-        gsl_integration_qags(&int_gsl_func,xi_l,xi_u,epsabs,epsrel, gsl_ws_CH->limit,gsl_ws_CH,&terms[i], &error);
-        //len_t nevals;
-        //gsl_integration_cquad(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,gsl_ws_CH,&terms[i],&error,&nevals);
+        
+        gsl_set_error_handler_off();
+        int status = gsl_integration_qags(&int_gsl_func,xi_l,xi_u,epsabs,epsrel, gsl_ws_CH->limit,gsl_ws_CH,&terms[i], &error);
+            
+        gsl_set_error_handler(NULL);
+        if(status == GSL_ESING){
+            len_t nevals;
+            gsl_integration_cquad(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,gsl_ws_CH_cquad,&terms[i],&error,&nevals);
+        }
         
     }
 
@@ -144,7 +150,9 @@ real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, rea
  *           Is used to flip the pitch of the source
  *      fgt: fluxGridType object needed for bounce averaging.
  */
-real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_max, real_t xi_l, real_t xi_u,  fluxGridType fgt){
+real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_u, real_t p_max, real_t p_cut, real_t xi_l, real_t xi_u,  fluxGridType fgt){
+    if (p_u < p_cut)
+        return 0.;
     real_t Bmin = GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,nullptr);
     real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,nullptr);
     real_t BminOverBmax;
@@ -155,7 +163,6 @@ real_t FluxSurfaceAverager::EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_
     real_t gamma_max = sqrt(1+p_max*p_max);
     real_t xi_min = ximin(gamma_i, gamma_max);
     real_t xi_max = ximax(gamma_i);
-    
     if (xi_j < 0){
         xi_j *= -1;
         real_t xi_l_temp = xi_l;
