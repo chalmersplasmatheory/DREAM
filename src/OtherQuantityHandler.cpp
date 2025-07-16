@@ -245,6 +245,8 @@ void OtherQuantityHandler::DefineQuantities() {
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t, QuantityData *qd) {FUNC}));
+	#define DEF_FL_T(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](const real_t t, QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](const real_t, QuantityData *qd) {FUNC}));
     #define DEF_FL_MUL(NAME, MUL, DESC, FUNC) \
@@ -434,6 +436,14 @@ void OtherQuantityHandler::DefineQuantities() {
 
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
+
+	DEF_FL("fluid/tIoniz", "Estimate of the ionization time scale (as used by the adaptive ionization time stepper) [s]",
+		qd->Store(this->postProcessor->GetIonizationTime());
+	);
+	DEF_SC("scalar/tIoniz", "Estimate of the shortest ionization time scale (as used by the adaptive ionization time stepper) [s]",
+		real_t ts = this->postProcessor->GetIonizationTimeScalar();
+		qd->Store(&ts);
+	);
 
     // Hyperresistive parameter
     if (tracked_terms->psi_p_hyperresistive != nullptr)
@@ -1039,6 +1049,12 @@ void OtherQuantityHandler::DefineQuantities() {
     );
 
 	if (this->tracked_terms->f_hot_kin_rates.size() > 0) {
+		DEF_HT_MUL("hottail/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+			for (auto t : this->tracked_terms->f_hot_kin_rates)
+				t->SetVectorElements(v, n_i);
+		);
 		DEF_HT_MUL("hottail/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
 			real_t *v = qd->StoreEmpty();
 
@@ -1057,6 +1073,12 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
 	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
+		DEF_HT_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+			for (auto t : this->tracked_terms->f_re_kin_rates)
+				t->SetVectorElements(v, n_i);
+		);
 		DEF_RE_MUL("runaway/kinioniz_vsigma", nChargeStates, "Kinetic ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
 			real_t *v = qd->StoreEmpty();
 
@@ -1075,6 +1097,12 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
     if (this->tracked_terms->n_re_kin_rates.size() > 0) {
+		DEF_FL_MUL("fluid/reioniz_rate", nChargeStates, "Ionization rate due to runaway impact ionization [m^-3 s^-1]",
+			real_t *v = qd->StoreEmpty();
+			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+			for (auto t : this->tracked_terms->n_re_kin_rates)
+				t->SetVectorElements(v, n_i);
+		);
         DEF_FL_MUL("fluid/reioniz_vsigma", nChargeStates, "Approximated runaway impact ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
             real_t *v = qd->StoreEmpty();
             const len_t nr = this->fluidGrid->GetNr();
