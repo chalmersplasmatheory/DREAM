@@ -4,7 +4,9 @@
 
 #include <string>
 #include <vector>
-#include <omp.h>
+#ifdef _OPENMP
+#	include <omp.h>
+#endif/*_OPENMP*/
 #include "DREAM/IO.hpp"
 #include "DREAM/Simulation.hpp"
 
@@ -95,13 +97,17 @@ bool IO::VerifyMessage(const message_t id) {
     else if (message_checklist[id])
         return false;
 
+#ifdef _OPENMP
     #pragma omp critical (DREAM_VerifyMessage)
     {
+#endif/*_OPENMP*/
         if (message_checklist[id] == false) {
             message_checklist[id] = true;
             retval = true;
         }
+#ifdef _OPENMP
     }
+#endif/*_OPENMP*/
 
     return retval;
 }
