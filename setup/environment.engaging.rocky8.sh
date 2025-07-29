@@ -4,7 +4,7 @@
 
 # Set DREAM path (based on location of this script)
 if [ -z "$DREAMPATH" ]; then
-	export DREAMPATH=$(realpath "$(dirname $0)"/..)
+	export DREAMPATH="$HOME/DREAM"
 fi
 
 # Clean up module environment
