@@ -28,7 +28,7 @@ function install_petsc {
 		--with-mkl_pardiso=1 \
 		--with-mkl_pardiso-dir=/orcd/software/community/001/rocky8/intel/2024.2.1/mkl/2024.2 \
 		--with-blaslapack-dir=/orcd/software/community/001/rocky8/intel/2024.2.1/mkl/2024.2 \
-		--with-cc=icx --with-cxx=icpx --with-fc=ifx
+		--with-cc=clang --with-cxx=clang++ --with-fc=ifx
 	
 	make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH
 }
@@ -44,7 +44,7 @@ function install_hdf5 {
 		cd "$HDF5_BUILD_DIR/hdf5-1.14.6"
 	fi
 
-	./configure --prefix="$HDF5_DIR" --enable-cxx --enable-hl CC=icx CXX=icpx
+	./configure --prefix="$HDF5_DIR" --enable-cxx --enable-hl CC=clang CXX=clang++
 	make
 	make install
 }
@@ -53,7 +53,8 @@ function install_dream {
 	cd "$DREAMPATH" && rm -rf build && mkdir build && cd build &&
 	cmake .. -DPETSC_EXECUTABLE_RUNS=YES \
 		-DCMAKE_CXX_COMPILER=$HDF5_DIR/bin/h5c++ \
-		-DGSL_ROOT_DIR=/home/software/modulefiles/gsl/2.5
+		-DGSL_ROOT_DIR=/home/software/modulefiles/gsl/2.5 \
+		-DDREAM_BUILD_TESTS=NO
 	
 	make -j 8
 }
