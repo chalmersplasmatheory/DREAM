@@ -336,6 +336,11 @@ void OtherQuantityHandler::DefineQuantities() {
                 v[ir] = gLCFS[ir] * nRE[ir];
             }
         );
+
+        DEF_SC("scalar/r_LCFS", "Radius of LCFS [m]",
+            real_t v = tracked_terms->lcfsLossRate_fluid->GetRadiusOfLCFS();
+            qd->Store(&v);
+        );
     }
 
 	if (tracked_terms->n_re_f_hot_flux != nullptr) {
