@@ -27,7 +27,7 @@ namespace DREAM::FVM {
         virtual bool Rebuild(const real_t, RadialGrid*) override;
 
         virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t, real_t, real_t, real_t) override;
-        virtual void GetGradRCartesian(real_t*, real_t, real_t, real_t);
+        virtual void GetGradRCartesian(real_t*, real_t, real_t, real_t) override;
         virtual real_t FindClosestApproach(real_t, real_t, real_t, real_t, real_t, real_t) override;
 
         virtual real_t JacobianAtTheta(const len_t ir, const real_t) override

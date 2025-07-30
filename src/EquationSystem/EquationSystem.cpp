@@ -73,8 +73,8 @@ EquationSystem::~EquationSystem() {
     if (this->settings != nullptr)
         delete this->settings;
 	
-	for (auto rsth : this->rsths)
-		delete rsth;
+    for (auto rsth : this->rsths)
+        delete rsth;
 
     if (this->otherQuantityHandler != nullptr)
 		delete this->otherQuantityHandler;
@@ -149,10 +149,10 @@ void EquationSystem::ProcessSystem(const real_t t0) {
         );
 	
 	// Set external iterator
-	this->extiter = new ExternalIterator(
-		&this->unknowns, &this->unknown_equations
-	);
-	this->extiter->Initialize(this->external_unknowns);
+    this->extiter = new ExternalIterator(
+        &this->unknowns, &this->unknown_equations
+    );
+    this->extiter->Initialize(this->external_unknowns);
     
     // Set initial values
     this->initializer->Execute(t0);

@@ -391,7 +391,7 @@ void Matrix::SetRow(
     irow += this->rowOffset;
     for(PetscInt i=0; i<ncol; i++)
         icol[i] += this->colOffset;
-	MatSetValues(this->petsc_mat, 1, &irow, ncol, icol, v, insert_mode);
+    MatSetValues(this->petsc_mat, 1, &irow, ncol, icol, v, insert_mode);
     // Reset offsets
     for(PetscInt i=0; i<ncol; i++)
         icol[i] -= this->colOffset;

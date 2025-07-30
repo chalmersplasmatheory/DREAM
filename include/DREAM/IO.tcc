@@ -46,8 +46,8 @@ void IO::PrintWarning(const char *msg, Args&& ... args) {
 }
 template<typename ... Args>
 void IO::PrintWarning(const IO::message_t id, const char *msg, Args&& ... args) {
-    if (!IO::VerifyMessage(id))
-        return;
+	if (!IO::VerifyMessage(id))
+		return;
 
 	// Generate warning string
 	int size = std::snprintf(nullptr, 0, msg, args ...) + 1;

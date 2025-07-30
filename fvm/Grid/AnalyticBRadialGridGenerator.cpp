@@ -519,7 +519,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
                 
     // We start by finding the flux surface label 'rmin' corresponding to cos(theta)=0 (using Newton iteration)
     // and use it to determine in which quadrant we should look for the solution
-	real_t r_tmp=std::abs(y);
+    real_t r_tmp=std::abs(y);
 	real_t Zdiff;// y in SPI coordinates is Z in cylindrical coordinates
 	real_t kappa;
 	real_t kappa_p;
@@ -558,11 +558,11 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	// to 'r' at 'Z=y'...
 	// We make a guess for a valid search intervall of startingGuessR+/-lengthScale, 
 	// and check if it has to be moved before actually starting with the bisection
-	real_t ra = std::max(startingGuessR-lengthScale,rmin), rb=ra+2*lengthScale;
-	real_t RMinusR0a, RMinusR0b;
-	real_t st;
-	real_t ct;
-	do{
+    real_t ra = std::max(startingGuessR-lengthScale,rmin), rb=ra+2*lengthScale;
+    real_t RMinusR0a, RMinusR0b;
+    real_t st;
+    real_t ct;
+    do{
 	    // Calculate RMinusR0a corresponding to ra
         delta = InterpolateInputTriangularity(ra);
         Delta = InterpolateInputShafranovShift(ra);
