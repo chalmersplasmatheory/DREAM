@@ -149,7 +149,7 @@ void DREAM::TransportBC<T>::AddToVectorElements_c(
 template<typename T>
 void DREAM::TransportBC<T>::__SetElements(
     std::function<void(const len_t, const len_t, const real_t)> f,
-    jacobian_interp_mode set_mode
+    jacobian_interp_mode
 ) {
     const len_t 
         nr = this->grid->GetNr(),

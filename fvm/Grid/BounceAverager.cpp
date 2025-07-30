@@ -177,13 +177,13 @@ void BounceAverager::Rebuild(){
 
     // Calculate bounce-averaged metric and hand over to grid 
     real_t **Vp, **Vp_fr, **Vp_f1, **Vp_f2, **VpOverP2AtZero;
-    bool isPXiGrid = true; 
-    if(isPXiGrid)
-        SetVpsPXi(Vp, Vp_f1, VpOverP2AtZero);
-    else {
+    /*bool isPXiGrid = true; 
+    if(isPXiGrid)*/
+	SetVpsPXi(Vp, Vp_f1, VpOverP2AtZero);
+    /*else {
         SetVp(Vp,FLUXGRIDTYPE_DISTRIBUTION);
         SetVp(Vp_f1,FLUXGRIDTYPE_P1);
-    }
+    }*/
     SetVp(Vp_fr,FLUXGRIDTYPE_RADIAL);
     SetVp(Vp_f2,FLUXGRIDTYPE_P2);
 

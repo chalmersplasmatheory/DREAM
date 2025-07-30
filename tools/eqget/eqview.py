@@ -292,6 +292,7 @@ class EqView(QtWidgets.QMainWindow):
             p0 = self.equil.psi_axis
             pe = self.equil.psi_bdry
             psi = psi_n * (pe-p0) + p0
+            psi = psi.reshape(r.shape)
             pw.ax.plot(r, psi, lw=2, label=r'$\psi$')
             pw.ax.set_xlabel(r'Minor radius $r$ (m)')
             pw.ax.set_ylabel(r'Poloidal flux (Wb)')

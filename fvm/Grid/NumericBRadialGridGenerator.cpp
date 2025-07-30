@@ -80,26 +80,26 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
     if (this->rf_provided != nullptr)
         delete [] this->rf_provided;
 	
-	if (this->input_r != nullptr)
-		delete [] this->input_r;
-	
-	if (this->dataB != nullptr)
-		delete [] this->dataB;
-	
-	if (this->theta != nullptr)
-		delete [] this->theta;
-	if (this->R != nullptr)
-		delete [] this->R;
-	if (this->Z != nullptr)
-		delete [] this->Z;
-	if (this->psi != nullptr)
-		delete [] this->psi;
-	if (this->dataBR != nullptr)
-		delete [] this->dataBR;
-	if (this->dataBZ != nullptr)
-		delete [] this->dataBZ;
-	if (this->dataBphi != nullptr)
-		delete [] this->dataBphi;
+    if (this->input_r != nullptr)
+        delete [] this->input_r;
+
+    if (this->dataB != nullptr)
+        delete [] this->dataB;
+
+    if (this->theta != nullptr)
+        delete [] this->theta;
+    if (this->R != nullptr)
+        delete [] this->R;
+    if (this->Z != nullptr)
+        delete [] this->Z;
+    if (this->psi != nullptr)
+        delete [] this->psi;
+    if (this->dataBR != nullptr)
+        delete [] this->dataBR;
+    if (this->dataBZ != nullptr)
+        delete [] this->dataBZ;
+    if (this->dataBphi != nullptr)
+        delete [] this->dataBphi;
 
     if (this->spline_R != nullptr) {
         gsl_spline_free(this->spline_psi);
@@ -108,7 +108,7 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         gsl_spline2d_free(this->spline_BR);
         gsl_spline2d_free(this->spline_BZ);
         gsl_spline2d_free(this->spline_Bphi);
-		gsl_spline2d_free(this->spline_B);
+        gsl_spline2d_free(this->spline_B);
     }
 
     gsl_interp_accel_free(this->acc_theta);
@@ -344,7 +344,7 @@ real_t *NumericBRadialGridGenerator::addR0DataPoint(
     if (std::isnan(c))
         c = x[0] - (r[0]-0.0)/(r[1]-r[0]) * (x[1] - x[0]);
 
-	for (len_t j = 0; j < ntheta; j++) {
+    for (len_t j = 0; j < ntheta; j++) {
 		// Value at r=0
 		arr[j*(nr+1)] = c;
 
