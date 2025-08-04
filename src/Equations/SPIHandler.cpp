@@ -1,6 +1,7 @@
 /**
  * Implementation of a class that calculates and stores quantities related to the SPI shards
  */
+#include <gsl/gsl_sf_expint.h>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
