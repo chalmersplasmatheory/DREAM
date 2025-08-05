@@ -103,6 +103,11 @@ void LCFSLossRateTerm::FindRadiusOfLCFS(){
     if ( exists == false ) { this->ir_LCFS = -1; } // No flux surface is closed
 }
 
+real_t LCFSLossRateTerm::GetRadiusOfLCFS() {
+    if (ir_LCFS>-1)
+        return this->rGrid->GetR(ir_LCFS);
+    return 0;
+}
 
 
 /**
