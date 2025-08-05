@@ -6,20 +6,21 @@ sys.path.append('../py')
 
 from DREAM import DREAMOutput
 
-def main(argv):
+def main():
     parser = argparse.ArgumentParser()
 
     # Arguments
-    parser.add_argument('output', help="Name of DREAM output file (excluding .h5)", action='store', default='', type=str)
-    parser.add_argument('filename', help="Name of file to save data in (excluding file extension)", action='store', default='', type=str)
+    parser.add_argument('output', help="Name of DREAM output file (excluding .h5)", type=str)
+    parser.add_argument('filename', help="Name of file to save data in (excluding file extension)", type=str)
 
     # Options
-    parser.add_argument('-E', '--energy', help="Use energy pitch angle coordinates", action='store_const', const="E theta", dest="coordinates", default="p xi")
-    parser.add_argument('-C', '--cylindrical', help="Use cylindrical coordinates", action='store_const',const="p_par p_perp", dest="coordinates", default="p xi")
-    parser.add_argument('-M', '--matfile', help="Use mat file format to save data", action='store_true', dest="mat", default=False)
+    parser.add_argument('-E', '--energy', help="Use energy pitch angle coordinates", action='store_const', const="E theta", dest="coordinates")
+    parser.add_argument('-C', '--cylindrical', help="Use cylindrical coordinates", action='store_const',const="p_par p_perp", dest="coordinates")
+    parser.set_defaults(coordinates="p xi")
+    parser.add_argument('-M', '--matfile', help="Use Matlab version 5 file format to save data", action='store_true', dest="mat", default=False)
     parser.add_argument('-N', '--normalized', help="Use normalized distribution function", action='store_true', dest="normalized", default=False)
     parser.add_argument('-J', '--jacobian', help="Include jacobian in distribution function data to be saved", action='store_true', dest="jacobian", default=False)
-    parser.add_argument('--time', help="Time indices for distribution function data.", nargs='*', type=int, default=[0])
+    parser.add_argument('--time', help="Time indices for distribution function data.", nargs='*', type=int, default=[-1])
 
     settings = parser.parse_args()
 
@@ -78,4 +79,4 @@ def main(argv):
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[:]))
+    sys.exit(main())

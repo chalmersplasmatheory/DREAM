@@ -54,7 +54,7 @@ class DistributionFunction(KineticQuantity):
             t = np.asarray([t])
 
         Vprime = self.momentumgrid.Vprime[:,:,:]
-        Vprime = Vprime.reshape(1,Vprime.shape[0],Vprime.shape[1],Vprime.shape[2])
+        Vprime = Vprime.reshape(1, *Vprime.shape)
         p2 = (self.momentumgrid.p1[:]**2).reshape(1,1,1,-1)
         dr = self.grid.dr[:].reshape(1,-1,1,1)
         if normalized:
