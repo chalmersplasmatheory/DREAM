@@ -49,6 +49,8 @@ namespace DREAM {
         ~LCFSLossRateTerm();
         // USES REBUILD, SETVECTORELEMENT, SETJACOBIANBLOCK FROM PARENT CLASSES
         
+        real_t GetRadiusOfLCFS();
+
         virtual bool GridRebuilt() override;
         virtual const real_t *GetLCFSLossWeights();
     
