@@ -1,8 +1,7 @@
 import numpy as np
 import scipy.constants as const
 from scipy.io import savemat
-import sys, argparse, h5py
-import pathlib
+import sys, argparse, h5py, pathlib
 path = str((pathlib.Path(__file__).parent / '../py').resolve().absolute())
 sys.path.append(path)
 
