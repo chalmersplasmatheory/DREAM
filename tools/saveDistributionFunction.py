@@ -2,7 +2,9 @@ import numpy as np
 import scipy.constants as const
 from scipy.io import savemat
 import sys, argparse, h5py
-sys.path.append('../py')
+import pathlib
+path = str((pathlib.Path(__file__).parent / '../py').resolve().absolute())
+sys.path.append(path)
 
 from DREAM import DREAMOutput
 
@@ -71,10 +73,7 @@ def main():
     else:
         with h5py.File(f"{settings.filename}.h5", 'w') as hf:
             for key, value in dic.items():
-                if isinstance(value, (np.ndarray, list, tuple)):
-                    hf.create_dataset("/" + key, data=np.array(value))
-                else:
-                    hf.create_dataset("/" + key, data=value)
+                hf[key] = value
 
     return 0
 
