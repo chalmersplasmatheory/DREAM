@@ -3,7 +3,6 @@
  * factorization (i.e. direct inversion).
  */
 
-#include <omp.h>
 #include <petscmat.h>
 #include <petscvec.h>
 #include "FVM/config.h"
