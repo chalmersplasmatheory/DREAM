@@ -231,7 +231,7 @@ def getData(f, key):
     if type(f[key]) == str:
         return f[key]
     elif (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
-        return f[key][:].tostring().decode('utf-8')
+        return f[key][:].tobytes().decode('utf-8')
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
             if type(f[key][()]) == str:

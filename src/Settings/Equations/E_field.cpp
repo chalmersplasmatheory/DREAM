@@ -112,6 +112,9 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     // Minor radius of the wall, defaults to radius of the plasma.
     s->DefineSetting(MODULENAME "/bc/wall_radius", "Minor radius of the inner wall", (real_t) -1);
 
+	// Initial wall current
+	s->DefineSetting(MODULENAME "/bc/I_wall_0", "Wall current at the start of the simulation (A)", (real_t)0);
+
     // Inverse wall time, defaults to 0 (infinitely conducting wall, 
     // which is equivalent to prescribing V_loop_wall to 0)
     s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the first wall", (real_t) 0.0);

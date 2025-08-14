@@ -862,7 +862,7 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
     }
 
     // Load momentum grid vectors
-    const real_t *_p1, *_p2;
+    const real_t *_p1, *_p2=nullptr;
     FVM::Interpolator3D::momentumgrid_type momtype;
 
     if ((_p1=s->GetRealArray(modname + "/" + name + "/p", 1, &np1, false)) != nullptr &&
@@ -992,7 +992,7 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
     }
 
     // Load momentum grid vectors
-    const real_t *_p1, *_p2;
+    const real_t *_p1, *_p2=nullptr;
     FVM::Interpolator3D::momentumgrid_type momtype;
 
     if ((_p1=s->GetRealArray(modname + "/" + name + "/p", 1, &np1, false)) != nullptr &&
