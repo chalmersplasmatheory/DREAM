@@ -1,6 +1,6 @@
 # Build DREAM with LLVM (Clang)
 
-name: CI
+name: LLVM build
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
