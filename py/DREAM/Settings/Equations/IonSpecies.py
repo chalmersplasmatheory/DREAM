@@ -22,6 +22,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numbers import Number
 from DREAM.Settings.Equations.EquationException import EquationException
 from ... DREAMException import DREAMException
 
@@ -73,7 +74,8 @@ class IonSpecies:
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
-        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
+        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,
+        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
         """
         Constructor.
 
@@ -547,7 +549,7 @@ class IonSpecies:
 
         if init_equil:
             # If scalar...
-            if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+            if isinstance(n, Number) or (type(n) == np.ndarray and n.size == 1):
                 r = interpr if interpr is not None else np.array([0])
                 N = np.zeros((r.size,))
                 N[:] = n
