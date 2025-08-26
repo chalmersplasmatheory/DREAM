@@ -116,7 +116,6 @@ class Equilibrium:
         theta[R<self.R0] = np.arctan2(rhoy[R<self.R0], -np.hypot(rhox[R<self.R0], rhoz[R<self.R0]))
         theta[theta<0] = theta[theta<0]+2*np.pi
 
-
         # Bisection to find radial coordinate corresponding
         # to 'r' at 'theta'...
         # We make a guess for a valid search intervall of startingGuessR+/-lengthScale,
