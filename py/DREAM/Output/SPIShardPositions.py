@@ -35,7 +35,7 @@ class SPIShardPositions(ScalarQuantity):
         yp = self.data[:,1::3,0]
 
         # Check if the shards start within the plasma
-        for i in range(xp.shape[0]):
+        for i in range(xp.shape[1]):
             if p.contains_point((xp[0,i], yp[0,i])):
                 return 0
 
