@@ -493,6 +493,44 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
+    def lineIntegrated(self, t=None, x0=np.array([0,10,0]), n = np.array([0,-1,0]), lmax = 20, nl = 1000, normaliseToPathLength=False):
+        """
+        Evaluate the line integral of this fluid quantity along a specified line.
+        
+        :param t: Time steps to evaluate the line integrated density for. If ``None``, the line integral is calculated for all time steps. May be a slice
+        :param x0: Starting point for the line to integrate along, in cartesian coordinates centered at the magnetic axis at pho=0 (same coordinates as used to track the SPI shards). One probably wants to set this point outside the plasma (the integrand is set to zero outside the plasma).
+        :param n: Vector specifying the direction to integrate along
+        :param lmax: Length of the line to integrate over.
+        :param nl: number of points along the line used for the numerical integration
+        :param normaliseToPathLength: If ``True``, divide the integral by the length of the part of the line residing inside the plasma
+        """
+        if t is None:
+            t=slice(t)
+
+        # define line in Cartesian coordinates (SPI coordinates)
+        l = np.linspace(0,lmax,nl)
+        dl = l[1]-l[0]
+        x = x0[0] + n[0]*l
+        y = x0[1] + n[1]*l
+        z = x0[2] + n[2]*l
+
+        # get r coordinates for all points along the line
+        r, _, _ = self.output.grid.eq.getRThetaPhiFromCartesian(x,y,z)
+
+        # compute line-integral
+        lineIntegral = np.zeros((len(self.grid.t[t]),1))
+        for i in range(nl):
+            if r[i]<self.grid.a:
+                lineIntegral+=self.data.data[t, (r[i]>self.grid.r_f[:-1]) & (r[i]<self.grid.r_f[1:])]*dl
+        
+        # divide by path length?
+        if normaliseToPathLength:
+            L = np.max(l[r<self.grid.a]) - np.min(l[r<self.grid.a])
+            return lineIntegral / L
+        
+        return lineIntegral
+
+
     def dumps(self, r=None, t=None):
         return self.get(r=r, t=t).__str__()
 
