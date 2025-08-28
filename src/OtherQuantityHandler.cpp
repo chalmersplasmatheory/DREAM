@@ -365,7 +365,7 @@ void OtherQuantityHandler::DefineQuantities() {
 				v[ir] = -v[ir];
 		);
 	}
-
+    /* !!! disabled for now, solve issue !!!
     // Magnetic ripple resonant momentum
     if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
         len_t nModes = tracked_terms->f_hot_ripple_Dxx->GetNumberOfModes();
@@ -385,7 +385,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetPoloidalModeNumbers()););
         DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetToroidalModeNumbers()););
     }
-
+     */
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
     DEF_FL("fluid/pCrit", "Critical momentum for avalanche, compton and tritium (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
@@ -1224,10 +1224,10 @@ void OtherQuantityHandler::DefineQuantities() {
         else if (qty->GetName().substr(0, 6) == "scalar")
             this->groups["scalar"].push_back(qty->GetName());
     }
-
+    /* !!! disabled for now, fix !!!
     this->groups["ripple"] = {
         "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"
-    };
+    }; */
     this->groups["transport"] = {
         "scalar/radialloss_n_re", "scalar/energyloss_T_cold",
         "scalar/radialloss_f_re", "scalar/energyloss_f_re",
