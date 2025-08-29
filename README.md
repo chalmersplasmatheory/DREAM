@@ -1,9 +1,22 @@
 # DREAM
+
+![The DREAM logo](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/logo1.png "The DREAM logo")
+
 This directory contains the Disruption Runaway Electron Analysis Model (DREAM)
 code. The **online documentation** is available at https://ft.nephy.chalmers.se/dream.
 
-The official DREAM paper has now been published: [doi:10.1016/j.cpc.2021.108098](https://doi.org/10.1016/j.cpc.2021.108098).
-(it is also on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).)
+DREAM is a physics simulation framework developed for studying relativistic
+runaway electrons in [tokamak](https://en.wikipedia.org/wiki/Tokamak) fusion
+devices. Specifically, DREAM solves a system of non-linear partial differential
+equations which describe the time evolution of a tokamak plasma. What sets DREAM
+apart from other tokamak transport codes is its wide range of models for
+studying runaway electron generation and dynamics. In particular, the fluid
+equations solved by DREAM can be coupled to a set of kinetic equations for
+electrons in order to more accurately describe the runaway electrons.
+
+The official DREAM paper is
+[doi:10.1016/j.cpc.2021.108098](https://doi.org/10.1016/j.cpc.2021.108098)
+(it is also on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457)).
 
 ## Requirements
 To compile DREAM, you need to have the following software installed:
@@ -13,9 +26,7 @@ To compile DREAM, you need to have the following software installed:
 - [GNU Scientific Library](https://www.gnu.org/software/gsl/) >= 2.4
 - [HDF5](https://www.hdfgroup.org/)
 - [PETSc](https://www.mcs.anl.gov/petsc)
-- OpenMP
-- MPI (for PETSc)
-- Python 3 (required for generating ADAS data)
+- Python 3 (required for generating ADAS data and using the Python interface)
 
 Additionally, to use the DREAM Python interface, you need the following
 Python packages:
@@ -37,7 +48,7 @@ $ git clone -b release https://gitlab.com/petsc/petsc.git petsc
 After this, compiling PETSc should be a matter of running the following
 commands:
 ```bash
-$ ./configure PETSC_ARCH=linux-c-opt
+$ ./configure PETSC_ARCH=linux-c-opt --with-mpi=0
 ...
 $ make PETSC_DIR=/path/to/petsc PETSC_ARCH=linux-c-opt all
 ...
@@ -54,14 +65,18 @@ unsure, you probably do):
 export PETSC_DIR="/path/to/petsc"
 export PETSC_ARCH=linux-c-opt
 ```
-Of course, the value for ``PETSC_DIR`` should be modified according to where
-you installed PETSc. An alternative to modifying your ``~/.bashrc`` file is to
-just give these variables directly to CMake every time you reconfigure DREAM
-(which is usually not very often, unless you're a DREAM developer).
+The value for ``PETSC_DIR`` should be modified according to where you installed
+PETSc. An alternative to modifying your ``~/.bashrc`` file is to just give these
+variables directly to CMake every time you reconfigure DREAM (which is usually
+not very often, unless you're a DREAM developer).
 
 ## Compilation
-To compile DREAM, go to the root DREAM directory and run the following commands:
+*If you're trying to install DREAM on a cluster which has previously been used
+to run DREAM, have a look in the
+[setup](https://github.com/chalmersplasmatheory/DREAM/tree/master/setup)
+directory to see if a build script is already available.*
 
+To compile DREAM, go to the root DREAM directory and run the following commands:
 ```bash
 $ mkdir -p build
 $ cd build
@@ -76,31 +91,13 @@ $ cmake .. -DPETSC_DIR=/path/to/petsc -DPETSC_ARCH=linux-c-opt
 where ``/path/to/petsc`` is the path to the directory containing your PETSc
 installation.
 
-### "PETSc was configured with MPICH but now appears to be compiling using a non-MPICH mpi.h"
-This error can occur if you have only installed MPI locally for PETSc, or if you
-have multiple MPI implementations (e.g. MPICH and OpenMPI) installed on your
-system. If you installed MPICH automatically during the configuration of PETSc
-you should run ``cmake`` with the flag
-```bash
-$ cmake .. -DMPI_CXX_COMPILER=/path/to/petsc/linux-c-opt/bin/mpicxx
-```
-Alternatively, if you compiled PETSc with an MPI installation you should specify
-```bash
-$ cmake .. -DMPI_EXECUTABLE_SUFFIX=.mpich
-```
-if you compiled PETSc with MPICH, or
-```bash
-$ cmake .. -DMPI_EXECUTABLE_SUFFIX=.openmpi
-```
-if you compiled PETSc with OpenMPI.
-
 ## Documentation
 Online documentation for how to run and extend the code is available at
 https://ft.nephy.chalmers.se/dream. LaTeX sources for documentation of the
 physics model and various mathematical details can be found under
 [doc/notes/](https://github.com/chalmersplasmatheory/DREAM/tree/master/doc/notes).
 
-## Usage in publications
+## Citing DREAM
 If you use DREAM in your scientific publications, please cite the
 [DREAM paper](https://doi.org/10.1016/j.cpc.2021.108098):
 ```
@@ -116,9 +113,37 @@ If you use DREAM in your scientific publications, please cite the
     author = {Mathias Hoppe and Ola Embreus and Tünde Fülöp}
 }
 ```
+If you use certain functionality, you should also cite the relevant reference
+for that functionality:
 
-## Authors
-DREAM is authored by [Ola Embreus](https://github.com/Embreus)
-and [Mathias Hoppe](https://github.com/hoppe93), along with members of the
-[Chalmers Plasma Theory group](https://ft.nephy.chalmers.se/). It is currently
-maintained by Mathias Hoppe and members of the Chalmers Plasma Theory group.
+- Shattered Pellet Injection: [O. Vallhagen, MSc thesis, Chalmers University of Technology (2021)](https://hdl.handle.net/20.500.12380/302296)
+- Plasmoid drift of SPI shards: [O. Vallhagen *et al*, JPP **89** 905890306 (2023)](https://doi.org/10.1017/S0022377823000466)
+- Fluid runaway ionization: [M. Hoppe *et al*, accepted for publication in PPCF (2025)](https://arxiv.org/abs/2412.14721)
+- Runaway scrape-off: [O. Vallhagen *et al*, accepted for publication in JPP (2025)](https://arxiv.org/abs/2410.03512)
+
+## Development
+DREAM development is overseen by the DREAM Developer Council which consists of
+
+![The DREAM Developer Council 2024](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/DDC/Council-2024.jpg "The DREAM Developer Council in 2024")
+*The DREAM Developer Council in 2024. From left: Oskar Vallhagen, Mathias Hoppe, Lorenzo Votta, Peter Halldestam, Ida Ekmark.*
+
+- [Mathias Hoppe](https://www.kth.se/profile/mhop?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
+- [Ida Ekmark](https://ft.nephy.chalmers.se/?p=people&id=61), Chalmers University of Technology, Gothenburg, Sweden
+- [Lorenzo Votta](https://www.kth.se/profile/votta?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
+- [Oskar Vallhagen](https://ft.nephy.chalmers.se/?p=people&id=16), Chalmers University of Technology, Gothenburg, Sweden
+- [Peter Halldestam](https://www.ipp.mpg.de/person/140267/5497846), Max Planck Institute for Plasma Physics, Garching-bei-München, Germany
+
+The code was originally developed within the
+[Plasma Theory group at Chalmers](https://ft.nephy.chalmers.se/) but is now
+coordinated from KTH Royal Institute of Technology, still in close collaboration
+with Chalmers. Over the lifetime of the code, a large number of people from
+across the world have contributed to its development. A regularly updated list
+of contributors can be found in
+[CONTRIBUTORS.md](https://github.com/chalmersplasmatheory/DREAM/blob/master/CONTRIBUTORS.md).
+
+The archive of DREAM newsletters, where changes to DREAM are recorded, can be
+found at [https://ft.nephy.chalmers.se/dreamnews/](https://ft.nephy.chalmers.se/dreamnews/).
+
+The original idea for DREAM was proposed by
+[Ola Embreus](https://github.com/Embreus) who, together with Mathias Hoppe,
+developed the first version.
