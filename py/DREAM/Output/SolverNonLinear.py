@@ -70,7 +70,7 @@ class SolverNonLinear(Solver):
         single range of time steps where the backup solver was used.
         """
         r = np.linspace(1, self.solvertime.size, self.solvertime.size)[np.where(self.backupinverter)]
-        if not r:
+        if len(r) == 0:
             return []
 
         arr = []

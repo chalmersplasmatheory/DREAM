@@ -2,7 +2,7 @@
  * Implementation of the equation for the frozen current coefficient.
  */
 
-#include "DREAM/Equations/FrozenCurrentCoefficient.hpp"
+#include "DREAM/Equations/FrozenCurrent/FrozenCurrentCoefficient.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Matrix.hpp"
 
@@ -16,12 +16,13 @@ using namespace DREAM;
 FrozenCurrentCoefficient::FrozenCurrentCoefficient(
 	FVM::Grid *grid, FVM::Grid *fluidGrid, FVM::Interpolator1D *I_p_presc,
 	FVM::UnknownQuantityHandler *unknowns, const real_t D_I_min,
-	const real_t D_I_max
+	const real_t D_I_max, const real_t dDdt_D_max, const real_t D_I_floor
 ) : EquationTerm(grid), fluidGrid(fluidGrid), I_p_presc(I_p_presc),
 	id_D_I(unknowns->GetUnknownID(OptionConstants::UQTY_D_I)),
 	id_I_p(unknowns->GetUnknownID(OptionConstants::UQTY_I_P)),
 	id_j_tot(unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT)),
-	D_I_min(D_I_min), D_I_max(D_I_max) {
+	D_I_min(D_I_min), D_I_max(D_I_max), dDdt_D_max(dDdt_D_max),
+	D_I_floor(D_I_floor) {
 	
 	this->D_I = new real_t[nMaxPoints];
 	this->Ip = new real_t[nMaxPoints];
@@ -181,6 +182,21 @@ void FrozenCurrentCoefficient::Rebuild(
 	// Bound upper value
 	if (DI > this->D_I_max)
 		DI = this->D_I_max;
+	
+	// Bound time-rate-of-change of diffusion coefficient
+	if (this->dDdt_D_max > 0) {
+		real_t DI_prev = unknowns->GetUnknownDataPrevious(this->id_D_I)[0];
+		real_t DI_max = DI_prev*(1 + this->dDdt_D_max * dt);
+		real_t DI_min = DI_prev*(1 - this->dDdt_D_max * dt);
+
+		if (DI_max < D_I_floor) DI_max = D_I_floor;
+		if (DI_min < 0) DI_min = 0;
+
+		if (DI > DI_max)
+			DI = DI_max;
+		else if (DI < DI_min)
+			DI = DI_min;
+	}
 	
 	this->DI_sol = DI;
 	this->prevTime = t;

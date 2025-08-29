@@ -27,6 +27,7 @@ SVENSSON_INTERP1D_PARAM_IP   = 2
 FROZEN_CURRENT_MODE_DISABLED = 1
 FROZEN_CURRENT_MODE_CONSTANT = 2
 FROZEN_CURRENT_MODE_BETAPAR = 3
+FROZEN_CURRENT_MODE_N_RE = 4
 
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
@@ -109,6 +110,9 @@ class TransportSettings:
         self.frozen_current_Ip_presc_t = None
         self.frozen_current_D_I_min = 0
         self.frozen_current_D_I_max = 1000
+        self.frozen_current_dDdt_D_max = 0
+        self.frozen_current_D_I_floor = 1e-3
+        self.frozen_current_t_adjust = 1e-3
 
         self.boundarycondition = BC_CONSERVATIVE
 
@@ -313,7 +317,10 @@ class TransportSettings:
             raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
 
 
-    def setFrozenCurrentMode(self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000):
+    def setFrozenCurrentMode(
+        self, mode, Ip_presc, Ip_presc_t=0, D_I_min=0, D_I_max=1000,
+        dDdt_D_max=0, D_I_floor=1e-3, t_adjust=1e-3
+    ):
         """
         Enable the frozen current mode and specify the target plasma current.
         """
@@ -333,6 +340,9 @@ class TransportSettings:
         self.frozen_current_Ip_presc_t = Ip_presc_t
         self.frozen_current_D_I_min = D_I_min
         self.frozen_current_D_I_max = D_I_max
+        self.frozen_current_dDdt_D_max = dDdt_D_max
+        self.frozen_current_D_I_floor = D_I_floor
+        self.frozen_current_t_adjust = t_adjust
 
 
     def setBoundaryCondition(self, bc):
@@ -485,9 +495,15 @@ class TransportSettings:
             self.frozen_current_D_I_min = float(data['D_I_min'])
         if 'D_I_max' in data:
             self.frozen_current_D_I_max = float(data['D_I_max'])
+        if 'dDdt_D_max' in data:
+            self.frozen_current_dDdt_D_max = float(data['dDdt_D_max'])
+        if 'D_I_floor' in data:
+            self.frozen_current_D_I_floor = float(data['D_I_floor'])
         if 'I_p_presc' in data:
             self.frozen_current_Ip_presc = data['I_p_presc']['x']
             self.frozen_current_Ip_presc_t = data['I_p_presc']['t']
+        if 't_adjust' in data:
+            self.frozen_current_t_adjust = float(data['t_adjust'])
 
 
     def todict(self):
@@ -593,6 +609,9 @@ class TransportSettings:
         data['frozen_current_mode'] = self.frozen_current_mode
         data['D_I_min'] = self.frozen_current_D_I_min
         data['D_I_max'] = self.frozen_current_D_I_max
+        data['dDdt_D_max'] = self.frozen_current_dDdt_D_max
+        data['D_I_floor'] = self.frozen_current_D_I_floor
+        data['t_adjust'] = self.frozen_current_t_adjust
         if self.frozen_current_Ip_presc is not None:
             data['I_p_presc'] = {
                 'x': self.frozen_current_Ip_presc,
@@ -704,7 +723,7 @@ class TransportSettings:
         """
         Verify consistency of the frozen current mode settings.
         """
-        if self.frozen_current_mode not in [FROZEN_CURRENT_MODE_DISABLED,FROZEN_CURRENT_MODE_CONSTANT,FROZEN_CURRENT_MODE_BETAPAR]:
+        if self.frozen_current_mode not in [FROZEN_CURRENT_MODE_DISABLED,FROZEN_CURRENT_MODE_CONSTANT,FROZEN_CURRENT_MODE_BETAPAR,FROZEN_CURRENT_MODE_N_RE]:
             raise TransportException(f"Frozen current mode: Invalid type of transport operator: {self.frozen_current_mode}.")
         elif self.frozen_current_Ip_presc.ndim != 1:
             raise TransportException(f"Frozen current mode: Invalid dimensions of prescribed plasma current: {self.frozen_current_Ip_presc.shape}.")

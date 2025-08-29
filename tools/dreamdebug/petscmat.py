@@ -56,6 +56,11 @@ def cmp(m1, m2, show=True, tollow=None, tolup=None, eqsys=None):
         dm2[r,c] = dm[r,c]
         dm = dm2
 
+    n = sparse.find(dm)
+    if len(n[0]) == 0:
+        print('Matrices are identical.')
+        return dm
+
     spy(dm, show=False, markersize=1, eqsys=eqsys)
 
     if tolup is not None:
@@ -129,11 +134,11 @@ def plotcol(m1, m2=None, col=None, log=False, show=True, legend=None, eqsys=None
         raise Exception("Parameter 'col' not specified.")
 
     if log:
-        plt.semilogy(np.abs(m1[:,col].A))
-        if m2 is not None: plt.semilogy(np.abs(m2[:,col].A))
+        plt.semilogy(np.abs(m1[:,col].todens()))
+        if m2 is not None: plt.semilogy(np.abs(m2[:,col].todense()))
     else:
-        plt.plot(m1[:,col].A)
-        if m2 is not None: plt.plot(m2[:,col].A)
+        plt.plot(m1[:,col].todense())
+        if m2 is not None: plt.plot(m2[:,col].todense())
 
     if HASMPLCURSORS:
         cursor = mplcursors.cursor()
