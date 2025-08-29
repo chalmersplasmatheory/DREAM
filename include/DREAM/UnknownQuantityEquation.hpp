@@ -20,6 +20,7 @@ namespace DREAM {
 
         // List of equations associated with this quantity
         std::map<len_t, FVM::Operator*> equations;
+		std::map<len_t, FVM::Operator*> equations_alt;
 
 		// Flag indicating whether this quantity is supposed to be
 		// evaluated using the external iterator
