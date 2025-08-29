@@ -55,6 +55,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
 	s->DefineSetting(MODULENAME "/init_equilibrium", "Flags indicating whether to initialize species in coronal equilibrium.", 1, dims, (int_t*)nullptr);
+	s->DefineSetting(MODULENAME "/reioniz_scale", "Factor by which to rescale ion runaway ionization term.", (real_t)1.0);
 
     s->DefineSetting(MODULENAME "/SPIMolarFraction", "molar fraction of SPI injection (if any)",0, (real_t*)nullptr);
 
@@ -351,7 +352,8 @@ void SimulationGenerator::ConstructEquation_Ions(
                     }
                 }
                 else if (includeFluidREIonization) {
-                    IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, 1.0);
+					real_t scaleFactor = s->GetReal(MODULENAME "/reioniz_scale");
+                    IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, scaleFactor);
                     oqty_terms->n_re_kin_rates.push_back(ifrit);
                     eqn->AddTerm(ifrit);
                 }
@@ -446,11 +448,6 @@ void SimulationGenerator::ConstructEquation_Ions(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_neutral_prescribed_advection, "neutral_prescribed_advection", true
     );
 
-	// Load prescribed source term data
-	MultiInterpolator1D *source_data = LoadDataIonT(
-		MODULENAME, s, nZ0_dynamic+nZ0_prescribed, "ion_source"
-	);
-
     // Add diffusion terms
     len_t offsetChargedDiffusion = 0;
     len_t offsetNeutralDiffusion = 0;
@@ -493,6 +490,11 @@ void SimulationGenerator::ConstructEquation_Ions(
                     "ions: Ion species with prescribed time evolutions cannot contain source terms. Ion '%s' has non-zero source term.",
 					ionNames[iZ].c_str()
 				);
+
+			// Load prescribed source term data
+			MultiInterpolator1D *source_data = LoadDataIonT(
+				MODULENAME, s, nZ0_dynamic+nZ0_prescribed, "ion_source"
+			);
 
 			eqn->AddBoundaryCondition(new IonSourceBoundaryCondition(
 				fluidGrid, ih, source_data, iZ

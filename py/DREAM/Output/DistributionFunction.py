@@ -36,6 +36,30 @@ class DistributionFunction(KineticQuantity):
                 p1name, p2name = 'PAR', 'PERP'
 
         return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn)
+    
+
+    #########################################
+    # VOLUME INTEGRATED DISTRIBUTION FUNCTION
+    #########################################
+
+    def volumeIntegratedDistributionFunction(self, t=None, normalized=False):
+        """
+        Calculates the volume integrated (real space) integral of the distribution function,
+        F(t,p,xi)=\int Vprime/p^2 * f(t,r,p,xi) dr
+        """
+        if t is None:
+            t = range(len(self.time))
+
+        if np.isscalar(t):
+            t = np.asarray([t])
+
+        Vprime = self.momentumgrid.Vprime[:,:,:]
+        Vprime = Vprime.reshape(1, *Vprime.shape)
+        p2 = (self.momentumgrid.p1[:]**2).reshape(1,1,1,-1)
+        dr = self.grid.dr[:].reshape(1,-1,1,1)
+        if normalized:
+            return (Vprime / p2 * dr * self.data[t,:,:,:]).sum(1) / self.grid.integrate(self.density(t=t))
+        return (Vprime * dr * self.data[t,:,:,:]).sum(1)
 
 
     #########################################

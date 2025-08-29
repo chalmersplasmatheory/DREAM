@@ -372,7 +372,7 @@ void SPIHandler::AssignDriftComputationParameters(len_t ip){
        
     // Calculate the fraction of the heat flux being absorbed in the cloud, using eq. 4.77 in Nicos MSc thesis
     real_t x = rf->GetElectronCollisionTimeThermal(irp[ip])*neBgDrift/n0Drift*(1+Zavg0Drift)*sqrt(2*TeBgDrift*qe/me)/LcInitDrift;// Ratio of mean free path and cloud length
-    plasmoidAbsorbtionFactor[ip] = 1-1/(x*x)*(exp(-1/sqrt(x))*(-0.5*sqrt(x)+0.5*x+x*sqrt(x)+x*x)-0.5*expint(-1/sqrt(x)));
+    plasmoidAbsorbtionFactor[ip] = 1-1/(x*x)*(exp(-1/sqrt(x))*(-0.5*sqrt(x)+0.5*x+x*sqrt(x)+x*x)-0.5*gsl_sf_expint_Ei(-1/sqrt(x)));
 
 }
 
