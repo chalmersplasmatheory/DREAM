@@ -6,26 +6,29 @@ class NBISettings:
     """
     Handles Neutral Beam Injection settings in the DREAM framework.
     This class is used by ColdElectronTemperature to manage NBI-specific parameters.
+    Pre-set values match TCV parameters.
     """
     
     def __init__(self):
-        #Should be fixed for TCV
         self.enabled = False
-        self.s_max = 2.05
-        self.r_beam = 123e-3 *0.5
-        self.P0 = [-1.2,-0.4,0.0]
-        self.n = [1.0,1.5,0.0]
-        self.Ti_beam = 25*1.6021e-16
-        self.m_i_beam = 3.344e-27
-        self.beam_power = 1.03e6
-        self.Z0 = 0
-        self.Zion = 1
-        self.R0 = 0.88
-        self.j_B_t = np.linspace(0, self.r_beam, 10)  #Rome
-        self.j_B_x = np.ones(len(self.j_B_t)) #Rome
-        self.j_B_tinterp = 0
-        self.TCVGaussian = False
+        self.s_max = 2.05 # Maximum beam path length [m]
+        self.r_beam = 0.0736 # Beam radius [m]
+        self.P0 = [-1.2,-0.42,0.0] # Beam entry point [m]
+        self.n = [0.5547, 0.83205, 0.0] # Beam direction vector (unit vector)
+        self.Ti_beam = 28*1.6021e-16 # Beam energy [J]
+        self.m_i_beam = 3.344e-27 # Beam ion mass [kg] (Deuterium)
+        self.beam_power = 11e5 # Beam power [W]
+        self.Z0 = 0 # Initial ion charge state
+        self.Zion = 1 # Ion type
+        self.R0 = 0.88 # Major radius [m]
+        self.j_B_t = np.linspace(0, 0.0775, 50) # Beam current profile time points [s] (Matching ROME radius)
+        self.j_B_x = 250e3 * np.ones(len(self.j_B_t)) # Beam current profile values [A/m^2]
+        self.j_B_tinterp = 0 # Interpolation method for time profile
+        self.TCVGaussian = False # Use TCV Gaussian beam profile if True
         self.a = 0.23 # Plasma minor radius [m]
+        self.P_NBI_t = [] # Beam power profile time points [s]
+        self.P_NBI_x = [] # Beam power profile values [W]
+        self.P_NBI_tinterp =0 # Interpolation method for power profile
 
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
@@ -34,9 +37,9 @@ class NBISettings:
     def setTCVGaussian(self, TCVGaussian=True):
         """Enable/disable TCV Gaussian beam profile."""
         self.TCVGaussian = TCVGaussian
-
+    
     def setCurrentProfile(self, j_B_t, j_B_x, tinterp=0):
-        """Set beam current profile in one dimention. As an alternative to setting the Gaussian."""
+        """Set beam current profile in one dimention. As an alternative to setting the TCV Gaussian."""
         self.j_B_t = j_B_t
         self.j_B_x = j_B_x
         self.j_B_tinterp = tinterp
@@ -68,6 +71,11 @@ class NBISettings:
         """Set beam power."""
         self.beam_power = beam_power
 
+    def setPowerProfile(self, j_B_t, j_B_x, tinterp=0):
+        """Set beam power profile in one dimension."""
+        self.P_NBI_t = j_B_t
+        self.P_NBI_x = j_B_x
+        self.P_NBI_tinterp = tinterp
 
     def visualize_3d_tokamak(self):
         """
@@ -113,12 +121,13 @@ class NBISettings:
         plt.show()
 
 
-    def visualize_flux_surfaces_top_view(self, NR):
+    def visualize_flux_surfaces_top_view(self, radius_vector):
         """
         Visualize circular flux surfaces and NBI beam in the top-down (X-Y) view.
         """
         fig, ax = plt.subplots(figsize=(10, 10))
-        r_f = np.linspace(0, self.a, NR + 1)
+        NR =len(radius_vector)
+        r_f = radius_vector
         r_mid = 0.5 * (r_f[:-1] + r_f[1:])
         theta = np.linspace(0, 2*np.pi, 100)
         colors = plt.cm.rainbow(np.linspace(0, 1, NR + 2))
@@ -160,10 +169,6 @@ class NBISettings:
         plt.tight_layout()
         plt.show()
 
-
-
-
-
     def todict(self):
         """Convert settings to dictionary format."""
         if not self.enabled:
@@ -184,4 +189,7 @@ class NBISettings:
             'NBI/j_B/x': self.j_B_x,
             'NBI/j_B/tinterp': self.j_B_tinterp,
             'NBI/TCVGaussian': self.TCVGaussian,
+            'NBI/P_NBI/t': self.P_NBI_t,
+            'NBI/P_NBI/x': self.P_NBI_x,
+            'NBI/P_NBI/tinterp': self.P_NBI_tinterp,
         }
