@@ -26,23 +26,21 @@ T_initial = 800     # Initial electron temperature [eV]
 Ip_initial = 120e5  # Initial plasma current [A]
 TMAX = 1e-6         # Simulation time [s]
 
-#Tokamak parameters
-NR = 20              # Number of radial points
+#Tokamak parameters - ROME
+NR = 50              # Number of radial points
 B0 = 5              # Magnetic field [T]
 a = 0.23             # Plasma minor radius [m]
 b = 0.23           # Wall radius [m]
 R0 =  0.798            # Major radius [m]  
 
-#NBI parameters
-nbi_entry_point = [0.685,-1.028,0.0]
-#nbi_entry_point = [0.585,-1.028,0.0]
-#nbi_entry_point = [0,-1,0.0]
-nbi_radius = 0.07  # Beam radius [m]  
-r_j_B = np.linspace(0, nbi_radius, 10)  
-j_B_values = 250e3 * np.ones(len(r_j_B))
-#nbi_direction_vector = [1.0,1.0,0.0]  # Direction of the NBI beam
-nbi_direction_vector = [0.0,1.0,0.0]  # Direction of the NBI beam
-s_max = 2
+
+#NBI parameters TO COMPARE WITH ROME
+r= np.linspace(0,a,NR+1)  # Radial grid points
+n_i_profile = 3e19 * (1 - (r/a)**2)
+nbi_entry_point = [0.685,-1.028,0.0] 
+nbi_radius = 0.0775  
+nbi_direction_vector = [0.0,1.0,0.0] 
+
 
 #############################
 # Initialize DREAM settings #
@@ -60,23 +58,12 @@ ds.radialgrid.setMajorRadius(R0)
 # Set up time step
 ds.timestep.setNt(1)
 ds.timestep.setTmax(TMAX)
-r = np.linspace(0, a, NR*10)
-n_profile = 3e19*(1-(r/(a))**2) 
 
 
-# Add ion species
-# Fully ionized ions (core plasma)
-n_i_profile = 3e19 * (1 - (r/a)**2)  # peak = 3e19 m⁻³
 Ti_profile = 250   # constant 250 eV
-
-# Neutrals (background gas)
-n_neutral_profile = 7e14 * np.ones_like(r) # peak = 7e14 m⁻³ try parabilic
-Tn_profile = 250        # same temp for simplicity obs
 # Add ionized deuterium
 ds.eqsys.n_i.addIon(name='D_core', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_i_profile, r=r, T=Ti_profile)
-
-# Add neutral deuterium
-#ds.eqsys.n_i.addIon(name='D_neutral', Z=1, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n_neutral_profile, r=r, T=Tn_profile)
+#ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=v, T=1)
 
 
 # Initial current / E-field setup
@@ -84,17 +71,38 @@ ds.eqsys.j_ohm.setInitialProfile(1, Ip0=Ip_initial)
 ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
 ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_PRESCRIBED, V_loop_wall_R0=0, R0=R0)
 
+
 nbi = NBISettings()
 nbi.setEnabled(True)
+##ROME
+#nbi.setTCVGaussian(True)  # Use TCV Gaussian beam profile for TCV
 nbi.setOrigin(nbi_entry_point)
 nbi.setDirection(nbi_direction_vector)
-nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=4.8e-15, m_i_beam=3.344e-27, s_max=s_max)
-nbi.setIons(Z0=0, Zion=1)  # Fully ionized deuterium
-nbi.setPower(beam_power=1.0)
-nbi.setCurrentProfile(j_B_t=r_j_B, j_B_x=j_B_values, tinterp=0)
+
+nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
+nbi.setIons(Z0=0, Zion=1)  
+nbi.setPower(beam_power=1) #57e3
 nbi.setR0_NBI(R0)
-nbi.visualize_3d_tokamak(nbi_entry_point, nbi_direction_vector, nbi_radius, R0, a, s_max)
-nbi.visualize_flux_surfaces_top_view(nbi_entry_point, nbi_direction_vector, nbi_radius, R0, a, s_max, NR)
+
+nbi.visualize_flux_surfaces_top_view(r)
+
+
+
+##TCV SETTINGS
+#nbi.setPower(beam_power=1.03e6)
+#nbi.setBeamParameters(Ti_beam= 28*1.6021e-16)
+#nbi.setTCVGaussian(True)  # Use TCV Gaussian beam profile for TCV
+#nbi.visualize_3d_tokamak(a = 0.23)
+#nbi.visualize_flux_surfaces_top_view(np.linspace(0,a,20))
+
+
+#t_beam = np.linspace(0,tMax, 100)
+#P_beam = np.zeros_like(t_beam)
+#P_beam[(t_beam >= 0) & (t_beam <= float(NBI_duriation) - 1e-10)] = beam_power
+#nbi.setPowerProfile(t_beam, P_beam)
+
+
+
 
 
 # Set up electron temperature and NBI
@@ -119,13 +127,6 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.solver.setVerbose(True)
 # Include fluid
 ds.other.include('fluid')
-
-
-
-
-
-
-
 print("Running DREAM simulation...")
 ds.save('settings_nbi.h5')
 runiface(ds, 'output_nbi.h5')
