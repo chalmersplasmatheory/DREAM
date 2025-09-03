@@ -56,7 +56,7 @@ R0 = 0.798            # Major radius [m]
 xs = 0.0       # Stagnation point offset [m]
 rB = 0.0775         # Beam radius [m]
 Rc = 0.685  
-lambda0= 0.434 #0.434
+lambda0= 0.434 #Taken from dream to match
 jB = 250e3
 from scipy.integrate import quad
 
@@ -133,7 +133,7 @@ def H_r_theta(r, theta):
     return H_r(rho) 
 
 def real_H_r(r):
-    theta_vals = np.linspace(0, 2*np.pi, 5)  # Does not matter when xs=0
+    theta_vals = np.linspace(0, 2*np.pi, 1)  # Does not matter when xs=0
     temp=[]
     for theta in theta_vals:
         temp.append(H_r_theta(r, theta))
