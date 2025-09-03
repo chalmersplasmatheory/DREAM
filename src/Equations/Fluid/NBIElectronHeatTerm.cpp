@@ -15,6 +15,7 @@
 #include <omp.h>
 #include <unistd.h>
 #include "FVM/Interpolator1D.hpp"
+#include <iostream>
 
 using namespace DREAM;
 /**
@@ -25,7 +26,7 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
                                          const real_t P0[3], const real_t n[3],
                                          real_t Ti_beam, real_t m_i_beam,
                                          real_t beamPower,
-                                         FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0, bool TCVGaussian) : EquationTerm(grid)
+                                         FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0, bool TCVGaussian, FVM::Interpolator1D *Power_Profile) : EquationTerm(grid)
 {
 
     // Set grid
@@ -38,12 +39,14 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
     this->H_r_dni = new real_t[nr];
     this->H_r_dTi = new real_t[nr];
     this->H_r_dne = new real_t[nr];
+    this->dV_beam_prime_tot = new real_t[nr];
 
     // Get from other classes
     this->id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     this->id_ion_density = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_ion_temperature = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+    this->nZ = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->adas = adas;
     this->ions = ions;
 
@@ -63,7 +66,6 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
     this->r_beam = r_beam;
     this->Ti_beam = Ti_beam;
     this->m_i_beam = m_i_beam;
-    this->beamPower = beamPower;
     this->Z0 = Z0;
     this->Zion = Zion;
     this->R0 = R0;
@@ -73,12 +75,13 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
         this->n[i] = n[i];
     }
 
+    this->beamPower = beamPower;
+
+    // Compute the beam basis vectors e1 and e2 and the start and stop of the beam in beam coordinates, initialized to extreme values
     this->s_start = 100;
     this->s_stop = 0;
     PrecomputeBeamBasisVectors();
-    PrecomputeFluxSurfaces(); // also compues s_start and s_stop
-    printf("s_start = %.6f\n", s_start);
-    printf("s_stop = %.6f\n", s_stop);
+    PrecomputeFluxSurfaces();
     if (s_start > s_stop)
     {
         throw std::runtime_error("Beam does not intersect with any flux surface.");
@@ -87,7 +90,9 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
     {
         throw std::runtime_error("Beam length is smaller than the distance to the last flux surface.");
     }
+
     this->j_B_profile = j_B_profile;
+    this->Power_Profile = Power_Profile;
     this->n_beam_radius = 25;
     this->d_beam_radius = r_beam / n_beam_radius;
     this->n_beam_theta = 25;
@@ -102,9 +107,10 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
     const real_t *dr = this->radialGrid->GetDr();
     for (len_t ir = 0; ir < nr; ir++)
         this->plasmaVolume += VpVol[ir] * dr[ir] * R0;
+    this->beamVolume = (s_stop - s_start) * M_PI * r_beam * r_beam;
 
-    this->I_B = 0.0;
     // Trapezoidal integration to get total beam current
+    this->I_B = 0.0;
     const real_t *r_beam_grid = this->j_B_profile->GetX();
     len_t N = this->j_B_profile->GetNx();
     for (len_t i = 0; i < N - 1; ++i)
@@ -121,10 +127,10 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(FVM::Grid *grid, FVM::UnknownQuantityHa
         this->I_B += 2.0 * M_PI * 0.5 * (j1 * r1 + j2 * r2) * dr;
     }
 }
+
 /**
  * Calculate the beam current density j_B divided by I_B.
  */
-
 real_t NBIElectronHeatTerm::Calculate_jB_IB(real_t r_B, real_t theta_B)
 {
     if (TCVGaussian == true)
@@ -137,9 +143,9 @@ real_t NBIElectronHeatTerm::Calculate_jB_IB(real_t r_B, real_t theta_B)
     }
     else
     {
-        const real_t *j_B_values = j_B_profile->Eval(theta_B);
+        const real_t *j_B_values = j_B_profile->Eval(r_B);
         real_t j_B_r = j_B_values[0];
-        printf("I_B = %.6e\n", this->I_B);
+
         return j_B_r / this->I_B;
     }
 }
@@ -149,6 +155,7 @@ real_t NBIElectronHeatTerm::Calculate_jB_IB(real_t r_B, real_t theta_B)
  */
 void NBIElectronHeatTerm::PrecomputeFluxSurfaces()
 {
+
     cachedFluxSurfaces.resize(nr);
     for (len_t ir = 0; ir < nr; ++ir)
     {
@@ -159,11 +166,11 @@ void NBIElectronHeatTerm::PrecomputeFluxSurfaces()
             real_t R = R0 + radialGrid->GetFluxSurfaceRMinusR0_theta(ir, theta);
             real_t Z = radialGrid->GetFluxSurfaceZMinusZ0_theta(ir, theta);
             cachedFluxSurfaces[ir][itheta] = {R, Z};
-            // find start and end of beam in beam coordinates
+
             real_t nphi = 100;
             real_t dphi = 2.0 * M_PI / nphi;
             if (ir == nr - 1)
-            { // most outer flux surface
+            { // Most outer flux surface
                 for (real_t iphi = 0; iphi < nphi; ++iphi)
                 {
                     real_t phi = iphi * dphi;
@@ -174,7 +181,7 @@ void NBIElectronHeatTerm::PrecomputeFluxSurfaces()
                     CartesianToCylindrical(x, y, z, this->P0, this->n, r_B, theta_B, s_B);
                     if (r_B < r_beam)
                     {
-                        // save the largest value as smax and the lowest as smin
+                        // Save the largest value as s_stop and the lowest as s_start
                         if (s_B > s_stop)
                             s_stop = s_B;
                         if (s_B < s_start)
@@ -235,81 +242,130 @@ NBIElectronHeatTerm::~NBIElectronHeatTerm()
  * Rebuild: Called at the start of every timestep.
  * Compute added heating term for each timestep and flux surface radius
  */
-void NBIElectronHeatTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns)
+void NBIElectronHeatTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *unknowns)
 {
-
+    // Setting values to zero
     for (len_t ir = 0; ir < nr; ++ir)
     {
         NBIHeatTerm[ir] = 0.0;
         Deposition_profile[ir] = 0.0;
         Deposition_profile_times_Vprime[ir] = 0.0;
+        dV_beam_prime_tot[ir] = 0.0;
         H_r_dTe[ir] = 0.0;
         H_r_dni[ir] = 0.0;
         H_r_dTi[ir] = 0.0;
         H_r_dne[ir] = 0.0;
     }
-    // Main Calculation
-    ComputeDepositionProfile(unknowns);
-    // Compute the deposited fraction of the beam
-    real_t cumulative = 0.0;
-    real_t frac = 0.0;
-    for (len_t ir = 0; ir < nr; ir++)
+    // Set the beam power, either constant or time-dependent
+    real_t powerNow = 0;
+    // If the time dependant value is set:
+    if (this->Power_Profile != nullptr)
     {
-        cumulative += Deposition_profile_times_Vprime[ir] * d_beam_radius;
-        frac = cumulative;
+        const real_t *p = this->Power_Profile->Eval(t);
+        powerNow = p[0];
     }
-    // printf("✅ Deposited fraction of beam = %.6f\n", cumulative);
-    //   Compute volume-weighted integral of raw deposition profile
-    real_t integral = 0.0;
-    for (len_t ir = 0; ir < nr; ++ir)
-        integral += Deposition_profile[ir] * this->radialGrid->GetVpVol()[ir] * this->R0 * this->radialGrid->GetDr()[ir];
+    else
+    { // If the constant value is set:
+        if (this->beamPower > 0)
+            powerNow = this->beamPower;
 
-    // Now normalize so that ∫ H(r) V'(r) dr = plasmaVolume
-    if (integral > 0)
+        else
+        {
+            throw std::runtime_error("No beam power set (neither constant nor profile)");
+        }
+    }
+    // If the power is not 0, then we want to compute the caluclation
+    if (powerNow != 0) 
     {
-        real_t norm_factor = plasmaVolume / integral;
+        // H(r)
+        ComputeDepositionProfile(unknowns);
+
+        // Compute the deposited fraction of the beam
+        real_t cumulative = 0.0;
+        real_t frac = 0.0;
+        for (len_t ir = 0; ir < nr; ir++)
+        {
+            cumulative += Deposition_profile_times_Vprime[ir] * d_beam_radius;
+            frac = cumulative;
+        }
+
         for (len_t ir = 0; ir < nr; ++ir)
         {
-            Deposition_profile[ir] *= norm_factor;
-            H_r_dTe[ir] *= norm_factor * frac;
-            H_r_dTi[ir] *= norm_factor * frac;
-            H_r_dni[ir] *= norm_factor * frac;
-            H_r_dne[ir] *= norm_factor * frac;
+
+            H_r_dTe[ir] *=  -powerNow * d_beam_radius / (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir]);
+            H_r_dTi[ir] *= -powerNow * d_beam_radius / (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir]);
+            H_r_dni[ir] *= -powerNow * d_beam_radius / (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir]);
+            H_r_dne[ir] *= -powerNow * d_beam_radius / (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir]);
         }
-        // printf("H_r_dTe = %.6e\n", H_r_dTe[0]);
-        // printf("H_r_dTi = %.6e\n", H_r_dTi[0]);
-        // printf("H_r_dni = %.6e\n", H_r_dni[0]);
-        // printf("H_r_dne = %.6e\n", H_r_dne[0]);
+
+        for (len_t ir = 0; ir < nr; ir++)
+        {
+            NBIHeatTerm[ir] = powerNow * Deposition_profile_times_Vprime[ir] * d_beam_radius /  (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir]); 
+            NBIHeatTerm[0] = 0;            
+            
+        }
+    
     }
-
-    for (len_t ir = 0; ir < nr; ir++)
+    // If power is 0
+    else 
     {
-
-        NBIHeatTerm[ir] = Deposition_profile[ir] * beamPower / plasmaVolume * frac;
-        // printf("NBIHeatTerm[%d] = %.6e\n", ir, NBIHeatTerm[ir]);
+        for (len_t ir = 0; ir < nr; ir++)
+        {
+            NBIHeatTerm[ir] = 0;
+            H_r_dTe[ir] *= 0;
+            H_r_dTi[ir] *= 0;
+            H_r_dni[ir] *= 0;
+            H_r_dne[ir] *= 0;
+        }
     }
 }
 
 /**
  * Computes and mean free path variable for the NBI heating term
  */
-void NBIElectronHeatTerm::ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t ni, real_t Ti, real_t &lambda_s, real_t &dlambda_dI, real_t &dlambda_dne)
+void NBIElectronHeatTerm::ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t ni, real_t Ti, real_t &lambda_s, real_t &dlambda_dI, real_t &dlambda_dne, real_t &dI_dni, real_t &dI_dTi, real_t &dI_dTe)
 {
+        // Get the SCD rate coefficient 
+        ADASRateInterpolator *scd = adas->GetSCD(Zion);
+        real_t dI_dne = scd->Eval_deriv_n(Z0, ncold, Tcold);
+        real_t I_ion = scd->Eval(Z0, ncold, Tcold);
+        
+        dI_dTe = scd->Eval_deriv_T(Z0, ncold, Tcold); //TOODO
 
-    ADASRateInterpolator *scd = adas->GetSCD(Zion);
-    ADASRateInterpolator *ccd = adas->GetCCD(Zion);
 
-    real_t dI_dne = scd->Eval_deriv_n(Z0, ncold, Tcold);
+        real_t v_NBI = std::sqrt(2.0 * Ti_beam / m_i_beam);
+        real_t total_CX = 0.0;
 
-    real_t I_ion = scd->Eval(Z0, ncold, Tcold);
-    real_t I_CX = ccd->Eval(Z0, ni, Ti);
+        // Loop over all atomic species
+        for (len_t iz = 0; iz < ions->GetNZ(); iz++)
+        {
+            len_t Zmax = ions->GetZ(iz);
+            
+            // Use the CCD table for this nuclear charge
+            ADASRateInterpolator *ccd = adas->GetCCD(Zmax);
 
-    real_t v_NBI = std::sqrt(2.0 * Ti_beam / m_i_beam);
-    lambda_s = v_NBI / (ncold * (I_ion + I_CX));
+ 
+            // Loop over charge states of this species
+            for (len_t Z0 = 0; Z0 <= Zmax; Z0++)
+            {
+                real_t niZ = ions->GetIonDensity(ir, iz, Z0);
+                if (niZ <= 0)
+                    continue;
+                
+        
+                // Evaluate CCD rate coefficient
+                real_t rateCoeff = ccd->Eval(Z0, niZ, Ti); //ti
+                total_CX += rateCoeff* niZ; 
 
-    dlambda_dI = -v_NBI / (ncold * std::pow(I_ion + I_CX, 2));
-
-    dlambda_dne = v_NBI * (-(I_ion + I_CX + dI_dne * ncold) / (ncold * ncold * (I_ion + I_CX) * (I_ion + I_CX)));
+                dI_dni += ccd->Eval_deriv_n(Z0, niZ, Ti);
+                dI_dTi= ccd->Eval_deriv_T(Z0, niZ, Ti);
+            }
+        }
+        
+            lambda_s = v_NBI / (ncold * (I_ion) + total_CX); 
+            dlambda_dI = -v_NBI / (ncold * std::pow(I_ion + total_CX, 2));
+            dlambda_dne = v_NBI * (-(I_ion + total_CX + dI_dne * ncold) / (ncold * ncold * (I_ion + total_CX) * (I_ion + total_CX)));
+            
 }
 
 /**
@@ -325,11 +381,13 @@ int_t NBIElectronHeatTerm::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, r
         P0[0] + dx * e1[0] + dy * e2[0],
         P0[1] + dx * e1[1] + dy * e2[1],
         P0[2] + dx * e1[2] + dy * e2[2]};
+
     int_t best_ir = -1;
     real_t smallest_diff = std::numeric_limits<real_t>::infinity();
 
     for (len_t ir = 0; ir < nr; ir++)
     { // Loop through all flux surfaces
+
         for (len_t i = 0; i < ntheta; i++)
         { // Loop thourgh theta and discretizise
             len_t j = (i + 1) % ntheta;
@@ -347,13 +405,16 @@ int_t NBIElectronHeatTerm::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, r
 
             real_t a0 = R1 * R1 - P0_current[0] * P0_current[0] - P0_current[1] * P0_current[1] + 2 * R1 * (P0_current[2] - Z1) * ratio + (P0_current[2] - Z1) * (P0_current[2] - Z1) * ratio * ratio;
 
-            real_t a1 = 2 * R1 * n[2] * ratio + 2 * n[2] * (P0_current[2] - Z1) * ratio * ratio - 2 * (P0_current[0] * n[0] + P0_current[1] * n[1]);
+            real_t a1 = 2 * R1 * n_norm[2] * ratio + 2 * n_norm[2] * (P0_current[2] - Z1) * ratio * ratio - 2 * (P0_current[0] * n_norm[0] + P0_current[1] * n_norm[1]);
 
-            real_t a2 = n[2] * n[2] * ratio * ratio - n[0] * n[0] - n[1] * n[1];
+            real_t a2 = n_norm[2] * n_norm[2] * ratio * ratio - n_norm[0] * n_norm[0] - n_norm[1] * n_norm[1];
 
             real_t discriminant = a1 * a1 / (4 * a2 * a2) - a0 / a2;
-            if (discriminant < 0)
+            if (discriminant <= 0)
+            {
+
                 continue;
+            }
 
             real_t sqrt_disc = std::sqrt(discriminant);
             real_t l1 = (-a1 / (2 * a2) + sqrt_disc);
@@ -364,7 +425,7 @@ int_t NBIElectronHeatTerm::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, r
             {
                 if (l < 0)
                     return {false, 0};
-                real_t t = (P0_current[2] - Z1 + l * n[2]) / dZ;
+                real_t t = (P0_current[2] - Z1 + l * n_norm[2]) / dZ;
                 if (t < 0 || t > 1)
                     return {false, 0};
                 return {true, std::abs(l - s_B)};
@@ -372,6 +433,7 @@ int_t NBIElectronHeatTerm::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, r
 
             // Check both solutions and update if better match found
             auto [valid1, diff1] = check_solution(l1);
+
             if (valid1 && diff1 < smallest_diff)
             {
                 smallest_diff = diff1;
@@ -388,7 +450,6 @@ int_t NBIElectronHeatTerm::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, r
     }
     return best_ir;
 }
-
 /**
  * Takes in the beam paramaters and turns a point on a flux surface (in x y z) into the beam coordinate system
  */
@@ -416,13 +477,14 @@ void NBIElectronHeatTerm::CartesianToCylindrical(
 /**
  * Computes the deposition profile for a flux surface
  */
-void NBIElectronHeatTerm::ComputeDepositionProfile(
-    FVM::UnknownQuantityHandler *unknowns)
+void NBIElectronHeatTerm::ComputeDepositionProfile(FVM::UnknownQuantityHandler *unknowns)
 {
+
     for (len_t ir = 0; ir < nr; ++ir)
     {
         Deposition_profile_times_Vprime[ir] = 0.0;
         Deposition_profile[ir] = 0.0;
+        dV_beam_prime_tot[ir] = 0.0;
         H_r_dTe[ir] = 0.0;
         H_r_dni[ir] = 0.0;
         H_r_dTi[ir] = 0.0;
@@ -437,29 +499,34 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(
         real_t beam_theta = i_beam_theta * d_beam_theta;
         for (real_t i_beam_radius = 0; i_beam_radius < n_beam_radius; i_beam_radius++)
         {
-            real_t beam_radius = i_beam_radius * d_beam_radius;
+
+            real_t beam_radius = (i_beam_radius + 0.5) * d_beam_radius;
+
             real_t I_s = 0.0;
             real_t I_s_squared = 0.0;
             for (real_t i_beam_s = 0; i_beam_s < n_beam_s; i_beam_s++)
             {
                 real_t beam_s = s_start + i_beam_s * d_beam_s;
                 len_t ir_now = CalculatePencilBeamFindFlux(beam_s, beam_radius, beam_theta);
-
                 if (ir_now < 0 || ir_now >= nr)
                 {
-                    printf("⚠️  Warning: ir_now = %d out of bounds (s_B = %.6e, r_B = %.6e, theta_B = %.6e)\n", ir_now, beam_s, beam_radius, beam_theta);
-                    continue;
-                }
 
+                    throw std::domain_error(
+                        "ir_now out of bounds: ir_now = " + std::to_string(ir_now) +
+                        " (s_B = " + std::to_string(beam_s) +
+                        ", r_B = " + std::to_string(beam_radius) +
+                        ", theta_B = " + std::to_string(beam_theta) + ")");
+                }
                 real_t ncold = this->unknowns->GetUnknownData(id_ncold)[ir_now];
                 real_t Tcold = this->unknowns->GetUnknownData(id_Tcold)[ir_now];
                 real_t ni = this->unknowns->GetUnknownData(id_ion_density)[ir_now];
                 real_t Ti = this->unknowns->GetUnknownData(id_ion_temperature)[ir_now];
 
-                real_t lambda_s, dlambda_dI, dlambda_dne;
+                real_t lambda_s, dlambda_dI, dlambda_dne, dI_dni, dI_dTi, dI_dTe;
+                ComputeMeanFreePath(ir_now, ncold, Tcold, ni, Ti, lambda_s, dlambda_dI, dlambda_dne, dI_dni, dI_dTi, dI_dTe);
+
                 if (lambda_cache[ir_now] < 0)
                 {
-                    ComputeMeanFreePath(ir_now, ncold, Tcold, ni, Ti, lambda_s, dlambda_dI, dlambda_dne);
                     lambda_cache[ir_now] = lambda_s;
                     dlambda_dI_cache[ir_now] = dlambda_dI;
                     dlambda_dne_cache[ir_now] = dlambda_dne;
@@ -470,7 +537,8 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(
                     dlambda_dI = dlambda_dI_cache[ir_now];
                     dlambda_dne = dlambda_dne_cache[ir_now];
                 }
-
+               
+                
                 I_s += 1 / lambda_s * d_beam_s;
                 I_s_squared += 1 / (lambda_s * lambda_s) * d_beam_s;
                 real_t survivalProb = std::exp(-I_s);
@@ -479,22 +547,17 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(
 
                 real_t dV_beam_prime = beam_radius * d_beam_theta * d_beam_s;
                 real_t H_r_theta_phi = jB_divided_IB * (1.0 / lambda_s) * survivalProb;
-
                 Deposition_profile[ir_now] += H_r_theta_phi;
+
                 Deposition_profile_times_Vprime[ir_now] += H_r_theta_phi * dV_beam_prime;
 
-                // Derivatives calcualtion
-                ADASRateInterpolator *scd = this->adas->GetSCD(Zion);
-                ADASRateInterpolator *ccd = this->adas->GetCCD(Zion);
+                dV_beam_prime_tot[ir_now] += dV_beam_prime;
 
-                real_t dI_dTe = scd->Eval_deriv_T(Z0, ncold, Tcold);
-                real_t dI_dni = ccd->Eval_deriv_n(Z0, ni, Ti);
-                real_t dI_dTi = ccd->Eval_deriv_T(Z0, ni, Ti);
-
-                H_r_dTe[ir_now] += jB_divided_IB * dlambda_dI * dI_dTe * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb);
-                H_r_dni[ir_now] += jB_divided_IB * dlambda_dI * dI_dni * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb);
-                H_r_dTi[ir_now] += jB_divided_IB * dlambda_dI * dI_dTi * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb);
-                H_r_dne[ir_now] += jB_divided_IB * dlambda_dne * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb);
+                // Derivatives
+                H_r_dTe[ir_now] += jB_divided_IB * dlambda_dI * dI_dTe * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
+                H_r_dni[ir_now] += jB_divided_IB * dlambda_dI * dI_dni * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
+                H_r_dTi[ir_now] += jB_divided_IB * dlambda_dI * dI_dTi * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
+                H_r_dne[ir_now] += jB_divided_IB * dlambda_dne * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
             }
         }
     }
@@ -510,22 +573,20 @@ bool NBIElectronHeatTerm::SetJacobianBlock(
 
     if (derivId != id_ncold && derivId != id_Tcold &&
         derivId != id_ion_density && derivId != id_ion_temperature)
-        return false; // No contribution to this block
+        return false; 
 
     for (len_t ir = 0; ir < nr; ++ir)
     {
         real_t dP = 0.0;
 
         if (derivId == id_ncold)
-            dP = H_r_dne[ir]; // stored ∂H/∂ne
+            dP = H_r_dne[ir];
         else if (derivId == id_Tcold)
             dP = H_r_dTe[ir];
         else if (derivId == id_ion_density)
             dP = H_r_dni[ir];
         else if (derivId == id_ion_temperature)
             dP = H_r_dTi[ir];
-
-        dP *= -beamPower / plasmaVolume; // scale to match how NBIHeatTerm is defined
 
         jac->SetElement(ir, ir, dP);
     }

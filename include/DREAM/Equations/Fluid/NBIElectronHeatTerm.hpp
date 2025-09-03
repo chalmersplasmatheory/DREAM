@@ -18,7 +18,7 @@ namespace DREAM
 
     private:
         // Grid and unknown quantity identifiers
-        len_t id_ncold, id_Tcold, id_ion_density, id_ion_temperature;
+        len_t id_ncold, id_Tcold, id_ion_density, id_ion_temperature, nZ;
         FVM::Grid *grid;
         FVM::RadialGrid *radialGrid;
         ADAS *adas;
@@ -40,14 +40,16 @@ namespace DREAM
         real_t m_i_beam;  // Beam ion mass
         real_t beamPower; // Total beam power
         FVM::Interpolator1D *j_B_profile;
-        real_t I_B;       // Total beam current
-        real_t Z0;        // Initial charge state
-        real_t Zion;      // Ion charge state
-        bool TCVGaussian; // Flag for Gaussian profile
+        FVM::Interpolator1D *Power_Profile; // Beam power profile
+        real_t I_B;                         // Total beam current
+        real_t Z0;                          // Initial charge state
+        real_t Zion;                        // Ion charge state
+        bool TCVGaussian;                   // Flag for Gaussian profile
 
         // Tokamak parameters
         real_t R0;           // Major radius
         real_t plasmaVolume; // Plasma volume
+        real_t beamVolume;   // Beam volume
 
         // Grid resolution parameters
         len_t nr;             // Number of radial points
@@ -64,6 +66,7 @@ namespace DREAM
         real_t *NBIHeatTerm; // Stored heating term values
         real_t *Deposition_profile;
         real_t *Deposition_profile_times_Vprime;
+        real_t *dV_beam_prime_tot;
         real_t *H_r_dTe;
         real_t *H_r_dni;
         real_t *H_r_dTi;
@@ -92,9 +95,9 @@ namespace DREAM
             const real_t P0[3], const real_t n[3],
             real_t Ti_beam, real_t m_i_beam,
             real_t beamPower,
-            FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0, bool TCV_gaussian);
+            FVM::Interpolator1D *j_B_profile, real_t Z0, real_t Zion, real_t R0, bool TCV_gaussian, FVM::Interpolator1D *Power_Profile);
         ~NBIElectronHeatTerm();
-        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns) override;
+        virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *unknowns) override;
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t *rhs) override;
         virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *x) override;
         virtual void SetVectorElements(real_t *rhs, const real_t *x) override;
@@ -102,7 +105,7 @@ namespace DREAM
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
 
         // Calculation methods
-        void ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t ni, real_t Ti, real_t &lambda_s, real_t &dlambda_dI, real_t &dlambda_dne);
+        void ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t ni, real_t Ti, real_t &lambda_s, real_t &dlambda_dI, real_t &dlambda_dne, real_t &dI_dni, real_t &dI_dTi, real_t &dI_dTe);
         void ComputeDepositionProfile(FVM::UnknownQuantityHandler *unknowns);
         int_t CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t theta_B);
         void CartesianToCylindrical(real_t x, real_t y, real_t z, const real_t P0[3], const real_t n[3], real_t &r, real_t &theta, real_t &s);
