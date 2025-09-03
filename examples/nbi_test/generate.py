@@ -27,7 +27,7 @@ Ip_initial = 120e5  # Initial plasma current [A]
 TMAX = 1e-6         # Simulation time [s]
 
 #Tokamak parameters - ROME
-NR = 50              # Number of radial points
+NR = 100              # Number of radial points
 B0 = 5              # Magnetic field [T]
 a = 0.23             # Plasma minor radius [m]
 b = 0.23           # Wall radius [m]
@@ -61,9 +61,25 @@ ds.timestep.setTmax(TMAX)
 
 
 Ti_profile = 250   # constant 250 eV
-# Add ionized deuterium
-ds.eqsys.n_i.addIon(name='D_core', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_i_profile, r=r, T=Ti_profile)
-#ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=v, T=1)
+
+##Add 2 sets of density profiles, one for each charge state
+nr = len(r)
+nD_tot = n_i_profile             
+n_charge = np.vstack([
+    nD_tot,               
+    nD_tot          
+])
+ds.eqsys.n_i.addIon(
+    name='D',
+    Z=1,
+    iontype=Ions.IONS_DYNAMIC,   
+    n=n_charge,                  
+    r=r,
+    T=Ti_profile
+)
+
+
+#ds.eqsys.n_i.addIon(name='D_core', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_i_profile, r=r, T=Ti_profile)
 
 
 # Initial current / E-field setup
@@ -127,6 +143,7 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.solver.setVerbose(True)
 # Include fluid
 ds.other.include('fluid')
+
 print("Running DREAM simulation...")
 ds.save('settings_nbi.h5')
 runiface(ds, 'output_nbi.h5')
