@@ -22,6 +22,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from numbers import Number
 from DREAM.Settings.Equations.EquationException import EquationException
 from ... DREAMException import DREAMException
 
@@ -548,7 +549,7 @@ class IonSpecies:
 
         if init_equil:
             # If scalar...
-            if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+            if isinstance(n, Number) or (type(n) == np.ndarray and n.size == 1):
                 r = interpr if interpr is not None else np.array([0])
                 N = np.zeros((r.size,))
                 N[:] = n

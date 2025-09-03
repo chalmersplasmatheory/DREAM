@@ -115,7 +115,7 @@ class DataObject:
         if self.type == DATA_TYPE_H5STRING:
             # Convert string properly
             if (self.data.dtype == 'S1') or (str(self.data.dtype).startswith('|S')):  # Regular strings
-                return self.data[:].tostring().decode('utf-8')
+                return self.data[:].tobytes().decode('utf-8')
             elif self.data.dtype == 'object':  # New strings
                 if self.data.shape == ():
                     if type(self.data[()]) == str:

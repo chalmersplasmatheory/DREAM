@@ -50,6 +50,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.V_loop_wall_R0 = None
         self.V_loop_wall_t = None
         self.R0 = 0
+        self.I_wall_0 = 0
 
     def __getitem__(self, index):
         """
@@ -149,6 +150,13 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             raise EquationException("E_field: Unrecognized boundary condition type: {}".format(bctype))
 
 
+    def setInitialWallCurrent(self, I_wall_0):
+        """
+        Set the initial wall current.
+        """
+        self.I_wall_0 = I_wall_0
+
+
     def setType(self, ttype):
         r"""
         Set the type of equation to use for evolving the electric field. The
@@ -205,12 +213,16 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                     self.inverse_wall_time = float(self.inverse_wall_time[0])
                 if 'R0' in data['bc']:
                     self.R0 = float(data['bc']['R0'])
+                if 'I_wall_0' in data['bc']:
+                    self.I_wall_0 = float(data['bc']['I_wall_0'])
             elif self.bctype == BC_TYPE_TRANSFORMER:
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
                 if not np.isscalar(self.inverse_wall_time):
                     self.inverse_wall_time = float(self.inverse_wall_time[0])
                 if 'R0' in data['bc']:
                     self.R0 = float(data['bc']['R0'])
+                if 'I_wall_0' in data['bc']:
+                    self.I_wall_0 = float(data['bc']['I_wall_0'])
 
                 self.V_loop_wall_R0 = data['bc']['V_loop_wall']['x']
                 self.V_loop_wall_t  = data['bc']['V_loop_wall']['t']
@@ -255,9 +267,11 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 data['bc']['inverse_wall_time'] = self.inverse_wall_time
                 data['bc']['R0'] = self.R0
+                data['bc']['I_wall_0'] = self.I_wall_0
             elif self.bctype == BC_TYPE_TRANSFORMER:
                 data['bc']['inverse_wall_time'] = self.inverse_wall_time
                 data['bc']['R0'] = self.R0
+                data['bc']['I_wall_0'] = self.I_wall_0
                 data['bc']['V_loop_wall'] = {
                         'x': self.V_loop_wall_R0,
                         't': self.V_loop_wall_t
@@ -295,15 +309,19 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 self._verifySettingsPrescribedScalarData()
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 if not np.isscalar(self.inverse_wall_time):
-                    raise EquationException("E_field: The specified inverse wall time is not a scalar: {}".format(self.inverse_wall_time))
+                    raise EquationException(f"E_field: The specified inverse wall time is not a scalar: {self.inverse_wall_time}.")
                 if not np.isscalar(self.R0) and not self.R0<0:
-                    raise EquationException("E_field: The specified major radius must be scalar and non-negative: R0 = {}".format(self.R0))
+                    raise EquationException(f"E_field: The specified major radius must be scalar and non-negative: R0 = {self.R0}.")
+                if not np.isscalar(self.I_wall_0):
+                    raise EquationException(f"E_field: The specified initial wall current must be a scalar: I_wall_0 = {self.I_wall_0}.")
             elif self.bctype == BC_TYPE_TRANSFORMER:
                 self._verifySettingsPrescribedScalarData()
                 if not np.isscalar(self.inverse_wall_time):
                     raise EquationException("E_field: The specified inverse wall time is not a scalar: {}".format(self.inverse_wall_time))
                 if not np.isscalar(self.R0) and not self.R0<0:
                     raise EquationException("E_field: The specified major radius must be scalar and non-negative: R0 = {}".format(self.R0))
+                if not np.isscalar(self.I_wall_0):
+                    raise EquationException(f"E_field: The specified initial wall current must be a scalar: I_wall_0 = {self.I_wall_0}.")
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 
