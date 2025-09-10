@@ -45,6 +45,7 @@ real_t BootstrapElectronDensityTerm::GetPartialCoefficient(len_t ir, len_t deriv
     real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
 
     real_t dCoefficient = dl31;
+    // IE: Shouldn't the stuff in the else statement happen regardless?
     if (!bs->includeIonTemperatures) {
         dCoefficient *= bs->Tcold[ir];
         if (derivId == id_Tcold)

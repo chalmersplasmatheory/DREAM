@@ -73,10 +73,12 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         // this high-aspect ratio approximation for qR0 seems to match better with Redl-Sauter
         // than calculating it via the total current (also simpler for initialization)
         qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
+        // IE: Do we want something else for a stellarator?
    }
 
     // locate the main ion index
     bool isFound = false;
+    // IE: is this (below) the best practice?
     for (len_t iZ = 0; iZ < ions->GetNZ(); iZ++)
         if (ions->GetZ(iZ) == 1) {
             iZMain = iZ;
