@@ -113,7 +113,6 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         IonHandler *ions;
-        BootstrapCurrent *bootstrap;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
         // indices to unknownquantities
@@ -136,6 +135,7 @@ namespace DREAM {
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
         SPIHandler *SPI;
+        BootstrapCurrent *bootstrap;
 
     public:
         OtherQuantityHandler(
