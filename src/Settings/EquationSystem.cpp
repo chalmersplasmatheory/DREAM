@@ -72,7 +72,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
     // Timing information
-    eqsys->SetTiming(s->GetBool("/output/timingstdout"), s->GetBool("/output/timingfile"));
+    eqsys->SetTiming(s->GetBool("output/timingstdout"), s->GetBool("output/timingfile"));
 
     // Initialize from previous simulation output?
     const real_t t0 = ConstructInitializer(eqsys, s);
@@ -131,10 +131,10 @@ void SimulationGenerator::ConstructEquations(
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
-
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
+    SPIHandler* SPI;
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
-        SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
+        SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
         eqsys->SetSPIHandler(SPI);
     }
 
@@ -161,6 +161,10 @@ void SimulationGenerator::ConstructEquations(
             eqsys->GetREFluid()->GetLnLambda()
         );
         eqsys->SetBootstrap(bootstrap);
+    }
+
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        SPI->SetREFluid(eqsys->GetREFluid());
     }
 
     // Post processing handler

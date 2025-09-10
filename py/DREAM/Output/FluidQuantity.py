@@ -11,6 +11,9 @@ from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
 
+anim_contours = None
+
+
 class FluidQuantity(UnknownQuantity):
     
 
@@ -151,6 +154,16 @@ class FluidQuantity(UnknownQuantity):
         else:
             return self.data[t,r]
 
+
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        return 1
+
         
     def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, unit='s', **kwargs):
         """
@@ -213,7 +226,7 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
         """
         Plot the radial profile of this quantity revolved over a 
         poloidal cross section at the specified time step. 
@@ -263,14 +276,17 @@ class FluidQuantity(UnknownQuantity):
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
             if logscale:
-                cb.ax.set_ylabel('$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
+                cb.ax.set_ylabel(r'$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
             else:
                 cb.ax.set_ylabel('{}'.format(self.getTeXName()))
             
         if show:
             plt.show(block=False)
             
-        return ax, cb
+        if return_contours:
+            return ax, cb, cp
+        else:
+            return ax, cb
 
         
     def animatePoloidal(self, t=None, repeat=False, repeat_delay=None, speed=None, dpi=100, save=None,**kwargs):
@@ -285,19 +301,28 @@ class FluidQuantity(UnknownQuantity):
         :param float dpi: animation resolution
         :param str save: title of the file (if any) into which the animation is saved
         """
+        global anim_contours
         
         fig, ax=plt.subplots(1,1)
         
         if t is None:
             t=range(len(self.grid.t))
             
-        ax,cb=self.plotPoloidal(show=False,t=0,**kwargs)
+        ax, cb, anim_contours = self.plotPoloidal(show=False, t=0, return_contours=True, **kwargs)
         
         def update_ani(t, fq, ax):
-            ax.clear()
-            ax=fq.plotPoloidal(colorbar=False, show=False,t=t,**kwargs)
-        
+            global anim_contours
+
+            for c in anim_contours.collections:
+                c.remove()
+
+            anim_contours, cb = fq.plotPoloidal(ax=ax, show=False, t=t, colorbar=False, **kwargs)
+
+            return anim_contours
             
+        if speed is None:
+            speed = 50
+
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=t,
             repeat=repeat, repeat_delay=repeat_delay, interval=speed,
@@ -305,7 +330,7 @@ class FluidQuantity(UnknownQuantity):
         
         if save:
             # Make animation
-            writer = animation.FFMpegFileWriter(fps=fps)
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
             writer.setup(fig, save, dpi=dpi)
             ani.save(save, writer=writer)
             print("Done saving video to '{}'.".format(save))
@@ -466,6 +491,44 @@ class FluidQuantity(UnknownQuantity):
             plt.show(block=False)
 
         return ax
+
+
+    def lineIntegrated(self, t=None, x0=np.array([0,10,0]), n = np.array([0,-1,0]), lmax = 20, nl = 1000, normaliseToPathLength=False):
+        """
+        Evaluate the line integral of this fluid quantity along a specified line.
+        
+        :param t: Time steps to evaluate the line integrated density for. If ``None``, the line integral is calculated for all time steps. May be a slice
+        :param x0: Starting point for the line to integrate along, in cartesian coordinates centered at the magnetic axis at pho=0 (same coordinates as used to track the SPI shards). One probably wants to set this point outside the plasma (the integrand is set to zero outside the plasma).
+        :param n: Vector specifying the direction to integrate along
+        :param lmax: Length of the line to integrate over.
+        :param nl: number of points along the line used for the numerical integration
+        :param normaliseToPathLength: If ``True``, divide the integral by the length of the part of the line residing inside the plasma
+        """
+        if t is None:
+            t=slice(t)
+
+        # define line in Cartesian coordinates (SPI coordinates)
+        l = np.linspace(0,lmax,nl)
+        dl = l[1]-l[0]
+        x = x0[0] + n[0]*l
+        y = x0[1] + n[1]*l
+        z = x0[2] + n[2]*l
+
+        # get r coordinates for all points along the line
+        r, _, _ = self.output.grid.eq.getRThetaPhiFromCartesian(x,y,z)
+
+        # compute line-integral
+        lineIntegral = np.zeros((len(self.grid.t[t]),1))
+        for i in range(nl):
+            if r[i]<self.grid.a:
+                lineIntegral+=self.data.data[t, (r[i]>self.grid.r_f[:-1]) & (r[i]<self.grid.r_f[1:])]*dl
+        
+        # divide by path length?
+        if normaliseToPathLength:
+            L = np.max(l[r<self.grid.a]) - np.min(l[r<self.grid.a])
+            return lineIntegral / L
+        
+        return lineIntegral
 
 
     def dumps(self, r=None, t=None):

@@ -60,6 +60,7 @@ QuantityData::~QuantityData() {
 
     delete [] olddata[0];
     delete [] olddata;
+	delete [] oldtime;
     delete [] data;
     delete [] idxVec;
 }
@@ -166,6 +167,14 @@ void QuantityData::RollbackSaveStep() {
     }
 
     this->nOldSaved--;
+}
+
+/**
+ * Restore solution to the value of the previous time step.
+ */
+void QuantityData::RestoreValue() {
+	for (len_t i = 0; i < this->nElements; i++)
+		this->data[i] = this->olddata[0][i];
 }
 
 /**

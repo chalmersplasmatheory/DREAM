@@ -19,6 +19,7 @@
 #include "DREAM/Equations/Fluid/ElectronHeatTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 
 
 using namespace DREAM;
@@ -27,6 +28,7 @@ using namespace DREAM;
 #define MODULENAME "eqsys/T_cold"
 #define MODULENAME_SPI "eqsys/spi"
 #define MODULENAME_ION "eqsys/n_i"
+#define MODULENAME_NRE "eqsys/n_re"
 
 
 /**
@@ -35,7 +37,7 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-
+    s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
 
@@ -121,6 +123,19 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
+
+    // Check if halo region heat losses should be included
+    bool lcfs_user_input_psi = (len_t)s->GetInteger(MODULENAME_NRE  "/lcfs_user_input_psi");
+	real_t lcfs_psi_edge_t0 = s->GetReal(MODULENAME_NRE "/lcfs_psi_edge_t0");
+
+    bool parallel_losses = s->GetBool(MODULENAME "/halo_region_losses");
+    if (parallel_losses) {
+        HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
+        oqty_terms->T_cold_halo = Par;
+        Op1->AddTerm(Par); // Add the term for parallel losses
+    }
+
+
     oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
 
@@ -174,22 +189,22 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
     
     len_t nZSPInShard;
-    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition"); 
+    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition");
+    OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = (enum OptionConstants::eqterm_spi_abl_ioniz_mode)s->GetInteger(MODULENAME_SPI "/abl_ioniz"); 
     const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME_ION "/SPIMolarFraction", 1, &nZSPInShard);
     
-    // If we use heat absorbtion based on the cloud size, 
-    // this heat contains the energy required for ionization, 
-    // so in that case we shouldn't have another ionization loss term
-    // Otherwise, add one ionization loss term for every species the pellet consists of
-    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+    // Add one ionization loss term for every species the pellet consists of
+    // Note that, when accounting for the heat absorbed in the neutral cloud,
+    // this energy is currently being redeposited where the material is deposited,
+    // and we therefore need these terms even when heat absorption is included.
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_abl_ioniz_mode!=OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL){
         len_t offset=0;
         len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         const len_t nZ = ionHandler->GetNZ();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[offset]>0){
                 Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(),
-                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, 
-                    OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT));
+                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, spi_abl_ioniz_mode));
                 offset+=nShard;
             }else {
             	offset+=1;
@@ -288,13 +303,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     /**
      * Load initial electron temperature profile.
-     * If the input profile is not explicitly set, then 'SetInitialValue()' is
-     * called with a null-pointer which results in T=0 at t=0
      */
     real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    if (Tcold_init == nullptr)
+        throw SettingsException("No initial data loaded for T_cold (from " MODULENAME "/init). Perhaps it has not been provided correctly?" );
     eqsys->SetInitialValue(id_T_cold, Tcold_init);
     delete [] Tcold_init;
-
 
     ConstructEquation_W_cold(eqsys, s);
 }

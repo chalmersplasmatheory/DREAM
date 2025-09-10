@@ -16,7 +16,9 @@
 
 using namespace DREAM;
 
-
+/**
+ * Constructor.
+ */
 RadiatedPowerTerm::RadiatedPowerTerm(
     FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, 
 	ADAS *adas, NIST *nist, AMJUEL* amjuel,
@@ -48,6 +50,18 @@ RadiatedPowerTerm::RadiatedPowerTerm(
         * sqrt(Constants::me*c*c*Constants::ec*2.0/M_PI);
     this->bremsRel1 = 19.0/24.0; // relativistic-maxwellian correction
     this->bremsRel2 = 5.0/(8.0*M_SQRT2)*(44.0-3.0*M_PI*M_PI); // e-e brems correction
+
+	// used for storing as OtherQuantities
+	Prad = new real_t[grid->GetNCells()];
+	Pion = new real_t[grid->GetNCells()];
+}
+
+/**
+ * Destructor.
+ */
+RadiatedPowerTerm::~RadiatedPowerTerm() {
+	delete [] Prad;
+	delete [] Pion;
 }
 
 
@@ -79,8 +93,11 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t *n_i    = unknowns->GetUnknownData(id_ni);
     
-    for (len_t i = 0; i < NCells; i++)
-            weights[i] = 0;
+    for (len_t i = 0; i < NCells; i++) {
+        weights[i] = 0;
+		Prad[i] = 0;
+		Pion[i] = 0;
+	}
 
     for(len_t iz = 0; iz<nZ; iz++){
         ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
@@ -96,7 +113,10 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 
             	if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){//Ly-opaque deuterium radiation from AMJUEL
 		            // Radiated power term
-		            Li = amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);// includes both line radiation and ionization potential energy difference
+		            // includes both line radiation and ionization potential energy difference
+		            // This term should be strictly larger than only the contribution from the ionization potential energy difference alone, 
+		            // i.e. the ionization rate*ionization energy, which the AMJUEL fit sometimes can give, so we manually enforce this lower limit
+	                Li = std::max(Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0), amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]));
 		            
 		            // The AMJUEL coefficients for recombination radiation do not contain bremsstrahlung,
 		            // but are on the other hand adjusted for repeated excitation/deexcitation and three-body recombination
@@ -136,11 +156,17 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 
                 }
 
-                real_t cont = n_i[indZ*NCells + i]*(Li+Bi);
-                if (ionScaleFactor != nullptr)
-                    weights[i] += ionScaleFactor[indZ] * cont;
-                else
-                    weights[i] += cont;
+				real_t nij = n_i[indZ*NCells + i];
+
+                if (ionScaleFactor != nullptr) {
+                    weights[i] += ionScaleFactor[indZ] * nij * (Li + Bi);
+					Prad[i] += ionScaleFactor[indZ] * n_cold[i] * nij * Li;
+					Pion[i] += ionScaleFactor[indZ] * n_cold[i] * nij * Bi;
+                }else{
+                    weights[i] += nij * (Li + Bi);
+					Prad[i] += n_cold[i] * nij * Li;
+					Pion[i] += n_cold[i] * nij * Bi;
+				}
             }
         }
     }
@@ -157,7 +183,9 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
         for(len_t i=0; i<NCells; i++){
             real_t ionTerm = ionHandler->GetZeff(i)*ionHandler->GetFreeElectronDensityFromQuasiNeutrality(i);
             real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i];
-            weights[i] += bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
+            real_t L = bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
+			weights[i] += L;
+			Prad[i] += L * n_cold[i];
         }
 }
 
@@ -173,7 +201,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t *n_i    = unknowns->GetUnknownData(id_ni);
-
+    
     if(derivId == id_ni){
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
@@ -189,7 +217,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                Li =  amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);
+		            
+		                Li = std::max(Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0), amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]));
 	                    Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
 				        
 				        Bi = 0;
@@ -260,7 +289,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                dLi =  amjuel->getIonizLossLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+		            
+		            	if (Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0) > amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]))
+		            	    dLi = Constants::ec*amjuel->getIonizLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0);
+		            	else
+    		                dLi = amjuel->getIonizLossLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+		                
 	                    dLi += amjuel->getRecRadLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
 				        
 				        dBi = 0;
@@ -268,8 +302,6 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
 				        if(Z0>0){       // Recombination gain
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
-				            if(includePRB)
-				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
                         
                         real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);
@@ -318,14 +350,22 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
-		                dLi =  amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
-		                dLi += amjuel->getRecRadLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+		            	
+		            	            
+    	                if (Constants::ec*amjuel->getIonizLyOpaque(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0) > amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]))
+		            	    dLi = Constants::ec*amjuel->getIonizLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i])*nist->GetIonizationEnergy(Zs[iz],Z0);
+    	                else
+    		                dLi = amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+    		            
+    		            dLi += amjuel->getRecRadLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 				        
 				        dBi = 0;
 				        // Binding energy rate term
 				        if(Z0>0){       // Recombination gain
-				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
+				            dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+				            if(includePRB)
+				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);				            
 			            }
 
                         real_t cont = n_i[indZ*NCells + i]*(dLi+dBi);

@@ -79,6 +79,27 @@ void NumericBRadialGridGenerator::Init(
 NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
     if (this->rf_provided != nullptr)
         delete [] this->rf_provided;
+	
+	if (this->input_r != nullptr)
+		delete [] this->input_r;
+	
+	if (this->dataB != nullptr)
+		delete [] this->dataB;
+	
+	if (this->theta != nullptr)
+		delete [] this->theta;
+	if (this->R != nullptr)
+		delete [] this->R;
+	if (this->Z != nullptr)
+		delete [] this->Z;
+	if (this->psi != nullptr)
+		delete [] this->psi;
+	if (this->dataBR != nullptr)
+		delete [] this->dataBR;
+	if (this->dataBZ != nullptr)
+		delete [] this->dataBZ;
+	if (this->dataBphi != nullptr)
+		delete [] this->dataBphi;
 
     if (this->spline_R != nullptr) {
         gsl_spline_free(this->spline_psi);
@@ -87,13 +108,11 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         gsl_spline2d_free(this->spline_BR);
         gsl_spline2d_free(this->spline_BZ);
         gsl_spline2d_free(this->spline_Bphi);
+		gsl_spline2d_free(this->spline_B);
     }
 
     gsl_interp_accel_free(this->acc_theta);
     gsl_interp_accel_free(this->acc_r);
-
-	delete [] this->BtorGOverR0;
-	delete [] this->BtorGOverR0_f;
 }
 
 
@@ -181,7 +200,7 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 		this->dataBZ = this->addR0DataPoint(this->dataBZ, this->R, this->npsi, this->ntheta);
 		this->dataBphi = this->addR0DataPoint(this->dataBphi, this->R, this->npsi, this->ntheta);
 
-		this->Z = this->addR0DataPoint(this->Z, this->R, this->npsi, this->ntheta);
+		this->Z = this->addR0DataPoint(this->Z, this->R, this->npsi, this->ntheta, 0); // <----
 		// The radial grid should be modified last...
 		this->R = this->addR0DataPoint(this->R, this->R, this->npsi, this->ntheta, 0);
 
@@ -205,6 +224,23 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 
 		// r grid has now been extended...
 		this->ntheta++;
+	} else {
+		// Ensure that values at theta=0 and theta=2*pi are identical
+		for (len_t ir = 0; ir < this->npsi; ir++) {
+			len_t idx0 = 0*this->npsi + ir;
+			len_t idx1 = (this->ntheta-1)*this->npsi + ir;
+
+			if (this->R[idx0] != this->R[idx1])
+				this->R[idx1] = this->R[idx0];
+			if (this->Z[idx0] != this->Z[idx1])
+				this->Z[idx1] = this->Z[idx0];
+			if (this->dataBR[idx0] != this->dataBR[idx1])
+				this->dataBR[idx1] = this->dataBR[idx0];
+			if (this->dataBZ[idx0] != this->dataBZ[idx1])
+				this->dataBZ[idx1] = this->dataBZ[idx0];
+			if (this->dataBphi[idx0] != this->dataBphi[idx1])
+				this->dataBphi[idx1] = this->dataBphi[idx0];
+		}
 	}
 
     // Evaluate minor radius in outer midplane
@@ -238,6 +274,7 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     for (len_t i = 0; i < this->npsi; i++) {
         bool minFound = false, maxFound = false;
 
+		len_t maxk=0, mink=0;
         for (len_t j = 1; j < this->ntheta; j++) {
             len_t k  = j*npsi+i;
             len_t km = k-npsi, kp = k+npsi;
@@ -262,9 +299,15 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                     throw FVMException(
                         "The numeric magnetic field has more than one maximum "
                         "along at least one magnetic field line."
+						"ipsi = " LEN_T_PRINTF_FMT
+						", itheta(1) = " LEN_T_PRINTF_FMT
+						", itheta(2) = " LEN_T_PRINTF_FMT,
+						i, (k-i)/npsi, (maxk-i)/npsi
                     );
-                else
+                else {
                     maxFound = true;
+					maxk = k;
+				}
             } else if (this->dataB[km] > this->dataB[k] &&
                        this->dataB[kp] > this->dataB[k] &&
                        dB > TOLERANCE) {
@@ -273,10 +316,16 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                 if (minFound)
                     throw FVMException(
                         "The numeric magnetic field has more than one minimum "
-                        "along at least one magnetic field line."
+                        "along at least one magnetic field line. "
+						"ipsi = " LEN_T_PRINTF_FMT
+						", itheta(1) = " LEN_T_PRINTF_FMT
+						", itheta(2) = " LEN_T_PRINTF_FMT,
+						i, (k-i)/npsi, (mink-i)/npsi
                     );
-                else
+                else {
                     minFound = true;
+					mink = k;
+				}
             }
         }
     }
@@ -611,7 +660,7 @@ void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *t
 	real_t rb = ra + 2*lengthScale;
 	if(rb>r_f[GetNr()]){
 	    ra = std::max(0.0, ra -( rb - r_f[GetNr()])); 
-	    rb -= rb - r_f[GetNr()]; 
+	    rb = r_f[GetNr()]; 
 	}
 	real_t rhoa, rhob;
 	do {
@@ -740,6 +789,94 @@ void NumericBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, rea
         gradr[1] = 0;
         gradr[2] = 0;
     }
+}
+
+
+/**
+ * Return a list of flux surface R coordinates
+ * on the simulation radial grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
+	const len_t nr = this->GetNr();
+	real_t *R = new real_t[nr * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++)
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			R[i] = ROverR0AtTheta(ir, this->theta[j]) * this->Rp - this->Rp;
+
+	return R;
+}
+
+
+/**
+ * Return a list of flux surface R coordinates
+ * on the simulation radial grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
+	const len_t nr = this->GetNr();
+	real_t *R = new real_t[(nr+1) * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++)
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			R[i] = ROverR0AtTheta_f(ir, this->theta[j]) * this->Rp - this->Rp;
+
+	return R;
+}
+
+
+/**
+ * Returns a list of flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
+	const len_t nr = this->GetNr();
+	real_t *Z = new real_t[nr * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		for (len_t ir = 0; ir < nr; ir++, i++) {
+			Z[i] = gsl_spline2d_eval(
+				this->spline_Z, this->r[ir], this->theta[j],
+				this->acc_r, this->acc_theta
+			) - this->Zp;
+		}
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list of flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
+	const len_t nr = this->GetNr();
+	real_t *Z = new real_t[(nr+1) * this->ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		for (len_t ir = 0; ir < nr+1; ir++, i++) {
+			Z[i] = gsl_spline2d_eval(
+				this->spline_Z, this->r_f[ir], this->theta[j],
+				this->acc_r, this->acc_theta
+			) - this->Zp;
+		}
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list of poloidal angles on which the flux
+ * surfaces returned by 'GetFluxSurfaceR()' and 'GetFluxSurfaceZ()'
+ * are defined.
+ */
+const real_t *NumericBRadialGridGenerator::GetPoloidalAngle() {
+	real_t *theta = new real_t[ntheta];
+	for (len_t i = 0; i < ntheta; i++)
+		theta[i] = this->theta[i];
+	
+	return theta;
 }
 
 

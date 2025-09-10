@@ -44,6 +44,8 @@ check_petsc_requires_mpi(PETSC_WITH_MPI)
 # Get git commit hash
 include(GetGitRevisionDescription)
 get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+git_local_changes(GIT_HAS_CHANGES)
+git_time(GIT_TIME)
 
 # Generate 'config.h'
 configure_file(
@@ -96,6 +98,11 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O3)
     endif()
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-ignored-qualifiers)
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+    endif()
 else ()
     message(WARNING "You are using an un-tested compiler.")
 endif ()
@@ -110,7 +117,7 @@ add_subdirectory(src)
 add_subdirectory(iface)
 
 if (DREAM_BUILD_PYFACE)
-    add_subdirectory(pyface)
+    add_subdirectory(dreampyface/cxx)
 endif()
 
 if (DREAM_BUILD_TESTS)

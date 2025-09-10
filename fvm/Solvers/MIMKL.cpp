@@ -3,7 +3,6 @@
  * factorization (i.e. direct inversion).
  */
 
-#include <omp.h>
 #include <petscmat.h>
 #include <petscvec.h>
 #include "FVM/config.h"
@@ -29,10 +28,6 @@ MIMKL::MIMKL(const len_t n, bool verbose) {
  * Destructor.
  */
 MIMKL::~MIMKL() {
-    KSPDestroy(&this->ksp);
-    VecDestroy(&this->x);
-
-    delete [] this->x_data;
 }
 
 /**

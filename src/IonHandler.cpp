@@ -239,8 +239,6 @@ const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
     return n_i[nr*Zind + ir];
 }
 
-
-
 // Returns the densities of ions which have Z index "ir" at radial index ir, for each Z0 (size Z0+1).
 const real_t* IonHandler::GetIonDensity(len_t ir, len_t iZ) const{
     real_t *niReturn = new real_t[1+Zs[iZ]];
@@ -264,6 +262,17 @@ const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
     return niReturn;
 }
 
+/**
+ * Calculates the total mass density of the ions.
+ */
+const real_t IonHandler::GetTotalIonMassDensity(const len_t ir) const {
+	real_t rho = 0;
+	for (len_t iZ = 0; iZ < this->nZ; iZ++)
+		for (len_t Z0 = 0; Z0 <= this->Zs[iZ]; Z0++)
+			rho += this->GetIonSpeciesMass(iZ) * this->GetIonDensity(ir, iZ, Z0);
+	
+	return rho;
+}
 
 /**
  * Calculates the density of tritium in the plasma.

@@ -554,6 +554,65 @@ In the below example we disable the ion jacobian only in the runaway distributio
    orders-of-magnitude in certain situations. However, as with all approximations 
    to the jacobian, there is a risk of deteriorated stability.
 
+Prescribed distribution function
+********************************
+It is possible to run DREAM with a prescribed distribution function, which can
+be useful for studying the effect of different distribution function moments on
+the fluid equations (e.g. the fast electron impact ionization on the ion
+densities). The distribution function can be prescribed in time, space, momentum
+and pitch. Only one function call is needed to prescribe the distribution
+function::
+
+   ds.eqsys.f_re.prescribe(f, t, r, xi, p)
+
+It is also possible to prescribe the distribution function in cylindrical
+momentum coordinates, i.e.::
+
+   ds.eqsys.f_re.prescribe(f, t, r, pperp=pperp, ppar=ppar)
+
+.. note::
+
+   Prescribing the distribution function is currently only possible for the
+   runaway electron distribution function. The hot electron distribution gives
+   rise to additional moments which would require additional care to define
+   properly in prescribed mode.
+
+Example
+-------
+
+.. code-block:: python
+
+   from DREAM.Formulas.Distribution import getAvalancheDistribution
+
+   ds = DREAMSettings()
+   ...
+   # Grid definition
+   np = 100
+   nxi = 40
+   pMin, pMax = 1, 100
+
+   ds.runawaygrid.setEnabled(True)
+   ds.runawaygrid.setNp(np)
+   ds.runawaygrid.setNxi(nxi)
+   ds.runawaygrid.setPmin(pMin)
+   ds.runawaygrid.setPmax(pMax)
+
+   # Distribution function
+   f   = np.zeros((nt, nr, nxi, np))
+   pp  = np.linspace(pMin, pMax, np+1)
+   xip = np.linspace(-1, 1, nxi+1)
+   p   = 0.5 * (pp[1:] + pp[:-1])
+   xi  = 0.5 * (xip[1:] + xip[:-1])
+
+   # Avalanche distribution parameters
+   E = 2    # E/Ec
+   Ztot = 8 # Total plasma charge (c.f. [Embreus JPP 84 (2018)])
+   nre = 1e16
+
+   f[0,0,:] = getAvalancheDistribution(p=p, xi=xi, E=E, Z=Ztot, nre=nre)
+
+   ds.eqsys.f_re.prescribe(f=f, t=[0], r=[0], xi=xi, p=p)
+
 Radial Transport
 ****************
 A radial transport term can be added to the Fokker-Planck equation. The general
@@ -669,6 +728,103 @@ If a constant and uniform perturbation level is desired, the more compact syntax
 can also be used. In this example, the magnetic perturbation
 :math:`\delta B/B = 10^{-3}` is used in every time step and at all radial
 positions.
+
+
+Frozen current mode
+-------------------
+In the frozen current mode, a target plasma current :math:`I_{\rm p}` is
+prescribed by the user and an associated diffusive radial transport with
+coefficient :math:`D_0` is introduced. In each time step, DREAM will then adjust
+:math:`D_0` such that :math:`I_{\rm p}` exactly matches its prescribed value.
+This is particularly useful for simulations of experiments, where the plasma
+current is often accurately known, while the radial transport is generally
+poorly constrained by experimental measurements. This feature is inspired by a
+similar feature in the kinetic solver LUKE.
+
+Frozen current mode can be enabled on any transportable (particle) quantity by
+calling ``setFrozenCurrentMode()``. The call takes two mandatory parameters:
+(i) the type of transport to model, and (ii) the plasma current target.
+Additionally, two optional parameters may be specified: (iii) the time vector
+corresponding to the prescribed plasma current, if the latter is to vary in
+time, and (iv) the maximum permitted value of :math:`D_0` (default: 1000 m/s^2).
+
+If the prescribed plasma current is higher than what can be achieved with a
+diffusive transport (i.e. if :math:`I_{\rm p}` is below its prescribed value in
+the absence of radial transport), the diffusion coefficient is set to zero and
+the target plasma current is ignored.
+
+List of options
+^^^^^^^^^^^^^^^
+The radial diffusion coefficient used in the frozen current mode is generally
+written on the form
+
+.. math::
+   D_{rr}(r,p,\xi_0) = D_0h(r,p,\xi_0)
+
+where the function :math:`h(r,p,\xi_0)` can take different forms. The following
+forms for :math:`h(r,p,\xi_0)` are currently supported in DREAM:
+
++----------------------------------+-----------------------------------------+
+| Name                             | :math:`h(r,p,\xi_0)`                    |
++==================================+=========================================+
+| ``FROZEN_CURRENT_MODE_DISABLED`` | :math:`0`                               |
++----------------------------------+-----------------------------------------+
+| ``FROZEN_CURRENT_MODE_CONSTANT`` | :math:`1`                               |
++----------------------------------+-----------------------------------------+
+| ``FROZEN_CURRENT_MODE_BETAPAR``  | :math:`\beta_\parallel = v_\parallel/c` |
++----------------------------------+-----------------------------------------+
+
+Example
+^^^^^^^
+The following example illustrates how to use the frozen current mode:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3   # Plasma current target (A)
+   ds.eqsys.f_hot.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip
+   )
+
+If one wishes to prescribe a time-evolving plasma current, the following call
+can be made instead:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   # Time vector
+   t  = np.linspace(0, 2, 40)
+   # Plasma current target (A)
+   Ip = 800e3*np.linspace(0.2, 1, t.size)
+   ds.eqsys.f_hot.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip, Ip_presc_t=t
+   )
+
+In poorly confined plasmas, or situations where strong transport leads to
+unstable simulations, one may want to adjust the maximum diffusion coefficient:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3   # Plasma current target (A)
+   ds.eqsys.f_hot.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_BETAPAR,
+       Ip_presc=Ip, D_I_max=200
+   )
 
 
 Boundary conditions

@@ -2,8 +2,13 @@
  * Implementation of some screen I/O helper routines.
  */
 
-#include <omp.h>
+#include <string>
+#include <vector>
+#ifdef _OPENMP
+#	include <omp.h>
+#endif/*_OPENMP*/
 #include "DREAM/IO.hpp"
+#include "DREAM/Simulation.hpp"
 
 
 using namespace DREAM;
@@ -16,6 +21,25 @@ bool IO::message_checklist[MESSAGE_LAST] = {false};
     const std::string IO::PRINT_YES = "YES";
     const std::string IO::PRINT_NO  = "NO";
 #endif
+
+/* Vector for storing warnings emitted during the simulation. */
+std::vector<std::string> IO::emitted_warning_messages = std::vector<std::string>();
+Simulation *IO::simulation = nullptr;
+
+
+/**
+ * Initialize the DREAM::IO interface.
+ */
+void IO::Init(Simulation *sim) {
+	IO::simulation = sim;
+}
+
+/**
+ * De-initialize the DREAM::IO interface.
+ */
+void IO::Deinit() {
+	IO::simulation = nullptr;
+}
 
 /**
  * Print a single new-line character in the 'Info' channel.
@@ -73,13 +97,17 @@ bool IO::VerifyMessage(const message_t id) {
     else if (message_checklist[id])
         return false;
 
+#ifdef _OPENMP
     #pragma omp critical (DREAM_VerifyMessage)
     {
+#endif/*_OPENMP*/
         if (message_checklist[id] == false) {
             message_checklist[id] = true;
             retval = true;
         }
+#ifdef _OPENMP
     }
+#endif/*_OPENMP*/
 
     return retval;
 }

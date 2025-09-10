@@ -3,23 +3,33 @@ TEX=latexmk
 TEXF=-pdf -pdflatex="pdflatex" -outdir="pdf"
 BIB=biber
 
-all: bootstrap_current badaptive_timestep ampere_faraday discretisation dreicer heat-transport magnetic_compression psi0psi1evaluation SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
-
-bootstrap_current: bootstrap_current.pdf
+all: adaptive_timestep ampere_faraday bootstrap_current charge_states discretisation dreicer frozen-current heat-transport HyperresistivityFromPerturbation kinioniz_approx magnetic_compression psi0psi1evaluation RunawayTransportRechesterRosenbluth SPIcoordinates SPIDeltaSource SvenssonTransport theory trappedbc
 
 adaptive_timestep: adaptive_timestep.pdf
 
 ampere_faraday: ampere_faraday.pdf
 
+bootstrap_current: bootstrap_current.pdf
+
+charge_states: charge_states.pdf
+
 discretisation: discretisation.pdf
 
 dreicer: dreicer.pdf
 
+frozen-current: frozen-current.pdf
+
 heat-transport: heat-transport.pdf
+
+HyperresistivityFromPerturbation: HyperresistivityFromPerturbation.pdf
+
+kinioniz_approx: kinioniz_approx.pdf
 
 magnetic_compression: magnetic_compression.pdf
 
 psi0psi1evaluation: psi0psi1evaluation.pdf
+
+RunawayTransportRechesterRosenbluth: RunawayTransportRechesterRosenbluth.pdf
 
 SPIcoordinates: SPIcoordinates.pdf
 

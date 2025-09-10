@@ -1,7 +1,7 @@
 #ifndef _DREAM_EQUATION_SYSTEM_HPP
 #define _DREAM_EQUATION_SYSTEM_HPP
 
-namespace DREAM { class EquationSystem; }
+namespace DREAM { class EquationSystem; class Simulation; }
 
 #include <map>
 #include <string>
@@ -19,6 +19,7 @@ namespace DREAM { class EquationSystem; }
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
 #include "DREAM/Equations/BootstrapCurrent.hpp"
+#include "DREAM/Equations/RunawaySourceTermHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/FVMException.hpp"
@@ -31,6 +32,9 @@ namespace DREAM { class EquationSystem; }
 
 namespace DREAM {
     class EquationSystem {
+    public:
+        typedef void (*timestep_finished_func_t)(Simulation*);
+
     private:
         /// GRIDS
         /// NOTE: These are owned by the parent 'Simulation' object,
@@ -46,10 +50,13 @@ namespace DREAM {
         IonHandler *ionHandler=nullptr;
         Solver *solver=nullptr;
         TimeStepper *timestepper=nullptr;
+        Simulation *simulation=nullptr;
+		ExternalIterator *extiter=nullptr;
 
         FVM::UnknownQuantityHandler unknowns;
         std::vector<UnknownQuantityEquation*> unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
+		std::vector<len_t> external_unknowns;
 
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
@@ -59,6 +66,7 @@ namespace DREAM {
         SPIHandler *SPI = nullptr;
         BootstrapCurrent *bootstrap = nullptr;
         Settings *settings = nullptr;
+		std::vector<RunawaySourceTermHandler*> rsths;
 
         AnalyticDistributionRE *distRE = nullptr;
         AnalyticDistributionHottail *distHT = nullptr;
@@ -78,6 +86,9 @@ namespace DREAM {
         bool timingStdout = false;
         bool timingFile = false;
 
+        std::vector<timestep_finished_func_t> callbacks_timestepFinished;
+        std::vector<void*> callbacks_timestepFinished_data;
+
     public:
         EqsysInitializer *initializer=nullptr;
 
@@ -87,6 +98,9 @@ namespace DREAM {
         FVM::Grid *GetFluidGrid() { return this->fluidGrid; }
         FVM::Grid *GetHotTailGrid() { return this->hottailGrid; }
         FVM::Grid *GetRunawayGrid() { return this->runawayGrid; }
+
+        real_t GetCurrentTime() const { return this->currentTime; }
+        real_t GetMaxTime() const;
 
         enum OptionConstants::momentumgrid_type GetHotTailGridType()
         { return this->hottailGrid_type; }
@@ -115,8 +129,11 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
         IonHandler *GetIonHandler() { return this->ionHandler; }
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
+		std::vector<len_t> *GetExternallyIteratedUnknowns() { return &external_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
+        Simulation *GetSimulation() { return this->simulation; }
+        TimeStepper *GetTimeStepper() { return this->timestepper; }
 
         std::vector<real_t>& GetTimes() { return this->times; }
 
@@ -136,15 +153,15 @@ namespace DREAM {
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="");
+        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
         //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when
         // performance is not a concern
-        void SetOperator(len_t blockrow, const std::string&, FVM::Operator*, const std::string& desc="");
-        void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="");
-        void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="");
+        void SetOperator(len_t blockrow, const std::string&, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
 
         void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh) {
             this->cqh_hottail = cqh;
@@ -206,12 +223,15 @@ namespace DREAM {
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
+        void SetSimulation(Simulation *sim) { this->simulation = sim; }
+		void AddRunawaySourceTermHandler(RunawaySourceTermHandler *rsth) { this->rsths.push_back(rsth); }
 
-        void SaveSolverData(SFile *sf, const std::string& n) { this->solver->WriteDataSFile(sf, n); }
+        void SaveSolverData(SFile *sf, const std::string& n);
         void SaveTimings(SFile*, const std::string&);
 
         void Solve();
         // Info routines
+		void PrintExternallyIteratedUnknowns();
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();
 
@@ -219,6 +239,10 @@ namespace DREAM {
             this->timingStdout = stdout;
             this->timingFile = file;
         }
+
+        void TimestepFinished();
+        void RegisterCallback_TimestepFinished(timestep_finished_func_t);
+        void RegisterCallback_IterationFinished(Solver::iteration_finished_func_t);
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {

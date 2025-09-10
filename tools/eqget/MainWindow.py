@@ -14,6 +14,7 @@ from DREAM import DREAMIO
 from pathlib import Path
 
 import AUG
+import TCV
 import EqFile
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -45,6 +46,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if AUG.isAvailable():
             self.ui.cbTokamak.addItem('ASDEX Upgrade', AUG)
+        if TCV.isAvailable():
+            self.ui.cbTokamak.addItem('TCV', TCV)
 
         self.ui.cbTokamak.addItem('File', EqFile)
         self.tokamakChanged()
@@ -112,14 +115,15 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.ui.cbTokamak.currentText() == "File":
             self.ui.lblDischarge.setText("Equilibrium file")
             self.ui.btnLoad.setText("Open...")
-            enbl = False
+            
+            self.ui.lblTime.setText('Psi override')
+            self.ui.tbTime.setText('')
         else:
             self.ui.lblDischarge.setText("Discharge")
             self.ui.btnLoad.setText("Load")
-            enbl = True
 
-        self.ui.lblTime.setEnabled(enbl)
-        self.ui.tbTime.setEnabled(enbl)
+            self.ui.lblTime.setText('Time')
+            self.ui.tbTime.setText('1.0')
 
 
     def getShot(self):
@@ -140,7 +144,7 @@ class MainWindow(QtWidgets.QMainWindow):
         shot = self.getShot()
 
         if self.ui.cbTokamak.currentText() == "File" and not shot:
-            shot, _ = QFileDialog.getOpenFileName(self, caption="Open equilibrium file", filter="All supported equilibria (*.geqdsk *.h5 *.mat);;LUKE equilibrium (*.h5 *.mat);;GEQDSK file (*.geqdsk);;All files (*.*)")
+            shot, _ = QFileDialog.getOpenFileName(self, caption="Open equilibrium file", filter="All supported equilibria (*.eqdsk *.geqdsk *.h5 *.mat);;LUKE equilibrium (*.h5 *.mat);;EQDSK file (*.eqdsk *.geqdsk);;All files (*.*)")
             if not shot:
                 return
 
@@ -152,13 +156,17 @@ class MainWindow(QtWidgets.QMainWindow):
     def _load_internal(self, data):
         try:
             mod = self.ui.cbTokamak.currentData()
-            self.equil = mod.getLUKE(data)
+            time = self.ui.tbTime.text()
+            if not time: time = False
+            else: time = float(time)
+
+            self.equil = mod.getLUKE(data, time)
             print("Loaded '{}'...".format(data))
 
             self.plotFluxSurfaces()
             self.toggleEnabled(True)
         except Exception as ex:
-            QMessageBox.critical(self, 'Error loading data', f"The specified data file could not be loaded:\n\n{ex}")
+            QMessageBox.critical(self, 'Error loading data', f"The specified data file could not be loaded:\n\n{traceback.format_exc()}")
 
 
     def calculateShaping(self):

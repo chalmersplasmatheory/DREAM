@@ -12,6 +12,7 @@
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -39,6 +40,8 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
 
     s->DefineSetting(MODULENAME "/inittype", "Specifies how to initialize f_re from n_re.", (int_t)OptionConstants::UQTY_F_RE_INIT_FORWARD);
 	//s->DefineSetting(MODULENAME "/initavag0", "Gamma0 parameter in analytical avalanche distribution when initializing using this distribution.", (real_t)20.0);
+	
+	DefineDataR(MODULENAME, s, "E_init");
 }
 
 /**
@@ -49,6 +52,28 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
  * s:     Settings object describing how to construct the equations.
  */
 void SimulationGenerator::ConstructEquation_f_re(
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    FVM::Operator **transport
+) {
+	enum OptionConstants::uqty_distribution_mode mode =
+		(enum OptionConstants::uqty_distribution_mode)
+			s->GetInteger(MODULENAME "/mode");
+	
+	if (mode == OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED)
+		ConstructEquation_f_re_prescribed(
+			eqsys, s
+		);
+	else
+		ConstructEquation_f_re_kineq(
+			eqsys, s, oqty_terms, transport
+		);
+}
+
+/**
+ * Construct a kinetic equation for f_re.
+ */
+void SimulationGenerator::ConstructEquation_f_re_kineq(
     EquationSystem *eqsys, Settings *s,
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
     FVM::Operator **transport
@@ -98,7 +123,7 @@ void SimulationGenerator::ConstructEquation_f_re(
     if (!Op_nTot->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_tot, Op_nTot);
     if (!Op_ni->IsEmpty())
-        eqsys->SetOperator(id_f_re, id_n_i, Op_nTot);
+        eqsys->SetOperator(id_f_re, id_n_i, Op_ni);
     if (Op_nREn != nullptr && !Op_nREn->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_re_neg, Op_nREn);
 
@@ -118,75 +143,93 @@ void SimulationGenerator::ConstructEquation_f_re(
     // but when the hot-tail grid is disabled and an initial n_re profile
     // is prescribed, we would like to make sure that f_re integrates
     // properly to n_re.
-    //if (!eqsys->HasHotTailGrid()) {
-        //const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
-        const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-		//const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-		RunawayFluid *REFluid = eqsys->GetREFluid();
-
+    // if (!eqsys->HasHotTailGrid()) {
         enum OptionConstants::uqty_f_re_inittype inittype =
             (enum OptionConstants::uqty_f_re_inittype)s->GetInteger(MODULENAME "/inittype");
+        
+        if (inittype != OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
+            RunawayFluid *REFluid = eqsys->GetREFluid();
+			real_t *E_init = LoadDataR(MODULENAME, runawayGrid->GetRadialGrid(), s, "E_init");
+            
+            eqsys->initializer->AddRule(
+                id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
+                [id_f_re,inittype,REFluid,E_init](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
+                    const real_t *n_re = unknowns->GetUnknownData(OptionConstants::UQTY_N_RE);
+                    const real_t *E    = unknowns->GetUnknownData(OptionConstants::UQTY_E_FIELD);
 
-        eqsys->initializer->AddRule(
-            id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
-            [id_f_re,inittype,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
-                const real_t *n_re = unknowns->GetUnknownData(OptionConstants::UQTY_N_RE);
-                const real_t *E    = unknowns->GetUnknownData(OptionConstants::UQTY_E_FIELD);
+                    FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
+                    const len_t nr = runawayGrid->GetNr();
+                    for (len_t ir = 0, offset = 0; ir < nr; ir++) {
+                        FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
+                        const len_t np1 = mg->GetNp1();
+                        const len_t np2 = mg->GetNp2();
+                        real_t dp = mg->GetDp1(0);
 
-                FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
-                const len_t nr = runawayGrid->GetNr();
-                for (len_t ir = 0, offset = 0; ir < nr; ir++) {
-                    FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
-                    const len_t np1 = mg->GetNp1();
-                    const len_t np2 = mg->GetNp2();
-                    real_t dp = mg->GetDp1(0);
+                        real_t VpVol = runawayGrid->GetVpVol(ir);
+                        if (inittype == OptionConstants::UQTY_F_RE_INIT_ISOTROPIC) {
 
-                    real_t VpVol = runawayGrid->GetVpVol(ir);
-                    if (inittype == OptionConstants::UQTY_F_RE_INIT_ISOTROPIC) {
+                            // Add an equal number of particles in every cell
+                            for (len_t j = 0; j < np2; j++) {
+                                real_t Vp = runawayGrid->GetVp(ir, 0, j);
+                                finit[offset + j*np1] = n_re[ir]*VpVol / (2.0*dp*Vp);   // 2 = integral over xi from -1 to 1
+                            }
+                        } else if (inittype == OptionConstants::UQTY_F_RE_INIT_AVALANCHE) {
+                            const real_t *p = runawayGrid->GetMomentumGrid(ir)->GetP1();
+                            const real_t *xi = runawayGrid->GetMomentumGrid(ir)->GetP2();
+                            AnalyticDistributionRE *fRE = REFluid->GetAnalyticDistributionRE();
 
-                        // Add an equal number of particles in every cell
-                        for (len_t j = 0; j < np2; j++) {
-                            real_t Vp = runawayGrid->GetVp(ir, 0, j);
-                            finit[offset + j*np1] = n_re[ir]*VpVol / (2.0*dp*Vp);   // 2 = integral over xi from -1 to 1
+                            // NOTE: This distribution function is normalized such
+                            // that
+                            //
+                            //   <n_re> = integral(f_re * V', 0, inf),
+                            //
+                            // i.e. unless pmax is set sufficiently high, the
+                            // density moment of the discretized f_re
+                            // will in general be different from the quantity n_re
+                            for (len_t j = 0; j < np2; j++)
+                                for (len_t i = 0; i < np1; i++)
+                                    finit[offset + j*np1 + i] = fRE->evaluateFullDistributionWithE(ir, xi[j], p[i], E_init[ir]);
+                        } else {
+                            len_t xiIndex = 0;
+                            // Select either xi=+1 or xi=-1, depending on the sign of E
+                            if (inittype == OptionConstants::UQTY_F_RE_INIT_FORWARD)
+                                xiIndex = (E[ir]>=0 ? np2-1 : 0);
+                            else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_NEGATIVE)
+                                xiIndex = 0;
+                            else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_POSITIVE)
+                                xiIndex = np2-1;
+
+                            real_t Vp  = runawayGrid->GetVp(ir, 0, xiIndex);
+                            real_t dxi = mg->GetDp2(xiIndex);
+
+                            finit[offset + xiIndex*np1] = n_re[ir]*VpVol / (dxi*dp*Vp);
                         }
-					} else if (inittype == OptionConstants::UQTY_F_RE_INIT_AVALANCHE) {
-						const real_t *p = runawayGrid->GetMomentumGrid(ir)->GetP1();
-						const real_t *xi = runawayGrid->GetMomentumGrid(ir)->GetP2();
-						AnalyticDistributionRE *fRE = REFluid->GetAnalyticDistributionRE();
 
-						// NOTE: This distribution function is normalized such
-						// that
-						//
-						//   <n_re> = integral(f_re * V', 0, inf),
-						//
-						// i.e. unless pmax is set sufficiently high, the
-						// density moment of the discretized f_re
-						// will in general be different from the quantity n_re
-						for (len_t j = 0; j < np2; j++)
-							for (len_t i = 0; i < np1; i++)
-								finit[offset + j*np1 + i] = fRE->evaluateFullDistribution(ir, xi[j], p[i]);
-                    } else {
-                        len_t xiIndex = 0;
-                        // Select either xi=+1 or xi=-1, depending on the sign of E
-                        if (inittype == OptionConstants::UQTY_F_RE_INIT_FORWARD)
-                            xiIndex = (E[ir]>=0 ? np2-1 : 0);
-                        else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_NEGATIVE)
-                            xiIndex = 0;
-                        else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_POSITIVE)
-                            xiIndex = np2-1;
-
-                        real_t Vp  = runawayGrid->GetVp(ir, 0, xiIndex);
-                        real_t dxi = mg->GetDp2(xiIndex);
-
-                        finit[offset + xiIndex*np1] = n_re[ir]*VpVol / (dxi*dp*Vp);
+                        offset += np1*np2;
                     }
-
-                    offset += np1*np2;
-                }
-            },
-            // Dependencies
-            id_n_re, id_E_field, id_n_i
-        );
+                },
+                // Dependencies
+                id_n_re, id_n_i
+            );
+        }
     //}
+}
+
+/**
+ * Prescribe f_re in time.
+ */
+void SimulationGenerator::ConstructEquation_f_re_prescribed(
+	EquationSystem *eqsys, Settings *s
+) {
+	len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+	FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
+
+	ConstructEquation_f_prescribed(
+		id_f_re, eqsys, runawayGrid, s, MODULENAME
+	);
+
+	eqsys->initializer->AddRule(
+		id_f_re, EqsysInitializer::INITRULE_EVAL_EQUATION
+	);
 }
 

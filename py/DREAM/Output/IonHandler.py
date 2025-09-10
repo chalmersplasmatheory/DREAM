@@ -17,6 +17,7 @@ class IonHandler(UnknownQuantity):
         """
         super(IonHandler, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
+        self.data = data
         self.meta = output.ionmeta
         self.ions = list()
 
@@ -33,6 +34,17 @@ class IonHandler(UnknownQuantity):
             iidx += Z+1
 
 
+    def __contains__(self, name):
+        """
+        Check if this list of ions contains an ion with the given name.
+        """
+        for ion in self.ions:
+            if ion.getName() == name:
+                return True
+
+        return False
+
+
     def __getitem__(self, i):
         """
         If i is a string, retrieves an 'IonSpecies' object by name.
@@ -47,7 +59,7 @@ class IonHandler(UnknownQuantity):
         if type(i) == str:
             ion = self.getIonByName(i)
         else:
-            if len(i) == 2:
+            if type(i) == tuple or type(i) == list:
                 idx = i[0]
                 Z0 = i[1]
             else:
@@ -116,6 +128,20 @@ class IonHandler(UnknownQuantity):
                 return i
 
         raise KeyError("No ion named '{}' found in the output.".format(name))
+
+
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        n = 0
+        for ion in self.ions:
+            n += ion.Z+1
+
+        return n
 
 
     def plot(self, t=-1, ax=None, show=None, **kwargs):

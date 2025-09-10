@@ -21,6 +21,10 @@ namespace DREAM {
         // List of equations associated with this quantity
         std::map<len_t, FVM::Operator*> equations;
 
+		// Flag indicating whether this quantity is supposed to be
+		// evaluated using the external iterator
+		bool solved_externally = false;
+
         std::string description;
 
     public:
@@ -36,6 +40,8 @@ namespace DREAM {
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }
         FVM::UnknownQuantity *GetUnknown() { return this->uqty; }
 
+		bool HasTransientTerm() const;
+
         len_t NumberOfElements() const { return this->uqty->NumberOfElements(); }
         len_t NumberOfNonZeros();
         len_t NumberOfNonZeros_jac();
@@ -43,9 +49,11 @@ namespace DREAM {
         bool IsEvaluable();
         FVM::PredeterminedParameter *GetPredetermined();
         bool IsPredetermined();
+		bool IsSolvedExternally() { return this->solved_externally; }
         void RebuildEquations(const real_t, const real_t, FVM::UnknownQuantityHandler*);
 
         void SetDescription(const std::string& desc) { this->description = desc; }
+		void SetExternallySolved(bool s) { this->solved_externally = s; }
 
         void SetOperator(const len_t blockcol, FVM::Operator *eqn) {
             this->equations[blockcol] = eqn;

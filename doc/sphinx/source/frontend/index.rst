@@ -31,6 +31,7 @@ output.
    api/DREAMOutput
    api/Settings/DREAMSettings
    api/runiface
+   api/dreampyface
 
 Interactive CLI
 ---------------
@@ -131,6 +132,28 @@ system are loaded with the following types (at the time of writing):
 All other variables are loaded as :ref:`do-unknownquantity` if the type has not
 been explicitly specified in the dict ``SPECIAL_TREATMENT`` in
 :ref:`do-eqsys`.
+
+Python/C++ interface
+--------------------
+The regular Python API described above only operates on input and output files
+for DREAM, and never interacts with the C++ code. A set of bindings for Python,
+allowing the DREAM library to be called directly via Python, has however also
+been developed and is located under ``dreampyface``. The primary goal of the
+Python bindings are to allow real-time monitoring of simulations using Python,
+such as for example continuously update plots of unknown quantities being
+evolved.
+
+:ref:`Read more about the Python bindings<dreampyface>`.
+
+.. warning::
+
+   The DREAM and FVM libraries were originally designed for running single
+   simulations at a time (i.e. relaunching the ``dreami`` program for each
+   individual simulation to conduct). Because of this, not all memory is
+   explicitly freed after the simulation finishes, which can lead to memory
+   leaks when running several consecutive simulations using the Python bindings.
+   We are aware of this problem and are working to avoid memory leaks as far as
+   possible.
 
 The DREAM Theater (GUI)
 -----------------------

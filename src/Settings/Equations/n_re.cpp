@@ -10,7 +10,10 @@
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
+#include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/ComptonSource.hpp"
+#include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -36,6 +39,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
     s->DefineSetting(MODULENAME "/negative_re", "When in kinetic mode, properly account for runaways in both positive and negative pitch directions.", (bool)false);
+    s->DefineSetting(MODULENAME "/extrapolateDreicer", "Extrapolation of the neural network for small electric fields", (bool)false);
 
     s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
@@ -46,13 +50,24 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
     //s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 	DefineDataT(MODULENAME "/compton", s, "flux");
+    s->DefineSetting(MODULENAME "/compton/gammaInt", "Integrated gamma flux spektrum", (real_t) 5.8844190260298);
+    s->DefineSetting(MODULENAME "/compton/C1", "First gamma spectrum parameter", (real_t) 1.2);
+    s->DefineSetting(MODULENAME "/compton/C2", "Second gamma spectrum parameter", (real_t) 0.8);
+    s->DefineSetting(MODULENAME "/compton/C3", "Third gamma spectrum parameter", (real_t) 0.0);
 
-    s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
+    s->DefineSetting(MODULENAME "/tritium", "Model to use for tritium decay seed generation.", (int_t) OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT);
 
     s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
+    
+    s->DefineSetting(MODULENAME "/lcfs_loss", "Model to use for the LCFS loss.", (int_t) OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED);
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
+    // Prescribed LCFS loss timescale
+    DefineDataR(MODULENAME, s, "lcfs_t_loss");
+    // Prescribed LCFS psi_p at plasma edge, t = 0
+    s->DefineSetting(MODULENAME "/lcfs_user_input_psi", "Whether or not to use user prescribed psi_p at edge t = 0 for LCFS loss term (0 or 1).", (int_t) 0);
+    s->DefineSetting(MODULENAME "/lcfs_psi_edge_t0", "Psi_p at plasma edge at t = 0, used for LCFS loss term.", (real_t) 0.0);
 
 }
 
@@ -107,18 +122,25 @@ void SimulationGenerator::ConstructEquation_n_re(
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
 			// Influx from hot-tail grid (with runaway grid at higher p)
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+            FVM::BC::PXiExternalKineticKinetic *xkinkin = new FVM::BC::PXiExternalKineticKinetic(
 				fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
 				Op, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_DENSITY
-			));
+			);
+
+            oqty_terms->f_re_f_hot_flux = xkinkin;
+
+			Op_nRE_fHot->AddBoundaryCondition(xkinkin);
 		} else {
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
-			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+			FVM::BC::PXiExternalLoss *xloss = new FVM::BC::PXiExternalLoss(
 				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
-			));
+			);
+			oqty_terms->n_re_f_hot_flux = xloss;
+
+			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
         desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
@@ -129,6 +151,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
+	eqsys->AddRunawaySourceTermHandler(rsth);
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
@@ -193,7 +216,55 @@ void SimulationGenerator::ConstructEquation_n_re(
      * called with a null-pointer which results in n_re=0 at t=0
      */
     real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
-    eqsys->SetInitialValue(id_n_re, n_re_init);
+    
+    enum OptionConstants::uqty_f_re_inittype inittype =
+        (enum OptionConstants::uqty_f_re_inittype)s->GetInteger("eqsys/f_re/inittype");
+    
+    if (inittype == OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
+        for (len_t ir = 0; ir < fluidGrid->GetRadialGrid()->GetNr(); ir++) 
+            if (n_re_init[ir] > 0.) {
+                DREAM::IO::PrintWarning(
+                    DREAM::IO::WARNING_INCONSISTENT_RE_TRANSPORT,
+                    "Inconsistent initialization of the RE population. You can not "
+                    "prescribe the initial profiles of both 'n_re' and 'f_re'. "
+                    "When the initial profile of 'f_re' is prescribed, the runaway "
+                    "density is set automatically."
+                );
+                break;
+            }
+        len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+        RunawayFluid *REFluid = eqsys->GetREFluid();
+        eqsys->initializer->AddRule(
+            id_n_re,
+            EqsysInitializer::INITRULE_EVAL_FUNCTION,
+            [id_f_re,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *ninit){
+                const real_t *f_re = unknowns->GetUnknownData(OptionConstants::UQTY_F_RE);
+                FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
+                const len_t nr = runawayGrid->GetNr();
+                for (len_t ir = 0, offset = 0; ir < nr; ir++) {
+                    FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
+                    const len_t np1 = mg->GetNp1();
+                    const len_t np2 = mg->GetNp2();
+                    real_t dp, dxi;
+                    real_t VpVol = runawayGrid->GetVpVol(ir);
+                    ninit[ir] = 0;
+                    for (len_t j = 0; j < np2; j++) {
+                        for (len_t i = 0; i < np1; i++) {
+                            dp = mg->GetDp1(i);
+                            dxi = mg->GetDp2(j);
+                            real_t Vp = runawayGrid->GetVp(ir, i, j);
+                            ninit[ir] += f_re[offset + j*np1 + i] * Vp/VpVol * dp * dxi;
+                        }
+                    }
+                    offset += np1*np2;
+                }
+            },
+            // Dependencies
+            id_f_re
+        );
+    } else {
+        eqsys->SetInitialValue(id_n_re, n_re_init);
+    }
     delete [] n_re_init;
 }
 

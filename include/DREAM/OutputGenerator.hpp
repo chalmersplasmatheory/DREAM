@@ -1,6 +1,8 @@
 #ifndef _DREAM_OUTPUT_GENERATOR_HPP
 #define _DREAM_OUTPUT_GENERATOR_HPP
 
+namespace DREAM { class OutputGenerator; }
+
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/EquationSystem.hpp"
@@ -18,6 +20,7 @@ namespace DREAM {
 
         bool savesettings = true;
 
+		virtual void SaveCodeInfo(const std::string&) = 0;
 		virtual void SaveGrids(const std::string&, bool) = 0;
 		virtual void SaveIonMetaData(const std::string&) = 0;
 		virtual void SaveOtherQuantities(const std::string&) = 0;

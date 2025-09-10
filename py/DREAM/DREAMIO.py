@@ -7,6 +7,7 @@ import numpy as np
 from packaging import version
 from pathlib import Path
 import os
+import types
 
 from . DataObject import DataObject
 
@@ -41,8 +42,8 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
 
     user, host, port, rpath = None, None, 22, None
     if SSHSUPPORT:
-        m1 = re.search('(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
-        m2 = re.search('(.+@)*([\w\-\_\d\.]+):(.*)', filename)
+        m1 = re.search(r'(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
+        m2 = re.search(r'(.+@)*([\w\-\_\d\.]+):(.*)', filename)
 
         if m1 is not None:
             user = m1.group(2)
@@ -158,9 +159,9 @@ def dict2h5(f, data, path=''):
         if type(d) == dict:
             o = f.create_group(key)
             dict2h5(o, d, path=path+'/'+key)
-        elif type(d) == float or type(d) == np.float64:
+        elif type(d) == float or type(d) == np.float64 or type(d) == np.float32:
             f.create_dataset(key, (1,), data=d)
-        elif type(d) == int:
+        elif type(d) == int or type(d) == np.int64:
             f.create_dataset(key, (1,), data=d, dtype='i8')
         elif type(d) == bool:
             v = 1 if d else 0
@@ -183,6 +184,8 @@ def dict2h5(f, data, path=''):
             f.create_dataset(key, (len(d),), data=d)
         elif type(d) == np.ndarray:
             f.create_dataset(key, d.shape, data=d)
+        elif type(d) == types.FunctionType:
+            f.create_dataset(key, (1,), data=1, dtype='i4') 
         else:
             raise DREAMIOException("Unrecognized data type of entry '{}/{}': {}.".format(path, key, type(d)))
 
@@ -225,17 +228,25 @@ def getData(f, key):
     Returns data from an h5py.File object, correctly transforming
     it (in case it is a string for example).
     """
-    if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
-        return f[key][:].tostring().decode('utf-8')
+    if type(f[key]) == str:
+        return f[key]
+    elif (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
+        return f[key][:].tobytes().decode('utf-8')
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
-            return f[key][()].decode()
+            if type(f[key][()]) == str:
+                return f[key][()]
+            else:
+                return f[key][()].decode()
         elif type(f[key][:][0]) == str:
             return f[key][:][0]
         else:
             return f[key][:][0].decode()
     else:
-        return f[key][:]
+        if f[key].shape == ():
+            return f[key][()]
+        else:
+            return f[key][:]
 
 
 def unlazy(s):

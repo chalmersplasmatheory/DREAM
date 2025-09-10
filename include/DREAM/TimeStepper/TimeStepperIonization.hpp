@@ -14,6 +14,7 @@ namespace DREAM {
 
 		real_t automaticstep = 1e-12;
 		real_t safetyfactor = 50;
+		real_t alpha = 0;
 
 		real_t currentTime=0;
 		real_t tscale0 = 0, dt;
@@ -22,19 +23,21 @@ namespace DREAM {
 
 		len_t nr;
 		real_t *timescales, *ncold;
-		
+
 		const len_t PROGRESSBAR_LENGTH = 80;
 	public:
 		TimeStepperIonization(
 			const real_t tMax, const real_t dt0, const real_t dtMax,
-			FVM::UnknownQuantityHandler*, const real_t automaticstep,
-			const real_t safetyfactor, const real_t minSaveDt
+			FVM::UnknownQuantityHandler*, EquationSystem*,
+			const real_t automaticstep, const real_t safetyfactor,
+			const real_t minSaveDt, const real_t alpha
 		);
 		~TimeStepperIonization();
 
 		virtual real_t CurrentTime() const { return this->currentTime; }
-		virtual bool IsFinished() override { return (this->currentTime >= this->tMax); }
+		virtual bool IsFinished() override;
 		virtual bool IsSaveStep() override;
+		virtual real_t MaxTime() const override;
 		virtual real_t NextTime() override;
 		virtual void ValidateStep() override;
 

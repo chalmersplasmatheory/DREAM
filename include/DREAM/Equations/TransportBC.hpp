@@ -24,7 +24,7 @@ namespace DREAM {
             JACOBIAN_SET_CENTER = 3,    // Sets diagonal jacobian contributions
             JACOBIAN_SET_UPPER  = 4     // Sets offset contribution for radial flux
         };
-    private:
+    protected:
         T *transportOperator;
 
         real_t *jacobianColumn;
@@ -42,10 +42,10 @@ namespace DREAM {
         void ResetJacobianColumn();
 
     public:
-        TransportBC<T>(
+        TransportBC(
             FVM::Grid*, T*, enum bctype type=TRANSPORT_BC_F0
         );
-        ~TransportBC<T>();
+        ~TransportBC();
 
         virtual bool GridRebuilt() override;
 
@@ -60,6 +60,8 @@ namespace DREAM {
         virtual bool SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {return false;}
         virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) override {}
         virtual void SetVectorElements(real_t*, const real_t*) override {}
+
+		const real_t *GetBoundaryCoefficient() { return this->GetCoefficient(this->grid->GetNr()); }
 
         void SetPartialJacobianContribution(
             const int_t, const len_t, DREAM::FVM::Matrix*, const real_t*,

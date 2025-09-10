@@ -4,7 +4,6 @@
 
 #include "DREAM/Settings/SimulationGenerator.hpp"
 
-
 using namespace DREAM;
 using namespace std;
 
@@ -45,6 +44,8 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     OptionConstants::eqterm_avalanche_mode ava_mode   = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)  s->GetInteger("eqsys/n_re/compton/mode");
     FVM::Interpolator1D *compton_photon_flux = LoadDataT("eqsys/n_re/compton", s, "flux");
+    real_t integratedComptonSpectrum = s->GetReal("eqsys/n_re/compton/gammaInt");
+    real_t C1_Compton =  s->GetReal("eqsys/n_re/compton/C1"), C2_Compton = s->GetReal("eqsys/n_re/compton/C2"), C3_Compton = s->GetReal("eqsys/n_re/compton/C3");
 
     // Note: these collision quantities will only be used for their evaluateAt(..., inSettings) 
     //       methods inside REFluid, and be called with other settings than 'cq'. 
@@ -67,9 +68,12 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
         distHT = new AnalyticDistributionHottail(rGrid, unknowns, n0, T0, ht_dist_mode);
     }
     
+    bool extrapolateDreicer = s->GetBool("eqsys/n_re/extrapolateDreicer");
     RunawayFluid *REF = new RunawayFluid(
-        g, unknowns, nuS, nuD, lnLEE, lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
-        cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux
+        g, unknowns, nuS, nuD, lnLEE, extrapolateDreicer, 
+        lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
+        cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux, 
+        integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton
     );
     distRE->SetREFluid(REF);
     eqsys->SetAnalyticDists(distRE, distHT);

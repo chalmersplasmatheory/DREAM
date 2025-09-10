@@ -25,9 +25,11 @@ PostProcessor::PostProcessor(
 
     // Allocate arrays
     this->runawayRate = new real_t[nr];
+	this->tIoniz = new real_t[nr];
 
     // Get IDs of unknown quantities
     this->id_n_re = uqh->GetUnknownID(OptionConstants::UQTY_N_RE);
+	this->id_n_cold = uqh->GetUnknownID(OptionConstants::UQTY_N_COLD);
 }
 
 /**
@@ -35,6 +37,7 @@ PostProcessor::PostProcessor(
  */
 PostProcessor::~PostProcessor() {
     delete [] this->runawayRate;
+	delete [] this->tIoniz;
 }
 
 /**
@@ -60,5 +63,32 @@ void PostProcessor::Process(const real_t t) {
     if (t > t0)
         for (len_t ir = 0; ir < nr; ir++)
             this->runawayRate[ir] = (n_RE1[ir] - n_RE0[ir]) / (t-t0);
+	
+
+	// IONIZATION TIME
+	// as calculated by the adaptive ionization time stepper.
+	real_t *n = this->unknowns->GetUnknownData(this->id_n_cold);
+	real_t *np = this->unknowns->GetUnknownDataPrevious(this->id_n_cold);
+	real_t tp = this->unknowns->GetUnknownDataPreviousTime(this->id_n_cold);
+	real_t dt = t - tp;
+
+	for (len_t ir = 0; ir < nr; ir++) {
+		real_t dn = n[ir] - np[ir];
+		if (dn != 0)
+			this->tIoniz[ir] = std::abs(dt * np[ir] / dn);
+		else
+			this->tIoniz[ir] = std::numeric_limits<real_t>::infinity();
+	}
+
+	// Find shortest ionization time scale
+	real_t tscale = this->tIoniz[0];
+	for (len_t ir = 0; ir < nr; ir++)
+		if (this->tIoniz[ir] < tscale)
+			tscale = this->tIoniz[ir];
+	
+	if (isinf(tscale))
+		this->tIoniz_scal = 0;
+	else
+		this->tIoniz_scal = tscale;
 }
 

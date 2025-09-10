@@ -42,9 +42,15 @@ TransportPrescribed<T>::~TransportPrescribed() {
     if (this->prescribedCoeff != nullptr)
         delete this->prescribedCoeff;
     if (this->interpolateddata != nullptr) {
-        delete [] this->interpolateddata[0];
         delete [] this->interpolateddata;
     }
+
+    delete [] this->coeff[0];
+    delete [] this->coeff;
+    delete [] this->t;
+    delete [] this->r;
+    delete [] this->p1;
+    delete [] this->p2;
 }
 }
 
@@ -81,10 +87,12 @@ void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
         this->grid->GetNCells() + this->grid->GetMomentumGrid(0)->GetNCells();
 
     newdata[0] = new real_t[nt*N];
+    real_t* newt = new real_t[nt];
 
     for (len_t i = 0; i < nt; i++) {
         if (i > 0)
             newdata[i] = newdata[i-1] + N;
+        newt[i] = t[i];
 
         DREAM::FVM::Interpolator3D intp3(
             nr, np2, np1, r, p2, p1, coeff[i],
@@ -95,12 +103,11 @@ void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
 
     if (this->prescribedCoeff != nullptr) {
         delete this->prescribedCoeff;
-        delete [] this->interpolateddata[0];
         delete [] this->interpolateddata;
     }
 
     this->prescribedCoeff = new DREAM::FVM::Interpolator1D(
-        nt, N, t, newdata[0]
+        nt, N, newt, newdata[0]
     );
 
     // This data is now used by 'prescribedCoeff', but we

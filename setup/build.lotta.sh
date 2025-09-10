@@ -31,8 +31,7 @@ function install_petsc {
 	cd "$PETSC_DIR"
 
 	# Configure with Intel MKL?
-	#./configure --with-debugging=0 --COPTFLAGS=-O2 --CXXOPTFLAGS=-O2 --FOPTFLAGS=-O2 --with-blas-lib=/usr/lib/x86_64-linux-gnu/blas64/libblas64.so.3.10.0 --with-lapack-lib=/usr/lib/x86_64-linux-gnu/lapack64/liblapack64.so.3.10.0 --with-mpi=0 &&
-	./configure --with-debugging=0 --COPTFLAGS=-O2 --CXXOPTFLAGS=-O2 --FOPTFLAGS=-O2 --with-blas-lib=/usr/lib/x86_64-linux-gnu/blas/libblas.so --with-lapack-lib=/usr/lib/x86_64-linux-gnu/lapack/liblapack.so  --with-mpi=0 &&
+	./configure --with-debugging=0 --COPTFLAGS=-O2 --CXXOPTFLAGS=-O2 --FOPTFLAGS=-O2 --with-mkl_pardiso=1 --with-mkl_pardiso-dir=/opt/intel/oneapi/mkl/latest --with-blaslapack-dir=/opt/intel/oneapi/mkl/latest --with-mpi=0 &&
 	make PETSC_DIR=$PETSC_DIR PETSC_ARCH=$PETSC_ARCH all
 }
 
@@ -45,13 +44,16 @@ function install_dream {
 
 HAS_PETSC=1
 if [ ! -d "$PETSC_DIR/$PETSC_ARCH" ]; then
-	install_petsc
+	#install_petsc
 
-	if [ -$? -ne 0 ]; then
-		echo "ERROR: Failed to install PETSc"
-		HAS_PETSC=0
-		#rm -rf "$PETSC_DIR/$PETSC_ARCH"
-	fi
+	#if [ -$? -ne 0 ]; then
+	#	echo "ERROR: Failed to install PETSc"
+	#	HAS_PETSC=0
+	#	#rm -rf "$PETSC_DIR/$PETSC_ARCH"
+	#fi
+
+	echo "ERROR: Unable to locate PETSc. Please check PETSC_DIR and PETSC_ARCH."
+	HAS_PETSC=0
 fi
 
 if [ $HAS_PETSC -gt 0 ]; then

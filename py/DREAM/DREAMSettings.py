@@ -213,7 +213,12 @@ class DREAMSettings:
         the DREAMSettings object is stored.
         """
         data = DREAMIO.LoadHDF5AsDict(filename, path=path, lazy=lazy)
-        self.fromdict(data, filename=filename)
+
+        # Is this an output file (which contains a separate settings object)?
+        if 'settings' in data:
+            self.fromdict(data['settings'], filename=filename)
+        else:
+            self.fromdict(data, filename=filename)
 
 
     def save(self, filename):
@@ -244,7 +249,7 @@ class DREAMSettings:
 
         if 'timeindex' in self.init:
             data['init']['filetimeindex'] = self.init['timeindex']
-        if 'fromfile' in self.init:
+        if 'fromfile' in self.init and self.init['fromfile'] != '':
             data['init']['fromfile'] = self.init['fromfile']
 
         return data

@@ -299,6 +299,51 @@ All ion and electron initial temperatures are taken to be uniform in radius.
    ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
 
+Start from coronal equilibrium
+------------------------------
+Coronal equilibrium refers to a distribution of charge states of an ion species
+such that ionization and recombination exactly balance for all charge states.
+It can be shown (see ``doc/notes``) that the density :math:`n_i^{(l)}` of
+species :math:`i` in charge state `l` is given by
+
+.. math::
+
+   n_i^{(l)} = n_i\left(
+       1 + 
+       \sum_{j=0}^{l-1}\prod_{k=j+1}^l \frac{R_i^{(k)}}{I_i^{(k-1)}} +
+       \sum_{j=l+1}^Z\prod_{k=l}^{j-1} \frac{I_i^{(k)}}{R_i^{(k+1)}}
+   \right)^{-1},
+
+where :math:`n_i=\sum_l n_i^{(l)}`.
+
+DREAM simulations can be launched with ions in coronal equilibrium initially.
+This is specified via a flag ``init_equil=True`` to the ``addIon()`` call, along
+with the desired species density :math:`n_i`. The code will then automatically
+evaluate the equilibrium state at startup, iterating until :math:`n_{\rm free}`
+(upon which the ionization/recombination rates depend).
+
+Example
+^^^^^^^
+To initiate one ion species in coronal equilibrium, the following syntax is used:
+
+.. code-block:: python
+
+   import numpy as np
+   import DREAM.Settings.Equations.IonSpecies as Ions
+   import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
+
+   ds = DREAMSettings()
+
+   ...
+
+   ds.eqsys.n_i.addIon(name='D',  Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
+   ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC, n=1e19, init_equil=True)
+
+.. note::
+
+   Initialization in coronal equilibrium is only possible for dynamically
+   evolved ion species.
+
 Atomic data
 -----------
 Various types of atomic data are downloaded from ADAS and NIST during the

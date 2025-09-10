@@ -37,7 +37,11 @@ EqsysInitializer::EqsysInitializer(
 /**
  * Destructor.
  */
-EqsysInitializer::~EqsysInitializer() { }
+EqsysInitializer::~EqsysInitializer() { 
+    for (auto rule : this->rules){
+        delete rule.second;
+    }
+}
 
 /**
  * Add a new initialization rule.
@@ -386,6 +390,10 @@ void EqsysInitializer::InitializeFromOutput(
             // shard quantities), treat it as (time, multiples, 1)
             else if (dims[2] == 1)
                 this->__InitTRmult(uqn, t0, tidx, 1, r, data, dims);
+
+			// If this is the ion density, make sure to rebuild the ion handler
+            if (uqn->GetName() == OptionConstants::UQTY_ION_SPECIES) 
+                ionHandler->Rebuild();
 
         // Time + radius + momentum
         } else if (ndims == 4) {

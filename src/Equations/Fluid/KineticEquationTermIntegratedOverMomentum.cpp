@@ -28,14 +28,9 @@ KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMome
 ) : FVM::EquationTerm(fluidGrid), kineticGrid(kineticGrid),
     kineticOperator(kineticOperator), id_f(id_f), unknowns(u),
     rebuildOperator(rebuild), scaleFactor(scaleFactor) {
+    NCells = kineticGrid->GetNCells();
     
     SetName("KineticEquationTermIntegratedOverMomentum");
-    
-    this->CsetJacobian = new Mat[u->GetNUnknowns()];
-    for (len_t i = 0; i < u->GetNUnknowns(); i++)
-        this->CsetJacobian[i] = nullptr;
-
-    allocateKineticStorage();
 }
 
 
@@ -49,14 +44,26 @@ KineticEquationTermIntegratedOverMomentum::~KineticEquationTermIntegratedOverMom
         MatDestroy(this->CsetJacobian+i);
         
     delete [] this->CsetJacobian;
+	if (this->kineticOperator != nullptr)
+		delete this->kineticOperator;
 }
 
+
+/**
+ * Allocate memory for this term.
+ */
+void KineticEquationTermIntegratedOverMomentum::Allocate() {
+    this->CsetJacobian = new Mat[this->unknowns->GetNUnknowns()];
+    for (len_t i = 0; i < this->unknowns->GetNUnknowns(); i++)
+        this->CsetJacobian[i] = nullptr;
+
+    allocateKineticStorage();
+}
 
 /**
  * Allocate and initialize grid quantities
  */
 void KineticEquationTermIntegratedOverMomentum::allocateKineticStorage(){
-    NCells = kineticGrid->GetNCells();
     PetscInt nnzPerRow = kineticOperator->GetNumberOfNonZerosPerRow_jac();
     PetscInt maxMGN = 0;
     for(len_t ir=0; ir<nr; ir++){
@@ -127,6 +134,9 @@ bool KineticEquationTermIntegratedOverMomentum::GridRebuilt(){
 void KineticEquationTermIntegratedOverMomentum::Rebuild(
     const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqn
 ) {
+	if (this->CsetJacobian == nullptr)
+		this->Allocate();
+
     if (this->rebuildOperator)
         this->kineticOperator->RebuildTerms(t, dt, uqn);
 }

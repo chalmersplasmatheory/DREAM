@@ -25,6 +25,10 @@ void SimulationGenerator::ConstructEquation_SPI(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
+	// Mark the "/init/Ninj" setting as used, so that it
+	// appears in the output file.
+	s->MarkUsed(MODULENAME "/init/Ninj");
+
     // Get data for shard content
     len_t nShard;
     const real_t *rp_init = s->GetRealArray(MODULENAME "/init/rp", 1, &nShard);
@@ -48,6 +52,7 @@ void SimulationGenerator::ConstructEquation_SPI(
 
     // Initialize shard radii-variable
     eqsys->SetInitialValue(id_Yp, Yp_init);
+	delete [] Yp_init;
 
     // Shard velocity and position terms
     switch (spi_velocity_mode) {
@@ -107,6 +112,4 @@ void SimulationGenerator::ConstructEquation_x_p_prescribed_constant_velocity(
 
     // Initialization
     eqsys->SetInitialValue(OptionConstants::UQTY_X_P, xp_init);
-    
-    delete [] t_delay;
 }

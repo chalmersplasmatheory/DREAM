@@ -5,6 +5,7 @@
 #include <string>
 #include <softlib/SFile.h>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
 
 
 using namespace DREAM;
@@ -33,5 +34,32 @@ void EquationSystem::SaveTimings(SFile *sf, const string& name) {
     path = name + "/runawayfluid";
     sf->CreateStruct(path);
     this->REFluid->SaveTimings(sf, path);
+}
+
+/**
+ * Save solver data.
+ */
+void EquationSystem::SaveSolverData(SFile *sf, const string& name) {
+	this->solver->WriteDataSFile(sf, name);
+
+	// Save list of non-trivials
+	string unkn = "";
+	string nontriv = "";
+
+	for (len_t i = 0; i < this->unknowns.Size(); i++)
+		unkn += this->unknowns.GetUnknown(i)->GetName() + ";";
+
+	for (len_t i = 0; i < nontrivial_unknowns.size(); i++)
+		nontriv += this->unknowns.GetUnknown(nontrivial_unknowns[i])->GetName() + ";";
+
+	sf->WriteString(name + "/unknowns", unkn);
+	sf->WriteString(name + "/nontrivials", nontriv);
+
+	// Save emitted warning messages
+	string warnings;
+	for (auto s : IO::emitted_warning_messages)
+		warnings += s + ";";
+
+	sf->WriteString(name + "/warnings", warnings);
 }
 
