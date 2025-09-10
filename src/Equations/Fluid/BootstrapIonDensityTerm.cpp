@@ -54,10 +54,20 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, l
     real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
 
     real_t dCoefficient = dl31;
-    if (!bs->includeIonTemperatures) {
+    if (!bs->includeIonTemperatures) { // IE: Isn't this wrong?
         dCoefficient *= bs->Tcold[ir];
         if (derivId == id_Tcold)
             dCoefficient += l31;
+        // IE: How I would do it
+        /*
+        dCoefficient *= bs->p[ir] / bs->n[ir];
+        if (derivId == id_ncold)
+            dCoefficient += l31 * (bs->Tcold[ir] - bs->p[ir] / bs->n[ir]) / bs->n[ir];
+        else if (derivId == id_Tcold)
+            dCoefficient += l31 * bs->ncold[ir] / bs->n[ir];
+        else if (derivId == id_Ni)
+            dCoefficient -= l31 * bs->p[ir] / (bs->n[ir] * bs->n[ir]);
+        */
     } else {
         real_t alpha = bs->getCoefficientAlpha(ir);
         real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, jzs, jZ);
@@ -70,8 +80,8 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, l
             dCoefficient += l31 * bs->ncold[ir] / bs->n[ir];
         else if (derivId == id_Ni)
             dCoefficient += l31 * ( (1. + alpha ) * bs->Wi[rOffset + ir] / ( 1.5 * bs->Ni[rOffset + ir] * bs-> Ni[rOffset + ir]) - bs->p[ir] / (bs->n[ir] * bs->n[ir]) );
-        else if (derivId == id_Wi)
-            dCoefficient += l31 * ( 1. + alpha ) / ( 1.5 * bs->Ni[rOffset + ir] * Constants::ec );
+        else if (derivId == id_Wi) // IE: Added: l31 / (1.5 * bs->n[ir] * Constants::ec) -
+            dCoefficient += l31 / (1.5 * bs->n[ir] * Constants::ec) - l31 * ( 1. + alpha ) / ( 1.5 * bs->Ni[rOffset + ir] * Constants::ec );
     }
     return pre * dCoefficient;
 }
