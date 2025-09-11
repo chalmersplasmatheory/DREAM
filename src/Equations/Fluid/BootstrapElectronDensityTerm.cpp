@@ -45,8 +45,7 @@ real_t BootstrapElectronDensityTerm::GetPartialCoefficient(len_t ir, len_t deriv
     real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
 
     real_t dCoefficient = dl31;
-    // IE: Shouldn't the stuff in the else statement happen regardless?
-    if (!bs->includeIonTemperatures) { // IE: Isn't this wrong?
+    if (!bs->includeIonTemperatures) { 
         dCoefficient *= bs->Tcold[ir];
         if (derivId == id_Tcold)
             dCoefficient += l31;
@@ -61,25 +60,5 @@ real_t BootstrapElectronDensityTerm::GetPartialCoefficient(len_t ir, len_t deriv
         else if (derivId == id_Wi)
                 dCoefficient += l31 / (1.5 * bs->n[ir] * Constants::ec);
     }
-
-    // IE: How I would do it
-    /*
-    real_t dCoefficient = dl31 * bs->p[ir] / bs->n[ir];
-    if (derivId == id_ncold)
-        dCoefficient += l31 * (bs->Tcold[ir] - bs->p[ir] / bs->n[ir]) / bs->n[ir];
-    else if (derivId == id_Tcold){
-        dCoefficient += l31 * bs->ncold[ir] / bs->n[ir];
-        if (!bs->includeIonTemperatures){
-            real_t nitot = 0;
-            for (len_t i = ir; i < nr * nZ; i += nr)
-                nitot += bs->Ni[i];
-            dCoefficient += l31 * nitot / bs->n[ir];
-        }
-            
-    } else if (derivId == id_Ni)
-        dCoefficient -= l31 * bs->p[ir] / (bs->n[ir] * bs->n[ir]);
-    else if (derivId == id_Wi)
-            dCoefficient += l31 / (1.5 * bs->n[ir] * Constants::ec);
-    */
     return pre * dCoefficient;
 }

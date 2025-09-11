@@ -37,9 +37,11 @@ real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir) {
     real_t l31 = bs->getCoefficientL31(ir);
     real_t alpha = bs->getCoefficientAlpha(ir);
 
-    real_t coefficient = bs->p[ir] / bs->n[ir];
+    real_t coefficient;
     if (bs->includeIonTemperatures)
-        coefficient -= 2./3. * ( 1. + alpha ) * bs->Wi[rOffset + ir] / (bs->Ni[rOffset + ir] * Constants::ec);
+        coefficient = bs->p[ir] / bs->n[ir] - 2./3. * ( 1. + alpha ) * bs->Wi[rOffset + ir] / (bs->Ni[rOffset + ir] * Constants::ec);
+    else
+        coefficient = - bs->T_cold[ir] * alpha;
 
     return pre * l31 * coefficient;
 }
@@ -52,26 +54,16 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, l
     real_t pre = bs->getConstantPrefactor(ir);
     real_t l31 = bs->getCoefficientL31(ir);
     real_t dl31 = bs->evaluatePartialCoefficientL31(ir, derivId, jzs);
+    real_t alpha = bs->getCoefficientAlpha(ir);
+    real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, jzs, jZ);
 
     real_t dCoefficient = dl31;
-    if (!bs->includeIonTemperatures) { // IE: Isn't this wrong?
-        dCoefficient *= bs->Tcold[ir];
+    if (!bs->includeIonTemperatures) {
+        dCoefficient *= - bs->Tcold[ir] * alpha;
+        dCoefficient -= l31 * bs->Tcold[ir] * dalpha
         if (derivId == id_Tcold)
-            dCoefficient += l31;
-        // IE: How I would do it
-        /*
-        dCoefficient *= bs->p[ir] / bs->n[ir];
-        if (derivId == id_ncold)
-            dCoefficient += l31 * (bs->Tcold[ir] - bs->p[ir] / bs->n[ir]) / bs->n[ir];
-        else if (derivId == id_Tcold)
-            dCoefficient += l31 * bs->ncold[ir] / bs->n[ir];
-        else if (derivId == id_Ni)
-            dCoefficient -= l31 * bs->p[ir] / (bs->n[ir] * bs->n[ir]);
-        */
+            dCoefficient -= l31 * alpha;
     } else {
-        real_t alpha = bs->getCoefficientAlpha(ir);
-        real_t dalpha = bs->evaluatePartialCoefficientAlpha(ir, derivId, jzs, jZ);
-
         dCoefficient *= bs->p[ir] / bs->n[ir] - ( 1. + alpha ) * bs->Wi[rOffset + ir];
         dCoefficient -= l31 * 2./3. * dalpha * bs->Wi[rOffset + ir] / bs->Ni[rOffset + ir];
         if (derivId == id_ncold)
