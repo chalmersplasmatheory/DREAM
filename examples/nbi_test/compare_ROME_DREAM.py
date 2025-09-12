@@ -15,32 +15,6 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 
-# Register the SciencePlots styles manually
-mplstyle.core.USER_LIBRARY_PATHS.append(
-    "/opt/homebrew/lib/python3.13/site-packages/SciencePlots/styles"
-)
-plt.style.reload_library()
-
-# Now you can safely use them
-
-
-
-plt.style.use(['science', 'notebook'])  
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "serif",
-    "font.serif": ["Computer Modern"],
-})
-plt.rcParams.update({
-    'font.size': 30,               # Base font size
-    'axes.titlesize': 25,          # Title font
-    'axes.labelsize': 34,          # Axis labels
-    'xtick.labelsize': 30,         # X tick labels
-    'ytick.labelsize': 30,         # Y tick labels
-    'legend.fontsize': 27,         # Legend
-    'figure.titlesize': 25         # Figure-wide title
-})
-sys.path.append('../../py')
 
 from DREAM.DREAMOutput import DREAMOutput
 
