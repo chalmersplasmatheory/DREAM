@@ -205,12 +205,6 @@ set(dream_solvers
 add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
-find_package(OpenMP REQUIRED)
-
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(dream PUBLIC OpenMP::OpenMP_CXX)
-endif()
 
 
 set_target_properties(dream PROPERTIES
