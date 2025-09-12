@@ -40,6 +40,7 @@ RadialGrid::~RadialGrid(){
     DeallocateFSAvg();
     
     DeallocateReferenceMagneticData();
+    DeallocateStellaratorData();
     DeallocateMagneticExtremumData();
     
     if(this->VpVol!=nullptr){
@@ -173,6 +174,16 @@ void RadialGrid::SetReferenceMagneticFieldData(
 }
 
 
+void RadialGrid::SetStellaratorData(
+    real_t *iota, real_t *iota_f
+){
+    DeallocateStellaratorData();
+
+    this->iota = iota;
+    this->iota_f = iota_f;
+}
+
+
 /**
  * Calculate and store flux surface averages.
  */
@@ -180,10 +191,12 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
  real_t 
     *effectivePassingFraction   = nullptr, 
     *effectivePassingFraction_f = nullptr, 
-    *FSA_B2   = nullptr,
-    *FSA_B2_f = nullptr,
-    *FSA_B    = nullptr,
-    *FSA_B_f  = nullptr,
+    *FSA_B2       = nullptr,
+    *FSA_B2_f     = nullptr,
+    *FSA_B        = nullptr,
+    *FSA_B_f      = nullptr,
+    *FSA_1OverB   = nullptr,
+    *FSA_1OverB_f = nullptr,
     *FSA_nablaR2OverR2   = nullptr,
     *FSA_nablaR2OverR2_f = nullptr, 
     *FSA_1OverR2   = nullptr,
@@ -192,6 +205,7 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, FSA_FUNC_ONE_OVER_R_SQUARED, nullptr, FSA_PARAM_ONE_OVER_R_SQUARED);
     SetFluxSurfaceAverage(FSA_B,FSA_B_f, FSA_FUNC_B, nullptr, FSA_PARAM_B);
     SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, FSA_FUNC_B_SQUARED, nullptr, FSA_PARAM_B_SQUARED);
+    SetFluxSurfaceAverage(FSA_1OverB,FSA_1OverB_f, FSA_FUNC_1OverB, nullptr, FSA_PARAM_1OverB);
     SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED, nullptr, FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED);
     
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);

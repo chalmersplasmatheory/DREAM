@@ -437,6 +437,7 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
 enum eqterm_bootstrap_mode {
     EQTERM_BOOTSTRAP_MODE_NEGLECT = 1,
     EQTERM_BOOTSTRAP_MODE_REDL = 2,
+    EQTERM_BOOTSTRAP_MODE_REDL_STELLARATOR = 3,
 };
 
 enum eqterm_bootstrap_init_mode {

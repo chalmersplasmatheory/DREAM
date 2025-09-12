@@ -158,7 +158,8 @@ void SimulationGenerator::ConstructEquations(
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
         BootstrapCurrent *bootstrap = new BootstrapCurrent(
             fluidGrid, unknowns, ionHandler,
-            eqsys->GetREFluid()->GetLnLambda()
+            eqsys->GetREFluid()->GetLnLambda(),
+            bootstrap_mode
         );
         eqsys->SetBootstrap(bootstrap);
     }

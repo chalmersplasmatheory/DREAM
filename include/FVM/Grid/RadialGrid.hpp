@@ -20,6 +20,8 @@ namespace DREAM::FVM {
             {return BOverBmin;}
         static real_t FSA_FUNC_B_SQUARED(real_t BOverBmin, real_t,real_t, void*)
             {return BOverBmin*BOverBmin;}
+        static real_t FSA_FUNC_1OverB(real_t BOverBmin, real_t,real_t, void*)
+            {return 1 / BOverBmin;}
         static real_t FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED(real_t, real_t ROverR0,real_t NablaR2, void*)
             {return NablaR2/(ROverR0*ROverR0);}
 
@@ -49,6 +51,7 @@ namespace DREAM::FVM {
             FSA_PARAM_ONE_OVER_R_SQUARED[4] = {0,-2,0,1},
             FSA_PARAM_B[4] = {1,0,0,1},
             FSA_PARAM_B_SQUARED[4] = {2,0,0,1},
+            FSA_PARAM_1OverB[4] = {-1,0,0,1},
             FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED[4] = {0,-2,1,1};
 
 
@@ -82,6 +85,8 @@ namespace DREAM::FVM {
             *FSA_B_f                    = nullptr, // <B> / Bmin
             *FSA_B2                     = nullptr, // <B^2> / Bmin^2
             *FSA_B2_f                   = nullptr, // <B^2> / Bmin^2
+            *FSA_1OverB                 = nullptr, // <1/B> * Bmin^2
+            *FSA_1OverB_f               = nullptr, // <1/B> * Bmin^2
             *FSA_nablaR2OverR2          = nullptr, // R0^2*<|nabla r|^2/R^2>
             *FSA_nablaR2OverR2_f        = nullptr, // R0^2*<|nabla r|^2/R^2>
             *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
@@ -113,6 +118,8 @@ namespace DREAM::FVM {
             *psiPrimeRef_f = nullptr,
             *psiToroidal   = nullptr,
             *psiToroidal_f = nullptr,
+            *iota   = nullptr,
+            *iota_f = nullptr,
             R0;
 
         // Orbit-phase-space Jacobian factors
@@ -128,6 +135,12 @@ namespace DREAM::FVM {
             delete [] BtorGOverR0_f;
             delete [] psiPrimeRef;
             delete [] psiPrimeRef_f;
+        }
+        void DeallocateStellaratorData(){
+            if(iota == nullptr)
+                return;
+            delete [] iota;
+            delete [] iota_f;
         }
         void DeallocateMagneticExtremumData(){
             if(Bmin == nullptr)
@@ -190,6 +203,9 @@ namespace DREAM::FVM {
             real_t *psiPrimeRef, real_t *psiPrimeRef_f,
             real_t R0
         );
+        void SetStellaratorData(
+            real_t *iota, real_t *iota_f
+        );
         void SetMagneticExtremumData(
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
@@ -240,6 +256,10 @@ namespace DREAM::FVM {
 		const real_t  GetPsiPrimeRef(const len_t ir) const {return this->psiPrimeRef[ir];}
 		const real_t *GetPsiPrimeRef_f() const {return this->psiPrimeRef_f;}
 		const real_t  GetPsiPrimeRef_f(const len_t ir) const {return this->psiPrimeRef_f[ir];}
+		const real_t *GetIota() const {return this->iota;}
+		const real_t  GetIota(const len_t ir) const {return this->iota[ir];}
+		const real_t *GetIota_f() const {return this->iota_f;}
+		const real_t  GetIota_f(const len_t ir) const {return this->iota_f[ir];}
 
         // Returns the xi0 value corresponding to the positive
         // trapped-passing boundary at radial index ir
@@ -331,6 +351,10 @@ namespace DREAM::FVM {
         const real_t   GetFSA_B(const len_t ir) const { return this->FSA_B[ir]; }
         const real_t  *GetFSA_B_f() const { return this->FSA_B_f; }
         const real_t   GetFSA_B_f(const len_t ir) const { return this->FSA_B_f[ir]; }
+        const real_t  *GetFSA_1OverB() const { return this->FSA_1OverB; }
+        const real_t   GetFSA_1OverB(const len_t ir) const { return this->FSA_1OverB[ir]; }
+        const real_t  *GetFSA_1OverB_f() const { return this->FSA_1OverB_f; }
+        const real_t   GetFSA_1OverB_f(const len_t ir) const { return this->FSA_1OverB_f[ir]; }
         const real_t  *GetFSA_1OverR2() const { return this->FSA_1OverR2; }
         const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
         const real_t  *GetFSA_1OverR2_f() const { return this->FSA_1OverR2_f; }
