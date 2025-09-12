@@ -19,7 +19,7 @@ using namespace DREAM::FVM;
  * xa: Value of outer radial flux grid point.
  */
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
-len_t nx,  real_t B0,
+    len_t nx,  real_t B0,
     real_t x0, real_t xa,
     len_t ntheta_out
 ) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0), ntheta_out(ntheta_out) {
@@ -195,15 +195,13 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
  * Returns the flux surface R coordinates on the simulation grid edges,
  * not shifted by R0.
  */
-real_t CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta)
-{
+real_t CylindricalRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta){
     return this->x_f[ir] * cos(theta);
 }
 /**
  * Returns the flux surface Z coordinates on the simulation grid edges
  */
-real_t CylindricalRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta)
-{
+real_t CylindricalRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta){
     return this->x_f[ir] * sin(theta);
 }
 
@@ -216,8 +214,7 @@ const real_t *CylindricalRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
     const len_t ntheta = this->GetNTheta();
     real_t *Z = new real_t[nr*ntheta];
 
-    for (len_t j = 0, i = 0; j < ntheta; j++)
-    {
+    for (len_t j = 0, i = 0; j < ntheta; j++){
         real_t theta = 2*M_PI*j / ntheta;
 
         for (len_t ir = 0; ir < nr; ir++, i++)
