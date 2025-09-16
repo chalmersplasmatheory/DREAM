@@ -10,11 +10,9 @@
 #include "FVM/Interpolator1D.hpp"
 #include "DREAM/IonHandler.hpp"
 
-namespace DREAM
-{
+namespace DREAM {
 
-    class NBIElectronHeatTerm : public FVM::EquationTerm
-    {
+    class NBIElectronHeatTerm : public FVM::EquationTerm {
 
     private:
         // Grid and unknown quantity identifiers
@@ -75,8 +73,7 @@ namespace DREAM
         std::vector<real_t> dPdne, dPdTe, dPdni, dPdTi;
 
         // Structure for storing R,Z coordinates of flux surfaces
-        struct FluxSurfacePoint
-        {
+        struct FluxSurfacePoint{
             real_t R, Z; // Major radius and vertical position
         };
         std::vector<std::vector<FluxSurfacePoint>> cachedFluxSurfaces;
