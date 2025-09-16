@@ -27,7 +27,7 @@ Ip_initial = 120e5  # Initial plasma current [A]
 TMAX = 1e-6         # Simulation time [s]
 
 #Tokamak parameters - ROME
-NR = 100              # Number of radial points
+NR = 10              # Number of radial points
 B0 = 5              # Magnetic field [T]
 a = 0.23             # Plasma minor radius [m]
 b = 0.23           # Wall radius [m]
@@ -37,8 +37,9 @@ R0 =  0.798            # Major radius [m]
 #NBI parameters TO COMPARE WITH ROME
 r= np.linspace(0,a,NR+1)  # Radial grid points
 n_i_profile = 3e19 * (1 - (r/a)**2)
+#nbi_entry_point = [0.9,-1.028,0.0] 
 nbi_entry_point = [0.685,-1.028,0.0] 
-nbi_radius = 0.0775  
+nbi_radius = 0.02 #775  
 nbi_direction_vector = [0.0,1.0,0.0] 
 
 
@@ -88,19 +89,19 @@ ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
 ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_PRESCRIBED, V_loop_wall_R0=0, R0=R0)
 
 
-nbi = NBISettings()
-nbi.setEnabled(True)
+ds.eqsys.T_cold.nbi.setEnabled(True)
+
 ##ROME
 #nbi.setTCVGaussian(True)  # Use TCV Gaussian beam profile for TCV
-nbi.setOrigin(nbi_entry_point)
-nbi.setDirection(nbi_direction_vector)
+ds.eqsys.T_cold.nbi.setOrigin(nbi_entry_point)
+ds.eqsys.T_cold.nbi.setDirection(nbi_direction_vector)
 
-nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
-nbi.setIons(Z0=0, Zion=1)  
-nbi.setPower(beam_power=1) #57e3
-nbi.setR0_NBI(R0)
+ds.eqsys.T_cold.nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
+ds.eqsys.T_cold.nbi.setIons(Z0=0, Zion=1)  
+ds.eqsys.T_cold.nbi.setPower(beam_power=1) #57e3
+ds.eqsys.T_cold.nbi.setR0_NBI(R0)
 
-nbi.visualize_flux_surfaces_top_view(r)
+ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
 
 
 
@@ -124,7 +125,7 @@ nbi.visualize_flux_surfaces_top_view(r)
 # Set up electron temperature and NBI
 ds.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds.eqsys.T_cold.setInitialProfile(T_initial)
-ds.eqsys.T_cold.setNBI(nbi)
+ds.eqsys.T_cold.include_NBI = True
 
 print(ds.eqsys.T_cold.todict())
 print("include_NBI setting is:", ds.eqsys.T_cold.include_NBI)

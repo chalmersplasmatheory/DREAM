@@ -61,10 +61,8 @@ void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
     // Beam geometry settings
     s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
     s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
-    real_t default_P0[] = {1.0, 1.0, 1.0};
-    real_t default_n[]  = {0.0, 0.0, 1.0};
-    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, default_P0);
-    s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, default_n);
+    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
 
     // Beam physics settings
     s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
@@ -95,18 +93,18 @@ void SimulationGenerator::ConstructEquation_T_cold(
     enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
 
     switch (type) {
-    case OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED:
-        ConstructEquation_T_cold_prescribed(eqsys, s);
-        break;
+        case OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED:
+            ConstructEquation_T_cold_prescribed(eqsys, s);
+            break;
 
-    case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-        ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, amjuel, oqty_terms);
-        break;
+        case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
+            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, amjuel, oqty_terms);
+            break;
 
-    default:
-        throw SettingsException(
-            "Unrecognized equation type for '%s': %d.",
-            OptionConstants::UQTY_T_COLD, type 
+        default:
+            throw SettingsException(
+                "Unrecognized equation type for '%s': %d.",
+                OptionConstants::UQTY_T_COLD, type 
         );
     }
 }
@@ -204,8 +202,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
     bool includeNBI = s->GetBool(MODULENAME "/include_NBI");
-    if (includeNBI)
-    {
+    if (includeNBI) {
         real_t s_max = s->GetReal(MODULENAME "/NBI/s_max");
         real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
         real_t Ti_beam = s->GetReal(MODULENAME "/NBI/Ti_beam");
@@ -221,10 +218,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
         // Load time-dependent j_B data
         FVM::Interpolator1D *j_B_profile = LoadDataT(
-            MODULENAME "/NBI", s, "j_B");
+            MODULENAME "/NBI", s, "j_B"
+        );
 
         FVM::Interpolator1D *Power_Profile = LoadDataT(
-            MODULENAME "/NBI", s, "P_NBI");
+            MODULENAME "/NBI", s, "P_NBI"
+        );
 
         NBIElectronHeatTerm *nbi = new NBIElectronHeatTerm(fluidGrid, unknowns, adas, ionHandler, s_max, r_beam, P0, n, Ti_beam, m_i_beam, beamPower, j_B_profile, Z0, Zion, R0, TCVGaussian, Power_Profile);
         Op4->AddTerm(nbi);

@@ -39,7 +39,7 @@ class NBISettings:
         self.TCVGaussian = TCVGaussian
     
     def setCurrentProfile(self, j_B_t, j_B_x, tinterp=0):
-        """Set beam current profile in one dimention. As an alternative to setting the TCV Gaussian."""
+        """Set beam current profile in one dimension. As an alternative to setting the TCV Gaussian."""
         self.j_B_t = j_B_t
         self.j_B_x = j_B_x
         self.j_B_tinterp = tinterp
@@ -170,26 +170,26 @@ class NBISettings:
         plt.show()
 
     def todict(self):
-        """Convert settings to dictionary format."""
-        if not self.enabled:
-            return {}
-            
         return {
-            'NBI/s_max': self.s_max,
-            'NBI/r_beam': self.r_beam,
-            'NBI/P0': self.P0,
-            'NBI/n': self.n,
-            'NBI/Ti_beam': self.Ti_beam,
-            'NBI/m_i_beam': self.m_i_beam,
-            'NBI/beamPower': self.beam_power,
-            'NBI/Z0': self.Z0,
-            'NBI/Zion': self.Zion,
-            'NBI/R0': self.R0,
-            'NBI/j_B/t': self.j_B_t,
-            'NBI/j_B/x': self.j_B_x,
-            'NBI/j_B/tinterp': self.j_B_tinterp,
-            'NBI/TCVGaussian': self.TCVGaussian,
-            'NBI/P_NBI/t': self.P_NBI_t,
-            'NBI/P_NBI/x': self.P_NBI_x,
-            'NBI/P_NBI/tinterp': self.P_NBI_tinterp,
+            's_max'      : self.s_max,
+            'r_beam'     : self.r_beam,
+            'P0'         : self.P0,
+            'n'          : self.n,
+            'Ti_beam'    : self.Ti_beam,
+            'm_i_beam'   : self.m_i_beam,
+            'beamPower'  : self.beam_power,
+            'Z0'         : self.Z0,
+            'Zion'       : self.Zion,
+            'R0'         : self.R0,
+            'TCVGaussian': self.TCVGaussian,
+            'j_B'        : {
+                't'       : self.j_B_t,
+                'x'       : self.j_B_x,
+                'tinterp' : self.j_B_tinterp,
+            },
+            'P_NBI'      : {
+                't'       : self.P_NBI_t,
+                'x'       : self.P_NBI_x,
+                'tinterp' : self.P_NBI_tinterp,
+            },
         }
