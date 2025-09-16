@@ -15,6 +15,7 @@
 #include <omp.h>
 #include <unistd.h>
 #include "FVM/Interpolator1D.hpp"
+#include "DREAM/DREAMException.hpp"
 #include <iostream>
 
 using namespace DREAM;
@@ -68,10 +69,13 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(
     this->Z0 = Z0;
     this->Zion = Zion;
     this->R0 = R0;
+    if (this->P0 == nullptr || this->n == nullptr)
+            throw DREAMException("Either direction or starting point of the beam is not set correctly");
     for (int i = 0; i < 3; ++i){
         this->P0[i] = P0[i];
         this->n[i] = n[i];
     }
+    
 
     this->beamPower = beamPower;
 
@@ -133,7 +137,7 @@ real_t NBIElectronHeatTerm::Calculate_jB_IB(real_t r_B, real_t theta_B){
         real_t A = 4 / (M_PI * Dx * Dy);
         real_t cs = std::cos(theta_B);
         real_t sn = std::sin(theta_B);
-        real_t jB_divided_IB = A * std::exp(-4*r_B*r_B * (cs*cs/(Dx*Dx) + sn*sn/(Dy*Dy));
+        real_t jB_divided_IB = A * std::exp(-4*r_B*r_B * (cs*cs/(Dx*Dx) + sn*sn/(Dy*Dy)));
         return jB_divided_IB;
     } else {
         const real_t *j_B_values = j_B_profile->Eval(r_B);
@@ -452,7 +456,7 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(FVM::UnknownQuantityHandler *
         real_t beam_theta = i_beam_theta * d_beam_theta;
         for (real_t i_beam_radius = 0; i_beam_radius < n_beam_radius; i_beam_radius++){
 
-            real_t beam_radius = (i_beam_radius + 0.5) * d_beam_radius
+            real_t beam_radius = (i_beam_radius + 0.5) * d_beam_radius;
             real_t I_s = 0.0;
             real_t I_s_squared = 0.0;
             for (real_t i_beam_s = 0; i_beam_s < n_beam_s; i_beam_s++){
