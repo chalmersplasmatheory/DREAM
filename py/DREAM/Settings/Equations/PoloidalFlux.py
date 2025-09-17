@@ -88,7 +88,8 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         """
         if 'hyperresistivity' in data:
             hyp = data['hyperresistivity']
-            self.hyperresistivity_mode = int(hyp['mode'])
+            if 'mode' in hyp:
+                self.hyperresistivity_mode = int(hyp['mode'])
 
             if 'Lambda' in hyp:
                 self.hyperresistivity_Lambda_x = hyp['Lambda']['x']

@@ -4,7 +4,7 @@ import numpy as np
 import scipy.interpolate
 from numpy.matlib import repmat
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
 
@@ -53,6 +53,7 @@ class Ions(UnknownQuantity):
 
         self.ionization = ionization
         self.typeTi = IONS_T_I_NEGLECT
+        self.reioniz_scale = 1
 
         self.advectionInterpolationCharged = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.advectionInterpolationNeutral = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
@@ -236,13 +237,16 @@ class Ions(UnknownQuantity):
             raise EquationException("Invalid call to 'getIon()'.")
 
 
-    def setIonization(self, ionization=IONIZATION_MODE_FLUID):
+    def setIonization(self, ionization=IONIZATION_MODE_FLUID, reioniz_scale=1.0):
         """
         Sets which model to use for ionization.
 
         :param int ionization: Flag indicating which model to use for ionization.
         """
         self.ionization=ionization
+
+        if ionization == IONIZATION_MODE_FLUID_RE:
+            self.reioniz_scale = reioniz_scale
 
 
     def getHydrogenSpecies(self):
@@ -611,6 +615,22 @@ class Ions(UnknownQuantity):
             self.advectionInterpolationNeutral.fromdict(data['adv_interp_neutral'])
         if 'initialTi' in data:
             initialTi = data['initialTi']
+        if 'init_equilibrium' in data:
+            init_equilibrium = data['init_equilibrium']
+        if 'initialNi' in data:
+            initialNi = data['initialNi']
+
+        if 'ion_source_types' in data:
+            ion_source_types = data['ion_source_types']
+            if len(ion_source_types) == 0:
+                ion_source_types = None
+        else:
+            ion_source_types = None
+
+        if 'ion_source' in data:
+            ion_source_t = data['ion_source']['t']
+            ion_source_x = data['ion_source']['x']
+
         iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx = 0, 0, 0, 0, 0, 0, 0
         for i in range(len(Z)):
             if types[i] == IONS_PRESCRIBED:
@@ -676,6 +696,9 @@ class Ions(UnknownQuantity):
                 rnpa=None
                 tnpa=None
 
+            init_equil = (init_equilibrium[i] != 0)
+            dens = initialNi['x'][i] if init_equil else n
+
             self.addIon(
                 name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies,
                 iontype=types[i], opacity_mode=opacity_modes[i], 
@@ -691,10 +714,17 @@ class Ions(UnknownQuantity):
                 # Neutral advection
                 neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa,
                 rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
-                T=T, n=n, r=r, t=t, tritium=tritium, hydrogen=hydrogen)
+                T=T, n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
+
+            # Load ion source
+            if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
+                self.addIonSource(names[i], dNdt=ion_source_x[i,:], t=ion_source_t)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
+
+        if 'reioniz_scale' in data:
+            self.reioniz_scale = float(data['reioniz_scale'])
 
         self.verifySettings()
 
@@ -891,6 +921,7 @@ class Ions(UnknownQuantity):
         }
         data['ionization'] = self.ionization
         data['typeTi'] = self.typeTi
+        data['reioniz_scale'] = self.reioniz_scale
 
         # Initial equilibrium
         for i in range(len(initialNi)):
