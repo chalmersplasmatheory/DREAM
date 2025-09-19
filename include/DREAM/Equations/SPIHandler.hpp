@@ -114,6 +114,7 @@ namespace DREAM{
 
         //Parameters for the shift calculation
         real_t *TDrift=nullptr;
+        real_t *heatReDepositionFactorDrift=nullptr;
         real_t *ZavgDriftArray;
         real_t *pelletDeuteriumFraction=nullptr;
         real_t* rp=nullptr;
@@ -158,7 +159,7 @@ namespace DREAM{
             OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
             OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
             real_t *TDrift, real_t T0Drift, real_t DeltaYDrift,real_t RmDrift, real_t *ZavgDriftArray,
-			len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
+			len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift, real_t *heatReDepositionFactorDrift,
             real_t VpVolNormFactor, real_t rclPrescribedConstant, const int_t *nbrShiftGridCell);
         ~SPIHandler();
         void AllocateQuantities();
