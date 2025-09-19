@@ -53,7 +53,7 @@ class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift = None, ZavgDriftArray = None, ZsDrift = None, isotopesDrift = None):
+SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift = None, ZavgDriftArray = None, ZsDrift = None, isotopesDrift = None, heatReDepositionFactorDrift = None):
         """
         Constructor.
         
@@ -102,9 +102,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.ZavgDriftArray= [0.]
         self.ZsDrift       = [0]
         self.isotopesDrift = [0]
+        self.heatReDepositionFactorDrift = None
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, Ninj=None, nbrShiftGridCell = None, TDrift = None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, Ninj=None, nbrShiftGridCell = None, TDrift = None, heatReDepositionFactorDrift = None):
 
         if Ninj is not None:
             if np.isscalar(Ninj):
@@ -141,6 +142,11 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             if np.isscalar(TDrift):
                 self.TDrift = np.asarray([TDrift])
             else: self.TDrift = np.asarray(TDrift)
+            
+        if heatReDepositionFactorDrift is not None:
+            if np.isscalar(heatReDepositionFactorDrift):
+                self.heatReDepositionFactorDrift = np.asarray([heatReDepositionFactorDrift])
+            else: self.heatReDepositionFactorDrift = np.asarray(heatReDepositionFactorDrift)
 
     def rpDistrParksStatistical(self,rp,kp):
         """
@@ -451,7 +457,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
         shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay=0,
         tilt=0, nDim=2, add=True, opacity_modes=None, nbrShiftGridCell=0,
-        TDrift=None, random=np.random, **kwargs
+        TDrift=None, heatReDepositionFactorDrift = None, random=np.random, **kwargs
     ):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
@@ -484,6 +490,14 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.TDrift = np.concatenate((self.TDrift,TDrift))
             else:
                 self.TDrift = TDrift
+                
+        if heatReDepositionFactorDrift is not None:
+            if np.isscalar(heatReDepositionFactorDrift):
+                heatReDepositionFactorDrift = heatReDepositionFactorDrift*np.ones(nShard)
+            if add and self.heatReDepositionFactorDrift is not None:
+                self.heatReDepositionFactorDrift = np.concatenate((self.heatReDepositionFactorDrift,heatReDepositionFactorDrift))
+            else:
+                self.heatReDepositionFactorDrift = heatReDepositionFactorDrift
 
         return kp
         
@@ -495,7 +509,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             else:
                 self.nbrShiftGridCell = nbrShiftGridCell
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0.], ZsDrift=[0], isotopesDrift=[0], add=True):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0.], ZsDrift=[0], isotopesDrift=[0], heatReDepositionFactorDrift=None, add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
@@ -507,6 +521,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         :param list ZavgDriftArray: average charge states inside the drifting cloud of all drifting ion species. These can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. Note that his list does NOT neccessarily have the same shape as the list of atomic numbers and isotopes included in the simulation, but instead the ZavgDriftArray-list and the ZsDrift and isotopesDrift-lists below will instead be used to look up the average charge state inside the drifting cloud for all the simulated ion species included in the pellet.
         :param list ZsDrift: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
         :param list isotopesDrift: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
+        :param numpy.ndarray heatReDepositionFactorDrift: fraction of the heat absorbed by the ablation cloud to be re-deposited at the location of deposition
         """
         self.setShift(shift)
         if TDrift is not None:
@@ -517,6 +532,16 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                     self.TDrift = np.concatenate((self.TDrift, TDrift))
             else:
                 self.TDrift = TDrift
+                
+        if heatReDepositionFactorDrift is not None:
+            if add and self.heatReDepositionFactorDrift is not None:
+                if np.isscalar(heatReDepositionFactorDrift):
+                    self.heatReDepositionFactorDrift = np.concatenate((self.heatReDepositionFactorDrift, [heatReDepositionFactorDrift]))
+                else:
+                    self.heatReDepositionFactorDrift = np.concatenate((self.heatReDepositionFactorDrift, heatReDepositionFactorDrift))
+            else:
+                self.heatReDepositionFactorDrift = heatReDepositionFactorDrift
+                
         self.T0Drift = T0Drift
         self.DeltaYDrift = DeltaYDrift
         self.RmDrift = RmDrift
@@ -608,6 +633,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             self.shift          = int(data['shift'])
         if 'TDrift' in data:
             self.TDrift              = [float(x) for x in data['TDrift']]
+        if 'heatReDepositionFactorDrift' in data:
+            self.heatReDepositionFactorDrift = [float(x) for x in data['heatReDepositionFactorDrift']]
         if 'T0Drift' in data:
             self.T0Drift             = float(data['T0Drift'])
         if 'DeltaYDrift' in data:
@@ -721,6 +748,14 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         else:
             data['TDrift'] = self.TDrift
             
+        if self.heatReDepositionFactorDrift is None:
+            if self.rp is not None:
+                data['heatReDepositionFactorDrift'] = np.ones(self.rp.shape)
+            else:
+                data['heatReDepositionFactorDrift'] = np.array([0])
+        else:
+            data['heatReDepositionFactorDrift'] = self.heatReDepositionFactorDrift
+            
         return data
 
 
@@ -741,6 +776,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
             if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
+            if any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1:
+                raise EquationException("spi: Invalid value assigned to 'heatReDepositionFactorDrift'. Expected array of floats between 0 and 1.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
             if self.RmDrift<0 and self.RmDrift!=-1:
