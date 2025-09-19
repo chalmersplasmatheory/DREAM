@@ -41,7 +41,7 @@ real_t BootstrapIonDensityTerm::GetCoefficient(len_t ir) {
     if (bs->includeIonTemperatures)
         coefficient = bs->p[ir] / bs->n[ir] - 2./3. * ( 1. + alpha ) * bs->Wi[rOffset + ir] / (bs->Ni[rOffset + ir] * Constants::ec);
     else
-        coefficient = - bs->Tcold[ir] * alpha;
+        coefficient = bs->Tcold[ir];
 
     return pre * l31 * coefficient;
 }
@@ -59,10 +59,9 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, l
 
     real_t dCoefficient = dl31;
     if (!bs->includeIonTemperatures) {
-        dCoefficient *= - bs->Tcold[ir] * alpha;
-        dCoefficient -= l31 * bs->Tcold[ir] * dalpha;
+        dCoefficient *= bs->Tcold[ir];
         if (derivId == id_Tcold)
-            dCoefficient -= l31 * alpha;
+            dCoefficient += l31;
     } else {
         dCoefficient *= bs->p[ir] / bs->n[ir] - ( 1. + alpha ) * bs->Wi[rOffset + ir];
         dCoefficient -= l31 * 2./3. * dalpha * bs->Wi[rOffset + ir] / bs->Ni[rOffset + ir];
