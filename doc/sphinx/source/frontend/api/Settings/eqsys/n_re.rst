@@ -256,7 +256,7 @@ and the kinetic source rate by
    \left( \frac{\mathrm{d} f}{\mathrm{d} t} \right)_{\rm T} \approx
    \frac{\ln 2}{4\pi } \frac{n_{\rm T}}{\tau_{\rm T}}\frac{1}{p^2} f_\beta\left( \gamma \right)m_{\rm e}c^2\frac{p}{\gamma},
 
-where :math:`n_{\rm T}` is the tritium density, :math:`\tau_{\rm T} = 4800\pm 8`
+where :math:`n_{\rm T}` is the tritium density, :math:`\tau_{\rm T} = 4500\pm 8`
 days is the tritium half-life, :math:`f_\beta(\gamma)` is the beta energy spectrum 
 and :math:`F_\beta(\gamma_{\rm c})` denotes the fraction of beta electrons generated with 
 an energy above the critical energy :math:`\gamma_{\rm c}` for runaway to occur. 
