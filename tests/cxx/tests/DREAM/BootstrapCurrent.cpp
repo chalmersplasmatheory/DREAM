@@ -14,10 +14,10 @@
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
-// TODO: Look at the IonRateEquation for inspiration, 
-const len_t N_IONS = /*TODO*/; // Number of ion species
-const len_t Z_IONS[N_IONS] = {/*TODO*/;}; // Vector with atomic number for each ion species, # elements == N_IONS
-const char ION_NAMES[N_IONS][3] = {/*TODO*/}; // Vector with name of each ion species, # elements == N_IONS
+// TODO Peter: Look at the IonRateEquation for inspiration, 
+const len_t N_IONS = /*TODO Peter*/; // Number of ion species
+const len_t Z_IONS[N_IONS] = {/*TODO Peter*/;}; // Vector with atomic number for each ion species, # elements == N_IONS
+const char ION_NAMES[N_IONS][3] = {/*TODO Peter*/}; // Vector with name of each ion species, # elements == N_IONS
 
 
 /**
@@ -66,7 +66,7 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(DREAM::F
     for (len_t iIon = 0; iIon < N_IONS; iIon++) {
         for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++) {
             for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++){
-                nions[rOffset] = /*TODO*/;
+                nions[rOffset] = /*TODO Peter*/;
                 Nions[iIon*nr+ir] += nions[rOffset];
             }
                 
@@ -76,26 +76,26 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(DREAM::F
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_NI_DENS, nions);
 
     if (withIonEnergy){
-        // TODO: Set ion energies
+        // TODO Peter: Set ion energies
         real_t *wions = new real_t[Nsum];
         len_t rOffset = 0;
         for (len_t iIon = 0; iIon < N_IONS; iIon++) {
             for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++)
-                wions[rOffset] = /*TODO*/;
+                wions[rOffset] = /*TODO Peter*/;
         }
         uqh->SetInitialValue(DREAM::OptionConstants::UQTY_WI_ENER, wions);
     }
 
-    // TODO: Set electron densities and energies
+    // TODO Peter: Set electron densities and energies
     // Set electron quantities
     real_t *ncold = new real_t[g->GetNr()];
     real_t *Tcold = new real_t[g->GetNr()];
     for (len_t i = 0; i < g->GetNr(); i++){
-        ncold[i] = /*TODO*/;
-        Tcold[i] = /*TODO*/;
+        ncold[i] = /*TODO Peter*/;
+        Tcold[i] = /*TODO Peter*/;
     }
-    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_N_COLD, /*TODO*/);
-    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_T_COLD, /*TODO*/);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_N_COLD, ncold);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_T_COLD, Tcold);
 
     delete [] nions;
     delete [] Nions;
@@ -111,9 +111,9 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(DREAM::F
  * Check if the bootstrap current is consistent with IDA.
  */
 bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
-    real_t successRelErrorThreshold = 1e-5; // TODO: Probably want to change this
+    real_t successRelErrorThreshold = 1e-5; // TODO Peter: Probably want to change this
     bool success = true;
-    const len_t Nr = /*TODO*/; 
+    const len_t Nr = /*TODO Peter*/; 
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(Nr);
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid, withIonEnergy);
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
@@ -138,7 +138,7 @@ bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
     // Clear 'j_bs'
     for (len_t ir = 0; ir < Nr; ir++){
         j_bs[ir] = 0;
-        j_bs_IDA[ir] = /*TODO*/;
+        j_bs_IDA[ir] = /*TODO Peter*/;
     }
     
     // Construct equation for each ion species
@@ -170,7 +170,7 @@ bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
     }
 
     /* 
-     * TODO: Alternatively, the IDA data for bootstrap current can be put in the vector j_bs_IDA in a loop here
+     * TODO Peter: Alternatively, the IDA data for bootstrap current can be put in the vector j_bs_IDA in a loop here
      */
 
     // Sum of all elements should vanish
