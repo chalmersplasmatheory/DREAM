@@ -43,6 +43,7 @@ namespace DREAM::FVM {
         const real_t *GetBuffer() const { return this->buffer; }
         const real_t *GetX() const { return this->x; }
         const real_t *GetY() const { return this->y; }
+		const len_t GetNx() const { return this->nx; }
     };
 
     class Interpolator1DException : public FVMException {

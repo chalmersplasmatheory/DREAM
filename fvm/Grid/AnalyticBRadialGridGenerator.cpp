@@ -777,6 +777,23 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 
 	return R;
 }
+/**
+ * Returns the flux surface R coordinates on the simulation grid edges,
+ * not shifted by R0.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta){
+    return ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+}
+ 
+
+/**
+ * Returns the flux surface Z coordinates on the simulation grid edges.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta){
+
+    return this->r_f[ir] * this->kappa_f[ir] * sin(theta);
+}
+
 
 
 /**
