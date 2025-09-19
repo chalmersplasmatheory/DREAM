@@ -53,6 +53,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
+            // IE: Should psiPrimeRef be held constant for a stellarator?
             const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
 
             // OBS. something is off with the above definitions: the following should not include the last factor of B0...
