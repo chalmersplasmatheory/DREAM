@@ -923,7 +923,6 @@ int_t SPIHandler::CalculateDriftIrp(len_t ip, real_t radius) {
             return (int_t)ir - (int_t)this->irp[ip];
 
     return nr;
-    //return nr-1-this->irp[ip];
 }
 
 /**
