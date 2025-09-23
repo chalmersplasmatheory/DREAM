@@ -85,6 +85,16 @@ namespace DREAM {
         // Private helper methods
         void PrecomputeFluxSurfaces();
         void PrecomputeBeamBasisVectors();
+        std::vector<len_t> ir_lut; // size = n_beam_theta * n_beam_radius * n_beam_s
+        inline size_t lut_index(len_t it, len_t irad, len_t is) const {
+        return (static_cast<size_t>(it)*n_beam_radius + irad)*n_beam_s + is;
+        }
+        void PrecomputeBeamMapLUT();
+
+        void IonElectronFractions(FVM::UnknownQuantityHandler *unknowns, len_t ir, real_t &f_i, real_t &f_e);
+
+        //const std::vector<real_t>& GetNBIHeatDensity() const { return this->NBIHeatTerm; }
+
 
     public:
         NBIElectronHeatTerm(

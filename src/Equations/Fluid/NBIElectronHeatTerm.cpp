@@ -17,6 +17,11 @@
 #include "FVM/Interpolator1D.hpp"
 #include "DREAM/DREAMException.hpp"
 #include <iostream>
+#include <map>
+#include <tuple>
+#include <vector>
+#include <fstream>
+#include <iomanip>
 
 using namespace DREAM;
 /**
@@ -58,7 +63,7 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(
 
     // Set integration step size
     this->unknowns = unknowns;
-    this->ntheta = 50;
+    this->ntheta = 100;
     this->dtheta = 2.0 * M_PI / ntheta;
 
     // Set beam parameters
@@ -100,6 +105,9 @@ NBIElectronHeatTerm::NBIElectronHeatTerm(
     this->n_beam_s = 50;
     this->d_beam_s = (s_stop - s_start) / n_beam_s;
     this->TCVGaussian = TCVGaussian;
+
+    //Precompute the ir-flux surface mapping 
+    PrecomputeBeamMapLUT();
 
     // Integrate VpVol to get plasma volume
     this->plasmaVolume = 0;
@@ -208,6 +216,26 @@ void NBIElectronHeatTerm::PrecomputeBeamBasisVectors(){
     e2[1] = n_norm[2] * e1[0] - n_norm[0] * e1[2];
     e2[2] = n_norm[0] * e1[1] - n_norm[1] * e1[0];
 }
+/**
+ * Precomputes discretized points in the beam and maps the intersections.
+ */
+void NBIElectronHeatTerm::PrecomputeBeamMapLUT(){
+    ir_lut.resize(static_cast<size_t>(n_beam_theta)*n_beam_radius*n_beam_s, static_cast<len_t>(-1));
+
+    //#pragma omp parallel for collapse(3)
+    for (len_t it = 0; it < n_beam_theta; ++it){
+        for (len_t irad = 0; irad < n_beam_radius; ++irad){
+            for (len_t is = 0; is < n_beam_s; ++is){
+                real_t beam_theta  = it * d_beam_theta;
+                real_t beam_radius = (irad) * d_beam_radius;
+                real_t beam_s      = s_start + is * d_beam_s;
+
+                len_t ir_now = CalculatePencilBeamFindFlux(beam_s, beam_radius, beam_theta);
+                ir_lut[lut_index(it, irad, is)] = ir_now;
+            }
+        }
+    }
+}
 
 /**
  * Destructor
@@ -273,7 +301,9 @@ void NBIElectronHeatTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuan
         }
 
         for (len_t ir = 0; ir < nr; ir++){
-            NBIHeatTerm[ir] = powerNow * Deposition_profile_times_Vprime[ir] * d_beam_radius /  (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir]); 
+            real_t fi, fe;
+            IonElectronFractions(unknowns, ir, fi, fe);
+            NBIHeatTerm[ir] = fe*powerNow * Deposition_profile_times_Vprime[ir] * d_beam_radius /  (radialGrid->GetVpVol()[ir]*radialGrid->GetDr()[ir] ); 
             NBIHeatTerm[0] = 0;            
             
         }
@@ -448,6 +478,7 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(FVM::UnknownQuantityHandler *
         H_r_dTi[ir] = 0.0;
         H_r_dne[ir] = 0.0;
     }
+    std::map<len_t, std::vector<std::tuple<real_t, real_t, real_t>>> beamMap;
     std::vector<real_t> lambda_cache(nr, -1.0); // -1 = not yet computed
     std::vector<real_t> dlambda_dI_cache(nr, -1.0);
     std::vector<real_t> dlambda_dne_cache(nr, -1.0);
@@ -456,12 +487,12 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(FVM::UnknownQuantityHandler *
         real_t beam_theta = i_beam_theta * d_beam_theta;
         for (real_t i_beam_radius = 0; i_beam_radius < n_beam_radius; i_beam_radius++){
 
-            real_t beam_radius = (i_beam_radius + 0.5) * d_beam_radius;
+            real_t beam_radius = (i_beam_radius) * d_beam_radius;
             real_t I_s = 0.0;
             real_t I_s_squared = 0.0;
             for (real_t i_beam_s = 0; i_beam_s < n_beam_s; i_beam_s++){
                 real_t beam_s = s_start + i_beam_s * d_beam_s;
-                len_t ir_now = CalculatePencilBeamFindFlux(beam_s, beam_radius, beam_theta);
+                len_t ir_now = ir_lut[lut_index(i_beam_theta, i_beam_radius, i_beam_s)];
                 if (ir_now < 0 || ir_now >= nr){
                     throw DREAMException(
                         "NBIElectronHeatTerm: ir_now out of bounds: "
@@ -508,9 +539,41 @@ void NBIElectronHeatTerm::ComputeDepositionProfile(FVM::UnknownQuantityHandler *
                 H_r_dni[ir_now] += jB_divided_IB * dlambda_dI * dI_dni * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
                 H_r_dTi[ir_now] += jB_divided_IB * dlambda_dI * dI_dTi * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
                 H_r_dne[ir_now] += jB_divided_IB * dlambda_dne * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
+                beamMap[ir_now].emplace_back(beam_s, beam_radius, beam_theta);
+
             }
         }
     }
+    {
+        std::ofstream ofs("beam_map_grouped.csv");
+        if (!ofs)
+            throw DREAMException("NBIElectronHeatTerm: Could not open 'beam_map_grouped.csv' for writing.");
+    
+        ofs.setf(std::ios::scientific);
+        ofs << std::setprecision(9);
+    
+        ofs << "# Beam -> flux-surface mapping grouped by ir\n";
+    
+        for (const auto &kv : beamMap) {
+            len_t ir = kv.first;
+            const auto &vec = kv.second;
+            ofs << "ir=" << ir << ", count=" << vec.size() << '\n';
+    
+            // print each hit with running index and fields s=..., r=..., theta=...
+            for (size_t i = 0; i < vec.size(); ++i) {
+                const auto &tpl = vec[i];
+                real_t s     = std::get<0>(tpl);
+                real_t r     = std::get<1>(tpl);
+                real_t theta = std::get<2>(tpl);
+    
+                ofs << "  [" << i << "] "
+                    << "s=" << s << ", "
+                    << "r=" << r << ", "
+                    << "theta=" << theta << '\n';
+            }
+        }
+    }
+    
 }
 
 /**
@@ -559,4 +622,63 @@ void NBIElectronHeatTerm::SetMatrixElements(FVM::Matrix *mat, real_t *rhs){
         real_t factor = 2.0 / (3.0 * n_cold[ir]);
         rhs[ir] -= factor * NBIHeatTerm[ir];
     }
+}
+/**
+ *Calculate the fraction of energy that should go to the electrons and different ion species
+ */
+
+void NBIElectronHeatTerm::IonElectronFractions(FVM::UnknownQuantityHandler *unknowns, len_t ir, real_t &f_i, real_t &f_e){
+    real_t m_u = 1.660539066e-27;      // atomic mass unit [kg]
+    real_t evJ = 1.602e-19; // ej to Joule
+
+
+    real_t ne = this->unknowns->GetUnknownData(this->id_ncold)[ir];          // [m^-3]
+    real_t Te = this->unknowns->GetUnknownData(this->id_Tcold)[ir];           // eV
+
+    real_t me = 9.109e-31;
+    real_t Me = me/m_u;
+    real_t Mb = this->m_i_beam/m_u;
+    real_t ve = std::sqrt(2 * Te / Me);
+    real_t vb = std::sqrt(2 * (this->Ti_beam /evJ) / Mb);
+
+    //Handeling the ions
+    len_t NZ = ions->GetNZ();
+
+    std::vector<real_t> ni_species(NZ, 0.0);   // total ion density of species i (sum over charge states) [m^-3]
+    std::vector<real_t> Zi(NZ, 0.0);           // nuclear charge (Zmax)
+    std::vector<real_t> Mi(NZ, 0.0);     
+    // Loop over all atomic species
+        for (len_t iz = 0; iz < ions->GetNZ(); iz++){
+            len_t Zmax = ions->GetZ(iz);
+            //real_t Mi_kg = ions->GetMass(iz);     // <-- adjust if your API differs
+            Zi[iz] = Zmax;
+            Mi[iz] = ions->GetIonSpeciesMass(iz)/m_u; //approx
+            
+
+            // Loop over charge states of this species
+            real_t sum_ni = 0.0;
+            for (len_t Z0 = 0; Z0 <= Zmax; Z0++){
+                real_t niZ = ions->GetIonDensity(ir, iz, Z0);
+                sum_ni += niZ; 
+            }
+            ni_species[iz] = sum_ni;            
+        }
+    real_t Z1_sum = 0.0;
+    for (len_t iz = 0; iz < NZ; iz++){
+        if (Mi[iz] > 0.0)
+            Z1_sum += ni_species[iz] * (Zi[iz]*Zi[iz]) / Mi[iz];
+            
+    }
+
+    real_t Z1 = (Mb/ne) * Z1_sum;
+    real_t factor = (3*std::sqrt(M_PI) * Me * Z1 / (4*Mb));
+    real_t vc = std::pow(std::max((real_t)0, factor), (real_t)(1.0/3.0)) * ve;  
+    real_t xc = vc/vb;
+    real_t x = 1/(xc);
+    real_t F_NB2 = (std::atan((2*x-1)/std::sqrt(3)) + M_PI/6)/std::sqrt(3) - (std::log((1+x)*(1+x)/(1 - x + x*x))) / 6.0;  
+
+    f_i = 2*F_NB2/(x*x);
+    f_e = 1-f_i;
+
+
 }
