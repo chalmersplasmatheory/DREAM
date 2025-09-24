@@ -118,7 +118,7 @@ class TransportCoefficientReader:
             ixi = np.argmax(self.xi)
          # 6.2/2 correction factor due to wrong major radius import
          # (see email from O. Vallhagen 2024-02-28)
-        dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        dBB = np.sqrt(self.Drr[:,:,ixi,ip]/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
         print(f'R0 = {dsObj.radialgrid.R0}')
         print(f'dB/B = {np.amax(dBB)}')
         print(f'Drr  = {np.amax(self.Drr[:,:,ixi,ip])}')
