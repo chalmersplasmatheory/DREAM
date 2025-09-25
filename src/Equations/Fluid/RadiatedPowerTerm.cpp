@@ -1,6 +1,5 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 
-
 /**
  * Implementation of a class which represents the 
  * radiated power as calculated with rate coefficients
@@ -54,6 +53,8 @@ RadiatedPowerTerm::RadiatedPowerTerm(
 	// used for storing as OtherQuantities
 	Prad = new real_t[grid->GetNCells()];
 	Pion = new real_t[grid->GetNCells()];
+	Prad_i = new real_t[grid->GetNCells()*ionHandler->GetNZ()];
+	Pion_i = new real_t[grid->GetNCells()*ionHandler->GetNZ()];
 }
 
 /**
@@ -62,6 +63,8 @@ RadiatedPowerTerm::RadiatedPowerTerm(
 RadiatedPowerTerm::~RadiatedPowerTerm() {
 	delete [] Prad;
 	delete [] Pion;
+	delete [] Prad_i;
+	delete [] Pion_i;
 }
 
 
@@ -97,6 +100,10 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
         weights[i] = 0;
 		Prad[i] = 0;
 		Pion[i] = 0;
+		for (len_t iz = 0; iz < nZ; iz++) {
+			Prad_i[iz*NCells + i] = 0;
+			Pion_i[iz*NCells + i] = 0;
+		}
 	}
 
     for(len_t iz = 0; iz<nZ; iz++){
@@ -167,6 +174,10 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 					Prad[i] += n_cold[i] * nij * Li;
 					Pion[i] += n_cold[i] * nij * Bi;
 				}
+
+				// other quantity
+				Prad_i[iz*NCells + i] += n_cold[i] * nij * Li;
+				Pion_i[iz*NCells + i] += n_cold[i] * nij * Bi;
             }
         }
     }

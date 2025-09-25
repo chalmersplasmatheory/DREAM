@@ -33,6 +33,8 @@ namespace DREAM {
 
 		real_t *Prad;
 		real_t *Pion;
+		real_t *Prad_i;
+		real_t *Pion_i;
 
     protected:
         virtual len_t GetNumberOfWeightsElements() override 
@@ -54,6 +56,10 @@ namespace DREAM {
 			{return Prad;}
 		const real_t* GetRateOfChangeBindingEnergy() const
 			{return Pion;}
+		const real_t* GetRadiationPower(len_t iZ) const
+			{return Prad_i + iZ*grid->GetNCells();}
+		const real_t* GetRateOfChangeBindingEnergy(len_t iZ) const
+			{return Pion_i + iZ*grid->GetNCells();}
    };
 
 

@@ -500,16 +500,35 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_transport->SetVectorElements(vec, Tcold);
         );
-    if (tracked_terms->T_cold_radiation != nullptr)
+    if (tracked_terms->T_cold_radiation != nullptr) {
         DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
             const real_t *Prad = this->tracked_terms->T_cold_radiation->GetRadiationPower();
 			qd->Store(Prad);
-        );	
-    if (tracked_terms->T_cold_radiation != nullptr)
-        DEF_FL("fluid/Tcold_binding_energy", "Rate of change in potential energy due to ionisation/recombination [J s^-1 m^-3]",
+        );
+		DEF_FL_MUL("fluid/radiated_power_ion", this->ions->GetNZ(), "Radiated power density for individual ion species [J s^-1 m^-3]",
+			real_t *v = qd->StoreEmpty();
+			len_t nr = this->fluidGrid->GetNr();
+			for (len_t iz = 0; iz < this->ions->GetNZ(); iz++) {
+				const real_t *Prad_i = this->tracked_terms->T_cold_radiation->GetRadiationPower(iz);
+				for (len_t ir = 0; ir < nr; ir++){
+					v[iz*nr+ir] = Prad_i[ir];}
+			}
+		);
+		
+		DEF_FL("fluid/Tcold_binding_energy", "Rate of change in potential energy due to ionisation/recombination [J s^-1 m^-3]",
             const real_t *Pion = this->tracked_terms->T_cold_radiation->GetRateOfChangeBindingEnergy();
 			qd->Store(Pion);
-        );
+        );	
+		DEF_FL_MUL("fluid/binding_energy_ion", this->ions->GetNZ(), "Rate of change in potential energy due to ionisation/recombination for individual ion species [J s^-1 m^-3]",
+			real_t *v = qd->StoreEmpty();
+			len_t nr = this->fluidGrid->GetNr();
+			for (len_t iz = 0; iz < this->ions->GetNZ(); iz++) {
+				const real_t *Pion_i = this->tracked_terms->T_cold_radiation->GetRateOfChangeBindingEnergy(iz);
+				for (len_t ir = 0; ir < nr; ir++)
+					v[iz*nr+ir] = Pion_i[ir];
+			}
+		);
+	}
 
 
     if (tracked_terms->T_cold_ion_coll != nullptr)
