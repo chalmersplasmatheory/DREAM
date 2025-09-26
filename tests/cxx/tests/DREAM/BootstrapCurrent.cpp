@@ -4,20 +4,23 @@
 
 #include <vector>
 #include <string>
+#include <softlib/SFile_HDF5.h>
 #include "BootstrapCurrent.hpp"
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/BootstrapCurrent.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
-// TODO Peter: Look at the IonRateEquation for inspiration, 
-const len_t N_IONS = /*TODO Peter*/; // Number of ion species
-const len_t Z_IONS[N_IONS] = {/*TODO Peter*/;}; // Vector with atomic number for each ion species, # elements == N_IONS
-const char ION_NAMES[N_IONS][3] = {/*TODO Peter*/}; // Vector with name of each ion species, # elements == N_IONS
+const string INPUT_FILENAME = "profiles_IDE_40655_t=2.3s.h5"
+const string EQUIL_FILENAME = "equilibrium_IDE_40655_t=2.3s.h5"
+
+const len_t N_IONS = 2; // Number of ion species
+const len_t Z_IONS[N_IONS] = {1, 10}; // Vector with atomic number for each ion species, # elements == N_IONS
+const char ION_NAMES[N_IONS][3] = {"D", "Ne"}; // Vector with name of each ion species, # elements == N_IONS
 
 
 /**
@@ -42,8 +45,12 @@ DREAM::IonHandler *BootstrapCurrent::GetIonHandler(
 /**
  * Generate an unknown quantity handler.
  */
-DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(DREAM::FVM::Grid *g, bool withIonEnergy) {
+DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(
+	DREAM::FVM::Grid *g, bool withIonEnergy, SFile_HDF5 input_file
+) {
     DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
+
+	len_t nr = g->GetNr();
 
     len_t nZ0 = 0;
     for (len_t i = 0; i < N_IONS; i++)
@@ -57,52 +64,58 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(DREAM::F
         uqh->InsertUnknown(DREAM::OptionConstants::UQTY_WI_ENER, "0", g, N_IONS);
 
 
+	// input data
+	sfilesize_t dims[2];
+	real_t *r = input_file->GetDouble1D("radius", dims);
+	real_t *ne = input_file->GetDouble1D("electron_density", dims);
+	real_t *Te = input_file->GetDouble1D("electron_temperature", dims);
+	real_t *ni = input_file->GetDouble1D("ion_density", dims);
+	real_t *Ti = input_file->GetDouble1D("ion_temperature", dims);
+	real_t *Zeff = input_file->GetDouble1D("effective_charge", dims);
+	
+
     // Set initial values
     const len_t Nsum = N_IONS*g->GetNr();
     const len_t N = nZ0*g->GetNr();;
     real_t *Nions = new real_t[Nsum];
     real_t *nions = new real_t[N];
     len_t  rOffset = 0;
+	real_t fZ;
+	len_t Z = Z_IONS[1];
     for (len_t iIon = 0; iIon < N_IONS; iIon++) {
         for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++) {
-            for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++){
-                nions[rOffset] = /*TODO Peter*/;
-                Nions[iIon*nr+ir] += nions[rOffset];
-            }
-                
-        }
-    }
+            for (len_t ir = 0; ir < nr; ir++, rOffset++){
+				if (Z0 == 1 && iIon == 0) // deuterium
+					nions[rOffset] = ni[ir] * Z*(Z - Zeff[ir]) / ((Z - 1)*(Z - Zeff[ir] + 1));
+				else if (Z0 == Z_IONS[1] && iIon == 1) // impurity
+					nions[rOffset] = ni[ir] * (Zeff[ir] - 1) / (Z*Z - Zeff[ir]*(Z - 1) - 1);
+				else
+					nions[rOffset] = 0.0;
+				Nions[iIon*nr+ir] = nions[rOffset]; // only one charge state per ion
+			}
+		}
+	}
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_ION_SPECIES, nions);
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_NI_DENS, nions);
 
     if (withIonEnergy){
-        // TODO Peter: Set ion energies
         real_t *wions = new real_t[Nsum];
         len_t rOffset = 0;
         for (len_t iIon = 0; iIon < N_IONS; iIon++) {
-            for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++)
-                wions[rOffset] = /*TODO Peter*/;
+            for (len_t ir = 0; ir < nr; ir++)
+                wions[rOffset] = Ti[ir] * 1.5 * Constants::ec * Nions[iIon*nr+ir];
         }
         uqh->SetInitialValue(DREAM::OptionConstants::UQTY_WI_ENER, wions);
     }
 
-    // TODO Peter: Set electron densities and energies
     // Set electron quantities
-    real_t *ncold = new real_t[g->GetNr()];
-    real_t *Tcold = new real_t[g->GetNr()];
-    for (len_t i = 0; i < g->GetNr(); i++){
-        ncold[i] = /*TODO Peter*/;
-        Tcold[i] = /*TODO Peter*/;
-    }
-    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_N_COLD, ncold);
-    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_T_COLD, Tcold);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_N_COLD, ne);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_T_COLD, Te);
 
     delete [] nions;
     delete [] Nions;
     if (withIonEnergy)
         delete [] wions;
-    delete [] ncold;
-    delete [] Tcold;
     
     return uqh;
 }
@@ -111,11 +124,17 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(DREAM::F
  * Check if the bootstrap current is consistent with IDA.
  */
 bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
+
+	// load input data
+	SFile_HDF5 input_file = SFile::Open(filename, SFILE_MODE_READ);
+	sfilesize_t dims[2];
+	real_t *j_bs_IDA = input_file->GetDouble1D("bootstrap_current", dims);
+	
     real_t successRelErrorThreshold = 1e-5; // TODO Peter: Probably want to change this
     bool success = true;
-    const len_t Nr = /*TODO Peter*/; 
+    const len_t Nr = (len_t)dims[0];	// match radial grid with that of the input data 
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(Nr);
-    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid, withIonEnergy);
+    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid, withIonEnergy, input_file);
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
     ih->Rebuild();
 
@@ -138,7 +157,6 @@ bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
     // Clear 'j_bs'
     for (len_t ir = 0; ir < Nr; ir++){
         j_bs[ir] = 0;
-        j_bs_IDA[ir] = /*TODO Peter*/;
     }
     
     // Construct equation for each ion species
@@ -168,10 +186,6 @@ bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
             term_wi[iIon]->SetVectorElements(j_bs, nullptr);
         }
     }
-
-    /* 
-     * TODO Peter: Alternatively, the IDA data for bootstrap current can be put in the vector j_bs_IDA in a loop here
-     */
 
     // Sum of all elements should vanish
     real_t deltas;
