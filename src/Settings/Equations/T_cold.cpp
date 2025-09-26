@@ -20,7 +20,8 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
-#include "DREAM/Equations/Fluid/NBIElectronHeatTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIElectronTerm.hpp"
+#include "DREAM/NBIHandler.hpp"
 
 
 
@@ -224,12 +225,27 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         FVM::Interpolator1D *Power_Profile = LoadDataT(
             MODULENAME "/NBI", s, "P_NBI"
         );
-
-        NBIElectronHeatTerm *nbi = new NBIElectronHeatTerm(fluidGrid, unknowns, adas, ionHandler, s_max, r_beam, P0, n, Ti_beam, m_i_beam, beamPower, j_B_profile, Z0, Zion, R0, TCVGaussian, Power_Profile);
-        Op4->AddTerm(nbi);
-        oqty_terms->T_cold_NBI = nbi;
-        eqsys->SetOperator(id_T_cold, id_T_cold, Op4);
+        NBIHandler *handler = oqty_terms->NBI_handler;
+        if (handler == nullptr) {
+            handler = new NBIHandler(eqsys->GetFluidGrid(), adas, ionHandler);
+            handler->ConfigureFromSettings(
+                s, unknowns,
+                s_max, r_beam,
+                P0, n,
+                Ti_beam, m_i_beam, beamPower,
+                j_B_profile, Z0, Zion, R0,
+                TCVGaussian, Power_Profile
+            );
+            
+        }
+        oqty_terms->NBI_handler = handler;
+  
+        auto *nbi_e = new NBIElectronTerm(handler, eqsys->GetFluidGrid(), unknowns);
+        Op4->AddTerm(nbi_e);
+        oqty_terms->T_cold_NBI = nbi_e;
         desc += " + NBI";
+        eqsys->SetOperator(id_T_cold, id_T_cold, Op4); 
+        
     }
 
     // SPI heat absorbtion
