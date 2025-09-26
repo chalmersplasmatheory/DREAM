@@ -101,8 +101,8 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 		Prad[i] = 0;
 		Pion[i] = 0;
 		for (len_t iz = 0; iz < nZ; iz++) {
-			Prad_i[iz*NCells + i] = 0;
-			Pion_i[iz*NCells + i] = 0;
+			Prad_i[iz*NCells+i] = 0;
+			Pion_i[iz*NCells+i] = 0;
 		}
 	}
 
@@ -176,8 +176,12 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 				}
 
 				// other quantity
-				Prad_i[iz*NCells + i] += n_cold[i] * nij * Li;
-				Pion_i[iz*NCells + i] += n_cold[i] * nij * Bi;
+				Prad_i[iz*NCells+i] += n_cold[i] * nij * Li;
+				Pion_i[iz*NCells+i] += n_cold[i] * nij * Bi;
+
+				//
+    	        if(!includePRB)
+	            	Prad_i[iz*NCells+i] += n_cold[i] * bremsPrefactor*sqrt(T_cold[i])*Z0*Z0*(1 + bremsRel1*T_cold[i]/Constants::mc2inEV);
             }
         }
     }
