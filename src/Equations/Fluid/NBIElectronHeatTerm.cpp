@@ -248,6 +248,8 @@ NBIElectronHeatTerm::~NBIElectronHeatTerm(){
     delete[] H_r_dni;
     delete[] H_r_dTi;
     delete[] H_r_dne;
+    delete[] dV_beam_prime_tot;
+
 }
 
 /**
