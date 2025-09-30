@@ -46,7 +46,6 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
 
     // equilibrium constants
     const real_t R0 = rGrid->GetR0();
-    const real_t B0 = rGrid->GetBmin_f(0);
     for (len_t ir = 0; ir < nr; ir++) {
         // calculate the geometric prefactor
         const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
@@ -54,8 +53,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
         const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
 
-        // OBS. something is off with the above definitions: the following should not include the last factor of B0...
-        constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef)  *B0; // <--- this B0!
+        constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
         if (ir == 0)
             constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
         else if (ir == nr - 1)
