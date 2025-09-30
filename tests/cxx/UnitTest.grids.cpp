@@ -11,6 +11,7 @@
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
+#include "FVM/Grid/NumericBRadialGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "UnitTest.hpp"
@@ -99,54 +100,11 @@ DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0)
  *
  * nr: (optional) Number of radial grid points.
  */
-DREAM::FVM::Grid *UnitTest::InitializeAnalyticBFluidGrid(const len_t nr,
-    const len_t ntheta_interp, const len_t nrProfiles) {
-    /*TODO: Peter - might want to load data directly into shapign arrays*/
-    real_t r0 = /*TODO: Peter*/;
-    real_t ra = /*TODO: Peter*/;
-    real_t R0 = /*TODO: Peter*/;
+DREAM::FVM::Grid *UnitTest::InitializeNumericFluidGrid(const real_t *r_f, const len_t nr, const std::string& mf) {
 
-    real_t 
-        DeltaMax = /*TODO: Peter*/,
-        deltaMax = /*TODO: Peter*/,
-        GMin = /*TODO: Peter*/,
-        GMax = /*TODO: Peter*/,
-        kappaMin = /*TODO: Peter*/,
-        kappaMax = /*TODO: Peter*/,
-        DeltaPsi = /*TODO: Peter*/;
-        
+    auto *NBrgg = new DREAM::FVM::NumericBRadialGridGenerator(r_f, nr, mf);
 
-    real_t 
-        *rProfiles = new real_t[nrProfiles],
-        *Gs = new real_t[nrProfiles], 
-        *psi_p0s = new real_t[nrProfiles], 
-        *kappas = new real_t[nrProfiles], 
-        *deltas = new real_t[nrProfiles], 
-        *Deltas = new real_t[nrProfiles];
-
-    /*TODO: Peter - might want this as data instead, or as another shape*/
-    #define ProfileAtIt(Y,YMIN,YMAX) Y[it] = YMIN + (YMAX-YMIN)*it/(nrProfiles-1)
-    for (len_t it = 0; it<nrProfiles; it++){
-        ProfileAtIt(rProfiles, r0, ra);
-        ProfileAtIt(Gs, GMin, GMax);
-        ProfileAtIt(kappas, kappaMin, kappaMax);
-        ProfileAtIt(Deltas, 0, DeltaMax);
-        ProfileAtIt(deltas, 0, deltaMax);
-        psi_p0s[it] = DeltaPsi*it*it/((nrProfiles-1)*(nrProfiles-1));
-    }
-    #undef ProfileAtIt
-
-    struct DREAM::FVM::AnalyticBRadialGridGenerator::shape_profiles shapes = {
-        nrProfiles, nrProfiles, nrProfiles, nrProfiles, nrProfiles,
-        Gs, rProfiles, psi_p0s, rProfiles, kappas, rProfiles,
-        deltas, rProfiles, Deltas, rProfiles
-    };
-
-    auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
-        nr, r0, ra, R0, ntheta_interp, &shapes
-    );
-
-    auto *rg   = new DREAM::FVM::RadialGrid(ABrgg);
+    auto *rg   = new DREAM::FVM::RadialGrid(NBrgg);
 
     auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyMomentumGrid(rg));
     grid->Rebuild(0);
