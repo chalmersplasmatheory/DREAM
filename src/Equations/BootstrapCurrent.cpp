@@ -82,6 +82,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         for (len_t ir = 0; ir < nr; ir++) {
             // calculate the geometric prefactor
             const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
+            const real_t BpolIOverR0 = rGrid->GetBPolI(ir);        // I / R0
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t FSA_1OverB = rGrid->GetFSA_1OverB(ir);    // <1 / B> * Bmin
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
@@ -106,7 +107,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
             // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
-            qR0[ir] = BtorGOverR0 * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin; // IE: Should we divide by Bmin here?
+            qR0[ir] = (BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin; // IE: Should we divide by Bmin here?
 
             eps[ir] = (rGrid->GetBmax(ir) - rGrid->GetBmin(ir)) / (rGrid->GetBmax(ir) + rGrid->GetBmin(ir));
         }
