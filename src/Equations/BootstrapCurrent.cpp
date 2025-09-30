@@ -56,8 +56,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             // IE: Should psiPrimeRef be held constant for a stellarator?
             const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
 
-            // OBS. something is off with the above definitions: the following should not include the last factor of B0...
-            constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef)  *B0; // <--- this B0!
+            constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
             if (ir == 0)
                 constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
             else if (ir == nr - 1)
@@ -88,8 +87,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
             const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
 
-            // OBS. something is off with the above definitions: the following should not include the last factor of B0...
-            constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef)  *B0; // <--- this B0!
+            constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
             if (ir == 0)
                 constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
             else if (ir == nr - 1)
