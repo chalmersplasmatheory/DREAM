@@ -11,6 +11,7 @@ set(dreamtests_dream
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/IonRateEquation.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/MeanExcitationEnergy.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/RunawayFluid.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/BootstrapCurrent.cpp"
 )
 
 set(dreamtests_fvm

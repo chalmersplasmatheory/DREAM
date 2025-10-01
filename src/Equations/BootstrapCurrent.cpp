@@ -29,7 +29,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     epsilon_forward = sqrt(std::numeric_limits<real_t>::epsilon());
     epsilon_central = cbrt(std::numeric_limits<real_t>::epsilon());
 
-    id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    //id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_ions  = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Ni    = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);   // cc summed densities

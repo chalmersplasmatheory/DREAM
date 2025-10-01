@@ -2,6 +2,7 @@
 #define _DREAMTESTS_DREAM_BOOTSTRAP_CURRENT_HPP
 
 #include <string>
+#include <softlib/SFile_HDF5.h>
 #include "DREAM/IonHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -15,9 +16,9 @@ namespace DREAMTESTS::_DREAM {
         BootstrapCurrent(const std::string& s) : UnitTest(s) {}
 
         DREAM::IonHandler *GetIonHandler(DREAM::FVM::Grid*, DREAM::FVM::UnknownQuantityHandler*);
-        DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*);
+        DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*, bool, SFile_HDF5*);
 
-        bool CheckBootstrap();
+        bool CheckBootstrap(bool);
         virtual bool Run(bool) override;
     };
 }
