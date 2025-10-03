@@ -16,10 +16,10 @@ namespace DREAM::FVM {
         };
 
     protected:
-        /* TODO: If B has several min and max on flux-surface, we have to redo this 
         virtual real_t FindMagneticFieldExtremum(
 			len_t ir, int_t sgn, enum fluxGridType
-		) override;*/
+		) override;
+        gsl_multimin_fminimizer *gsl_multi_fmin;
 
         len_t nphi_interp;
         real_t  *BpolIOverR0,        *BpolIOverR0_f;        // poloidal magnetic field strength (I(r)/R0)
@@ -47,10 +47,10 @@ namespace DREAM::FVM {
 
         // Interpolation objects for interpolating in input data
         gsl_spline *spline_psi, *spline_G, *spline_I, *spline_iota;
-        gsl_spline2d
-            *spline_B, *spline_Jacobian;
+        gsl_spline2d;
+            //*spline_B, *spline_Jacobian;
         
-        FVM::Interpolator3D //*interp_K, 
+        FVM::Interpolator3D *interp_B, *interp_Jacobian, //*interp_K, 
                             *interp_BdotGradphi, *interp_gtt, *interp_gtp; 
         gsl_interp_accel *acc_r, *acc_theta;
 
@@ -86,12 +86,12 @@ namespace DREAM::FVM {
 		real_t EvalB(const real_t, const real_t);
         
         // Override virtual methods
-		virtual real_t BAtTheta(const len_t, const real_t) override;
-		virtual real_t BAtTheta_f(const len_t, const real_t) override;
+		virtual real_t BAtThetaPhi(const len_t, const real_t, const real_t) override;
+		virtual real_t BAtThetaPhi_f(const len_t, const real_t, const real_t) override;
 
-        virtual real_t JacobianAtTheta(const len_t ir, const real_t theta) { return JacobianAtTheta(r[ir], theta); }
-        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t theta) { return JacobianAtTheta(r_f[ir], theta); };
-        real_t JacobianAtTheta(const real_t, const real_t);
+        virtual real_t JacobianAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) { return JacobianAtThetaPhi(r[ir], theta, phi); }
+        virtual real_t JacobianAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) { return JacobianAtThetaPhi(r_f[ir], theta, phi); };
+        real_t JacobianAtThetaPhi(const real_t, const real_t, const real_t);
 
         virtual real_t BdotGradphiAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) { return BdotGradphiAtThetaPhi(r[ir], theta, phi); }
         virtual real_t BdotGradphiAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) { return BdotGradphiAtThetaPhi(r_f[ir], theta, phi); };
@@ -104,37 +104,23 @@ namespace DREAM::FVM {
         virtual real_t gtpAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) { return gtpAtThetaPhi(r[ir], theta, phi); }
         virtual real_t gtpAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) { return gtpAtThetaPhi(r_f[ir], theta, phi); };
         real_t gtpAtThetaPhi(const real_t, const real_t, const real_t);
-        
-        virtual void EvaluateGeometricQuantitiesTheta(
-            const len_t ir, const real_t theta, real_t &B, real_t &Jacobian
-        ) override { EvaluateGeometricQuantitiesTheta(r[ir], theta, B, Jacobian); }
-        virtual void EvaluateGeometricQuantitiesTheta_fr(
-            const len_t ir, const real_t theta, real_t &B, real_t &Jacobian
-        ) override { EvaluateGeometricQuantitiesTheta(r_f[ir], theta, B, Jacobian); }
 
-        void EvaluateGeometricQuantitiesTheta(
-            const real_t r, const real_t theta, real_t &B, real_t &Jacobian
-        );
+        virtual void EvaluateGeometricQuantities(
+            const len_t ir, const real_t theta, const real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
+        ) override { EvaluateGeometricQuantities(r[ir], theta, phi, B, Jacobian, BdotGradphi, gttOverJ2, gtpOverJ2); }
+        virtual void EvaluateGeometricQuantities_fr(
+            const len_t ir, const real_t theta, const real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
+        ) override { EvaluateGeometricQuantities(r_f[ir], theta, phi, B, Jacobian, BdotGradphi, gttOverJ2, gtpOverJ2); }
 
-        virtual void EvaluateGeometricQuantitiesThetaPhi(
-            const len_t ir, const real_t theta, const real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
-        ) override { EvaluateGeometricQuantitiesThetaPhi(r[ir], theta, phi, BdotGradphi, gttOverJ2, gtpOverJ2); }
-        virtual void EvaluateGeometricQuantitiesThetaPhi_fr(
-            const len_t ir, const real_t theta, const real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
-        ) override { EvaluateGeometricQuantitiesThetaPhi(r_f[ir], theta, phi, BdotGradphi, gttOverJ2, gtpOverJ2); }
-
-        void EvaluateGeometricQuantitiesThetaPhi(
-            const real_t r, const real_t theta, real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
+        void EvaluateGeometricQuantities(
+            const real_t r, const real_t theta, real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
         );
 
 		// Output generation helper routines
 		virtual const len_t GetNPsi() override { return this->GetNr(); }
 		virtual const len_t GetNTheta() override { return this->ntheta; }
         virtual const len_t GetNPhi() override { return this->nphi; }
-		virtual const real_t *GetFluxSurfaceRMinusR0() override;
-		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
-		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
-		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
+
 		virtual const real_t *GetPoloidalAngle() override;
 		virtual const real_t *GetToroidalAngle() override;
 

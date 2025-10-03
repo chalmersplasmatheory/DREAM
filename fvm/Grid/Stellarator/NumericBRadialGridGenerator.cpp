@@ -28,6 +28,8 @@ NumericBRadialGridGenerator::NumericBRadialGridGenerator(
     const std::string& mf, enum file_format frmt,
 	const len_t ntheta_interp, const len_t nphi_interp
 ) : RadialGridGenerator(nr), rMin(r0), rMax(ra) {
+    const gsl_multimin_fminimizer_type * T = gsl_multimin_fminimizer_nmsimplex2; // TODO: Ok?
+    gsl_multi_fmin = gsl_multimin_fminimizer_alloc(T, 2);
 
     this->Init(mf, frmt, ntheta_interp, nphi_interp);
 }
@@ -86,6 +88,8 @@ void NumericBRadialGridGenerator::Init(
  * Destructor.
  */
 NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
+    gsl_multimin_fminimizer_free(gsl_multi_fmin);
+
     if (this->rf_provided != nullptr)
         delete [] this->rf_provided;
 	
@@ -122,10 +126,12 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         gsl_spline_free(this->spline_G);
         gsl_spline_free(this->spline_I);
         gsl_spline_free(this->spline_iota);
-        gsl_spline2d_free(this->spline_B);
-        gsl_spline2d_free(this->spline_Jacobian);
+        //gsl_spline2d_free(this->spline_B);
+        //gsl_spline2d_free(this->spline_Jacobian);
         
         //delete this->interp_K;
+        delete this->interp_B;
+        delete this->interp_Jacobian;
         delete this->interp_BdotGradphi;
         delete this->interp_gtt;
         delete this->interp_gtp;
@@ -431,18 +437,20 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     this->spline_I    = gsl_spline_alloc(gsl_interp_steffen, this->npsi);
 
     const gsl_interp2d_type *splineType = gsl_interp2d_bicubic; //or ..._bilinear
-    this->spline_B           = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    this->spline_Jacobian    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    //this->spline_B           = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    //this->spline_Jacobian    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
 
     gsl_spline_init(this->spline_psi, this->input_r, this->psi,   this->npsi);
     gsl_spline_init(this->spline_G,   this->input_r, this->dataG, this->npsi);
     gsl_spline_init(this->spline_I,   this->input_r, this->dataI, this->npsi); 
 
-    gsl_spline2d_init(this->spline_B,        this->input_r, this->theta, this->dataB, this->npsi, this->ntheta);
-    gsl_spline2d_init(this->spline_Jacobian, this->input_r, this->theta, this->dataJacobian, this->npsi, this->ntheta);
+    //gsl_spline2d_init(this->spline_B,        this->input_r, this->theta, this->dataB, this->npsi, this->ntheta);
+    //gsl_spline2d_init(this->spline_Jacobian, this->input_r, this->theta, this->dataJacobian, this->npsi, this->ntheta);
     
     enum FVM::Interpolator3D::interp_method interp_meth = FVM::Interpolator3D::INTERP_LINEAR; // TODO: possibly implement cubic?
     //this->interp_K           = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataK, nullptr, interp_meth);
+    this->interp_B           = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataB, nullptr, interp_meth);
+    this->interp_Jacobian    = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataJacobian, nullptr, interp_meth);
     this->interp_BdotGradphi = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataBdotGradphi, nullptr, interp_meth);
     this->interp_gtt         = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datagtt, nullptr, interp_meth);
     this->interp_gtp         = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datagtp, nullptr, interp_meth);
@@ -466,7 +474,7 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 		this->BtorGOverR0[i] = BtorG / this->R0;
 		this->BpolIOverR0[i] = BpolI / this->R0; 
 		this->rotTransf[i]   = iota; 
-        this->psiPrimeRef[i] = psip; // TODO: Does this even make sense?
+        this->psiPrimeRef[i] = psip; // TODO: We could use the toroidal current here, and be consistent with stellarators. Would mean using d psi_t/ d r in bootstrap
 	}
 	for (len_t i = 0; i < GetNr()+1; i++) {
 		real_t
@@ -508,12 +516,19 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  * r:     Minor radius.
  * theta: Poloidal angle.
  */
-real_t NumericBRadialGridGenerator::JacobianAtTheta(
-    const real_t r, const real_t theta
+real_t NumericBRadialGridGenerator::JacobianAtThetaPhi(
+    const real_t radius, const real_t theta, const real_t phi
 ) {
-    real_t t = this->_angleBounded(theta);
+    
+    real_t t[1] = {this->_angleBounded(theta)};
+    real_t p[1] = {this->_angleBounded(phi)};
+    real_t r[1] = {radius}
 
-    return gsl_spline2d_eval(this->spline_Jacobian, r, t, this->acc_r, this->acc_theta) / this->R0;
+    real_t *Jacobian = new real_t[1];
+
+    this->interp_Jacobian->Eval(1,1,1, &r, &t, &p, nullptr, Jacobian);
+
+    return Jacobian[0] / this->R0;
 }
 
 /**
@@ -555,7 +570,7 @@ real_t NumericBRadialGridGenerator::gttAtThetaPhi(
     
     this->interp_gtt->Eval(1,1,1, &r, &t, &p, nullptr, gtt);
 
-    real_t J = JacobianAtTheta(radius, theta);
+    real_t J = JacobianAtThetaPhi(radius, theta, phi);
 	return gtt[0] / (J*J) / (R0 * R0);
 }
 
@@ -577,129 +592,155 @@ real_t NumericBRadialGridGenerator::gtpAtThetaPhi(
 
     this->interp_gtp->Eval(1,1,1, &r, &t, &p, nullptr, gtp);
 
-    real_t J = JacobianAtTheta(radius, theta);
+    real_t J = JacobianAtThetaPhi(radius, theta, phi);
 	return gtp[0] / (J*J) / (R0 * R0);
 }
 
 /**
  * Evaluate all the geometric quantities in one go.
  */
-void NumericBRadialGridGenerator::EvaluateGeometricQuantitiesTheta(
-    const real_t r, const real_t theta, real_t &B, real_t &Jacobian
+void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
+    const real_t r, const real_t theta, real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
 ) {
     real_t t = this->_angleBounded(theta);
-
-    Jacobian = JacobianAtTheta(r, theta);
     
-    B = gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
-}
+    real_t p = this->_angleBounded(phi);
 
-/**
- * Evaluate all the geometric quantities in one go.
- */
-void NumericBRadialGridGenerator::EvaluateGeometricQuantitiesThetaPhi(
-    const real_t r, const real_t theta, real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
-) {
-    real_t t = this->_angleBounded(theta);
+    Jacobian = JacobianAtThetaPhi(r, t, p);
+    
+    B = BAtThetaPhi(r, t, p);
 
-    BdotGradphi = BdotGradphiAtThetaPhi(r, theta, phi);
+    BdotGradphi = BdotGradphiAtThetaPhi(r, t, p);
 
-    gttOverJ2 = gttAtThetaPhi(r, theta, phi);
+    gttOverJ2 = gttAtThetaPhi(r, t, p);
 
-    gtpOverJ2 = gtpAtThetaPhi(r, theta, phi);
+    gtpOverJ2 = gtpAtThetaPhi(r, t, p);
 }
 
 /**
  * Evaluate magnetic field strength B at given poloidal angle
  * and radius.
  */
-real_t NumericBRadialGridGenerator::EvalB(const real_t r, const real_t theta) {
-    real_t t    = this->_angleBounded(theta);
-    return gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
+real_t NumericBRadialGridGenerator::EvalB(const real_t radius, const real_t theta, const real_t phi) {
+    
+    real_t t[1] = {this->_angleBounded(theta)};
+    real_t p[1] = {this->_angleBounded(phi)};
+    real_t r[1] = {radius}
+
+    real_t *B = new real_t[1];
+
+    this->interp_B->Eval(1,1,1, &r, &t, &p, nullptr, B);
+    
+    return B[0];
 }
 
-real_t NumericBRadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
-	return EvalB(this->r[ir], theta);
+real_t NumericBRadialGridGenerator::BAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) {
+	return EvalB(this->r[ir], theta, phi);
 }
-real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
-	return EvalB(this->r_f[ir], theta);
-}
-
-
-/** TODO: Update with phi or remove?
- * Return a list of flux surface R coordinates
- * on the simulation radial grid.
- */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
-	const len_t nr = this->GetNr();
-	real_t *R = new real_t[nr * this->ntheta];
-
-	for (len_t j = 0, i = 0; j < ntheta; j++)
-		for (len_t ir = 0; ir < nr; ir++, i++)
-			R[i] = ROverR0AtTheta(ir, this->theta[j]) * this->Rp - this->Rp;
-
-	return R;
+real_t NumericBRadialGridGenerator::BAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) {
+	return EvalB(this->r_f[ir], theta, phi);
 }
 
-
-/** TODO: Update with phi or remove?
- * Return a list of flux surface R coordinates
- * on the simulation radial grid.
- */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
-	const len_t nr = this->GetNr();
-	real_t *R = new real_t[(nr+1) * this->ntheta];
-
-	for (len_t j = 0, i = 0; j < ntheta; j++)
-		for (len_t ir = 0; ir < nr+1; ir++, i++)
-			R[i] = ROverR0AtTheta_f(ir, this->theta[j]) * this->Rp - this->Rp;
-
-	return R;
+// The remaining functions are related to determining theta_Bmin and theta_Bmax
+// with a gsl fmin algorithm
+struct EvalBParams {len_t ir; NumericBRadialGridGenerator* rgg; int_t sgn;};
+real_t gslEvalB(const gsl_vector *v, void *par){
+    real_t theta = gsl_vector_get(v, 0);
+    real_t phi = gsl_vector_get(v, 1);
+    EvalBParams *params = (EvalBParams *) par;
+    return params->sgn*params->rgg->BAtThetaPhi(params->ir,theta,phi);
+}
+real_t gslEvalB_f(real_t theta, void *par){
+    EvalBParams *params = (EvalBParams *) par;
+    return params->sgn*params->rgg->BAtThetaPhi_f(params->ir,theta, phi);
 }
 
 
-/** TODO: Update with phi or remove?
- * Returns a list of flux surface Z coordinates
- * on the simulation grid.
- */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
-	const len_t nr = this->GetNr();
-	real_t *Z = new real_t[nr * this->ntheta];
-
-	for (len_t j = 0, i = 0; j < ntheta; j++) {
-		for (len_t ir = 0; ir < nr; ir++, i++) {
-			Z[i] = gsl_spline2d_eval(
-				this->spline_Z, this->r[ir], this->theta[j],
-				this->acc_r, this->acc_theta
-			) - this->Zp;
-		}
-	}
-
-	return Z;
-}
-
-
-// TODO: Update with phi or remove?
+// Tolerances and max number of iterations for gsl magnetic field minimizer
+const len_t MAX_NUM_ITER = 30;
+const real_t EPSABS = 1e-6;
+const real_t EPSREL = 0;
+const real_t STEP = 2*M_PI / 100; // TODO: Ok? How many wiggles can we expect at the most?
 /**
- * Returns a list of flux surface Z coordinates
- * on the simulation grid.
+ * Finds the extremum of the magnetic field on the interval [0,2*pi]. 
+ * If sgn=1, returns the minimum.
+ * If sgn=-1, returns the maximum.
  */
-const real_t *NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
-	const len_t nr = this->GetNr();
-	real_t *Z = new real_t[(nr+1) * this->ntheta];
+real_t NumericBRadialGridGenerator::FindMagneticFieldExtremum(
+    len_t ir, int_t sgn, fluxGridType fluxGridType
+) {
+    real_t theta_lim_lower = 0, theta_lim_upper = 2*M_PI;
+    
+    real_t theta_guess = 0, phi_guess = 0;
+    real_t B_opt = sgn*std::numeric_limits<real_t>::infinity();
+    real_t B;
 
-	for (len_t j = 0, i = 0; j < ntheta; j++) {
-		for (len_t ir = 0; ir < nr+1; ir++, i++) {
-			Z[i] = gsl_spline2d_eval(
-				this->spline_Z, this->r_f[ir], this->theta[j],
-				this->acc_r, this->acc_theta
-			) - this->Zp;
-		}
-	}
+    for (real_t theta=0; theta<2*M_PI; theta+=STEP){
+        for (real_t phi=0; phi<2*M_PI; phi+=STEP){
+            if (fluxGridType == FLUXGRIDTYPE_DISTRIBUTION) {
+                B = BAtThetaPhi(ir, theta, phi);
+            } else {
+                B = BAtThetaPhi_f(ir, theta, phi);
+            }
+            if (sgn*B < sgn*B_opt){
+                B_opt = B;
+                theta_guess = theta;
+                phi_guess = phi;
+            }
+        }
+    }
+    '''
+    real_t theta_lim_lower = std::max(0.0, theta_guess - STEP);
+    real_t theta_lim_upper = std::min(2*M_PI, theta_guess + STEP);
+    real_t phi_lim_lower = std::max(0.0, phi_guess - STEP);
+    real_t phi_lim_upper = std::min(2*M_PI, phi_guess + STEP);
+    '''
+    gsl_vector *guess = gsl_vector_alloc(2);
+    gsl_vector_set(x, 0, theta_guess);
+    gsl_vector_set(x, 1, phi_guess);
 
-	return Z;
+    gsl_vector *step = gsl_vector_alloc(2);
+    gsl_vector_set_all(ss, STEP / 2); // TODO: OK Step size?
+	
+    EvalBParams params = {ir, this, sgn};
+    gsl_multimin_function gsl_func;
+    gsl_func.n = 2;
+    if(fluxGridType == FLUXGRIDTYPE_DISTRIBUTION)
+        gsl_func.f = &(gslEvalB); 
+    else
+        gsl_func.f = &(gslEvalB_f); 
+    gsl_func.params = &(params); // TODO: Should this be without &?
+
+    
+    // otherwise, find extremum with fmin algorithm
+    gsl_multimin_fminimizer_set( 
+        gsl_multi_fmin, &gsl_func, guess, step, 
+    );
+
+    int status;
+    for(len_t iter=0; iter<MAX_NUM_ITER; iter++){
+        gsl_multimin_fminimizer_iterate(gsl_multi_fmin);
+
+        size = gsl_multimin_fminimizer_size(gsl_multi_fmin);
+        status = gsl_multimin_test_size(size, EPSABS);
+        if(status == GSL_SUCCESS)
+            break;
+    }
+
+    gsl_vector_free(guess);
+    gsl_vector_free(step);
+
+    real_t theta = gsl_vector_get(gsl_multi_fmin->x, 0);
+    real_t phi   = gsl_vector_get(gsl_multi_fmin->x, 1);
+  
+    real_t extremum = theta; // TODO: We disregard phi, right?
+    if(extremum < 2*EPSABS || extremum > 2*M_PI - 2*EPSABS)
+        return 0;
+    else if (fabs(M_PI-extremum) < 2*EPSABS)
+        return M_PI;
+    else
+        return extremum; 
 }
-
 
 /**
  * Returns a list of poloidal angles on which the flux
@@ -728,7 +769,7 @@ const real_t *NumericBRadialGridGenerator::GetToroidalAngle() {
 }
 
 
-/*
+/** TODO: Is this good?
  * Save the magnitude of the magnetic field vector to the named
  * output file (saved using the 'SFile' API).
  *
@@ -736,15 +777,16 @@ const real_t *NumericBRadialGridGenerator::GetToroidalAngle() {
  */
 void NumericBRadialGridGenerator::__SaveB(const char *filename) {
     // DEBUG: Save magnetic field
-    const len_t NTHETA = 1000;
+    const len_t NTHETA = 100, NPHI = 100;
     real_t **B = new real_t*[GetNr()];
     B[0] = new real_t[GetNr()*NTHETA];
     for (len_t i = 0; i < GetNr(); i++) {
         if (i > 0)
             B[i] = B[i-1] + NTHETA;
 
-        for (len_t j = 0; j < NTHETA; j++)
-            B[i][j] = this->BAtTheta(i, j*2*M_PI/NTHETA);
+        for (len_t j = 0; j < NPHI; j++)
+            for (len_t k = 0; k < NTHETA; k++)
+                B[i][j*NTHETA + k] = this->BAtThetaPhi(i, k*2*M_PI/NTHETA, j*2*M_PI/NPHI);
     }
 
     SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);

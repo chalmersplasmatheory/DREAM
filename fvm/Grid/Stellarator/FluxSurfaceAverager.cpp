@@ -40,8 +40,8 @@ FluxSurfaceAverager::FluxSurfaceAverager(
 
     InitializeQuadrature(q_method);
 
-    BOverBmin   = new FluxSurfaceQuantity(rGrid, [rgg,g](len_t ir, real_t theta){if(!g->GetBmin(ir)) return 1.0; else return rgg->BAtTheta(ir,theta)/g->GetBmin(ir);}, [rgg,g](len_t ir, real_t theta){if(!g->GetBmin_f(ir)) return 1.0; else return rgg->BAtTheta_f(ir,theta)/g->GetBmin_f(ir);}, interpolationMethod);
-    Jacobian    = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta){return rgg->JacobianAtTheta(ir,theta);},           [rgg](len_t ir, real_t theta){return rgg->JacobianAtTheta_f(ir,theta);}, interpolationMethod);
+    BOverBmin   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->BAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->BAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
+    Jacobian    = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->JacobianAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->JacobianAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     BdotGradphi = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->BdotGradphiAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->BdotGradphiAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     gttOverJ2   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->gttAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->gttAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     gtpOverJ2   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->gtpAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->gtpAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
@@ -79,8 +79,8 @@ void FluxSurfaceAverager::Rebuild(){
 
     // if using fixed quadrature, store all quantities on the theta grid
     if(!integrateAdaptive){
-        BOverBmin->InterpolateMagneticDataToTheta(theta, ntheta_interp);
-        Jacobian->InterpolateMagneticDataToTheta(theta, ntheta_interp);
+        BOverBmin->InterpolateMagneticDataToThetaPhi(theta, ntheta_interp, phi, nphi_interp);
+        Jacobian->InterpolateMagneticDataToThetaPhi(theta, ntheta_interp, phi, nphi_interp);
         BdotGradphi->InterpolateMagneticDataToThetaPhi(theta, ntheta_interp, phi, nphi_interp);
         gttOverJ2->InterpolateMagneticDataToThetaPhi(theta, ntheta_interp, phi, nphi_interp);
         gtpOverJ2->InterpolateMagneticDataToThetaPhi(theta, ntheta_interp, phi, nphi_interp);
@@ -90,33 +90,17 @@ void FluxSurfaceAverager::Rebuild(){
     real_t *VpVol   = new real_t[nr];
     real_t *VpVol_f = new real_t[nr+1];    
     for(len_t ir=0; ir<nr;  ir++) // TODO: If Jacobian is not phi-independent, this will need to change!
-        VpVol[ir]   = EvaluateFluxSurfaceIntegralTheta(ir, FLUXGRIDTYPE_DISTRIBUTION, RadialGrid::FSA_FUNC_UNITY, nullptr, RadialGrid::FSA_PARAM_UNITY);
+        VpVol[ir]   = EvaluateFluxSurfaceIntegral(ir, FLUXGRIDTYPE_DISTRIBUTION, RadialGrid::FSA_FUNC_UNITY, nullptr, RadialGrid::FSA_PARAM_UNITY);
     for(len_t ir=0; ir<=nr; ir++)
-        VpVol_f[ir] = EvaluateFluxSurfaceIntegralTheta(ir, FLUXGRIDTYPE_RADIAL, RadialGrid::FSA_FUNC_UNITY, nullptr, RadialGrid::FSA_PARAM_UNITY);
+        VpVol_f[ir] = EvaluateFluxSurfaceIntegral(ir, FLUXGRIDTYPE_RADIAL, RadialGrid::FSA_FUNC_UNITY, nullptr, RadialGrid::FSA_PARAM_UNITY);
     
     rGrid->SetVpVol(VpVol,VpVol_f);
-}
-
-
-/**
- *  Evaluates the flux surface average <F> of a function F = F(B/Bmin) on radial grid point ir. 
- */
-real_t FluxSurfaceAverager::CalculateFluxSurfaceAverageTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par, const int_t *F_list){
-    real_t VpVol = GetVpVol(ir,fluxGridType);
-
-    // TODO: Still keep this the same?
-    // treat singular point r=0 separately where orbit parameters are constant 
-    if(VpVol == 0) 
-        return F(1,par); // TODO: his should just give 1?
-
-    // otherwise use regular method
-    return EvaluateFluxSurfaceIntegralTheta(ir,fluxGridType, F, par, F_list) / VpVol;
 }
 
 /**
  *  Evaluates the flux surface average <F> of a function F = F(B/Bmin, |B \cdot \nabla\varphi|, g_{\theta\theta}/J^2, g_{\theta\theta}/J^2) on radial grid point ir. 
  */
-real_t FluxSurfaceAverager::CalculateFluxSurfaceAverageThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
+real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
     real_t VpVol = GetVpVol(ir,fluxGridType);
 
     // TODO: Still keep this the same?
@@ -125,34 +109,7 @@ real_t FluxSurfaceAverager::CalculateFluxSurfaceAverageThetaPhi(len_t ir, fluxGr
         return F(1,1,1,1,1,par); // TODO: his should just give 1?
 
     // otherwise use regular method
-    return EvaluateFluxSurfaceIntegralThetaPhi(ir,fluxGridType, F, par, F_list) / VpVol;
-}
-
-
-/**
- * The function returns the integrand of the flux surface integral at theta,
- * and is used with the adaptive quadrature
- */
-struct FluxSurfaceIntegralParamsTheta {
-    real_t(*Function)(real_t,void*); void *FSApar; const int_t *F_list; len_t ir; real_t Bmin;
-    FluxSurfaceAverager *FSA; fluxGridType fgType;
-}
-real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionTheta(real_t theta, void *p){
-    struct FluxSurfaceIntegralParamsTheta *params = (struct FluxSurfaceIntegralParamsTheta *) p;
-    len_t ir = params->ir;
-    fluxGridType fluxGridType = params->fgType;
-    real_t Bmin = params->Bmin;
-
-    real_t B,Jacobian,BdotGradphi,gttOverJ2,gtpOverJ2;
-    params->FSA->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,fluxGridType);
-    real_t BOverBmin=1;
-    if(Bmin != 0)
-        BOverBmin = B/Bmin;
-    const int_t *Flist = params->F_list;
-    real_t Function = (Flist!=nullptr) ?
-        AssembleFSAFuncTheta(BOverBmin, Flist) 
-        : params->Function(BOverBmin, params->FSApar);  
-    return 2*M_PI*Jacobian*Function;
+    return EvaluateFluxSurfaceIntegral(ir,fluxGridType, F, par, F_list) / VpVol;
 }
 
 /**
@@ -171,14 +128,13 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionThetaPhi(real_t theta, vo
     real_t phi = params->phi;
 
     real_t B,Jacobian,BdotGradphi,gttOverJ2,gtpOverJ2;
-    params->FSA->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,fluxGridType);
-    params->FSA->GeometricQuantitiesAtThetaPhi(ir,theta,phi,BdotGradphi,gttOverJ2,gtpOverJ2,fluxGridType);
+    params->FSA->GeometricQuantitiesAtThetaPhi(ir,theta,phi,B,Jacobian,BdotGradphi,gttOverJ2,gtpOverJ2,fluxGridType);
     real_t BOverBmin=1;
     if(Bmin != 0)
         BOverBmin = B/Bmin;
     const int_t *Flist = params->F_list;
     real_t Function = (Flist!=nullptr) ?
-        AssembleFSAFuncThetaPhi(BOverBmin, BdotGradphi, gttOverJ2, gtpOverJ2, Flist) 
+        AssembleFSAFunc(BOverBmin, BdotGradphi, gttOverJ2, gtpOverJ2, Flist) 
         : params->Function(BOverBmin, BdotGradphi, gttOverJ2, gtpOverJ2, params->FSApar);  
     return Jacobian*Function;
 }
@@ -205,43 +161,7 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionPhi(real_t phi, void *p){
     return fluxSurfaceIntegral;
 }
 
-
-/**
- * Core functions of this class: evaluates the flux surface integral 
- *    FluxSurfaceIntegral(X) = \int J*X dphi dtheta
- * taken over toroidal and poloidal angle, weighted by the 
- * spatial jacobian J. See doc/notes/theory section on 
- * Flux surface averages for further details.
- * First is for axisymmetric integrands in Boozer coordinates, 
- * second is for non-axisymmetric.
- */
-real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegralTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par, const int_t *F_list){
-    real_t fluxSurfaceIntegral = 0;
-
-    // Calculate using fixed quadrature:
-    if(!integrateAdaptive){
-        const real_t *BOverBmin = this->BOverBmin->GetData(ir, fluxGridType);
-        const real_t *Jacobian  = this->Jacobian->GetData(ir,fluxGridType);
-        
-        bool hasFlist = (F_list!=nullptr);    
-        for (len_t it = 0; it<ntheta_interp; it++)
-            fluxSurfaceIntegral += weights_theta[it] * Jacobian[it] 
-                * (hasFlist ? AssembleFSAFuncTheta(BOverBmin[it], F_list) 
-                    : F(BOverBmin[it], par));
-        fluxSurfaceIntegral *= 2*M_PI;
-    // or by using adaptive quadrature:
-    } else {
-        gsl_function GSL_func; 
-        FluxSurfaceIntegralParamsTheta params = {F, par, F_list, ir, GetBmin(ir,fluxGridType), this, fluxGridType}; 
-        GSL_func.function = &(FluxSurfaceIntegralFunctionTheta);
-        GSL_func.params = &params;
-        real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive_theta->limit, error;
-        gsl_integration_qag(&GSL_func, 0, theta_max,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive_theta,&fluxSurfaceIntegral, &error);
-    }
-    return fluxSurfaceIntegral;  
-} 
-
-real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegralThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
+real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
     real_t fluxSurfaceIntegral = 0;
 
     // Calculate using fixed quadrature:
@@ -256,7 +176,7 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegralThetaPhi(len_t ir, fluxGr
         for (len_t it = 0; it<ntheta_interp; it++)
             for (len_t ip = 0; it<nphi_interp; ip++)
                 fluxSurfaceIntegral += weights_phi[ip] * weights_theta[it] * Jacobian[it] 
-                    * (hasFlist ? AssembleFSAFuncThetaPhi(BOverBmin, BdotGradphi, gttOverJ2, gtpOverJ2, Flist) 
+                    * (hasFlist ? AssembleFSAFunc(BOverBmin, BdotGradphi, gttOverJ2, gtpOverJ2, Flist) 
                         : F(BOverBmin[it*nphi_interp+ip], BdotGradphi[it*nphi_interp+ip], gttOverJ2[it*nphi_interp+ip], gtpOverJ2[it*nphi_interp+ip], par));
     // or by using adaptive quadrature:
     } else {
@@ -436,26 +356,10 @@ real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
 /**
  * Returns the function to be flux surface averaged, evaluated at poloidal angle theta.
  * If Flist is provided, returns the function
- *      FSA_Func = Flist[3] * BOverBmin^Flist[0],
- */
-real_t FluxSurfaceAverager::AssembleFSAFuncTheta(real_t BOverBmin, const int_t *Flist){
-    real_t FSA_Func = Flist[1];
-    if(Flist[0]>0)
-        for(int_t k=0; k<Flist[0]; k++)
-            FSA_Func *= BOverBmin;
-    else if(Flist[0]<0)
-        for(int_t k=0; k<-Flist[0]; k++)
-            FSA_Func /= BOverBmin;
-    return FSA_Func;
-}
-
-/**
- * Returns the function to be flux surface averaged, evaluated at poloidal angle theta.
- * If Flist is provided, returns the function
  *      FSA_Func = Flist[4] * BOverBmin^Flist[0] 
  *               * BdotGradphi^Flist[1] * gttOverJ2^Flist[2] * gttOverJ2^Flist[3],
  */
-real_t FluxSurfaceAverager::AssembleFSAFuncThetaPhi(real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist){
+real_t FluxSurfaceAverager::AssembleFSAFunc(real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist){
     real_t FSA_Func = Flist[3];
     if(Flist[0]>0)
         for(int_t k=0; k<Flist[0]; k++)
@@ -484,19 +388,24 @@ real_t FluxSurfaceAverager::AssembleFSAFuncThetaPhi(real_t BOverBmin, real_t Bdo
     return FSA_Func;
 }
 
-/**
+/** TODO: This is a bit wrong.... We write the first element twice, but it is never used.
  * Print the variation of B(theta) to stdout.
  */
-void FluxSurfaceAverager::PrintBOfTheta(const len_t ir, const len_t N, enum fluxGridType fgt) {
-	printf("B(theta) at ir = " LEN_T_PRINTF_FMT "\n", ir);
+void FluxSurfaceAverager::PrintBOfThetaPhi(const len_t ir, const len_t N, enum fluxGridType fgt) {
+	printf("B(theta,phi) at ir = " LEN_T_PRINTF_FMT "\n", ir);
 	printf("theta = [%.12e", -M_PI);
 	for (len_t i = 1; i < N; i++)
 		printf(",%.12e", 2*M_PI * (i/((real_t)N)) - M_PI);
 	printf("]\n");
+	printf("phi = [%.12e", 0);
+	for (len_t i = 1; i < N; i++)
+		printf(",%.12e", 2*M_PI * (i/((real_t)N)));
+	printf("]\n");
 		
-	printf("B     = [%.12e", BAtTheta(ir, -M_PI, fgt));
+	printf("B     = [%.12e", BAtThetaPhi(ir, -M_PI, 0,  fgt));
 	for (len_t i = 0; i < N; i++)
-		printf(",%.12e", BAtTheta(ir, 2*M_PI * (i/((real_t)N)) - M_PI, fgt));
+        for (len_t j = 0; j < N; j++)
+		    printf(",%.12e", BAtThetaPhi(ir, 2*M_PI * (j/((real_t)N)) - M_PI, 2*M_PI * (i/((real_t)N)), fgt));
 	printf("]\n");
 }
 

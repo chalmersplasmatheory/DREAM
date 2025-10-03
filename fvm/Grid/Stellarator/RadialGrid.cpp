@@ -106,20 +106,14 @@ void RadialGrid::DeallocateGrid() {
 /** 
  * Calculate flux surface average
  */
-real_t RadialGrid::CalculateFluxSurfaceAverageTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par, const int_t *Flist){
-    return fluxSurfaceAverager->CalculateFluxSurfaceAverageTheta(ir, fluxGridType, F, par, Flist);
+real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
+    return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F, par, Flist);
 }
-real_t RadialGrid::CalculateFluxSurfaceAverageThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
-    return fluxSurfaceAverager->CalculateFluxSurfaceAverageThetaPhi(ir, fluxGridType, F, par, Flist);
-}
-/** T
+/** 
  * Evaluate flux surface integral
  */
-real_t RadialGrid::EvaluateFluxSurfaceIntegralTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par, const int_t *Flist){
-    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegralTheta(ir, fluxGridType, F, par, Flist);
-}
-real_t RadialGrid::EvaluateFluxSurfaceIntegralThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
-    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegralThetaPhi(ir, fluxGridType, F, par, Flist);
+real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
+    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F, par, Flist);
 }
 
 /** TODO: Take back code for BA, see original RadialGrid */
@@ -203,12 +197,12 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     *FSA_gtpOverJ2   = nullptr,
     *FSA_gtpOverJ2_f = nullptr;
 
-    SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, FSA_FUNC_B_SQUARED, true, nullptr, FSA_PARAM_B_SQUARED);
-    SetFluxSurfaceAverage(FSA_B,FSA_B_f, FSA_FUNC_B, true, nullptr, FSA_PARAM_B);
-    SetFluxSurfaceAverage(FSA_1OverB,FSA_1OverB_f, FSA_FUNC_1OverB, true, nullptr, FSA_PARAM_1OverB);
-    SetFluxSurfaceAverage(FSA_BdotGradphi,FSA_BdotGradphi_f, FSA_FUNC_B_DOT_GRAD_PHI, false, nullptr, FSA_PARAM_B_DOT_GRAD_PHI);
-    SetFluxSurfaceAverage(FSA_gttOverJ2,FSA_gttOverJ2_f, FSA_FUNC_GTT_OVER_JACOBIAN_SQUARED, false, nullptr, FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED);
-    SetFluxSurfaceAverage(FSA_gtpOverJ2,FSA_gtpOverJ2_f, FSA_FUNC_GTP_OVER_JACOBIAN_SQUARED, false, nullptr, FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED);
+    SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, FSA_FUNC_B_SQUARED, nullptr, FSA_PARAM_B_SQUARED);
+    SetFluxSurfaceAverage(FSA_B,FSA_B_f, FSA_FUNC_B, nullptr, FSA_PARAM_B);
+    SetFluxSurfaceAverage(FSA_1OverB,FSA_1OverB_f, FSA_FUNC_1OverB, nullptr, FSA_PARAM_1OverB);
+    SetFluxSurfaceAverage(FSA_BdotGradphi,FSA_BdotGradphi_f, FSA_FUNC_B_DOT_GRAD_PHI, nullptr, FSA_PARAM_B_DOT_GRAD_PHI);
+    SetFluxSurfaceAverage(FSA_gttOverJ2,FSA_gttOverJ2_f, FSA_FUNC_GTT_OVER_JACOBIAN_SQUARED, nullptr, FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED);
+    SetFluxSurfaceAverage(FSA_gtpOverJ2,FSA_gtpOverJ2_f, FSA_FUNC_GTP_OVER_JACOBIAN_SQUARED, nullptr, FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED);
     
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
 
@@ -242,23 +236,15 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
 /** 
  * Helper method to store flux surface averages.
  */
-void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), bool axisymmetric, void *par, const int_t *Flist){
+void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), void *par, const int_t *Flist){
     FSA_quantity   = new real_t[GetNr()];
     FSA_quantity_f = new real_t[GetNr()+1];
 
-    if (axisymmetric){
-        for(len_t ir=0; ir<nr; ir++)
-            FSA_quantity[ir] = CalculateFluxSurfaceAverageTheta(ir, FLUXGRIDTYPE_DISTRIBUTION, F, par, Flist);
+    for(len_t ir=0; ir<nr; ir++)
+        FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F, par, Flist);
 
-        for(len_t ir=0; ir<=nr; ir++)
-            FSA_quantity_f[ir] = CalculateFluxSurfaceAverageTheta(ir, FLUXGRIDTYPE_RADIAL, F, par, Flist);
-    } else {
-        for(len_t ir=0; ir<nr; ir++)
-            FSA_quantity[ir] = CalculateFluxSurfaceAverageThetaPhi(ir, FLUXGRIDTYPE_DISTRIBUTION, F, par, Flist);
-
-        for(len_t ir=0; ir<=nr; ir++)
-            FSA_quantity_f[ir] = CalculateFluxSurfaceAverageThetaPhi(ir, FLUXGRIDTYPE_RADIAL, F, par, Flist);
-    }
+    for(len_t ir=0; ir<=nr; ir++)
+        FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F, par, Flist);
 }
 
 
@@ -275,7 +261,7 @@ real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     return x/ rGrid->CalculateFluxSurfaceAverageTheta(ir, fluxGridType, FSA_FUNC_EFF_PASS_FRAC, params);// TODO: Not phi dependent?
 }
 
-/** TODO: Is this correct? Might need changing if there are several Bmin? 
+/** 
  * Calculates and stores the effective fraction of passing electrons
  */
 void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FSA_B2, real_t*){

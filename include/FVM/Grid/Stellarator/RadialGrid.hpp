@@ -17,11 +17,11 @@ namespace DREAM::FVM {
         // Specification for functions used in flux surface averages
         static real_t FSA_FUNC_UNITY(real_t, void*)
             {return 1;};
-        static real_t FSA_FUNC_B(real_t BOverBmin, void*)
+        static real_t FSA_FUNC_B(real_t BOverBmin, real_t, real_t, real_t, void*)
             {return BOverBmin;}
-        static real_t FSA_FUNC_B_SQUARED(real_t BOverBmin, void*)
+        static real_t FSA_FUNC_B_SQUARED(real_t BOverBmin, real_t, real_t, real_t, void*)
             {return BOverBmin*BOverBmin;}
-        static real_t FSA_FUNC_1OverB(real_t BOverBmin, void*)
+        static real_t FSA_FUNC_1OverB(real_t BOverBmin, real_t, real_t, real_t, void*)
             {return 1 / BOverBmin;}
         static real_t FSA_FUNC_B_DOT_GRAD_PHI(real_t, real_t BdotGradphi, real_t, real_t, void*)
             {return BdotGradphi;}
@@ -31,7 +31,7 @@ namespace DREAM::FVM {
             {return gtpOverJ2;}
 
         struct EPF_params {real_t x; real_t BminOverBmax; len_t ir; RadialGrid *rGrid; fluxGridType fgType;};
-        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, void *par){
+        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, real_t, real_t, real_t, void *par){
             struct EPF_params *params = (struct EPF_params *) par;
             real_t BminOverBmax = params->BminOverBmax;
             real_t x = params->x;
@@ -41,10 +41,10 @@ namespace DREAM::FVM {
 
         // Alternative parametric representation of FSA functions
         static constexpr int_t
-            FSA_PARAM_UNITY[4] = {0,1},
-            FSA_PARAM_B[4] = {1,1},
-            FSA_PARAM_B_SQUARED[4] = {2,1},
-            FSA_PARAM_1OverB[4] = {-1,1},
+            FSA_PARAM_UNITY[5] = {0,0,0,0,1},
+            FSA_PARAM_B[5] = {1,0,0,0,1},
+            FSA_PARAM_B_SQUARED[5] = {2,0,0,0,1},
+            FSA_PARAM_1OverB[5] = {-1,0,0,0,1},
             FSA_PARAM_B_DOT_GRAD_PHI[5] = {0,1,0,0,1},
             FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED[5] = {0,0,1,0,1},
             FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED[5] = {0,0,0,1,1};
@@ -132,7 +132,7 @@ namespace DREAM::FVM {
             delete [] xi0TrappedBoundary;
             delete [] xi0TrappedBoundary_f;
         }
-        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), bool axisymmetric, void *par=nullptr, const int_t *Flist = nullptr);
+        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist = nullptr);
 
         virtual void RebuildFluxSurfaceAveragedQuantities();
         void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
@@ -202,10 +202,8 @@ namespace DREAM::FVM {
 
         virtual void RebuildJacobians();
 
-        real_t CalculateFluxSurfaceAverageTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t CalculateFluxSurfaceAverageThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t EvaluateFluxSurfaceIntegralTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t EvaluateFluxSurfaceIntegralThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         void SetVpVol(real_t *VpVol, real_t *VpVol_f){
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;

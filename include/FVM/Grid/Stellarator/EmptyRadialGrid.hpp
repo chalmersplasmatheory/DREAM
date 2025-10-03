@@ -17,22 +17,19 @@ namespace DREAM::FVM {
 
             virtual bool NeedsRebuild(const real_t) const override { return !isBuilt; }
             virtual bool Rebuild(const real_t, RadialGrid*) override;
-            virtual real_t JacobianAtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t JacobianAtThetaPhi(const len_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t BdotGradphiAtThetaPhi(const len_t, const real_t, const real_t)  {return 1.0;}
             virtual real_t gttAtThetaPhi(const len_t, const real_t, const real_t)  {return 1.0;}
             virtual real_t gtpAtThetaPhi(const len_t, const real_t, const real_t)  {return 1.0;}
-            virtual real_t JacobianAtTheta_f(const len_t, const real_t) override {return 1.0;}
+            virtual real_t JacobianAtThetaPhi_f(const len_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t BdotGradphiAtThetaPhi_f(const len_t, const real_t, const real_t)  {return 1.0;}
             virtual real_t gttAtThetaPhi_f(const len_t, const real_t, const real_t)  {return 1.0;}
             virtual real_t gtpAtThetaPhi_f(const len_t, const real_t, const real_t)  {return 1.0;}
-            virtual void EvaluateGeometricQuantitiesTheta(const len_t, const real_t, real_t &B, real_t &Jacobian) 
-                {Jacobian=1; B=1}
-            virtual void EvaluateGeometricQuantitiesTheta_fr(const len_t, const real_t, real_t &B, real_t &Jacobian) 
-                {Jacobian=1; B=1}
-            virtual void EvaluateGeometricQuantitiesThetaPhi(const len_t, const real_t, const real_t, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) 
-                {BdotGradphi=1; gttOverJ2=1; gtpOverJ2=1}
-            virtual void EvaluateGeometricQuantitiesThetaPhi_fr(const len_t, const real_t, const real_t, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) 
-                {BdotGradphi=1; gttOverJ2=1; gtpOverJ2=1}
+            
+            virtual void EvaluateGeometricQuantities(const len_t, const real_t, const real_t, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) 
+                {B=1; Jacobian=1; BdotGradphi=1; gttOverJ2=1; gtpOverJ2=1}
+            virtual void EvaluateGeometricQuantities_fr(const len_t, const real_t, const real_t, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) 
+                {B=1; Jacobian=1; BdotGradphi=1; gttOverJ2=1; gtpOverJ2=1}
 
 			virtual const len_t GetNPsi() override { return 0; }
 			virtual const len_t GetNTheta() override { return 0; }
