@@ -1,81 +1,55 @@
-#ifndef _DREAM_FVM_RADIAL_GRID_HPP
+#ifndef _DREAM_FVM_RADIAL_GRID_HPP // TODO
 #define _DREAM_FVM_RADIAL_GRID_HPP
 
 namespace DREAM::FVM { class RadialGrid; }
 
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
-#include "FVM/Grid/FluxSurfaceAverager.hpp"
+#include "FVM/Grid/Stellarator/FluxSurfaceAverager.hpp"
 #include <functional>
 
 namespace DREAM::FVM {
 	class RadialGrid {
     public:
+        /** TODO: Take back code for BA, see original RadialGrid */
+
+
         // Specification for functions used in flux surface averages
-        static real_t FSA_FUNC_UNITY(real_t, real_t, real_t, void*)
+        static real_t FSA_FUNC_UNITY(real_t, void*)
             {return 1;};
-        static real_t FSA_FUNC_ONE_OVER_R_SQUARED(real_t, real_t ROverR0,real_t, void*)
-            {return 1/(ROverR0*ROverR0);}
-        static real_t FSA_FUNC_B(real_t BOverBmin, real_t,real_t, void*)
+        static real_t FSA_FUNC_B(real_t BOverBmin, void*)
             {return BOverBmin;}
-        static real_t FSA_FUNC_B_SQUARED(real_t BOverBmin, real_t,real_t, void*)
+        static real_t FSA_FUNC_B_SQUARED(real_t BOverBmin, void*)
             {return BOverBmin*BOverBmin;}
-        static real_t FSA_FUNC_1OverB(real_t BOverBmin, real_t,real_t, void*)
+        static real_t FSA_FUNC_1OverB(real_t BOverBmin, void*)
             {return 1 / BOverBmin;}
-        static real_t FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED(real_t, real_t ROverR0,real_t NablaR2, void*)
-            {return NablaR2/(ROverR0*ROverR0);}
+        static real_t FSA_FUNC_B_DOT_GRAD_PHI(real_t, real_t BdotGradphi, real_t, real_t, void*)
+            {return BdotGradphi;}
+        static real_t FSA_FUNC_GTT_OVER_JACOBIAN_SQUARED(real_t, real_t, real_t gttOverJ2, real_t, void*)
+            {return gttOverJ2;}
+        static real_t FSA_FUNC_GTP_OVER_JACOBIAN_SQUARED(real_t, real_t, real_t, real_t gtpOverJ2, void*)
+            {return gtpOverJ2;}
 
         struct EPF_params {real_t x; real_t BminOverBmax; len_t ir; RadialGrid *rGrid; fluxGridType fgType;};
-        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, real_t, real_t, void *par){
+        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, void *par){
             struct EPF_params *params = (struct EPF_params *) par;
             real_t BminOverBmax = params->BminOverBmax;
             real_t x = params->x;
             return sqrt(1 - x * BminOverBmax * BOverBmin );
         }
 
-        static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){
-            real_t xi0 = *(real_t*)xiPtr;
-            if(BOverBmin < 1 + 100*realeps)
-                return xi0;
-            real_t xi = sqrt(1 - (1-xi0*xi0)*BOverBmin);
-            if(xi0>=0)
-                return xi;
-            else
-                return -xi;
-        }
-
 
         // Alternative parametric representation of FSA functions
         static constexpr int_t
-            FSA_PARAM_UNITY[4] = {0,0,0,1},
-            FSA_PARAM_ONE_OVER_R_SQUARED[4] = {0,-2,0,1},
-            FSA_PARAM_B[4] = {1,0,0,1},
-            FSA_PARAM_B_SQUARED[4] = {2,0,0,1},
-            FSA_PARAM_1OverB[4] = {-1,0,0,1},
-            FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED[4] = {0,-2,1,1};
+            FSA_PARAM_UNITY[4] = {0,1},
+            FSA_PARAM_B[4] = {1,1},
+            FSA_PARAM_B_SQUARED[4] = {2,1},
+            FSA_PARAM_1OverB[4] = {-1,1},
+            FSA_PARAM_B_DOT_GRAD_PHI[5] = {0,1,0,0,1},
+            FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED[5] = {0,0,1,0,1},
+            FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED[5] = {0,0,0,1,1};
 
-
-        // Specification for functions used in bounce averages
-        static real_t BA_FUNC_UNITY(real_t,real_t,real_t,real_t,void*)
-            {return 1;}
-        static real_t BA_FUNC_XI(real_t xiOverXi0,real_t,real_t,real_t,void*)
-            {return xiOverXi0;}
-        static real_t BA_FUNC_XI_SQUARED_OVER_B(real_t xiOverXi0,real_t BOverBmin,real_t,real_t,void*)
-            {return xiOverXi0*xiOverXi0/BOverBmin;}
-        static real_t BA_FUNC_B_CUBED(real_t, real_t BOverBmin, real_t, real_t, void*)
-            {return BOverBmin*BOverBmin*BOverBmin;}
-        static real_t BA_FUNC_XI_SQUARED_B_SQUARED(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void*)
-            {return BOverBmin*BOverBmin*xiOverXi0*xiOverXi0;}
-
-        // Alternative representation of functions to be bounce averaged:
-        // lists containing exponents of the various contributing factors
-        static constexpr int_t
-            BA_PARAM_UNITY[5] = {0,0,0,0,1},
-            BA_PARAM_XI[5] = {1,0,0,0,1},
-            BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1},
-            BA_PARAM_B_CUBED[5] = {0,3,0,0,1},
-            BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};
-
+        
 	private:
         // Flux-surface averaged quantities.
         real_t
@@ -85,12 +59,14 @@ namespace DREAM::FVM {
             *FSA_B_f                    = nullptr, // <B> / Bmin
             *FSA_B2                     = nullptr, // <B^2> / Bmin^2
             *FSA_B2_f                   = nullptr, // <B^2> / Bmin^2
-            *FSA_1OverB                 = nullptr, // <1/B> * Bmin^2
-            *FSA_1OverB_f               = nullptr, // <1/B> * Bmin^2
-            *FSA_nablaR2OverR2          = nullptr, // R0^2*<|nabla r|^2/R^2>
-            *FSA_nablaR2OverR2_f        = nullptr, // R0^2*<|nabla r|^2/R^2>
-            *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
-            *FSA_1OverR2_f              = nullptr; // R0^2*<1/R^2>
+            *FSA_1OverB                 = nullptr, // <1/B> * Bmin
+            *FSA_1OverB_f               = nullptr, // <1/B> * Bmin
+            *FSA_BdotGradphi            = nullptr, // <|B\dot\nabla\varphi|>
+            *FSA_BdotGradphi_f          = nullptr, // <|B\dot\nabla\varphi|>
+            *FSA_gttOverJ2              = nullptr, // <g_{\theta\theta}/J^2>
+            *FSA_gttOverJ2_f            = nullptr, // <g_{\theta\theta}/J^2>
+            *FSA_gtpOverJ2              = nullptr, // <g_{\theta\varphi}/J^2>
+            *FSA_gtpOverJ2_f            = nullptr; // <g_{\theta\varphi}/J^2>
 
         // Number of radial grid points
         len_t nr;
@@ -156,7 +132,7 @@ namespace DREAM::FVM {
             delete [] xi0TrappedBoundary;
             delete [] xi0TrappedBoundary_f;
         }
-        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist = nullptr);
+        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), bool axisymmetric, void *par=nullptr, const int_t *Flist = nullptr);
 
         virtual void RebuildFluxSurfaceAveragedQuantities();
         void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
@@ -164,10 +140,13 @@ namespace DREAM::FVM {
 
         void DeallocateFSAvg();
         void InitializeFSAvg(
-            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f,
+            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
             real_t *B2avg, real_t *B2avg_f,
-            real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
-            real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
+            real_t *OneOverB_avg, real_t *OneOverB_avg_f,
+            real_t *BdotGradphi_avg, real_t *BdotGradphi_avg_f,
+            real_t *gttOverJ2_avg, real_t *gttOverJ2_avg_f,
+            real_t *gtpOverJ2_avg, real_t *gtpOverJ2_avg_f
+        );
 
         static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();
 
@@ -223,10 +202,10 @@ namespace DREAM::FVM {
 
         virtual void RebuildJacobians();
 
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverageTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverageThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegralTheta(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegralThetaPhi(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         void SetVpVol(real_t *VpVol, real_t *VpVol_f){
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;
@@ -234,12 +213,6 @@ namespace DREAM::FVM {
             }
             this->VpVol = VpVol;
             this->VpVol_f = VpVol_f;
-        }
-
-        void GetRThetaPhiFromCartesian(real_t *r, real_t *theta, real_t *phi, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaPhiFromCartesian(r,theta,phi,x,y,z,lengthScale, startingGuessR);}
-        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta, real_t phi){return this->generator->GetGradRCartesian(gradRCartesian,r,theta, phi);}
-        real_t FindClosestApproach(real_t x1, real_t y1, real_t z1, real_t x2, real_t y2, real_t z2){
-            return this->generator->FindClosestApproach(x1, y1, z1, x2, y2, z2);
         }
 
         /**
@@ -302,14 +275,9 @@ namespace DREAM::FVM {
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
 
 		// Routines used for saving equilibrium to output file
-		virtual const real_t GetZ0() { return this->generator->GetZ0(); }
-		virtual const len_t GetNPsi() { return this->generator->GetNPsi(); }
-		virtual const len_t GetNTheta() { return this->generator->GetNTheta(); }
-		virtual const real_t *GetFluxSurfaceRMinusR0() { return this->generator->GetFluxSurfaceRMinusR0(); }
-		virtual const real_t *GetFluxSurfaceRMinusR0_f() { return this->generator->GetFluxSurfaceRMinusR0_f(); }
-		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
-		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
+        // TODO: Don't save equilibrium in output, or save something else
 		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
+        virtual const real_t *GetToroidalAngle() { return this->generator->GetToroidalAngle(); }
         
         /**
          * Returns q*R0 on the distribution grid where q
@@ -321,13 +289,18 @@ namespace DREAM::FVM {
          *  mu0Ip: product of vacuum permeability and toroidal plasma
          *         current enclosed by the flux surface ir.
          */
-        const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
-            if(mu0Ip==0)
-                return std::numeric_limits<real_t>::infinity();
+        const real_t RotationalTransform(const len_t ir, const real_t mu0Ip) const {
             real_t twoPi = 2*M_PI;
             real_t twoPiCubed = twoPi*twoPi*twoPi;
-            return VpVol[ir]*VpVol[ir]/(twoPiCubed*mu0Ip) * GetBTorG(ir)
-                    * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
+            return twoPiCubed / (VpVol[ir]*VpVol[ir]*R0*R0)
+                        * (mu0Ip / GetFSA_BdotGradphi(ir) - GetFSA_gtpOverJ2(ir)) 
+                            / GetFSA_gttOverJ2(ir);
+        }
+
+        const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
+            real_t iota = RotationalTransform(ir, mu0Ip); // TODO: Should it be this->iota[ir]; instead? Maybe we want an option?
+
+            return (this->BtorGOverR0[ir] + iota * BpolIOverR0) * R0 / iota * FSA_1OverB / Bmin;
         }
 
         const real_t *GetToroidalFlux() const
@@ -364,14 +337,18 @@ namespace DREAM::FVM {
         const real_t   GetFSA_1OverB(const len_t ir) const { return this->FSA_1OverB[ir]; }
         const real_t  *GetFSA_1OverB_f() const { return this->FSA_1OverB_f; }
         const real_t   GetFSA_1OverB_f(const len_t ir) const { return this->FSA_1OverB_f[ir]; }
-        const real_t  *GetFSA_1OverR2() const { return this->FSA_1OverR2; }
-        const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
-        const real_t  *GetFSA_1OverR2_f() const { return this->FSA_1OverR2_f; }
-        const real_t   GetFSA_1OverR2_f(const len_t ir) const { return this->FSA_1OverR2_f[ir]; }
-        const real_t  *GetFSA_NablaR2OverR2() const { return this->FSA_nablaR2OverR2; }
-        const real_t   GetFSA_NablaR2OverR2(const len_t ir) const { return this->FSA_nablaR2OverR2[ir]; }
-        const real_t  *GetFSA_NablaR2OverR2_f() const { return this->FSA_nablaR2OverR2_f; }
-        const real_t   GetFSA_NablaR2OverR2_f(const len_t ir) const { return this->FSA_nablaR2OverR2_f[ir]; }
+        const real_t  *GetFSA_BdotGradphi() const { return this->FSA_BdotGradphi; }
+        const real_t   GetFSA_BdotGradphi(const len_t ir) const { return this->FSA_BdotGradphi[ir]; }
+        const real_t  *GetFSA_BdotGradphi_f() const { return this->FSA_BdotGradphi_f; }
+        const real_t   GetFSA_BdotGradphi_f(const len_t ir) const { return this->FSA_BdotGradphi_f[ir]; }
+        const real_t  *GetFSA_gttOverJ2() const { return this->FSA_gttOverJ2; }
+        const real_t   GetFSA_gttOverJ2(const len_t ir) const { return this->FSA_gttOverJ2[ir]; }
+        const real_t  *GetFSA_gttOverJ2_f() const { return this->FSA_gttOverJ2_f; }
+        const real_t   GetFSA_gttOverJ2_f(const len_t ir) const { return this->FSA_gttOverJ2_f[ir]; }
+        const real_t  *GetFSA_gtpOverJ2() const { return this->FSA_gtpOverJ2; }
+        const real_t   GetFSA_gtpOverJ2(const len_t ir) const { return this->FSA_gtpOverJ2[ir]; }
+        const real_t  *GetFSA_gtpOverJ2_f() const { return this->FSA_gtpOverJ2_f; }
+        const real_t   GetFSA_gtpOverJ2_f(const len_t ir) const { return this->FSA_gtpOverJ2_f[ir]; }
 
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 

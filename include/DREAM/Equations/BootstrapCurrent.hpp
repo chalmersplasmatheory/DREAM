@@ -40,6 +40,8 @@ namespace DREAM {
         real_t *NiMain=nullptr;
         real_t *WiMain=nullptr;
 
+        bool stellarator = false;
+
         real_t *ft=nullptr;             // fraction of trapped particles
         real_t *qR0=nullptr;            // safety factor multiplied by R0
         real_t *eps=nullptr;            // safety factor multiplied by R0

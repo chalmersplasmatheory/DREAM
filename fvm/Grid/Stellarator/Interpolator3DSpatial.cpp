@@ -5,7 +5,7 @@
 #include <cmath>
 #include <gsl/gsl_interp.h>
 #include "FVM/FVMException.hpp"
-#include "FVM/Interpolator3D.hpp"
+#include "FVM/Grid/Stellarator/Interpolator3D.hpp"
 #include <gsl/gsl_machine.h>
 
 using namespace DREAM::FVM;

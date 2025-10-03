@@ -78,6 +78,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             eps[ir] = rGrid->GetR(ir) / rGrid->GetR0();
         }
     } else if (mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL_STELLARATOR) {
+        stellarator = true;
         for (len_t ir = 0; ir < nr; ir++) {
             // calculate the geometric prefactor
             const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
@@ -105,7 +106,8 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
             // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
-            qR0[ir] = (BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin; // IE: Should we divide by Bmin here?
+            // TODO: Change this?
+            qR0[ir] = (BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin;
 
             eps[ir] = (rGrid->GetBmax(ir) - rGrid->GetBmin(ir)) / (rGrid->GetBmax(ir) + rGrid->GetBmin(ir));
         }
@@ -211,6 +213,13 @@ void BootstrapCurrent::Rebuild() {
         //     real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
         //     qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, mu0Ip));
         // }
+        
+        /** TODO: Should we use this? 
+        if (stellarator) {
+            real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
+            qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, mu0Ip));
+        }*/
+
 
         // calculate collision frequencies
         real_t nuE = evaluateElectronCollisionFrequency(ir);

@@ -1,13 +1,16 @@
-#ifndef _DREAM_EMPTY_RADIAL_GRID_HPP
+#ifndef _DREAM_EMPTY_RADIAL_GRID_HPP // TODO
 #define _DREAM_EMPTY_RADIAL_GRID_HPP
 
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
 namespace DREAM::FVM {
     class EmptyRadialGridGenerator : public RadialGridGenerator {
+        protected:
+            len_t nphi_interp;
         public:
             EmptyRadialGridGenerator() : RadialGridGenerator(1) {
                 ntheta_interp = 1;
+                nphi_interp = 1;
                 isUpDownSymmetric = true;
             }
             bool isBuilt = false;
@@ -15,27 +18,27 @@ namespace DREAM::FVM {
             virtual bool NeedsRebuild(const real_t) const override { return !isBuilt; }
             virtual bool Rebuild(const real_t, RadialGrid*) override;
             virtual real_t JacobianAtTheta(const len_t, const real_t) override {return 1.0;}
-            virtual real_t ROverR0AtTheta(const len_t, const real_t) override {return 1.0;}
-            virtual real_t NablaR2AtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t BdotGradphiAtThetaPhi(const len_t, const real_t, const real_t)  {return 1.0;}
+            virtual real_t gttAtThetaPhi(const len_t, const real_t, const real_t)  {return 1.0;}
+            virtual real_t gtpAtThetaPhi(const len_t, const real_t, const real_t)  {return 1.0;}
             virtual real_t JacobianAtTheta_f(const len_t, const real_t) override {return 1.0;}
-            virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override {return 1.0;}
-            virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override {return 1.0;}
-            virtual void EvaluateGeometricQuantities(const len_t, const real_t, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override
-                {Jacobian=1; B=1; NablaR2 = 1; ROverR0 = 1;}
-            virtual void EvaluateGeometricQuantities_fr(const len_t, const real_t, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override
-                {Jacobian=1; B=1; NablaR2 = 1; ROverR0 = 1;}
+            virtual real_t BdotGradphiAtThetaPhi_f(const len_t, const real_t, const real_t)  {return 1.0;}
+            virtual real_t gttAtThetaPhi_f(const len_t, const real_t, const real_t)  {return 1.0;}
+            virtual real_t gtpAtThetaPhi_f(const len_t, const real_t, const real_t)  {return 1.0;}
+            virtual void EvaluateGeometricQuantitiesTheta(const len_t, const real_t, real_t &B, real_t &Jacobian) 
+                {Jacobian=1; B=1}
+            virtual void EvaluateGeometricQuantitiesTheta_fr(const len_t, const real_t, real_t &B, real_t &Jacobian) 
+                {Jacobian=1; B=1}
+            virtual void EvaluateGeometricQuantitiesThetaPhi(const len_t, const real_t, const real_t, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) 
+                {BdotGradphi=1; gttOverJ2=1; gtpOverJ2=1}
+            virtual void EvaluateGeometricQuantitiesThetaPhi_fr(const len_t, const real_t, const real_t, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) 
+                {BdotGradphi=1; gttOverJ2=1; gtpOverJ2=1}
 
-			virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t , real_t , real_t, real_t ) override {}
-			virtual void GetGradRCartesian(real_t*, real_t , real_t, real_t) override {}
-
-			virtual const real_t GetZ0() override { return 0; }
 			virtual const len_t GetNPsi() override { return 0; }
 			virtual const len_t GetNTheta() override { return 0; }
-			virtual const real_t *GetFluxSurfaceRMinusR0() override { return nullptr; }
-			virtual const real_t *GetFluxSurfaceRMinusR0_f() override { return nullptr; }
-			virtual const real_t *GetFluxSurfaceZMinusZ0() override { return nullptr; }
-			virtual const real_t *GetFluxSurfaceZMinusZ0_f() override { return nullptr; }
+            virtual const len_t GetNPhi() override { return 0; }
 			virtual const real_t *GetPoloidalAngle() override { return nullptr; }
+            virtual const real_t *GetToroidalAngle() override { return nullptr; }
     };
 
     class EmptyRadialGrid : public RadialGrid {

@@ -19,6 +19,17 @@ FluxSurfaceQuantity::FluxSurfaceQuantity(
     const gsl_interp_type *interpType
 ) : rGrid(rGrid), evaluateFuncAtTheta(evalAtTheta), evaluateFuncAtTheta_f(evalAtTheta_f),  interpolationMethod(interpType) 
 { 
+    axisymmetric = true;
+    gsl_acc = gsl_interp_accel_alloc();
+}
+
+FluxSurfaceQuantity::FluxSurfaceQuantity(
+    RadialGrid *rGrid, std::function<real_t(len_t,real_t,real_t)> evalAtThetaPhi, 
+    std::function<real_t(len_t,real_t,real_t)> evalAtThetaPhi_f, 
+    const gsl_interp_type *interpType
+) : rGrid(rGrid), evaluateFuncAtThetaPhi(evalAtThetaPhi), evaluateFuncAtThetaPhi_f(evalAtThetaPhi_f),  interpolationMethod(interpType) 
+{ 
+    axisymmetric = false;
     gsl_acc = gsl_interp_accel_alloc();
 }
 
@@ -47,6 +58,28 @@ void FluxSurfaceQuantity::InterpolateMagneticDataToTheta(real_t *theta, len_t nt
         quantityData_fr[ir] = new real_t[ntheta_interp];
         for(len_t it=0; it<ntheta_interp; it++)
             quantityData_fr[ir][it] = evaluateFuncAtTheta_f(ir,theta[it]);
+    }
+}
+
+/** TODO: Is it*nphi_interp+ip correct indexing?
+ * Interpolate (and store) data to theta grid.
+ */
+void FluxSurfaceQuantity::InterpolateMagneticDataToThetaPhi(real_t *theta, len_t ntheta_interp, real_t *phi, len_t nphi_interp){
+    DeallocateInterpolatedData();
+    nr = rGrid->GetNr();
+    quantityData = new real_t**[nr];
+    for(len_t ir = 0; ir<nr; ir++){
+        quantityData[ir] = new real_t*[ntheta_interp*nphi_interp];
+        for(len_t it=0; it<ntheta_interp; it++)
+            for(len_t ip=0; ip<nphi_interp; ip++)
+                quantityData[ir][it*nphi_interp+ip] = evaluateFuncAtThetaPhi(ir,theta[it],phi[ip]);
+    }
+    quantityData_fr = new real_t*[nr+1];
+    for(len_t ir = 0; ir<=nr; ir++){
+        quantityData_fr[ir] = new real_t*[ntheta_interp*nphi_interp];
+        for(len_t it=0; it<ntheta_interp; it++)
+            for(len_t ip=0; ip<nphi_interp; ip++)
+                quantityData[ir][it*nphi_interp+ip] = evaluateFuncAtThetaPhi(ir,theta[it],phi[ip]);
     }
 }
 
@@ -84,4 +117,14 @@ const real_t FluxSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGr
         return evaluateFuncAtTheta_f(ir,theta);
     else
         return evaluateFuncAtTheta(ir,theta);
+}
+
+/**
+ * Evaluate quantity at any poloidal angle theta
+ */
+const real_t FluxSurfaceQuantity::evaluateAtThetaPhi(len_t ir, real_t theta, real_t phi, fluxGridType fluxGridType) const {
+    if (fluxGridType == FLUXGRIDTYPE_RADIAL)
+        return evaluateFuncAtThetaPhi_f(ir,theta,phi);
+    else
+        return evaluateFuncAtThetaPhi(ir,theta,phi);
 }

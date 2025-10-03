@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline2d.h>
-#include "FVM/Grid/NumericBRadialGridGeneratorStellarator.hpp"
+#include "FVM/Grid/Stellarator/NumericBRadialGridGenerator.hpp"
 
 
 using namespace DREAM::FVM;
@@ -507,11 +507,6 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  *
  * r:     Minor radius.
  * theta: Poloidal angle.
- *
- * Optional return parameters:
- * _R:    Major radius coordinate in the given point.
- * _dRdt: Poloidal angle derivative of R.
- * _dZdt: Poloidal angle derivative of vertical coordinate Z.
  */
 real_t NumericBRadialGridGenerator::JacobianAtTheta(
     const real_t r, const real_t theta
@@ -521,7 +516,7 @@ real_t NumericBRadialGridGenerator::JacobianAtTheta(
     return gsl_spline2d_eval(this->spline_Jacobian, r, t, this->acc_r, this->acc_theta) / this->R0;
 }
 
-/** TODO: Should this be normalized somehow?
+/**
  * Calculate B\dot Grad phi at the given poloidal and toroidal angle.
  *
  * r:     Minor radius.
@@ -542,8 +537,8 @@ real_t NumericBRadialGridGenerator::BdotGradphiAtThetaPhi(
 	return BdotGradphi[0];
 }
 
-/** TODO: Should this be normalized somehow?
- * Calculate B\dot Grad phi at the given poloidal and toroidal angle.
+/**
+ * Calculate g_{\theta\theta}/J^2 at the given poloidal and toroidal angle.
  *
  * r:     Minor radius.
  * theta: Poloidal angle.
@@ -557,14 +552,15 @@ real_t NumericBRadialGridGenerator::gttAtThetaPhi(
     real_t r[1] = {radius}
 
     real_t *gtt = new real_t[1];
-
+    
     this->interp_gtt->Eval(1,1,1, &r, &t, &p, nullptr, gtt);
 
-	return gtt[0];
+    real_t J = JacobianAtTheta(radius, theta);
+	return gtt[0] / (J*J) / (R0 * R0);
 }
 
-/** TODO: Should this be normalized somehow?
- * Calculate B\dot Grad phi at the given poloidal and toroidal angle.
+/**
+ * Calculate g_{\theta\varphi}/J^2 at the given poloidal and toroidal angle.
  *
  * r:     Minor radius.
  * theta: Poloidal angle.
@@ -581,20 +577,36 @@ real_t NumericBRadialGridGenerator::gtpAtThetaPhi(
 
     this->interp_gtp->Eval(1,1,1, &r, &t, &p, nullptr, gtp);
 
-	return gtp[0];
+    real_t J = JacobianAtTheta(radius, theta);
+	return gtp[0] / (J*J) / (R0 * R0);
 }
 
 /**
  * Evaluate all the geometric quantities in one go.
  */
-void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
+void NumericBRadialGridGenerator::EvaluateGeometricQuantitiesTheta(
     const real_t r, const real_t theta, real_t &B, real_t &Jacobian
 ) {
     real_t t = this->_angleBounded(theta);
 
-    Jacobian = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
+    Jacobian = JacobianAtTheta(r, theta);
     
     B = gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
+}
+
+/**
+ * Evaluate all the geometric quantities in one go.
+ */
+void NumericBRadialGridGenerator::EvaluateGeometricQuantitiesThetaPhi(
+    const real_t r, const real_t theta, real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
+) {
+    real_t t = this->_angleBounded(theta);
+
+    BdotGradphi = BdotGradphiAtThetaPhi(r, theta, phi);
+
+    gttOverJ2 = gttAtThetaPhi(r, theta, phi);
+
+    gtpOverJ2 = gtpAtThetaPhi(r, theta, phi);
 }
 
 /**

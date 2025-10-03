@@ -6,7 +6,7 @@
 #include <string>
 #include <softlib/SFile.h>
 #include "FVM/Grid/RadialGridGenerator.hpp"
-#include "FVM/Interpolator3D.hpp"
+#include "FVM/Grid/Stellarator/Interpolator3D.hpp"
 
 namespace DREAM::FVM {
     class NumericBRadialGridGenerator : public RadialGridGenerator {
@@ -93,6 +93,10 @@ namespace DREAM::FVM {
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t theta) { return JacobianAtTheta(r_f[ir], theta); };
         real_t JacobianAtTheta(const real_t, const real_t);
 
+        virtual real_t BdotGradphiAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) { return BdotGradphiAtThetaPhi(r[ir], theta, phi); }
+        virtual real_t BdotGradphiAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) { return BdotGradphiAtThetaPhi(r_f[ir], theta, phi); };
+        real_t BdotGradphiAtThetaPhi(const real_t, const real_t, const real_t);
+
         virtual real_t gttAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) { return gttAtThetaPhi(r[ir], theta, phi); }
         virtual real_t gttAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) { return gttAtThetaPhi(r_f[ir], theta, phi); };
         real_t gttAtThetaPhi(const real_t, const real_t, const real_t);
@@ -101,15 +105,26 @@ namespace DREAM::FVM {
         virtual real_t gtpAtThetaPhi_f(const len_t ir, const real_t theta, const real_t phi) { return gtpAtThetaPhi(r_f[ir], theta, phi); };
         real_t gtpAtThetaPhi(const real_t, const real_t, const real_t);
         
-        virtual void EvaluateGeometricQuantities(
+        virtual void EvaluateGeometricQuantitiesTheta(
             const len_t ir, const real_t theta, real_t &B, real_t &Jacobian
-        ) override { EvaluateGeometricQuantities(r[ir], theta, B, Jacobian, ROverR0, NablaR2); }
-        virtual void EvaluateGeometricQuantities_fr(
+        ) override { EvaluateGeometricQuantitiesTheta(r[ir], theta, B, Jacobian); }
+        virtual void EvaluateGeometricQuantitiesTheta_fr(
             const len_t ir, const real_t theta, real_t &B, real_t &Jacobian
-        ) override { EvaluateGeometricQuantities(r_f[ir], theta, B, Jacobian, ROverR0, NablaR2); }
+        ) override { EvaluateGeometricQuantitiesTheta(r_f[ir], theta, B, Jacobian); }
 
-        void EvaluateGeometricQuantities(
+        void EvaluateGeometricQuantitiesTheta(
             const real_t r, const real_t theta, real_t &B, real_t &Jacobian
+        );
+
+        virtual void EvaluateGeometricQuantitiesThetaPhi(
+            const len_t ir, const real_t theta, const real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
+        ) override { EvaluateGeometricQuantitiesThetaPhi(r[ir], theta, phi, BdotGradphi, gttOverJ2, gtpOverJ2); }
+        virtual void EvaluateGeometricQuantitiesThetaPhi_fr(
+            const len_t ir, const real_t theta, const real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
+        ) override { EvaluateGeometricQuantitiesThetaPhi(r_f[ir], theta, phi, BdotGradphi, gttOverJ2, gtpOverJ2); }
+
+        void EvaluateGeometricQuantitiesThetaPhi(
+            const real_t r, const real_t theta, real_t phi, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
         );
 
 		// Output generation helper routines
