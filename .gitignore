@@ -34,3 +34,4 @@ petsc_matrix
 petsc_matrix.info
 src/Atomics/adasdata.cpp
 tools/cache
+*.CDF
