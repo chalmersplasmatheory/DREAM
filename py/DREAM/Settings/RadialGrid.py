@@ -9,15 +9,18 @@ import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
+from .StellaratorMagneticField import StellaratorMagneticField
 from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
 
 
 TYPE_CYLINDRICAL = 1
 TYPE_ANALYTIC_TOROIDAL = 2
 TYPE_NUMERICAL = 3
+TYPE_STELLARATOR = 4
 
 # Numerical magnetic field file formats
 FILE_FORMAT_LUKE = 1
+FILE_FORMAT_DESC = 2
 
 
 class RadialGrid(PrescribedScalarParameter):
@@ -40,6 +43,7 @@ class RadialGrid(PrescribedScalarParameter):
         # Analytic toroidal settings
         self.R0 = None
         self.ntheta = 20
+        self.nphi = 64
         self.Delta = None       # Shafranov shift
         self.Delta_r = None
         self.delta = None       # Triangularity
@@ -66,6 +70,28 @@ class RadialGrid(PrescribedScalarParameter):
         self.num_filename = None
         self.num_fileformat = None
         self.num_magneticfield = None   # Magnetic field class parsing data
+
+        # Stellarator magnetic field parameters
+        self.num_stellarator = None
+        self.nr_equil = int(0)
+        self.ntheta_equil = 129
+        self.nphi_equil = 129
+        self.rho = None
+        self.theta = None
+        self.phi = None
+        self.f_passing = None
+        self.B_min = None
+        self.B_max = None
+        self.G = None
+        self.I = None
+        self.iota = None
+        self.B = None
+        self.BdotGradPhi = None
+        self.Jacobian = None
+        self.g_tt = None
+        self.g_tp = None
+        self.lambda_t = None
+        self.lambda_p = None
 
         # prescribed arbitrary grid
         self.custom_grid = False
@@ -104,6 +130,11 @@ class RadialGrid(PrescribedScalarParameter):
                 raise EquationException("RadialGrid: Custom grid points 'r_f' must be an array of increasing numbers.")
         if np.min(r_f)<0:
             raise EquationException("RadialGrid: Custom grid points must be non-negative.")
+        if np.max(r_f)>self.a:
+            raise EquationException("RadialGrid: Last radius element must be smaller than or equal to minor radius.")
+        if self.type == TYPE_STELLARATOR:
+            r_f /= self.a
+
         self.r_f = r_f
         self.custom_grid = True
 
@@ -173,7 +204,7 @@ class RadialGrid(PrescribedScalarParameter):
         if nr <= 0:
             raise DREAMException("RadialGrid: Invalid value assigned to 'nr': {}".format(nr))
         if self.r_f is not None:
-            print("*WARNING* RadialGrid: Prescibing 'Nr' overrides the custom radial grid 'r_f'.")
+            print("*WARNING* RadialGrid: Prescribing 'Nr' overrides the custom radial grid 'r_f'.")
             self.r_f = None
             self.custom_grid = False
             
@@ -182,7 +213,7 @@ class RadialGrid(PrescribedScalarParameter):
 
     def setNtheta(self, ntheta):
         """
-        (Analytic toroidal and numerical)
+        (Analytic toroidal, numerical and stellarator)
         Set the number of grid points to use for the poloidal grid on which bounce
         averages are calculated.
         """
@@ -192,7 +223,19 @@ class RadialGrid(PrescribedScalarParameter):
         self.ntheta = ntheta
 
 
-    def setNthetaOut(self, ntheta):
+    def setNphi(self, nphi):
+        """
+        (Analytic toroidal, numerical and stellarator)
+        Set the number of grid points to use for the poloidal grid on which bounce
+        averages are calculated.
+        """
+        if nphi <= 0:
+            raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}".format(ntheta))
+
+        self.nphi = nphi
+
+
+    def setNthetaOut(self, ntheta): # TODO: For phi?
         """
         (Cylindrical and analytic toroidal)
         Set the number of poloidal grid points to use for the flux surfaces
@@ -331,11 +374,57 @@ class RadialGrid(PrescribedScalarParameter):
         self.a = self.num_magneticfield.a
 
 
+    def setStellarator(self, filename, format=FILE_FORMAT_DESC, nr_equil=None, ntheta_equil=None, nphi_equil=None):
+        """
+        Sets the numerical magnetic field to use for the simulation.
+
+        :param str filename: Name of file containing magnetic field data.
+        :param int format:   Format of the magnetic field data in the given file.
+        """
+        self.type = TYPE_STELLARATOR
+        self.num_filename = filename
+
+        if format == FILE_FORMAT_DESC:
+            self.num_fileformat = format
+
+            if nr_equil is None:
+                self.nr_equil = self.nr
+            else:
+                self.nr_equil = nr_equil
+            if ntheta_equil is not None:
+                self.ntheta_equil = ntheta_equil
+            if nphi_equil is not None:
+                self.nphi_equil = nphi_equil
+            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
+            self.num_stellarator.load()
+        else:
+            DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
+
+        self.a = self.num_stellarator.a
+        self.R0 = self.num_stellarator.R0
+        self.rho = self.num_stellarator.rho
+        self.theta = self.num_stellarator.theta
+        self.phi = self.num_stellarator.phi
+        self.f_passing = self.num_stellarator.f_passing
+        self.B_min = self.num_stellarator.B_min
+        self.B_max = self.num_stellarator.B_max
+        self.G = self.num_stellarator.G
+        self.I = self.num_stellarator.I
+        self.iota = self.num_stellarator.iota
+        self.B = self.num_stellarator.B
+        self.BdotGradPhi = self.num_stellarator.BdotGradPhi
+        self.Jacobian = self.num_stellarator.Jacobian
+        self.g_tt = self.num_stellarator.g_tt
+        self.g_tp = self.num_stellarator.g_tp
+        self.lambda_t = self.num_stellarator.lambda_t
+        self.lambda_p = self.num_stellarator.lambda_p
+
+
     def setType(self, ttype):
         """
         Set the type of radial grid to use.
         """
-        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL]
+        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL, TYPE_STELLARATOR]
         if ttype in types:
             self.type = ttype
         else:
@@ -356,6 +445,8 @@ class RadialGrid(PrescribedScalarParameter):
             self.visualize_analytic(*args, ax=ax, show=show, **kwargs)
         elif self.type == TYPE_NUMERICAL:
             self.num_magneticfield.visualize(*args, ax=ax, show=show, **kwargs)
+        elif self.type == TYPE_STELLARATOR:
+            self.num_stellarator.visualize(*args, ax=ax, show=show, **kwargs)
         else:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
     
@@ -367,6 +458,8 @@ class RadialGrid(PrescribedScalarParameter):
             return self.R0
         elif self.type==TYPE_NUMERICAL:
             return self.num_magneticfield.Rp
+        elif self.type==TYPE_STELLARATOR:
+            return self.num_stellarator.R0
         else: 
             raise Exception('Unrecognized radial grid type')
         
@@ -465,7 +558,7 @@ class RadialGrid(PrescribedScalarParameter):
             else:
                 self.b = float(self.b)
 
-        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL or self.type == TYPE_STELLARATOR:
             self.a = data['a']
             self.nr = data['nr']
             self.r0 = data['r0']
@@ -507,6 +600,34 @@ class RadialGrid(PrescribedScalarParameter):
                         self.num_magneticfield = LUKEMagneticField(self.num_filename)
                     except:
                         self.num_magneticfield = None
+        elif self.type == TYPE_STELLARATOR:
+            self.num_filename = data['filename']
+            self.ntheta = data['ntheta']
+            self.nphi = data['nphi']
+            self.nr_equil = data['nr_equil']
+            self.ntheta_equil = data['ntheta_equil']
+            self.nphi_equil = data['nphi_equil']
+            self.rho = data['rho']
+            self.theta = data['theta']
+            self.phi = data['phi']
+            self.f_passing = data['f_passing']
+            self.B_min = data['B_min']
+            self.B_max = data['B_max']
+            self.G = data['G']
+            self.I = data['I']
+            self.iota = data['iota']
+            self.B = data['B']
+            self.BdotGradPhi = data['BdotGradPhi']
+            self.Jacobian = data['Jacobian']
+            self.g_tt = data['g_tt']
+            self.g_tp = data['g_tp']
+            self.lambda_t = data['lambda_t']
+            self.lambda_p = data['lambda_p']
+            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
+
+            if 'fileformat' in data:
+                self.num_fileformat = data['fileformat']
+
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -535,7 +656,7 @@ class RadialGrid(PrescribedScalarParameter):
             'type': self.type
         }
 
-        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL or self.type == TYPE_STELLARATOR:
             data['a'] = self.a
             data['nr'] = self.nr
             data['r0'] = self.r0
@@ -563,6 +684,33 @@ class RadialGrid(PrescribedScalarParameter):
 
             if self.num_fileformat is not None:
                 data['fileformat'] = self.num_fileformat
+        elif self.type == TYPE_STELLARATOR:
+            data['filename'] = self.num_filename
+            data['ntheta'] = self.ntheta
+            data['nphi'] = self.nphi
+            data['nr_equil'] = self.nr_equil
+            data['ntheta_equil'] = self.ntheta_equil
+            data['nphi_equil'] = self.nphi_equil
+            data['rho'] = self.rho
+            data['theta'] = self.theta
+            data['phi'] = self.phi
+            data['f_passing'] = self.f_passing
+            data['B_min'] = self.B_min
+            data['B_max'] = self.B_max
+            data['G'] = self.G
+            data['I'] = self.I
+            data['iota'] = self.iota
+            data['B'] = self.B
+            data['BdotGradPhi'] = self.BdotGradPhi
+            data['Jacobian'] = self.Jacobian
+            data['g_tt'] = self.g_tt
+            data['g_tp'] = self.g_tp
+            data['lambda_t'] = self.lambda_t
+            data['lambda_p'] = self.lambda_p
+
+            if self.num_fileformat is not None:
+                data['fileformat'] = self.num_fileformat
+
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -590,7 +738,7 @@ class RadialGrid(PrescribedScalarParameter):
         """
         Verfiy that the RadialGrid settings are consistent.
         """
-        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL]
+        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL, TYPE_STELLARATOR]
         if self.type in types:
             if (self.a is None or self.a <= 0) and self.r_f is None:
                 raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(self.a))
@@ -643,6 +791,43 @@ class RadialGrid(PrescribedScalarParameter):
             formats = [FILE_FORMAT_LUKE]
             if (self.num_fileformat is not None) and (self.num_fileformat not in formats):
                 raise DREAMException("RadialGrid: Unrecognized file format specified for numerical magnetic field: {}.".format(self.num_fileformat))
+
+        elif self.type == TYPE_STELLARATOR:
+            if type(self.num_filename) != str:
+                raise DREAMException("RadialGrid: No numerical magnetic field file specified.")
+            elif not pathlib.Path(self.num_filename).is_file():
+                raise DREAMException("RadialGrid: The specified numerical magnetic field file does not exist.")
+
+            formats = [FILE_FORMAT_DESC]
+            if (self.num_fileformat is not None) and (self.num_fileformat not in formats):
+                raise DREAMException("RadialGrid: Unrecognized file format specified for numerical magnetic field: {}.".format(self.num_fileformat))
+
+            if self.r_f is not None:
+                if np.max(r_f) > self.a:
+                    raise EquationException(
+                        "RadialGrid: Last grid point can't be larger than minor radius from desc file.")
+            elif self.a > self.num_stellarator.a:
+                raise EquationException(
+                    "RadialGrid: Last grid point can't be larger than minor radius from desc file.")
+            elif self.a < self.num_stellarator.a:
+                print("*WARNING* RadialGrid: Using a smaller minor radius than in the equilibrium file.")
+
+            verifySettingsStellaratorParameter('rho')
+            verifySettingsStellaratorParameter('theta')
+            verifySettingsStellaratorParameter('phi')
+            verifySettingsStellaratorParameter('f_passing')
+            verifySettingsStellaratorParameter('B_max')
+            verifySettingsStellaratorParameter('B_min')
+            verifySettingsStellaratorParameter('G')
+            verifySettingsStellaratorParameter('I')
+            verifySettingsStellaratorParameter('iota')
+            verifySettingsStellaratorParameter('B')
+            verifySettingsStellaratorParameter('BdotGradPhi')
+            verifySettingsStellaratorParameter('Jacobian')
+            verifySettingsStellaratorParameter('g_tt')
+            verifySettingsStellaratorParameter('g_tp')
+            verifySettingsStellaratorParameter('lambda_t')
+            verifySettingsStellaratorParameter('lambda_p')
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -679,4 +864,14 @@ class RadialGrid(PrescribedScalarParameter):
         if v.shape != r.shape:
             raise DREAMException("RadialGrid: Dimensions mismatch between shape parameter '{}' {} and its radial grid {}.".format(shapeparam, v.shape, r.shape))
 
+    def verifySettingsStellaratorParameter(self, stellaratorparam):
+        """
+        Verify the settings of the named shape parameter.
+
+        :param str shapeparam: Name of shape parameter to verify settings for.
+        """
+        v = getattr(self, stellaratorparam)
+
+        if v is None or type(v) != np.ndarray:
+            raise DREAMException("RadialGrid: Invalid type of shape parameter '{}': {}.".format(shapeparam, type(v)))
 
