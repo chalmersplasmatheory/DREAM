@@ -58,7 +58,7 @@ namespace DREAM::FVM {
         RadialGrid *rGrid;
         RadialGridGenerator *gridGenerator;
 
-        bool geometryIsSymmetric;
+        len_t nfp = 0;
 
         /**
          * Is true if FluSurfaceAverager is constructed with 
@@ -94,7 +94,7 @@ namespace DREAM::FVM {
             *phi     = nullptr, // toroidal grid points
             *weights_theta = nullptr, // corresponding quadrature weights for theta
             *weights_phi   = nullptr, // corresponding quadrature weights for phi
-            theta_max;
+            theta_max = 2 * M_PI, phi_max = 2 * M_PI;
 
         // poloidal angles of minimum and maximum magnetic field strength.
         real_t 
@@ -119,7 +119,7 @@ namespace DREAM::FVM {
 
     public:
         FluxSurfaceAverager(
-            RadialGrid*, RadialGridGenerator*, bool geometryIsSymmetric = false, len_t ntheta_interp = 10,, len_t nphi_interp = 10, // TODO: Change?
+            RadialGrid*, RadialGridGenerator*, len_t nfp = 0, len_t ntheta_interp = 64, len_t nphi_interp = 64, // TODO: Change?
             interp_method im = INTERP_LINEAR, quadrature_method qm = QUAD_FIXED_LEGENDRE
         );
         ~FluxSurfaceAverager();
@@ -136,7 +136,9 @@ namespace DREAM::FVM {
         const real_t *GetWeights() const
             {return weights;}        
         const real_t GetThetaMax() const    
-            {return theta_max;}
+            {return theta_max;}      
+        const real_t GetPhiMax() const    
+            {return phi_max;}
 
         void SetReferenceMagneticFieldData(
             real_t *theta_Bmin, real_t *theta_Bmin_f, // poloidal angle of B=Bmin
@@ -189,7 +191,7 @@ namespace DREAM::FVM {
         real_t GetBmax(len_t ir, fluxGridType, real_t *theta_Bmax = nullptr);
 
 
-        bool isGeometrySymmetric(){return geometryIsSymmetric;}
+        len_t getNFP(){return nfp;}
         bool isIntegrationAdaptive(){return integrateAdaptive;}
 
 

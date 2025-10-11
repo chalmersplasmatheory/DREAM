@@ -27,11 +27,11 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/,
     FluxSurfaceAverager::interp_method im, FluxSurfaceAverager::quadrature_method qm_passing)
     : nr(rg->GetNr()), generator(rg) {
 
-    bool geometryIsSymmetric = rg->IsFieldSymmetric();
+    len_t nfp = rg->IsFieldSymmetric();
     len_t ntheta_interp_passing = rg->GetNthetaInterp();
     len_t nphi_interp_passing = rg->GetNphiInterp();
 
-    fluxSurfaceAverager = new FluxSurfaceAverager(this,rg,geometryIsSymmetric,ntheta_interp_passing,nphi_interp_passing,im,qm_passing); // TODO: Should this not be changed to the stellarator flux surface averager?
+    fluxSurfaceAverager = new FluxSurfaceAverager(this,rg,nfp,ntheta_interp_passing,nphi_interp_passing,im,qm_passing); // TODO: Should this not be changed to the stellarator flux surface averager?
 }
 
 /**

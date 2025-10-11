@@ -64,6 +64,8 @@ struct NumericBData *DREAM::FVM::LoadNumericBFromDESC(SFile *sf, const std::stri
     double **_Jacobian = sf->GetDoubles("equil/Jacobian", fsize); ASSERT_DIMS_2D("Jacobian(psi,theta)");
     double **_gtt = sf->GetDoubles("equil/gtt", fsize); ASSERT_DIMS_3D("gtt(psi,theta,phi)");
     double **_gtp = sf->GetDoubles("equil/gtp", fsize); ASSERT_DIMS_3D("gtp(psi,theta,phi)");
+    double **_lambdat = sf->GetDoubles("equil/lambdat", fsize); ASSERT_DIMS_3D("lambdat(psi,theta,phi)");
+    double **_lambdap = sf->GetDoubles("equil/lambdap", fsize); ASSERT_DIMS_3D("lambdap(psi,theta,phi)");
 
 	// We need only a pointer to the full chunk of
 	// data, and so we free the 2D pointer here...
@@ -76,6 +78,8 @@ struct NumericBData *DREAM::FVM::LoadNumericBFromDESC(SFile *sf, const std::stri
 	d->Jacobian    = _Jacobian[0];      delete [] _Jacobian;
     d->gtt         = _gtt[0];           delete [] _gtt;
 	d->gtp         = _gtp[0];           delete [] _gtp;
+	d->lambdat     = _lambdat[0];       delete [] _lambdat;
+	d->lambdap     = _lambdap[0];       delete [] _lambdap;
 
     
     // TODO: Make DESC relevant

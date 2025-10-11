@@ -41,8 +41,7 @@ namespace DREAM::FVM {
         real_t *dataG=nullptr, *dataI=nullptr;// Magnetic field components (1D)
         real_t *dataiota=nullptr; // Rotational transform (1D)
         real_t //*dataK=nullptr
-                *dataBdotGradphi=nullptr, *datagtt=nullptr, *datagtp=nullptr, 
-                *datalambdat=nullptr, *datalambdap=nullptr;     // Magnetic field and Jacobian data (3D)
+                *dataBdotGradphi=nullptr, *datagtt=nullptr, *datagtp=nullptr;     // Magnetic field and Jacobian data (3D)
         real_t *dataB=nullptr, *dataJacobian=nullptr;   // Magnetic field and Jacobian data (2D)
 
         std::string name;
@@ -53,8 +52,7 @@ namespace DREAM::FVM {
             //*spline_B, *spline_Jacobian;
         
         FVM::Interpolator3D *interp_B, *interp_Jacobian, //*interp_K, 
-                            *interp_BdotGradphi, *interp_gtt, *interp_gtp
-                            *interp_lambdat, *interp_lambdap; 
+                            *interp_BdotGradphi, *interp_gtt, *interp_gtp; 
         gsl_interp_accel *acc_r, *acc_theta;
 
 		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t, len_t);
@@ -143,7 +141,7 @@ namespace DREAM::FVM {
                 *BdotGradphi=nullptr; // Dim: npsi*ntheta*nphi? Is K even needed?
         double *B=nullptr; // Dim npsi*ntheta? Or npsi*ntheta*nphi? Should be independent of phi
         double *Jacobian=nullptr; // Dim npsi*ntheta? Or npsi*ntheta*nphi? Should be independent of phi
-        double *gtt=nullptr, *gtp=nullptr, *lambdat=nullptr, *lambdap=nullptr; // Dim npsi*ntheta*nphi?
+        double *gtt=nullptr, *gtp=nullptr; // Dim npsi*ntheta*nphi?
 
         ~NumericBData() {
             if (psi!=nullptr) delete [] psi;
@@ -158,8 +156,6 @@ namespace DREAM::FVM {
             if (Jacobian!=nullptr) delete [] Jacobian;
             if (gtt!=nullptr) delete [] gtt;
             if (gtp!=nullptr) delete [] gtp;
-            if (lambdat!=nullptr) delete [] lambdat;
-            if (lambdap!=nullptr) delete [] lambdap;
         }
     };
 

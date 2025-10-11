@@ -116,10 +116,6 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
 		delete [] this->datagtt;
 	if (this->datagtp!= nullptr)
 		delete [] this->datagtp;
-	if (this->datalambdat!= nullptr)
-		delete [] this->datalambdat;
-	if (this->datalambdap!= nullptr)
-		delete [] this->datalambdap;
 	if (this->dataB != nullptr)
 		delete [] this->dataB;
 	if (this->dataJacobian != nullptr)
@@ -139,8 +135,6 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         delete this->interp_BdotGradphi;
         delete this->interp_gtt;
         delete this->interp_gtp;
-        delete this->interp_lambdat;
-        delete this->interp_lambdap;
     }
 
     gsl_interp_accel_free(this->acc_theta);
@@ -229,8 +223,6 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 
     this->datagtt      = convert_data(d->gtt, npsi, ntheta, nphi); // TODO: Correct dim?
     this->datagtp      = convert_data(d->gtp, npsi, ntheta, nphi); // TODO: Correct dim?
-    this->datalambdat  = convert_data(d->lambdat, npsi, ntheta, nphi); // TODO: Correct dim?
-    this->datalambdap  = convert_data(d->lambdap, npsi, ntheta, nphi); // TODO: Correct dim?
 
 	// TODO: extrapolate to r=0 and r=a?
 
@@ -250,8 +242,6 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
         this->dataJacobian = this->addThetaDataPoint(this->dataJacobian, this->npsi, this->ntheta, 1);
         this->datagtt = this->addThetaDataPoint(this->datagtt, this->npsi, this->ntheta, this->nphi);
         this->datagtp = this->addThetaDataPoint(this->datagtp, this->npsi, this->ntheta, this->nphi);
-        this->datalambdat = this->addThetaDataPoint(this->datalambdat, this->npsi, this->ntheta, this->nphi);
-        this->datalambdap = this->addThetaDataPoint(this->datalambdap, this->npsi, this->ntheta, this->nphi);
 
 		// r grid has now been extended...
 		this->ntheta++;
@@ -276,10 +266,6 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                     this->datagtt[idx1] = this->datagtt[idx0];
                 if (this->datagtp[idx0] != this->datagtp[idx1])
                     this->datagtp[idx1] = this->datagtp[idx0];
-                if (this->datalambdat[idx0] != this->datalambdat[idx1])
-                    this->datalambdat[idx1] = this->datalambdat[idx0];
-                if (this->datalambdap[idx0] != this->datalambdap[idx1])
-                    this->datalambdap[idx1] = this->datalambdap[idx0];
 
             }
 
@@ -468,8 +454,6 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     this->interp_BdotGradphi = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataBdotGradphi, nullptr, interp_meth);
     this->interp_gtt         = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datagtt, nullptr, interp_meth);
     this->interp_gtp         = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datagtp, nullptr, interp_meth);
-    this->interp_lambdat     = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datalambdat, nullptr, interp_meth);
-    this->interp_lambdap     = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datalambdap, nullptr, interp_meth);
 
 	// Reference quantities
 	for (len_t i = 0; i < GetNr(); i++) {
@@ -605,17 +589,11 @@ real_t NumericBRadialGridGenerator::gtpAtThetaPhi(
     real_t r[1] = {radius}
 
     real_t *gtp = new real_t[1];
-    real_t *gtt = new real_t[1];
-    real_t *lambdat = new real_t[1];
-    real_t *lambdap = new real_t[1];
-    
+
     this->interp_gtp->Eval(1,1,1, &r, &t, &p, nullptr, gtp);
-    this->interp_gtt->Eval(1,1,1, &r, &t, &p, nullptr, gtt);
-    this->interp_lambdat->Eval(1,1,1, &r, &t, &p, nullptr, lambdat);
-    this->interp_lambdap->Eval(1,1,1, &r, &t, &p, nullptr, lambdap);
 
     real_t J = JacobianAtThetaPhi(radius, theta, phi);
-	return (gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) / (J*J) / (R0 * R0);
+	return gtp[0] / (J*J) / (R0 * R0);
 }
 
 /**

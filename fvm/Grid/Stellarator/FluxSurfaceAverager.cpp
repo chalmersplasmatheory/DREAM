@@ -18,9 +18,9 @@ using namespace DREAM::FVM;
  * Constructor.
  */
 FluxSurfaceAverager::FluxSurfaceAverager(
-    RadialGrid *g, RadialGridGenerator *rgg, bool geometryIsSymmetric, len_t ntheta_interp, len_t nphi_interp
+    RadialGrid *g, RadialGridGenerator *rgg, len_t nfp, len_t ntheta_interp, len_t nphi_interp
     interp_method i_method, quadrature_method q_method
-) : rGrid(g), gridGenerator(rgg), geometryIsSymmetric(geometryIsSymmetric), 
+) : rGrid(g), gridGenerator(rgg), nfp(nfp), 
     ntheta_interp(ntheta_interp), nphi_interp(nphi_interp) {
     const gsl_interp_type *interpolationMethod;
     switch(i_method){
@@ -185,7 +185,7 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
         GSL_func.function = &(FluxSurfaceIntegralFunctionPhi);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive_phi->limit, error;
-        gsl_integration_qag(&GSL_func, 0, 2*M_PI,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive_phi,&fluxSurfaceIntegral, &error);
+        gsl_integration_qag(&GSL_func, 0, phi_max,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive_phi,&fluxSurfaceIntegral, &error);
     }
     return fluxSurfaceIntegral;  
 } 
@@ -227,11 +227,10 @@ void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
     gsl_adaptive_theta = gsl_integration_workspace_alloc(1000);
     gsl_adaptive_phi   = gsl_integration_workspace_alloc(1000);
     std::function<real_t(real_t,real_t,real_t)>  QuadWeightFunction;
-    if(geometryIsSymmetric)
-        theta_max = M_PI;
-    else 
-        theta_max = 2*M_PI;
-
+    
+    if(nfp > 0)
+        phi_max = M_PI / nfp;
+    
     const gsl_integration_fixed_type *quadratureRule = nullptr;
     switch(q_method){
         case QUAD_FIXED_LEGENDRE:
@@ -259,7 +258,7 @@ void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
     this->phi = gsl_w_theta->x;
     this->weights_theta = gsl_w_theta->weights;
 
-    gsl_w_phi = gsl_integration_fixed_alloc(quadratureRule,nphi_interp,0,2*M_PI,0,0);
+    gsl_w_phi = gsl_integration_fixed_alloc(quadratureRule,nphi_interp,0,phi_max,0,0);
     this->phi = gsl_w_phi->x;
     this->weights_phi = gsl_w_phi->weights;
 
@@ -268,13 +267,13 @@ void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
     for(len_t it=0; it<ntheta_interp; it++)
         weights_theta[it]/= QuadWeightFunction(theta[it],0,theta_max);
     for(len_t ip=0; it<nphi_interp; ip++)
-        weights_phi[ip]/= QuadWeightFunction(phi[ip],0,2*M_PI);
+        weights_phi[ip]/= QuadWeightFunction(phi[ip],0,phi_max);
 
     // If symmetric field we integrate from 0 to pi and multiply result by 2. 
     // TODO: Keep for theta? Add for phi?
-    if(geometryIsSymmetric)
+    if(nfp > 0)
         for(len_t it=0; it<ntheta_interp; it++)
-            weights_theta[it] *= 2;
+            weights_theta[it] *= 2 * nfp;
 }
 
 
