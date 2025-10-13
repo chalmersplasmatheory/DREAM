@@ -16,56 +16,45 @@ using namespace DREAM::FVM;
  * Constructor for a uniform radial grid.
  *
  * nr:            Number of radial grid points in uniform radial *distribution* grid. 
- * r0:            Value of innermost point on radial *flux* grid.                     // TODO: Remove?
- * ra:            Value of outermost point on radial *flux* grid.                     // TODO: Remove?
- * mf:            Name of file containing the magnetic field and Jacobian data to load.
- * frmt:          Format in which the magnetic field data is stored.                  // TODO: DESC
+ * r0:            Value of innermost point on radial *flux* grid.
+ * ra:            Value of outermost point on radial *flux* grid.
  * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  * nphi_interp:   Toroidal angle resolution in quadrature for flux surface and bounce averages.
  */
 NumericBRadialGridGenerator::NumericBRadialGridGenerator(
-    const len_t nr, const real_t r0, const real_t ra,
-    const std::string& mf, enum file_format frmt,
+    const len_t nr, const real_t r0, const real_t ra, struct eq_data eqdata,
 	const len_t ntheta_interp, const len_t nphi_interp
 ) : RadialGridGenerator(nr), rMin(r0), rMax(ra) {
     const gsl_multimin_fminimizer_type * T = gsl_multimin_fminimizer_nmsimplex2; // TODO: Ok?
     gsl_multi_fmin = gsl_multimin_fminimizer_alloc(T, 2);
 
-    this->Init(mf, frmt, ntheta_interp, nphi_interp);
+    this->Init(eqdata, ntheta_interp, nphi_interp);
 }
 
 /**
  * Constructor for a custom radial grid.
  *
- * r_f:           Radial flux grid desired.                                           // TODO: Adapt?
+ * r_f:           Radial flux grid desired.
  * nr:            Number of points on distribution grids corresponding to 
  *                'r_f' (i.e. the number of points in 'r_f', minus one).
- * mf:            Name of file containing the magnetic field and Jacobian data to load.
- * frmt:          Format in which the magnetic field data is stored.                  // TODO: DESC
  * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  * nphi_interp:   Toroidal angle resolution in quadrature for flux surface and bounce averages.
  */
 NumericBRadialGridGenerator::NumericBRadialGridGenerator(
-    const real_t *r_f, const len_t nr,
-    const std::string& mf, enum file_format frmt,
+    const real_t *r_f, const len_t nr, struct eq_data eqdata,
 	const len_t ntheta_interp, const len_t nphi_interp
-) : RadialGridGenerator(nr) {
+) : RadialGridGenerator(nr), providedData(eqdata) {
 
     this->rf_provided = new real_t[nr+1];
     for (len_t i = 0; i < nr+1; i++)
         this->rf_provided[i] = r_f[i];
     
-    this->Init(mf, frmt, ntheta_interp, nphi_interp);
-}
+    this->nrho = eqdata->nrho;
+    this->ntheta = eqdata->ntheta;
+    this->nphi = eqdata->nphi;
 
-/**
- * Common initializer.
- */
-void NumericBRadialGridGenerator::Init(
-    const std::string& mf, enum file_format frmt,
-    const len_t ntheta_interp, const len_t nphi_interp
-) {
-    this->nfp = 0; // TODO
+    this->nfp = eqdata->nfp;
+    this->R0 = eqdata->R0;
 	this->ntheta_interp = ntheta_interp;
 	this->nphi_interp   = nphi_interp;
 
@@ -75,13 +64,11 @@ void NumericBRadialGridGenerator::Init(
     this->BpolIOverR0_f = new real_t[GetNr()+1];
     this->rotTransf = new real_t[GetNr()];
     this->rotTransf_f = new real_t[GetNr()+1];
-    //this->BflxKOverR0 = new real_t[GetNr()*ntheta_interp*nphi_interp]; // TODO: Is this needed in this form?
-    //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; // TODO: Is it needed in this form?
+    //this->BflxKOverR0 = new real_t[GetNr()*ntheta_interp*nphi_interp]; 
+    //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
     this->acc_r = gsl_interp_accel_alloc();
     this->acc_theta = gsl_interp_accel_alloc();
-
-    LoadMagneticFieldData(mf, frmt);
 }
 
 /**
@@ -93,43 +80,12 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
     if (this->rf_provided != nullptr)
         delete [] this->rf_provided;
 	
-	if (this->input_r != nullptr)
-		delete [] this->input_r;
-	
-	if (this->psi != nullptr)
-		delete [] this->psi;
-	if (this->theta != nullptr)
-		delete [] this->theta;
-	if (this->phi != nullptr)
-		delete [] this->phi;
-	if (this->dataG != nullptr)
-		delete [] this->dataG;
-	if (this->dataI != nullptr)
-		delete [] this->dataI;
-	if (this->dataiota != nullptr)
-		delete [] this->dataiota;
-	//if (this->dataK != nullptr)
-	//	delete [] this->dataK;
-	if (this->dataBdotGradphi != nullptr)
-		delete [] this->dataBdotGradphi;
-	if (this->datagtt != nullptr)
-		delete [] this->datagtt;
-	if (this->datagtp!= nullptr)
-		delete [] this->datagtp;
-	if (this->datalambdat!= nullptr)
-		delete [] this->datalambdat;
-	if (this->datalambdap!= nullptr)
-		delete [] this->datalambdap;
-	if (this->dataB != nullptr)
-		delete [] this->dataB;
-	if (this->dataJacobian != nullptr)
-		delete [] this->dataJacobian;
 
-    if (this->spline_R != nullptr) {
-        gsl_spline_free(this->spline_psi);
+    if (this->spline_G != nullptr) {
         gsl_spline_free(this->spline_G);
         gsl_spline_free(this->spline_I);
         gsl_spline_free(this->spline_iota);
+        gsl_spline_free(this->spline_psi);
         //gsl_spline2d_free(this->spline_B);
         //gsl_spline2d_free(this->spline_Jacobian);
         
@@ -145,6 +101,8 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
 
     gsl_interp_accel_free(this->acc_theta);
     gsl_interp_accel_free(this->acc_r);
+
+	delete this->providedData; // Is this ok?
 }
 
 
@@ -164,227 +122,6 @@ real_t NumericBRadialGridGenerator::_angleBounded(const real_t angle) const {
 }
 
 /**
- * Load magnetic field data from the named file.
- *
- * filename: Name of file to load data from.
- */
-void NumericBRadialGridGenerator::LoadMagneticFieldData(
-    const std::string& filename, enum file_format frmt
-) {
-    SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
-    this->LoadMagneticFieldData(sf, frmt);
-
-    sf->Close();
-    delete sf;
-}
-
-/**
- * Load magnetic field data from the given file.
- *
- * sf: SFile object representing the file.
- */
-void NumericBRadialGridGenerator::LoadMagneticFieldData(
-    SFile *sf, enum file_format frmt
-) {
-    struct NumericBData *d;
-    switch (frmt) {
-        case FILE_FORMAT_DESC:
-            d = LoadNumericBFromDESC(sf);
-            break;
-
-        default:
-            throw FVMException(
-                "NumericBRadialGrid: Unrecognized file format specified for magnetic field data: %d.",
-                frmt
-            );
-    }
-
-    auto convert_data = [](const double *a, const len_t nx, const len_t ny, const len_t nz) {
-        real_t *d = new real_t[nx*ny*nz];
-        for (len_t i = 0; i < nx*ny*nz; i++)
-            d[i] = (real_t)a[i];
-
-        return d;
-    };
-
-	this->npsi = d->npsi;
-	this->ntheta = d->ntheta;
-	this->nphi = d->nphi;
-
-	this->R0 = d->R0;
-
-    // Set magnetic field data
-    this->psi      = convert_data(d->psi, npsi, 1, 1);
-    this->theta    = convert_data(d->theta, ntheta, 1, 1);
-    this->phi      = convert_data(d->phi, nphi, 1, 1);
-    
-    this->dataG    = convert_data(d->G, npsi, 1, 1);
-    this->dataI    = convert_data(d->I, npsi, 1, 1); 
-
-    //this->dataK    = convert_data(d->K, npsi, ntheta, nphi);
-    this->dataBdotGradphi = convert_data(d->BdotGradphi, npsi, ntheta, nphi);
-
-    this->dataB        = convert_data(d->B, npsi, ntheta, 1); 
-    this->dataJacobian = convert_data(d->Jacobian, npsi, ntheta, 1);
-
-    this->datagtt      = convert_data(d->gtt, npsi, ntheta, nphi); // TODO: Correct dim?
-    this->datagtp      = convert_data(d->gtp, npsi, ntheta, nphi); // TODO: Correct dim?
-    this->datalambdat  = convert_data(d->lambdat, npsi, ntheta, nphi); // TODO: Correct dim?
-    this->datalambdap  = convert_data(d->lambdap, npsi, ntheta, nphi); // TODO: Correct dim?
-
-	// TODO: extrapolate to r=0 and r=a?
-
-	// Ensure that theta=0 exists...
-	if (this->theta[0] != 0)
-		throw FVMException("NumericBRadialGrid: All numerical data must be given in theta = 0.");
-    
-
-    // TODO: Update this depending on how data looks!
-	// Add point at theta=2*pi if it does not already exist...
-	if (this->theta[this->ntheta-1] != 2*M_PI) {
-		this->theta = this->addThetaDataPoint(this->theta, 1, this->ntheta, 1);
-		this->theta[this->ntheta] = 2*M_PI;
-		//this->dataK = this->addThetaDataPoint(this->dataK, this->npsi, this->ntheta, this->nphi);
-		this->dataBdotGradphi = this->addThetaDataPoint(this->dataBdotGradphi, this->npsi, this->ntheta, this->nphi);
-		this->dataB = this->addThetaDataPoint(this->dataB, this->npsi, this->ntheta, 1);
-        this->dataJacobian = this->addThetaDataPoint(this->dataJacobian, this->npsi, this->ntheta, 1);
-        this->datagtt = this->addThetaDataPoint(this->datagtt, this->npsi, this->ntheta, this->nphi);
-        this->datagtp = this->addThetaDataPoint(this->datagtp, this->npsi, this->ntheta, this->nphi);
-        this->datalambdat = this->addThetaDataPoint(this->datalambdat, this->npsi, this->ntheta, this->nphi);
-        this->datalambdap = this->addThetaDataPoint(this->datalambdap, this->npsi, this->ntheta, this->nphi);
-
-		// r grid has now been extended...
-		this->ntheta++;
-	} else {
-		// Ensure that values at theta=0 and theta=2*pi are identical
-		for (len_t ir = 0; ir < this->npsi; ir++) {
-			len_t idx0 = ir*this->ntheta + 0;
-			len_t idx1 = ir*this->ntheta + (this->ntheta-1);
-
-            if (this->dataB[idx0] != this->dataB[idx1])
-				this->dataB[idx1] = this->dataB[idx0];
-			if (this->dataJacobian[idx0] != this->dataJacobian[idx1])
-				this->dataJacobian[idx1] = this->dataJacobian[idx0];
-
-            for (len_t iphi; iphi < this->nphi; iphi++){
-                idx0 = (ir*this->ntheta + 0)*this->nphi + this->iphi;
-                idx1 = (ir*this->ntheta + (this->ntheta-1))*this->nphi + this->iphi;
-                
-                //if (this->dataK[idx0] != this->dataK[idx1])
-                //    this->dataK[idx1] = this->dataK[idx0];
-                if (this->datagtt[idx0] != this->datagtt[idx1])
-                    this->datagtt[idx1] = this->datagtt[idx0];
-                if (this->datagtp[idx0] != this->datagtp[idx1])
-                    this->datagtp[idx1] = this->datagtp[idx0];
-                if (this->datalambdat[idx0] != this->datalambdat[idx1])
-                    this->datalambdat[idx1] = this->datalambdat[idx0];
-                if (this->datalambdap[idx0] != this->datalambdap[idx1])
-                    this->datalambdap[idx1] = this->datalambdap[idx0];
-
-            }
-
-		}
-	}
-
-    // Evaluate minor radius in outer midplane
-    this->input_r = new real_t[this->npsi];
-    for (len_t i = 0; i < this->npsi; i++)
-        this->input_r[i] = 0; // TODO!
-
-    // Verify that the magnetic field contains exactly one maximum and
-    // one minimum
-
-    // TODO: Should it only contain one of each?
-    // Tolelance for an extremum to be announced...
-    const real_t TOLERANCE = sqrt(std::numeric_limits<real_t>::epsilon());
-    for (len_t i = 0; i < this->npsi; i++) {
-        bool minFound = false, maxFound = false;
-
-		len_t maxk=0, mink=0;
-        for (len_t j = 1; j < this->ntheta; j++) {
-            len_t k  = j*npsi+i;
-            len_t km = k-npsi, kp = k+npsi;
-
-            // Wrap-around at the upper endpoint
-            if (j == this->ntheta-1)
-                kp = 0*npsi + i;
-
-            real_t dB =
-                std::max(
-                    std::abs(this->dataB[k]-this->dataB[km]),
-                    std::abs(this->dataB[kp]-this->dataB[k])
-                );
-
-            // Is this a (local) maximum or minimum?
-            if (this->dataB[km] < this->dataB[k] &&
-                this->dataB[kp] < this->dataB[k] &&
-                dB > TOLERANCE) {
-
-                // Has a maximum already been found?
-                if (maxFound)
-                    throw FVMException(
-                        "The numeric magnetic field has more than one maximum "
-                        "along at least one magnetic field line."
-						"ipsi = " LEN_T_PRINTF_FMT
-						", itheta(1) = " LEN_T_PRINTF_FMT
-						", itheta(2) = " LEN_T_PRINTF_FMT,
-						i, (k-i)/npsi, (maxk-i)/npsi
-                    );
-                else {
-                    maxFound = true;
-					maxk = k;
-				}
-            } else if (this->dataB[km] > this->dataB[k] &&
-                       this->dataB[kp] > this->dataB[k] &&
-                       dB > TOLERANCE) {
-                
-                // Has a minimum already been found?
-                if (minFound)
-                    throw FVMException(
-                        "The numeric magnetic field has more than one minimum "
-                        "along at least one magnetic field line. "
-						"ipsi = " LEN_T_PRINTF_FMT
-						", itheta(1) = " LEN_T_PRINTF_FMT
-						", itheta(2) = " LEN_T_PRINTF_FMT,
-						i, (k-i)/npsi, (mink-i)/npsi
-                    );
-                else {
-                    minFound = true;
-					mink = k;
-				}
-            }
-        }
-    }
-
-    delete d;
-}
-
-
-/**
- * Extend the given array with one element at theta=2*pi.
- */
-real_t *NumericBRadialGridGenerator::addThetaDataPoint(
-	const real_t *x, const len_t npsi, const len_t ntheta, const len_t nphi
-) {
-	real_t *arr = new real_t[npsi*(ntheta+1)*nphi];
-
-	for (len_t ir = 0, i, j, j_temp; ir < npsi; ir++){
-        for (len_t ithetaphi = 0; i < nphi; i++, j++){
-            arr[i] = x[j];
-            arr[i+ntheta*nphi] = x[j];
-        }
-        for (len_t ithetaphi = nphi; i < ntheta*nphi; i++, j++){
-            arr[i] = x[j];
-        }
-        i += nphi;
-    }
-    
-	delete [] x;
-
-	return arr;
-}
-
-/**
  * Rebuild this numeric radial B grid.
  */
 bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
@@ -400,12 +137,12 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     if (rf_provided == nullptr) {
         if (rMin < 0)
             throw FVMException("NumericBRadialGrid: rMin < 0.");
-        else if (rMax > this->input_r[this->npsi-1])
+        else if (rMax > this->providedData->rho[this->nrho-1])
             throw FVMException(
                 "NumericBRadialGrid: Maximum r available in numeric magnetic "
                 "field data is rMax = %.3f, but r = %.3f is required for radial "
-                "grid. (Delta: %e)", this->input_r[this->npsi-1], rMax,
-                std::abs(this->input_r[this->npsi-1]/rMax-1)
+                "grid. (Delta: %e)", this->providedData->rho[this->nrho-1], rMax,
+                std::abs(this->providedData->rho[this->nrho-1]/rMax-1)
             );
         else if (rMin >= rMax)
             throw FVMException("NumericBRadialGrid: rMin must be strictly less than rMax.");
@@ -417,11 +154,11 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     } else {
         if (rf_provided[0] < 0)
             throw FVMException("NumericBRadialGrid: First point on custom radial grid is less than zero.");
-        else if (rf_provided[GetNr()] > this->input_r[this->npsi-1])
+        else if (rf_provided[GetNr()] > this->providedData->rho[this->nrho-1])
             throw FVMException(
                 "NumericBRadialGrid: Last point on custom radial grid may not be greater than "
                 "the maximum r available in the numeric magnetic field data, rMax = %.3f.",
-                this->input_r[this->npsi-1]
+                this->providedData->rho[this->nrho-1]
             );
         else if (rf_provided[0] >= rf_provided[GetNr()])
             throw FVMException("NumericBRadialGrid: The first point on the custom radial grid must be strictly less than the last point.");
@@ -446,30 +183,32 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     rGrid->Initialize(r, r_f, dr, dr_f);
 
     // Construct splines for input data
-    this->spline_psi  = gsl_spline_alloc(gsl_interp_steffen, this->npsi);
-    this->spline_G    = gsl_spline_alloc(gsl_interp_steffen, this->npsi); 
-    this->spline_I    = gsl_spline_alloc(gsl_interp_steffen, this->npsi);
+    this->spline_psi  = gsl_spline_alloc(gsl_interp_steffen, this->nrho);
+    this->spline_G    = gsl_spline_alloc(gsl_interp_steffen, this->nrho); 
+    this->spline_I    = gsl_spline_alloc(gsl_interp_steffen, this->nrho);
+    this->spline_iota = gsl_spline_alloc(gsl_interp_steffen, this->nrho);
 
     const gsl_interp2d_type *splineType = gsl_interp2d_bicubic; //or ..._bilinear
-    //this->spline_B           = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    //this->spline_Jacobian    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    //this->spline_B           = gsl_spline2d_alloc(splineType, this->nrho, this->ntheta);
+    //this->spline_Jacobian    = gsl_spline2d_alloc(splineType, this->nrho, this->ntheta);
 
-    gsl_spline_init(this->spline_psi, this->input_r, this->psi,   this->npsi);
-    gsl_spline_init(this->spline_G,   this->input_r, this->dataG, this->npsi);
-    gsl_spline_init(this->spline_I,   this->input_r, this->dataI, this->npsi); 
+    gsl_spline_init(this->spline_G,    this->providedData->rho, this->providedData->dataG, this->nrho);
+    gsl_spline_init(this->spline_I,    this->providedData->rho, this->providedData->dataI, this->nrho); 
+    gsl_spline_init(this->spline_iota, this->providedData->rho, this->providedData->dataiota, this->nrho);
+    gsl_spline_init(this->spline_psi,  this->providedData->rho, this->providedData->datapsi, this->nrho);
 
-    //gsl_spline2d_init(this->spline_B,        this->input_r, this->theta, this->dataB, this->npsi, this->ntheta);
-    //gsl_spline2d_init(this->spline_Jacobian, this->input_r, this->theta, this->dataJacobian, this->npsi, this->ntheta);
+    //gsl_spline2d_init(this->spline_B,        this->providedData->rho, this->theta, this->providedData->dataB, this->nrho, this->ntheta);
+    //gsl_spline2d_init(this->spline_Jacobian, this->providedData->rho, this->theta, this->providedData->dataJacobian, this->nrho, this->ntheta);
     
-    enum FVM::Interpolator3D::interp_method interp_meth = FVM::Interpolator3D::INTERP_LINEAR; // TODO: possibly implement cubic?
-    //this->interp_K           = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataK, nullptr, interp_meth);
-    this->interp_B           = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataB, nullptr, interp_meth);
-    this->interp_Jacobian    = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataJacobian, nullptr, interp_meth);
-    this->interp_BdotGradphi = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->dataBdotGradphi, nullptr, interp_meth);
-    this->interp_gtt         = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datagtt, nullptr, interp_meth);
-    this->interp_gtp         = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datagtp, nullptr, interp_meth);
-    this->interp_lambdat     = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datalambdat, nullptr, interp_meth);
-    this->interp_lambdap     = new FVM::Interpolator3D(this->npsi, this->ntheta, this->nphi, this->input_r, this->theta, this->phi, this->datalambdap, nullptr, interp_meth);
+    enum FVM::Interpolator3D::interp_method interp_meth = FVM::Interpolator3D::INTERP_LINEAR; 
+    //this->interp_K           = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->dataK, nullptr, interp_meth);
+    this->interp_B           = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->dataB, nullptr, interp_meth);
+    this->interp_Jacobian    = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->dataJacobian, nullptr, interp_meth);
+    this->interp_BdotGradphi = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->dataBdotGradphi, nullptr, interp_meth);
+    this->interp_gtt         = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->datagtt, nullptr, interp_meth);
+    this->interp_gtp         = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->datagtp, nullptr, interp_meth);
+    this->interp_lambdat     = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->datalambdat, nullptr, interp_meth);
+    this->interp_lambdap     = new FVM::Interpolator3D(this->nrho, this->ntheta, this->nphi, this->providedData->rho, this->theta, this->phi, this->providedData->datalambdap, nullptr, interp_meth);
 
 	// Reference quantities
 	for (len_t i = 0; i < GetNr(); i++) {
@@ -490,7 +229,7 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 		this->BtorGOverR0[i] = BtorG / this->R0;
 		this->BpolIOverR0[i] = BpolI / this->R0; 
 		this->rotTransf[i]   = iota; 
-        this->psiPrimeRef[i] = psip; // TODO: We could use the toroidal current here, and be consistent with stellarators. Would mean using d psi_t/ d r in bootstrap
+        this->psiPrimeRef[i] = psip; 
 	}
 	for (len_t i = 0; i < GetNr()+1; i++) {
 		real_t
@@ -510,7 +249,7 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 		this->BtorGOverR0_f[i] = BtorG / this->R0;
 		this->BpolIOverR0_f[i] = BpolI / this->R0; 
 		this->rotTransf_f[i]   = iota; 
-        this->psiPrimeRef_f[i] = psip; // TODO: Does this even make sense?
+        this->psiPrimeRef_f[i] = psip; 
 	}
 	
 	rGrid->SetReferenceMagneticFieldData(
@@ -682,7 +421,7 @@ real_t gslEvalB_f(real_t theta, void *par){
 const len_t MAX_NUM_ITER = 30;
 const real_t EPSABS = 1e-6;
 const real_t EPSREL = 0;
-const real_t STEP = 2*M_PI / 100; // TODO: Ok? How many wiggles can we expect at the most?
+const real_t STEP = 2*M_PI / 100; 
 /**
  * Finds the extremum of the magnetic field on the interval [0,2*pi]. 
  * If sgn=1, returns the minimum.
@@ -690,15 +429,17 @@ const real_t STEP = 2*M_PI / 100; // TODO: Ok? How many wiggles can we expect at
  */
 real_t NumericBRadialGridGenerator::FindMagneticFieldExtremum(
     len_t ir, int_t sgn, fluxGridType fluxGridType
-) {
-    real_t theta_lim_lower = 0, theta_lim_upper = 2*M_PI;
-    
+) { 
     real_t theta_guess = 0, phi_guess = 0;
     real_t B_opt = sgn*std::numeric_limits<real_t>::infinity();
     real_t B;
 
+    real_t phi_max = 2*M_PI;
+    if (this->nfp > 0)
+        phi_max = M_PI / this->nfp;
+    
     for (real_t theta=0; theta<2*M_PI; theta+=STEP){
-        for (real_t phi=0; phi<2*M_PI; phi+=STEP){
+        for (real_t phi=0; phi<phi_max; phi+=STEP){
             if (fluxGridType == FLUXGRIDTYPE_DISTRIBUTION) {
                 B = BAtThetaPhi(ir, theta, phi);
             } else {
@@ -711,12 +452,7 @@ real_t NumericBRadialGridGenerator::FindMagneticFieldExtremum(
             }
         }
     }
-    '''
-    real_t theta_lim_lower = std::max(0.0, theta_guess - STEP);
-    real_t theta_lim_upper = std::min(2*M_PI, theta_guess + STEP);
-    real_t phi_lim_lower = std::max(0.0, phi_guess - STEP);
-    real_t phi_lim_upper = std::min(2*M_PI, phi_guess + STEP);
-    '''
+
     gsl_vector *guess = gsl_vector_alloc(2);
     gsl_vector_set(x, 0, theta_guess);
     gsl_vector_set(x, 1, phi_guess);
@@ -755,7 +491,7 @@ real_t NumericBRadialGridGenerator::FindMagneticFieldExtremum(
     real_t theta = gsl_vector_get(gsl_multi_fmin->x, 0);
     real_t phi   = gsl_vector_get(gsl_multi_fmin->x, 1);
   
-    real_t extremum = theta; // TODO: We disregard phi, right?
+    real_t extremum = theta; 
     if(extremum < 2*EPSABS || extremum > 2*M_PI - 2*EPSABS)
         return 0;
     else if (fabs(M_PI-extremum) < 2*EPSABS)

@@ -73,6 +73,7 @@ class RadialGrid(PrescribedScalarParameter):
 
         # Stellarator magnetic field parameters
         self.num_stellarator = None
+        self.nfp = None
         self.nr_equil = int(0)
         self.ntheta_equil = 129
         self.nphi_equil = 129
@@ -85,6 +86,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.G = None
         self.I = None
         self.iota = None
+        self.psi_T = None
         self.B = None
         self.BdotGradPhi = None
         self.Jacobian = None
@@ -402,6 +404,7 @@ class RadialGrid(PrescribedScalarParameter):
 
         self.a = self.num_stellarator.a
         self.R0 = self.num_stellarator.R0
+        self.nfp = self.num_stellarator.nfp
         self.rho = self.num_stellarator.rho
         self.theta = self.num_stellarator.theta
         self.phi = self.num_stellarator.phi
@@ -411,6 +414,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.G = self.num_stellarator.G
         self.I = self.num_stellarator.I
         self.iota = self.num_stellarator.iota
+        self.psi_T = self.num_stellarator.psi_T
         self.B = self.num_stellarator.B
         self.BdotGradPhi = self.num_stellarator.BdotGradPhi
         self.Jacobian = self.num_stellarator.Jacobian
@@ -602,6 +606,7 @@ class RadialGrid(PrescribedScalarParameter):
                         self.num_magneticfield = None
         elif self.type == TYPE_STELLARATOR:
             self.num_filename = data['filename']
+            self.nfp = data['nfp']
             self.ntheta = data['ntheta']
             self.nphi = data['nphi']
             self.nr_equil = data['nr_equil']
@@ -616,6 +621,7 @@ class RadialGrid(PrescribedScalarParameter):
             self.G = data['G']
             self.I = data['I']
             self.iota = data['iota']
+            self.psi_T = data['psi_T']
             self.B = data['B']
             self.BdotGradPhi = data['BdotGradPhi']
             self.Jacobian = data['Jacobian']
@@ -686,6 +692,7 @@ class RadialGrid(PrescribedScalarParameter):
                 data['fileformat'] = self.num_fileformat
         elif self.type == TYPE_STELLARATOR:
             data['filename'] = self.num_filename
+            data['nfp'] = self.num_filename
             data['ntheta'] = self.ntheta
             data['nphi'] = self.nphi
             data['nr_equil'] = self.nr_equil
@@ -700,6 +707,7 @@ class RadialGrid(PrescribedScalarParameter):
             data['G'] = self.G
             data['I'] = self.I
             data['iota'] = self.iota
+            data['psi_T'] = self.psi_T
             data['B'] = self.B
             data['BdotGradPhi'] = self.BdotGradPhi
             data['Jacobian'] = self.Jacobian
@@ -821,6 +829,7 @@ class RadialGrid(PrescribedScalarParameter):
             verifySettingsStellaratorParameter('G')
             verifySettingsStellaratorParameter('I')
             verifySettingsStellaratorParameter('iota')
+            verifySettingsStellaratorParameter('psi_T')
             verifySettingsStellaratorParameter('B')
             verifySettingsStellaratorParameter('BdotGradPhi')
             verifySettingsStellaratorParameter('Jacobian')

@@ -296,8 +296,9 @@ namespace DREAM::FVM {
         }
 
         const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
-            real_t iota = RotationalTransform(ir, mu0Ip); // TODO: Should it be this->iota[ir]; instead? Maybe we want an option?
-
+            real_t iota = this->iota[ir]; 
+            // TODO, future option, 
+            // real_t iota = RotationalTransform(ir, mu0Ip); 
             return (this->BtorGOverR0[ir] + iota * BpolIOverR0) * R0 / iota * FSA_1OverB / Bmin;
         }
 

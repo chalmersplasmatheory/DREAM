@@ -11,6 +11,19 @@
 namespace DREAM::FVM {
     class NumericBRadialGridGenerator : public RadialGridGenerator {
     public:
+        struct eq_data {
+            len_t nrho, ntheta, nphi;
+            const len_t nfp;
+            const real_t R0;
+            const real_t *rho, *theta, *phi;  // Coordinate arrays (1D)
+            const real_t *dataG, *dataI;      // toroial and poloidal magnetic field strengths (1D)
+            const real_t *dataiota;           // Rotational transform (1D)
+            const real_t *datapsi;            // Toroidal flux (1D)
+
+            const real_t *dataB, *dataBdotGradphi;           // Magnetic field data (3D)
+            const real_t *dataJacobian, *datagtt, *datagtp;  // Jacobian data (3D)
+            const real_t *datalambdat, *datalambdap;         // Stream function data (3D)
+        };
         enum file_format {
             FILE_FORMAT_DESC
         };
@@ -24,9 +37,10 @@ namespace DREAM::FVM {
         len_t nphi_interp;
         real_t  *BpolIOverR0,        *BpolIOverR0_f;        // poloidal magnetic field strength (I(r)/R0)
         real_t  *iota,               *iota_f;               // Rotational transform
-        len_t nfp;  // Number of field poles?
     
     private:
+        struct eq_data *providedData;
+
         bool isBuilt = false;
 
         real_t rMin, rMax;
@@ -35,22 +49,14 @@ namespace DREAM::FVM {
 
         // Input data
         real_t R0;
-        len_t npsi, ntheta, nphi;
-        real_t *input_r=nullptr;    // Calculated minor radius in outer midplane (same size as psi)
-        real_t *psi=nullptr, *theta=nullptr, *phi=nullptr;        // Poloidal flux, poloidal angle and toroidal angle grids (1D)
-        real_t *dataG=nullptr, *dataI=nullptr;// Magnetic field components (1D)
-        real_t *dataiota=nullptr; // Rotational transform (1D)
-        real_t //*dataK=nullptr
-                *dataBdotGradphi=nullptr, *datagtt=nullptr, *datagtp=nullptr, 
-                *datalambdat=nullptr, *datalambdap=nullptr;     // Magnetic field and Jacobian data (3D)
-        real_t *dataB=nullptr, *dataJacobian=nullptr;   // Magnetic field and Jacobian data (2D)
-
+        len_t nfp;  // Number of field poles?
+        len_t nrho, ntheta, nphi;
+        
         std::string name;
 
         // Interpolation objects for interpolating in input data
-        gsl_spline *spline_psi, *spline_G, *spline_I, *spline_iota;
-        gsl_spline2d;
-            //*spline_B, *spline_Jacobian;
+        gsl_spline *spline_G, *spline_I, *spline_iota,  *spline_psi;
+        //gsl_spline2d *spline_B, *spline_Jacobian;
         
         FVM::Interpolator3D *interp_B, *interp_Jacobian, //*interp_K, 
                             *interp_BdotGradphi, *interp_gtt, *interp_gtp
@@ -59,19 +65,15 @@ namespace DREAM::FVM {
 
 		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t, len_t);
 
-        void Init(const std::string&, enum file_format, const len_t, const len_t);
-
         real_t _angleBounded(const real_t) const;
 
     public:
         NumericBRadialGridGenerator(
-            const len_t nr, const real_t r0, const real_t ra,
-            const std::string&, enum file_format frmt=FILE_FORMAT_DESC,
+            const len_t nr, const real_t r0, const real_t ra, struct eq_data,
 			const len_t ntheta_interp=64, const len_t nphi_interp=64
         );
         NumericBRadialGridGenerator(
-            const real_t *r_f, const len_t nr, const std::string&,
-            enum file_format frmt=FILE_FORMAT_DESC,
+            const real_t *r_f, const len_t nr, const std::string&,struct eq_data,
 			const len_t ntheta_interp=64, const len_t nphi_interp=64
         );
         ~NumericBRadialGridGenerator();
@@ -83,8 +85,6 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
-        /* TODO: If B has several min and max on flux-surface, we have to redo this 
-        virtual void RebuildJacobians(RadialGrid*) override;*/
         len_t getNFP(){return nfp;}
 
 		real_t EvalB(const real_t, const real_t);
@@ -121,7 +121,7 @@ namespace DREAM::FVM {
         );
 
 		// Output generation helper routines
-		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNRho() override { return this->GetNr(); }
 		virtual const len_t GetNTheta() override { return this->ntheta; }
         virtual const len_t GetNPhi() override { return this->nphi; }
 
@@ -131,39 +131,6 @@ namespace DREAM::FVM {
         // Debugging method
         void __SaveB(const char*);
     };
-
-    // TODO: Make DESC relevant
-    struct NumericBData {
-        std::string name;
-        sfilesize_t npsi, ntheta, nphi;
-        double R0;
-        double *psi=nullptr, *theta=nullptr, *phi=nullptr;    // Coordinate grids
-        double *G=nullptr, *I=nullptr, iota=nullptr; // Dim npsi
-        double //*K=nullptr, 
-                *BdotGradphi=nullptr; // Dim: npsi*ntheta*nphi? Is K even needed?
-        double *B=nullptr; // Dim npsi*ntheta? Or npsi*ntheta*nphi? Should be independent of phi
-        double *Jacobian=nullptr; // Dim npsi*ntheta? Or npsi*ntheta*nphi? Should be independent of phi
-        double *gtt=nullptr, *gtp=nullptr, *lambdat=nullptr, *lambdap=nullptr; // Dim npsi*ntheta*nphi?
-
-        ~NumericBData() {
-            if (psi!=nullptr) delete [] psi;
-            if (theta!=nullptr) delete [] theta;
-            if (phi!=nullptr) delete [] phi;
-            if (G!=nullptr) delete [] G;
-            if (I!=nullptr) delete [] I;
-            if (iota!=nullptr) delete [] iota;
-            //if (K!=nullptr) delete [] K;
-            if (BdotGradphi!=nullptr) delete [] BdotGradphi;
-            if (B!=nullptr) delete [] B;
-            if (Jacobian!=nullptr) delete [] Jacobian;
-            if (gtt!=nullptr) delete [] gtt;
-            if (gtp!=nullptr) delete [] gtp;
-            if (lambdat!=nullptr) delete [] lambdat;
-            if (lambdap!=nullptr) delete [] lambdap;
-        }
-    };
-
-    struct NumericBData *LoadNumericBFromDESC(SFile*, const std::string& path="");
 }
 
 #endif/*_DREAM_FVM_NUMERIC_B_RADIAL_GRID_GENERATOR_HPP*/ // TODO

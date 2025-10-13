@@ -119,7 +119,7 @@ namespace DREAM::FVM {
 
     public:
         FluxSurfaceAverager(
-            RadialGrid*, RadialGridGenerator*, len_t nfp = 0, len_t ntheta_interp = 64, len_t nphi_interp = 64, // TODO: Change?
+            RadialGrid*, RadialGridGenerator*, len_t nfp = 0, len_t ntheta_interp = 64, len_t nphi_interp = 64, 
             interp_method im = INTERP_LINEAR, quadrature_method qm = QUAD_FIXED_LEGENDRE
         );
         ~FluxSurfaceAverager();

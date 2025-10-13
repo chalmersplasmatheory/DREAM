@@ -27,11 +27,11 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/,
     FluxSurfaceAverager::interp_method im, FluxSurfaceAverager::quadrature_method qm_passing)
     : nr(rg->GetNr()), generator(rg) {
 
-    len_t nfp = rg->IsFieldSymmetric();
+    len_t nfp = rg->getNFP();
     len_t ntheta_interp_passing = rg->GetNthetaInterp();
     len_t nphi_interp_passing = rg->GetNphiInterp();
 
-    fluxSurfaceAverager = new FluxSurfaceAverager(this,rg,nfp,ntheta_interp_passing,nphi_interp_passing,im,qm_passing); // TODO: Should this not be changed to the stellarator flux surface averager?
+    fluxSurfaceAverager = new FluxSurfaceAverager(this,rg,nfp,ntheta_interp_passing,nphi_interp_passing,im,qm_passing); 
 }
 
 /**
@@ -258,7 +258,7 @@ real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     RadialGrid *rGrid = params->rGrid;
     len_t ir = params->ir;
     fluxGridType fluxGridType = params->fgType;
-    return x/ rGrid->CalculateFluxSurfaceAverageTheta(ir, fluxGridType, FSA_FUNC_EFF_PASS_FRAC, params);// TODO: Not phi dependent?
+    return x/ rGrid->CalculateFluxSurfaceAverageTheta(ir, fluxGridType, FSA_FUNC_EFF_PASS_FRAC, params);
 }
 
 /** 

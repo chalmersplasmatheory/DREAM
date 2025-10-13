@@ -33,6 +33,7 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.G = None
         self.I = None
         self.iota = None
+        self.psi_T = None
         self.B = None
         self.BdotGradPhi = None
         self.Jacobian = None
@@ -47,6 +48,7 @@ class StellaratorMagneticField(NumericalMagneticField):
 
         self.R0 = self.eq.compute('R0', grid=self.grid)['R0']
         self.a = self.eq.compute('a', grid=self.grid)['a']
+        self.nfp = self.eq.NFP
 
         self.rho = self.grid.nodes[self.grid.unique_rho_idx,0]
         self.theta = self.grid.nodes[self.grid.unique_theta_idx,1]
@@ -67,6 +69,7 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.I = self.eq.compute('I', grid=self.grid)['I'][self.grid.unique_rho_idx]
         iota = self.eq.compute('iota', grid=self.grid)['iota']
         self.iota = iota[self.grid.unique_rho_idx]
+        self.psi_T = self.eq.compute('Psi', grid=self.grid)['Psi'][self.grid.unique_rho_idx]
 
         self.B = self.eq.compute('|B|', grid=self.grid)['|B|']
         self.BdotGradPhi = self.eq.compute('B^zeta', grid=self.grid)['B^zeta']

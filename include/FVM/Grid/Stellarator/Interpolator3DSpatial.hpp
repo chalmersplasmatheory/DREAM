@@ -2,7 +2,6 @@
 #define _DREAM_FVM_INTERPOLATOR_3D_SPATIAL_HPP
 
 #include <gsl/gsl_interp.h>
-//#include "FVM/Grid/Grid.hpp" // TODO: Not needed?
 
 namespace DREAM::FVM {
     class Interpolator3D {
