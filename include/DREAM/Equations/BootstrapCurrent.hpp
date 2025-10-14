@@ -68,7 +68,7 @@ namespace DREAM {
         real_t *p;
         real_t *n;
 
-        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*, enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode);
+        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*, enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode=OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL);
         ~BootstrapCurrent();
 
         void AllocateQuantities();

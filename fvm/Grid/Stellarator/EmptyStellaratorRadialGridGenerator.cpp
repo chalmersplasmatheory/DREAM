@@ -2,7 +2,7 @@
  * Implementation of a grid with 1 grid point at x=0
  */
 
-#include "FVM/Grid/Stellarator/EmptyRadialGrid.hpp"
+#include "FVM/Grid/Stellarator/EmptyRadialGridStellarator.hpp"
 
 using namespace DREAM::FVM;
 
@@ -15,7 +15,7 @@ using namespace DREAM::FVM;
  * Rebuilds a trivial grid of zeros and size 1. *
  * rGrid: Radial grid to re-build.
  */
-bool EmptyRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
+bool EmptyStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStellarator *rGrid) {
     len_t N = 1;
     real_t
         *x    = new real_t[N],
@@ -49,7 +49,7 @@ bool EmptyRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     psiPrimeRef_f  = new real_t[N+1];    
     for (len_t ir = 0; ir < N; ir++){
         BtorGOverR0[ir] = 0;
-        BpolIGOverR0[ir] = 0;
+        BpolIOverR0[ir] = 0;
         psiPrimeRef[ir] = 0; 
     }
     for (len_t ir = 0; ir < N+1; ir++){

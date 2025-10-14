@@ -5,7 +5,7 @@
 #include <cmath>
 #include <gsl/gsl_interp.h>
 #include "FVM/FVMException.hpp"
-#include "FVM/Grid/Stellarator/Interpolator3D.hpp"
+#include "FVM/Grid/Stellarator/Interpolator3DSpatial.hpp"
 #include <gsl/gsl_machine.h>
 
 using namespace DREAM::FVM;
@@ -15,7 +15,7 @@ using namespace std;
 /**
  * Constructor.
  */
-Interpolator3D::Interpolator3D(
+Interpolator3DSpatial::Interpolator3DSpatial(
     const len_t nx1, const len_t nx2, const len_t nx3,
     const real_t *x1, const real_t *x2, const real_t *x3,
     const real_t *y, enum interp_method meth,
@@ -46,7 +46,7 @@ Interpolator3D::Interpolator3D(
 /**
  * Destructor.
  */
-Interpolator3D::~Interpolator3D() {
+Interpolator3DSpatial::~Interpolator3DSpatial() {
     gsl_interp_accel_free(this->acc3);
     gsl_interp_accel_free(this->acc2);
     gsl_interp_accel_free(this->acc1);
@@ -78,7 +78,7 @@ Interpolator3D::~Interpolator3D() {
  *                new memory is allocated and must later be deleted
  *                by the caller.
  */
-const real_t *Interpolator3D::Eval(
+const real_t *Interpolator3DSpatial::Eval(
     const len_t nx1, const len_t nx2, const len_t nx3,
     const real_t *x1, const real_t *x2, const real_t *x3,
     real_t *out
@@ -90,12 +90,12 @@ const real_t *Interpolator3D::Eval(
         for (len_t j = 0; j < nx2; j++) { 
             for (len_t i = 0; i < nx3; i++) { 
                 const len_t idx = (k*nx2 + j)*nx3 + i; 
-                if (meth == INTERP_NEAREST) { 
-                    out[idx] = this->_eval_nearest(xi[k], x2[j], x3[i]); 
-                } else if (meth == INTERP_LOGARITHMIC) { 
-                    out[idx] = this->_eval_logarithmic(xi[k], x2[j], x3[i]); 
+                if (this->method == INTERP_NEAREST) { 
+                    out[idx] = this->_eval_nearest(x1[k], x2[j], x3[i]); 
+                } else if (this->method == INTERP_LOGARITHMIC) { 
+                    out[idx] = this->_eval_logarithmic(x1[k], x2[j], x3[i]); 
                 } else { 
-                    out[idx] = this->_eval_linear(xi[k], x2[j], x3[i]); 
+                    out[idx] = this->_eval_linear(x1[k], x2[j], x3[i]); 
                 } 
             } 
         } 
@@ -108,7 +108,7 @@ const real_t *Interpolator3D::Eval(
  * Evaluate a single point on the grid using the
  * 'nearest' interpolation algorithm.
  */
-real_t Interpolator3D::_eval_nearest(
+real_t Interpolator3DSpatial::_eval_nearest(
     const real_t x1, const real_t x2, const real_t x3
 ) {
     len_t ix1 = _find_x1(x1);
@@ -134,7 +134,7 @@ real_t Interpolator3D::_eval_nearest(
  * Evaluate a single point on the grid using the
  * 'logarithmic' interpolation algorithm.
  */
-real_t Interpolator3D::_eval_logarithmic(
+real_t Interpolator3DSpatial::_eval_logarithmic(
     const real_t x1, const real_t x2, const real_t x3
 ) {
     len_t ix10 = _find_x1(x1);
@@ -188,7 +188,7 @@ real_t Interpolator3D::_eval_logarithmic(
  * Evaluate a single point on the grid using the
  * 'linear' interpolation algorithm.
  */
-real_t Interpolator3D::_eval_linear(
+real_t Interpolator3DSpatial::_eval_linear(
     const real_t x1, const real_t x2, const real_t x3
 ) {
     len_t ix10 = _find_x1(x1);
@@ -248,7 +248,7 @@ real_t Interpolator3D::_eval_linear(
  * xarr: Array to search in.
  * acc:  GSL accelerator object used to speed up search.
  */
-len_t Interpolator3D::_find_x(
+len_t Interpolator3DSpatial::_find_x(
     const real_t x, const len_t nx,
     const real_t *xarr, gsl_interp_accel *acc
 ) {

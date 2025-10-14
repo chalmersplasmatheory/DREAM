@@ -27,8 +27,8 @@ namespace DREAM::FVM {
         std::function<real_t(len_t,real_t)> evaluateFuncAtTheta;
         std::function<real_t(len_t,real_t)> evaluateFuncAtTheta_f;
         
-        std::function<real_t(len_t,real_t)> evaluateFuncAtThetaPhi;
-        std::function<real_t(len_t,real_t)> evaluateFuncAtThetaPhi_f;
+        std::function<real_t(len_t,real_t,real_t)> evaluateFuncAtThetaPhi;
+        std::function<real_t(len_t,real_t,real_t)> evaluateFuncAtThetaPhi_f;
 
         gsl_interp_accel *gsl_acc;
         const gsl_interp_type *interpolationMethod;

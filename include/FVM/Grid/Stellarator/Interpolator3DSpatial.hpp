@@ -2,9 +2,10 @@
 #define _DREAM_FVM_INTERPOLATOR_3D_SPATIAL_HPP
 
 #include <gsl/gsl_interp.h>
+#include "FVM/config.h"
 
 namespace DREAM::FVM {
-    class Interpolator3D {
+    class Interpolator3DSpatial {
     public:
         enum interp_method {
             INTERP_NEAREST,
@@ -34,14 +35,14 @@ namespace DREAM::FVM {
         real_t _eval_linear(const real_t, const real_t, const real_t);
 
     public:
-        Interpolator3D(
+        Interpolator3DSpatial(
             const len_t, const len_t, const len_t,
             const real_t*, const real_t*, const real_t*,
             const real_t*, 
             enum interp_method meth=INTERP_LINEAR,
             bool ownsArrays=true
         );
-        ~Interpolator3D();
+        ~Interpolator3DSpatial();
         
         const real_t *Eval(
             const len_t, const len_t, const len_t,
@@ -57,12 +58,12 @@ namespace DREAM::FVM {
         const len_t GetNx3(){ return this->nx3; }
     };
 
-    class Interpolator3DException : public FVMException {
+    class Interpolator3DSpatialException : public FVMException {
     public:
         template<typename ... Args>
-        Interpolator3DException(const std::string& msg, Args&& ... args)
+        Interpolator3DSpatialException(const std::string& msg, Args&& ... args)
             : FVMException(msg, std::forward<Args>(args) ...) {
-            AddModule("Interpolator3D");
+            AddModule("Interpolator3DSpatial");
         }
     };
 }

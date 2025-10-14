@@ -67,16 +67,16 @@ void FluxSurfaceQuantity::InterpolateMagneticDataToTheta(real_t *theta, len_t nt
 void FluxSurfaceQuantity::InterpolateMagneticDataToThetaPhi(real_t *theta, len_t ntheta_interp, real_t *phi, len_t nphi_interp){
     DeallocateInterpolatedData();
     nr = rGrid->GetNr();
-    quantityData = new real_t**[nr];
+    quantityData = new real_t*[nr];
     for(len_t ir = 0; ir<nr; ir++){
-        quantityData[ir] = new real_t*[ntheta_interp*nphi_interp];
+        quantityData[ir] = new real_t[ntheta_interp*nphi_interp];
         for(len_t it=0; it<ntheta_interp; it++)
             for(len_t ip=0; ip<nphi_interp; ip++)
                 quantityData[ir][it*nphi_interp+ip] = evaluateFuncAtThetaPhi(ir,theta[it],phi[ip]);
     }
     quantityData_fr = new real_t*[nr+1];
     for(len_t ir = 0; ir<=nr; ir++){
-        quantityData_fr[ir] = new real_t*[ntheta_interp*nphi_interp];
+        quantityData_fr[ir] = new real_t[ntheta_interp*nphi_interp];
         for(len_t it=0; it<ntheta_interp; it++)
             for(len_t ip=0; ip<nphi_interp; ip++)
                 quantityData[ir][it*nphi_interp+ip] = evaluateFuncAtThetaPhi(ir,theta[it],phi[ip]);

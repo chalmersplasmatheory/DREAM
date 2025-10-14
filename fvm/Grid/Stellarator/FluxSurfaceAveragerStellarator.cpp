@@ -1,14 +1,14 @@
 /**
- * Implementation of the FluxSurfaceAverager class which 
+ * Implementation of the FluxSurfaceAveragerStellarator class which 
  * handles everything needed to carry out flux surface 
  * averages in DREAM. 
  * 
  * It is initialized (or refreshed) with Rebuild(), which should
- * be called after RadialGridGenerator has called 
+ * be called after RadialGridGeneratorStellarator has called 
  * SetReferenceMagneticFieldData(...).
  */
 
-#include "FVM/Grid/Stellarator/FluxSurfaceAverager.hpp"
+#include "FVM/Grid/Stellarator/FluxSurfaceAveragerStellarator.hpp"
 #include "gsl/gsl_errno.h"
 using namespace std;
 using namespace DREAM::FVM;
@@ -17,8 +17,8 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-FluxSurfaceAverager::FluxSurfaceAverager(
-    RadialGrid *g, RadialGridGenerator *rgg, len_t nfp, len_t ntheta_interp, len_t nphi_interp
+FluxSurfaceAveragerStellarator::FluxSurfaceAveragerStellarator(
+    RadialGridStellarator *g, RadialGridGeneratorStellarator *rgg, len_t nfp, len_t ntheta_interp, len_t nphi_interp, 
     interp_method i_method, quadrature_method q_method
 ) : rGrid(g), gridGenerator(rgg), nfp(nfp), 
     ntheta_interp(ntheta_interp), nphi_interp(nphi_interp) {
@@ -35,7 +35,7 @@ FluxSurfaceAverager::FluxSurfaceAverager(
             break;
         }
         default:
-            throw FVMException("Interpolation method '%d' not supported by FluxSurfaceAverager.", i_method);
+            throw FVMException("Interpolation method '%d' not supported by FluxSurfaceAveragerStellarator.", i_method);
     }
 
     InitializeQuadrature(q_method);
@@ -56,7 +56,7 @@ FluxSurfaceAverager::FluxSurfaceAverager(
 /**
  * Destructor
  */
-FluxSurfaceAverager::~FluxSurfaceAverager(){
+FluxSurfaceAveragerStellarator::~FluxSurfaceAveragerStellarator(){
     // TODO: Take back if BA
     //gsl_root_fsolver_free(gsl_fsolver);
 
@@ -74,7 +74,7 @@ FluxSurfaceAverager::~FluxSurfaceAverager(){
  * (Re-)Initializes everyting required to perform flux surface averages.
  * Should be called after SetReferenceMagneticFieldData(...).
  */
-void FluxSurfaceAverager::Rebuild(){
+void FluxSurfaceAveragerStellarator::Rebuild(){
     this->nr = rGrid->GetNr();
 
     // if using fixed quadrature, store all quantities on the theta grid
@@ -86,13 +86,13 @@ void FluxSurfaceAverager::Rebuild(){
         gtpOverJ2->InterpolateMagneticDataToThetaPhi(theta, ntheta_interp, phi, nphi_interp);
     }
 
-    // Calculate flux-surface averaged Jacobian and hand over to RadialGrid.
+    // Calculate flux-surface averaged Jacobian and hand over to RadialGridStellarator.
     real_t *VpVol   = new real_t[nr];
     real_t *VpVol_f = new real_t[nr+1];    
     for(len_t ir=0; ir<nr;  ir++) 
-        VpVol[ir]   = EvaluateFluxSurfaceIntegral(ir, FLUXGRIDTYPE_DISTRIBUTION, RadialGrid::FSA_FUNC_UNITY, nullptr, RadialGrid::FSA_PARAM_UNITY);
+        VpVol[ir]   = EvaluateFluxSurfaceIntegral(ir, FLUXGRIDTYPE_DISTRIBUTION, RadialGridStellarator::FSA_FUNC_UNITY, nullptr, RadialGridStellarator::FSA_PARAM_UNITY);
     for(len_t ir=0; ir<=nr; ir++)
-        VpVol_f[ir] = EvaluateFluxSurfaceIntegral(ir, FLUXGRIDTYPE_RADIAL, RadialGrid::FSA_FUNC_UNITY, nullptr, RadialGrid::FSA_PARAM_UNITY);
+        VpVol_f[ir] = EvaluateFluxSurfaceIntegral(ir, FLUXGRIDTYPE_RADIAL, RadialGridStellarator::FSA_FUNC_UNITY, nullptr, RadialGridStellarator::FSA_PARAM_UNITY);
     
     rGrid->SetVpVol(VpVol,VpVol_f);
 }
@@ -100,12 +100,12 @@ void FluxSurfaceAverager::Rebuild(){
 /**
  *  Evaluates the flux surface average <F> of a function F = F(B/Bmin, |B \cdot \nabla\varphi|, g_{\theta\theta}/J^2, g_{\theta\theta}/J^2) on radial grid point ir. 
  */
-real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
+real_t FluxSurfaceAveragerStellarator::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
     real_t VpVol = GetVpVol(ir,fluxGridType);
 
     // treat singular point r=0 separately where orbit parameters are constant 
     if(VpVol == 0) 
-        return F(1,1,1,1,1,par); // TODO: should we keep this as 1?
+        return F(1,1,1,1,par); // TODO: should we keep this as 1?
 
     // otherwise use regular method
     return EvaluateFluxSurfaceIntegral(ir,fluxGridType, F, par, F_list) / VpVol;
@@ -117,9 +117,9 @@ real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType f
  */
 struct FluxSurfaceIntegralParamsThetaPhi {
     real_t(*Function)(real_t,real_t,real_t,real_t,void*); void *FSApar; const int_t *F_list; len_t ir; real_t Bmin; real_t phi;
-    FluxSurfaceAverager *FSA; fluxGridType fgType;
+    FluxSurfaceAveragerStellarator *FSA; fluxGridType fgType;
 };
-real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionThetaPhi(real_t theta, void *p){
+real_t FluxSurfaceAveragerStellarator::FluxSurfaceIntegralFunctionThetaPhi(real_t theta, void *p){
     struct FluxSurfaceIntegralParamsThetaPhi *params = (struct FluxSurfaceIntegralParamsThetaPhi *) p;
     len_t ir = params->ir;
     fluxGridType fluxGridType = params->fgType;
@@ -144,9 +144,9 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionThetaPhi(real_t theta, vo
  */
 struct FluxSurfaceIntegralParamsPhi {
     real_t(*Function)(real_t,real_t,real_t,real_t,void*); void *FSApar; const int_t *F_list; len_t ir; real_t Bmin;
-    FluxSurfaceAverager *FSA; fluxGridType fgType;
+    FluxSurfaceAveragerStellarator *FSA; fluxGridType fgType;
 };
-real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionPhi(real_t phi, void *p){
+real_t FluxSurfaceAveragerStellarator::FluxSurfaceIntegralFunctionPhi(real_t phi, void *p){
     real_t fluxSurfaceIntegral;
     gsl_function GSL_func; 
     struct FluxSurfaceIntegralParamsPhi *params_phi = (struct FluxSurfaceIntegralParamsPhi *) p;
@@ -154,13 +154,13 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunctionPhi(real_t phi, void *p){
 
     GSL_func.function = &(FluxSurfaceIntegralFunctionThetaPhi);
     GSL_func.params = &params;
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive_theta->limit, error;
-    gsl_integration_qag(&GSL_func, 0, theta_max,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive_theta,&fluxSurfaceIntegral, &error);
+    real_t epsabs = 0, epsrel = 1e-4, lim = params_phi->FSA->gsl_adaptive_theta->limit, error;
+    gsl_integration_qag(&GSL_func, 0, params_phi->FSA->theta_max,epsabs,epsrel,lim,params_phi->FSA->QAG_KEY,params_phi->FSA->gsl_adaptive_theta,&fluxSurfaceIntegral, &error);
     
     return fluxSurfaceIntegral;
 }
 
-real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
+real_t FluxSurfaceAveragerStellarator::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
     real_t fluxSurfaceIntegral = 0;
 
     // Calculate using fixed quadrature:
@@ -175,7 +175,7 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
         for (len_t it = 0; it<ntheta_interp; it++)
             for (len_t ip = 0; it<nphi_interp; ip++)
                 fluxSurfaceIntegral += weights_phi[ip] * weights_theta[it] * Jacobian[it] 
-                    * (hasFlist ? AssembleFSAFunc(BOverBmin, BdotGradphi, gttOverJ2, gtpOverJ2, Flist) 
+                    * (hasFlist ? AssembleFSAFunc(BOverBmin[it*nphi_interp+ip], BdotGradphi[it*nphi_interp+ip], gttOverJ2[it*nphi_interp+ip], gtpOverJ2[it*nphi_interp+ip], F_list) 
                         : F(BOverBmin[it*nphi_interp+ip], BdotGradphi[it*nphi_interp+ip], gttOverJ2[it*nphi_interp+ip], gtpOverJ2[it*nphi_interp+ip], par));
     // or by using adaptive quadrature:
     } else {
@@ -194,7 +194,7 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
 /**
  * Deallocate quadrature.
  */
-void FluxSurfaceAverager::DeallocateQuadrature(){
+void FluxSurfaceAveragerStellarator::DeallocateQuadrature(){
     // TODO: Take back if BA
     //gsl_integration_workspace_free(gsl_adaptive);
     //gsl_integration_workspace_free(gsl_adaptive_outer);
@@ -219,7 +219,7 @@ void FluxSurfaceAverager::DeallocateQuadrature(){
  * and corresponding weight functions:
  *      https://www.gnu.org/software/gsl/doc/html/integration.html
  */
-void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
+void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_method){
     // TODO: Take back if BA
     //gsl_adaptive = gsl_integration_workspace_alloc(1000);
     //gsl_adaptive_outer = gsl_integration_workspace_alloc(1000);
@@ -249,7 +249,7 @@ void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
             integrateAdaptive = true;
             return;
         default:
-            throw FVMException("Quadrature rule '%d' not supported by FluxSurfaceAverager.", q_method);            
+            throw FVMException("Quadrature rule '%d' not supported by FluxSurfaceAveragerStellarator.", q_method);            
     }
 
     
@@ -265,7 +265,7 @@ void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
     // equation on the form required by the quadrature rule.
     for(len_t it=0; it<ntheta_interp; it++)
         weights_theta[it]/= QuadWeightFunction(theta[it],0,theta_max);
-    for(len_t ip=0; it<nphi_interp; ip++)
+    for(len_t ip=0; ip<nphi_interp; ip++)
         weights_phi[ip]/= QuadWeightFunction(phi[ip],0,phi_max);
 
     // If symmetric field we integrate from 0 to pi and multiply result by 2. 
@@ -277,17 +277,17 @@ void FluxSurfaceAverager::InitializeQuadrature(quadrature_method q_method){
 
 /*
  * Sets reference magnetic field quantities that have been
- * generated by a RadialGridGenerator (FluxSurfaceAverager
+ * generated by a RadialGridGeneratorStellarator (FluxSurfaceAveragerStellarator
  * takes ownership of these and will deallocate them).
  */
-void FluxSurfaceAverager::SetReferenceMagneticFieldData(
+void FluxSurfaceAveragerStellarator::SetReferenceMagneticFieldData(
     real_t *theta_Bmin, real_t *theta_Bmin_f,
     real_t *theta_Bmax, real_t *theta_Bmax_f
 ){
     InitializeReferenceData(theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f);    
 }
 
-void FluxSurfaceAverager::InitializeReferenceData(
+void FluxSurfaceAveragerStellarator::InitializeReferenceData(
     real_t *theta_Bmin, real_t *theta_Bmin_f,
     real_t *theta_Bmax, real_t *theta_Bmax_f
 ){
@@ -298,7 +298,7 @@ void FluxSurfaceAverager::InitializeReferenceData(
     this->theta_Bmax_f = theta_Bmax_f;    
 }
 
-void FluxSurfaceAverager::DeallocateReferenceData(){
+void FluxSurfaceAveragerStellarator::DeallocateReferenceData(){
     if(theta_Bmin==nullptr)
         return;
 
@@ -311,9 +311,9 @@ void FluxSurfaceAverager::DeallocateReferenceData(){
 
 
 /**
- * Helper function to get Bmin from RadialGrid.
+ * Helper function to get Bmin from RadialGridStellarator.
  */
-real_t FluxSurfaceAverager::GetBmin(len_t ir,fluxGridType fluxGridType, real_t *theta_Bmin){
+real_t FluxSurfaceAveragerStellarator::GetBmin(len_t ir,fluxGridType fluxGridType, real_t *theta_Bmin){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
         if(theta_Bmin != nullptr)
             *theta_Bmin = this->theta_Bmin_f[ir];
@@ -325,9 +325,9 @@ real_t FluxSurfaceAverager::GetBmin(len_t ir,fluxGridType fluxGridType, real_t *
     }
 }
 /**
- * Helper function to get Bmax from RadialGrid.
+ * Helper function to get Bmax from RadialGridStellarator.
  */
-real_t FluxSurfaceAverager::GetBmax(len_t ir,fluxGridType fluxGridType, real_t *theta_Bmax){
+real_t FluxSurfaceAveragerStellarator::GetBmax(len_t ir,fluxGridType fluxGridType, real_t *theta_Bmax){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
         if(theta_Bmax != nullptr)
             *theta_Bmax = this->theta_Bmax_f[ir];
@@ -339,9 +339,9 @@ real_t FluxSurfaceAverager::GetBmax(len_t ir,fluxGridType fluxGridType, real_t *
     }
 }
 /**
- * Helper function to get VpVol from RadialGrid.
+ * Helper function to get VpVol from RadialGridStellarator.
  */
-real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
+real_t FluxSurfaceAveragerStellarator::GetVpVol(len_t ir,fluxGridType fluxGridType){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL)
         return rGrid->GetVpVol_f(ir);
     else
@@ -356,7 +356,7 @@ real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
  *      FSA_Func = Flist[4] * BOverBmin^Flist[0] 
  *               * BdotGradphi^Flist[1] * gttOverJ2^Flist[2] * gttOverJ2^Flist[3],
  */
-real_t FluxSurfaceAverager::AssembleFSAFunc(real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist){
+real_t FluxSurfaceAveragerStellarator::AssembleFSAFunc(real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist){
     real_t FSA_Func = Flist[3];
     if(Flist[0]>0)
         for(int_t k=0; k<Flist[0]; k++)
@@ -378,23 +378,23 @@ real_t FluxSurfaceAverager::AssembleFSAFunc(real_t BOverBmin, real_t BdotGradphi
             FSA_Func /= gttOverJ2;
     if(Flist[3]>0)
         for(int_t k=0; k<Flist[3]; k++)
-            FSA_Func *= gttOverJ2;
+            FSA_Func *= gtpOverJ2;
     else if(Flist[3]<0)
         for(int_t k=0; k<-Flist[3]; k++)
-            FSA_Func /= gttOverJ2;
+            FSA_Func /= gtpOverJ2;
     return FSA_Func;
 }
 
 /** TODO: This is a bit wrong.... We write the first element twice, but it is never used.
  * Print the variation of B(theta) to stdout.
  */
-void FluxSurfaceAverager::PrintBOfThetaPhi(const len_t ir, const len_t N, enum fluxGridType fgt) {
+void FluxSurfaceAveragerStellarator::PrintBOfThetaPhi(const len_t ir, const len_t N, enum fluxGridType fgt) {
 	printf("B(theta,phi) at ir = " LEN_T_PRINTF_FMT "\n", ir);
 	printf("theta = [%.12e", -M_PI);
 	for (len_t i = 1; i < N; i++)
 		printf(",%.12e", 2*M_PI * (i/((real_t)N)) - M_PI);
 	printf("]\n");
-	printf("phi = [%.12e", 0);
+	printf("phi = [%.12e", 0.);
 	for (len_t i = 1; i < N; i++)
 		printf(",%.12e", 2*M_PI * (i/((real_t)N)));
 	printf("]\n");

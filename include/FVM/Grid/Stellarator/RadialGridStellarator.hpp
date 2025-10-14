@@ -1,21 +1,22 @@
-#ifndef _DREAM_FVM_RADIAL_GRID_HPP // TODO
-#define _DREAM_FVM_RADIAL_GRID_HPP
+#ifndef _DREAM_FVM_RADIAL_GRID_STELLARATOR_HPP // TODO
+#define _DREAM_FVM_RADIAL_GRID_STELLARATOR_HPP
 
-namespace DREAM::FVM { class RadialGrid; }
+namespace DREAM::FVM { class RadialGridStellarator; }
 
 #include "FVM/FVMException.hpp"
-#include "FVM/Grid/RadialGridGenerator.hpp"
-#include "FVM/Grid/Stellarator/FluxSurfaceAverager.hpp"
+#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Stellarator/RadialGridGeneratorStellarator.hpp"
+#include "FVM/Grid/Stellarator/FluxSurfaceAveragerStellarator.hpp"
 #include <functional>
 
 namespace DREAM::FVM {
-	class RadialGrid {
+	class RadialGridStellarator : public RadialGrid {
     public:
         /** TODO: Take back code for BA, see original RadialGrid */
 
 
         // Specification for functions used in flux surface averages
-        static real_t FSA_FUNC_UNITY(real_t, void*)
+        static real_t FSA_FUNC_UNITY(real_t, real_t, real_t, real_t, void*)
             {return 1;};
         static real_t FSA_FUNC_B(real_t BOverBmin, real_t, real_t, real_t, void*)
             {return BOverBmin;}
@@ -30,7 +31,7 @@ namespace DREAM::FVM {
         static real_t FSA_FUNC_GTP_OVER_JACOBIAN_SQUARED(real_t, real_t, real_t, real_t gtpOverJ2, void*)
             {return gtpOverJ2;}
 
-        struct EPF_params {real_t x; real_t BminOverBmax; len_t ir; RadialGrid *rGrid; fluxGridType fgType;};
+        struct EPF_params {real_t x; real_t BminOverBmax; len_t ir; RadialGridStellarator *rGrid; fluxGridType fgType;};
         static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, real_t, real_t, real_t, void *par){
             struct EPF_params *params = (struct EPF_params *) par;
             real_t BminOverBmax = params->BminOverBmax;
@@ -132,9 +133,9 @@ namespace DREAM::FVM {
             delete [] xi0TrappedBoundary;
             delete [] xi0TrappedBoundary_f;
         }
-        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist = nullptr);
+        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist = nullptr);
 
-        virtual void RebuildFluxSurfaceAveragedQuantities();
+        virtual void RebuildFluxSurfaceAveragedQuantities() override;
         void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
         static real_t effectivePassingFractionIntegrand(real_t x, void *p);
 
@@ -151,15 +152,15 @@ namespace DREAM::FVM {
         static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();
 
 	protected:
-        FluxSurfaceAverager *fluxSurfaceAverager;
-        RadialGridGenerator *generator;
+        FluxSurfaceAveragerStellarator *fluxSurfaceAverager;
+        RadialGridGeneratorStellarator *generator;
 
     public:
-        RadialGrid(RadialGridGenerator*, const real_t t0=0,
-            FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_STEFFEN,
-            FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
+        RadialGridStellarator(RadialGridGeneratorStellarator*, const real_t t0=0,
+            FluxSurfaceAveragerStellarator::interp_method im = FluxSurfaceAveragerStellarator::INTERP_STEFFEN,
+            FluxSurfaceAveragerStellarator::quadrature_method qm = FluxSurfaceAveragerStellarator::QUAD_FIXED_LEGENDRE
         );
-        virtual ~RadialGrid();
+        virtual ~RadialGridStellarator();
 
         void DeallocateGrid();
 
@@ -200,7 +201,7 @@ namespace DREAM::FVM {
 
         bool Rebuild(const real_t);
 
-        virtual void RebuildJacobians();
+        virtual void RebuildJacobians() override;
 
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
@@ -295,11 +296,11 @@ namespace DREAM::FVM {
                             / GetFSA_gttOverJ2(ir);
         }
 
-        const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
+        const real_t SafetyFactorNormalized(const len_t ir, const real_t /*mu0Ip*/) const {
             real_t iota = this->iota[ir]; 
             // TODO, future option, 
             // real_t iota = RotationalTransform(ir, mu0Ip); 
-            return (this->BtorGOverR0[ir] + iota * BpolIOverR0) * R0 / iota * FSA_1OverB / Bmin;
+            return (this->BtorGOverR0[ir] + iota * BpolIOverR0[ir]) * R0 / iota * FSA_1OverB[ir] / Bmin[ir];
         }
 
         const real_t *GetToroidalFlux() const
@@ -349,20 +350,20 @@ namespace DREAM::FVM {
         const real_t  *GetFSA_gtpOverJ2_f() const { return this->FSA_gtpOverJ2_f; }
         const real_t   GetFSA_gtpOverJ2_f(const len_t ir) const { return this->FSA_gtpOverJ2_f[ir]; }
 
-        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
+        FluxSurfaceAveragerStellarator *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
 	};
 
-    class RadialGridException : public FVMException {
+    class RadialGridStellaratorException : public FVMException {
     public:
         template<typename ... Args>
-        RadialGridException(const std::string &msg, Args&& ... args)
+        RadialGridStellaratorException(const std::string &msg, Args&& ... args)
             : FVMException(msg, std::forward<Args>(args) ...) {
-            AddModule("RadialGrid");
+            AddModule("RadialGridStellarator");
         }
     };
 }
 
-#endif/*_DREAM_FVM_RADIAL_GRID_HPP*/
+#endif/*_DREAM_FVM_RADIAL_GRID_STELLARATOR_HPP*/

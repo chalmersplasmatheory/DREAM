@@ -1,23 +1,24 @@
-#include "FVM/Grid/Stellarator/RadialGrid.hpp"
+#include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
 
-#ifndef _DREAM_FVM_FLUX_SURFACE_AVERAGER_HPP // TODO
-#define _DREAM_FVM_FLUX_SURFACE_AVERAGER_HPP
+#ifndef _DREAM_FVM_FLUX_SURFACE_AVERAGER_STELLARATOR_HPP
+#define _DREAM_FVM_FLUX_SURFACE_AVERAGER_STELLARATOR_HPP
 
-namespace DREAM::FVM { class FluxSurfaceAverager; }
+namespace DREAM::FVM { class FluxSurfaceAveragerStellarator; }
 
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
+//#include "FVM/Grid/Stellarator/StellaratorRadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
 #include "gsl/gsl_roots.h"
 
 
 namespace DREAM::FVM {
-    class FluxSurfaceAverager {
+    class FluxSurfaceAveragerStellarator {
 
     public:
         /**
          * The interpolation method used when
          * interpolating from reference magnetic
-         * data from RadialGridGenerator to grid
+         * data from StellaratorRadialGridGenerator to grid
          * points requested by quadrature rule.
          */ 
         enum interp_method {
@@ -40,7 +41,7 @@ namespace DREAM::FVM {
         struct BounceIntegralParams {
             len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
             real_t Bmin; real_t(*F_ref)(real_t,real_t,real_t,real_t,void*); real_t(*F_eval)(real_t,real_t,real_t,real_t,void*); void *F_ref_par; int_t *Flist_eval; 
-            FluxSurfaceAverager *fsAvg; bool integrateQAWS;
+            FluxSurfaceAveragerStellarator *fsAvg; bool integrateQAWS;
         };
         static real_t BA_FUNC_PASSING(real_t xiOverXi0, real_t BOverBmin, real_t ROverR0, real_t NablaR2, void* par){
             BounceIntegralParams *params = (BounceIntegralParams*)par;
@@ -54,9 +55,9 @@ namespace DREAM::FVM {
 
     private:
         // Pointer to the RadialGrid which owns 
-        // this FluxSurfaceAverager, and its generator.
-        RadialGrid *rGrid;
-        RadialGridGenerator *gridGenerator;
+        // this FluxSurfaceAveragerStellarator, and its generator.
+        RadialGridStellarator *rGrid;
+        RadialGridGeneratorStellarator *gridGenerator;
 
         len_t nfp = 0;
 
@@ -112,17 +113,17 @@ namespace DREAM::FVM {
         );
         void DeallocateReferenceData();
         
-        static real_t FluxSurfaceIntegralFunctionThetaPhi(real_t,real_t, void *p);
+        static real_t FluxSurfaceIntegralFunctionThetaPhi(real_t, void *p);
         static real_t FluxSurfaceIntegralFunctionPhi(real_t, void *p);
 
         real_t GetVpVol(len_t ir, fluxGridType);
 
     public:
-        FluxSurfaceAverager(
-            RadialGrid*, RadialGridGenerator*, len_t nfp = 0, len_t ntheta_interp = 64, len_t nphi_interp = 64, 
+        FluxSurfaceAveragerStellarator(
+            RadialGridStellarator*, RadialGridGeneratorStellarator*, len_t nfp = 0, len_t ntheta_interp = 64, len_t nphi_interp = 64, 
             interp_method im = INTERP_LINEAR, quadrature_method qm = QUAD_FIXED_LEGENDRE
         );
-        ~FluxSurfaceAverager();
+        ~FluxSurfaceAveragerStellarator();
 
         void Rebuild();
 
@@ -132,9 +133,11 @@ namespace DREAM::FVM {
         const len_t GetNTheta() const
             {return ntheta_interp;}    
         const real_t *GetTheta() const
-            {return theta;}        
-        const real_t *GetWeights() const
-            {return weights;}        
+            {return theta;}
+        const real_t *GetWeightsTheta() const
+            {return weights_theta;}
+        const real_t *GetWeightsPhi() const
+            {return weights_phi;}
         const real_t GetThetaMax() const    
             {return theta_max;}      
         const real_t GetPhiMax() const    
@@ -154,31 +157,31 @@ namespace DREAM::FVM {
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
                 return gridGenerator->BAtThetaPhi_f(ir,theta,phi);
             else
-                return gridGenerator->BAtThetaPhi(ir,theta,phi);            
+                return gridGenerator->BAtThetaPhi(ir,theta,phi);
         }
         real_t JacobianAtThetaPhi(len_t ir, real_t theta, real_t phi, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
                 return gridGenerator->JacobianAtThetaPhi_f(ir,theta,phi);
             else
-                return gridGenerator->JacobianAtThetaPhi(ir,theta,phi);            
+                return gridGenerator->JacobianAtThetaPhi(ir,theta,phi);
         }
         real_t BdotGradphiAtThetaPhi(len_t ir, real_t theta, real_t phi, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-                return gridGenerator->BdotGradphiAtThetaPhi_f(ir,theta);
+                return gridGenerator->BdotGradphiAtThetaPhi_f(ir,theta,phi);
             else
-                return gridGenerator->BdotGradphiAtThetaPhi(ir,theta);            
+                return gridGenerator->BdotGradphiAtThetaPhi(ir,theta,phi);
         }
         real_t gttOverJ2AtThetaPhi(len_t ir, real_t theta, real_t phi, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-                return gridGenerator->gttAtThetaPhi_f(ir,theta);
+                return gridGenerator->gttAtThetaPhi_f(ir,theta,phi);
             else
-                return gridGenerator->gttAtThetaPhi(ir,theta);            
+                return gridGenerator->gttAtThetaPhi(ir,theta,phi);
         }
         real_t gtpOverJ2AtThetaPhi(len_t ir, real_t theta, real_t phi, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-                return gridGenerator->gtpAtThetaPhi_f(ir,theta);
+                return gridGenerator->gtpAtThetaPhi_f(ir,theta,phi);
             else
-                return gridGenerator->gtpAtThetaPhi(ir,theta);            
+                return gridGenerator->gtpAtThetaPhi(ir,theta,phi);
         }
         void GeometricQuantitiesAtThetaPhi(const len_t ir, const real_t theta, const real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -203,5 +206,5 @@ namespace DREAM::FVM {
     };
 }
 
-#endif/*_DREAM_FVM_FLUX_SURFACE_AVERAGER_HPP*/
+#endif/*_DREAM_FVM_FLUX_SURFACE_AVERAGER_STELLARATOR_HPP*/
 

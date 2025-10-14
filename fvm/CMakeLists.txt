@@ -91,6 +91,12 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/BounceAverager.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/BounceSurfaceQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/BounceSurfaceMetric.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/EmptyStellaratorRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/RadialGridStellarator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/RadialGridGeneratorStellarator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/FluxSurfaceAveragerStellarator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/StellaratorRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/Interpolator3DSpatial.cpp"
 )
 set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/CylindricalRadialGridGenerator.hpp"
@@ -110,6 +116,9 @@ set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/XiBiUniformThetaGridGenerator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/RadialGrid.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/RadialGridGenerator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/Stellarator/EmptyRadialGridStellarator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/Stellarator/RadialGridStellarator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/Stellarator/RadialGridGeneratorStellarator.hpp"
 )
 
 add_library(fvm STATIC ${fvm_core} ${fvm_equation} ${fvm_grid} ${fvm_core_headers} ${fvm_equation_headers} ${fvm_grid_headers})

@@ -9,7 +9,7 @@ import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
-from .StellaratorMagneticField import StellaratorMagneticField
+#from .StellaratorMagneticField import StellaratorMagneticField
 from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
 
 
@@ -397,8 +397,8 @@ class RadialGrid(PrescribedScalarParameter):
                 self.ntheta_equil = ntheta_equil
             if nphi_equil is not None:
                 self.nphi_equil = nphi_equil
-            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
-            self.num_stellarator.load()
+            #self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
+            #self.num_stellarator.load()
         else:
             DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
 
@@ -629,7 +629,7 @@ class RadialGrid(PrescribedScalarParameter):
             self.g_tp = data['g_tp']
             self.lambda_t = data['lambda_t']
             self.lambda_p = data['lambda_p']
-            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
+            #self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
 
             if 'fileformat' in data:
                 self.num_fileformat = data['fileformat']
