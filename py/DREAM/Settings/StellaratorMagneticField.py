@@ -3,10 +3,8 @@
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-from desc.grid import LinearGrid
-import desc.io
-from .. import DREAMIO
-from .. import helpers
+#from .. import DREAMIO
+#from .. import helpers
 from . NumericalMagneticField import NumericalMagneticField
 
 
@@ -41,6 +39,9 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.g_tp = None
         self.lambda_t = None
         self.lambda_p = None
+
+        from desc.grid import LinearGrid
+        import desc.io
 
         self.eq = desc.io.load(self.filename)
 
