@@ -19,7 +19,6 @@ FluxSurfaceQuantity::FluxSurfaceQuantity(
     const gsl_interp_type *interpType
 ) : rGrid(rGrid), evaluateFuncAtTheta(evalAtTheta), evaluateFuncAtTheta_f(evalAtTheta_f),  interpolationMethod(interpType) 
 { 
-    axisymmetric = true;
     gsl_acc = gsl_interp_accel_alloc();
 }
 
@@ -29,7 +28,6 @@ FluxSurfaceQuantity::FluxSurfaceQuantity(
     const gsl_interp_type *interpType
 ) : rGrid(rGrid), evaluateFuncAtThetaPhi(evalAtThetaPhi), evaluateFuncAtThetaPhi_f(evalAtThetaPhi_f),  interpolationMethod(interpType) 
 { 
-    axisymmetric = false;
     gsl_acc = gsl_interp_accel_alloc();
 }
 

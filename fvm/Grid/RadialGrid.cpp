@@ -40,7 +40,6 @@ RadialGrid::~RadialGrid(){
     DeallocateFSAvg();
     
     DeallocateReferenceMagneticData();
-    DeallocateStellaratorData();
     DeallocateMagneticExtremumData();
     
     if(this->VpVol!=nullptr){
@@ -171,16 +170,6 @@ void RadialGrid::SetReferenceMagneticFieldData(
     this->psiPrimeRef    = psiPrimeRef;
     this->psiPrimeRef_f  = psiPrimeRef_f;
     this->R0             = R0;
-}
-
-
-void RadialGrid::SetStellaratorData(
-    real_t *iota, real_t *iota_f
-){
-    DeallocateStellaratorData();
-
-    this->iota = iota;
-    this->iota_f = iota_f;
 }
 
 

@@ -16,9 +16,7 @@ namespace DREAM::FVM {
             **quantityData_fr  = nullptr;
 
         RadialGrid *rGrid; 
-        len_t nr;        
-
-        bool axisymmetric;
+        len_t nr;
 
         gsl_spline  
             **quantitySpline = nullptr,
@@ -56,8 +54,6 @@ namespace DREAM::FVM {
 
         real_t *const* GetData() const {return quantityData;}
         real_t *const* GetData_fr() const {return quantityData_fr;}
-        
-        bool isAxisymmetric(){return axisymmetric;}
         
     };
 

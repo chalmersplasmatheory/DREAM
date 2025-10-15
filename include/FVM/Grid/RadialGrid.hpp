@@ -118,8 +118,6 @@ namespace DREAM::FVM {
             *psiPrimeRef_f = nullptr,
             *psiToroidal   = nullptr,
             *psiToroidal_f = nullptr,
-            *iota   = nullptr,
-            *iota_f = nullptr,
             R0;
 
         // Orbit-phase-space Jacobian factors
@@ -135,12 +133,6 @@ namespace DREAM::FVM {
             delete [] BtorGOverR0_f;
             delete [] psiPrimeRef;
             delete [] psiPrimeRef_f;
-        }
-        void DeallocateStellaratorData(){
-            if(iota == nullptr)
-                return;
-            delete [] iota;
-            delete [] iota_f;
         }
         void DeallocateMagneticExtremumData(){
             if(Bmin == nullptr)
@@ -202,9 +194,6 @@ namespace DREAM::FVM {
             real_t *BtorGOverR0, real_t *BtorGOverR0_f,
             real_t *psiPrimeRef, real_t *psiPrimeRef_f,
             real_t R0
-        );
-        void SetStellaratorData(
-            real_t *iota, real_t *iota_f
         );
         void SetMagneticExtremumData(
             real_t *Bmin, real_t *Bmin_f,
