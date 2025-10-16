@@ -23,11 +23,11 @@ from DREAM.Settings.Equations.NBISettings import NBISettings
 
 # Plasma parameters
 T_initial = 800     # Initial electron temperature [eV]
-Ip_initial = 120e5  # Initial plasma current [A]
+Ip_initial = 120e3  # Initial plasma current [A]
 TMAX = 1e-6         # Simulation time [s]
 
 #Tokamak parameters - ROME
-NR = 10              # Number of radial points
+NR = 20              # Number of radial points
 B0 = 5              # Magnetic field [T]
 a = 0.23             # Plasma minor radius [m]
 b = 0.23           # Wall radius [m]
@@ -39,7 +39,7 @@ r= np.linspace(0,a,NR+1)  # Radial grid points
 n_i_profile = 3e19 * (1 - (r/a)**2)
 #nbi_entry_point = [0.9,-1.028,0.0] 
 nbi_entry_point = [0.685,-1.028,0.0] 
-nbi_radius = 0.02 #775  
+nbi_radius = 0.0775  
 nbi_direction_vector = [0.0,1.0,0.0] 
 
 
@@ -57,7 +57,7 @@ ds.radialgrid.setMajorRadius(R0)
 
 
 # Set up time step
-ds.timestep.setNt(1)
+ds.timestep.setNt(2)
 ds.timestep.setTmax(TMAX)
 
 
@@ -125,7 +125,7 @@ ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
 # Set up electron temperature and NBI
 ds.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds.eqsys.T_cold.setInitialProfile(T_initial)
-ds.eqsys.T_cold.include_NBI = True
+ds.eqsys.T_cold.include_NBI = False
 
 print(ds.eqsys.T_cold.todict())
 print("include_NBI setting is:", ds.eqsys.T_cold.include_NBI)
@@ -140,13 +140,19 @@ ds.hottailgrid.setEnabled(False)
 ds.runawaygrid.setEnabled(False)
 
 # Solver settings
-ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setType(Solver.NONLINEAR)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setDebug(printjacobianinfo=True, savejacobian=True,
+                   savenumericaljacobian=True, saveresidual=True,
+                   savesystem=True, rescaled=True, timestep=2, iteration=1)
+
+
 ds.solver.setVerbose(True)
 # Include fluid
 ds.other.include('fluid')
 
 print("Running DREAM simulation...")
 ds.save('settings_nbi.h5')
-runiface(ds, 'output_nbi.h5')
+runiface(ds, 'output_nbi_new.h5')
 
 
