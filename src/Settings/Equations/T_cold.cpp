@@ -240,7 +240,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         }
         oqty_terms->NBI_handler = handler;
   
-        auto *nbi_e = new NBIElectronTerm(handler, eqsys->GetFluidGrid(), unknowns);
+        auto *nbi_e = new NBIElectronTerm(handler, eqsys->GetFluidGrid(), unknowns, ionHandler);
         Op4->AddTerm(nbi_e);
         oqty_terms->T_cold_NBI = nbi_e;
         desc += " + NBI";

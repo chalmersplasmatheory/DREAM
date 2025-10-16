@@ -3,6 +3,7 @@
 
 #include "FVM/Equation/EquationTerm.hpp"
 #include "DREAM/NBIHandler.hpp"
+#include "DREAM/IonHandler.hpp"
 
 //#include "DREAM/UnknownQuantityHandler.hpp"
 
@@ -16,9 +17,13 @@ private:
     FVM::RadialGrid *radialGrid;
     len_t nr;
     FVM::UnknownQuantityHandler *unknowns;
-    len_t id_ncold, id_Tcold, id_ion_density, id_ion_temperature;
+    len_t id_ncold, id_Tcold, id_ion_density, id_ion_temperature ,id_ni;
+    IonHandler* ions;
+    const real_t* Qe_1;
+    const real_t* Qe_2;
+    const real_t* Qe_3;
 public:
-    NBIElectronTerm(NBIHandler *h, FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns);
+    NBIElectronTerm(NBIHandler *h, FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, IonHandler* ionHandler);
 
     ~NBIElectronTerm() override = default;
 
