@@ -6,7 +6,7 @@
 namespace DREAM::FVM { class FluxSurfaceAveragerStellarator; }
 
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
-//#include "FVM/Grid/Stellarator/StellaratorRadialGridGenerator.hpp"
+//#include "FVM/Grid/Stellarator/NumericStellaratorRadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
 #include "gsl/gsl_roots.h"
 
@@ -18,7 +18,7 @@ namespace DREAM::FVM {
         /**
          * The interpolation method used when
          * interpolating from reference magnetic
-         * data from StellaratorRadialGridGenerator to grid
+         * data from RadialGridGenerator to grid
          * points requested by quadrature rule.
          */ 
         enum interp_method {

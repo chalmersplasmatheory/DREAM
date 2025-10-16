@@ -26,7 +26,8 @@ namespace DREAM::FVM {
 
         len_t nphi_interp;
         real_t  *BpolIOverR0,        *BpolIOverR0_f,        // poloidal magnetic field strength (I(r)/R0)
-                *iota,               *iota_f;               // Rotational transform
+                *iota,               *iota_f,               // Rotational transform
+                *Fpassing,           *Fpassing_f;
        
         // Tolerance to use when switching between cartesian and flux surface coordinates
         // Increasing the value of this tolerance seem to make it hard for SPI simulations
@@ -91,10 +92,10 @@ namespace DREAM::FVM {
         virtual void EvaluateGeometricQuantities_fr(const len_t, const real_t, real_t &, real_t &, real_t &, real_t &) {}
 
         virtual const real_t GetZ0() {return 0;}
-		virtual const real_t *GetFluxSurfaceRMinusR0() {return 0;}
-		virtual const real_t *GetFluxSurfaceRMinusR0_f() {return 0;}
-		virtual const real_t *GetFluxSurfaceZMinusZ0() {return 0;}
-		virtual const real_t *GetFluxSurfaceZMinusZ0_f() {return 0;}
+		virtual const real_t *GetFluxSurfaceRMinusR0() {return nullptr;}
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() {return nullptr;}
+		virtual const real_t *GetFluxSurfaceZMinusZ0() {return nullptr;}
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() {return nullptr;}
         
     };
 }

@@ -95,7 +95,7 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/RadialGridStellarator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/RadialGridGeneratorStellarator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/FluxSurfaceAveragerStellarator.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/StellaratorRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/NumericStellaratorRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Stellarator/Interpolator3DSpatial.cpp"
 )
 set(fvm_grid_headers

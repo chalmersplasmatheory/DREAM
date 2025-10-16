@@ -25,7 +25,7 @@ using namespace DREAM::FVM;
  */
 RadialGridStellarator::RadialGridStellarator(RadialGridGeneratorStellarator *rg, const real_t /*t0*/,
     FluxSurfaceAveragerStellarator::interp_method im, FluxSurfaceAveragerStellarator::quadrature_method qm_passing)
-    : RadialGrid(rg), nr(rg->GetNr()), generator(rg) {
+    : RadialGrid(rg), generator(rg) {
 
     len_t nfp = rg->getNFP();
     len_t ntheta_interp_passing = rg->GetNthetaInterp();
@@ -37,23 +37,12 @@ RadialGridStellarator::RadialGridStellarator(RadialGridGeneratorStellarator *rg,
 /**
  * Destructor.
  */
-RadialGridStellarator::~RadialGridStellarator(){    
-    DeallocateGrid();
+RadialGridStellarator::~RadialGridStellarator(){
     DeallocateFSAvg();
     
     DeallocateReferenceMagneticData();
     DeallocateStellaratorData();
-    DeallocateMagneticExtremumData();
     
-    if(this->VpVol!=nullptr){
-        delete [] this->VpVol;
-        delete [] this->VpVol_f;
-    }
-	if (this->psiToroidal != nullptr) {
-		delete [] this->psiToroidal;
-		delete [] this->psiToroidal_f;
-	}
-
     delete this->generator;
     delete this->fluxSurfaceAverager;
 }
@@ -86,20 +75,6 @@ void RadialGridStellarator::RebuildJacobians(){
     this->generator->RebuildJacobians(this);
     fluxSurfaceAverager->Rebuild();
     RebuildFluxSurfaceAveragedQuantities();
-}
-
-
-/**
- * Grid deallocator
- */
-void RadialGridStellarator::DeallocateGrid() {
-    if (this->r == nullptr)
-        return;
-
-    delete [] this->dr_f;
-    delete [] this->dr;
-    delete [] this->r_f;
-    delete [] this->r;
 }
 
 

@@ -42,7 +42,10 @@ class RadialGrid(PrescribedScalarParameter):
 
         # Analytic toroidal settings
         self.R0 = None
-        self.ntheta = 20
+        if ttype == TYPE_STELLARATOR:
+            self.ntheta = 64
+        else:
+            self.ntheta = 20
         self.nphi = 64
         self.Delta = None       # Shafranov shift
         self.Delta_r = None
@@ -431,6 +434,8 @@ class RadialGrid(PrescribedScalarParameter):
         types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL, TYPE_STELLARATOR]
         if ttype in types:
             self.type = ttype
+            if self.type == TYPE_STELLARATOR:
+                self.ntheta = 64 # TODO: Ok?
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 

@@ -19,6 +19,55 @@ RadialGridGeneratorStellarator::~RadialGridGeneratorStellarator(){
     gsl_multimin_fminimizer_free(gsl_multi_fmin);
 }
 
+
+/** TODO: Is this needed?
+ * Rebuilds magnetic field data and stores all quantities needed for flux surface and bounce averages.
+ */
+void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGrid) {
+    real_t realeps = std::numeric_limits<real_t>::epsilon();
+
+    nr = rGrid->GetNr();
+
+    Bmin   = new real_t[GetNr()];
+    Bmax   = new real_t[GetNr()];
+    Bmin_f = new real_t[GetNr()+1];
+    Bmax_f = new real_t[GetNr()+1];
+    theta_Bmin     = new real_t[GetNr()];
+    theta_Bmax     = new real_t[GetNr()];
+    theta_Bmin_f   = new real_t[GetNr()+1];
+    theta_Bmax_f   = new real_t[GetNr()+1];
+    xi0TrappedBoundary   = new real_t[GetNr()];
+    xi0TrappedBoundary_f = new real_t[GetNr()+1];
+
+    for (len_t ir = 0; ir < GetNr(); ir++){
+        theta_Bmin[ir] = getTheta_Bmin(ir);
+        theta_Bmax[ir] = getTheta_Bmax(ir);
+        
+        Bmin[ir] = BAtTheta(ir,theta_Bmin[ir]);
+        Bmax[ir] = BAtTheta(ir,theta_Bmax[ir]);
+        if(!Bmin[ir] || 1-Bmin[ir]/Bmax[ir]<100*realeps)
+            xi0TrappedBoundary[ir] = 0;
+        else
+            xi0TrappedBoundary[ir] = sqrt(1-Bmin[ir]/Bmax[ir]);
+
+    }
+    for (len_t ir = 0; ir < GetNr()+1; ir++){
+        theta_Bmin_f[ir] = getTheta_Bmin_f(ir);
+        theta_Bmax_f[ir] = getTheta_Bmax_f(ir);
+        Bmin_f[ir] = BAtTheta_f(ir,theta_Bmin_f[ir]);
+        Bmax_f[ir] = BAtTheta_f(ir,theta_Bmax_f[ir]);
+        if(!Bmin_f[ir] || 1-Bmin_f[ir]/Bmax_f[ir]<100*realeps)
+            xi0TrappedBoundary_f[ir] = 0;
+        else
+            xi0TrappedBoundary_f[ir] = sqrt(1-Bmin_f[ir]/Bmax_f[ir]);
+    }
+    rGrid->SetMagneticExtremumData(
+        Bmin, Bmin_f, Bmax, Bmax_f, 
+        theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f,
+        xi0TrappedBoundary, xi0TrappedBoundary_f
+    );
+}
+
 // The remaining functions are related to determining theta_Bmin and theta_Bmax
 // with a gsl fmin algorithm
 struct EvalBParams {len_t ir; RadialGridGeneratorStellarator* rgg; int_t sgn;};
@@ -112,7 +161,7 @@ real_t RadialGridGeneratorStellarator::FindMagneticFieldExtremum(
     //real_t phi   = gsl_vector_get(gsl_multi_fmin->x, 1);
   
     real_t extremum = theta; 
-    if(extremum < 2*EPSABS || extremum > 2*M_PI - 2*EPSABS)
+    if(extremum < 2*EPSABS || extremum > (2*M_PI - 2*EPSABS))
         return 0;
     else if (fabs(M_PI-extremum) < 2*EPSABS)
         return M_PI;

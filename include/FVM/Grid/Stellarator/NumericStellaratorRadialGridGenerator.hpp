@@ -1,18 +1,16 @@
-#ifndef _DREAM_FVM_STELLARATOR_RADIAL_GRID_GENERATOR_HPP
-#define _DREAM_FVM_STELLARATOR_RADIAL_GRID_GENERATOR_HPP
+#ifndef _DREAM_FVM_NUMERIC_STELLARATOR_RADIAL_GRID_GENERATOR_HPP
+#define _DREAM_FVM_NUMERIC_STELLARATOR_RADIAL_GRID_GENERATOR_HPP
 
 #include <gsl/gsl_interp.h>
 #include <softlib/SFile.h>
 #include "FVM/Grid/Stellarator/RadialGridGeneratorStellarator.hpp"
 #include "FVM/Grid/Stellarator/Interpolator3DSpatial.hpp"
 
-namespace DREAM::FVM {
-    class StellaratorRadialGridGenerator : public RadialGridGeneratorStellarator {
+namespace DREAM::FVM { 
+    class NumericStellaratorRadialGridGenerator : public RadialGridGeneratorStellarator {
     public:
         struct eq_data {
             len_t nrho, ntheta, nphi;
-            const len_t nfp;
-            const real_t R0;
             const real_t *rho, *theta, *phi;  // Coordinate arrays (1D)
             const real_t *dataG, *dataI;      // toroial and poloidal magnetic field strengths (1D)
             const real_t *dataiota;           // Rotational transform (1D)
@@ -52,15 +50,17 @@ namespace DREAM::FVM {
         real_t _angleBounded(const real_t) const;
 
     public:
-        StellaratorRadialGridGenerator(
-            const len_t nr, const real_t r0, const real_t ra, struct eq_data*,
+        NumericStellaratorRadialGridGenerator(
+            const len_t nr, const real_t r0, const real_t ra, 
+            const real_t R0, const len_t nfp, struct eq_data*,
 			const len_t ntheta_interp=64, const len_t nphi_interp=64
         );
-        StellaratorRadialGridGenerator(
-            const real_t *r_f, const len_t nr, struct eq_data*,
+        NumericStellaratorRadialGridGenerator(
+            const real_t *r_f, const len_t nr, 
+            const real_t R0, const len_t nfp, struct eq_data*,
 			const len_t ntheta_interp=64, const len_t nphi_interp=64
         );
-        ~StellaratorRadialGridGenerator();
+        ~NumericStellaratorRadialGridGenerator();
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGridStellarator*);
@@ -111,4 +111,4 @@ namespace DREAM::FVM {
     };
 }
 
-#endif/*_DREAM_FVM_STELLARATOR_RADIAL_GRID_GENERATOR_HPP*/ // TODO
+#endif/*_DREAM_FVM_NUMERIC_STELLARATOR_RADIAL_GRID_GENERATOR_HPP*/ // TODO

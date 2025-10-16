@@ -11,6 +11,9 @@
 #include "FVM/Grid/EmptyMomentumGrid.hpp"
 #include "FVM/Grid/EmptyRadialGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Stellarator/EmptyRadialGridStellarator.hpp"
+#include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
+#include "FVM/Grid/Stellarator/NumericStellaratorRadialGridGenerator.hpp"
 
 
 using namespace DREAM;
@@ -108,6 +111,11 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
         case OptionConstants::RADIALGRID_TYPE_NUMERICAL:
             rg = ConstructRadialGrid_Numerical(nr, s);
             break;
+
+        case OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR:
+            FVM::RadialGridStellarator *rg_s;
+            rg_s = ConstructStellaratorRadialGrid_Numerical(nr, s);
+            return new FVM::Grid(rg_s, new FVM::EmptyMomentumGrid(rg));
 
         default:
             throw SettingsException(
@@ -261,5 +269,62 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
     }
 
     return new FVM::RadialGrid(nbrg);
+}
+
+/**
+ * Construct a stellarator radial grid based on a numeric magnetic field.
+ *
+ * nr: Number of radial (distribution) grid points.
+ * s:  Settings object specifying how to construct the grid.
+ */
+FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_Numerical(
+    const int_t nr, Settings *s
+) {
+    real_t R0 = s->GetReal(RADIALGRID "/R0");
+    len_t nfp = s->GetReal(RADIALGRID "/nfp");
+    len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
+    len_t nphi_interp   = s->GetInteger(RADIALGRID "/nphi");
+	bool custom_grid    = s->GetBool(RADIALGRID "/custom_grid");
+
+    FVM::NumericStellaratorRadialGridGenerator::eq_data *eqdata =
+        new FVM::NumericStellaratorRadialGridGenerator::eq_data;
+
+    eqdata->rho             = s->GetRealArray(RADIALGRID "/rho", 1, &eqdata->nrho);
+    eqdata->theta           = s->GetRealArray(RADIALGRID "/theta", 1, &eqdata->ntheta);
+    eqdata->phi             = s->GetRealArray(RADIALGRID "/phi", 1, &eqdata->nphi);
+    eqdata->dataG           = s->GetRealArray(RADIALGRID "/G", 1, nullptr);
+    eqdata->dataI           = s->GetRealArray(RADIALGRID "/I", 1, nullptr);
+    eqdata->dataiota        = s->GetRealArray(RADIALGRID "/iota", 1, nullptr);
+    eqdata->datapsi         = s->GetRealArray(RADIALGRID "/psi_T", 1, nullptr);
+    eqdata->dataB           = s->GetRealArray(RADIALGRID "/B", 1, nullptr);
+    eqdata->dataBdotGradphi = s->GetRealArray(RADIALGRID "/BdotGradPhi", 1, nullptr);
+    eqdata->dataJacobian    = s->GetRealArray(RADIALGRID "/Jacobian", 1, nullptr);
+    eqdata->datagtt         = s->GetRealArray(RADIALGRID "/g_tt", 1, nullptr);
+    eqdata->datagtp         = s->GetRealArray(RADIALGRID "/g_tp", 1, nullptr);
+    eqdata->datalambdat     = s->GetRealArray(RADIALGRID "/lambda_t", 1, nullptr);
+    eqdata->datalambdap     = s->GetRealArray(RADIALGRID "/lambda_p", 1, nullptr);
+
+    FVM::NumericStellaratorRadialGridGenerator *nsrg;
+
+    // Uniform radial grid
+    if (!custom_grid) {
+        real_t a  = s->GetReal(RADIALGRID "/a");
+        real_t r0 = s->GetReal(RADIALGRID "/r0");
+
+        nsrg = new FVM::NumericStellaratorRadialGridGenerator(
+            nr, r0, a, R0, nfp, eqdata, ntheta_interp, nphi_interp
+        );
+
+    // Custom radial grid
+    } else {
+        len_t len_rf; // equals nr+1 of the simulation
+        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
+
+        nsrg = new FVM::NumericStellaratorRadialGridGenerator(
+            r_f, len_rf-1, R0, nfp, eqdata, ntheta_interp, nphi_interp
+        );
+    }
+
+    return new FVM::RadialGridStellarator(nsrg);
 }
 

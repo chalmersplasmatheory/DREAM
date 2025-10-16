@@ -82,7 +82,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         for (len_t ir = 0; ir < nr; ir++) {
             // calculate the geometric prefactor
             const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
-            const real_t BpolIOverR0 = 1;//rGrid->GetBPolI(ir);        // I / R0
+            const real_t BpolIOverR0 = rGrid->GetBPolI(ir);        // I / R0
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t FSA_1OverB = rGrid->GetFSA_1OverB(ir);    // <1 / B> * Bmin
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin

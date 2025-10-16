@@ -57,7 +57,7 @@ class StellaratorMagneticField(NumericalMagneticField):
 
 
 
-    def load(self):
+    def load(self): # TODO: Spara behandlad data till fil
         """
         Load a DESC magnetic equilibrium from the named file.
         """
@@ -81,6 +81,10 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.lambda_t = self.eq.compute('lambda_t', grid=self.grid)['lambda_t'] + iota*self.eq.compute('nu_t', grid=self.grid)['nu_t']
         self.lambda_p = self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota*self.eq.compute('nu_z', grid=self.grid)['nu_z']
 
+        # TODO: Save this as wuantities instead of R and Z, for ouput and for SPI in the future
+        #R_mn = self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota * \
+        #           self.eq.compute('nu_z', grid=self.grid)['nu_z']
+
 
 
     def getMinorRadius(self):
@@ -97,7 +101,7 @@ class StellaratorMagneticField(NumericalMagneticField):
         return float(self.R0)
 
 
-    def visualize(self, phi, nrho=None, ntheta=None, ax=None, show=None): # TODO
+    def visualize(self, phi, nrho=None, ntheta=None, ax=None, show=None):
         """
         Visualize this magnetic field.
         """
