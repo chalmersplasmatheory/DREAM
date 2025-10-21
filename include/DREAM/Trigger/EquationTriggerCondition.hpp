@@ -10,13 +10,14 @@ namespace DREAM {
 		FVM::UnknownQuantityHandler *unknowns;
 		bool *triggered;
 
-		void SetTriggered(bool v) { this->triggered = v; }
+		void SetTriggered(const len_t i, bool v) { this->triggered[i] = v; }
 
 	public:
 		EquationTriggerCondition(FVM::Grid*, FVM::UnknownQuantityHandler*);
 		virtual ~EquationTriggerCondition();
 
-		virtual void CheckCondition(UnknownQuantityHandler*) = 0;
+		virtual void CheckCondition(FVM::UnknownQuantityHandler*) = 0;
+		const bool *GetTriggerMask() { return this->triggered; }
 
 		bool IsTriggered(const len_t i) { return this->triggered[i]; }
 	};

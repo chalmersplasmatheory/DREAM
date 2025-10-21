@@ -9,11 +9,32 @@ using namespace DREAM;
 
 
 /**
+ * Constructor.
+ */
+UnknownQuantityEquation::UnknownQuantityEquation(
+	len_t uqtyId, FVM::UnknownQuantity *uqty, const std::string& desc,
+	EquationTriggerCondition *condition
+) :uqtyId(uqtyId), uqty(uqty), condition(condition), description(desc) {
+	
+	if (condition == nullptr) {
+		const len_t N = uqty->NumberOfElements();
+		this->eqn_cache = new real_t[N];
+		this->nElements = N;
+	}
+}
+
+/**
  * Destructor.
  */
 UnknownQuantityEquation::~UnknownQuantityEquation() {
     for (auto it = equations.begin(); it != equations.end(); it++)
         delete it->second;
+	
+	for (auto it = equations_alt.begin(); it != equations_alt.end(); it++)
+		delete it->second;
+	
+	if (this->eqn_cache != nullptr)
+		delete [] this->eqn_cache;
 }
 
 
@@ -27,9 +48,9 @@ UnknownQuantityEquation::~UnknownQuantityEquation() {
 void UnknownQuantityEquation::Evaluate(
     const len_t uqtyId, real_t *vec, FVM::UnknownQuantityHandler *unknowns
 ) {
-    FVM::Operator *eqn = nullptr;
+    FVM::Operator *eqn = nullptr, *eqn_a = nullptr;
 
-    for (auto it = equations.begin(); it != equations.end(); it++) {
+    for (auto it = this->equations.begin(); it != this->equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
         
         // This equation will be used later to "solve" for
@@ -46,6 +67,26 @@ void UnknownQuantityEquation::Evaluate(
             it->second->Evaluate(vec, uqty->GetData());
     }
 
+	// Evaluate alternative equation
+	if (this->condition != nullptr) {
+		for (auto it = this->equations.begin(); it != this->equations.end(); it++) {
+			FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
+			
+			// This equation will be used later to "solve" for
+			// the unknown quantity, so store it for now...
+			if (it->first == uqtyId) {
+				eqn_a = it->second;
+
+				if (!eqn_a->IsEvaluable())
+					throw DREAMException(
+						"%s: quantity equation is not evaluable because the diagonal term is not evaluable.",
+						uqty->GetName().c_str()
+					);
+			} else
+				it->second->Evaluate(eqn_cache, uqty->GetData());
+		}
+	}
+
     // Predetermined equation terms have an implicit identity term
     // applied to them.
     if (!IsPredetermined()) {
@@ -57,20 +98,38 @@ void UnknownQuantityEquation::Evaluate(
 
         // Apply transformation which solves for the unknown quantity
         eqn->EvaluableTransform(vec);
-    } else
+    } else {
         eqn->Evaluate(vec, nullptr);
+
+		if (eqn_a != nullptr) {
+			eqn_a->Evaluate(eqn_cache, nullptr);
+
+			// Set the elements for which the condition is triggered
+			for (len_t i = 0; i < nElements; i++) {
+				if (this->condition->IsTriggered(i))
+					vec[i] = eqn_cache[i];
+			}
+		}
+	}
 }
+
 
 /**
  * Returns true if this equation contains a transient term.
  */
 bool UnknownQuantityEquation::HasTransientTerm() const {
-	for (auto it = equations.begin(); it != equations.end(); it++)
+	for (auto it = this->equations.begin(); it != this->equations.end(); it++)
 		if (it->second->HasTransientTerm())
 			return true;
 	
+	if (this->condition != nullptr)
+		for (auto it = this->equations_alt.begin(); it != this->equations_alt.end(); it++)
+			if (it->second->HasTransientTerm())
+				return true;
+	
 	return false;
 }
+
 
 /**
  * Returns the number of non-zero elements per row
@@ -80,8 +139,17 @@ bool UnknownQuantityEquation::HasTransientTerm() const {
  */
 len_t UnknownQuantityEquation::NumberOfNonZeros() {
     len_t nnz = 0;
-    for (auto it = equations.begin(); it != equations.end(); it++)
+    for (auto it = this->equations.begin(); it != this->equations.end(); it++)
         nnz += it->second->GetNumberOfNonZerosPerRow();
+	
+	if (this->condition != nullptr) {
+		len_t nnz_a = 0;
+		for (auto it = this->equations_alt.begin(); it != this->equations_alt.end(); it++)
+			nnz_a += it->second->GetNumberOfNonZerosPerRow();
+
+		if (nnz_a > nnz)
+			nnz = nnz_a;
+	}
 
     return nnz;
 }
@@ -93,8 +161,17 @@ len_t UnknownQuantityEquation::NumberOfNonZeros() {
  */
 len_t UnknownQuantityEquation::NumberOfNonZeros_jac() {
     len_t nnz = 0;
-    for (auto it = equations.begin(); it != equations.end(); it++)
+    for (auto it = this->equations.begin(); it != this->equations.end(); it++)
         nnz += it->second->GetNumberOfNonZerosPerRow_jac();
+
+	if (this->condition != nullptr) {
+		len_t nnz_a = 0;
+		for (auto it = this->equations_alt.begin(); it != this->equations_alt.end(); it++)
+			nnz_a += it->second->GetNumberOfNonZerosPerRow_jac();
+
+		if (nnz_a > nnz)
+			nnz = nnz_a;
+	}
 
     return nnz;
 }
@@ -108,7 +185,7 @@ FVM::PredeterminedParameter *UnknownQuantityEquation::GetPredetermined() {
     if (!IsPredetermined())
         return nullptr;
     else
-        return equations.begin()->second->GetPredetermined();
+		return equations.begin()->second->GetPredetermined();
 }
 
 /**
@@ -117,15 +194,24 @@ FVM::PredeterminedParameter *UnknownQuantityEquation::GetPredetermined() {
  * an equation.
  */
 bool UnknownQuantityEquation::IsEvaluable() {
-    /*bool ev = true;
-    for (auto it = equations.begin(); it != equations.end(); it++)
-        ev = (ev &&  it->second->IsEvaluable());*/
-
-    if (equations.find(this->uqtyId) == equations.end())
+	// Check that there is at least one term applied to 'uqtyId'
+	// (an evaluable term must contain an identity term, applied
+	//  applied to 'uqtyId')
+    if (this->equations.find(this->uqtyId) == this->equations.end())
         return false;
 
-    FVM::Operator *eqn = equations[this->uqtyId];
-    return eqn->IsEvaluable();
+	// If an alternative equation is available, we require that both
+	// the main and alternative equations are evaluable for the
+	// 'UnknownQuantityEquation' to be considered evaluable.
+    FVM::Operator *eqn = this->equations[this->uqtyId];
+	if (this->condition) {
+		FVM::Operator *eqn_a;
+		if (this->equations.find(this->uqtyId) == this->equations.end())
+			eqn_a = this->equations_alt[this->uqtyId];
+
+		return (eqn->IsEvaluable() && eqn_a->IsEvaluable());
+	} else
+		return eqn->IsEvaluable();
 }
 
 /**
@@ -140,17 +226,26 @@ bool UnknownQuantityEquation::IsPredetermined() {
     // where 'x_0(t)' denotes the predetermined value at time t.
     // Hence, if there are multiple equations (= applied to
     // different unknowns) this is not a predetermined quantity.
-    if (equations.size() == 1)
-        return (equations.begin()->second->IsPredetermined());
-    else
+    if (equations.size() == 1) {
+		bool eq0 = equations.begin()->second->IsPredetermined();
+		if (equations_alt.size() == 0)
+			return eq0;
+		else
+			return false;
+    } else
         return false;
 }
 
 void UnknownQuantityEquation::RebuildEquations(
     const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqty
 ) {
-    for (auto it = equations.begin(); it != equations.end(); it++)
-        it->second->RebuildTerms(t, dt, uqty);
+	for (auto it = this->equations.begin(); it != this->equations.end(); it++)
+		it->second->RebuildTerms(t, dt, uqty);
+	
+	// If available, also rebuild alternative equation
+	if (this->condition != nullptr)
+		for (auto it = this->equations_alt.begin(); it != this->equations_alt.end(); it++)
+			it->second->RebuildTerms(t, dt, uqty);
 }
 
 /**
@@ -164,8 +259,42 @@ void UnknownQuantityEquation::RebuildEquations(
 void UnknownQuantityEquation::SetVectorElements(
     real_t *vec, FVM::UnknownQuantityHandler *unknowns
 ) {
-    for (auto it = equations.begin(); it != equations.end(); it++) {
+    for (auto it = this->equations.begin(); it != this->equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
         it->second->SetVectorElements(vec, uqty->GetData());
     }
+
+	if (this->condition != nullptr) {
+		for (len_t i = 0; i < nElements; i++)
+			this->eqn_cache[i] = 0;
+
+		for (auto it = this->equations_alt.begin(); it != this->equations_alt.end(); it++) {
+			FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
+			it->second->SetVectorElements(eqn_cache, uqty->GetData());
+		}
+
+		// Set the elements for which the condition is triggered
+		for (len_t i = 0; i < nElements; i++) {
+			if (this->condition->IsTriggered(i))
+				vec[i] = eqn_cache[i];
+		}
+	}
 }
+
+
+/**
+ * Set the trigger condition to use for switching between
+ * different equations.
+ */
+void UnknownQuantityEquation::SetTriggerCondition(
+	EquationTriggerCondition *condition
+) {
+	this->condition = condition;
+
+	if (condition == nullptr) {
+		const len_t N = uqty->NumberOfElements();
+		this->eqn_cache = new real_t[N];
+		this->nElements = N;
+	}
+}
+

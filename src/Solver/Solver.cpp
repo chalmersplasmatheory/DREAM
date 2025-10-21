@@ -88,28 +88,49 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         len_t matUqnId = utmm[uqnId];
-        // Iterate over each equation term
-        len_t operatorId = 0;
-        for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
-            const real_t *x = unknowns->GetUnknownData(it->first);
-        
-            // "Differentiate with respect to the unknowns which
-            // appear in the matrix"
-            //   d (F_uqnId) / d x_derivId
-            for (len_t derivId : nontrivial_unknowns) {
-                len_t matDerivId = utmm[derivId];
-                jac->SelectSubEquation(matUqnId, matDerivId);
 
-                // - in the equation for                           x_uqnId
-                // - differentiate the operator that is applied to x_it
-                // - with respect to                               x_derivId
-                it->second->SetJacobianBlock(it->first, derivId, jac, x);
-            }
+		// Repeat the block below twice; once for the main equation
+		// and once for the "alternative" equation. In both cases,
+		// a mask is applied to the matrix so that only relevant
+		// elements are set. If no alternative equation is used,
+		// 'SetJacobianBlock()' is called without any mask.
+		bool localRowMaskNot = true;
+		do {
+			// When an alternative equation is present, we apply a
+			// row mask to both the main and alternative equations.
+			if (eqn->HasAlternativeEquation()) {
+				jac->SetLocalRowMask(
+					eqn->GetAlternativeEquationMask(), matUqnId,
+					matUqnId+eqn->NumberOfElements(), localRowMaskNot
+				);
+			}
 
-            operatorId++;
-        }
+			// Iterate over each equation term
+			len_t operatorId = 0;
+			bool alt = !localRowMaskNot;
+			for (auto it = eqn->GetOperators(alt).begin(); it != eqn->GetOperators(alt).end(); it++) {
+				const real_t *x = unknowns->GetUnknownData(it->first);
+			
+				// "Differentiate with respect to the unknowns which
+				// appear in the matrix"
+				//   d (F_uqnId) / d x_derivId
+				for (len_t derivId : nontrivial_unknowns) {
+					len_t matDerivId = utmm[derivId];
+					jac->SelectSubEquation(matUqnId, matDerivId);
 
-        //printf("operatorId = " LEN_T_PRINTF_FMT "\n", operatorId);
+					// - in the equation for                           x_uqnId
+					// - differentiate the operator that is applied to x_it
+					// - with respect to                               x_derivId
+					it->second->SetJacobianBlock(it->first, derivId, jac, x);
+				}
+
+				operatorId++;
+			}
+
+			localRowMaskNot = !localRowMaskNot;
+		} while (eqn->HasAlternativeEquation() && !localRowMaskNot);
+
+		jac->ResetLocalRowMask();
     }
     jac->PartialAssemble();
 

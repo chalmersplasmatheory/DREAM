@@ -168,7 +168,7 @@ void EquationSystem::ProcessSystem(const real_t t0) {
  */
 void EquationSystem::SetOperator(
 	const len_t blockrow, const len_t blockcol, FVM::Operator *op,
-	const std::string& desc, const bool solvedExternally
+	const std::string& desc, const bool solvedExternally, bool alternative
 ) {
     // Verify that the list is sufficiently large
     if (unknown_equations.size() < blockrow+1)
@@ -179,7 +179,10 @@ void EquationSystem::SetOperator(
     if (unknown_equations[blockrow] == nullptr)
         unknown_equations[blockrow] = new UnknownQuantityEquation(blockrow, GetUnknown(blockrow), desc);
 
-    unknown_equations[blockrow]->SetOperator(blockcol, op);
+	if (alternative)
+		unknown_equations[blockrow]->SetOperatorAlt(blockcol, op);
+	else
+		unknown_equations[blockrow]->SetOperator(blockcol, op);
 
     if (desc != "") {
         unknown_equations[blockrow]->SetDescription(desc);
@@ -191,7 +194,7 @@ void EquationSystem::SetOperator(
 }
 
 /**
- * Same as 'SetEquation(len_t, len_t, Equation*)', but specifies
+ * Same as 'SetOperator(len_t, len_t, Equation*)', but specifies
  * the unknowns by name rather than by index.
  */
 void EquationSystem::SetOperator(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
@@ -202,6 +205,20 @@ void EquationSystem::SetOperator(const std::string& blockrow, len_t blockcol, FV
 }
 void EquationSystem::SetOperator(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
     SetOperator(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc, solvedExternally);
+}
+
+/**
+ * Same as 'SetOperator(len_t, len_t, Equation*)', but specifies
+ * the unknowns by name rather than by index.
+ */
+void EquationSystem::SetOperatorAlt(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperatorAlt(blockrow, GetUnknownID(blockcol), op, desc, solvedExternally);
+}
+void EquationSystem::SetOperatorAlt(const std::string& blockrow, len_t blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperatorAlt(GetUnknownID(blockrow), blockcol, op, desc, solvedExternally);
+}
+void EquationSystem::SetOperatorAlt(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperatorAlt(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc, solvedExternally);
 }
 
 /**

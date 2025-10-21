@@ -366,8 +366,24 @@ void Matrix::SetElement(
     const PetscInt irow, const PetscInt icol,
     const PetscScalar v, InsertMode insert_mode
 ) {
-    if (v != 0)
+    if (v != 0) {
+		if (this->localRowMask != nullptr) {
+			len_t ir = this->rowOffset+irow;
+			if (ir >= this->iMinRM && ir < this->iMaxRM) {
+				// If the mask is 'true', we should set the matrix element,
+				// but only if the not modifier (localRowMaskNot) is 'false'.
+				// Otherwise, we require the mask to be 'false' to set the
+				// matrix element.
+				//
+				// Hence, if 'localRowMask' and 'localRowMaskNot' are equal,
+				// we DO NOT set the element.
+				if (this->localRowMask[irow] == this->localRowMaskNot)
+					return;
+			}
+		}
+
         MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
+	}
 }
 
 /**
@@ -459,3 +475,24 @@ void Matrix::SetDiagonalConstant(const PetscInt n, const PetscInt i[], const Pet
     for(PetscInt it=0; it<n; it++)
         MatSetValue(this->petsc_mat, this->rowOffset+i[it], this->colOffset+i[it], v, INSERT_VALUES);
 }
+
+
+/**
+ * Apply a local row mask which limits whether elements are set or not.
+ * Elements are set if the corresponding row mask element is 'true'.
+ */
+void Matrix::SetLocalRowMask(const bool *mask, const len_t iStart, const len_t iEnd, bool usenot) {
+	this->localRowMask = mask;
+	this->iMinRM = iStart;
+	this->iMaxRM = iEnd;
+	this->localRowMaskNot = usenot;
+}
+
+
+/**
+ * Reset the local row mask.
+ */
+void Matrix::ResetLocalRowMask() {
+	this->localRowMask = nullptr;
+}
+
