@@ -194,6 +194,8 @@ namespace DREAM::FVM {
         virtual const real_t  *GetFSA_gtpOverJ2_f() const override { return this->FSA_gtpOverJ2_f; }
         virtual const real_t   GetFSA_gtpOverJ2_f(const len_t ir) const override { return this->FSA_gtpOverJ2_f[ir]; }
 
+        virtual const bool isStellarator() const override {return true;} 
+
         FluxSurfaceAveragerStellarator *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 
 	};
