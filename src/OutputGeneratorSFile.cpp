@@ -151,10 +151,22 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     this->sf->WriteList(geom + "FSA_BOverBmin2", FSA_B2, nr);
     const real_t *FSA_B = rgrid->GetFSA_B();
     this->sf->WriteList(geom + "FSA_BOverBmin", FSA_B, nr);
-    const real_t *FSA_1OverR2 = rgrid->GetFSA_1OverR2();
-    this->sf->WriteList(geom + "FSA_R02OverR2", FSA_1OverR2, nr);
-    const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
-    this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
+
+    if (rgrid->isStellarator()){
+        const real_t *BPolIOverR0 = rgrid->GetBPolI();
+        this->sf->WriteList(geom + "IR0", BPolIOverR0, nr);
+        const real_t *FSA_BdotGradphi = rgrid->GetFSA_BdotGradphi();
+        this->sf->WriteList(geom + "FSA_BdotGradphiR0", FSA_BdotGradphi, nr);
+        const real_t *FSA_gttOverJ2 = rgrid->GetFSA_gttOverJ2();
+        this->sf->WriteList(geom + "FSA_gttR02OverJ2", FSA_gttOverJ2, nr);
+        const real_t *FSA_gtpOverJ2 = rgrid->GetFSA_gtpOverJ2();
+        this->sf->WriteList(geom + "FSA_gtpR02OverJ2", FSA_gtpOverJ2, nr);
+    } else {
+        const real_t *FSA_1OverR2 = rgrid->GetFSA_1OverR2();
+        this->sf->WriteList(geom + "FSA_R02OverR2", FSA_1OverR2, nr);
+        const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
+        this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
+    }
 
 	// Equilibrium data
 	this->sf->CreateStruct(group + "eq");

@@ -1344,7 +1344,7 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
  * Returns the total poloidal magnetic energy internal
  * to the tokamak chamber normalized to R0
  */
-real_t OtherQuantityHandler::evaluateMagneticEnergy(){
+real_t OtherQuantityHandler::evaluateMagneticEnergy(){ // TODO: Do for stellarator
     FVM::RadialGrid *rGrid = this->fluidGrid->GetRadialGrid();
     const real_t *G_R0 = rGrid->GetBTorG();
     const real_t *VpVol = rGrid->GetVpVol();

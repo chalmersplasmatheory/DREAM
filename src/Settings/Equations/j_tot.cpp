@@ -71,84 +71,154 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 	enum OptionConstants::current_profile_type prof_type =
 		(enum OptionConstants::current_profile_type)s->GetInteger("eqsys/j_ohm/j_type");
 
+	enum OptionConstants::radialgrid_type type = (enum OptionConstants::radialgrid_type)s->GetInteger("radialgrid/type");
 	// Re-scale if not j_parallel
 	if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_J_DOT_GRADPHI) {
 		// Conversion from <j . grad phi>  -->  j_||
-		const len_t nr_f = rGrid->GetNr()+1;
-		const real_t *r_f = rGrid->GetR_f();
-		const real_t *GR0_f = rGrid->GetBTorG_f();
-		const real_t *R02OverR2_f = rGrid->GetFSA_1OverR2_f();
-		const real_t *Bmin_f = rGrid->GetBmin_f();
-		const real_t R0 = rGrid->GetR0();
+		if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
+			const len_t nr_f = rGrid->GetNr()+1;
+			const real_t *r_f = rGrid->GetR_f();
+			const real_t *BdotGradPhi_f = rGrid->GetFSA_BdotGradphi();
+			const real_t *Bmin_f = rGrid->GetBmin_f();
+			const real_t R0 = rGrid->GetR0();
 
-		if (std::isinf(R0))
-			throw SettingsException(
-				"Cannot re-scale current density profile in cylindrical geometry. "
-				"A finite major radius R0 is required to do so."
+			if (std::isinf(R0))
+				throw SettingsException(
+					"Cannot re-scale current density profile in cylindrical geometry. "
+					"A finite major radius R0 is required to do so."
+				);
+
+			FVM::Interpolator1D *iBdotGradPhi = new FVM::Interpolator1D(
+				nr_f, 1, r_f, BdotGradPhi_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iBmin = new FVM::Interpolator1D(
+				nr_f, 1, r_f, Bmin_f, FVM::Interpolator1D::INTERP_LINEAR, false
 			);
 
-		FVM::Interpolator1D *iGR0 = new FVM::Interpolator1D(
-			nr_f, 1, r_f, GR0_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
-		FVM::Interpolator1D *iR02OverR2 = new FVM::Interpolator1D(
-			nr_f, 1, r_f, R02OverR2_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
-		FVM::Interpolator1D *iBmin = new FVM::Interpolator1D(
-			nr_f, 1, r_f, Bmin_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
+			for (len_t ir = 0; ir < dd->nr; ir++) {
+				const real_t r = dd->r[ir];
+				real_t geom = iBmin->Eval(r)[0] * R0*R0*R0 / (iBdotGradPhi->Eval(r)[0]);
 
-		for (len_t ir = 0; ir < dd->nr; ir++) {
-			const real_t r = dd->r[ir];
-			real_t geom = iBmin->Eval(r)[0] * R0*R0*R0 / (iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0]);
+				for (len_t i = 0; i < dd->nt; i++)
+					dd->x[i*(dd->nr)+ir] *= geom;
+			}
 
-			for (len_t i = 0; i < dd->nt; i++)
-				dd->x[i*(dd->nr)+ir] *= geom;
+			delete iBmin;
+			delete iBdotGradPhi;
+		} else {
+			const len_t nr_f = rGrid->GetNr()+1;
+			const real_t *r_f = rGrid->GetR_f();
+			const real_t *GR0_f = rGrid->GetBTorG_f();
+			const real_t *R02OverR2_f = rGrid->GetFSA_1OverR2_f();
+			const real_t *Bmin_f = rGrid->GetBmin_f();
+			const real_t R0 = rGrid->GetR0();
+
+			if (std::isinf(R0))
+				throw SettingsException(
+					"Cannot re-scale current density profile in cylindrical geometry. "
+					"A finite major radius R0 is required to do so."
+				);
+
+			FVM::Interpolator1D *iGR0 = new FVM::Interpolator1D(
+				nr_f, 1, r_f, GR0_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iR02OverR2 = new FVM::Interpolator1D(
+				nr_f, 1, r_f, R02OverR2_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iBmin = new FVM::Interpolator1D(
+				nr_f, 1, r_f, Bmin_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+
+			for (len_t ir = 0; ir < dd->nr; ir++) {
+				const real_t r = dd->r[ir];
+				real_t geom = iBmin->Eval(r)[0] * R0*R0*R0 / (iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0]); // TODO: Why R_0^3 here?
+
+				for (len_t i = 0; i < dd->nt; i++)
+					dd->x[i*(dd->nr)+ir] *= geom;
+			}
+
+			delete iBmin;
+			delete iR02OverR2;
+			delete iGR0;
 		}
-
-		delete iBmin;
-		delete iR02OverR2;
-		delete iGR0;
 	} else if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_JTOR_OVER_R) {
 		// Conversion from <j . B> / <B . grad phi>  -->  j_||
-		const len_t nr_f = rGrid->GetNr()+1;
-		const real_t *r_f = rGrid->GetR_f();
-		const real_t *GR0_f = rGrid->GetBTorG_f();
-		const real_t *R02OverR2_f = rGrid->GetFSA_1OverR2_f();
-		const real_t *BOverBmin2_f = rGrid->GetFSA_B2_f();
-		const real_t *Bmin_f = rGrid->GetBmin_f();
-		const real_t R0 = rGrid->GetR0();
+		if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
+			const len_t nr_f = rGrid->GetNr()+1;
+			const real_t *r_f = rGrid->GetR_f();
+			const real_t *BdotGradPhi_f = rGrid->GetFSA_BdotGradphi();
+			const real_t *BOverBmin2_f = rGrid->GetFSA_B2_f();
+			const real_t *Bmin_f = rGrid->GetBmin_f();
+			const real_t R0 = rGrid->GetR0();
 
-		if (std::isinf(R0))
-			throw SettingsException(
-				"Cannot re-scale current density profile in cylindrical geometry. "
-				"A finite major radius R0 is required to do so."
+			if (std::isinf(R0))
+				throw SettingsException(
+					"Cannot re-scale current density profile in cylindrical geometry. "
+					"A finite major radius R0 is required to do so."
+				);
+
+			FVM::Interpolator1D *iBdotGradPhi = new FVM::Interpolator1D(
+				nr_f, 1, r_f, BdotGradPhi_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iBOverBmin2 = new FVM::Interpolator1D(
+				nr_f, 1, r_f, BOverBmin2_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iBmin = new FVM::Interpolator1D(
+				nr_f, 1, r_f, Bmin_f, FVM::Interpolator1D::INTERP_LINEAR, false
 			);
 
-		FVM::Interpolator1D *iGR0 = new FVM::Interpolator1D(
-			nr_f, 1, r_f, GR0_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
-		FVM::Interpolator1D *iR02OverR2 = new FVM::Interpolator1D(
-			nr_f, 1, r_f, R02OverR2_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
-		FVM::Interpolator1D *iBOverBmin2 = new FVM::Interpolator1D(
-			nr_f, 1, r_f, BOverBmin2_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
-		FVM::Interpolator1D *iBmin = new FVM::Interpolator1D(
-			nr_f, 1, r_f, Bmin_f, FVM::Interpolator1D::INTERP_LINEAR, false
-		);
+			for (len_t ir = 0; ir < dd->nr; ir++) {
+				const real_t r = dd->r[ir];
+				real_t geom = iBdotGradPhi->Eval(r)[0] / (iBOverBmin2->Eval(r)[0] * iBmin->Eval(r)[0] * R0);
 
-		for (len_t ir = 0; ir < dd->nr; ir++) {
-			const real_t r = dd->r[ir];
-			real_t geom = iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0] / (iBOverBmin2->Eval(r)[0] * iBmin->Eval(r)[0] * R0);
+				for (len_t i = 0; i < dd->nt; i++)
+					dd->x[i*(dd->nr)+ir] *= geom;
+			}
 
-			for (len_t i = 0; i < dd->nt; i++)
-				dd->x[i*(dd->nr)+ir] *= geom;
+			delete iBmin;
+			delete iBdotGradPhi;
+			delete iBOverBmin2;
+		} else {
+			const len_t nr_f = rGrid->GetNr()+1;
+			const real_t *r_f = rGrid->GetR_f();
+			const real_t *GR0_f = rGrid->GetBTorG_f();
+			const real_t *R02OverR2_f = rGrid->GetFSA_1OverR2_f();
+			const real_t *BOverBmin2_f = rGrid->GetFSA_B2_f();
+			const real_t *Bmin_f = rGrid->GetBmin_f();
+			const real_t R0 = rGrid->GetR0();
+
+			if (std::isinf(R0))
+				throw SettingsException(
+					"Cannot re-scale current density profile in cylindrical geometry. "
+					"A finite major radius R0 is required to do so."
+				);
+
+			FVM::Interpolator1D *iGR0 = new FVM::Interpolator1D(
+				nr_f, 1, r_f, GR0_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iR02OverR2 = new FVM::Interpolator1D(
+				nr_f, 1, r_f, R02OverR2_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iBOverBmin2 = new FVM::Interpolator1D(
+				nr_f, 1, r_f, BOverBmin2_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+			FVM::Interpolator1D *iBmin = new FVM::Interpolator1D(
+				nr_f, 1, r_f, Bmin_f, FVM::Interpolator1D::INTERP_LINEAR, false
+			);
+
+			for (len_t ir = 0; ir < dd->nr; ir++) {
+				const real_t r = dd->r[ir];
+				real_t geom = iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0] / (iBOverBmin2->Eval(r)[0] * iBmin->Eval(r)[0] * R0);
+
+				for (len_t i = 0; i < dd->nt; i++)
+					dd->x[i*(dd->nr)+ir] *= geom;
+			}
+
+			delete iBmin;
+			delete iR02OverR2;
+			delete iBOverBmin2;
+			delete iGR0;
 		}
-
-		delete iBmin;
-		delete iR02OverR2;
-		delete iBOverBmin2;
-		delete iGR0;
 	}
 
 	// Re-scale to get right initial plasma current (Ip)?
@@ -226,41 +296,75 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 		enum OptionConstants::current_profile_type prof_type =
 			(enum OptionConstants::current_profile_type)s->GetInteger("eqsys/j_ohm/j_type");
 
+		enum OptionConstants::radialgrid_type type = (enum OptionConstants::radialgrid_type)s->GetInteger("radialgrid/type");
 		// Need to convert to j_|| first?
 		if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_J_DOT_GRADPHI) {
 			// Conversion from <j . grad phi>  -->  j_||
-			const len_t nr = rGrid->GetNr();
-			const real_t *GR0 = rGrid->GetBTorG();
-			const real_t *R02OverR2 = rGrid->GetFSA_1OverR2();
-			const real_t *Bmin = rGrid->GetBmin();
-			const real_t R0 = rGrid->GetR0();
+			if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
+				const len_t nr = rGrid->GetNr();
+				const real_t *BdotGradphi = rGrid->GetFSA_BdotGradphi();
+				const real_t *Bmin = rGrid->GetBmin();
+				const real_t R0 = rGrid->GetR0();
 
-			if (std::isinf(R0))
-				throw SettingsException(
-					"Cannot re-scale current density profile in cylindrical geometry. "
-					"A finite major radius R0 is required to do so."
-				);
+				if (std::isinf(R0))
+					throw SettingsException(
+						"Cannot re-scale current density profile in cylindrical geometry. "
+						"A finite major radius R0 is required to do so."
+					);
 
-			for (len_t ir = 0; ir < nr; ir++)
-				johm_init[ir] *= Bmin[ir] * R0*R0*R0 / (GR0[ir] * R02OverR2[ir]);
+				for (len_t ir = 0; ir < nr; ir++)
+					johm_init[ir] *= Bmin[ir] * R0*R0*R0 / (BdotGradphi[ir]);
+			} else {
+				const len_t nr = rGrid->GetNr();
+				const real_t *GR0 = rGrid->GetBTorG();
+				const real_t *R02OverR2 = rGrid->GetFSA_1OverR2();
+				const real_t *Bmin = rGrid->GetBmin();
+				const real_t R0 = rGrid->GetR0();
+
+				if (std::isinf(R0))
+					throw SettingsException(
+						"Cannot re-scale current density profile in cylindrical geometry. "
+						"A finite major radius R0 is required to do so."
+					);
+
+				for (len_t ir = 0; ir < nr; ir++)
+					johm_init[ir] *= Bmin[ir] * R0*R0*R0 / (GR0[ir] * R02OverR2[ir]);
+			}
 
 		} else if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_JTOR_OVER_R) {
 			// Conversion from <j . B> / <B . grad phi>  -->  j_||
-			const len_t nr = rGrid->GetNr();
-			const real_t *GR0 = rGrid->GetBTorG();
-			const real_t *R02OverR2 = rGrid->GetFSA_1OverR2();
-			const real_t *BOverBmin2 = rGrid->GetFSA_B2();
-			const real_t *Bmin = rGrid->GetBmin();
-			const real_t R0 = rGrid->GetR0();
-			
-			if (std::isinf(R0))
-				throw SettingsException(
-					"Cannot re-scale current density profile in cylindrical geometry. "
-					"A finite major radius R0 is required to do so."
-				);
+			if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
+				const len_t nr = rGrid->GetNr();
+				const real_t *BdotGradphi = rGrid->GetFSA_BdotGradphi();
+				const real_t *BOverBmin2 = rGrid->GetFSA_B2();
+				const real_t *Bmin = rGrid->GetBmin();
+				const real_t R0 = rGrid->GetR0();
+				
+				if (std::isinf(R0))
+					throw SettingsException(
+						"Cannot re-scale current density profile in cylindrical geometry. "
+						"A finite major radius R0 is required to do so."
+					);
 
-			for (len_t ir = 0; ir < nr; ir++)
-				johm_init[ir] *= GR0[ir] * R02OverR2[ir] / (BOverBmin2[ir] * Bmin[ir] * R0);
+				for (len_t ir = 0; ir < nr; ir++)
+					johm_init[ir] *= BdotGradphi[ir] / (BOverBmin2[ir] * Bmin[ir] * R0);
+			} else {
+				const len_t nr = rGrid->GetNr();
+				const real_t *GR0 = rGrid->GetBTorG();
+				const real_t *R02OverR2 = rGrid->GetFSA_1OverR2();
+				const real_t *BOverBmin2 = rGrid->GetFSA_B2();
+				const real_t *Bmin = rGrid->GetBmin();
+				const real_t R0 = rGrid->GetR0();
+				
+				if (std::isinf(R0))
+					throw SettingsException(
+						"Cannot re-scale current density profile in cylindrical geometry. "
+						"A finite major radius R0 is required to do so."
+					);
+
+				for (len_t ir = 0; ir < nr; ir++)
+					johm_init[ir] *= GR0[ir] * R02OverR2[ir] / (BOverBmin2[ir] * Bmin[ir] * R0);
+			}
 		}
 
 		// Re-scale to get right plasma current (Ip)?

@@ -65,24 +65,43 @@ namespace DREAM {
  */
 namespace DREAM {
     class dPsiDtTerm : public FVM::LinearTransientTerm {
+    private:
+        enum OptionConstants::radialgrid_type type;
     public:
-        dPsiDtTerm(FVM::Grid* g, const len_t unknownId) : FVM::LinearTransientTerm(g,unknownId){}
+        dPsiDtTerm(FVM::Grid* g, const len_t unknownId, enum OptionConstants::radialgrid_type type) : FVM::LinearTransientTerm(g,unknownId), type(type) {}
 
         virtual void SetWeights() override {
             len_t offset = 0;
             FVM::RadialGrid *rGrid = grid->GetRadialGrid();
-            for (len_t ir = 0; ir < nr; ir++){
-                real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
+            
+            if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) { // TODO: Is this the best way to avoid nr if-statements?
+                for (len_t ir = 0; ir < nr; ir++){
+                    real_t BdotPhi = rGrid->GetFSA_BdotGradphi(ir);
 
-                // psit'/VpVol, multiplied by 2*pi
-                real_t psitPrimeOverVpVol  = BdotPhi;
+                    // psit'/VpVol, multiplied by 2*pi
+                    real_t psitPrimeOverVpVol  = BdotPhi;
 
-                real_t w = -psitPrimeOverVpVol;
+                    real_t w = -psitPrimeOverVpVol;
 
-                for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                    weights[offset + i] = w;
+                    for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                        weights[offset + i] = w;
 
-                offset += n1[ir]*n2[ir];
+                    offset += n1[ir]*n2[ir];
+                }
+            } else {
+                for (len_t ir = 0; ir < nr; ir++){
+                    real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
+
+                    // psit'/VpVol, multiplied by 2*pi
+                    real_t psitPrimeOverVpVol  = BdotPhi;
+
+                    real_t w = -psitPrimeOverVpVol;
+
+                    for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                        weights[offset + i] = w;
+
+                    offset += n1[ir]*n2[ir];
+                }
             }
         }
     };
@@ -225,8 +244,10 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 
     std::string eqn = "dpsi_p/dt = V_loop";
 
+    enum OptionConstants::radialgrid_type type = (enum OptionConstants::radialgrid_type)s->GetInteger("radialgrid/type");
+
     // Add transient term -dpsi/dt
-    dtTerm->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX)));
+    dtTerm->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX), type));
     // Add Vloop term
     Vloop->AddTerm(new VloopTerm(fluidGrid));
 
