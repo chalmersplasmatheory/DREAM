@@ -11,10 +11,12 @@ namespace DREAM {
 		len_t id_n_cold, id_n_hot;
 
 	public:
-		ColdElectronDensityRiseCondition(FVM::Grid*, FVM::UnknownQuantityHandler*);
+		ColdElectronDensityRiseCondition(
+			FVM::Grid*, FVM::UnknownQuantityHandler*, const real_t
+		);
 		virtual ~ColdElectronDensityRiseCondition();
 
-		virtual bool CheckCondition(UnknownQuantityHandler*) override;
+		virtual void CheckCondition(FVM::UnknownQuantityHandler*) override;
 	};
 }
 

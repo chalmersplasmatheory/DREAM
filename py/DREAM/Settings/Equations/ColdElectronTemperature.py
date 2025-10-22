@@ -6,6 +6,7 @@ from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
+from .. EquationTrigger import EquationTrigger
 from . NBISettings import NBISettings
 
 
@@ -41,6 +42,14 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.include_NBI = False
         self.halo_region_losses = halo_region_losses
 
+        self.trigger = EquationTrigger(
+            settings,
+            ColdElectronTemperature(
+                settings, ttype=ttype, temperature=temperature,
+                radius=radius, times=times, recombination=recombination,
+                halo_region_losses=halo_region_losses
+            )
+        )
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)
@@ -156,7 +165,8 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         if 'recombination' in data:
             self.recombination = data['recombination']
 
-
+        if 'switch' in data:
+            self.trigger.fromdict(data['switch'])
 
         self.verifySettings()
 
@@ -190,6 +200,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+
+        if self.trigger.enabled():
+            data['switch'] = self.trigger.todict()
 
         return data
 

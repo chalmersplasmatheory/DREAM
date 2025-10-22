@@ -28,6 +28,8 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperAdaptive.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperConstant.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperIonization.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Trigger/ColdElectronDensityRiseCondition.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Trigger/EquationTriggerCondition.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
@@ -171,6 +173,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/spi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/EquationTrigger.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/IonEquilibrium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"

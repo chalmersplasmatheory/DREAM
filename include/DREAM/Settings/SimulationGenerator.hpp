@@ -23,6 +23,7 @@
 #include "DREAM/TimeStepper/TimeStepperAdaptive.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
 #include "DREAM/TimeStepper/TimeStepperIonization.hpp"
+#include "DREAM/Trigger/EquationTriggerCondition.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -104,7 +105,8 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_T_cold(Settings*);
-        static void DefineOptions_T_cold_NBI(Settings*);
+        static void DefineOptions_T_cold_inner(Settings*, const std::string&);
+        static void DefineOptions_T_cold_NBI(Settings*, const std::string&);
         static void DefineOptions_T_abl(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
@@ -196,9 +198,10 @@ namespace DREAM {
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold_inner(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_tau_coll(EquationSystem*);
-        static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold_prescribed(const std::string&, EquationSystem*, Settings*);
+        static void ConstructEquation_T_cold_selfconsistent(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl_prescribed(EquationSystem*, Settings*);
         
@@ -211,6 +214,9 @@ namespace DREAM {
 
 		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
 		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
+
+		// Equation trigger condition routines
+		static EquationTriggerCondition *LoadTriggerCondition(Settings*, const std::string&, FVM::Grid*, FVM::UnknownQuantityHandler*);
 
 
         template<typename T>

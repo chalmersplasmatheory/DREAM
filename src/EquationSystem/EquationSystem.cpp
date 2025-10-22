@@ -139,6 +139,9 @@ void EquationSystem::ProcessSystem(const real_t t0) {
                 totsize += unknowns[i]->NumberOfElements();
             }
         }
+
+		// Initialize 'alternative equation' handler
+		this->assignToAlternative[i] = false;
     }
 
     // Initialize from output...
@@ -168,8 +171,10 @@ void EquationSystem::ProcessSystem(const real_t t0) {
  */
 void EquationSystem::SetOperator(
 	const len_t blockrow, const len_t blockcol, FVM::Operator *op,
-	const std::string& desc, const bool solvedExternally, bool alternative
+	const std::string& desc, const bool solvedExternally
 ) {
+	bool alternative = assignToAlternative[blockrow];
+
     // Verify that the list is sufficiently large
     if (unknown_equations.size() < blockrow+1)
         unknown_equations.resize(unknowns.Size(), nullptr);
@@ -208,18 +213,30 @@ void EquationSystem::SetOperator(const std::string& blockrow, const std::string&
 }
 
 /**
- * Same as 'SetOperator(len_t, len_t, Equation*)', but specifies
- * the unknowns by name rather than by index.
+ * Specify that all further calls to 'SetOperator()' should assign operators
+ * to the "alternative" equation instead of the main equation.
+ *
+ * uqtyId: ID of the unknown quantity whose alternative equation is to be set.
+ * v:      true if alternative equation is to be set, false if main equation is
+ *         to be set
  */
-void EquationSystem::SetOperatorAlt(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
-    SetOperatorAlt(blockrow, GetUnknownID(blockcol), op, desc, solvedExternally);
+void EquationSystem::SetAssignToAlternativeEquation(const len_t uqtyId, bool v) {
+	this->assignToAlternative[uqtyId] = v;
 }
-void EquationSystem::SetOperatorAlt(const std::string& blockrow, len_t blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
-    SetOperatorAlt(GetUnknownID(blockrow), blockcol, op, desc, solvedExternally);
+
+/**
+ * Set the trigger condition for an unknown equation.
+ *
+ * uqtyId:    ID of the unknown quantity for which the trigger condition should
+ *            be set.
+ * condition: Trigger condition to use.
+ */
+void EquationSystem::SetTriggerCondition(
+	const len_t uqtyId, EquationTriggerCondition *condition
+) {
+	this->unknown_equations[uqtyId]->SetTriggerCondition(condition);
 }
-void EquationSystem::SetOperatorAlt(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
-    SetOperatorAlt(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc, solvedExternally);
-}
+
 
 /**
  * Set the initial value of the specified unknown quantity. If

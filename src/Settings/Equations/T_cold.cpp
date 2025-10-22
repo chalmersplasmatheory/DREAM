@@ -25,6 +25,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 
 #define MODULENAME "eqsys/T_cold"
@@ -36,50 +37,60 @@ using namespace DREAM;
 /**
  * Define options for the electron temperature module.
  */
-void SimulationGenerator::DefineOptions_T_cold(Settings *s){
-    s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
-    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/include_NBI", "Whether to include NBI heating term in T_cold evolution", (bool)false);
-    DefineOptions_T_cold_NBI(s);
+void SimulationGenerator::DefineOptions_T_cold(Settings *s) {
+	DefineOptions_T_cold_inner(s, MODULENAME);
+
+	// Possibility for switching equation
+	s->DefineSetting(MODULENAME "/switch/condition", "Type of condition to use for triggering the equation switch", (int_t)OptionConstants::EQN_TRIGGER_TYPE_NONE);
+
+	// Also define settings for the 'alternative' equation
+	DefineOptions_T_cold_inner(s, MODULENAME "/switch/equation");
+}
+
+void SimulationGenerator::DefineOptions_T_cold_inner(Settings *s, const string& modulename) {
+    s->DefineSetting(modulename + "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(modulename + "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
+    s->DefineSetting(modulename + "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
+    s->DefineSetting(modulename + "/include_NBI", "Whether to include NBI heating term in T_cold evolution", (bool)false);
+    DefineOptions_T_cold_NBI(s, modulename);
 
     // Prescribed data (in radius+time)
-    DefineDataRT(MODULENAME, s, "data");
+    DefineDataRT(modulename, s, "data");
 
     // Prescribed initial profile (when evolving T self-consistently)
-    DefineDataR(MODULENAME, s, "init");
+    DefineDataR(modulename, s, "init");
 
     // Transport settings
-    DefineOptions_Transport(MODULENAME, s, false);
+    DefineOptions_Transport(modulename, s, false);
 }
 /**
  * Define options for the NBI heating term.
  */
-void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
-    const std::string NBI_PATH = std::string(MODULENAME) + "/NBI";
+void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s, const string& modulename) {
+    const string NBI_PATH = string(modulename) + "/NBI";
 
     // Beam geometry settings
-    s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
-    s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
-    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
+    s->DefineSetting(modulename + "/NBI/r_beam", "Beam radius", (real_t)0.1);
+    s->DefineSetting(modulename + "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
 
     // Beam physics settings
-    s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
-    s->DefineSetting(MODULENAME "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
-    s->DefineSetting(MODULENAME "/NBI/beamPower", "Beam power [W]", (real_t)1e6);
+    s->DefineSetting(modulename + "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
+    s->DefineSetting(modulename + "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
+    s->DefineSetting(modulename + "/NBI/beamPower", "Beam power [W]", (real_t)1e6);
 
     // Plasma and beam parameters
-    s->DefineSetting(MODULENAME "/NBI/Z0", "Charge state before the process", (real_t)1.0);
-    s->DefineSetting(MODULENAME "/NBI/Zion", "Charge of the ion species ", (real_t)1.0);
-    s->DefineSetting(MODULENAME "/NBI/R0", "Major Radius", (real_t)1.0);
-    s->DefineSetting(MODULENAME "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
-    s->DefineSetting(MODULENAME "/NBI/TCVGaussian", "Enable gaussian density profile for TCV", (bool)false);
-    s->DefineSetting(MODULENAME "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(modulename + "/NBI/Z0", "Charge state before the process", (real_t)1.0);
+    s->DefineSetting(modulename + "/NBI/Zion", "Charge of the ion species ", (real_t)1.0);
+    s->DefineSetting(modulename + "/NBI/R0", "Major Radius", (real_t)1.0);
+    s->DefineSetting(modulename + "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(modulename + "/NBI/TCVGaussian", "Enable gaussian density profile for TCV", (bool)false);
+    s->DefineSetting(modulename + "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
 }
 
 
@@ -90,15 +101,40 @@ void SimulationGenerator::ConstructEquation_T_cold(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
-    enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
+	const len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+	// Construct main equation
+	ConstructEquation_T_cold_inner(MODULENAME, eqsys, s, adas, nist, amjuel, oqty_terms);
+
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
+	
+	// Set alternative equation?
+	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_T_cold, true);
+
+		ConstructEquation_T_cold_inner(MODULENAME "/switch/equation", eqsys, s, adas, nist, amjuel, oqty_terms);
+
+		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
+		eqsys->SetTriggerCondition(id_T_cold, trig);
+	}
+}
+
+void SimulationGenerator::ConstructEquation_T_cold_inner(
+	const string& modulename,
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
+    enum OptionConstants::uqty_T_cold_eqn type =
+		(enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(modulename + "/type");
 
     switch (type) {
         case OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED:
-            ConstructEquation_T_cold_prescribed(eqsys, s);
+            ConstructEquation_T_cold_prescribed(modulename, eqsys, s);
             break;
 
         case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, amjuel, oqty_terms);
+            ConstructEquation_T_cold_selfconsistent(modulename, eqsys, s, adas, nist, amjuel, oqty_terms);
             break;
 
         default:
@@ -113,12 +149,12 @@ void SimulationGenerator::ConstructEquation_T_cold(
  * Construct the equation for a prescribed temperature.
  */
 void SimulationGenerator::ConstructEquation_T_cold_prescribed(
-    EquationSystem *eqsys, Settings *s
+    const string& modulename, EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-    FVM::Interpolator1D *interp = LoadDataRT_intp(MODULENAME,fluidGrid->GetRadialGrid(), s);
+    FVM::Interpolator1D *interp = LoadDataRT_intp(modulename,fluidGrid->GetRadialGrid(), s);
     eqn->AddTerm(new FVM::PrescribedParameter(fluidGrid, interp));
 
     eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
@@ -127,7 +163,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     eqsys->initializer->AddRule(
         OptionConstants::UQTY_T_COLD,
         EqsysInitializer::INITRULE_EVAL_EQUATION
-);
+	);
 
     ConstructEquation_W_cold(eqsys, s);
 }
@@ -137,6 +173,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
  * Construct the equation for a self-consistent temperature evolution.
  */
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
+	const string& modulename,
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
@@ -162,7 +199,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool lcfs_user_input_psi = (len_t)s->GetInteger(MODULENAME_NRE  "/lcfs_user_input_psi");
     real_t lcfs_psi_edge_t0 = s->GetReal(MODULENAME_NRE "/lcfs_psi_edge_t0");
 
-    bool parallel_losses = s->GetBool(MODULENAME "/halo_region_losses");
+    bool parallel_losses = s->GetBool(modulename + "/halo_region_losses");
     if (parallel_losses) {
         HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
         oqty_terms->T_cold_halo = Par;
@@ -173,7 +210,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
 
-    bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
+    bool withRecombinationRadiation = s->GetBool(modulename + "/recombination");
 
     // Load opacity settings
     len_t nitypes;
@@ -191,7 +228,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(
-        Op4, MODULENAME, fluidGrid,
+        Op4, modulename, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys, s, false, true,
         &oqty_terms->T_cold_advective_bc,&oqty_terms->T_cold_diffusive_bc
@@ -199,30 +236,30 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
-    std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
+    string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
-    bool includeNBI = s->GetBool(MODULENAME "/include_NBI");
+    bool includeNBI = s->GetBool(modulename + "/include_NBI");
     if (includeNBI) {
-        real_t s_max = s->GetReal(MODULENAME "/NBI/s_max");
-        real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
-        real_t Ti_beam = s->GetReal(MODULENAME "/NBI/Ti_beam");
-        real_t m_i_beam = s->GetReal(MODULENAME "/NBI/m_i_beam");
-        real_t beamPower = s->GetReal(MODULENAME "/NBI/beamPower");
-        real_t Z0 = s->GetReal(MODULENAME "/NBI/Z0");
-        real_t Zion = s->GetReal(MODULENAME "/NBI/Zion");
-        real_t R0 = s->GetReal(MODULENAME "/NBI/R0");
+        real_t s_max = s->GetReal(modulename + "/NBI/s_max");
+        real_t r_beam = s->GetReal(modulename + "/NBI/r_beam");
+        real_t Ti_beam = s->GetReal(modulename + "/NBI/Ti_beam");
+        real_t m_i_beam = s->GetReal(modulename + "/NBI/m_i_beam");
+        real_t beamPower = s->GetReal(modulename + "/NBI/beamPower");
+        real_t Z0 = s->GetReal(modulename + "/NBI/Z0");
+        real_t Zion = s->GetReal(modulename + "/NBI/Zion");
+        real_t R0 = s->GetReal(modulename + "/NBI/R0");
         len_t dims[1];
-        const real_t *P0 = s->GetRealArray(MODULENAME "/NBI/P0", 1, dims);
-        const real_t *n = s->GetRealArray(MODULENAME "/NBI/n", 1, dims);
-        bool TCVGaussian = s->GetBool(MODULENAME "/NBI/TCVGaussian");
+        const real_t *P0 = s->GetRealArray(modulename + "/NBI/P0", 1, dims);
+        const real_t *n = s->GetRealArray(modulename + "/NBI/n", 1, dims);
+        bool TCVGaussian = s->GetBool(modulename + "/NBI/TCVGaussian");
 
         // Load time-dependent j_B data
         FVM::Interpolator1D *j_B_profile = LoadDataT(
-            MODULENAME "/NBI", s, "j_B"
+            modulename + "/NBI", s, "j_B"
         );
 
         FVM::Interpolator1D *Power_Profile = LoadDataT(
-            MODULENAME "/NBI", s, "P_NBI"
+            modulename + "/NBI", s, "P_NBI"
         );
 
         NBIElectronHeatTerm *nbi = new NBIElectronHeatTerm(fluidGrid, unknowns, adas, ionHandler, s_max, r_beam, P0, n, Ti_beam, m_i_beam, beamPower, j_B_profile, Z0, Zion, R0, TCVGaussian, Power_Profile);
@@ -368,9 +405,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     /**
      * Load initial electron temperature profile.
      */
-    real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    real_t *Tcold_init = LoadDataR(modulename, fluidGrid->GetRadialGrid(), s, "init");
     if (Tcold_init == nullptr)
-        throw SettingsException("No initial data loaded for T_cold (from " MODULENAME "/init). Perhaps it has not been provided correctly?" );
+        throw SettingsException("No initial data loaded for T_cold (from '%s/init'). Perhaps it has not been provided correctly?", modulename.c_str());
     eqsys->SetInitialValue(id_T_cold, Tcold_init);
     delete [] Tcold_init;
 

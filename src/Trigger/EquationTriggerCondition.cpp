@@ -9,7 +9,7 @@ using namespace DREAM;
  * Constructor.
  */
 EquationTriggerCondition::EquationTriggerCondition(
-	FVM::Grid *g, UnknownQuantityHandler *u
+	FVM::Grid *g, FVM::UnknownQuantityHandler *u
 ) : grid(g), unknowns(u) {
 	
 	this->triggered = new bool[g->GetNCells()];

@@ -84,6 +84,8 @@ namespace DREAM {
         bool timingStdout = false;
         bool timingFile = false;
 
+		std::map<len_t, bool> assignToAlternative;
+
         std::vector<timestep_finished_func_t> callbacks_timestepFinished;
         std::vector<void*> callbacks_timestepFinished_data;
 
@@ -150,10 +152,7 @@ namespace DREAM {
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false, bool alternative=false);
-		void SetOperatorAlt(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false)
-		{ this->SetOperator(blockrow, blockcol, eqn, desc, solvedExternally, true); }
-        //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
+        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when
@@ -161,9 +160,9 @@ namespace DREAM {
         void SetOperator(len_t blockrow, const std::string& qty2, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
         void SetOperator(const std::string& qty1, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
         void SetOperator(const std::string& qty1, const std::string& qty2, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
-        void SetOperatorAlt(len_t blockrow, const std::string& qty2, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
-        void SetOperatorAlt(const std::string& qty1, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
-        void SetOperatorAlt(const std::string&, const std::string&, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
+
+		void SetAssignToAlternativeEquation(const len_t, bool);
+		void SetTriggerCondition(const len_t, EquationTriggerCondition*);
 
         void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh) {
             this->cqh_hottail = cqh;
