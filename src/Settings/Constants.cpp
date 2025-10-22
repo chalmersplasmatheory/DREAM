@@ -40,6 +40,7 @@ DEF_UQTY(PSI_WALL,        "psi_wall",     "Poloidal magnetic flux on tokamak wal
 DEF_UQTY(S_PARTICLE,      "S_particle",   "Rate at which cold-electron density is added [m^-3 s^-1]");
 DEF_UQTY(T_ABL,           "T_abl",        "Ablated but not equilibrated electron temperature [eV]");
 DEF_UQTY(T_COLD,          "T_cold",       "Cold electron temperature [eV]");
+DEF_UQTY(T_HOT,           "T_hot",        "Hot electron temperature [eV]");
 DEF_UQTY(TAU_COLL,        "tau_coll",     "Time-integrated relativistic collision frequency for analytic hottail formula");
 DEF_UQTY(V_LOOP_TRANS,    "V_loop_trans", "Loop voltage applied at transformer normalized to major radius R0 [V/m]");
 DEF_UQTY(V_LOOP_WALL,     "V_loop_w",     "Loop voltage on tokamak wall normalized to major radius R0 [V/m]");

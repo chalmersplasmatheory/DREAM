@@ -38,6 +38,7 @@ namespace DREAM {
             *UQTY_S_PARTICLE,      *UQTY_S_PARTICLE_DESC,
             *UQTY_T_ABL,           *UQTY_T_ABL_DESC,
             *UQTY_T_COLD,          *UQTY_T_COLD_DESC,
+			*UQTY_T_HOT,		   *UQTY_T_HOT_DESC,
             *UQTY_TAU_COLL,        *UQTY_TAU_COLL_DESC,
             *UQTY_V_LOOP_TRANS,    *UQTY_V_LOOP_TRANS_DESC,
             *UQTY_V_LOOP_WALL,     *UQTY_V_LOOP_WALL_DESC,
