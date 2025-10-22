@@ -41,7 +41,7 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s) {
 	DefineOptions_T_cold_inner(s, MODULENAME);
 
 	// Possibility for switching equation
-	s->DefineSetting(MODULENAME "/switch/condition", "Type of condition to use for triggering the equation switch", (int_t)OptionConstants::EQN_TRIGGER_TYPE_NONE);
+	DefineOptions_TriggerCondition(s, MODULENAME "/switch");
 
 	// Also define settings for the 'alternative' equation
 	DefineOptions_T_cold_inner(s, MODULENAME "/switch/equation");
@@ -117,6 +117,8 @@ void SimulationGenerator::ConstructEquation_T_cold(
 
 		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
 		eqsys->SetTriggerCondition(id_T_cold, trig);
+
+		eqsys->SetAssignToAlternativeEquation(id_T_cold, false);
 	}
 }
 
@@ -160,10 +162,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
 
     // Initialization
-    eqsys->initializer->AddRule(
-        OptionConstants::UQTY_T_COLD,
-        EqsysInitializer::INITRULE_EVAL_EQUATION
-	);
+	eqsys->SetInitialValue(OptionConstants::UQTY_T_COLD, interp->Eval(0));
 
     ConstructEquation_W_cold(eqsys, s);
 }
@@ -402,16 +401,24 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     }
     eqsys->SetOperator(id_T_cold, id_W_cold,Op1,desc);
 
-    /**
-     * Load initial electron temperature profile.
-     */
-    real_t *Tcold_init = LoadDataR(modulename, fluidGrid->GetRadialGrid(), s, "init");
-    if (Tcold_init == nullptr)
-        throw SettingsException("No initial data loaded for T_cold (from '%s/init'). Perhaps it has not been provided correctly?", modulename.c_str());
-    eqsys->SetInitialValue(id_T_cold, Tcold_init);
-    delete [] Tcold_init;
+	/**
+	 * Load initial electron temperature profile.
+	 */
+	real_t *Tcold_init = LoadDataR(modulename, fluidGrid->GetRadialGrid(), s, "init");
 
-    ConstructEquation_W_cold(eqsys, s);
+	if (!eqsys->IsAssigningToAlternativeEquation(id_T_cold)) {
+		// NOTE: We should still mark the initial value as used,
+		// to prevent complaints by the Python settings interface
+		// when loading back the settings from the output file.
+		if (Tcold_init == nullptr)
+			throw SettingsException("No initial data loaded for T_cold (from '%s/init'). Perhaps it has not been provided correctly?", modulename.c_str());
+		eqsys->SetInitialValue(id_T_cold, Tcold_init);
+
+		ConstructEquation_W_cold(eqsys, s);
+	}
+
+	if (Tcold_init != nullptr)
+		delete [] Tcold_init;
 }
 
 

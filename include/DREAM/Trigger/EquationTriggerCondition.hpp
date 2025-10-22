@@ -16,7 +16,7 @@ namespace DREAM {
 		EquationTriggerCondition(FVM::Grid*, FVM::UnknownQuantityHandler*);
 		virtual ~EquationTriggerCondition();
 
-		virtual void CheckCondition(FVM::UnknownQuantityHandler*) = 0;
+		virtual void CheckCondition(const real_t, FVM::UnknownQuantityHandler*) = 0;
 		const bool *GetTriggerMask() { return this->triggered; }
 
 		bool IsTriggered(const len_t i) { return this->triggered[i]; }

@@ -200,18 +200,8 @@ bool UnknownQuantityEquation::IsEvaluable() {
     if (this->equations.find(this->uqtyId) == this->equations.end())
         return false;
 
-	// If an alternative equation is available, we require that both
-	// the main and alternative equations are evaluable for the
-	// 'UnknownQuantityEquation' to be considered evaluable.
     FVM::Operator *eqn = this->equations[this->uqtyId];
-	if (this->condition) {
-		FVM::Operator *eqn_a;
-		if (this->equations.find(this->uqtyId) == this->equations.end())
-			eqn_a = this->equations_alt[this->uqtyId];
-
-		return (eqn->IsEvaluable() && eqn_a->IsEvaluable());
-	} else
-		return eqn->IsEvaluable();
+	return eqn->IsEvaluable();
 }
 
 /**
@@ -239,6 +229,9 @@ bool UnknownQuantityEquation::IsPredetermined() {
 void UnknownQuantityEquation::RebuildEquations(
     const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqty
 ) {
+	if (this->condition != nullptr)
+		this->condition->CheckCondition(t, uqty);
+
 	for (auto it = this->equations.begin(); it != this->equations.end(); it++)
 		it->second->RebuildTerms(t, dt, uqty);
 	

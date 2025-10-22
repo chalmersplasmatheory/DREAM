@@ -250,6 +250,11 @@ void EquationSystem::SetInitialValue(const std::string& name, const real_t *val,
     this->SetInitialValue(this->unknowns.GetUnknownID(name), val, t0);
 }
 void EquationSystem::SetInitialValue(const len_t id, const real_t *val, const real_t t0) {
+	// When assigning to terms to the alternative equation, just
+	// ignore any initial values which are set.
+	if (this->IsAssigningToAlternativeEquation(id))
+		return;
+
     this->unknowns.SetInitialValue(id, val, t0);
 }
 

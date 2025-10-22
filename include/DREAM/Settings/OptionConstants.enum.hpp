@@ -157,7 +157,8 @@ enum timestepper_type {
 /////////////////////////////////////
 enum eqn_trigger_type {
 	EQN_TRIGGER_TYPE_NONE=1,
-	EQN_TRIGGER_TYPE_COLD_ELECTRON_DENSITY_RISE=2
+	EQN_TRIGGER_TYPE_TIME=2,
+	EQN_TRIGGER_TYPE_COLD_ELECTRON_DENSITY_RISE=3
 };
 
 /////////////////////////////////////

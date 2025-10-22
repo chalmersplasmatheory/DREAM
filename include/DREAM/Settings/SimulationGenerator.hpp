@@ -216,6 +216,7 @@ namespace DREAM {
 		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
 
 		// Equation trigger condition routines
+		static void DefineOptions_TriggerCondition(Settings*, const std::string&);
 		static EquationTriggerCondition *LoadTriggerCondition(Settings*, const std::string&, FVM::Grid*, FVM::UnknownQuantityHandler*);
 
 

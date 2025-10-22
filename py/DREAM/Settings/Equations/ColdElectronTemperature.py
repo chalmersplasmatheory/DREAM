@@ -24,7 +24,8 @@ HALO_REGION_LOSSES_NEGLECTED = False
 class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
     def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, 
-                 recombination=RECOMBINATION_RADIATION_NEGLECTED, halo_region_losses = HALO_REGION_LOSSES_NEGLECTED):
+                 recombination=RECOMBINATION_RADIATION_NEGLECTED, halo_region_losses = HALO_REGION_LOSSES_NEGLECTED,
+                 makeTrigger=True):
         """
         Constructor.
         """
@@ -42,14 +43,17 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.include_NBI = False
         self.halo_region_losses = halo_region_losses
 
-        self.trigger = EquationTrigger(
-            settings,
-            ColdElectronTemperature(
-                settings, ttype=ttype, temperature=temperature,
-                radius=radius, times=times, recombination=recombination,
-                halo_region_losses=halo_region_losses
+        if makeTrigger:
+            self.trigger = EquationTrigger(
+                settings,
+                ColdElectronTemperature(
+                    settings, ttype=ttype, temperature=temperature,
+                    radius=radius, times=times, recombination=recombination,
+                    halo_region_losses=halo_region_losses, makeTrigger=False
+                )
             )
-        )
+        else:
+            self.trigger = None
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)
@@ -165,7 +169,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         if 'recombination' in data:
             self.recombination = data['recombination']
 
-        if 'switch' in data:
+        if 'switch' in data and self.trigger is not None:
             self.trigger.fromdict(data['switch'])
 
         self.verifySettings()
@@ -201,7 +205,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
-        if self.trigger.enabled():
+        if self.trigger is not None and self.trigger.enabled():
             data['switch'] = self.trigger.todict()
 
         return data

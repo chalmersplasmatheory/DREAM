@@ -333,10 +333,12 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqnId = nontrivial_unknowns[i];
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
+		eqn->RebuildEquations(t, dt, unknowns);
 
-        for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
+        /*for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             it->second->RebuildTerms(t, dt, unknowns);
-        }
+        }*/
+
     }
 
     solver_timeKeeper->StopTimer(timerRebuildTerms);

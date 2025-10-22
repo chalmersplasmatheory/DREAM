@@ -30,6 +30,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperIonization.cpp"
     "${PROJECT_SOURCE_DIR}/src/Trigger/ColdElectronDensityRiseCondition.cpp"
     "${PROJECT_SOURCE_DIR}/src/Trigger/EquationTriggerCondition.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Trigger/TimeTrigger.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations

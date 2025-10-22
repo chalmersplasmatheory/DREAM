@@ -161,6 +161,9 @@ namespace DREAM {
         void SetOperator(const std::string& qty1, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
         void SetOperator(const std::string& qty1, const std::string& qty2, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
 
+		bool IsAssigningToAlternativeEquation(const len_t uqtyId) {
+			return this->assignToAlternative[uqtyId];
+		}
 		void SetAssignToAlternativeEquation(const len_t, bool);
 		void SetTriggerCondition(const len_t, EquationTriggerCondition*);
 

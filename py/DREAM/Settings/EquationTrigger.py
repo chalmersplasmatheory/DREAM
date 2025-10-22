@@ -4,8 +4,14 @@ from .. DREAMException import DREAMException
 
 
 EQN_TRIGGER_TYPE_NONE = 1
-EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE = 2
+EQN_TRIGGER_TYPE_TIME = 2
+EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE = 3
 
+ALL_TRIGGER_TYPES = [
+    EQN_TRIGGER_TYPE_NONE,
+    EQN_TRIGGER_TYPE_TIME,
+    EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE
+]
 
 class EquationTrigger:
     
@@ -18,6 +24,9 @@ class EquationTrigger:
         self.equation = eqnsettings
 
         self.sensitivity = 0.01
+
+        # EQN_TRIGGER_TYPE_TIME
+        self.trigger_time = 1
 
         self.condition = EQN_TRIGGER_TYPE_NONE
 
@@ -34,10 +43,19 @@ class EquationTrigger:
         """
         Set the condition to use for triggering an equation switch.
         """
-        if condition not in [EQN_TRIGGER_TYPE_NONE, EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE]:
+        if condition not in ALL_TRIGGER_TYPES:
             raise DREAMException(f"Unrecognized trigger condition specified: {condition}.")
 
         self.condition = condition
+
+
+    def setTimeTrigger(self, time):
+        """
+        Enable an equation trigger which switches the equation after a
+        given time.
+        """
+        self.setCondition(EQN_TRIGGER_TYPE_TIME)
+        self.trigger_time = time
 
 
     def fromdict(self, data):
@@ -52,9 +70,16 @@ class EquationTrigger:
         """
         Turn these settings into a dictionary.
         """
-        return {
-            'condition': self.condition
+        data = {
+            'condition': self.condition,
             'equation': self.equation.todict()
         }
+
+        if self.condition == EQN_TRIGGER_TYPE_TIME:
+            data['trigger_time'] = self.trigger_time
+        elif self.condition == EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE:
+            data['sensitivity'] = self.sensitivity
+
+        return data
 
 

@@ -16,7 +16,7 @@ namespace DREAM {
 		);
 		virtual ~ColdElectronDensityRiseCondition();
 
-		virtual void CheckCondition(FVM::UnknownQuantityHandler*) override;
+		virtual void CheckCondition(const real_t, FVM::UnknownQuantityHandler*) override;
 	};
 }
 
