@@ -182,6 +182,8 @@ class RadialGrid(PrescribedScalarParameter):
             self.custom_grid = False
 
         self.a = float(a)
+        if self.type == TYPE_STELLARATOR:
+            self.a /= self.num_stellarator.a
 
 
     def setMajorRadius(self, R0):
@@ -405,7 +407,9 @@ class RadialGrid(PrescribedScalarParameter):
         else:
             DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
 
-        self.a = self.num_stellarator.a
+        self.a = 1#self.num_stellarator.a
+        if self.b == 0.:
+            self.b = self.num_stellarator.a
         self.R0 = self.num_stellarator.R0
         self.nfp = self.num_stellarator.nfp
         self.rho = self.num_stellarator.rho
@@ -425,7 +429,6 @@ class RadialGrid(PrescribedScalarParameter):
         self.g_tp = self.num_stellarator.g_tp
         self.lambda_t = self.num_stellarator.lambda_t
         self.lambda_p = self.num_stellarator.lambda_p
-
 
     def setType(self, ttype):
         """
@@ -697,7 +700,7 @@ class RadialGrid(PrescribedScalarParameter):
                 data['fileformat'] = self.num_fileformat
         elif self.type == TYPE_STELLARATOR:
             data['filename'] = self.num_filename
-            data['nfp'] = self.num_filename
+            data['nfp'] = self.nfp
             data['ntheta'] = self.ntheta
             data['nphi'] = self.nphi
             data['nr_equil'] = self.nr_equil
@@ -824,7 +827,7 @@ class RadialGrid(PrescribedScalarParameter):
                     "RadialGrid: Last grid point can't be larger than minor radius from desc file.")
             elif self.a < self.num_stellarator.a:
                 print("*WARNING* RadialGrid: Using a smaller minor radius than in the equilibrium file.")
-
+            '''
             verifySettingsStellaratorParameter('rho')
             verifySettingsStellaratorParameter('theta')
             verifySettingsStellaratorParameter('phi')
@@ -842,6 +845,7 @@ class RadialGrid(PrescribedScalarParameter):
             verifySettingsStellaratorParameter('g_tp')
             verifySettingsStellaratorParameter('lambda_t')
             verifySettingsStellaratorParameter('lambda_p')
+            '''
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
