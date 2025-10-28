@@ -77,7 +77,7 @@ void FluxSurfaceQuantity::InterpolateMagneticDataToThetaPhi(real_t *theta, len_t
         quantityData_fr[ir] = new real_t[ntheta_interp*nphi_interp];
         for(len_t it=0; it<ntheta_interp; it++)
             for(len_t ip=0; ip<nphi_interp; ip++)
-                quantityData[ir][it*nphi_interp+ip] = evaluateFuncAtThetaPhi(ir,theta[it],phi[ip]);
+                quantityData_fr[ir][it*nphi_interp+ip] = evaluateFuncAtThetaPhi_f(ir,theta[it],phi[ip]);
     }
 }
 

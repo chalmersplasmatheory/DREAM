@@ -41,6 +41,8 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
     this->BpolIOverR0_f = new real_t[GetNr()+1];
     this->iota = new real_t[GetNr()];
     this->iota_f = new real_t[GetNr()+1];
+	this->psiPrimeRef = new real_t[GetNr()];
+	this->psiPrimeRef_f = new real_t[GetNr()+1];
     //this->BflxKOverR0 = new real_t[GetNr()*ntheta_interp*nphi_interp]; 
     //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
@@ -83,6 +85,8 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
     this->BpolIOverR0_f = new real_t[GetNr()+1];
     this->iota = new real_t[GetNr()];
     this->iota_f = new real_t[GetNr()+1];
+	this->psiPrimeRef = new real_t[GetNr()];
+	this->psiPrimeRef_f = new real_t[GetNr()+1];
     //this->BflxKOverR0 = new real_t[GetNr()*ntheta_interp*nphi_interp]; 
     //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
@@ -310,7 +314,7 @@ real_t NumericStellaratorRadialGridGenerator::BdotGradphiAtThetaPhi(
     real_t r[1] = {radius};
 
     real_t *BdotGradphi = new real_t[1];
-
+    
     this->interp_BdotGradphi->Eval(1,1,1, p, r, t, BdotGradphi);
 
 	return BdotGradphi[0] * this->R0;
@@ -335,6 +339,8 @@ real_t NumericStellaratorRadialGridGenerator::gttAtThetaPhi(
     this->interp_gtt->Eval(1,1,1, p, r, t, gtt);
 
     real_t J = JacobianAtThetaPhi(radius, theta, phi);
+    if (gtt[0] == 0)
+        return 0.;
 	return gtt[0] / (J*J);
 }
 
@@ -363,6 +369,8 @@ real_t NumericStellaratorRadialGridGenerator::gtpAtThetaPhi(
     this->interp_lambdap->Eval(1,1,1, p, r, t, lambdap);
 
     real_t J = JacobianAtThetaPhi(radius, theta, phi);
+    if ((gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) == 0)
+        return 0.;
 	return (gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) / (J*J) ;
 }
 
