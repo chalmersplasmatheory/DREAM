@@ -12,7 +12,7 @@ class NBISettings:
     def __init__(self):
         self.enabled = False
         self.s_max = 2.05 # Maximum beam path length [m]
-        self.r_beam = 0.0736 # Beam radius [m]
+        self.r_beam = 0.089 # Beam radius [m]
         self.P0 = [-1.2,-0.42,0.0] # Beam entry point [m]
         self.n = [0.5547, 0.83205, 0.0] # Beam direction vector (unit vector)
         self.Ti_beam = 28*1.6021e-16 # Beam energy [J]
@@ -29,6 +29,7 @@ class NBISettings:
         self.P_NBI_t = [] # Beam power profile time points [s]
         self.P_NBI_x = [] # Beam power profile values [W]
         self.P_NBI_tinterp =0 # Interpolation method for power profile
+        self.energy_fractions = [0.56, 0.32, 0.12] # Fractions of beam energy for multi-energy components
 
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
@@ -51,6 +52,10 @@ class NBISettings:
     def setDirection(self, n):
         """Set beam direction vector."""
         self.n = n
+        
+    def setEnergyFractions(self, fractions):
+        """Set energy fractions for multi-energy beam components."""
+        self.energy_fractions = fractions
     
     def setIons(self, Z0, Zion):
         """Set ion species."""
@@ -175,6 +180,7 @@ class NBISettings:
             'r_beam'     : self.r_beam,
             'P0'         : self.P0,
             'n'          : self.n,
+            'energy_fractions' : self.energy_fractions,
             'Ti_beam'    : self.Ti_beam,
             'm_i_beam'   : self.m_i_beam,
             'beamPower'  : self.beam_power,

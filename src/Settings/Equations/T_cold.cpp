@@ -64,6 +64,7 @@ void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
     s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
     s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
 
     // Beam physics settings
     s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
@@ -215,6 +216,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         len_t dims[1];
         const real_t *P0 = s->GetRealArray(MODULENAME "/NBI/P0", 1, dims);
         const real_t *n = s->GetRealArray(MODULENAME "/NBI/n", 1, dims);
+        const real_t *energy_fractions = s->GetRealArray(MODULENAME "/NBI/energy_fractions", 1, dims);
         bool TCVGaussian = s->GetBool(MODULENAME "/NBI/TCVGaussian");
 
         // Load time-dependent j_B data
@@ -231,7 +233,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             handler->ConfigureFromSettings(
                 s, unknowns,
                 s_max, r_beam,
-                P0, n,
+                P0, n, energy_fractions,
                 Ti_beam, m_i_beam, beamPower,
                 j_B_profile, Z0, Zion, R0,
                 TCVGaussian, Power_Profile
