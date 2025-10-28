@@ -54,6 +54,7 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "kappa");    // Elongation
     DefineDataR(RADIALGRID, s, "GOverR0");        // G/R0 = (R/R0)*Bphi
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
+    
     // Magnetic ripple effects
     DefineOptions_f_ripple(RADIALGRID, s);
 	// Time-varying B operator
@@ -62,6 +63,24 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     // NumericBRadialGridGenerator
     s->DefineSetting(RADIALGRID "/filename", "Name of file containing the magnetic field data", (string)"");
     s->DefineSetting(RADIALGRID "/fileformat", "Format used for storing the magnetic field data", (int_t)OptionConstants::RADIALGRID_NUMERIC_FORMAT_LUKE);
+
+    // NumericStellaratorRadialGridGenerator
+    s->DefineSetting(RADIALGRID "/nfp", "Number of field periods", (int_t)0);
+    s->DefineSetting(RADIALGRID "/nphi", "Number of toroidal angle grid points to use for bounce averages", (int_t)64);
+    s->DefineSetting(RADIALGRID "/rho", "Radial coordinate for DESC data", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/theta", "Poloidal angle coordinate for DESC data", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/phi", "Toroidal angle coordinate for DESC data", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/G", "Covariant toroidal component of magnetic field in Boozer coordinates (proportional to poloidal current)", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/I", "Covariant poloidal component of magnetic field in Boozer coordinates (proportional to toroidal current)", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/iota", "Rotational transform (normalized by 2pi)", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/psi_T", "Toroidal flux", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/B", "Magnetic field strength", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/BdotGradPhi", "|B.nabla phi|", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/Jacobian", "Jacobian in standard toroidal coordinates", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/g_tt", "Poloidal/Poloidal element of covariant metric tensor", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/g_tp", "Poloidal/Toroidal element of covariant metric tensor", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/lambda_t", "Poloidal stream function to Boozer coordinates", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/lambda_p", "Toroidal stream function to Boozer coordinates", 0, (real_t*) nullptr);
 }
 
 /**
@@ -115,7 +134,7 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
         case OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR:
             FVM::RadialGridStellarator *rg_s;
             rg_s = ConstructStellaratorRadialGrid_Numerical(nr, s);
-            return new FVM::Grid(rg_s, new FVM::EmptyMomentumGrid(rg));
+            return new FVM::Grid(rg_s, new FVM::EmptyMomentumGrid(rg_s));
 
         default:
             throw SettingsException(
@@ -136,9 +155,13 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
  * s: Settings object specifying how to construct
  *    the radial grid.
  */
-FVM::Grid *SimulationGenerator::ConstructScalarGrid() {
+FVM::Grid *SimulationGenerator::ConstructScalarGrid(Settings *s) {
 //    auto *emptyGridGenerator = new FVM::EmptyRadialGridGenerator();
 //   FVM::RadialGrid *rg = new FVM::RadialGrid(emptyGridGenerator);
+    if (s->GetInteger(RADIALGRID "/type") == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR){
+        FVM::RadialGridStellarator *rg = new FVM::EmptyRadialGridStellarator();
+        return new FVM::Grid(rg, new FVM::EmptyMomentumGrid(rg));
+    }
     FVM::RadialGrid *rg = new FVM::EmptyRadialGrid();
     return new FVM::Grid(rg, new FVM::EmptyMomentumGrid(rg));
 }
@@ -281,28 +304,30 @@ FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_
     const int_t nr, Settings *s
 ) {
     real_t R0 = s->GetReal(RADIALGRID "/R0");
-    len_t nfp = s->GetReal(RADIALGRID "/nfp");
+    len_t nfp = s->GetInteger(RADIALGRID "/nfp");
     len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
     len_t nphi_interp   = s->GetInteger(RADIALGRID "/nphi");
 	bool custom_grid    = s->GetBool(RADIALGRID "/custom_grid");
 
     FVM::NumericStellaratorRadialGridGenerator::eq_data *eqdata =
         new FVM::NumericStellaratorRadialGridGenerator::eq_data;
+    
+    len_t ndim;
 
     eqdata->rho             = s->GetRealArray(RADIALGRID "/rho", 1, &eqdata->nrho);
     eqdata->theta           = s->GetRealArray(RADIALGRID "/theta", 1, &eqdata->ntheta);
     eqdata->phi             = s->GetRealArray(RADIALGRID "/phi", 1, &eqdata->nphi);
-    eqdata->dataG           = s->GetRealArray(RADIALGRID "/G", 1, nullptr);
-    eqdata->dataI           = s->GetRealArray(RADIALGRID "/I", 1, nullptr);
-    eqdata->dataiota        = s->GetRealArray(RADIALGRID "/iota", 1, nullptr);
-    eqdata->datapsi         = s->GetRealArray(RADIALGRID "/psi_T", 1, nullptr);
-    eqdata->dataB           = s->GetRealArray(RADIALGRID "/B", 1, nullptr);
-    eqdata->dataBdotGradphi = s->GetRealArray(RADIALGRID "/BdotGradPhi", 1, nullptr);
-    eqdata->dataJacobian    = s->GetRealArray(RADIALGRID "/Jacobian", 1, nullptr);
-    eqdata->datagtt         = s->GetRealArray(RADIALGRID "/g_tt", 1, nullptr);
-    eqdata->datagtp         = s->GetRealArray(RADIALGRID "/g_tp", 1, nullptr);
-    eqdata->datalambdat     = s->GetRealArray(RADIALGRID "/lambda_t", 1, nullptr);
-    eqdata->datalambdap     = s->GetRealArray(RADIALGRID "/lambda_p", 1, nullptr);
+    eqdata->dataG           = s->GetRealArray(RADIALGRID "/G", 1, &ndim);
+    eqdata->dataI           = s->GetRealArray(RADIALGRID "/I", 1, &ndim);
+    eqdata->dataiota        = s->GetRealArray(RADIALGRID "/iota", 1, &ndim);
+    eqdata->datapsi         = s->GetRealArray(RADIALGRID "/psi_T", 1, &ndim);
+    eqdata->dataB           = s->GetRealArray(RADIALGRID "/B", 1, &ndim);
+    eqdata->dataBdotGradphi = s->GetRealArray(RADIALGRID "/BdotGradPhi", 1, &ndim);
+    eqdata->dataJacobian    = s->GetRealArray(RADIALGRID "/Jacobian", 1, &ndim);
+    eqdata->datagtt         = s->GetRealArray(RADIALGRID "/g_tt", 1, &ndim);
+    eqdata->datagtp         = s->GetRealArray(RADIALGRID "/g_tp", 1, &ndim);
+    eqdata->datalambdat     = s->GetRealArray(RADIALGRID "/lambda_t", 1, &ndim);
+    eqdata->datalambdap     = s->GetRealArray(RADIALGRID "/lambda_p", 1, &ndim);
 
     FVM::NumericStellaratorRadialGridGenerator *nsrg;
 
