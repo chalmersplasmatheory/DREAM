@@ -16,6 +16,7 @@
 #include "DREAM/Equations/Fluid/IonSourceBoundaryCondition.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
+#include "DREAM/Equations/Fluid/IonSourceTerm.hpp"
 
 #include <iostream>
 
@@ -501,6 +502,27 @@ void SimulationGenerator::ConstructEquation_Ions(
 			));
 		}
 	}
+
+    //Adds ion source (for 1 ion species) term to all grid, 
+    for (len_t iZ = 0; iZ < nZ; iZ++) {
+        if (source_types[iZ] == OptionConstants::ION_SOURCE_PRESCRIBED_CONSTANT) {
+            printf(
+                "ions: Adding prescribed constant ion source term for ion '%s'.\n",
+                ionNames[iZ].c_str()
+            );
+
+            // Load prescribed source term data
+			MultiInterpolator1D *source_data = LoadDataIonT(
+				MODULENAME, s, nZ0_dynamic+nZ0_prescribed, "ion_source"
+			);
+            // Create array with single ion index
+            len_t *ion_idx = new len_t[1];
+            ion_idx[0] = iZ;
+            //One species source iZ added to all grid
+            eqn->AddTerm(new IonSourceTerm(fluidGrid, ih, 1, ion_idx, source_data));
+        }
+    }
+
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();

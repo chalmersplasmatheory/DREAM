@@ -66,6 +66,7 @@ ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED = 2
 # Ion source types
 ION_SOURCE_NONE = 1
 ION_SOURCE_PRESCRIBED = 2
+ION_SOURCE_PRESCRIBED_CONSTANT = 3
 
 class IonSpecies:
 
@@ -924,11 +925,11 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral advection coefficient: {}.".format(self.name, neutral_prescribed_advection.shape))
 
 
-    def initialize_source(self, n, t=None, Z0=0):
+    def initialize_source(self, n, t=None, Z0=0, source_type=ION_SOURCE_PRESCRIBED):
         """
         Initialize the ion source term associated with this species.
         """
-        self.source_type = ION_SOURCE_PRESCRIBED
+        self.source_type = source_type
 
         if n is None:
             raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")

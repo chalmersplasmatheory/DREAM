@@ -99,14 +99,23 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
         return;
 
     const len_t Nr = this->grid->GetNr();
+    const len_t data_nr = iondata->GetNr();  // ← Add this line back
     
     for (len_t i = 0, ionOffset = 0; i < nIons; i++) {
         for (len_t Z0 = 0; Z0 <= Z[i]; Z0++,ionOffset++) {
             const real_t *n = iondata->Eval(ionOffset, t);
             real_t *cd = currentData[i] + Z0*Nr;
-
-            for (len_t ir = 0; ir < Nr; ir++)
-                cd[ir] = n[ir];
+            
+            
+            if (data_nr == 1) {
+                // Spatially uniform, replicate single value to all radii
+                for (len_t ir = 0; ir < Nr; ir++)
+                    cd[ir] = n[0];
+            } else {
+                // Radially resolved, copy profile
+                for (len_t ir = 0; ir < Nr; ir++)
+                    cd[ir] = n[ir];
+            }
         }
     }
 }

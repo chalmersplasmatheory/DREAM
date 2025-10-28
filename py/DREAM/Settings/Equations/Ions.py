@@ -4,7 +4,7 @@ import numpy as np
 import scipy.interpolate
 from numpy.matlib import repmat
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED, ION_SOURCE_PRESCRIBED_CONSTANT
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
 
@@ -140,7 +140,7 @@ class Ions(UnknownQuantity):
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
 
 
-    def addIonSource(self, species, dNdt=None, t=None, Z0=0):
+    def addIonSource(self, species, dNdt=None, t=None, Z0=0, source_type=ION_SOURCE_PRESCRIBED):
         """
         Add a source term for the specified ion species.
 
@@ -148,6 +148,7 @@ class Ions(UnknownQuantity):
         :param dNdt:    Number of particles to add per unit time.
         :param t:       Time grid associated with ``dNdt`` (if any).
         :param Z0:      For scalar or 1D ``dNdt``, the charge state for which to add the source term.
+        :param source_type: Type of source term to add (e.g., prescribed, constant).
         """
         if t is None:
             t = self.tSourceTerm
@@ -157,7 +158,7 @@ class Ions(UnknownQuantity):
         found = False
         for ion in self.ions:
             if ion.name == species:
-                ion.initialize_source(n=dNdt, t=t, Z0=Z0)
+                ion.initialize_source(n=dNdt, t=t, Z0=Z0, source_type=source_type)
                 found = True
 
                 self.tSourceTerm = ion.getSourceTime()
@@ -718,7 +719,9 @@ class Ions(UnknownQuantity):
 
             # Load ion source
             if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
-                self.addIonSource(names[i], dNdt=ion_source_x[i,:], t=ion_source_t)
+                self.addIonSource(names[i], dNdt=ion_source_x[i,:], t=ion_source_t,source_type=ION_SOURCE_PRESCRIBED )
+            elif ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED_CONSTANT:
+                self.addIonSource(names[i], dNdt=ion_source_x[i,0], t=None, source_type=ION_SOURCE_PRESCRIBED_CONSTANT)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
