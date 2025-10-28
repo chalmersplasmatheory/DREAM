@@ -31,7 +31,9 @@ RadialGridStellarator::RadialGridStellarator(RadialGridGeneratorStellarator *rg,
     len_t ntheta_interp_passing = rg->GetNthetaInterp();
     len_t nphi_interp_passing = rg->GetNphiInterp();
 
-    fluxSurfaceAverager = new FluxSurfaceAveragerStellarator(this,rg,nfp,ntheta_interp_passing,nphi_interp_passing,im,qm_passing); 
+    delete fluxSurfaceAverager;
+    fluxSurfaceAveragerS = new FluxSurfaceAveragerStellarator(this,rg,nfp,ntheta_interp_passing,nphi_interp_passing,im,qm_passing); 
+    fluxSurfaceAverager = fluxSurfaceAveragerS;
 }
 
 /**
@@ -44,7 +46,7 @@ RadialGridStellarator::~RadialGridStellarator(){
     DeallocateStellaratorData();
     
     delete this->generator;
-    delete this->fluxSurfaceAverager;
+    //delete this->fluxSurfaceAveragerS;
 }
 
 /***************************
@@ -73,7 +75,7 @@ bool RadialGridStellarator::Rebuild(const real_t t) {
  */
 void RadialGridStellarator::RebuildJacobians(){ 
     this->generator->RebuildJacobians(this);
-    fluxSurfaceAverager->Rebuild();
+    fluxSurfaceAveragerS->Rebuild();
     RebuildFluxSurfaceAveragedQuantities();
 }
 
@@ -82,13 +84,13 @@ void RadialGridStellarator::RebuildJacobians(){
  * Calculate flux surface average
  */
 real_t RadialGridStellarator::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
-    return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F, par, Flist);
+    return fluxSurfaceAveragerS->CalculateFluxSurfaceAverage(ir, fluxGridType, F, par, Flist);
 }
 /** 
  * Evaluate flux surface integral
  */
 real_t RadialGridStellarator::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
-    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F, par, Flist);
+    return fluxSurfaceAveragerS->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F, par, Flist);
 }
 
 /** TODO: Take back code for BA, see original RadialGrid */
@@ -114,7 +116,7 @@ void RadialGridStellarator::SetMagneticExtremumData(
     this->xi0TrappedBoundary = xi0TrappedBoundary;
     this->xi0TrappedBoundary_f = xi0TrappedBoundary_f;
     
-    fluxSurfaceAverager->SetReferenceMagneticFieldData(
+    fluxSurfaceAveragerS->SetReferenceMagneticFieldData(
         theta_Bmin, theta_Bmin_f,
         theta_Bmax, theta_Bmax_f
     );
@@ -197,13 +199,13 @@ void RadialGridStellarator::RebuildFluxSurfaceAveragedQuantities(){
     this->psiToroidal_f = new real_t[nr+1];
 
     // Calculate psi_t by integrating using a trapezoidal rule.
-    real_t x, x_f = (1. /(2. * M_PI)) * VpVol_f[0]*R0 * FSA_BdotGradphi_f[0];
+    real_t x, x_f = (1. /(2. * M_PI)) * VpVol_f[0] * FSA_BdotGradphi_f[0];
     psiToroidal_f[0] = 0;
     for (len_t ir = 0; ir < nr; ir++) {
-        x    = (1. /(2. * M_PI)) * VpVol[ir]*R0 * FSA_BdotGradphi[ir];
+        x    = (1. /(2. * M_PI)) * VpVol[ir] * FSA_BdotGradphi[ir];
         psiToroidal[ir] = psiToroidal_f[ir] + 0.5*(x_f+x)*(r[ir]-r_f[ir]);
 
-        x_f  = (1. /(2. * M_PI)) * VpVol_f[ir+1]*R0 * FSA_BdotGradphi_f[ir+1];
+        x_f  = (1. /(2. * M_PI)) * VpVol_f[ir+1] * FSA_BdotGradphi_f[ir+1];
         psiToroidal_f[ir+1] = psiToroidal[ir] + 0.5*(x_f+x)*(r_f[ir+1]-r[ir]);
     }
 }
