@@ -112,13 +112,16 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
                     0, false,
                     unknowns, lnLambda, ionHandler)
         );
-        auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
-        bool includeNBI = s->GetBool("eqsys/T_cold" "/include_NBI");
-       if (includeNBI){
+    }
+
+    bool includeNBI = s->GetBool("eqsys/T_cold" "/include_NBI");
+    if (includeNBI){
+        for(len_t iz=0; iz<nZ; iz++){
+           auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
            Op_Wij->AddTerm(nbi_i);
        }
     }
-    len_t id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+
     eqsys->SetOperator(id_Wi, id_Wi, Op_Wij, "dW_i/dt = sum_j Q_ij + Q_ie");
     eqsys->SetOperator(id_Wi, id_Wcold, Op_Wie);
 }
