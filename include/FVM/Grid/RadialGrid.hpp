@@ -207,7 +207,7 @@ namespace DREAM::FVM {
             real_t *xi0TrappedBoundary, real_t *xi0TrappedBoundary_f
         );
 
-        bool Rebuild(const real_t);
+        virtual bool Rebuild(const real_t);
 
         virtual void RebuildJacobians();
 

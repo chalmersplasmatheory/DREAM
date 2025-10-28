@@ -105,7 +105,7 @@ namespace DREAM {
         }
 
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
-            for (len_t ir = 0; ir <= nr; ir++) {
+            for (len_t ir = 0; ir < nr; ir++) {
                 real_t c_l = grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir);
                 real_t c_u = grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir+1) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir+1);
                 term[ir] = (c_u - c_l) / grid->GetRadialGrid()->GetDr(ir);
@@ -151,13 +151,12 @@ void SimulationGenerator::ConstructEquation_psi_p(
     FVM::Operator *eqn_j1 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn_j2 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn_j3 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn_j4 = new FVM::Operator(fluidGrid);
 
     enum OptionConstants::radialgrid_type type = (enum OptionConstants::radialgrid_type)s->GetInteger("radialgrid/type");
     if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
         eqn_j1->AddTerm(new AmperesLawJTotTermStellarator(fluidGrid));
         eqn_j2->AddTerm(new AmperesLawDiffusionTermStellaratorPoloidalFlux(fluidGrid));
-        eqn_j3->AddTerm(new AmperesLawConstantTermStellaratorToroidalFlux(fluidGrid));
+        eqn_j2->AddTerm(new AmperesLawConstantTermStellaratorToroidalFlux(fluidGrid));
     } else {
         eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
         eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
@@ -175,18 +174,10 @@ void SimulationGenerator::ConstructEquation_psi_p(
 
     // Set outgoing flux from diffusion term due to dpsi/dr at r=a,
     // obtained from psi_edge = psi(a)
-    if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
-        // TODO: eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
-        // TODO: eqn_j4->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,scalarGrid,eqn_j2,+1.0));
-        eqsys->SetOperator(id_psi_p, id_psi_edge, eqn_j4);
-        eqsys->SetOperator(id_psi_p, id_psi_p, eqn_j2);
-        eqsys->SetOperator(id_psi_p, id_j_ohm, eqn_j3); // TODO: Is this even ok? It shouldn't be applied to any unknown quantity
-    } else {
-        eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
-        eqn_j3->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,scalarGrid,eqn_j2,+1.0));
-        eqsys->SetOperator(id_psi_p, id_psi_edge, eqn_j3);
-        eqsys->SetOperator(id_psi_p, id_psi_p, eqn_j2);
-    }
+    eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
+    eqn_j3->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,scalarGrid,eqn_j2,+1.0));
+    eqsys->SetOperator(id_psi_p, id_psi_edge, eqn_j3);
+    eqsys->SetOperator(id_psi_p, id_psi_p, eqn_j2);
     
 }
 

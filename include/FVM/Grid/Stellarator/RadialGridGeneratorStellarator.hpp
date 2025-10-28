@@ -19,12 +19,14 @@ namespace DREAM::FVM {
         len_t nr = 0;
 
     protected:
-        virtual real_t FindMagneticFieldExtremum(
+        virtual std::array<real_t,2> FindMagneticFieldExtremumStellarator(
 			len_t ir, int_t sgn, enum fluxGridType
-		) override;
+		);
         gsl_multimin_fminimizer *gsl_multi_fmin;
 
         len_t nphi_interp;
+        real_t  *phi_Bmin,         *phi_Bmin_f,         // poloidal angle of minimum B
+                *phi_Bmax,         *phi_Bmax_f;         // poloidal angle of maximum B
         real_t  *BpolIOverR0,        *BpolIOverR0_f,        // poloidal magnetic field strength (I(r)/R0)
                 *iota,               *iota_f,               // Rotational transform
                 *Fpassing,           *Fpassing_f;
@@ -36,6 +38,20 @@ namespace DREAM::FVM {
         // simulations significantly
         
         len_t nfp;  // Number of field poles?
+
+
+        virtual std::array<real_t,2> getThetaPhi_Bmin(const len_t ir) {
+            return FindMagneticFieldExtremumStellarator(ir,1,FLUXGRIDTYPE_DISTRIBUTION);
+        }
+        virtual std::array<real_t,2> getThetaPhi_Bmax(const len_t ir) {
+            return FindMagneticFieldExtremumStellarator(ir,-1,FLUXGRIDTYPE_DISTRIBUTION);
+        }
+        virtual std::array<real_t,2> getThetaPhi_Bmin_f(const len_t ir) {
+            return FindMagneticFieldExtremumStellarator(ir,1,FLUXGRIDTYPE_RADIAL);
+        }
+        virtual std::array<real_t,2> getThetaPhi_Bmax_f(const len_t ir) {
+            return FindMagneticFieldExtremumStellarator(ir,-1,FLUXGRIDTYPE_RADIAL);
+        }
         
     public:
         RadialGridGeneratorStellarator(const len_t nr); 

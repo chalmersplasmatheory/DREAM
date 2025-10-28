@@ -20,10 +20,6 @@ namespace DREAM::FVM {
             const real_t *dataJacobian, *datagtt, *datagtp;  // Jacobian data (3D)
             const real_t *datalambdat, *datalambdap;         // Stream function data (3D)
         };
-
-    protected:
-
-        len_t nphi_interp;
     
     private:
         struct eq_data *providedData;

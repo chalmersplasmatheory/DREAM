@@ -49,6 +49,27 @@ namespace DREAM::FVM {
             FSA_PARAM_B_DOT_GRAD_PHI[5] = {0,1,0,0,1},
             FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED[5] = {0,0,1,0,1},
             FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED[5] = {0,0,0,1,1};
+    
+        // Specification for functions used in bounce averages
+        static real_t BA_FUNC_UNITY(real_t,real_t,real_t,real_t,real_t,void*)
+            {return 1;}
+        static real_t BA_FUNC_XI(real_t xiOverXi0,real_t,real_t,real_t,real_t,void*)
+            {return xiOverXi0;}
+        static real_t BA_FUNC_XI_SQUARED_OVER_B(real_t xiOverXi0,real_t BOverBmin,real_t,real_t,real_t,void*)
+            {return xiOverXi0*xiOverXi0/BOverBmin;}
+        static real_t BA_FUNC_B_CUBED(real_t, real_t BOverBmin,real_t, real_t, real_t, void*)
+            {return BOverBmin*BOverBmin*BOverBmin;}
+        static real_t BA_FUNC_XI_SQUARED_B_SQUARED(real_t xiOverXi0, real_t BOverBmin,real_t, real_t, real_t, void*)
+            {return BOverBmin*BOverBmin*xiOverXi0*xiOverXi0;}
+
+        // Alternative representation of functions to be bounce averaged:
+        // lists containing exponents of the various contributing factors
+        static constexpr int_t
+            BA_PARAM_UNITY[5] = {0,0,0,0,0,1},
+            BA_PARAM_XI[5] = {1,0,0,0,0,1},
+            BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,0,1},
+            BA_PARAM_B_CUBED[5] = {0,3,0,0,0,1},
+            BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,0,1};
 
         
 	private:
@@ -68,11 +89,6 @@ namespace DREAM::FVM {
             *iota   = nullptr,
             *iota_f = nullptr,
             R0;
-
-        // Orbit-phase-space Jacobian factors
-        real_t
-             *VpVol = nullptr,    // Size NR
-             *VpVol_f = nullptr;  // Size NR+1
 
         // Deallocators
         void DeallocateReferenceMagneticData(){
@@ -106,7 +122,7 @@ namespace DREAM::FVM {
         static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();
 
 	protected:
-        FluxSurfaceAveragerStellarator *fluxSurfaceAverager;
+        FluxSurfaceAveragerStellarator *fluxSurfaceAveragerS;
         RadialGridGeneratorStellarator *generator;
 
     public:
@@ -133,7 +149,7 @@ namespace DREAM::FVM {
             real_t *xi0TrappedBoundary, real_t *xi0TrappedBoundary_f
         );
 
-        bool Rebuild(const real_t);
+        virtual bool Rebuild(const real_t) override;
 
         virtual void RebuildJacobians() override;
 
@@ -196,7 +212,7 @@ namespace DREAM::FVM {
 
         virtual const bool isStellarator() const override {return true;} 
 
-        FluxSurfaceAveragerStellarator *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
+        FluxSurfaceAveragerStellarator *GetFluxSurfaceAverager(){return fluxSurfaceAveragerS;}
 
 	};
 

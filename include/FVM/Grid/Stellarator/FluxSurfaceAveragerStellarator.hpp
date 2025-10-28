@@ -6,35 +6,16 @@
 namespace DREAM::FVM { class FluxSurfaceAveragerStellarator; }
 
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
+#include "FVM/Grid/FluxSurfaceAverager.hpp"
 //#include "FVM/Grid/Stellarator/NumericStellaratorRadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
 #include "gsl/gsl_roots.h"
 
 
 namespace DREAM::FVM {
-    class FluxSurfaceAveragerStellarator {
+    class FluxSurfaceAveragerStellarator : public FluxSurfaceAverager {
 
     public:
-        /**
-         * The interpolation method used when
-         * interpolating from reference magnetic
-         * data from RadialGridGenerator to grid
-         * points requested by quadrature rule.
-         */ 
-        enum interp_method {
-            INTERP_LINEAR, // Linear interpolation
-            INTERP_STEFFEN // Extremum-preserving spline
-        };
-
-        /**
-         * Which quadrature rule is used for 
-         * evaluating flux surface integrals.
-         */
-        enum quadrature_method {
-            QUAD_FIXED_LEGENDRE,
-            QUAD_FIXED_CHEBYSHEV,
-            QUAD_ADAPTIVE
-        };
 
         // parameters for BounceIntegralFunction
         /** TODO: Take back if BA
@@ -61,19 +42,7 @@ namespace DREAM::FVM {
 
         len_t nfp = 0;
 
-        /**
-         * Is true if FluSurfaceAverager is constructed with 
-         * QUAD_ADAPTIVE. Overrides a bunch of stuff and evaluates
-         * flux surface averages with an adaptive quadrature.
-         */ 
-        bool integrateAdaptive = false;
-
-        // Number of radial grid points on distribution grid
-        len_t nr;
-
         FluxSurfaceQuantity 
-            *BOverBmin = nullptr,
-            *Jacobian = nullptr,
             *BdotGradphi = nullptr,
             *gttOverJ2 = nullptr,
             *gtpOverJ2 = nullptr;
@@ -89,34 +58,20 @@ namespace DREAM::FVM {
         //gsl_integration_qaws_table *qaws_table;
         int QAG_KEY = GSL_INTEG_GAUSS41;
 
-        len_t ntheta_interp, nphi_interp; // number of poloidal and toroidal grid points
+    
+        len_t nphi_interp; // number of poloidal and toroidal grid points
         real_t  
-            *theta   = nullptr, // poloidal grid points
             *phi     = nullptr, // toroidal grid points
             *weights_theta = nullptr, // corresponding quadrature weights for theta
             *weights_phi   = nullptr, // corresponding quadrature weights for phi
-            theta_max = 2 * M_PI, phi_max = 2 * M_PI;
+            phi_max;
 
-        // poloidal angles of minimum and maximum magnetic field strength.
-        real_t 
-            *theta_Bmin = nullptr,
-            *theta_Bmin_f,
-            *theta_Bmax,
-            *theta_Bmax_f;
-
+    
         void InitializeQuadrature(quadrature_method);
         void DeallocateQuadrature();
-
-        void InitializeReferenceData(
-            real_t *theta_Bmin, real_t *theta_Bmin_f,
-            real_t *theta_Bmax, real_t *theta_Bmax_f
-        );
-        void DeallocateReferenceData();
         
         static real_t FluxSurfaceIntegralFunctionThetaPhi(real_t, void *p);
         static real_t FluxSurfaceIntegralFunctionPhi(real_t, void *p);
-
-        real_t GetVpVol(len_t ir, fluxGridType);
 
     public:
         FluxSurfaceAveragerStellarator(
@@ -130,26 +85,19 @@ namespace DREAM::FVM {
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         
-        const len_t GetNTheta() const
-            {return ntheta_interp;}    
-        const real_t *GetTheta() const
-            {return theta;}
+        const len_t GetNPhi() const
+            {return nphi_interp;}    
+        const real_t *GetPhi() const
+            {return phi;}
         const real_t *GetWeightsTheta() const
             {return weights_theta;}
         const real_t *GetWeightsPhi() const
             {return weights_phi;}
-        const real_t GetThetaMax() const    
-            {return theta_max;}      
         const real_t GetPhiMax() const    
             {return phi_max;}
 
-        void SetReferenceMagneticFieldData(
-            real_t *theta_Bmin, real_t *theta_Bmin_f, // poloidal angle of B=Bmin
-            real_t *theta_Bmax, real_t *theta_Bmax_f  // poloidal angle of B=Bmax
-        );
-
-        FluxSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
-        FluxSurfaceQuantity *GetJacobian(){return Jacobian;}
+        virtual FluxSurfaceQuantity *GetBOverBmin() override {return BOverBmin;}
+        virtual FluxSurfaceQuantity *GetJacobian() override {return Jacobian;}
         FluxSurfaceQuantity *GetBdotGradphi(){return BdotGradphi;}
         FluxSurfaceQuantity *GetgttOverJ2(){return gttOverJ2;}
         FluxSurfaceQuantity *GetgtpOverJ2(){return gtpOverJ2;}
@@ -190,19 +138,20 @@ namespace DREAM::FVM {
                 gridGenerator->EvaluateGeometricQuantities_fr(ir, theta, phi, B, Jacobian, BdotGradphi, gttOverJ2, gtpOverJ2);
         }
 
-        real_t GetBmin(len_t ir, fluxGridType, real_t *theta_Bmin = nullptr);
-        real_t GetBmax(len_t ir, fluxGridType, real_t *theta_Bmax = nullptr);
-
 
         len_t getNFP(){return nfp;}
-        bool isIntegrationAdaptive(){return integrateAdaptive;}
+        virtual const bool isStellarator() const override {return true;} 
 
 
+        static real_t AssembleBAFunc(
+            real_t xiOverXi0,real_t BOverBmin, real_t BdotGradphi, 
+            real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist
+        );
         static real_t AssembleFSAFunc(
             real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist
         );
         
-		void PrintBOfThetaPhi(const len_t ir, const len_t N=100, enum fluxGridType fgt=FLUXGRIDTYPE_DISTRIBUTION);
+		//void PrintBOfThetaPhi(const len_t ir, const len_t N=100, enum fluxGridType fgt=FLUXGRIDTYPE_DISTRIBUTION);
     };
 }
 

@@ -51,7 +51,7 @@ namespace DREAM::FVM {
                  + params->F_ref(-xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par);
         }
 
-    private:
+    protected:
         // Pointer to the RadialGrid which owns 
         // this FluxSurfaceAverager, and its generator.
         RadialGrid *rGrid;
@@ -68,24 +68,10 @@ namespace DREAM::FVM {
 
         // Number of radial grid points on distribution grid
         len_t nr;
-
-        FluxSurfaceQuantity 
-            *BOverBmin = nullptr,
-            *Jacobian = nullptr,
-            *ROverR0 = nullptr,
-            *NablaR2 = nullptr;
-        
-        gsl_integration_fixed_workspace *gsl_w = nullptr;
-        gsl_integration_workspace *gsl_adaptive;
-        gsl_integration_workspace *gsl_adaptive_outer;
-        gsl_root_fsolver *gsl_fsolver;
-        gsl_integration_qaws_table *qaws_table;
-        int QAG_KEY = GSL_INTEG_GAUSS41;
-
+    
         len_t ntheta_interp; // number of poloidal grid points
         real_t  
             *theta   = nullptr, // poloidal grid points
-            *weights = nullptr, // corresponding quadrature weights
             theta_max;
 
         // poloidal angles of minimum and maximum magnetic field strength.
@@ -94,28 +80,45 @@ namespace DREAM::FVM {
             *theta_Bmin_f,
             *theta_Bmax,
             *theta_Bmax_f;
+        FluxSurfaceQuantity 
+            *BOverBmin = nullptr,
+            *Jacobian = nullptr,
+            *ROverR0 = nullptr,
+            *NablaR2 = nullptr;
+
+    private:
+        
+        gsl_integration_fixed_workspace *gsl_w = nullptr;
+        gsl_integration_workspace *gsl_adaptive;
+        gsl_integration_workspace *gsl_adaptive_outer;
+        gsl_root_fsolver *gsl_fsolver;
+        gsl_integration_qaws_table *qaws_table;
+        int QAG_KEY = GSL_INTEG_GAUSS41;
+        real_t  
+            *weights = nullptr; // corresponding quadrature weights
 
         void InitializeQuadrature(quadrature_method);
         void DeallocateQuadrature();
+        
+        static real_t FluxSurfaceIntegralFunction(real_t x, void *p);
 
+        static real_t evaluatePXiBounceIntegralAtXi(real_t,void*);
+
+    protected:
         void InitializeReferenceData(
             real_t *theta_Bmin, real_t *theta_Bmin_f,
             real_t *theta_Bmax, real_t *theta_Bmax_f
         );
         void DeallocateReferenceData();
-        
-        static real_t FluxSurfaceIntegralFunction(real_t x, void *p);
 
         real_t GetVpVol(len_t ir, fluxGridType);
-
-    static real_t evaluatePXiBounceIntegralAtXi(real_t,void*);
 
     public:
         FluxSurfaceAverager(
             RadialGrid*, RadialGridGenerator*, bool geometryIsSymmetric = false, len_t ntheta_interp = 10,
             interp_method im = INTERP_LINEAR, quadrature_method qm = QUAD_FIXED_LEGENDRE
         );
-        ~FluxSurfaceAverager();
+        virtual ~FluxSurfaceAverager();
 
         void Rebuild();
 
@@ -143,10 +146,10 @@ namespace DREAM::FVM {
             real_t *theta_Bmax, real_t *theta_Bmax_f  // poloidal angle of B=Bmax
         );
 
-        FluxSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
-        FluxSurfaceQuantity *GetJacobian(){return Jacobian;}
-        FluxSurfaceQuantity *GetROverR0(){return ROverR0;}
-        FluxSurfaceQuantity *GetNablaR2(){return NablaR2;}
+        virtual FluxSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
+        virtual FluxSurfaceQuantity *GetJacobian(){return Jacobian;}
+        virtual FluxSurfaceQuantity *GetROverR0(){return ROverR0;}
+        virtual FluxSurfaceQuantity *GetNablaR2(){return NablaR2;}
         real_t BAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
                 return gridGenerator->BAtTheta_f(ir,theta);
@@ -201,6 +204,8 @@ namespace DREAM::FVM {
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
 
 		void PrintBOfTheta(const len_t ir, const len_t N=1000, enum fluxGridType fgt=FLUXGRIDTYPE_DISTRIBUTION);
+
+        virtual const bool isStellarator() const {return false;} 
     };
 }
 
