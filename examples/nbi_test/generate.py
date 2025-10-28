@@ -41,6 +41,7 @@ n_i_profile = 3e19 * (1 - (r/a)**2)
 nbi_entry_point = [0.685,-1.028,0.0] 
 nbi_radius = 0.0775  
 nbi_direction_vector = [0.0,1.0,0.0] 
+energy_fractions = [0.56, 0.32, 0.12]
 
 
 #############################
@@ -96,9 +97,11 @@ ds.eqsys.T_cold.nbi.setEnabled(True)
 ds.eqsys.T_cold.nbi.setOrigin(nbi_entry_point)
 ds.eqsys.T_cold.nbi.setDirection(nbi_direction_vector)
 
+ds.eqsys.T_cold.nbi.setEnergyFractions(energy_fractions)
+
 ds.eqsys.T_cold.nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
 ds.eqsys.T_cold.nbi.setIons(Z0=0, Zion=1)  
-ds.eqsys.T_cold.nbi.setPower(beam_power=1) #57e3
+ds.eqsys.T_cold.nbi.setPower(beam_power=100e3) #57e3
 ds.eqsys.T_cold.nbi.setR0_NBI(R0)
 
 ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
@@ -125,7 +128,7 @@ ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
 # Set up electron temperature and NBI
 ds.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds.eqsys.T_cold.setInitialProfile(T_initial)
-ds.eqsys.T_cold.include_NBI = False
+ds.eqsys.T_cold.include_NBI = True
 
 print(ds.eqsys.T_cold.todict())
 print("include_NBI setting is:", ds.eqsys.T_cold.include_NBI)
@@ -142,9 +145,9 @@ ds.runawaygrid.setEnabled(False)
 # Solver settings
 ds.solver.setType(Solver.NONLINEAR)
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)
-ds.solver.setDebug(printjacobianinfo=True, savejacobian=True,
-                   savenumericaljacobian=True, saveresidual=True,
-                   savesystem=True, rescaled=True, timestep=2, iteration=1)
+#ds.solver.setDebug(printjacobianinfo=True, savejacobian=True,
+#                   savenumericaljacobian=True, saveresidual=True,
+#                   savesystem=True, rescaled=False, timestep=1, iteration=2)
 
 
 ds.solver.setVerbose(True)
