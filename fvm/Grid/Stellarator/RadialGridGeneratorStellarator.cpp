@@ -36,15 +36,24 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
     theta_Bmax     = new real_t[GetNr()];
     theta_Bmin_f   = new real_t[GetNr()+1];
     theta_Bmax_f   = new real_t[GetNr()+1];
+    phi_Bmin     = new real_t[GetNr()];
+    phi_Bmax     = new real_t[GetNr()];
+    phi_Bmin_f   = new real_t[GetNr()+1];
+    phi_Bmax_f   = new real_t[GetNr()+1];
     xi0TrappedBoundary   = new real_t[GetNr()];
     xi0TrappedBoundary_f = new real_t[GetNr()+1];
-
+    std::array<real_t,2> extremum;
     for (len_t ir = 0; ir < GetNr(); ir++){
-        theta_Bmin[ir] = getTheta_Bmin(ir);
-        theta_Bmax[ir] = getTheta_Bmax(ir);
+        extremum = getThetaPhi_Bmin(ir);
+        theta_Bmin[ir] = extremum[0];
+        phi_Bmin[ir] = extremum[1];
+
+        extremum = getThetaPhi_Bmax(ir);
+        theta_Bmax[ir] = extremum[0];
+        phi_Bmax[ir] = extremum[0];
         
-        Bmin[ir] = BAtTheta(ir,theta_Bmin[ir]);
-        Bmax[ir] = BAtTheta(ir,theta_Bmax[ir]);
+        Bmin[ir] = BAtThetaPhi(ir,theta_Bmin[ir], phi_Bmin[ir]);
+        Bmax[ir] = BAtThetaPhi(ir,theta_Bmax[ir], phi_Bmax[ir]);
         if(!Bmin[ir] || 1-Bmin[ir]/Bmax[ir]<100*realeps)
             xi0TrappedBoundary[ir] = 0;
         else
@@ -52,10 +61,16 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
 
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
-        theta_Bmin_f[ir] = getTheta_Bmin_f(ir);
-        theta_Bmax_f[ir] = getTheta_Bmax_f(ir);
-        Bmin_f[ir] = BAtTheta_f(ir,theta_Bmin_f[ir]);
-        Bmax_f[ir] = BAtTheta_f(ir,theta_Bmax_f[ir]);
+        extremum = getThetaPhi_Bmin_f(ir);
+        theta_Bmin_f[ir] = extremum[0];
+        phi_Bmin_f[ir] = extremum[1];
+
+        extremum = getThetaPhi_Bmax_f(ir);
+        theta_Bmax_f[ir] = extremum[0];
+        phi_Bmax_f[ir] = extremum[0];
+
+        Bmin_f[ir] = BAtThetaPhi_f(ir,theta_Bmin_f[ir], phi_Bmin_f[ir]);
+        Bmax_f[ir] = BAtThetaPhi_f(ir,theta_Bmax_f[ir], phi_Bmax_f[ir]);
         if(!Bmin_f[ir] || 1-Bmin_f[ir]/Bmax_f[ir]<100*realeps)
             xi0TrappedBoundary_f[ir] = 0;
         else
@@ -95,7 +110,7 @@ const real_t STEP = 2*M_PI / 100;
  * If sgn=1, returns the minimum.
  * If sgn=-1, returns the maximum.
  */
-real_t RadialGridGeneratorStellarator::FindMagneticFieldExtremum(
+std::array<real_t,2> RadialGridGeneratorStellarator::FindMagneticFieldExtremumStellarator(
     len_t ir, int_t sgn, fluxGridType fluxGridType
 ) { 
     real_t theta_guess = 0, phi_guess = 0;
@@ -158,13 +173,14 @@ real_t RadialGridGeneratorStellarator::FindMagneticFieldExtremum(
     gsl_vector_free(step);
 
     real_t theta = gsl_vector_get(gsl_multi_fmin->x, 0);
-    //real_t phi   = gsl_vector_get(gsl_multi_fmin->x, 1);
-  
-    real_t extremum = theta; 
-    if(extremum < 2*EPSABS || extremum > (2*M_PI - 2*EPSABS))
-        return 0;
-    else if (fabs(M_PI-extremum) < 2*EPSABS)
-        return M_PI;
-    else
-        return extremum; 
+    if(theta < 2*EPSABS || theta > (2*M_PI - 2*EPSABS))
+        theta = 0;
+    else if (fabs(M_PI-theta) < 2*EPSABS)
+        theta = M_PI;
+    real_t phi   = gsl_vector_get(gsl_multi_fmin->x, 1);
+    
+    std::array<real_t,2> extremum;
+    extremum[0] = theta;
+    extremum[1] = phi;
+    return extremum;
 }
