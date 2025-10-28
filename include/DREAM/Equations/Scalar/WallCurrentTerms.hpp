@@ -61,9 +61,12 @@ namespace DREAM {
             const real_t dr = rGrid->GetDr(ir);
             const real_t VpVol = rGrid->GetVpVol(ir);
             const real_t Bmin = rGrid->GetBmin(ir);
-            const real_t R2inv = rGrid->GetFSA_1OverR2(ir);
-            const real_t G = rGrid->GetBTorG(ir);
-            return dr*VpVol*G*R2inv/(2*M_PI*Bmin);
+            real_t BdotGradphi;
+            if (rGrid->isStellarator())
+                BdotGradphi = rGrid->GetFSA_BdotGradphi(ir);
+            else
+                BdotGradphi = rGrid->GetFSA_1OverR2(ir) * rGrid->GetBTorG(ir);
+            return dr*VpVol*BdotGradphi/(2*M_PI*Bmin);
         }
 
         /**
