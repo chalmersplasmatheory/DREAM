@@ -19,129 +19,168 @@ NBIElectronTerm::NBIElectronTerm(NBIHandler *h, FVM::Grid *grid, FVM::UnknownQua
     this->id_ion_density = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_ion_temperature = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    this-> Qe_1 = Qe_1;
-    this-> Qe_2 = Qe_2;
-    this-> Qe_3 = Qe_3;
+    len_t nZ = ions->GetNZ();
+    len_t Zmax_max = 0;
+    for (len_t iz = 0; iz <nZ; ++iz)
+        Zmax_max = std::max(Zmax_max, ions->GetZ(iz));   
+    len_t nCharge = Zmax_max + 1;
+    size_t deriv_size = static_cast<size_t>(nr) *
+                    static_cast<size_t>(nZ) *
+                    static_cast<size_t>(nCharge);
+    
+
+    // Allocate temporary arrays for energy spectra and their derivatives
+    Qe_1 = new real_t[nr];
+    Qe_2 = new real_t[nr];
+    Qe_3 = new real_t[nr];
+    d_Qe1_d_Te = new real_t[nr];
+    d_Qe1_d_ne = new real_t[nr];
+    d_Qe1_d_n_ij = new real_t[deriv_size];
+    d_Qe1_d_T_ij = new real_t[deriv_size];
+    
+    d_Qe2_d_Te = new real_t[nr];
+    d_Qe2_d_ne = new real_t[nr];
+    d_Qe2_d_n_ij = new real_t[deriv_size];
+    d_Qe2_d_T_ij = new real_t[deriv_size];
+    
+    d_Qe3_d_Te = new real_t[nr];
+    d_Qe3_d_ne = new real_t[nr];
+    d_Qe3_d_n_ij = new real_t[deriv_size];
+    d_Qe3_d_T_ij = new real_t[deriv_size];
+
+    // Register all unknowns that this term has Jacobian contributions for
+    AddUnknownForJacobian(unknowns, id_ncold);
+    AddUnknownForJacobian(unknowns, id_Tcold);
+    AddUnknownForJacobian(unknowns, id_ni);
+    AddUnknownForJacobian(unknowns, id_ion_temperature);
 }
+
 
 /**
  * Rebuild the term (called once per time step). Call of the build function in NBIHandler
  */
 void NBIElectronTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *unknowns){
-   
-    real_t beam_energy = handler->GetBeamEnergy();  
-    //printf("Beam energy in NBIElectronTerm: %e J\n", beam_energy);
-    handler->Build(t, dt, unknowns, beam_energy);
-    Qe_1 = handler->GetNBIHeatTerm_e();
-    //handler->Build(t, dt, unknowns, beam_energy/2);
-    //printf("Beam energy/2 in NBIElectronTerm: %e J\n", beam_energy/2);
-    //Qe_2 = handler->GetNBIHeatTerm_e();
-    //handler->Build(t, dt, unknowns, beam_energy/3);
-    //Qe_3 = handler->GetNBIHeatTerm_e();
+    real_t beam_energy = handler->GetBeamEnergy();
+    
+    // Helper to copy data
+    auto copyData = [&](real_t energy, real_t* Qe_target,
+                        real_t* d_Te_target, real_t* d_ne_target,
+                        real_t* d_n_ij_target, real_t* d_T_ij_target) {
+        handler->Build(t, dt, unknowns, energy);
+        
+        const real_t* Qe = handler->GetNBIHeatTerm_e();
+        const real_t* d_Te = handler->Getd_NBIHeatTerm_e_d_Te();
+        const real_t* d_ne = handler->Getd_NBIHeatTerm_e_d_ne();
+        const real_t* d_n_ij = handler->Getd_NBIHeatTerm_e_d_n_ij();
+        const real_t* d_T_ij = handler->Getd_NBIHeatTerm_e_d_T_ij();
+        
+        // Copy heating terms
+        for (len_t ir = 0; ir < nr; ++ir) {
+            Qe_target[ir] = Qe[ir];
+            d_Te_target[ir] = d_Te[ir];
+            d_ne_target[ir] = d_ne[ir];
+        }
+        
+        // Copy ion derivatives (multi-dimensional)
+        for (len_t ir = 0; ir < nr; ++ir) {
+            for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
+                for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
+                    len_t idx = handler->idx(ir, iIon, Zp);
+                    d_n_ij_target[idx] = d_n_ij[idx];
+                    d_T_ij_target[idx] = d_T_ij[idx];
+                }
+            }
+        }
+    };
+    
+    // Build for three energy components
+    copyData(beam_energy,     Qe_1, d_Qe1_d_Te, d_Qe1_d_ne, d_Qe1_d_n_ij, d_Qe1_d_T_ij);
+    copyData(beam_energy / 2, Qe_2, d_Qe2_d_Te, d_Qe2_d_ne, d_Qe2_d_n_ij, d_Qe2_d_T_ij);
+    copyData(beam_energy / 3, Qe_3, d_Qe3_d_Te, d_Qe3_d_ne, d_Qe3_d_n_ij, d_Qe3_d_T_ij);
+
 }
 
 /**
  * Set the vector elements corresponding to this term.
  */
 void NBIElectronTerm::SetVectorElements(real_t *rhs, const real_t*){
-    for (len_t ir=0; ir<nr; ++ir) {
-        rhs[ir] -= this->Qe_1[ir]; // + this->Qe_2[ir] + this->Qe_3[ir];
-        //printf("NBI heating term at ir = %d: %e W/m^3\n", ir, Qe[ir]);
+    const real_t* energy_fractions = handler->GetEnergyFractions();
+    for (len_t ir=0; ir<nr; ++ir) {   
+        rhs[ir] -= energy_fractions[0] * this->Qe_1[ir] + energy_fractions[1] * this->Qe_2[ir] + energy_fractions[2] * this->Qe_3[ir];
     }
-    
 }
 
 /**
  * Set the matrix elements corresponding to this term.
  */
-void NBIElectronTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs){ //TODO
-    //const real_t *Qe = handler->GetNBIHeatTerm_e();
-    //const real_t *nc = unknowns->GetUnknownData(id_ncold);
-
-    //for (len_t ir=0; ir<nr; ++ir){
-     //   const real_t factor = 2.0/(3.0*nc[ir]);
-     //   rhs[ir] -= factor * Qe[ir];
-    //} TODO
+void NBIElectronTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs){ 
+    const real_t* energy_fractions = handler->GetEnergyFractions();
+    for (len_t ir=0; ir<nr; ++ir) {
+        rhs[ir] -= energy_fractions[0] * this->Qe_1[ir] + energy_fractions[1] * this->Qe_2[ir] + energy_fractions[2] * this->Qe_3[ir];
+    }
 }
 
 /**
  * Set the Jacobian elements corresponding to this term.
  */
-bool NBIElectronTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId,
+bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId,
                                        FVM::Matrix *jac, const real_t*){
-    // Check if this derivId is one we handle
     if (derivId != id_ncold && derivId != id_Tcold &&
         derivId != id_ni && derivId != id_ion_temperature)
-        return false; 
+        return false;
     
-    // Get derivative arrays from NBIHandler
-    const real_t *d_NBIHeatTerm_e_d_Te = handler->Getd_NBIHeatTerm_e_d_Te();
-    const real_t *d_NBIHeatTerm_e_d_ne = handler->Getd_NBIHeatTerm_e_d_ne();
-    const std::vector<std::vector<std::vector<real_t>>>& d_NBIHeatTerm_e_d_n_ij = handler->Getd_NBIHeatTerm_e_d_n_ij();
-    const std::vector<std::vector<std::vector<real_t>>>& d_NBIHeatTerm_e_d_T_ij = handler->Getd_NBIHeatTerm_e_d_T_ij();
-
-    // Set Jacobian elements for each radial point
-    if (derivId == id_ncold) {
+    const real_t* energy_fractions = handler->GetEnergyFractions();    
+    if (derivId == id_Tcold) {
         for (len_t ir = 0; ir < nr; ++ir) {
-            jac->SetElement(ir, ir, 0);//d_NBIHeatTerm_e_d_ne[ir]);
+            real_t deriv = energy_fractions[0] * d_Qe1_d_Te[ir]
+                         + energy_fractions[1] * d_Qe2_d_Te[ir]
+                         + energy_fractions[2] * d_Qe3_d_Te[ir];
+            jac->SetElement(ir, ir, deriv);
         }
     }
     
-    if (derivId == id_Tcold) {
+    if (derivId == id_ncold) {
         for (len_t ir = 0; ir < nr; ++ir) {
-            jac->SetElement(ir, ir, 0);//d_NBIHeatTerm_e_d_Te[ir]);
+            real_t deriv = energy_fractions[0] * d_Qe1_d_ne[ir]
+                         + energy_fractions[1] * d_Qe2_d_ne[ir]
+                         + energy_fractions[2] * d_Qe3_d_ne[ir];
+            jac->SetElement(ir, ir, deriv);
         }
     }
     
     if (derivId == id_ni) {
-        // here we set per species and chanrge
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
                 const len_t Zmax = ions->GetZ(iIon);
                 const len_t speciesStart = ions->GetIndex(iIon, 0) * nr;
                 for (len_t Zp = 0; Zp <= Zmax; ++Zp) {
-                    real_t dP = d_NBIHeatTerm_e_d_n_ij[ir][iIon][Zp];
+                    len_t idx = handler->idx(ir, iIon, Zp);
+                    real_t deriv = energy_fractions[0] * d_Qe1_d_n_ij[idx]
+                                 + energy_fractions[1] * d_Qe2_d_n_ij[idx]
+                                 + energy_fractions[2] * d_Qe3_d_n_ij[idx];
                     len_t col = speciesStart + Zp * nr + ir;
-                    jac->SetElement(ir, col, 0);//dP); //why not col, col
+                    jac->SetElement(ir, col, deriv);
                 }
             }
         }
     }
     
     if (derivId == id_ion_temperature) {
-        // Derivative w.r.t. ion temperature: loop over all species
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
-                const len_t Zmax = ions->GetZ(iIon);
-                
-                // Get total ion density for this species
-                real_t ni_species = 0.0;
-                for (len_t Zp = 0; Zp <= Zmax; ++Zp) {
-                    const len_t ni_idx = ions->GetIndex(iIon, Zp) * nr + ir;
-                    ni_species += unknowns->GetUnknownData(id_ion_density)[ni_idx];
+                real_t deriv_sum = 0.0;
+                for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
+                    len_t idx = handler->idx(ir, iIon, Zp);
+                    deriv_sum += energy_fractions[0] * d_Qe1_d_T_ij[idx]
+                               + energy_fractions[1] * d_Qe2_d_T_ij[idx]
+                               + energy_fractions[2] * d_Qe3_d_T_ij[idx];
                 }
-                
-                // Sum derivatives over all charge states
-                real_t dQe_dTi_species = 0.0;
-                for (len_t Zp = 0; Zp <= Zmax; ++Zp) {  
-                    dQe_dTi_species += d_NBIHeatTerm_e_d_T_ij[ir][iIon][Zp];
-                }
-                
-                // Convert from dQ/dTi to dQ/dWi
-                // Wi = (3/2) * ni * Ti, so dTi/dWi = 1/(3/2 * ni)
-                const real_t eq = 1.602e-19; // eV to Joules
-                real_t dQe_dWi = 0.0;
-                if (ni_species > 0) {
-                    dQe_dWi = dQe_dTi_species / (1.5 * ni_species * eq);
-                }
-                
-                // WI_ENER has one value per species, not per charge state
                 len_t col = iIon * nr + ir;
-                jac->SetElement(ir, col, 0);//dQe_dWi); 
+                jac->SetElement(ir, col, deriv_sum);
             }
         }
     }
-
+    
     return true;
 }
 
