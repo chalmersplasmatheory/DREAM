@@ -14,7 +14,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
-        len_t id_T_cold, id_W_cold, id_N_i, id_W_i, id_jtot;
+        len_t id_T, id_N_i, id_W_i, id_jtot;
 
         real_t scaleFactor;
         bool userGivenPsiEdge_t0;
@@ -54,7 +54,7 @@ namespace DREAM {
     
         HaloRegionHeatLossTerm(
 			FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
-            real_t, bool userGivenPsiEdge_t0=0,
+            real_t, const len_t, bool userGivenPsiEdge_t0=0,
 			real_t PsiEdge_t0=0
 		);
         ~HaloRegionHeatLossTerm();

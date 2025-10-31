@@ -2,6 +2,7 @@
 # Simple test of the "equation trigger" functionality
 
 
+import matplotlib.pyplot as plt
 import numpy as np
 from DREAM import DREAMSettings, runiface
 
@@ -47,5 +48,8 @@ ds.timestep.setTmax(tMax)
 ds.solver.setType(Solver.NONLINEAR)
 
 ds.save('settings.h5')
-runiface(ds, 'output.h5')
+do = runiface(ds, 'output.h5')
+
+do.eqsys.T_cold.plot(r=range(0,20,2))
+plt.show()
 

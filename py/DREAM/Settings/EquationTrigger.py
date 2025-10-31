@@ -62,8 +62,10 @@ class EquationTrigger:
         """
         Load settings from a dictionary.
         """
-        self.condition = data['condition']
-        self.equation.fromdict(data['equation'])
+        if 'condition' in data:
+            self.condition = data['condition']
+        if 'equation' in data:
+            self.equation.fromdict(data['equation'])
 
 
     def todict(self):

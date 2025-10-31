@@ -108,6 +108,7 @@ namespace DREAM {
         static void DefineOptions_T_cold_inner(Settings*, const std::string&);
         static void DefineOptions_T_cold_NBI(Settings*, const std::string&);
         static void DefineOptions_T_abl(Settings*);
+		static void DefineOptions_T_hot(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
 
@@ -198,17 +199,19 @@ namespace DREAM {
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_T_cold_inner(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold_inner(const std::string&, const len_t, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_tau_coll(EquationSystem*);
-        static void ConstructEquation_T_cold_prescribed(const std::string&, EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold_prescribed(const std::string&, EquationSystem*, Settings*, const len_t);
+        static void ConstructEquation_T_cold_selfconsistent(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*, const len_t id_eqn, const len_t id_T, const len_t id_W, const len_t id_n, const len_t id_j, bool isForThot=false);
         static void ConstructEquation_T_abl(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl_prescribed(EquationSystem*, Settings*);
         
         static void ConstructEquation_W_cold(EquationSystem*, Settings*);
         static void ConstructEquation_W_abl(EquationSystem*, Settings*);
         
-        static void ConstructEquation_W_hot(EquationSystem*, Settings*);
+		static void ConstructEquation_T_hot(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_W_hot_moment(EquationSystem*, Settings*);
+		static void ConstructEquation_W_hot_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 

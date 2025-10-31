@@ -224,6 +224,11 @@ enum uqty_T_cold_eqn {
     UQTY_T_COLD_SELF_CONSISTENT=2   // T_cold calculated self-consistently
 };
 
+enum uqty_T_hot_eqn {
+	UQTY_T_HOT_MOMENT=1,			// T_hot taken as moment of f_hot
+	UQTY_T_HOT_SELF_CONSISTENT=2	// T_hot calculated self-consistently
+};
+
 enum uqty_T_abl_eqn {
     UQTY_T_ABL_EQN_PRESCRIBED=1,   // T_abl prescribed by the user
     UQTY_T_ABL_SELF_CONSISTENT=2   // T_abl calculated self-consistently

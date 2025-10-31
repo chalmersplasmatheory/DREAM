@@ -196,7 +196,10 @@ void SimulationGenerator::ConstructEquations(
     if(eqsys->GetSPIHandler()!=nullptr){
         ConstructEquation_SPI(eqsys,s);
         if(hottailGrid != nullptr){
-        	ConstructEquation_W_hot(eqsys,s);
+			// T_hot is defined, the equation for W_hot will already be set up
+			if (!eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_T_HOT))
+				ConstructEquation_W_hot_moment(eqsys,s);
+
         	ConstructEquation_q_hot(eqsys,s);
         }
     }
@@ -355,7 +358,7 @@ void SimulationGenerator::ConstructUnknowns(
 		}
     }
 
-    if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
+    if ((OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE){
         len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WI_ENER, nIonSpecies);
         DEFU_FLD_N(NI_DENS, nIonSpecies);

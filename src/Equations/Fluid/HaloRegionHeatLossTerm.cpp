@@ -13,9 +13,9 @@ using namespace DREAM;
  */
 HaloRegionHeatLossTerm::HaloRegionHeatLossTerm(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns, IonHandler *ions,
-    real_t sf, bool userGivenPsiEdge_t0, real_t PsiEdge_t0
+    real_t sf, const len_t id_T, bool userGivenPsiEdge_t0, real_t PsiEdge_t0
 ) : FVM::DiagonalComplexTerm(grid, unknowns, grid),
-	unknowns(unknowns), ions(ions), scaleFactor(sf), 
+	unknowns(unknowns), ions(ions), id_T(id_T), scaleFactor(sf), 
     userGivenPsiEdge_t0(userGivenPsiEdge_t0), psi_edge_t0(PsiEdge_t0), 
     id_psi(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX)){
 
@@ -23,8 +23,6 @@ HaloRegionHeatLossTerm::HaloRegionHeatLossTerm(
     this->rGrid = grid->GetRadialGrid();
     this->GridRebuilt();
 
-    this->id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    this->id_W_cold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     this->id_N_i = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
@@ -165,13 +163,13 @@ void HaloRegionHeatLossTerm::SetWeights() {
     FindRadiusOfLCFS(); // Find ir_LCFS
     const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
 	
-    real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
+    real_t *T = unknowns->GetUnknownData(this->id_T); 
     real_t *N_i = unknowns->GetUnknownData(id_N_i); 
     real_t *W_i = unknowns->GetUnknownData(id_W_i); 
 
     for (len_t ir = 0; ir < nr; ir++) {
 	   	real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
-        real_t T_e = T_cold[ir] * Constants::ec; 
+        real_t T_e = T[ir] * Constants::ec; 
         real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->grid->GetRadialGrid(),jtot);
     	real_t qR0 = this->grid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
 
@@ -183,13 +181,13 @@ void HaloRegionHeatLossTerm::SetWeights() {
  */
 void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     // Retrieve necessary arrays from the unknowns handler
-    real_t *T_cold = unknowns->GetUnknownData(id_T_cold);
+    real_t *T = unknowns->GetUnknownData(id_T);
     real_t *W_i = unknowns->GetUnknownData(id_W_i);
     real_t *N_i = unknowns->GetUnknownData(id_N_i);
     const real_t *jtot = unknowns->GetUnknownData(id_jtot);
 
     // Calculate the electron temperature at the radial index 'nr'
-    real_t T_e = T_cold[nr] * Constants::ec;
+    real_t T_e = T[nr] * Constants::ec;
 
     auto calculateMu0Ip = [&](len_t ir) {
         return Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, grid->GetRadialGrid(), jtot);
@@ -205,14 +203,14 @@ void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
         return - StepFunction(ir) * coeff / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i)) / (2 * M_PI * qR0);
     };
 
-    real_t coeff = (derivId == id_T_cold) ? (2. / 3.) : (4. / 9. * kappa * gamma);
+    real_t coeff = (derivId == id_T) ? (2. / 3.) : (4. / 9. * kappa * gamma);
     
     for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++) {
         for (len_t ir = 0; ir < nr; ir++) {
             real_t qR0 = calculateQ(ir);
             if (derivId == id_N_i) {
                 this->diffWeights[i_ion * nr + ir] = calculateWeight(ir, qR0, coeff * W_i[ir]);
-            } else if (derivId == id_T_cold) {
+            } else if (derivId == id_T) {
                 this->diffWeights[ir] = - calculateWeight(ir, qR0, coeff * W_i[ir]);
             } else if (derivId == id_W_i){
                 this->diffWeights[i_ion * nr + ir] = - calculateWeight(ir, qR0, coeff);
