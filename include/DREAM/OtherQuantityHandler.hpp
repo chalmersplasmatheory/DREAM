@@ -43,18 +43,25 @@ namespace DREAM { class OtherQuantityHandler; }
 namespace DREAM {
     class OtherQuantityHandler {
     public:
+		struct T_terms {
+			RadiatedPowerTerm *radiation=nullptr;
+			OhmicHeatingTerm *ohmic=nullptr;
+            CollisionalEnergyTransferKineticTerm *fhot_coll=nullptr;
+            CollisionalEnergyTransferKineticTerm *fre_coll=nullptr;
+            CollisionalEnergyTransferREFluidTerm *nre_coll=nullptr;
+            FVM::AdvectionDiffusionTerm *transport=nullptr;
+            FVM::Operator *ion_coll=nullptr;
+            HaloRegionHeatLossTerm *halo=nullptr;
+            NBIElectronHeatTerm *NBI = nullptr;
+			// Radial transport boundary conditions
+            DREAM::TransportAdvectiveBC *advective_bc=nullptr;
+            DREAM::TransportDiffusiveBC *diffusive_bc=nullptr;
+		};
+
         struct eqn_terms {
             // Terms in the heat equation:
-            DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr;
-			DREAM::RadiatedPowerTerm *T_cold_binding_energy=nullptr;
-            DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
-            DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
-            DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
-            DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
-            DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
-            DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
-            DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
-            DREAM::NBIElectronHeatTerm *T_cold_NBI = nullptr;
+            struct T_terms T_cold;
+			struct T_terms T_hot;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -62,8 +69,6 @@ namespace DREAM {
             DREAM::TransportDiffusiveBC *f_hot_diffusive_bc=nullptr;
             DREAM::TransportAdvectiveBC *n_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *n_re_diffusive_bc=nullptr;
-            DREAM::TransportAdvectiveBC *T_cold_advective_bc=nullptr;
-            DREAM::TransportDiffusiveBC *T_cold_diffusive_bc=nullptr;
             // Svensson transport coefficients
             DREAM::SvenssonTransportAdvectionTermA *svensson_A=nullptr;
             DREAM::SvenssonTransportDiffusionTerm  *svensson_D=nullptr;
@@ -101,8 +106,6 @@ namespace DREAM {
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
             // List of approximated RE impact ionization rates for each ion species
             std::vector<IonFluidRunawayIonizationTerm*> n_re_kin_rates;
-
-            
         };
 
     protected:
@@ -123,11 +126,16 @@ namespace DREAM {
         len_t
             id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
-            id_n_re_neg=0, id_Yp, id_n_i;
+            id_n_re_neg=0, id_Yp, id_n_i, id_Thot=0, id_Whot=0;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids
         real_t *kineticVectorHot = nullptr;
         real_t *kineticVectorRE = nullptr;
+
+		void setup_T_quantities(
+			struct T_terms*, const std::string&, const std::string&,
+			const len_t, const len_t
+		);
 
         // helper functions for evaluating other quantities
         real_t integratedKineticBoundaryTerm(

@@ -62,6 +62,10 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
 
+	if (unknowns->HasUnknown(OptionConstants::UQTY_T_HOT))
+		id_Thot = unknowns->GetUnknownID(OptionConstants::UQTY_T_HOT);
+	if (unknowns->HasUnknown(OptionConstants::UQTY_W_HOT))
+		id_Whot = unknowns->GetUnknownID(OptionConstants::UQTY_W_HOT);
     if (unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX))
         id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     if (unknowns->HasUnknown(OptionConstants::UQTY_PSI_EDGE))
@@ -303,6 +307,11 @@ void OtherQuantityHandler::DefineQuantities() {
 	    );
     }
 
+	// Setup other quantities for power balance
+	setup_T_quantities(&this->tracked_terms->T_cold, "Tcold", "Wcold_Tcold", this->id_Tcold, this->id_Wcold);
+	if (unknowns->HasUnknown(OptionConstants::UQTY_T_HOT))
+		setup_T_quantities(&this->tracked_terms->T_hot, "Thot", "Whot_Thot", this->id_Thot, this->id_Whot);
+
     if (tracked_terms->n_re_hottail_rate != nullptr) {
         DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
 	}
@@ -450,103 +459,8 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL_FR("fluid/Lambda_hypres", "Hyper-resistive diffusion coefficient Lambda [H]",
             qd->Store(this->tracked_terms->psi_p_hyperresistive->GetLambda());
         );
-    // Power terms in heat equation
-    if (tracked_terms->T_cold_ohmic != nullptr)
-        DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
-            real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_ohmic->SetVectorElements(vec, Eterm);
-        );
-	if (tracked_terms->T_cold_halo != nullptr)
-        DEF_FL("fluid/Tcold_halo", "Power density escaping through the halo region [J s^-1 m^-3]",
-            real_t *Wcold = this->unknowns->GetUnknownData(this->id_Wcold);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_halo->SetVectorElements(vec, Wcold);
-		);
-    if (tracked_terms->T_cold_fhot_coll != nullptr)
-        DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
-            real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_fhot_coll->SetVectorElements(vec, fhot);
-        );
-    if (tracked_terms->T_cold_fre_coll != nullptr)
-        DEF_FL("fluid/Tcold_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
-            real_t *fre = this->unknowns->GetUnknownData(id_f_re);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_fre_coll->SetVectorElements(vec, fre);
-        );
-    if (tracked_terms->T_cold_nre_coll != nullptr)
-        DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
-            real_t *nre = this->unknowns->GetUnknownData(id_n_re);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
-        );
 
-    if (tracked_terms->T_cold_transport != nullptr)
-        DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
-            real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_transport->SetVectorElements(vec, Tcold);
-        );
-    if (tracked_terms->T_cold_radiation != nullptr)
-        DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
-            const real_t *Prad = this->tracked_terms->T_cold_radiation->GetRadiationPower();
-			qd->Store(Prad);
-        );	
-    if (tracked_terms->T_cold_radiation != nullptr)
-        DEF_FL("fluid/Tcold_binding_energy", "Rate of change in potential energy due to ionisation/recombination [J s^-1 m^-3]",
-            const real_t *Pion = this->tracked_terms->T_cold_radiation->GetRateOfChangeBindingEnergy();
-			qd->Store(Pion);
-        );
-
-
-    if (tracked_terms->T_cold_ion_coll != nullptr)
-        DEF_FL("fluid/Tcold_ion_coll", "Collisional heating power density by ions [J s^-1 m^-3]",
-            real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
-        );
-        
-    if (tracked_terms->T_cold_NBI != nullptr)
-    DEF_FL("fluid/Tcold_NBI", "Collisional heating power density by NBI [J s^-1 m^-3]",
-        real_t *vec = qd->StoreEmpty();
-        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
-            vec[ir] = 0;
-
-        // This assumes your NBIElectronHeatTerm implements this method
-        this->tracked_terms->T_cold_NBI->SetVectorElements(vec, nullptr);
-    );
-
-    if (tracked_terms->T_cold_transport) {
-        if (tracked_terms->T_cold_transport->GetAdvectionTerms().size() > 0) {
-            DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
-                const real_t *Ar = this->tracked_terms->T_cold_transport->GetAdvectionCoeffR(0);
-                qd->Store(Ar);
-            );
-        }
-        if (tracked_terms->T_cold_transport->GetDiffusionTerms().size() > 0) {
-            DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
-                const real_t *Drr = this->tracked_terms->T_cold_transport->GetDiffusionCoeffRR(0);
-                qd->Store(Drr);
-            );
-        }
-    }
-    
-
-    DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
+	DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){
             const real_t *f_hot = this->unknowns->GetUnknownData(id_f_hot);
@@ -954,10 +868,10 @@ void OtherQuantityHandler::DefineQuantities() {
         const real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
         real_t v=0;
         len_t nr = this->fluidGrid->GetNr();
-        if (this->tracked_terms->T_cold_advective_bc != nullptr)
-            this->tracked_terms->T_cold_advective_bc->AddToVectorElements((&v)-(nr-1), Tcold);
-        if (this->tracked_terms->T_cold_diffusive_bc != nullptr)
-            this->tracked_terms->T_cold_diffusive_bc->AddToVectorElements((&v)-(nr-1), Tcold);
+        if (this->tracked_terms->T_cold.advective_bc != nullptr)
+            this->tracked_terms->T_cold.advective_bc->AddToVectorElements((&v)-(nr-1), Tcold);
+        if (this->tracked_terms->T_cold.diffusive_bc != nullptr)
+            this->tracked_terms->T_cold.diffusive_bc->AddToVectorElements((&v)-(nr-1), Tcold);
 
         // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
         v *= this->fluidGrid->GetVpVol(nr-1) * this->fluidGrid->GetRadialGrid()->GetDr(nr-1);
@@ -1273,6 +1187,118 @@ void OtherQuantityHandler::DefineQuantities() {
         "fluid/W_hot", "fluid/W_re", "scalar/E_mag", "scalar/L_i", "scalar/l_i",
         "scalar/energyloss_T_cold", "scalar/energyloss_f_re", "scalar/energyloss_f_hot"
     };
+}
+
+
+/**
+ * Set up other quantities related to the power balance equation.
+ */
+void OtherQuantityHandler::setup_T_quantities(
+	struct T_terms *oqty, const std::string &qtyName,
+	const std::string &qtyNameW, const len_t id_T, const len_t id_W
+) {
+	// Re-define 'DEF_FL'
+	#undef DEF_FL
+	#undef DEF_FL_FR
+    #define DEF_FL(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,oqty,id_T,id_W](const real_t, QuantityData *qd) {FUNC}));
+    #define DEF_FL_FR(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,oqty,id_T,id_W](const real_t, QuantityData *qd) {FUNC}));
+
+	// Power terms in heat equation
+    if (oqty->ohmic != nullptr)
+        DEF_FL("fluid/"+qtyName+"_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
+            real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->ohmic->SetVectorElements(vec, Eterm);
+        );
+	if (oqty->halo != nullptr)
+        DEF_FL("fluid/"+qtyName+"_halo", "Power density escaping through the halo region [J s^-1 m^-3]",
+            real_t *W = this->unknowns->GetUnknownData(id_W);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->halo->SetVectorElements(vec, W);
+		);
+    if (oqty->fhot_coll != nullptr)
+        DEF_FL("fluid/"+qtyName+"_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
+            real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->fhot_coll->SetVectorElements(vec, fhot);
+        );
+    if (oqty->fre_coll != nullptr)
+        DEF_FL("fluid/"+qtyName+"_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
+            real_t *fre = this->unknowns->GetUnknownData(id_f_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->fre_coll->SetVectorElements(vec, fre);
+        );
+    if (oqty->nre_coll != nullptr)
+        DEF_FL("fluid/"+qtyName+"_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
+            real_t *nre = this->unknowns->GetUnknownData(id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->nre_coll->SetVectorElements(vec, nre);
+        );
+
+    if (oqty->transport != nullptr)
+        DEF_FL("fluid/"+qtyName+"_transport", "Transported power density [J s^-1 m^-3]",
+            real_t *T = this->unknowns->GetUnknownData(id_T);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->transport->SetVectorElements(vec, T);
+        );
+    if (oqty->radiation != nullptr) {
+        DEF_FL("fluid/"+qtyName+"_radiation", "Radiated power density [J s^-1 m^-3]",
+            const real_t *Prad = oqty->radiation->GetRadiationPower();
+			qd->Store(Prad);
+        );	
+        DEF_FL("fluid/"+qtyName+"_binding_energy", "Rate of change in potential energy due to ionisation/recombination [J s^-1 m^-3]",
+            const real_t *Pion = oqty->radiation->GetRateOfChangeBindingEnergy();
+			qd->Store(Pion);
+        );
+	}
+
+
+    if (oqty->ion_coll != nullptr)
+        DEF_FL("fluid/"+qtyName+"_ion_coll", "Collisional heating power density by ions [J s^-1 m^-3]",
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            oqty->ion_coll->SetVectorElements(vec, nullptr);
+        );
+        
+    if (oqty->NBI != nullptr)
+		DEF_FL("fluid/"+qtyName+"_NBI", "Collisional heating power density by NBI [J s^-1 m^-3]",
+			real_t *vec = qd->StoreEmpty();
+			for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+				vec[ir] = 0;
+
+			// This assumes your NBIElectronHeatTerm implements this method
+			oqty->NBI->SetVectorElements(vec, nullptr);
+		);
+
+    if (oqty->transport) {
+        if (oqty->transport->GetAdvectionTerms().size() > 0) {
+            DEF_FL_FR("fluid/"+qtyNameW+"_Ar", "Net radial heat advection [m/s]",
+                const real_t *Ar = oqty->transport->GetAdvectionCoeffR(0);
+                qd->Store(Ar);
+            );
+        }
+        if (oqty->transport->GetDiffusionTerms().size() > 0) {
+            DEF_FL_FR("fluid/"+qtyNameW+"_Drr", "Net radial heat diffusion [m/s]",
+                const real_t *Drr = oqty->transport->GetDiffusionCoeffRR(0);
+                qd->Store(Drr);
+            );
+        }
+    }
 }
 
 

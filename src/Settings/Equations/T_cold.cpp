@@ -104,7 +104,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
 	const len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
 	// Construct main equation
-	ConstructEquation_T_cold_inner(MODULENAME, id_T_cold, eqsys, s, adas, nist, amjuel, oqty_terms);
+	ConstructEquation_T_cold_inner(MODULENAME, id_T_cold, eqsys, s, adas, nist, amjuel, &oqty_terms->T_cold);
 
 	enum OptionConstants::eqn_trigger_type switchtype =
 		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
@@ -113,7 +113,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
 	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
 		eqsys->SetAssignToAlternativeEquation(id_T_cold, true);
 
-		ConstructEquation_T_cold_inner(MODULENAME "/switch/equation", id_T_cold, eqsys, s, adas, nist, amjuel, oqty_terms);
+		ConstructEquation_T_cold_inner(MODULENAME "/switch/equation", id_T_cold, eqsys, s, adas, nist, amjuel, &oqty_terms->T_cold);
 
 		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
 		eqsys->SetTriggerCondition(id_T_cold, trig);
@@ -127,7 +127,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
 void SimulationGenerator::ConstructEquation_T_cold_inner(
 	const string& modulename, const len_t id_T_cold,
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::T_terms *oqty_terms
 ) {
     enum OptionConstants::uqty_T_cold_eqn type =
 		(enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(modulename + "/type");
@@ -203,7 +203,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 	const string& modulename,
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    struct OtherQuantityHandler::T_terms *oqty_terms,
 	const len_t id_eqn, const len_t id_T, const len_t id_W, const len_t id_n,
 	const len_t id_j, bool isForThot
 ) {
@@ -233,12 +233,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool parallel_losses = s->GetBool(modulename + "/halo_region_losses");
     if (parallel_losses) {
         HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1, id_T, lcfs_user_input_psi, lcfs_psi_edge_t0);
-        oqty_terms->T_cold_halo = Par;
+        oqty_terms->halo = Par;
         Op1->AddTerm(Par); // Add the term for parallel losses
     }
 
-    oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid, unknowns, id_j);
-    Op2->AddTerm(oqty_terms->T_cold_ohmic);
+    oqty_terms->ohmic = new OhmicHeatingTerm(fluidGrid, unknowns, id_j);
+    Op2->AddTerm(oqty_terms->ohmic);
 
     bool withRecombinationRadiation = s->GetBool(modulename + "/recombination");
 
@@ -249,12 +249,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     for (len_t i = 0; i < nitypes; i++)
         opacity_mode[i] = (enum OptionConstants::ion_opacity_mode)iopacity_modes[i];
 
-    oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
+    oqty_terms->radiation = new RadiatedPowerTerm(
         fluidGrid,unknowns,ionHandler,adas,nist,amjuel,
 		id_T, id_n,
 		opacity_mode,withRecombinationRadiation
     );
-    Op3->AddTerm(oqty_terms->T_cold_radiation);
+    Op3->AddTerm(oqty_terms->radiation);
 
 
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
@@ -263,8 +263,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op4, modulename, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys, s, false, true,
-        &oqty_terms->T_cold_advective_bc,
-		&oqty_terms->T_cold_diffusive_bc,
+        &oqty_terms->advective_bc,
+		&oqty_terms->diffusive_bc,
 		nullptr, "transport", id_T, id_n
     );
 
@@ -298,7 +298,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
         NBIElectronHeatTerm *nbi = new NBIElectronHeatTerm(fluidGrid, unknowns, adas, ionHandler, s_max, r_beam, P0, n, Ti_beam, m_i_beam, beamPower, j_B_profile, Z0, Zion, R0, TCVGaussian, Power_Profile);
         Op4->AddTerm(nbi);
-        oqty_terms->T_cold_NBI = nbi;
+        oqty_terms->NBI = nbi;
         eqsys->SetOperator(id_eqn, id_T, Op4);
         desc += " + NBI";
     }
@@ -348,7 +348,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     }
 
     if(hasTransport){
-        oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
+        oqty_terms->transport = Op4->GetAdvectionDiffusion();
         desc += " + transport";
     }
 
@@ -379,14 +379,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             // defined as those with momentum above the defined threshold.
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
         }
-        oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
+        oqty_terms->fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),
             id_eqn, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(),
             eqsys->GetHotTailGridType(), -1.0,
             pThreshold, pMode
         );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
+        Op5->AddTerm(oqty_terms->fhot_coll );
         eqsys->SetOperator(id_eqn, id_f_hot, Op5);
         desc += " + int(W*nu_E*f_hot)";
     }
@@ -398,22 +398,22 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
-			oqty_terms->T_cold_fre_coll = new CollisionalEnergyTransferKineticTerm(
+			oqty_terms->fre_coll = new CollisionalEnergyTransferKineticTerm(
 				fluidGrid,eqsys->GetRunawayGrid(),
 				id_eqn, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler(),
 				eqsys->GetRunawayGridType(), -1.0
 			);
 			FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-			Op5->AddTerm( oqty_terms->T_cold_fre_coll );
+			Op5->AddTerm(oqty_terms->fre_coll );
 			eqsys->SetOperator(id_eqn, id_f_re, Op5);
 			desc += " + int(W*nu_E*f_re)";
 		} else {
 			len_t id_n_re = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
-			oqty_terms->T_cold_nre_coll = new CollisionalEnergyTransferREFluidTerm(
+			oqty_terms->nre_coll = new CollisionalEnergyTransferREFluidTerm(
 				fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()->GetLnLambda(), -1.0
 			);
 			FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-			Op5->AddTerm( oqty_terms->T_cold_nre_coll );
+			Op5->AddTerm(oqty_terms->nre_coll );
 			eqsys->SetOperator(id_eqn, id_n_re, Op5);
 
 			desc += " + e*c*Ec*n_re";
@@ -432,9 +432,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
         const len_t nZ = ionHandler->GetNZ();
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-        oqty_terms->T_cold_ion_coll = new FVM::Operator(fluidGrid);
+        oqty_terms->ion_coll = new FVM::Operator(fluidGrid);
         for(len_t iz=0; iz<nZ; iz++){
-            oqty_terms->T_cold_ion_coll->AddTerm(
+            oqty_terms->ion_coll->AddTerm(
                 new MaxwellianCollisionalEnergyTransferTerm(
                     fluidGrid,
                     0, false,
@@ -443,7 +443,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
                     unknowns, lnLambda, ionHandler, -1.0)
                 );
         }
-        eqsys->SetOperator(id_eqn, id_Wi, oqty_terms->T_cold_ion_coll);
+        eqsys->SetOperator(id_eqn, id_Wi, oqty_terms->ion_coll);
         desc += " + sum_i Q_ei";
     }
     eqsys->SetOperator(id_eqn, id_W,Op1,desc);

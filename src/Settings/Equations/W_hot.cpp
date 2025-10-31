@@ -113,7 +113,7 @@ void SimulationGenerator::ConstructEquation_W_hot_selfconsistent(
 	// to 'W_hot', whereas for the cold particles it is assigned to 'T_cold'
 	// (and not 'W_cold').
 	ConstructEquation_T_cold_selfconsistent(
-		MODULENAME, eqsys, s, adas, nist, amjuel, oqty_terms,
+		MODULENAME, eqsys, s, adas, nist, amjuel, &oqty_terms->T_hot,
 		id_W_hot, id_T_hot,
 		id_W_hot, id_n_hot, id_j_hot,
 		true	// <-- "is for T_hot"
