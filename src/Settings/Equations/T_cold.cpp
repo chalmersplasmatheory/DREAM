@@ -420,7 +420,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     OptionConstants::uqty_T_i_eqn Ti_type =
         (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi");
     if(Ti_type == OptionConstants::UQTY_T_I_INCLUDE) {
-        CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
+        CoulombLogarithm *lnLambda;
+		if (isForThot)
+			lnLambda = eqsys->GetREFluid()->GetLnLambdaHot();
+		else
+			lnLambda = eqsys->GetREFluid()->GetLnLambda();
+
         const len_t nZ = ionHandler->GetNZ();
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
         oqty_terms->T_cold_ion_coll = new FVM::Operator(fluidGrid);
@@ -430,6 +435,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
                     fluidGrid,
                     0, false,
                     iz, true,
+					id_T, id_W, id_n,
                     unknowns, lnLambda, ionHandler, -1.0)
                 );
         }

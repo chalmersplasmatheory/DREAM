@@ -20,8 +20,8 @@ namespace DREAM{
         real_t mi, mj;
         len_t 
             id_ions,
-            id_Tcold,
-            id_ncold,id_Wcold,
+            id_T,
+            id_n, id_W,
             id_Ni, id_Wi;
 
         struct CollisionQuantity::collqty_settings *lnLambda_settings;
@@ -31,6 +31,7 @@ namespace DREAM{
             FVM::Grid *g, 
             const len_t index_i, bool isIon_i,
             const len_t index_j, bool isIon_j, 
+			const len_t id_T, const len_t id_W, const len_t id_n,
             FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler, real_t scaleFactor=1.0
         );
         ~MaxwellianCollisionalEnergyTransferTerm() {delete lnLambda_settings;}

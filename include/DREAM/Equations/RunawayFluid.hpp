@@ -30,9 +30,10 @@ namespace DREAM {
         FVM::RadialGrid *rGrid;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
-        CoulombLogarithm *lnLambdaEE;
+        CoulombLogarithm *lnLambdaEE=nullptr;
+		CoulombLogarithm *lnLambdaEEhot=nullptr;
         bool extrapolateDreicer;
-        CoulombLogarithm *lnLambdaEI;
+        CoulombLogarithm *lnLambdaEI=nullptr;
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
@@ -102,7 +103,7 @@ namespace DREAM {
         FVM::TimeKeeper *timeKeeper;
         len_t
             timerTot,
-            timerLnLambdaEE, timerLnLambdaEI,
+            timerLnLambdaEE, timerLnLambdaEEhot, timerLnLambdaEI,
             timerNuS, timerNuD, timerDerived,
             timerEcEff, timerPCrit, timerGrowthrates;
 
@@ -143,7 +144,7 @@ namespace DREAM {
     public:
         RunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-            PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
+            PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE, CoulombLogarithm *lnLEEhot,
             bool extrapolateDreicer,
             CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
             CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
@@ -256,7 +257,8 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
         AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
 
-        CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
+        CoulombLogarithm *GetLnLambda(){return lnLambdaEE;}
+		CoulombLogarithm *GetLnLambdaHot(){return lnLambdaEEhot;}
         SlowingDownFrequency* GetNuS(){return nuS;}
         PitchScatterFrequency* GetNuD(){return nuD;}
 

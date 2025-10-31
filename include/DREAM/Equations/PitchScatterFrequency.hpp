@@ -26,9 +26,13 @@ namespace DREAM {
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
     public:
-        PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                CoulombLogarithm *lnLei,CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
+        PitchScatterFrequency(
+			FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+			CoulombLogarithm *lnLei,CoulombLogarithm *lnLee,
+			enum OptionConstants::momentumgrid_type mgtype,
+			struct collqty_settings *cqset,
+			const len_t id_T, const len_t id_n
+		);
         ~PitchScatterFrequency();
 
         real_t GetIonEffectiveSizeAj(len_t iz, len_t Z0)

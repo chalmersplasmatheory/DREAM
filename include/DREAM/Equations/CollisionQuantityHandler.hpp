@@ -14,8 +14,9 @@ namespace DREAM {
 
         CollisionQuantity::collqty_settings *collQtySettings;
 
-        CoulombLogarithm *lnLambdaEE;
-        CoulombLogarithm *lnLambdaEI;
+        CoulombLogarithm *lnLambdaEE=nullptr;
+		CoulombLogarithm *lnLambdaEEhot=nullptr;
+        CoulombLogarithm *lnLambdaEI=nullptr;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         ParallelDiffusionFrequency *nuPar;
@@ -32,6 +33,7 @@ namespace DREAM {
         PitchScatterFrequency* GetNuD(){return nuD;}
         ParallelDiffusionFrequency* GetNuPar(){return nuPar;}
         CoulombLogarithm* GetLnLambdaEE(){return lnLambdaEE;}
+        CoulombLogarithm* GetLnLambdaEEhot(){return lnLambdaEEhot;}
         CoulombLogarithm* GetLnLambdaEI(){return lnLambdaEI;}
 
         CollisionQuantity::collqty_settings* GetCollisionQuantitySettings()

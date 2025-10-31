@@ -31,8 +31,9 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
  */
 RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, bool extrapolateDreicer,
-    CoulombLogarithm *lnLei, IonHandler *ions, AnalyticDistributionRE *distRE,
+    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, CoulombLogarithm *lnLeeHot,
+	bool extrapolateDreicer, CoulombLogarithm *lnLei, IonHandler *ions,
+	AnalyticDistributionRE *distRE,
     CollisionQuantity::collqty_settings *cqsetForPc,
     CollisionQuantity::collqty_settings *cqsetForEc,
     OptionConstants::conductivity_mode cond_mode,
@@ -42,8 +43,9 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_compton_mode compton_mode,
     FVM::Interpolator1D *compton_photon_flux, 
     real_t integratedComptonSpectrum, real_t C1_Compton, real_t C2_Compton, real_t C3_Compton
-) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), extrapolateDreicer(extrapolateDreicer),
-    lnLambdaEI(lnLei), unknowns(u), ions(ions), analyticRE(distRE), 
+) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEEhot(lnLeeHot),
+	extrapolateDreicer(extrapolateDreicer), lnLambdaEI(lnLei),
+	unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
     cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
     ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux),
@@ -101,6 +103,8 @@ RunawayFluid::RunawayFluid(
     this->timeKeeper = new FVM::TimeKeeper("RunawayFluid");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
     this->timerLnLambdaEE = this->timeKeeper->AddTimer("lnlambdaEE", "e-e Coulomb logarithm");
+	if (this->lnLambdaEEhot != nullptr)
+		this->timerLnLambdaEEhot = this->timeKeeper->AddTimer("lnLambdaEEhot", "Hot e-e Coulomb logarithm");
     this->timerLnLambdaEI = this->timeKeeper->AddTimer("lnlambdaEI", "e-i Coulomb logarithm");
     this->timerNuS = this->timeKeeper->AddTimer("nus", "Slowing-down frequency");
     this->timerNuD = this->timeKeeper->AddTimer("nud", "Pitch scattering frequency");
@@ -136,6 +140,8 @@ RunawayFluid::~RunawayFluid(){
 		delete this->nuD;
 	if (this->lnLambdaEE != nullptr)
 		delete this->lnLambdaEE;
+	if (this->lnLambdaEEhot != nullptr)
+		delete this->lnLambdaEEhot;
 	if (this->lnLambdaEI != nullptr)
 		delete this->lnLambdaEI;
 	
@@ -183,6 +189,8 @@ void RunawayFluid::Rebuild(const real_t t){
     // The collision frequencies (nuS, nuD) uses the coulomb logarithms 
     // in a way that requires them to be rebuilt here.
     TIME(LnLambdaEE, lnLambdaEE->RebuildRadialTerms());
+	if (this->lnLambdaEEhot != nullptr)
+		TIME(LnLambdaEEhot, lnLambdaEEhot->RebuildRadialTerms());
     TIME(LnLambdaEI, lnLambdaEI->RebuildRadialTerms());
     TIME(NuS, nuS->RebuildRadialTerms());
     TIME(NuD, nuD->RebuildRadialTerms());
@@ -257,6 +265,8 @@ void RunawayFluid::CalculateDerivedQuantities(){
 void RunawayFluid::GridRebuilt(){
     gridRebuilt = true;
     lnLambdaEE->GridRebuilt();
+	if (this->lnLambdaEEhot != nullptr)
+		lnLambdaEEhot->GridRebuilt();
     lnLambdaEI->GridRebuilt();
     nuS->GridRebuilt();
     nuD->GridRebuilt();    

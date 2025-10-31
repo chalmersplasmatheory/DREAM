@@ -74,19 +74,32 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
  * Implements the self-consistent evolution of ion heat W_i for each species
  */
 void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* /*s*/){
-    const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
+    const len_t id_Wi    = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     const len_t id_Wcold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
+	const len_t id_Tcold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+	const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+	const len_t id_nhot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
+	len_t id_Thot  = 0;
+	len_t id_Whot  = 0;
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     IonHandler *ionHandler = eqsys->GetIonHandler();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();    
     const len_t nZ = ionHandler->GetNZ();
 
-
     FVM::Operator *Op_Wij = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_Wie = new FVM::Operator(fluidGrid);
+	FVM::Operator *Op_WieHot = nullptr;
+
+	bool hasThot = unknowns->HasUnknown(OptionConstants::UQTY_T_HOT);
+	if (hasThot) {
+		id_Thot = unknowns->GetUnknownID(OptionConstants::UQTY_T_HOT);
+		id_Whot = unknowns->GetUnknownID(OptionConstants::UQTY_W_HOT);
+		Op_WieHot = new FVM::Operator(fluidGrid);
+	}
 
     CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
+	CoulombLogarithm *lnLambdaHot = eqsys->GetREFluid()->GetLnLambdaHot();
     for(len_t iz=0; iz<nZ; iz++){
         Op_Wij->AddTerm( 
             new IonSpeciesTransientTerm(fluidGrid, iz, id_Wi, -1.0)
@@ -99,17 +112,37 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
                     fluidGrid,
                     iz, true,
                     jz, true,
+					id_Tcold, id_Wcold, id_ncold,
                     unknowns, lnLambda, ionHandler)
             );
         }
+
+		// i-e collisions
         Op_Wie->AddTerm(
             new MaxwellianCollisionalEnergyTransferTerm(
-                    fluidGrid,
-                    iz, true,
-                    0, false,
-                    unknowns, lnLambda, ionHandler)
+				fluidGrid,
+				iz, true,
+				0, false,
+				id_Tcold, id_Wcold, id_ncold,
+				unknowns, lnLambda, ionHandler
+			)
         );
+
+		// i-e (hot) collisions
+		if (hasThot) {
+			Op_WieHot->AddTerm(
+				new MaxwellianCollisionalEnergyTransferTerm(
+					fluidGrid,
+					iz, true,
+					0, false,
+					id_Thot, id_Whot, id_nhot,
+					unknowns, lnLambdaHot, ionHandler
+				)
+			);
+		}
     }
     eqsys->SetOperator(id_Wi, id_Wi, Op_Wij, "dW_i/dt = sum_j Q_ij + Q_ie");
     eqsys->SetOperator(id_Wi, id_Wcold, Op_Wie);
+	if (hasThot)
+		eqsys->SetOperator(id_Wi, id_Whot, Op_WieHot);
 }
