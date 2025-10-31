@@ -65,11 +65,15 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/fileformat", "Format used for storing the magnetic field data", (int_t)OptionConstants::RADIALGRID_NUMERIC_FORMAT_LUKE);
 
     // NumericStellaratorRadialGridGenerator
+    s->DefineSetting(RADIALGRID "/rhomax", "Outer-most radial coordinate to simulate (on flux-grid)", (real_t)1.0);
+    s->DefineSetting(RADIALGRID "/rhomin", "Inner-most radial coordinate to simulate (on flux-grid)", (real_t)0.0);
     s->DefineSetting(RADIALGRID "/nfp", "Number of field periods", (int_t)0);
     s->DefineSetting(RADIALGRID "/nphi", "Number of toroidal angle grid points to use for bounce averages", (int_t)64);
     s->DefineSetting(RADIALGRID "/rho", "Radial coordinate for DESC data", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/theta", "Poloidal angle coordinate for DESC data", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/phi", "Toroidal angle coordinate for DESC data", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/R", "Radial coordinate (cylindrical)", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/Z", "Vertical coordinate (cylindrical)", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/G", "Covariant toroidal component of magnetic field in Boozer coordinates (proportional to poloidal current)", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/I", "Covariant poloidal component of magnetic field in Boozer coordinates (proportional to toroidal current)", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/iota", "Rotational transform (normalized by 2pi)", 0, (real_t*) nullptr);
@@ -81,6 +85,9 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/g_tp", "Poloidal/Toroidal element of covariant metric tensor", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/lambda_t", "Poloidal stream function to Boozer coordinates", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/lambda_p", "Toroidal stream function to Boozer coordinates", 0, (real_t*) nullptr);
+    s->DefineSetting(RADIALGRID "/nr_equil", "number of radial grid points for DESC equilibrium grid", (int_t)0);
+    s->DefineSetting(RADIALGRID "/ntheta_equil", "number of poloidal angle grid points for DESC equilibrium grid", (int_t)0);
+    s->DefineSetting(RADIALGRID "/nphi_equil", "number of toroidal angle grid points for DESC equilibrium grid", (int_t)0);
 }
 
 /**
@@ -303,6 +310,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
 FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_Numerical(
     const int_t nr, Settings *s
 ) {
+    const string filename = s->GetString(RADIALGRID "/filename");
     real_t R0 = s->GetReal(RADIALGRID "/R0");
     len_t nfp = s->GetInteger(RADIALGRID "/nfp");
     len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
@@ -317,6 +325,8 @@ FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_
     eqdata->rho             = s->GetRealArray(RADIALGRID "/rho", 1, &eqdata->nrho);
     eqdata->theta           = s->GetRealArray(RADIALGRID "/theta", 1, &eqdata->ntheta);
     eqdata->phi             = s->GetRealArray(RADIALGRID "/phi", 1, &eqdata->nphi);
+    eqdata->dataR           = s->GetRealArray(RADIALGRID "/R", 1, &ndim);
+    eqdata->dataZ           = s->GetRealArray(RADIALGRID "/Z", 1, &ndim);
     eqdata->dataG           = s->GetRealArray(RADIALGRID "/G", 1, &ndim);
     eqdata->dataI           = s->GetRealArray(RADIALGRID "/I", 1, &ndim);
     eqdata->dataiota        = s->GetRealArray(RADIALGRID "/iota", 1, &ndim);
@@ -331,11 +341,15 @@ FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_
 
     FVM::NumericStellaratorRadialGridGenerator *nsrg;
 
+
+    real_t a  = s->GetReal(RADIALGRID "/rhomax");
+    real_t r0 = s->GetReal(RADIALGRID "/rhomin");
+    
+    int_t nr_equil     = s->GetInteger(RADIALGRID "/nr_equil");
+    int_t ntheta_equil = s->GetInteger(RADIALGRID "/ntheta_equil");
+    int_t nphi_equil   = s->GetInteger(RADIALGRID "/nphi_equil");
     // Uniform radial grid
     if (!custom_grid) {
-        real_t a  = s->GetReal(RADIALGRID "/a");
-        real_t r0 = s->GetReal(RADIALGRID "/r0");
-
         nsrg = new FVM::NumericStellaratorRadialGridGenerator(
             nr, r0, a, R0, nfp, eqdata, ntheta_interp, nphi_interp
         );

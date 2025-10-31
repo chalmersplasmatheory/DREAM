@@ -37,7 +37,7 @@ namespace DREAM::FVM {
         // which is why we use this rather small value here. It does however not seem to slow down the
         // simulations significantly
         
-        len_t nfp;  // Number of field poles?
+        len_t nfp = 0;  // Number of field poles?
 
 
         virtual std::array<real_t,2> getThetaPhi_Bmin(const len_t ir) {

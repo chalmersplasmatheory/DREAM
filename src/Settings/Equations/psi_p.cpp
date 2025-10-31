@@ -145,7 +145,6 @@ void SimulationGenerator::ConstructEquation_psi_p(
     const len_t id_psi_p = eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     const len_t id_psi_edge = eqsys->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);    
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
-    const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
 
     // Set equation j_tot ~ d_r^2(psi_p)
     FVM::Operator *eqn_j1 = new FVM::Operator(fluidGrid);

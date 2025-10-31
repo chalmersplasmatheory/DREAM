@@ -170,7 +170,10 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
 
 	// Equilibrium data
 	this->sf->CreateStruct(group + "eq");
-	SaveEquilibrium(this->sf, group + "eq/");
+    if (rgrid->isStellarator())
+        SaveStellaratorEquilibrium(this->sf, group + "eq/");
+	else
+        SaveEquilibrium(this->sf, group + "eq/");
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -218,6 +221,49 @@ void OutputGeneratorSFile::SaveEquilibrium(
 	sf->WriteList(group + "theta", theta, ntheta);
 
 	delete [] theta;
+	delete [] Z_f;
+	delete [] Z;
+	delete [] R_f;
+	delete [] R;
+}
+
+/**
+ * Save stellarator equilibrium data to the output.
+ *
+ * sf:    SFile object to write data to.
+ * group: Full path to the equilibrium in the output.
+ */
+void OutputGeneratorSFile::SaveStellaratorEquilibrium(
+	SFile *sf, const string& group
+) {
+	FVM::RadialGrid *rg = this->fluidGrid->GetRadialGrid();
+
+	sf->WriteScalar(group + "R0", rg->GetR0());
+	sf->WriteScalar(group + "Z0", 0);
+
+	// Flux surface coordinates
+	len_t npsi = rg->GetNPsi();
+	len_t ntheta = rg->GetNTheta();
+	len_t nphi = rg->GetNPhi();
+
+	const real_t *R = rg->GetFluxSurfaceRMinusR0();
+	const real_t *R_f = rg->GetFluxSurfaceRMinusR0_f();
+	const real_t *Z = rg->GetFluxSurfaceZMinusZ0();
+	const real_t *Z_f = rg->GetFluxSurfaceZMinusZ0_f();
+	const real_t *theta = rg->GetPoloidalAngle();
+	const real_t *phi = rg->GetToroidalAngle();
+
+	sfilesize_t dims[3] = {nphi, ntheta, npsi};
+	sfilesize_t dims_f[3] = {nphi, ntheta, npsi+1};
+	sf->WriteMultiArray(group + "RMinusR0", R, 3, dims);
+	sf->WriteMultiArray(group + "RMinusR0_f", R_f, 3, dims_f);
+	sf->WriteMultiArray(group + "ZMinusZ0", Z, 3, dims);
+	sf->WriteMultiArray(group + "ZMinusZ0_f", Z_f, 3, dims_f);
+	sf->WriteList(group + "theta", theta, ntheta);
+    sf->WriteList(group + "phi", phi, nphi);
+
+	delete [] theta;
+    delete [] phi;
 	delete [] Z_f;
 	delete [] Z;
 	delete [] R_f;

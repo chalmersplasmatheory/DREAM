@@ -47,11 +47,10 @@ class StellaratorMagneticField(NumericalMagneticField):
 
         self.grid = LinearGrid(L=self.nr - 1, M=int((self.ntheta - 1) / 2), N=int((self.nphi - 1) / 2), endpoint=True, NFP=self.eq.NFP)
 
-        R = self.eq.compute('R', grid=self.grid)['R'].reshape((self.nphi, self.nr, self.ntheta))
-        self.R0 = float(R[0,0,0])
-        self.a = float(R[0,-1,0]-R[0,0,0])
-        #self.R0 = float(self.eq.compute('R0', grid=self.grid)['R0']) # TODO: This is not the major radius as defined in DREAM
-        #self.a = float(self.eq.compute('a', grid=self.grid)['a']) # TODO: This is not the minor radius as defined in DREAM
+        self.R = np.array(self.eq.compute('R', grid=self.grid)['R'], dtype=np.float64)
+        self.Z = np.array(self.eq.compute('Z', grid=self.grid)['Z'], dtype=np.float64)
+        self.R0 = float(self.eq.axis.R_n[self.eq.axis.R_basis.get_idx(0)])
+        self.a = float(self.eq.compute('a', grid=self.grid)['a'])
         self.nfp = int(self.eq.NFP)
 
         self.rho = np.array(self.grid.nodes[self.grid.unique_rho_idx,0], dtype=np.float64)
@@ -88,10 +87,11 @@ class StellaratorMagneticField(NumericalMagneticField):
         if savedata:
             dic = { "R0" : self.R0,
                     "a": self.a,
-                    "nr": self.nr,
                     "nfp": self.nfp,
                     "rho": self.theta,
                     "phi": self.phi,
+                    "R" : self.R,
+                    "Z" : self.Z,
                     "f_passing": self.f_passing,
                     "B_min": self.B_min,
                     "B_max": self.B_max,
@@ -208,10 +208,22 @@ class StellaratorMagneticField(NumericalMagneticField):
 
             ax.plot(R[:,:-1], Z[:,:-1], color=gray, linewidth=0.5)
             ax.plot(R[:,-1], Z[:,-1], color=red, linewidth=2)
-            #ax.plot(R[0,0], Z[0,0], 's', color=red)
+            ax.plot(R[0,0], Z[0,0], 's', color=red)
+            '''
+            R0loc = 0
+            n = 1
+            for rn in self.eq.axis.R_n:
+                R0loc += rn*np.cos(n*iphi)
+                print(f'R0loc_{n}  =  {R0loc:.4f}  =  R0loc_{n-1}+{rn*np.cos(n*iphi):.4f},     rn  =  {rn:.4f}')
+                n += 1
+            ax.plot([R0loc, R0loc], [-0.4,0.4], color=black)
+            ax.plot([R[0,0], R[0,-1]], [Z[0,0], Z[0,-1]], 'k--')
+            print(f'R_0={R[0, 0]:.4f}    R_-1={R[0, -1]:.4f}')
+            print(f'Z_0={Z[0, 0]:.4f}    Z_-1={Z[0, -1]:.4f}')
+            print(f't_0={plotgrid.nodes[:,1].reshape((nrho+1, ntheta)).T[0,0]:.4f}    t_-1={plotgrid.nodes[:,1].reshape((nrho+1, ntheta)).T[0,-1]}')
+            '''
 
-        ax.plot(self.R0, 0, 's', color=red)#'X', color=black)
-
+        ax.plot(self.R0, 0, 'X', color=black)
         ax.set_xlabel('$R$ (m)')
         ax.set_ylabel('$Z$ (m)')
 

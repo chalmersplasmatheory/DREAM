@@ -307,14 +307,20 @@ void RadialGrid::InitializeFSAvg(
  * Deallocate flux surface averages
  */
 void RadialGrid::DeallocateFSAvg(){
-    if (this->effectivePassingFraction == nullptr)
+    if (this->FSA_nablaR2OverR2 == nullptr)
         return;
 
-    delete [] this->FSA_B;
-    delete [] this->FSA_B_f;
-    delete [] this->FSA_B2;
-    delete [] this->FSA_B2_f;
-    delete [] this->effectivePassingFraction;
+    if (this->FSA_B != nullptr)
+        delete [] this->FSA_B;
+    if (this->FSA_B_f != nullptr)
+        delete [] this->FSA_B_f;
+    if (this->FSA_B2 != nullptr)
+        delete [] this->FSA_B2;
+    if (this->FSA_B2_f != nullptr)
+        delete [] this->FSA_B2_f;
+    if (this->effectivePassingFraction != nullptr)
+        delete [] this->effectivePassingFraction;
+
     delete [] this->FSA_nablaR2OverR2;
     delete [] this->FSA_nablaR2OverR2_f;
     delete [] this->FSA_1OverR2;

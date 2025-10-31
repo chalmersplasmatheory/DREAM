@@ -12,6 +12,7 @@ namespace DREAM::FVM {
         struct eq_data {
             len_t nrho, ntheta, nphi;
             const real_t *rho, *theta, *phi;  // Coordinate arrays (1D)
+            const real_t *dataR, *dataZ;              // Cylindrical coordinates
             const real_t *dataG, *dataI;      // toroial and poloidal magnetic field strengths (1D)
             const real_t *dataiota;           // Rotational transform (1D)
             const real_t *datapsi;            // Toroidal flux (1D)
@@ -38,8 +39,10 @@ namespace DREAM::FVM {
         
         FVM::Interpolator3DSpatial *interp_B, *interp_Jacobian, //*interp_K, 
                             *interp_BdotGradphi, *interp_gtt, *interp_gtp,
-                            *interp_lambdat, *interp_lambdap; 
-        gsl_interp_accel *acc_r, *acc_theta;
+                            *interp_lambdat, *interp_lambdap, 
+                            *interp_R, *interp_Z; 
+
+        gsl_interp_accel *acc_r;
 
 		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t, len_t);
 
@@ -102,8 +105,13 @@ namespace DREAM::FVM {
 		virtual const real_t *GetPoloidalAngle() override;
 		virtual const real_t *GetToroidalAngle() override;
 
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
+
         // Debugging method
-        void __SaveB(const char*); // TODO: Remove?
+        //void __SaveB(const char*); // TODO: Remove?
     };
 }
 

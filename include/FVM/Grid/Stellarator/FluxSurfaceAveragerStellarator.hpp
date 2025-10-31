@@ -15,25 +15,6 @@ namespace DREAM::FVM { class FluxSurfaceAveragerStellarator; }
 namespace DREAM::FVM {
     class FluxSurfaceAveragerStellarator : public FluxSurfaceAverager {
 
-    public:
-
-        // parameters for BounceIntegralFunction
-        /** TODO: Take back if BA
-        struct BounceIntegralParams {
-            len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
-            real_t Bmin; real_t(*F_ref)(real_t,real_t,real_t,real_t,void*); real_t(*F_eval)(real_t,real_t,real_t,real_t,void*); void *F_ref_par; int_t *Flist_eval; 
-            FluxSurfaceAveragerStellarator *fsAvg; bool integrateQAWS;
-        };
-        static real_t BA_FUNC_PASSING(real_t xiOverXi0, real_t BOverBmin, real_t ROverR0, real_t NablaR2, void* par){
-            BounceIntegralParams *params = (BounceIntegralParams*)par;
-            return params->F_ref(xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par);
-        }
-        static real_t BA_FUNC_TRAPPED(real_t xiOverXi0, real_t BOverBmin, real_t ROverR0, real_t NablaR2, void* par){
-            BounceIntegralParams *params = (BounceIntegralParams*)par;
-            return params->F_ref( xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par) 
-                 + params->F_ref(-xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par);
-        }*/
-
     private:
         // Pointer to the RadialGrid which owns 
         // this FluxSurfaceAveragerStellarator, and its generator.
@@ -84,6 +65,9 @@ namespace DREAM::FVM {
 
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        virtual real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr) override;
+
+        static real_t BounceIntegralFunction(real_t theta, void *par);
         
         const len_t GetNPhi() const
             {return nphi_interp;}    
@@ -142,11 +126,6 @@ namespace DREAM::FVM {
         len_t getNFP(){return nfp;}
         virtual const bool isStellarator() const override {return true;} 
 
-
-        static real_t AssembleBAFunc(
-            real_t xiOverXi0,real_t BOverBmin, real_t BdotGradphi, 
-            real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist
-        );
         static real_t AssembleFSAFunc(
             real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist
         );

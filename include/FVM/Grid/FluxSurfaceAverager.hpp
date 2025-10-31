@@ -85,11 +85,12 @@ namespace DREAM::FVM {
             *Jacobian = nullptr,
             *ROverR0 = nullptr,
             *NablaR2 = nullptr;
+        
+        gsl_integration_workspace *gsl_adaptive;
 
     private:
         
         gsl_integration_fixed_workspace *gsl_w = nullptr;
-        gsl_integration_workspace *gsl_adaptive;
         gsl_integration_workspace *gsl_adaptive_outer;
         gsl_root_fsolver *gsl_fsolver;
         gsl_integration_qaws_table *qaws_table;
@@ -124,7 +125,7 @@ namespace DREAM::FVM {
 
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        virtual real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
 
         real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);

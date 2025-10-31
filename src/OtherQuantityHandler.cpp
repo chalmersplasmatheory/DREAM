@@ -1159,7 +1159,7 @@ void OtherQuantityHandler::DefineQuantities() {
     }
 
     if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
-        this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {
+        this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL) && !this->fluidGrid->GetRadialGrid()->isStellarator()) {
         // Magnetic energy and internal inductance
         DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
             real_t v = evaluateMagneticEnergy();
@@ -1344,7 +1344,7 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
  * Returns the total poloidal magnetic energy internal
  * to the tokamak chamber normalized to R0
  */
-real_t OtherQuantityHandler::evaluateMagneticEnergy(){ // TODO: Do for stellarator
+real_t OtherQuantityHandler::evaluateMagneticEnergy(){ // TODO: Do for stellarator!!!
     FVM::RadialGrid *rGrid = this->fluidGrid->GetRadialGrid();
     const real_t *G_R0 = rGrid->GetBTorG();
     const real_t *VpVol = rGrid->GetVpVol();

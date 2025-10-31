@@ -139,12 +139,20 @@ class Grid:
             self.xi0TrappedBoundary = geom['xi0TrappedBoundary']
             self.toroidalFlux = geom['toroidalFlux']
             self.GR0 = geom['GR0']
+            if 'IR0' in geom:
+                self.IR0 = geom['IR0']
             self.Bmin = geom['Bmin']
             self.Bmax = geom['Bmax']
             self.FSA_BOverBmin2 = geom['FSA_BOverBmin2']
             self.FSA_BOverBmin = geom['FSA_BOverBmin']
-            self.FSA_R02OverR2 = geom['FSA_R02OverR2']
-            self.FSA_NablaR2_R02OverR2 = geom['FSA_NablaR2_R02OverR2']
+            if 'FSA_R02OverR2' in geom:
+                self.FSA_R02OverR2 = geom['FSA_R02OverR2']
+                self.FSA_NablaR2_R02OverR2 = geom['FSA_NablaR2_R02OverR2']
+            elif 'FSA_BdotGradphiR0' in geom:
+                self.FSA_BdotGradphiR0 = geom['FSA_BdotGradphiR0']
+                self.FSA_gttR02OverJ2 = geom['FSA_gttR02OverJ2']
+                self.FSA_gtpR02OverJ2 = geom['FSA_gtpR02OverJ2']
+
 
         if 'eq' in grid:
             self.eq = Equilibrium(grid['eq'])

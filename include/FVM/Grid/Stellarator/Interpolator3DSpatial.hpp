@@ -40,7 +40,7 @@ namespace DREAM::FVM {
             const real_t*, const real_t*, const real_t*,
             const real_t*, 
             enum interp_method meth=INTERP_LINEAR,
-            bool ownsArrays=true
+            bool ownsArrays=false
         );
         ~Interpolator3DSpatial();
         

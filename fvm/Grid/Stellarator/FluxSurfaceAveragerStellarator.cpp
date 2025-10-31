@@ -41,7 +41,7 @@ FluxSurfaceAveragerStellarator::FluxSurfaceAveragerStellarator(
 
     InitializeQuadrature(q_method);
 
-    BOverBmin   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->BAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->BAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
+    BOverBmin   = new FluxSurfaceQuantity(rGrid, [rgg,g](len_t ir, real_t theta, real_t phi){return rgg->BAtThetaPhi(ir,theta, phi)/g->GetBmin(ir);},            [rgg,g](len_t ir, real_t theta, real_t phi){return rgg->BAtThetaPhi_f(ir,theta, phi)/g->GetBmin_f(ir);}, interpolationMethod);
     Jacobian    = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->JacobianAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->JacobianAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     BdotGradphi = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->BdotGradphiAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->BdotGradphiAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     gttOverJ2   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->gttAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->gttAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
@@ -65,14 +65,9 @@ FluxSurfaceAveragerStellarator::~FluxSurfaceAveragerStellarator(){
     //gsl_root_fsolver_free(gsl_fsolver);
 
     DeallocateQuadrature();
-    DeallocateReferenceData();
-    delete BOverBmin;
-    delete Jacobian;
     delete BdotGradphi;
     delete gttOverJ2;
     delete gtpOverJ2;
-    delete ROverR0;
-    delete NablaR2;
 }
 
 
@@ -235,8 +230,8 @@ void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_me
     gsl_adaptive_phi   = gsl_integration_workspace_alloc(1000);
     std::function<real_t(real_t,real_t,real_t)>  QuadWeightFunction;
     theta_max = 2 * M_PI; 
-    if(nfp > 0)
-        phi_max = M_PI / nfp;
+    if(this->nfp > 0)
+        phi_max = M_PI / this->nfp;
     else 
         phi_max = 2 * M_PI;
     
@@ -279,53 +274,70 @@ void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_me
         weights_phi[ip]/= QuadWeightFunction(phi[ip],0,phi_max);
 
     // If symmetric field we integrate from 0 to pi and multiply result by 2. 
-    if(nfp > 0)
+    if(this->nfp > 0)
         for(len_t it=0; it<ntheta_interp; it++)
-            weights_phi[it] *= 2 * nfp;
+            weights_phi[it] *= 2 * this->nfp;
+}
+
+/**
+ * Evaluates the bounce-integral integrand normalized to p^2*R0 at an arbitrary 
+ * poloidal angle theta, in a form that can be used by gsl quadratures.
+ */
+real_t FluxSurfaceAveragerStellarator::BounceIntegralFunction(real_t theta, void *par){
+    struct BounceIntegralParams *params = (struct BounceIntegralParams *) par;
+    
+    FluxSurfaceAverager *fluxAvg = params->fsAvg; 
+    int_t *Flist_eval = params->Flist_eval;
+    
+    real_t BOverBmin = 1;
+    real_t xiOverXi0 = 1;
+    real_t Jacobian = 1;
+
+    real_t Function = (Flist_eval != nullptr) ? 
+        fluxAvg->AssembleBAFunc(xiOverXi0,BOverBmin, 0., 0.,Flist_eval)
+        : params->F_eval(xiOverXi0,BOverBmin,0.,0.,params);
+    
+    real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
+    real_t S = 2*M_PI*Jacobian*sqrtG*Function;
+
+    return S;
+}
+
+/**
+ * Evaluates the bounce integral normalized to p^2 of the function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2)  
+ * at radial grid point ir and pitch xi0, using an adaptive quadrature.
+ */
+real_t FluxSurfaceAveragerStellarator::EvaluatePXiBounceIntegralAtP(len_t ir, real_t /*xi0*/, fluxGridType fluxGridType, real_t(*F_ref)(real_t,real_t,real_t,real_t,void*), void *F_ref_par, const int_t *Flist){
+    int_t Flist_copy[5];
+    int_t *Flist_eval = nullptr;
+    if(Flist != nullptr){
+        for(len_t k=0;k<5;k++)
+            Flist_copy[k] = Flist[k];
+        Flist_eval = Flist_copy;
+    }
+
+    real_t(*F_eval)(real_t,real_t,real_t,real_t,void*) = BA_FUNC_PASSING;
+    real_t theta_b1 = 0;
+    real_t theta_b2 = 2*M_PI;
+
+    BounceIntegralParams params = {
+        ir,1,theta_b1,theta_b2,fluxGridType,
+        1,F_ref,F_eval,F_ref_par,Flist_eval,this,false
+    };
+
+    gsl_function GSL_func;
+    GSL_func.function = &(BounceIntegralFunction);
+    GSL_func.params = &params;
+    real_t bounceIntegral, error; 
+
+    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_adaptive->limit; 
+    gsl_integration_qag(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&bounceIntegral,&error);
+    
+    return bounceIntegral;
 }
 
 /** TODO: Take back code for BA, see original FluxSurfaceAverager */
 
-/**
- * Returns the function to be bounce averaged, evaluated at poloidal angle theta.
- * If Flist is provided, returns the function
- *      BA_Func = Flist[5] * xiOverXi0^Flist[0] * BOverBmin^Flist[1] 
- *               * BdotGradphi^Flist[2] * NablaR2^Flist[3],
- */
-real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist){
-    real_t BA_Func = Flist[5];
-    if(Flist[0]>0)
-        for(int_t k=0; k<Flist[0]; k++)
-            BA_Func *= xiOverXi0;
-    else if(Flist[0]<0)
-        for(int_t k=0; k<-Flist[0]; k++)
-            BA_Func /= xiOverXi0;
-    if(Flist[1]>0)
-        for(int_t k=0; k<Flist[1]; k++)
-            BA_Func *= BOverBmin;
-    else if(Flist[1]<0)
-        for(int_t k=0; k<-Flist[1]; k++)
-            BA_Func /= BOverBmin;
-    if(Flist[2]>0)
-        for(int_t k=0; k<Flist[2]; k++)
-            BA_Func *= BdotGradphi;
-    else if(Flist[2]<0)
-        for(int_t k=0; k<-Flist[2]; k++)
-            BA_Func /= BdotGradphi;
-    if(Flist[3]>0)
-        for(int_t k=0; k<Flist[3]; k++)
-            BA_Func *= gttOverJ2;
-    else if(Flist[3]<0)
-        for(int_t k=0; k<-Flist[3]; k++)
-            BA_Func /= gttOverJ2;
-    if(Flist[4]>0)
-        for(int_t k=0; k<Flist[4]; k++)
-            BA_Func *= gtpOverJ2;
-    else if(Flist[4]<0)
-        for(int_t k=0; k<-Flist[4]; k++)
-            BA_Func /= gtpOverJ2;
-    return BA_Func;
-}
 
 /**
  * Returns the function to be flux surface averaged, evaluated at poloidal angle theta.
@@ -334,7 +346,7 @@ real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, re
  *               * BdotGradphi^Flist[1] * gttOverJ2^Flist[2] * gttOverJ2^Flist[3],
  */
 real_t FluxSurfaceAveragerStellarator::AssembleFSAFunc(real_t BOverBmin, real_t BdotGradphi, real_t gttOverJ2, real_t gtpOverJ2, const int_t *Flist){
-    real_t FSA_Func = Flist[3];
+    real_t FSA_Func = Flist[4];
     if(Flist[0]>0)
         for(int_t k=0; k<Flist[0]; k++)
             FSA_Func *= BOverBmin;

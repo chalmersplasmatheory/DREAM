@@ -295,11 +295,13 @@ namespace DREAM::FVM {
 		virtual const real_t GetZ0() { return this->generator->GetZ0(); }
 		virtual const len_t GetNPsi() { return this->generator->GetNPsi(); }
 		virtual const len_t GetNTheta() { return this->generator->GetNTheta(); }
+		virtual const len_t GetNPhi() { return 0; }
 		virtual const real_t *GetFluxSurfaceRMinusR0() { return this->generator->GetFluxSurfaceRMinusR0(); }
 		virtual const real_t *GetFluxSurfaceRMinusR0_f() { return this->generator->GetFluxSurfaceRMinusR0_f(); }
 		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
 		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
+        virtual const real_t *GetToroidalAngle() { return nullptr; }
         
         /**
          * Returns q*R0 on the distribution grid where q
@@ -311,7 +313,7 @@ namespace DREAM::FVM {
          *  mu0Ip: product of vacuum permeability and toroidal plasma
          *         current enclosed by the flux surface ir.
          */
-        const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
+        virtual const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
             if(mu0Ip==0)
                 return std::numeric_limits<real_t>::infinity();
             real_t twoPi = 2*M_PI;

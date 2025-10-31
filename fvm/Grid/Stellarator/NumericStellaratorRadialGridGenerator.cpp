@@ -47,7 +47,6 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
     //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
     this->acc_r = gsl_interp_accel_alloc();
-    this->acc_theta = gsl_interp_accel_alloc();
 }
 
 /**
@@ -91,7 +90,6 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
     //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
     this->acc_r = gsl_interp_accel_alloc();
-    this->acc_theta = gsl_interp_accel_alloc();
 }
 
 /**
@@ -117,9 +115,10 @@ NumericStellaratorRadialGridGenerator::~NumericStellaratorRadialGridGenerator() 
         delete this->interp_gtp;
         delete this->interp_lambdat;
         delete this->interp_lambdap;
+        delete this->interp_R;
+        delete this->interp_Z;
     }
 
-    gsl_interp_accel_free(this->acc_theta);
     gsl_interp_accel_free(this->acc_r);
 
 	delete this->providedData; // Is this ok?
@@ -222,6 +221,8 @@ bool NumericStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStel
     this->interp_gtp         = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->datagtp,interp_meth);
     this->interp_lambdat     = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->datalambdat,interp_meth);
     this->interp_lambdap     = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->datalambdap,interp_meth);
+    this->interp_R           = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->dataR,interp_meth);
+    this->interp_Z           = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->dataZ,interp_meth);
 
 	// Reference quantities
 	for (len_t i = 0; i < GetNr(); i++) {
@@ -296,7 +297,11 @@ real_t NumericStellaratorRadialGridGenerator::JacobianAtThetaPhi(
 
     this->interp_Jacobian->Eval(1,1,1, p, r, t, Jacobian);
 
-    return Jacobian[0] / this->R0;
+    real_t JacobianOverR0 = Jacobian[0] / this->R0;
+    
+    delete [] Jacobian;
+    
+    return JacobianOverR0;
 }
 
 /**
@@ -317,7 +322,11 @@ real_t NumericStellaratorRadialGridGenerator::BdotGradphiAtThetaPhi(
     
     this->interp_BdotGradphi->Eval(1,1,1, p, r, t, BdotGradphi);
 
-	return BdotGradphi[0] * this->R0;
+    real_t BdotGradphiTimesR0 = BdotGradphi[0] * this->R0;
+    
+    delete [] BdotGradphi;
+
+	return BdotGradphiTimesR0;
 }
 
 /**
@@ -339,9 +348,16 @@ real_t NumericStellaratorRadialGridGenerator::gttAtThetaPhi(
     this->interp_gtt->Eval(1,1,1, p, r, t, gtt);
 
     real_t J = JacobianAtThetaPhi(radius, theta, phi);
-    if (gtt[0] == 0)
+    if (gtt[0] == 0){
+        delete [] gtt;
         return 0.;
-	return gtt[0] / (J*J);
+    }
+
+    real_t gttOverJ2 = gtt[0] / (J*J);
+    
+    delete [] gtt;
+    
+	return gttOverJ2;
 }
 
 /**
@@ -358,20 +374,33 @@ real_t NumericStellaratorRadialGridGenerator::gtpAtThetaPhi(
     real_t p[1] = {this->_angleBounded(phi)};
     real_t r[1] = {radius};
 
-    real_t *gtp = new real_t[1];
     real_t *gtt = new real_t[1];
+    real_t *gtp = new real_t[1];
     real_t *lambdat = new real_t[1];
     real_t *lambdap = new real_t[1];
     
-    this->interp_gtp->Eval(1,1,1, p, r, t, gtp);
     this->interp_gtt->Eval(1,1,1, p, r, t, gtt);
+    this->interp_gtp->Eval(1,1,1, p, r, t, gtp);
     this->interp_lambdat->Eval(1,1,1, p, r, t, lambdat);
     this->interp_lambdap->Eval(1,1,1, p, r, t, lambdap);
 
     real_t J = JacobianAtThetaPhi(radius, theta, phi);
-    if ((gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) == 0)
+    if ((gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) == 0){
+        delete [] gtt;
+        delete [] gtp;
+        delete [] lambdat;
+        delete [] lambdap;
         return 0.;
-	return (gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) / (J*J) ;
+    }
+
+    real_t gtpOverJ2 = (gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) / (J*J);
+    
+    delete [] gtt;
+    delete [] gtp;
+    delete [] lambdat;
+    delete [] lambdap;
+    
+	return gtpOverJ2;
 }
 
 /**
@@ -408,8 +437,12 @@ real_t NumericStellaratorRadialGridGenerator::EvalB(const real_t radius, const r
     real_t *B = new real_t[1];
 
     this->interp_B->Eval(1,1,1, p, r, t, B);
+
+    real_t b = B[0];
     
-    return B[0];
+    delete [] B;
+    
+    return b;
 }
 
 real_t NumericStellaratorRadialGridGenerator::BAtThetaPhi(const len_t ir, const real_t theta, const real_t phi) {
@@ -419,6 +452,116 @@ real_t NumericStellaratorRadialGridGenerator::BAtThetaPhi_f(const len_t ir, cons
 	return EvalB(this->r_f[ir], theta, phi);
 }
 
+/**
+ * Return a list of flux surface R coordinates
+ * on the simulation radial grid.
+ */
+const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceRMinusR0() {
+	const len_t nr = this->GetNr();
+	real_t *R = new real_t[nr * this->ntheta * this->nphi];
+    const real_t *theta = GetPoloidalAngle();
+    const real_t *phi   = GetToroidalAngle();
+
+	for (len_t ip = 0, i = 0; ip < nphi; ip++)
+        for (len_t it = 0; it < ntheta; it++)
+		    for (len_t ir = 0; ir < nr; ir++, i++){
+                real_t t[1] = {this->_angleBounded(theta[it])};
+                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t r[1] = {this->r[ir]};
+                real_t *iR = new real_t[1];
+                this->interp_R->Eval(1,1,1, p, r, t, iR);
+                R[i] = iR[0] - this->R0;
+                delete [] iR;
+        }
+    delete [] theta;
+    delete [] phi;
+
+	return R;
+}
+
+
+/**
+ * Return a list of flux surface R coordinates
+ * on the simulation radial grid.
+ */
+const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
+	const len_t nr = this->GetNr();
+	real_t *R = new real_t[(nr+1) * this->ntheta * this->nphi];
+    const real_t *theta = GetPoloidalAngle();
+    const real_t *phi   = GetToroidalAngle();
+
+    for (len_t ip = 0, i = 0; ip < nphi; ip++)
+        for (len_t it = 0; it < ntheta; it++)
+		    for (len_t ir = 0; ir < nr+1; ir++, i++){
+                real_t t[1] = {this->_angleBounded(theta[it])};
+                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t r[1] = {this->r_f[ir]};
+                real_t *iR = new real_t[1];
+                this->interp_R->Eval(1,1,1, p, r, t, iR);
+                R[i] = iR[0] - this->R0;
+                delete [] iR;
+        }
+    delete [] theta;
+    delete [] phi;
+
+	return R;
+}
+
+
+/**
+ * Returns a list of flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
+	const len_t nr = this->GetNr();
+	real_t *Z = new real_t[nr * this->ntheta * this->nphi];
+    const real_t *theta = GetPoloidalAngle();
+    const real_t *phi   = GetToroidalAngle();
+
+    for (len_t ip = 0, i = 0; ip < nphi; ip++)
+        for (len_t it = 0; it < ntheta; it++)
+		    for (len_t ir = 0; ir < nr; ir++, i++){
+                real_t t[1] = {this->_angleBounded(theta[it])};
+                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t r[1] = {this->r[ir]};
+                real_t *iZ = new real_t[1];
+                this->interp_Z->Eval(1,1,1, p, r, t, iZ);
+                Z[i] = iZ[0];
+                delete [] iZ;
+        }
+    delete [] theta;
+    delete [] phi;
+
+	return Z;
+}
+
+
+/**
+ * Returns a list of flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
+	const len_t nr = this->GetNr();
+	real_t *Z = new real_t[(nr+1) * this->ntheta * this->nphi];
+    const real_t *theta = GetPoloidalAngle();
+    const real_t *phi   = GetToroidalAngle();
+
+    for (len_t ip = 0, i = 0; ip < nphi; ip++)
+        for (len_t it = 0; it < ntheta; it++)
+		    for (len_t ir = 0; ir < nr+1; ir++, i++){
+                real_t t[1] = {this->_angleBounded(theta[it])};
+                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t r[1] = {this->r_f[ir]};
+                real_t *iZ = new real_t[1];
+                this->interp_Z->Eval(1,1,1, p, r, t, iZ);
+                Z[i] = iZ[0];
+                delete [] iZ;
+        }
+    delete [] theta;
+    delete [] phi;
+
+	return Z;
+}
 
 /**
  * Returns a list of poloidal angles on which the flux
@@ -461,7 +604,7 @@ const real_t *NumericStellaratorRadialGridGenerator::GetToroidalAngle() {
  *
  * filename: Name of file to save data to.
  */
-void NumericStellaratorRadialGridGenerator::__SaveB(const char *filename) {
+/*void NumericStellaratorRadialGridGenerator::__SaveB(const char *filename) {
     // DEBUG: Save magnetic field
     const len_t NTHETA = 100, NPHI = 100;
     real_t **B = new real_t*[GetNr()];
@@ -478,5 +621,5 @@ void NumericStellaratorRadialGridGenerator::__SaveB(const char *filename) {
     SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
     sf->WriteArray("B", B, GetNr(), NTHETA);
     sf->Close();
-}
+}*/
 

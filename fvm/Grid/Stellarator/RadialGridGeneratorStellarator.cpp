@@ -24,8 +24,6 @@ RadialGridGeneratorStellarator::~RadialGridGeneratorStellarator(){
  * Rebuilds magnetic field data and stores all quantities needed for flux surface and bounce averages.
  */
 void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGrid) {
-    real_t realeps = std::numeric_limits<real_t>::epsilon();
-
     nr = rGrid->GetNr();
 
     Bmin   = new real_t[GetNr()];
@@ -50,15 +48,12 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
 
         extremum = getThetaPhi_Bmax(ir);
         theta_Bmax[ir] = extremum[0];
-        phi_Bmax[ir] = extremum[0];
+        phi_Bmax[ir] = extremum[1];
         
         Bmin[ir] = BAtThetaPhi(ir,theta_Bmin[ir], phi_Bmin[ir]);
         Bmax[ir] = BAtThetaPhi(ir,theta_Bmax[ir], phi_Bmax[ir]);
-        if(!Bmin[ir] || 1-Bmin[ir]/Bmax[ir]<100*realeps)
-            xi0TrappedBoundary[ir] = 0;
-        else
-            xi0TrappedBoundary[ir] = sqrt(1-Bmin[ir]/Bmax[ir]);
-
+        xi0TrappedBoundary[ir] = 0; // Used for BA in E_ceff, simplified => no trapped particles
+        
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
         extremum = getThetaPhi_Bmin_f(ir);
@@ -67,20 +62,19 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
 
         extremum = getThetaPhi_Bmax_f(ir);
         theta_Bmax_f[ir] = extremum[0];
-        phi_Bmax_f[ir] = extremum[0];
+        phi_Bmax_f[ir] = extremum[1];
 
         Bmin_f[ir] = BAtThetaPhi_f(ir,theta_Bmin_f[ir], phi_Bmin_f[ir]);
         Bmax_f[ir] = BAtThetaPhi_f(ir,theta_Bmax_f[ir], phi_Bmax_f[ir]);
-        if(!Bmin_f[ir] || 1-Bmin_f[ir]/Bmax_f[ir]<100*realeps)
-            xi0TrappedBoundary_f[ir] = 0;
-        else
-            xi0TrappedBoundary_f[ir] = sqrt(1-Bmin_f[ir]/Bmax_f[ir]);
+        xi0TrappedBoundary_f[ir] = 0;  // Used for BA in E_ceff, simplified => no trapped particles
     }
     rGrid->SetMagneticExtremumData(
         Bmin, Bmin_f, Bmax, Bmax_f, 
         theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f,
         xi0TrappedBoundary, xi0TrappedBoundary_f
     );
+    delete [] phi_Bmin;
+    delete [] phi_Bmax;
 }
 
 // The remaining functions are related to determining theta_Bmin and theta_Bmax

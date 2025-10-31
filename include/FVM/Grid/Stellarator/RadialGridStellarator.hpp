@@ -49,27 +49,6 @@ namespace DREAM::FVM {
             FSA_PARAM_B_DOT_GRAD_PHI[5] = {0,1,0,0,1},
             FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED[5] = {0,0,1,0,1},
             FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED[5] = {0,0,0,1,1};
-    
-        // Specification for functions used in bounce averages
-        static real_t BA_FUNC_UNITY(real_t,real_t,real_t,real_t,real_t,void*)
-            {return 1;}
-        static real_t BA_FUNC_XI(real_t xiOverXi0,real_t,real_t,real_t,real_t,void*)
-            {return xiOverXi0;}
-        static real_t BA_FUNC_XI_SQUARED_OVER_B(real_t xiOverXi0,real_t BOverBmin,real_t,real_t,real_t,void*)
-            {return xiOverXi0*xiOverXi0/BOverBmin;}
-        static real_t BA_FUNC_B_CUBED(real_t, real_t BOverBmin,real_t, real_t, real_t, void*)
-            {return BOverBmin*BOverBmin*BOverBmin;}
-        static real_t BA_FUNC_XI_SQUARED_B_SQUARED(real_t xiOverXi0, real_t BOverBmin,real_t, real_t, real_t, void*)
-            {return BOverBmin*BOverBmin*xiOverXi0*xiOverXi0;}
-
-        // Alternative representation of functions to be bounce averaged:
-        // lists containing exponents of the various contributing factors
-        static constexpr int_t
-            BA_PARAM_UNITY[5] = {0,0,0,0,0,1},
-            BA_PARAM_XI[5] = {1,0,0,0,0,1},
-            BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,0,1},
-            BA_PARAM_B_CUBED[5] = {0,3,0,0,0,1},
-            BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,0,1};
 
         
 	private:
@@ -87,8 +66,7 @@ namespace DREAM::FVM {
             *BpolIOverR0   = nullptr,
             *BpolIOverR0_f = nullptr,
             *iota   = nullptr,
-            *iota_f = nullptr,
-            R0;
+            *iota_f = nullptr;
 
         // Deallocators
         void DeallocateReferenceMagneticData(){
@@ -96,6 +74,14 @@ namespace DREAM::FVM {
                 return;
             delete [] BpolIOverR0;
             delete [] BpolIOverR0_f;
+            delete [] BtorGOverR0;
+            BtorGOverR0 = nullptr;
+            delete [] BtorGOverR0_f;
+            BtorGOverR0_f = nullptr;
+            delete [] psiPrimeRef;
+            psiPrimeRef = nullptr;
+            delete [] psiPrimeRef_f;
+            psiPrimeRef_f = nullptr;
         }
         void DeallocateStellaratorData(){
             if(iota == nullptr)
@@ -166,9 +152,17 @@ namespace DREAM::FVM {
 		virtual const real_t  GetIota_f(const len_t ir) const override {return this->iota_f[ir];}
 
 		// Routines used for saving equilibrium to output file
-        // TODO: Don't save equilibrium in output, or save something else
-        virtual const real_t *GetToroidalAngle() { return this->generator->GetToroidalAngle(); }
+		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
+        virtual const real_t *GetToroidalAngle() override { return this->generator->GetToroidalAngle(); }
         
+		virtual const len_t GetNPsi() override { return this->generator->GetNPsi(); }
+		virtual const len_t GetNTheta() override { return this->generator->GetNTheta(); }
+        virtual const len_t GetNPhi() override { return this->generator->GetNPhi(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0() override { return this->generator->GetFluxSurfaceRMinusR0(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override { return this->generator->GetFluxSurfaceRMinusR0_f(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override { return this->generator->GetFluxSurfaceZMinusZ0(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
+
         /**
          * Returns q*R0 on the distribution grid where q
          * is the safety factor and R0 the major radius.
@@ -187,11 +181,17 @@ namespace DREAM::FVM {
                             / GetFSA_gttOverJ2(ir);
         }
 
-        const real_t SafetyFactorNormalized(const len_t ir, const real_t /*mu0Ip*/) const {
-            real_t iota = this->iota[ir]; 
+        virtual const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const override {
+            //real_t iota = this->iota[ir]; 
             // TODO, future option, 
             // real_t iota = RotationalTransform(ir, mu0Ip); 
-            return (this->BtorGOverR0[ir] + iota * BpolIOverR0[ir]) * R0 / iota * FSA_1OverB[ir] / Bmin[ir];
+            //return (this->BtorGOverR0[ir] + iota * BpolIOverR0[ir]) * R0 / iota * FSA_1OverB[ir] / Bmin[ir];
+            if(mu0Ip==0)
+                return std::numeric_limits<real_t>::infinity();
+            real_t twoPi = 2*M_PI;
+            real_t twoPiCubed = twoPi*twoPi*twoPi;
+            return VpVol[ir]*VpVol[ir]/(twoPiCubed*mu0Ip)
+                    * GetFSA_BdotGradphi(ir) * GetFSA_gttOverJ2(ir);
         }
 
         /**

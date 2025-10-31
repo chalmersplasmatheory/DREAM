@@ -23,7 +23,7 @@ using namespace DREAM::FVM;
  * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  * nphi_interp:   Toroidal angle resolution in quadrature for flux surface and bounce averages.
  */
-RadialGridStellarator::RadialGridStellarator(RadialGridGeneratorStellarator *rg, const real_t /*t0*/,
+RadialGridStellarator::RadialGridStellarator(RadialGridGeneratorStellarator *rg, const real_t /*t0*/, 
     FluxSurfaceAveragerStellarator::interp_method im, FluxSurfaceAveragerStellarator::quadrature_method qm_passing)
     : RadialGrid(rg), generator(rg) {
 
@@ -45,8 +45,8 @@ RadialGridStellarator::~RadialGridStellarator(){
     DeallocateReferenceMagneticData();
     DeallocateStellaratorData();
     
-    delete this->generator;
-    //delete this->fluxSurfaceAveragerS;
+    //delete this->generator; // Handled in RadialGrid
+    //delete this->fluxSurfaceAveragerS; // Handled in RadialGrid
 }
 
 /***************************
@@ -301,17 +301,20 @@ void RadialGridStellarator::InitializeFSAvg(
  * Deallocate flux surface averages
  */
 void RadialGridStellarator::DeallocateFSAvg(){
-    if (this->effectivePassingFraction == nullptr)
+    if (this->FSA_BdotGradphi == nullptr)
         return;
 
     delete [] this->FSA_B;
+    this->FSA_B = nullptr;
     delete [] this->FSA_B_f;
+    this->FSA_B_f = nullptr;
     delete [] this->FSA_B2;
+    this->FSA_B2 = nullptr;
     delete [] this->FSA_B2_f;
-    delete [] this->FSA_1OverB;
-    delete [] this->FSA_1OverB_f;
+    this->FSA_B2_f = nullptr;
     delete [] this->effectivePassingFraction;
-    delete [] this->effectivePassingFraction_f;
+    this->effectivePassingFraction = nullptr;
+
     delete [] this->FSA_BdotGradphi;
     delete [] this->FSA_BdotGradphi_f;
     delete [] this->FSA_gttOverJ2;
