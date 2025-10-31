@@ -242,7 +242,8 @@ namespace DREAM {
             Settings*, bool, bool, DREAM::TransportAdvectiveBC** abc=nullptr,
             DREAM::TransportDiffusiveBC** dbc=nullptr,
             struct OtherQuantityHandler::eqn_terms *oqty_terms=nullptr,
-            const std::string& subname="transport"
+            const std::string& subname="transport",
+			len_t id_T=0, len_t id_n=0
         );
 
         static void ConstructEquation_SPI(EquationSystem*, Settings*);

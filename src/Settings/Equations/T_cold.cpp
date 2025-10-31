@@ -250,7 +250,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         opacity_mode[i] = (enum OptionConstants::ion_opacity_mode)iopacity_modes[i];
 
     oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
-        fluidGrid,unknowns,ionHandler,adas,nist,amjuel,opacity_mode,withRecombinationRadiation
+        fluidGrid,unknowns,ionHandler,adas,nist,amjuel,
+		id_T, id_n,
+		opacity_mode,withRecombinationRadiation
     );
     Op3->AddTerm(oqty_terms->T_cold_radiation);
 
@@ -261,7 +263,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op4, modulename, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys, s, false, true,
-        &oqty_terms->T_cold_advective_bc,&oqty_terms->T_cold_diffusive_bc
+        &oqty_terms->T_cold_advective_bc,
+		&oqty_terms->T_cold_diffusive_bc,
+		nullptr, "transport", id_T, id_n
     );
 
     eqsys->SetOperator(id_eqn, id_E_field,Op2);
