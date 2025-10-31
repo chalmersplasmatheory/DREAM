@@ -8,6 +8,7 @@ from .. DREAMException import DREAMException
 from .Equations.ColdElectrons import ColdElectrons
 from .Equations.ColdElectronTemperature import ColdElectronTemperature
 from .Equations.ElectricField import ElectricField
+from .Equations.HotElectronCurrent import HotElectronCurrent
 from .Equations.HotElectronDistribution import HotElectronDistribution
 from .Equations.Ions import Ions
 from .Equations.OhmicCurrent import OhmicCurrent
@@ -43,6 +44,7 @@ class EquationSystem:
         self.addUnknown('E_field', ElectricField(settings=settings))
         self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
         self.addUnknown('f_re', RunawayElectronDistribution(settings=settings))
+        self.addUnknown('j_hot', HotElectronCurrent(settings=settings))
         self.addUnknown('j_ohm', OhmicCurrent(settings=settings))
         self.addUnknown('n_cold', ColdElectrons(settings=settings))
         self.addUnknown('n_i', Ions(settings=settings))

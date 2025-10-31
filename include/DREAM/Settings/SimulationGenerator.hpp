@@ -96,6 +96,8 @@ namespace DREAM {
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
         static void DefineOptions_Ions_abl(Settings *s);
+		static void DefineOptions_j_hot(Settings*);
+		static void DefineOptions_j_hot_inner(Settings*, const std::string&);
         static void DefineOptions_j_ohm(Settings*);
         static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
@@ -171,6 +173,9 @@ namespace DREAM {
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
+        static void ConstructEquation_j_hot_inner(const std::string&, EquationSystem*, Settings*);
+        static void ConstructEquation_j_hot_ohmic(EquationSystem*, Settings*);
+        static void ConstructEquation_j_hot_moment(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot_hottailMode(EquationSystem*, Settings*);
         static void ConstructEquation_j_re(EquationSystem*, Settings*);
         static void ConstructEquation_j_ohm(EquationSystem*, Settings*);

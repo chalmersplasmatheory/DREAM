@@ -219,6 +219,11 @@ enum uqty_n_cold_eqn {
     UQTY_N_COLD_EQN_SELFCONSISTENT=2 // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE
 };
 
+enum uqty_j_hot_eqn {
+	UQTY_J_HOT_EQN_MOMENT=1,		// j_hot is a moment of f_hot (or 0, if no f_hot)
+	UQTY_J_HOT_EQN_OHMIC=2			// j_hot obeys Ohm's law
+};
+
 enum uqty_T_cold_eqn {
     UQTY_T_COLD_EQN_PRESCRIBED=1,   // T_cold prescribed by the user
     UQTY_T_COLD_SELF_CONSISTENT=2   // T_cold calculated self-consistently

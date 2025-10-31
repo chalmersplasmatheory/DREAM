@@ -9,6 +9,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
+#include "DREAM/Equations/Fluid/CurrentFromHotConductivityTerm.hpp"
 #include "DREAM/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.hpp"
 #include "DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
@@ -22,6 +23,107 @@ using namespace DREAM;
 
 
 /**
+ * Define options for the hot electron current density module.
+ */
+void SimulationGenerator::DefineOptions_j_hot(Settings *s) {
+	DefineOptions_j_hot_inner(s, MODULENAME);
+	DefineOptions_TriggerCondition(s, MODULENAME "/switch");
+	DefineOptions_j_hot_inner(s, MODULENAME "/switch/equation");
+}
+
+void SimulationGenerator::DefineOptions_j_hot_inner(Settings *s, const std::string &modulename) {
+	s->DefineSetting(modulename+ "/type", "Type of equation to use for the hot electron current density.", (int_t)OptionConstants::UQTY_J_HOT_EQN_MOMENT);
+}
+
+
+/**
+ * Construct the equation for the hot electron current density.
+ */
+void SimulationGenerator::ConstructEquation_j_hot(
+    EquationSystem *eqsys, Settings *s
+) {
+	const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
+
+	// Construct main equation
+	ConstructEquation_j_hot_inner(MODULENAME, eqsys, s);
+
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
+	
+	// Set alternative equation?
+	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_j_hot, true);
+
+		ConstructEquation_j_hot_inner(MODULENAME "/switch/equation", eqsys, s);
+
+		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
+		eqsys->SetTriggerCondition(id_j_hot, trig);
+
+		eqsys->SetAssignToAlternativeEquation(id_j_hot, false);
+	}
+}
+
+void SimulationGenerator::ConstructEquation_j_hot_inner(
+	const std::string &modulename, EquationSystem *eqsys,
+	Settings *s
+) {
+	enum OptionConstants::uqty_j_hot_eqn eqn_type =
+		(enum OptionConstants::uqty_j_hot_eqn)s->GetInteger(modulename + "/type");
+	
+	switch (eqn_type) {
+		case OptionConstants::UQTY_J_HOT_EQN_MOMENT:
+			ConstructEquation_j_hot_moment(eqsys, s);
+			break;
+
+		case OptionConstants::UQTY_J_HOT_EQN_OHMIC:
+			ConstructEquation_j_hot_ohmic(eqsys, s);
+			break;
+
+		default:
+			throw SettingsException(
+				"Unrecognized equation type for 'j_hot': %d.",
+				eqn_type
+			);
+	}
+}
+
+/**
+ * Construct the equation for the hot parallel current, 'j_hot'.
+ * With this option, we take the hot current to be governed by
+ * Ohm's law, evaluated at the hot electron temperature and
+ * density.
+ */
+void SimulationGenerator::ConstructEquation_j_hot_ohmic(
+	EquationSystem *eqsys, Settings*
+) {
+	FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
+
+	const len_t id_j_hot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
+	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+
+	FVM::Operator *Op_j = new FVM::Operator(fluidGrid);
+	FVM::Operator *Op_E = new FVM::Operator(fluidGrid);
+
+	Op_j->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+	Op_E->AddTerm(new CurrentFromHotConductivityTerm(
+		fluidGrid, eqsys->GetUnknownHandler(),
+		eqsys->GetREFluid(), eqsys->GetIonHandler()
+	));
+
+	eqsys->SetOperator(id_j_hot, id_j_hot, Op_j, "j_hot = sigma*E");
+	eqsys->SetOperator(id_j_hot, id_E_field, Op_E);
+
+	eqsys->initializer->AddRule(
+		id_j_hot,
+		EqsysInitializer::INITRULE_EVAL_EQUATION,
+		nullptr,
+		// Dependencies
+		id_E_field,
+		EqsysInitializer::RUNAWAY_FLUID
+	);
+}
+
+/**
  * Construct the equation for the hot parallel current, 'j_hot'.
  * If the hot-tail grid is enabled, j_hot will be an integral of
  * the hot electron distribution. If it does not exist, it is set
@@ -30,8 +132,8 @@ using namespace DREAM;
  * eqsys:  Equation system to put the equation in.
  * s:      Settings object describing how to construct the equation.
  */
-void SimulationGenerator::ConstructEquation_j_hot(
-    EquationSystem *eqsys, Settings* s
+void SimulationGenerator::ConstructEquation_j_hot_moment(
+	EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
