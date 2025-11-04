@@ -291,6 +291,12 @@ namespace DREAM {
         static len_t GetNumberOfIonChargeStates(Settings*);
         static len_t GetNumberOfIonSpecies(Settings*);
 
+		// Helper routines for fetching f_hot settings
+		static std::string _get_f_hot_subgroup(Settings*, const std::string&);
+		static bool _get_f_hot_bool(Settings*, const std::string&);
+		static int_t _get_f_hot_int(Settings*, const std::string&);
+		static real_t _get_f_hot_real(Settings*, const std::string&);
+
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);
         static SolverNonLinear *ConstructSolver_nonlinear(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);

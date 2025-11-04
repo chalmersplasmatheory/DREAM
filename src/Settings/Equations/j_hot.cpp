@@ -155,13 +155,13 @@ void SimulationGenerator::ConstructEquation_j_hot_moment(
 
             std::string desc = "Moment of f_hot";
 
-            FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+            FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)_get_f_hot_int(s, "pThresholdMode");
             real_t pThreshold = 0.0;
             enum OptionConstants::collqty_collfreq_mode collfreq_mode =
                 (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
             if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
                 // With collfreq_mode FULL, n_hot is defined as density above some threshold.
-                pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold"); 
+                pThreshold = (real_t)_get_f_hot_real(s, "pThreshold"); 
                 
                 std::ostringstream str;
                 str <<std::fixed << std::setprecision(3) << pThreshold;
@@ -249,7 +249,7 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
     enum OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    bool withFullIonJacobian = (bool) s->GetBool("eqsys/f_hot/fullIonJacobian");
+    bool withFullIonJacobian = (bool)_get_f_hot_bool(s, "fullIonJacobian");
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     Op2->AddTerm(
         new HotTailCurrentDensityFromDistributionFunction(
@@ -273,3 +273,33 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
         EqsysInitializer::COLLQTYHDL_HOTTAIL
     );
 }
+
+/**
+ * Returns the full path to the appropriate quantity 'name' to use.
+ * This quantity will either be located under '/eqsys/f_hot' or
+ * '/eqsys/f_hot/switch/equation', depending on whether it is set for the
+ * main or alternative equations.
+ */
+std::string SimulationGenerator::_get_f_hot_subgroup(Settings *s, const std::string& name) {
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger("eqsys/f_hot/switch/condition");
+	
+	// Main equation?
+	if (switchtype == OptionConstants::EQN_TRIGGER_TYPE_NONE)
+		return "eqsys/f_hot/" + name;
+	else
+		return "eqsys/f_hot/switch/equation/" + name;
+}
+bool SimulationGenerator::_get_f_hot_bool(Settings *s, const std::string& name) {
+	const std::string &path = _get_f_hot_subgroup(s, name);
+	return s->GetBool(path);
+}
+int_t SimulationGenerator::_get_f_hot_int(Settings *s, const std::string& name) {
+	const std::string &path = _get_f_hot_subgroup(s, name);
+	return s->GetInteger(path);
+}
+real_t SimulationGenerator::_get_f_hot_real(Settings *s, const std::string& name) {
+	const std::string &path = _get_f_hot_subgroup(s, name);
+	return s->GetReal(path);
+}
+
