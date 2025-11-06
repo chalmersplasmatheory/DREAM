@@ -131,6 +131,103 @@ must call the method ``setRecombinationRadiation`` with the option
    ds.eqsys.T_cold.setRecombinationRadiation(True)
 
 
+Neutral Beam Injection (NBI)
+****************************
+The cold electron temperature equation can include heating from **Neutral Beam Injection (NBI)**. The **NBI** 
+settings are handled through the ``NBISettings`` class.  This class is used to define the beam geometry, 
+physical tokamak properties, and optional radial or time-dependant profiles for current density and beam power. To include NBI heating, the user must call the method
+``nbi.setEnabled()`` with the argument ``True``. 
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.T_cold.nbi.setEnabled(True)
+
+
+The beam geometry can be set using the methods ``nbi.setOrigin()``, ``nbi.setDirection()``, and ``nbi.setBeamParameters()``, which requires the following parameters:
+
+.. code-block:: python
+
+   ...
+   # Set beam origin point in X, Y, Z (in meters)
+   ds.eqsys.T_cold.nbi.setOrigin(P0 = [X0, Y0, Z0]) 
+   
+   # Set beam direction
+   ds.eqsys.T_cold.nbi.setDirection(n = [nX, nY, nZ]) 
+
+   # Set beam physical parameters, including:
+   # r_beam: beam radius (in meters)
+   # Ti_beam: beam energy (in Joules)
+   # m_i_beam: mass of beam ions (in kg)
+   # s_max: maximum path length of beam in plasma (in meters)
+   ds.eqsys.T_cold.nbi.setBeamParameters(r_beam = beamRadius, Ti_beam = beamEnergy, m_i_beam = beamMass, s_max = beamPathLength) 
+
+
+
+The beam and tokamak geometry can be visualized using the methods ``nbi.visualize_3d_tokamak()`` and ``nbi.visualize_flux_surfaces_top_view()``,
+
+.. code-block:: python
+
+   ...
+   # Visualize beam and tokamak in 3D
+   ds.eqsys.T_cold.nbi.visualize_3d_tokamak()
+
+   # Visualize flux surfaces in top view. Needs the radial grid as input
+   ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(radialGrid = radialGrid)
+
+For visualization, it is necessary to set up the minor and major radius of the tokamak, which is done using the method ``nbi.setRadius()``,
+
+.. code-block:: python
+
+   ...
+   # Set major and minor radius of tokamak (in meters)
+   ds.eqsys.T_cold.nbi.setR0_NBI( R0 = majorRadius, a = minorRadius )
+
+
+
+The NBI power and current density profiles can be defined using the methods
+``nbi.setPowerProfile()`` and ``nbi.setCurrentProfile()``, respectively.
+The power profile specifies the total injected beam power as a function of time,
+allowing the beam power to vary during the simulation.
+In contrast, the current density profile defines how the beam current is distributed
+across the beam radius and is assumed to remain constant over time.
+
+Alternatively, predefined normalized Gaussian profiles can be used for typical TCV or
+ITER configurations via the methods
+``nbi.setPowerProfileGaussianTCV()`` and ``nbi.setPowerProfileGaussianITER()``.
+These automatically apply beam shapes consistent with the experimental setups of the
+respective devices.
+
+The energy partition between beam components (e.g., full, half, and third energy)
+can be configured using the method ``nbi.setEnergyFractions()``.
+
+
+.. code-block:: python
+
+   ...
+   # Set time-dependent power profile (in Watts)
+   ds.eqsys.T_cold.nbi.setPowerProfile(power = powerArray, times = timeArray)
+
+   # Set time-dependent current profile (in Amperes)
+   ds.eqsys.T_cold.nbi.setCurrentProfile(current = currentArray, times = timeArray)
+
+   # Set energy fractions
+   ds.eqsys.T_cold.nbi.setEnergyFractions(fractions = [0.5, 0.4, 0.1])
+
+   # Set normalized gaussian power profile for TCV
+   ds.eqsys.T_cold.nbi.setTCVGaussian(False)
+
+   # Set normalized gaussian power profile for ITER
+   ds.eqsys.T_cold.nbi.setITERGaussian(False)
+
+
+
+
+
+
 Class documentation
 -------------------
 
