@@ -101,7 +101,7 @@ ds.eqsys.T_cold.nbi.setEnergyFractions(energy_fractions)
 
 ds.eqsys.T_cold.nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
 ds.eqsys.T_cold.nbi.setPower(beam_power=100e3) #57e3
-ds.eqsys.T_cold.nbi.setR0_NBI(R0)
+ds.eqsys.T_cold.nbi.setRadius(R0=R0)
 
 ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
 

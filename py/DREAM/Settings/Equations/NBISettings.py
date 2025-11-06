@@ -69,7 +69,7 @@ class NBISettings:
         if m_i_beam is not None: self.m_i_beam = m_i_beam
         if s_max is not None: self.s_max = s_max
 
-    def setRadius(self, R0, a):
+    def setRadius(self, R0=None, a=None):
         if R0 is not None: self.R0 = R0
         if a is not None: self.a = a
 
