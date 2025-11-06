@@ -5,8 +5,8 @@ from .UnknownQuantity import UnknownQuantity
 from .. EquationTrigger import EquationTrigger
 
 
-JHOT_TYPE_MOMENT = 1
-JHOT_TYPE_OHMIC = 2
+TYPE_MOMENT = 1
+TYPE_OHMIC = 2
 
 
 class HotElectronCurrent(UnknownQuantity):
@@ -18,7 +18,7 @@ class HotElectronCurrent(UnknownQuantity):
         """
         super().__init__(settings=settings)
 
-        self.eqn_type = JHOT_TYPE_MOMENT
+        self.eqn_type = TYPE_MOMENT
 
         if makeTrigger:
             self.trigger = EquationTrigger(
@@ -27,6 +27,16 @@ class HotElectronCurrent(UnknownQuantity):
             )
         else:
             self.trigger = None
+
+
+    def setType(self, eqn_type):
+        """
+        Set the type of equation to use for evolving j_hot.
+        """
+        if eqn_type in [TYPE_MOMENT, TYPE_OHMIC]:
+            self.eqn_type = eqn_type
+        else:
+            raise EquationException(f"Unrecognized equation type for 'j_hot': {eqn_type}.")
 
 
     def fromdict(self, data):

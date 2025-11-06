@@ -40,6 +40,11 @@ TIME_VARYING_B_MODE_INCLUDE = 2
 DISTRIBUTION_MODE_NUMERICAL = 1
 DISTRIBUTION_MODE_ANALYTICAL = 2
 DISTRIBUTION_MODE_PRESCRIBED = 3
+DISTRIBUTION_MODE_MAXWELLIAN = 4
+
+MAXWELLIAN_POPULATION_COLD = 1
+MAXWELLIAN_POPULATION_HOT = 2
+
 
 class DistributionFunction(UnknownQuantity):
     
@@ -88,6 +93,10 @@ class DistributionFunction(UnknownQuantity):
         self.prescribed_xi = None
         self.prescribed_ppar = None
         self.prescribed_pperp = None
+
+        # Whether to use n_cold/T_cold or n_hot/T_hot when
+        # evaluated as an instantaneous Maxwellian
+        self.maxwellian_population = MAXWELLIAN_POPULATION_COLD
 
         self.init = None
 
@@ -278,6 +287,15 @@ class DistributionFunction(UnknownQuantity):
         self.fullIonJacobian = includeJacobian
 
 
+    def asMaxwellian(self, population=MAXWELLIAN_POPULATION_COLD):
+        """
+        Evolve this distribution function as an instantaneous Maxwellian in
+        each time step.
+        """
+        self.mode = DISTRIBUTION_MODE_MAXWELLIAN
+        self.maxwellian_population = population
+
+
     def prescribe(self, f, t, r, xi=None, p=None, pperp=None, ppar=None):
         """
         Prescribe the time evolution of this distribution function instead of
@@ -451,8 +469,8 @@ class DistributionFunction(UnknownQuantity):
         Verify that the settings of this unknown are correctly set.
         """
         if self.grid.enabled:
-            if self.mode not in [DISTRIBUTION_MODE_NUMERICAL, DISTRIBUTION_MODE_PRESCRIBED]:
-                raise EquationException("{}: Invalid mode set. Must be 'NUMERICAL' or 'PRESCRIBED' when the grid is 'enabled'.".format(self.name))
+            if self.mode not in [DISTRIBUTION_MODE_NUMERICAL, DISTRIBUTION_MODE_PRESCRIBED, DISTRIBUTION_MODE_MAXWELLIAN ]:
+                raise EquationException("{}: Invalid mode set. Must be 'NUMERICAL', 'PRESCRIBED' or 'MAXWELLIAN' when the grid is 'enabled'.".format(self.name))
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("{}: Invalid external boundary condition set: {}.".format(self.name, bc))

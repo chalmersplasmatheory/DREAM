@@ -3,14 +3,14 @@
 from .. DREAMException import DREAMException
 
 
-EQN_TRIGGER_TYPE_NONE = 1
-EQN_TRIGGER_TYPE_TIME = 2
-EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE = 3
+TYPE_NONE = 1
+TYPE_TIME = 2
+TYPE_COLD_ELECTRON_RISE = 3
 
 ALL_TRIGGER_TYPES = [
-    EQN_TRIGGER_TYPE_NONE,
-    EQN_TRIGGER_TYPE_TIME,
-    EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE
+    TYPE_NONE,
+    TYPE_TIME,
+    TYPE_COLD_ELECTRON_RISE
 ]
 
 class EquationTrigger:
@@ -25,10 +25,10 @@ class EquationTrigger:
 
         self.sensitivity = 0.01
 
-        # EQN_TRIGGER_TYPE_TIME
+        # TYPE_TIME
         self.trigger_time = 1
 
-        self.condition = EQN_TRIGGER_TYPE_NONE
+        self.condition = TYPE_NONE
 
 
     def enabled(self):
@@ -36,10 +36,10 @@ class EquationTrigger:
         Returns ``True`` if the trigger condition is enabled,
         otherwise ``False``.
         """
-        return (self.condition != EQN_TRIGGER_TYPE_NONE)
+        return (self.condition != TYPE_NONE)
 
 
-    def setCondition(self, condition):
+    def setCondition(self, condition, trigger_time=None):
         """
         Set the condition to use for triggering an equation switch.
         """
@@ -48,14 +48,18 @@ class EquationTrigger:
 
         self.condition = condition
 
+        if condition == TYPE_TIME:
+            self.trigger_time = trigger_time
+        elif condition == TYPE_COLD_ELECTRON_RISE:
+            pass
+
 
     def setTimeTrigger(self, time):
         """
         Enable an equation trigger which switches the equation after a
         given time.
         """
-        self.setCondition(EQN_TRIGGER_TYPE_TIME)
-        self.trigger_time = time
+        self.setCondition(TYPE_TIME, trigger_time=time)
 
 
     def fromdict(self, data):
@@ -77,9 +81,9 @@ class EquationTrigger:
             'equation': self.equation.todict()
         }
 
-        if self.condition == EQN_TRIGGER_TYPE_TIME:
+        if self.condition == TYPE_TIME:
             data['trigger_time'] = self.trigger_time
-        elif self.condition == EQN_TRIGGER_TYPE_COLD_ELECTRON_RISE:
+        elif self.condition == TYPE_COLD_ELECTRON_RISE:
             data['sensitivity'] = self.sensitivity
 
         return data

@@ -88,6 +88,7 @@ namespace DREAM {
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_f_hot(Settings*);
+        static void DefineOptions_f_hot_inner(Settings*, const std::string&);
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
         static void DefineOptions_f_ripple(const std::string&, Settings*);
@@ -138,8 +139,10 @@ namespace DREAM {
         static void ConstructEquation_E_field_prescribed_current(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_f_hot_kineq(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_f_hot_prescribed(EquationSystem*, Settings*);
+        static void ConstructEquation_f_hot_inner(const std::string&, EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+		static void ConstructEquation_f_hot_maxwellian(const std::string&, EquationSystem*, Settings*);
+        static void ConstructEquation_f_hot_kineq(const std::string&, EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_f_hot_prescribed(const std::string&, EquationSystem*, Settings*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
         static void ConstructEquation_f_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);
         static void ConstructEquation_f_re_kineq(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);

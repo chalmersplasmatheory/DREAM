@@ -25,13 +25,14 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
     
     def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, 
                  recombination=RECOMBINATION_RADIATION_NEGLECTED, halo_region_losses = HALO_REGION_LOSSES_NEGLECTED,
-                 makeTrigger=True):
+                 name="T_cold", makeTrigger=True):
         """
         Constructor.
         """
         super().__init__(settings=settings)
 
         self.setType(ttype=ttype)
+        self.name = name
 
         self.temperature = None
         self.radius = None
@@ -119,7 +120,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             if (self.radius) is None or (self.times is not None):
                 self.setInitialProfile(temperature=-1)
         else:
-            raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+            raise EquationException(f"{name}: Unrecognized cold electron temperature type: {ttype}")
 
 
     def setRecombinationRadiation(self, recombination=RECOMBINATION_RADIATION_NEGLECTED):
@@ -164,7 +165,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                         for k, v in data['NBI'].items():
                             setattr(self.nbi, k, v)
         else:
-            raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+            raise EquationException(f"{name}: Unrecognized cold electron temperature type: {self.type}")
         
         if 'recombination' in data:
             self.recombination = data['recombination']
@@ -203,7 +204,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
         
         else:
-            raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+            raise EquationException(f"{name}: Unrecognized cold electron temperature type: {self.type}")
 
         if self.trigger is not None and self.trigger.enabled():
             data['switch'] = self.trigger.todict()
@@ -217,30 +218,30 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         """
         if self.type == TYPE_PRESCRIBED:
             if type(self.temperature) != np.ndarray:
-                raise EquationException("T_cold: Temperature prescribed, but no temperature data provided.")
+                raise EquationException(f"{self.name}: Temperature prescribed, but no temperature data provided.")
             elif type(self.times) != np.ndarray:
-                raise EquationException("T_cold: Temperature prescribed, but no time data provided, or provided in an invalid format.")
+                raise EquationException(f"{self.name}: Temperature prescribed, but no time data provided, or provided in an invalid format.")
             elif type(self.radius) != np.ndarray:
-                raise EquationException("T_cold: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
+                raise EquationException(f"{self.name}: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedData()
         elif self.type == TYPE_SELFCONSISTENT:
             if type(self.temperature) != np.ndarray:
-                raise EquationException("T_cold: Temperature prescribed, but no temperature data provided.")
+                raise EquationException(f"{self.name}: Temperature prescribed, but no temperature data provided.")
             elif type(self.radius) != np.ndarray:
-                raise EquationException("T_cold: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
+                raise EquationException(f"{self.name}: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedInitialData()
             self.transport.verifySettings()
         else:
-            raise EquationException("T_cold: Unrecognized equation type specified: {}.".format(self.type))
+            raise EquationException(f"{self.name}: Unrecognized equation type specified: {self.type}.")
 
 
     def verifySettingsPrescribedData(self):
-        self._verifySettingsPrescribedData('T_cold', self.temperature, self.radius, self.times)
+        self._verifySettingsPrescribedData(self.name, self.temperature, self.radius, self.times)
 
     def verifySettingsPrescribedInitialData(self):
-        self._verifySettingsPrescribedInitialData('T_cold', data=self.temperature, radius=self.radius)
+        self._verifySettingsPrescribedInitialData(self.name, data=self.temperature, radius=self.radius)
 
     def setNBI(self, settings):
         """

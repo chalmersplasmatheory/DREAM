@@ -23,6 +23,7 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
+#include "DREAM/Equations/Kinetic/InstantaneousMaxwellianTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/ParticleSourceTerm.hpp"
@@ -32,6 +33,7 @@
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Interpolator3D.hpp"
 
 
@@ -47,15 +49,33 @@ using namespace std;
  * s: Settings object to define options in.
  */
 void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
-    DefineOptions_f_general(s, MODULENAME);
+	DefineOptions_f_hot_inner(s, MODULENAME);
+
+	// Possibility for switching equation
+	DefineOptions_TriggerCondition(s, MODULENAME "/switch");
+
+	// Also define settings for the 'alternative' equation
+	DefineOptions_f_hot_inner(s, MODULENAME "/switch/equation");
+}
+
+/**
+ * Define settings for the hot-tail distribution function.
+ *
+ * modulename: Name of module to define the settings in.
+ * s:          Settings object to define options in.
+ */
+void SimulationGenerator::DefineOptions_f_hot_inner(
+	Settings *s, const string& modulename
+) {
+    DefineOptions_f_general(s, modulename);
 
     // Cold electron definition
-    s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 5.0);
-    s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
-    s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
-    s->DefineSetting(MODULENAME "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
+    s->DefineSetting(modulename + "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 5.0);
+    s->DefineSetting(modulename + "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
+    s->DefineSetting(modulename + "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
+    s->DefineSetting(modulename + "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
 	
-    s->DefineSetting(MODULENAME "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
+    s->DefineSetting(modulename + "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
 }
 
 /**
@@ -69,23 +89,67 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
 void SimulationGenerator::ConstructEquation_f_hot(
     EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
+	const len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
+	// Construct main equation
+	ConstructEquation_f_hot_inner(
+		MODULENAME, eqsys, s, oqty_terms
+	);
+
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
+	
+	// Set alternative equation?
+	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_f_hot, true);
+
+		ConstructEquation_f_hot_inner(MODULENAME "/switch/equation", eqsys, s, oqty_terms);
+
+		EquationTriggerCondition *trig = LoadTriggerCondition(
+			s, MODULENAME "/switch", eqsys->GetFluidGrid(),
+			eqsys->GetUnknownHandler()
+		);
+		eqsys->SetTriggerCondition(id_f_hot, trig);
+
+		eqsys->SetAssignToAlternativeEquation(id_f_hot, false);
+	}
+}
+
+void SimulationGenerator::ConstructEquation_f_hot_inner(
+    const std::string& modulename, EquationSystem *eqsys,
+	Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
 	enum OptionConstants::uqty_distribution_mode mode =
 		(enum OptionConstants::uqty_distribution_mode)
-			s->GetInteger(MODULENAME "/mode");
+			s->GetInteger(modulename + "/mode");
 	
-	if (mode == OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED)
-		ConstructEquation_f_hot_prescribed(
-			eqsys, s
-		);
-	else
-		ConstructEquation_f_hot_kineq(
-			eqsys, s, oqty_terms
-		);
+	switch (mode) {
+		case OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED:
+			ConstructEquation_f_hot_prescribed(
+				modulename, eqsys, s
+			);
+			break;
+
+		case OptionConstants::UQTY_DISTRIBUTION_MODE_MAXWELLIAN:
+			ConstructEquation_f_hot_maxwellian(
+				modulename, eqsys, s
+			);
+			break;
+
+		case OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL:
+			ConstructEquation_f_hot_kineq(
+				modulename, eqsys, s, oqty_terms
+			);
+			break;
+		
+		default:
+			throw DREAMException("Unrecognized f_hot equation type: %d\n", mode);
+	}
 }
 
 void SimulationGenerator::ConstructEquation_f_hot_kineq(
-    EquationSystem *eqsys, Settings *s,
-	struct OtherQuantityHandler::eqn_terms *oqty_terms
+    const std::string& modulename, EquationSystem *eqsys,
+	Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -96,7 +160,7 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
     bool addInternalBC = true;
     bool rescaleMaxwellian = true;
     FVM::Operator *eqn = ConstructEquation_f_general(
-        s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
+        s, modulename, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
         eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
         nullptr,    // transport operator (only used for f_re)
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
@@ -161,8 +225,8 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
 
     bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
-    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode)s->GetInteger(MODULENAME "/particleSource"); 
-    OptionConstants::eqterm_particle_source_shape pSourceShape  = (OptionConstants::eqterm_particle_source_shape)s->GetInteger(MODULENAME "/particleSourceShape");
+    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode)s->GetInteger(modulename + "/particleSource"); 
+    OptionConstants::eqterm_particle_source_shape pSourceShape  = (OptionConstants::eqterm_particle_source_shape)s->GetInteger(modulename + "/particleSourceShape");
     // Enable particle source term ?
     if(collfreqModeFull){
         FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
@@ -213,7 +277,7 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
  * Prescribe f_hot in time.
  */
 void SimulationGenerator::ConstructEquation_f_hot_prescribed(
-    EquationSystem *eqsys, Settings *s
+    const std::string& modulename, EquationSystem *eqsys, Settings *s
 ) {
 	/**
 	 * In order to implement prescribed mode for f_hot, we should make
@@ -228,11 +292,63 @@ void SimulationGenerator::ConstructEquation_f_hot_prescribed(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
 	ConstructEquation_f_prescribed(
-		id_f_hot, eqsys, hottailGrid, s, MODULENAME
+		id_f_hot, eqsys, hottailGrid, s, modulename
 	);
 
 	eqsys->initializer->AddRule(
 		id_f_hot, EqsysInitializer::INITRULE_EVAL_EQUATION
+	);
+}
+
+
+/**
+ * Set f_hot equal to an instantaneous Maxwellian.
+ */
+void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
+    const std::string& modulename, EquationSystem *eqsys, Settings *s
+) {
+	len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+	FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+
+	enum OptionConstants::uqty_f_hot_maxwellian_population ipop =
+		(enum OptionConstants::uqty_f_hot_maxwellian_population)s->GetInteger(modulename + "/maxwellian_population");
+	
+	enum InstantaneousMaxwellianTerm::MaxwellianPopulation pop;
+	if (ipop == OptionConstants::UQTY_F_HOT_MAXWELLIAN_HOT)
+		pop = InstantaneousMaxwellianTerm::MAXWELLIAN_POPULATION_HOT;
+	else
+		pop = InstantaneousMaxwellianTerm::MAXWELLIAN_POPULATION_COLD;
+
+	FVM::Operator *op = new FVM::Operator(hottailGrid);
+	// f_hot =
+	op->AddTerm(new FVM::IdentityTerm(hottailGrid, -1.0));
+	// = f_M(T_pop, n_pop)
+	op->AddTerm(
+		new InstantaneousMaxwellianTerm(
+			hottailGrid, eqsys->GetUnknownHandler(),
+			pop
+		)
+	);
+
+	string desc;
+	len_t id_T, id_n;
+	if (pop == InstantaneousMaxwellianTerm::MAXWELLIAN_POPULATION_COLD) {
+		desc = "f_hot = f_M(T_cold, n_cold)";
+		id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+		id_n = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+	} else {
+		desc = "f_hot = f_M(T_hot, n_hot)";
+		id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_HOT);
+		id_n = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
+	}
+
+	eqsys->SetOperator(id_f_hot, id_f_hot, op, desc);
+	eqsys->initializer->AddRule(
+		id_f_hot,
+		EqsysInitializer::INITRULE_EVAL_EQUATION,
+		nullptr,
+		// Dependencies
+		id_T, id_n
 	);
 }
 

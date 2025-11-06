@@ -2,6 +2,11 @@
 import numpy as np
 from . import DistributionFunction as DistFunc
 from . DistributionFunction import DistributionFunction
+from .. EquationTrigger import EquationTrigger
+
+from . import ColdElectronTemperature as T_cold
+from . import HotElectronCurrent as j_hot
+from . import HotElectronTemperature as T_hot
 
 # BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
 # (NOTE: These are kept for backwards compatibility. You
@@ -38,6 +43,10 @@ PARTICLE_SOURCE_SHAPE_DELTA = 2
 
 F_HOT_DIST_MODE_NONREL = 1
 
+MAXWELLIAN_POPULATION_COLD = DistFunc.MAXWELLIAN_POPULATION_COLD
+MAXWELLIAN_POPULATION_HOT = DistFunc.MAXWELLIAN_POPULATION_HOT
+
+
 class HotElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
@@ -54,13 +63,13 @@ class HotElectronDistribution(DistributionFunction):
         dist_mode = F_HOT_DIST_MODE_NONREL,
         pThreshold=7, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
         particleSource=PARTICLE_SOURCE_EXPLICIT,
-        particleSourceShape=PARTICLE_SOURCE_SHAPE_MAXWELLIAN):
+        particleSourceShape=PARTICLE_SOURCE_SHAPE_MAXWELLIAN,
+        makeTrigger=True):
         """
         Constructor.
         """
         super().__init__(settings=settings, name='f_hot', grid=settings.hottailgrid,
-            f=fhot, initr=initr, initp=initp, initxi=initxi, initppar=initppar,
-            initpperp=initpperp, rn0=rn0, n0=n0, rT0=rT0, T0=T0,
+            f=fhot, initr=initr, initp=initp, initxi=initxi, initppar=initppar, initpperp=initpperp, rn0=rn0, n0=n0, rT0=rT0, T0=T0,
             bc=bc, ad_int_r=ad_int_r, ad_int_p1=ad_int_p1,
             ad_int_p2=ad_int_p2, ad_jac_r=ad_jac_r, ad_jac_p1=ad_jac_p1,
             ad_jac_p2=ad_jac_p2, fluxlimiterdamping=fluxlimiterdamping)
@@ -71,6 +80,67 @@ class HotElectronDistribution(DistributionFunction):
 
         self.particleSource = particleSource
         self.particleSourceShape = particleSourceShape
+
+        if makeTrigger:
+            self.trigger = EquationTrigger(
+                settings,
+                HotElectronDistribution(
+                    settings=settings,
+                    fhot=fhot, initr=initr, initp=initp, initxi=initxi,
+                    initppar=initppar, initpperp=initpperp,
+                    rn0=rn0, n0=n0, rT0=rT0, T0=T0, bc=bc,
+                    ad_int_r =ad_int_r ,
+                    ad_int_p1=ad_int_p1,
+                    ad_int_p2=ad_int_p2,
+                    ad_jac_r =ad_jac_r ,
+                    ad_jac_p1=ad_jac_p1, 
+                    ad_jac_p2=ad_jac_p2,
+                    fluxlimiterdamping=fluxlimiterdamping,
+                    dist_mode=dist_mode,
+                    pThreshold=pThreshold, pThresholdMode=pThresholdMode,
+                    particleSource=particleSource,
+                    particleSourceShape=particleSourceShape,
+                    makeTrigger=False
+                )
+            )
+        else:
+            self.trigger = None
+
+
+    def enableIsotropicTrigger(self, condition, Tcold=1, *args, **kwargs):
+        """
+        Enable the automatically triggered isotropic model.
+
+        :param condition: The trigger condition to use.
+        :param Tcold: Initial cold electron temperature.
+        :param args, kwargs: Additional arguments passed onto 'trigger.setCondition()'.
+        """
+        self.trigger.setCondition(condition, *args, **kwargs)
+
+        self.settings.eqsys.j_hot.trigger.setCondition(condition, *args, **kwargs)
+        self.settings.eqsys.T_cold.trigger.setCondition(condition, *args, **kwargs)
+        self.settings.eqsys.T_hot.trigger.setCondition(condition, *args, **kwargs)
+
+        # f_hot before/after
+        self.asMaxwellian()
+
+        # Copy initial profiles (if already set)
+        if self.n0 is not None:
+            self.trigger.equation.setInitialProfiles(
+                n0=self.n0, T0=self.T0, rn0=self.rn0, rT0=self.rT0
+            )
+
+        # T_cold before/after
+        self.settings.eqsys.T_cold.setPrescribedData(Tcold)
+        self.settings.eqsys.T_cold.trigger.equation.setType(T_cold.TYPE_SELFCONSISTENT)
+
+        # T_hot before/after
+        self.settings.eqsys.T_hot.setType(T_hot.TYPE_SELFCONSISTENT)
+        self.settings.eqsys.T_hot.trigger.equation.setType(T_hot.TYPE_MOMENT)
+
+        # j_hot before/after
+        self.settings.eqsys.j_hot.setType(j_hot.TYPE_OHMIC)
+        self.settings.eqsys.j_hot.trigger.equation.setType(j_hot.TYPE_MOMENT)
 
 
     def setHotRegionThreshold(self, pThreshold=7, pMode=HOT_REGION_P_MODE_THERMAL):
@@ -109,6 +179,9 @@ class HotElectronDistribution(DistributionFunction):
         if 'particleSourceShape' in data:
             self.particleSourceShape = data['particleSourceShape']
 
+        if 'switch' in data and self.trigger is not None:
+            self.trigger.fromdict(data['switch'])
+
 
     def todict(self):
         """
@@ -122,6 +195,9 @@ class HotElectronDistribution(DistributionFunction):
             data['pThresholdMode'] = self.pThresholdMode
             data['particleSource'] = self.particleSource
             data['particleSourceShape'] = self.particleSourceShape
+
+        if self.trigger is not None and self.trigger.enabled():
+            data['switch'] = self.trigger.todict()
 
         return data
 
