@@ -65,8 +65,6 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/fileformat", "Format used for storing the magnetic field data", (int_t)OptionConstants::RADIALGRID_NUMERIC_FORMAT_LUKE);
 
     // NumericStellaratorRadialGridGenerator
-    s->DefineSetting(RADIALGRID "/rhomax", "Outer-most radial coordinate to simulate (on flux-grid)", (real_t)1.0);
-    s->DefineSetting(RADIALGRID "/rhomin", "Inner-most radial coordinate to simulate (on flux-grid)", (real_t)0.0);
     s->DefineSetting(RADIALGRID "/nfp", "Number of field periods", (int_t)0);
     s->DefineSetting(RADIALGRID "/nphi", "Number of toroidal angle grid points to use for bounce averages", (int_t)64);
     s->DefineSetting(RADIALGRID "/rho", "Radial coordinate for DESC data", 0, (real_t*) nullptr);
@@ -340,18 +338,19 @@ FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_
     eqdata->datalambdap     = s->GetRealArray(RADIALGRID "/lambda_p", 1, &ndim);
 
     FVM::NumericStellaratorRadialGridGenerator *nsrg;
-
-
-    real_t a  = s->GetReal(RADIALGRID "/rhomax");
-    real_t r0 = s->GetReal(RADIALGRID "/rhomin");
+    
+    real_t b  = s->GetReal(RADIALGRID "/wall_radius");
     
     int_t nr_equil     = s->GetInteger(RADIALGRID "/nr_equil");
     int_t ntheta_equil = s->GetInteger(RADIALGRID "/ntheta_equil");
     int_t nphi_equil   = s->GetInteger(RADIALGRID "/nphi_equil");
     // Uniform radial grid
     if (!custom_grid) {
+        real_t a  = s->GetReal(RADIALGRID "/a");
+        real_t r0 = s->GetReal(RADIALGRID "/r0");
+
         nsrg = new FVM::NumericStellaratorRadialGridGenerator(
-            nr, r0, a, R0, nfp, eqdata, ntheta_interp, nphi_interp
+            nr, r0, a, b, R0, nfp, eqdata, ntheta_interp, nphi_interp
         );
 
     // Custom radial grid
@@ -360,7 +359,7 @@ FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_
         const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
 
         nsrg = new FVM::NumericStellaratorRadialGridGenerator(
-            r_f, len_rf-1, R0, nfp, eqdata, ntheta_interp, nphi_interp
+            r_f, len_rf-1, b, R0, nfp, eqdata, ntheta_interp, nphi_interp
         );
     }
 

@@ -52,6 +52,7 @@ namespace DREAM::FVM {
 
         
 	private:
+
         // Flux-surface averaged quantities.
         real_t
             *FSA_BdotGradphi            = nullptr, // <|B\dot\nabla\varphi|>
@@ -60,6 +61,8 @@ namespace DREAM::FVM {
             *FSA_gttOverJ2_f            = nullptr, // <g_{\theta\theta}/J^2>
             *FSA_gtpOverJ2              = nullptr, // <g_{\theta\varphi}/J^2>
             *FSA_gtpOverJ2_f            = nullptr; // <g_{\theta\varphi}/J^2>
+
+        real_t psiExtraAtWall;
 
         // Magnetic field quantities
         real_t
@@ -209,6 +212,8 @@ namespace DREAM::FVM {
         virtual const real_t   GetFSA_gtpOverJ2(const len_t ir) const override { return this->FSA_gtpOverJ2[ir]; }
         virtual const real_t  *GetFSA_gtpOverJ2_f() const override { return this->FSA_gtpOverJ2_f; }
         virtual const real_t   GetFSA_gtpOverJ2_f(const len_t ir) const override { return this->FSA_gtpOverJ2_f[ir]; }
+        
+        virtual real_t GetPsiExtraAtWall() override {return psiExtraAtWall*R0;}
 
         virtual const bool isStellarator() const override {return true;} 
 

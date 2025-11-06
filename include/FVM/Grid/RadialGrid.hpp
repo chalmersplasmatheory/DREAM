@@ -385,6 +385,8 @@ namespace DREAM::FVM {
         virtual const real_t  *GetFSA_gtpOverJ2_f() const { return nullptr; }
         virtual const real_t   GetFSA_gtpOverJ2_f(const len_t) const { return 0.; }
 
+        virtual real_t GetPsiExtraAtWall() {return 0.;}
+
         virtual const bool isStellarator() const {return false;} 
 
 	};

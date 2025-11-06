@@ -27,7 +27,7 @@ namespace DREAM::FVM {
 
         bool isBuilt = false;
 
-        real_t rMin, rMax;
+        real_t rMin, rMax, rWall;
         real_t *rf_provided=nullptr;
         real_t *r=nullptr, *r_f=nullptr;
 
@@ -50,12 +50,12 @@ namespace DREAM::FVM {
 
     public:
         NumericStellaratorRadialGridGenerator(
-            const len_t nr, const real_t r0, const real_t ra, 
+            const len_t nr, const real_t r0, const real_t ra, const real_t rw, 
             const real_t R0, const len_t nfp, struct eq_data*,
 			const len_t ntheta_interp=64, const len_t nphi_interp=64
         );
         NumericStellaratorRadialGridGenerator(
-            const real_t *r_f, const len_t nr, 
+            const real_t *r_f, const len_t nr, const real_t rw,
             const real_t R0, const len_t nfp, struct eq_data*,
 			const len_t ntheta_interp=64, const len_t nphi_interp=64
         );
@@ -96,6 +96,11 @@ namespace DREAM::FVM {
         void EvaluateGeometricQuantities(
             const real_t r, const real_t theta, real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
         );
+
+        // For poloidal flux BC
+        virtual real_t GetMinorRadius() override {return rMax;}
+        virtual real_t GetWallRadius() override {return rWall;}
+
 
 		// Output generation helper routines
 		virtual const len_t GetNPsi() override { return this->GetNr(); }

@@ -77,6 +77,10 @@ namespace DREAM::FVM {
         virtual real_t gttAtThetaPhi_f(const len_t, const real_t, const real_t) = 0;
         virtual real_t gtpAtThetaPhi(const len_t, const real_t, const real_t) = 0;
         virtual real_t gtpAtThetaPhi_f(const len_t, const real_t, const real_t) = 0;
+
+        // For poloidal flux BC
+        virtual real_t GetMinorRadius() = 0;
+        virtual real_t GetWallRadius() = 0;
         
         virtual void EvaluateGeometricQuantities(const len_t, const real_t, const real_t, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) = 0;
         virtual void EvaluateGeometricQuantities_fr(const len_t, const real_t, const real_t, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2) = 0;

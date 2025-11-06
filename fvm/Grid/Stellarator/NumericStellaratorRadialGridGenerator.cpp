@@ -21,10 +21,10 @@ using namespace DREAM::FVM;
  * nphi_interp:   Toroidal angle resolution in quadrature for flux surface and bounce averages.
  */
 NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
-    const len_t nr, const real_t r0, const real_t ra,
+    const len_t nr, const real_t r0, const real_t ra, const real_t rw,
     const real_t R0, const len_t nfp, struct eq_data* eqdata,
 	const len_t ntheta_interp, const len_t nphi_interp
-) : RadialGridGeneratorStellarator(nr), providedData(eqdata), rMin(r0), rMax(ra) {
+) : RadialGridGeneratorStellarator(nr), providedData(eqdata), rMin(r0), rMax(ra), rWall(rw) {
 
     this->nfp = nfp;
     this->R0 = R0;
@@ -59,10 +59,10 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
  * nphi_interp:   Toroidal angle resolution in quadrature for flux surface and bounce averages.
  */
 NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
-    const real_t *r_f, const len_t nr,
+    const real_t *r_f, const len_t nr, const real_t rw,
     const real_t R0, const len_t nfp, struct eq_data* eqdata,
 	const len_t ntheta_interp, const len_t nphi_interp
-) : RadialGridGeneratorStellarator(nr), providedData(eqdata) {
+) : RadialGridGeneratorStellarator(nr), providedData(eqdata), rWall(rw) {
 
     this->nfp = nfp;
     this->R0 = R0;

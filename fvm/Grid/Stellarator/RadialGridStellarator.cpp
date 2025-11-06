@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <gsl/gsl_interp.h>
 #include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
 #include "FVM/Grid/Stellarator/RadialGridGeneratorStellarator.hpp"
 #include "gsl/gsl_integration.h"
@@ -153,6 +154,26 @@ void RadialGridStellarator::SetStellaratorData(
     this->iota_f = iota_f;
 }
 
+/**
+ * Get the extra term for the poloidal flux boundary condition
+ */
+struct paramsPsiBC {
+    real_t *C_gtt; real_t *C_gtp; real_t *C_psi; 
+};
+real_t integrandPsiBC(real_t r, void *p){
+    struct paramsPsiBC *params = (struct paramsPsiBC *) p;
+    
+    real_t gtt  = params->C_gtt[0] + params->C_gtt[1] * r;
+    real_t gtp  = params->C_gtp[0] + params->C_gtp[1] * r;
+    real_t psip = params->C_psi[0] + params->C_psi[1] * r;
+    return gtp / gtt * psip;
+}
+
+static void extrapolator(real_t *x, real_t *y, len_t n, real_t C[2]){
+    C[1] = (y[n-1] - y[n-2]) / (x[n-1] - x[n-2]);
+    C[0] = y[n-1] - C[1] * x[n-1];
+}
+
 
 /** 
  * Calculate and store flux surface averages.
@@ -180,7 +201,27 @@ void RadialGridStellarator::RebuildFluxSurfaceAveragedQuantities(){
     SetFluxSurfaceAverage(FSA_BdotGradphi,FSA_BdotGradphi_f, FSA_FUNC_B_DOT_GRAD_PHI, nullptr, FSA_PARAM_B_DOT_GRAD_PHI);
     SetFluxSurfaceAverage(FSA_gttOverJ2,FSA_gttOverJ2_f, FSA_FUNC_GTT_OVER_JACOBIAN_SQUARED, nullptr, FSA_PARAM_GTT_OVER_JACOBIAN_SQUARED);
     SetFluxSurfaceAverage(FSA_gtpOverJ2,FSA_gtpOverJ2_f, FSA_FUNC_GTP_OVER_JACOBIAN_SQUARED, nullptr, FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED);
-    
+
+    if (nr >= 1 && r_f[nr-1] != r_f[nr]){
+        real_t C_gtt[2], C_gtp[2], C_psi[2];
+        extrapolator(r_f, FSA_gttOverJ2_f, nr, C_gtt);
+        extrapolator(r_f, FSA_gtpOverJ2_f, nr, C_gtp);
+        extrapolator(r_f, psiPrimeRef_f, nr, C_psi);
+        
+        struct paramsPsiBC params = {C_gtt, C_gtp, C_psi};
+        real_t a = this->generator->GetMinorRadius(), b = this->generator->GetWallRadius();
+        
+        gsl_integration_workspace *gsl_adaptive = gsl_integration_workspace_alloc(1000);
+        gsl_function GSL_func; 
+        GSL_func.function = &(integrandPsiBC);
+        GSL_func.params = &params;
+        real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+        gsl_integration_qag(&GSL_func, a, b, epsabs, epsrel, lim, GSL_INTEG_GAUSS41, gsl_adaptive, &psiExtraAtWall, &error);
+    } else {
+        psiExtraAtWall = 0;
+    }
+
+
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
