@@ -49,6 +49,8 @@ class NBIIonTerm : public IonEquationTerm<FVM::EquationTerm> {
         nnz += ions->GetNZ();  // Ion temperatures
         return nnz;
     }
+    real_t ComputeWeightFactor(len_t ir, len_t iIon);
+
 
 public:
     
