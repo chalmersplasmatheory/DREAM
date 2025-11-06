@@ -114,7 +114,10 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         );
     }
 
-    bool includeNBI = s->GetBool("eqsys/T_cold" "/include_NBI");
+    bool includeNBI = false;
+    if (s->HasSetting(MODULENAME "/NBI/enabled")) {
+        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
+    }
     if (includeNBI){
         for(len_t iz=0; iz<nZ; iz++){
            auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);

@@ -33,6 +33,8 @@ class NBISettings:
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
         self.enabled = enabled
+        if enabled:
+            print("NBI enabled.")
 
     def setTCVGaussian(self, TCVGaussian=True):
         """Enable/disable TCV Gaussian beam profile."""
@@ -174,6 +176,7 @@ class NBISettings:
 
     def todict(self):
         return {
+            'enabled'    : self.enabled,
             's_max'      : self.s_max,
             'r_beam'     : self.r_beam,
             'P0'         : self.P0,

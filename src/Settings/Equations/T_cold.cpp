@@ -41,7 +41,6 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
     s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/include_NBI", "Whether to include NBI heating term in T_cold evolution", (bool)false);
     DefineOptions_T_cold_NBI(s);
 
     // Prescribed data (in radius+time)
@@ -59,6 +58,7 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
 void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
     const std::string NBI_PATH = std::string(MODULENAME) + "/NBI";
 
+    s->DefineSetting(MODULENAME "/NBI/enabled", "Enable/disable NBI heating", (bool)false);
     // Beam geometry settings
     s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
     s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
@@ -202,7 +202,10 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
     std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
-    bool includeNBI = s->GetBool(MODULENAME "/include_NBI");
+    bool includeNBI = false;
+    if (s->HasSetting(MODULENAME "/NBI/enabled")) {
+        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
+    }
     if (includeNBI) {
         real_t s_max = s->GetReal(MODULENAME "/NBI/s_max");
         real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
