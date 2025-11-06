@@ -45,9 +45,8 @@ namespace DREAM {
         FVM::Interpolator1D *j_B_profile; // Beam current density profile
         FVM::Interpolator1D *Power_Profile; // Beam power profile
         real_t I_B;                         // Total beam current
-        real_t Z0;                          // Initial charge state
-        real_t Zion;                        // Ion charge state
         bool TCVGaussian;                   // Flag for Gaussian profile
+        bool ITERGaussian;                  // Flag for ITER Gaussian profile
 
         // Tokamak parameters
         real_t R0;           // Major radius
@@ -75,7 +74,6 @@ namespace DREAM {
         real_t *H_r_dne;
         real_t *H_r_dn_ij;
         real_t *H_r_dT_ij;
-        real_t depositedFraction = 1.0;
 
         // Derivative storage
         real_t dfe_dne, dfe_dTe;
@@ -89,8 +87,6 @@ namespace DREAM {
         real_t *d_NBIHeatTerm_i_d_Te, *d_NBIHeatTerm_i_d_ne;
         real_t *d_NBIHeatTerm_i_d_T_ij, *d_NBIHeatTerm_i_d_n_ij;
 
-
-        std::vector<real_t> dPdne, dPdTe, dPdni, dPdTi;
 
         // Structure for storing R,Z coordinates of flux surfaces
         struct FluxSurfacePoint{
@@ -111,7 +107,9 @@ namespace DREAM {
         }
         void PrecomputeBeamMapLUT();
 
-        void IonElectronFractions(FVM::UnknownQuantityHandler *unknowns, len_t ir, real_t &f_i, real_t &f_e, real_t &dfe_dne, real_t &dfe_dTe, std::vector<real_t> &dfe_dn_ij, std::vector<real_t> &dfe_dT_ij, real_t &dfi_dne, real_t &dfi_dTe, std::vector<real_t> &dfi_dn_ij, std::vector<real_t> &dfi_dT_ij, real_t Ti_beam);
+        void IonElectronFractions(FVM::UnknownQuantityHandler *unknowns, len_t ir, real_t &f_i, real_t &f_e, real_t &dfe_dne, real_t &dfe_dTe, 
+                                std::vector<real_t> &dfe_dn_ij, std::vector<real_t> &dfe_dT_ij, real_t &dfi_dne, real_t &dfi_dTe, 
+                                std::vector<real_t> &dfi_dn_ij, std::vector<real_t> &dfi_dT_ij, real_t Ti_beam);
 
     public:
         NBIHandler(FVM::Grid *, ADAS *, IonHandler *ions);
@@ -124,8 +122,7 @@ namespace DREAM {
             const real_t energy_fractions[3],
             real_t Ti_beam, real_t m_i_beam, real_t beamPower,
             FVM::Interpolator1D *j_B_profile,
-            real_t Z0, real_t Zion, real_t R0,
-            bool TCVGaussian,
+            real_t R0, bool TCVGaussian, bool ITERGaussian,
             FVM::Interpolator1D *Power_Profile
         );
 
@@ -135,7 +132,8 @@ namespace DREAM {
 
 
         // Calculation methods
-        void ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t &lambda_s, real_t &dlambda_dI_e, std::vector<real_t> &dlambda_dI_ij, real_t &dlambda_dne, std::vector<real_t> &dlambda_dn_ij, std::vector<real_t> &dI_ij_dT_ij, real_t &dI_e_dTe, real_t Ti_beam);
+        void ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t &lambda_s, real_t &dlambda_dI_e, std::vector<real_t> &dlambda_dI_ij, 
+                                real_t &dlambda_dne, std::vector<real_t> &dlambda_dn_ij, std::vector<real_t> &dI_ij_dT_ij, real_t &dI_e_dTe, real_t Ti_beam);
         void ComputeDepositionProfile(FVM::UnknownQuantityHandler *unknowns, real_t Ti_beam);
         int_t CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t theta_B);
         void CartesianToCylindrical(real_t x, real_t y, real_t z, real_t &r, real_t &theta, real_t &s);
