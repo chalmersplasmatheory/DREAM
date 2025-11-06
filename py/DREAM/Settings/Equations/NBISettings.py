@@ -18,18 +18,17 @@ class NBISettings:
         self.Ti_beam = 28*1.6021e-16 # Beam energy [J]
         self.m_i_beam = 3.344e-27 # Beam ion mass [kg] (Deuterium)
         self.beam_power = 11e5 # Beam power [W]
-        self.Z0 = 0 # Initial ion charge state
-        self.Zion = 1 # Ion type
         self.R0 = 0.88 # Major radius [m]
         self.j_B_t = np.linspace(0, 0.0775, 50) # Beam current profile time points [s] (Matching ROME radius)
         self.j_B_x = 250e3 * np.ones(len(self.j_B_t)) # Beam current profile values [A/m^2]
         self.j_B_tinterp = 0 # Interpolation method for time profile
         self.TCVGaussian = False # Use TCV Gaussian beam profile if True
+        self.ITERGaussian = False # Use ITER Gaussian beam profile if True
         self.a = 0.23 # Plasma minor radius [m]
         self.P_NBI_t = [] # Beam power profile time points [s]
         self.P_NBI_x = [] # Beam power profile values [W]
         self.P_NBI_tinterp =0 # Interpolation method for power profile
-        self.energy_fractions = [0.56, 0.32, 0.12] # Fractions of beam energy for multi-energy components
+        self.energy_fractions = [1.0,0.0,0.0] #[0.56, 0.32, 0.12] # Fractions of beam energy for multi-energy components
 
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
@@ -38,6 +37,10 @@ class NBISettings:
     def setTCVGaussian(self, TCVGaussian=True):
         """Enable/disable TCV Gaussian beam profile."""
         self.TCVGaussian = TCVGaussian
+
+    def setITERGaussian(self, ITERGaussian=True):
+        """Enable/disable ITER Gaussian beam profile."""
+        self.ITERGaussian = ITERGaussian
     
     def setCurrentProfile(self, j_B_t, j_B_x, tinterp=0):
         """Set beam current profile in one dimension. As an alternative to setting the TCV Gaussian."""
@@ -56,11 +59,6 @@ class NBISettings:
     def setEnergyFractions(self, fractions):
         """Set energy fractions for multi-energy beam components."""
         self.energy_fractions = fractions
-    
-    def setIons(self, Z0, Zion):
-        """Set ion species."""
-        self.Z0 = Z0
-        self.Zion = Zion
 
     def setBeamParameters(self, r_beam=None, Ti_beam=None, m_i_beam=None, s_max=None):
         """Set beam physical parameters."""
@@ -184,10 +182,9 @@ class NBISettings:
             'Ti_beam'    : self.Ti_beam,
             'm_i_beam'   : self.m_i_beam,
             'beamPower'  : self.beam_power,
-            'Z0'         : self.Z0,
-            'Zion'       : self.Zion,
             'R0'         : self.R0,
             'TCVGaussian': self.TCVGaussian,
+            'ITERGaussian': self.ITERGaussian,
             'j_B'        : {
                 't'       : self.j_B_t,
                 'x'       : self.j_B_x,
