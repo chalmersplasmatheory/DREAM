@@ -100,7 +100,6 @@ ds.eqsys.T_cold.nbi.setDirection(nbi_direction_vector)
 ds.eqsys.T_cold.nbi.setEnergyFractions(energy_fractions)
 
 ds.eqsys.T_cold.nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
-ds.eqsys.T_cold.nbi.setIons(Z0=0, Zion=1)  
 ds.eqsys.T_cold.nbi.setPower(beam_power=100e3) #57e3
 ds.eqsys.T_cold.nbi.setR0_NBI(R0)
 
