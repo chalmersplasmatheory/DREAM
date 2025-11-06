@@ -75,8 +75,6 @@ class RadialGrid(PrescribedScalarParameter):
         self.num_magneticfield = None   # Magnetic field class parsing data
 
         # Stellarator magnetic field parameters
-        self.rhomin = 0.0
-        self.rhomax = 1.0
         self.num_stellarator = None
         self.nfp = None
         self.nr_equil = int(0)
@@ -169,8 +167,6 @@ class RadialGrid(PrescribedScalarParameter):
             self.custom_grid = False
 
         self.r0 = r0
-        if self.type == TYPE_STELLARATOR:
-            self.rhomin = self.r0 / self.num_stellarator.a
 
 
     def setMinorRadius(self, a):
@@ -186,8 +182,6 @@ class RadialGrid(PrescribedScalarParameter):
             self.custom_grid = False
 
         self.a = float(a)
-        if self.type == TYPE_STELLARATOR:
-            self.rhomax = self.a / self.num_stellarator.a
 
 
     def setMajorRadius(self, R0):
@@ -385,7 +379,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.a = self.num_magneticfield.a
 
 
-    def setStellarator(self, filename, format=FILE_FORMAT_DESC, nr_equil=None, ntheta_equil=None, nphi_equil=None):
+    def setStellarator(self, filename, format=FILE_FORMAT_DESC, nr_equil=None, ntheta_equil=None, nphi_equil=None, datafilename=None):
         """
         Sets the numerical magnetic field to use for the simulation.
 
@@ -406,8 +400,9 @@ class RadialGrid(PrescribedScalarParameter):
                 self.ntheta_equil = ntheta_equil
             if nphi_equil is not None:
                 self.nphi_equil = nphi_equil
-            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
-            self.num_stellarator.load()
+            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, datafilename)
+            if datafilename is None:
+                self.num_stellarator.load()
         else:
             DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
 
@@ -619,9 +614,6 @@ class RadialGrid(PrescribedScalarParameter):
                     except:
                         self.num_magneticfield = None
         elif self.type == TYPE_STELLARATOR:
-            self.rhomin = data['rhomin']
-            self.rhomax = data['rhomax']
-            self.r0 = data['r0']
             self.num_filename = data['filename']
             self.nfp = data['nfp']
             self.ntheta = data['ntheta']
@@ -710,8 +702,7 @@ class RadialGrid(PrescribedScalarParameter):
             if self.num_fileformat is not None:
                 data['fileformat'] = self.num_fileformat
         elif self.type == TYPE_STELLARATOR:
-            data['rhomin'] = self.rhomin
-            data['rhomax'] = self.rhomax
+            data['R0'] = self.R0
             data['filename'] = self.num_filename
             data['nfp'] = self.nfp
             data['ntheta'] = self.ntheta

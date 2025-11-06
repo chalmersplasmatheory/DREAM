@@ -13,7 +13,7 @@ from . NumericalMagneticField import NumericalMagneticField
 class StellaratorMagneticField(NumericalMagneticField):
     
 
-    def __init__(self, filename, nr, ntheta=129, nphi=129): # TODO: OK?
+    def __init__(self, filename, nr, ntheta=129, nphi=129, datafilename=None): # TODO: OK?
         """
         Constructor.
         """
@@ -45,20 +45,45 @@ class StellaratorMagneticField(NumericalMagneticField):
 
         self.eq = desc.io.load(self.filename)
 
-        self.grid = LinearGrid(L=self.nr - 1, M=int((self.ntheta - 1) / 2), N=int((self.nphi - 1) / 2), endpoint=True, NFP=self.eq.NFP)
+        if datafilename is None:
+            self.grid = LinearGrid(L=int(self.nr-1), M=int((self.ntheta - 1) / 2), N=int((self.nphi - 1) / 2), endpoint=True, NFP=self.eq.NFP)
 
-        self.R = np.array(self.eq.compute('R', grid=self.grid)['R'], dtype=np.float64)
-        self.Z = np.array(self.eq.compute('Z', grid=self.grid)['Z'], dtype=np.float64)
-        self.R0 = float(self.eq.axis.R_n[self.eq.axis.R_basis.get_idx(0)])
-        self.a = float(self.eq.compute('a', grid=self.grid)['a'])
-        self.nfp = int(self.eq.NFP)
+            self.R = np.array(self.eq.compute('R', grid=self.grid)['R'], dtype=np.float64)
+            self.Z = np.array(self.eq.compute('Z', grid=self.grid)['Z'], dtype=np.float64)
+            self.R0 = float(self.eq.axis.R_n[self.eq.axis.R_basis.get_idx(0)])
+            self.a = float(self.eq.compute('a', grid=self.grid)['a'])
+            self.nfp = int(self.eq.NFP)
 
-        self.rho = np.array(self.grid.nodes[self.grid.unique_rho_idx,0], dtype=np.float64)
-        self.theta = np.array(self.grid.nodes[self.grid.unique_theta_idx,1], dtype=np.float64)
-        self.phi = np.array(self.grid.nodes[self.grid.unique_zeta_idx,2], dtype=np.float64)
+            self.rho = np.array(self.grid.nodes[self.grid.unique_rho_idx,0]*self.a, dtype=np.float64)
+            self.theta = np.array(self.grid.nodes[self.grid.unique_theta_idx,1], dtype=np.float64)
+            self.phi = np.array(self.grid.nodes[self.grid.unique_zeta_idx,2], dtype=np.float64)
+        else:
+            with h5py.File(f"{datafilename}.h5", 'r') as hf:
+                self.R = np.array(hf['R'][:], dtype=np.float64)
+                self.Z = np.array(hf['Z'][:], dtype=np.float64)
+                self.R0 = hf["R0"][()]
+                self.a = hf["a"][()]
+                self.nfp = hf["nfp"][()]
+                self.rho = np.array(hf["rho"][:], dtype=np.float64)
+                self.theta = np.array(hf["theta"][:], dtype=np.float64)
+                self.phi =np.array( hf["phi"][:], dtype=np.float64)
+                self.f_passing = np.array(hf["f_passing"][:], dtype=np.float64)
+                self.B_min = np.array(hf["B_min"][:], dtype=np.float64)
+                self.B_max = np.array(hf["B_max"][:], dtype=np.float64)
+                self.G = np.array(hf["G"][:], dtype=np.float64)
+                self.I = np.array(hf["I"][:], dtype=np.float64)
+                self.iota = np.array(hf["iota"][:], dtype=np.float64)
+                self.psi_T = np.array(hf["psi_T"][:], dtype=np.float64)
+                self.B = np.array(hf["B"][:], dtype=np.float64)
+                self.BdotGradPhi = np.array(hf["BdotGradPhi"][:], dtype=np.float64)
+                self.Jacobian = np.array(hf["Jacobian"][:], dtype=np.float64)
+                self.g_tt = np.array(hf["g_tt"][:], dtype=np.float64)
+                self.g_tp = np.array(hf["g_tp"][:], dtype=np.float64)
+                self.lambda_t = np.array(hf["lambda_t"][:], dtype=np.float64)
+                self.lambda_p = np.array(hf["lambda_p"][:], dtype=np.float64)
 
 
-    def load(self, savedata=False): # TODO: Spara behandlad data till fil
+    def load(self, savedata=True, savefilename='numericStellaratorSettings'): # TODO: Spara behandlad data till fil
         """
         Load a DESC magnetic equilibrium from the named file.
         """
@@ -66,7 +91,6 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.f_passing = np.array(1- self.eq.compute('trapped fraction', grid=self.grid)['trapped fraction'][self.grid.unique_rho_idx], dtype=np.float64)
         self.B_min = np.array(self.eq.compute('min_tz |B|', grid=self.grid)['min_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
         self.B_max = np.array(self.eq.compute('max_tz |B|', grid=self.grid)['max_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
-
         self.G = np.array(self.eq.compute('G', grid=self.grid)['G'][self.grid.unique_rho_idx], dtype=np.float64)
         self.I = np.array(self.eq.compute('I', grid=self.grid)['I'][self.grid.unique_rho_idx], dtype=np.float64)
         iota = np.array(self.eq.compute('iota', grid=self.grid)['iota'], dtype=np.float64)
@@ -75,23 +99,28 @@ class StellaratorMagneticField(NumericalMagneticField):
 
         self.B = np.array(self.eq.compute('|B|', grid=self.grid)['|B|'], dtype=np.float64)
         self.BdotGradPhi = np.array(self.eq.compute('B^zeta', grid=self.grid)['B^zeta'], dtype=np.float64)
-        self.Jacobian = np.array(self.eq.compute('sqrt(g)', grid=self.grid)['sqrt(g)'], dtype=np.float64)
-
+        self.Jacobian = np.array(self.eq.compute('sqrt(g)', grid=self.grid)['sqrt(g)'], dtype=np.float64) / self.a
         self.g_tt = np.array(self.eq.compute('g_tt', grid=self.grid)['g_tt'], dtype=np.float64)
         self.g_tp = np.array(self.eq.compute('g_tz', grid=self.grid)['g_tz'], dtype=np.float64)
+        isAxis = np.where(self.grid.nodes[:,0] == 0)
+        self.g_tt = self.g_tt / self.Jacobian**2
+        self.g_tp = self.g_tp / self.Jacobian**2
+        for i in isAxis:
+            self.g_tt[i] = self.g_tt[i+self.ntheta]
+            self.g_tp[i] = self.g_tp[i+self.ntheta]
+
         self.lambda_t = np.array(self.eq.compute('lambda_t', grid=self.grid)['lambda_t'] + iota*self.eq.compute('nu_t', grid=self.grid)['nu_t'], dtype=np.float64)
         self.lambda_p = np.array(self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota*self.eq.compute('nu_z', grid=self.grid)['nu_z'], dtype=np.float64)
 
-
-
         if savedata:
-            dic = { "R0" : self.R0,
+            dic = { "R" : self.R,
+                    "Z" : self.Z,
+                    "R0" : self.R0,
                     "a": self.a,
                     "nfp": self.nfp,
-                    "rho": self.theta,
+                    "rho": self.rho,
+                    "theta": self.theta,
                     "phi": self.phi,
-                    "R" : self.R,
-                    "Z" : self.Z,
                     "f_passing": self.f_passing,
                     "B_min": self.B_min,
                     "B_max": self.B_max,
@@ -107,52 +136,15 @@ class StellaratorMagneticField(NumericalMagneticField):
                     "lambda_t": self.lambda_t,
                     "lambda_p": self.lambda_p
             }
-            with h5py.File(f"{self.savefilename}.h5", 'w') as hf:
+            with h5py.File(f"{savefilename}.h5", 'w') as hf:
                 for key, value in dic.items():
                     hf[key] = value
 
 
-        from desc.grid import LinearGrid
-        # TODO: Temporary for benchmark, remove
-        lukegrid = LinearGrid(L=self.nr-1, M=int((self.ntheta - 1) / 2), zeta=0, endpoint=True)
-        theta = lukegrid.nodes[lukegrid.unique_theta_idx, 1]
-        R = self.eq.compute('R', grid=lukegrid)['R'].reshape((self.nr, self.ntheta)).T
-        R -= R[0,0]
-        psi = 2 * np.pi * self.eq.compute('chi', grid=lukegrid)['chi'][lukegrid.unique_rho_idx] / self.R0 * self.a
-
-        Z = self.eq.compute('Z', grid=lukegrid)['Z'].reshape((self.nr, self.ntheta)).T
-        B_R = self.eq.compute('B_R', grid=lukegrid)['B_R'].reshape((self.nr, self.ntheta)).T
-        B_Z = self.eq.compute('B_Z', grid=lukegrid)['B_Z'].reshape((self.nr, self.ntheta)).T
-        B_phi = self.eq.compute('B_phi', grid=lukegrid)['B_phi'].reshape((self.nr, self.ntheta)).T
-
-        dictemp = {#"/equil":
-                        #{
-                         "/equil/id": 1,
-                         "/equil/Rp": np.array([self.R0]),
-                         "/equil/Zp": np.array([0]),
-                         "/equil/psi_apRp": psi.reshape((-1,1)),
-                         "/equil/theta": theta,
-                         "/equil/ptx": R,
-                         "/equil/pty": Z,
-                         "/equil/ptBx": B_R,
-                         "/equil/ptBy": B_Z,
-                         "/equil/ptBPHI": B_phi
-                        #}
-        }
-
         with h5py.File(f"data/numericalLUKE.h5", 'w') as hf:
             for key, value in dictemp.items():
                 hf[key] = value
-        '''
-        with h5py.File(f"numericalLUKE.h5", 'w') as hf:
-            for group_name, group_data in dictemp.items():
-                group = hf.create_group(group_name)
-                for key, value in group_data.items():
-                    if isinstance(value, np.ndarray):
-                        group.create_dataset(key, data=value)
-                    else:
-                        group.attrs[key] = value
-        '''
+
         # TODO: Save this as quantities instead of R and Z, for ouput and for SPI in the future
         #R_mn = self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota * \
         #           self.eq.compute('nu_z', grid=self.grid)['nu_z']
@@ -209,19 +201,6 @@ class StellaratorMagneticField(NumericalMagneticField):
             ax.plot(R[:,:-1], Z[:,:-1], color=gray, linewidth=0.5)
             ax.plot(R[:,-1], Z[:,-1], color=red, linewidth=2)
             ax.plot(R[0,0], Z[0,0], 's', color=red)
-            '''
-            R0loc = 0
-            n = 1
-            for rn in self.eq.axis.R_n:
-                R0loc += rn*np.cos(n*iphi)
-                print(f'R0loc_{n}  =  {R0loc:.4f}  =  R0loc_{n-1}+{rn*np.cos(n*iphi):.4f},     rn  =  {rn:.4f}')
-                n += 1
-            ax.plot([R0loc, R0loc], [-0.4,0.4], color=black)
-            ax.plot([R[0,0], R[0,-1]], [Z[0,0], Z[0,-1]], 'k--')
-            print(f'R_0={R[0, 0]:.4f}    R_-1={R[0, -1]:.4f}')
-            print(f'Z_0={Z[0, 0]:.4f}    Z_-1={Z[0, -1]:.4f}')
-            print(f't_0={plotgrid.nodes[:,1].reshape((nrho+1, ntheta)).T[0,0]:.4f}    t_-1={plotgrid.nodes[:,1].reshape((nrho+1, ntheta)).T[0,-1]}')
-            '''
 
         ax.plot(self.R0, 0, 'X', color=black)
         ax.set_xlabel('$R$ (m)')

@@ -298,7 +298,6 @@ real_t NumericStellaratorRadialGridGenerator::JacobianAtThetaPhi(
     this->interp_Jacobian->Eval(1,1,1, p, r, t, Jacobian);
 
     real_t JacobianOverR0 = Jacobian[0] / this->R0;
-    
     delete [] Jacobian;
     
     return JacobianOverR0;
@@ -339,6 +338,8 @@ real_t NumericStellaratorRadialGridGenerator::BdotGradphiAtThetaPhi(
 real_t NumericStellaratorRadialGridGenerator::gttAtThetaPhi(
     const real_t radius, const real_t theta, const real_t phi
 ) {
+	if (radius == 0)
+		return 1.0; 
     real_t t[1] = {this->_angleBounded(theta)};
     real_t p[1] = {this->_angleBounded(phi)};
     real_t r[1] = {radius};
@@ -347,13 +348,8 @@ real_t NumericStellaratorRadialGridGenerator::gttAtThetaPhi(
     
     this->interp_gtt->Eval(1,1,1, p, r, t, gtt);
 
-    real_t J = JacobianAtThetaPhi(radius, theta, phi);
-    if (gtt[0] == 0){
-        delete [] gtt;
-        return 0.;
-    }
-
-    real_t gttOverJ2 = gtt[0] / (J*J);
+    real_t gttOverJ2 = gtt[0] * this->R0 * this->R0;
+    
     
     delete [] gtt;
     
@@ -384,16 +380,7 @@ real_t NumericStellaratorRadialGridGenerator::gtpAtThetaPhi(
     this->interp_lambdat->Eval(1,1,1, p, r, t, lambdat);
     this->interp_lambdap->Eval(1,1,1, p, r, t, lambdap);
 
-    real_t J = JacobianAtThetaPhi(radius, theta, phi);
-    if ((gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) == 0){
-        delete [] gtt;
-        delete [] gtp;
-        delete [] lambdat;
-        delete [] lambdap;
-        return 0.;
-    }
-
-    real_t gtpOverJ2 = (gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) / (J*J);
+    real_t gtpOverJ2 = (gtp[0] * (1 + lambdat[0]) - gtt[0] * lambdap[0]) * this->R0 * this->R0;
     
     delete [] gtt;
     delete [] gtp;
