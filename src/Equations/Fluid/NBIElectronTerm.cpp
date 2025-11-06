@@ -31,7 +31,6 @@ NBIElectronTerm::NBIElectronTerm(
         static_cast<size_t>(nr) * static_cast<size_t>(nZ) * static_cast<size_t>(nCharge);
 
 
-    // Allocate temporary arrays for energy spectra and their derivatives
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
     Qe_3 = new real_t[nr];
@@ -50,7 +49,6 @@ NBIElectronTerm::NBIElectronTerm(
     d_Qe3_d_n_ij = new real_t[deriv_size];
     d_Qe3_d_T_ij = new real_t[deriv_size];
 
-    // Register all unknowns that this term has Jacobian contributions for
     AddUnknownForJacobian(unknowns, id_ncold);
     AddUnknownForJacobian(unknowns, id_Tcold);
     AddUnknownForJacobian(unknowns, id_ni);
@@ -76,14 +74,12 @@ void NBIElectronTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuant
         const real_t* d_n_ij = handler->Getd_NBIHeatTerm_e_d_n_ij();
         const real_t* d_T_ij = handler->Getd_NBIHeatTerm_e_d_T_ij();
 
-        // Copy heating terms
         for (len_t ir = 0; ir < nr; ++ir) {
             Qe_target[ir] = Qe[ir];
             d_Te_target[ir] = d_Te[ir];
             d_ne_target[ir] = d_ne[ir];
         }
 
-        // Copy ion derivatives (multi-dimensional)
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
                 for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {

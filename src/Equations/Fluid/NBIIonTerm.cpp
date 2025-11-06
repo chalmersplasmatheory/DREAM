@@ -15,8 +15,7 @@ using namespace DREAM;
 NBIIonTerm::NBIIonTerm(
     NBIHandler* h, FVM::Grid* grid, IonHandler* ionHandler,
     FVM::UnknownQuantityHandler* unknowns, const len_t iIon
-)
-: IonEquationTerm<FVM::EquationTerm>(grid, ionHandler, iIon), handler(h), ions(ionHandler), radialGrid(grid->GetRadialGrid()) {
+) : IonEquationTerm<FVM::EquationTerm>(grid, ionHandler, iIon), handler(h), ions(ionHandler), radialGrid(grid->GetRadialGrid()) {
     this->unknowns = unknowns;
     this->nr = radialGrid->GetNr();
 
@@ -40,7 +39,6 @@ NBIIonTerm::NBIIonTerm(
                     static_cast<size_t>(nCharge);
     
 
-    // Allocate temporary arrays for energy spectra
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
     Qe_3 = new real_t[nr];
@@ -67,7 +65,7 @@ NBIIonTerm::NBIIonTerm(
 void NBIIonTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *unknowns){
     real_t beam_energy = handler->GetBeamEnergy();
     
-    // Helper to copy data
+
     auto copyData = [&](real_t energy, real_t* Qe_target,
                         real_t* d_Te_target, real_t* d_ne_target,
                         real_t* d_n_ij_target, real_t* d_T_ij_target) {
@@ -79,14 +77,12 @@ void NBIIonTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHa
         const real_t* d_n_ij = handler->Getd_NBIHeatTerm_i_d_n_ij();
         const real_t* d_T_ij = handler->Getd_NBIHeatTerm_i_d_T_ij();
 
-        // Copy heating terms
         for (len_t ir = 0; ir < nr; ++ir) {
             Qe_target[ir] = Qe[ir];
             d_Te_target[ir] = d_Te[ir];
             d_ne_target[ir] = d_ne[ir];
         }
         
-        // Copy ion derivatives (multi-dimensional)
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
                 for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
@@ -98,7 +94,6 @@ void NBIIonTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHa
         }
     };
     
-    // Build for three energy components
     copyData(beam_energy,     Qe_1, d_Qe1_d_Te, d_Qe1_d_ne, d_Qe1_d_n_ij, d_Qe1_d_T_ij);
     copyData(beam_energy / 2, Qe_2, d_Qe2_d_Te, d_Qe2_d_ne, d_Qe2_d_n_ij, d_Qe2_d_T_ij);
     copyData(beam_energy / 3, Qe_3, d_Qe3_d_Te, d_Qe3_d_ne, d_Qe3_d_n_ij, d_Qe3_d_T_ij);
@@ -111,7 +106,8 @@ void NBIIonTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHa
  */
 void NBIIonTerm::SetCSVectorElements(
             real_t *vec, const real_t* /*x*/,
-        const len_t iIon, const len_t Z0, const len_t /*rOffset*/){
+        const len_t iIon, const len_t Z0, const len_t /*rOffset*/
+){
     const real_t* energy_fractions = handler->GetEnergyFractions();
 
 
@@ -162,13 +158,13 @@ void NBIIonTerm::SetCSVectorElements(
  */
 void NBIIonTerm::SetCSMatrixElements(
             FVM::Matrix *mat, real_t *rhs,
-        const len_t iIon, const len_t Z0, const len_t /*rOffset*/){
+        const len_t iIon, const len_t Z0, const len_t /*rOffset*/
+){
             (void)mat;
 
     const real_t* energy_fractions = handler->GetEnergyFractions();
 
 
-    // Calculate the weight factor for each species
     len_t NZ = ions->GetNZ();
     if (NZ == 0) {
         throw DREAMException("No ion species found in NBIIonTerm");
@@ -214,7 +210,8 @@ void NBIIonTerm::SetCSMatrixElements(
 bool NBIIonTerm::SetCSJacobianBlock(
            const len_t /*uqtyId*/, const len_t derivId,
                         FVM::Matrix *jac, const real_t* /*x*/,
-                        const len_t iIon, const len_t Z0, const len_t /*rOffset*/){
+                        const len_t iIon, const len_t Z0, const len_t /*rOffset*/
+){
     const real_t* energy_fractions = handler->GetEnergyFractions();
 
     if (derivId != id_ncold && derivId != id_Tcold &&
@@ -234,7 +231,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
             real_t deriv = energy_fractions[0] * d_Qe1_d_ne[ir]
                          + energy_fractions[1] * d_Qe2_d_ne[ir]
                          + energy_fractions[2] * d_Qe3_d_ne[ir];
-            jac->SetElement(row, col, deriv); 
+           jac->SetElement(row, col, deriv); 
         }
     }
     
@@ -245,7 +242,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
             real_t deriv = energy_fractions[0] * d_Qe1_d_Te[ir]
                          + energy_fractions[1] * d_Qe2_d_Te[ir]
                          + energy_fractions[2] * d_Qe3_d_Te[ir];
-            jac->SetElement(row, col, deriv); 
+           jac->SetElement(row, col, deriv); 
         }
     }
     
@@ -268,9 +265,9 @@ bool NBIIonTerm::SetCSJacobianBlock(
             const len_t Zmax = ions->GetZ(iIon);
             real_t ni_species = 0.0;
             real_t dQi_dTi_total = 0.0;
+            //sum over charges
             for (len_t Zp = 0; Zp <= Zmax; ++Zp) {
-                const len_t ni_idx = ions->GetIndex(iIon, Zp) * nr + ir;
-                ni_species += unknowns->GetUnknownData(id_ion_density)[ni_idx];
+                ni_species += ions->GetIonDensity(ir, iIon, Zp);
                 len_t idx = handler->idx(ir, iIon, Zp);
                 dQi_dTi_total += energy_fractions[0] * d_Qe1_d_T_ij[idx]
                            + energy_fractions[1] * d_Qe2_d_T_ij[idx]
@@ -280,15 +277,14 @@ bool NBIIonTerm::SetCSJacobianBlock(
             
             const real_t eq = 1.602e-19; 
             real_t dP = 0.0;
-            if (ni_species > 0) {
+            if (ni_species > 1e10) { 
                 dP = dQi_dTi_total / (1.5 * ni_species * eq);
             }
-                        len_t col = iIon*nr+ir;
+            len_t col = iIon*nr+ir;
             len_t row = iIon*nr+ir;
             jac->SetElement(row, col, dP);
         }
     }
-    
     return true;
 }
 
