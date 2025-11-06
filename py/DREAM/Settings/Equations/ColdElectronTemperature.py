@@ -181,10 +181,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             
             data['transport'] = self.transport.todict()
         
-        if self.nbi is not None and self.nbi.enabled:
-            data['NBI'] = self.nbi.todict()
+            if self.nbi is not None and self.nbi.enabled:
+                data['NBI'] = self.nbi.todict()
 
-        
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 

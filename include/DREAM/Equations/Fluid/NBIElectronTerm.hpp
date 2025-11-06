@@ -5,9 +5,6 @@
 #include "DREAM/NBIHandler.hpp"
 #include "DREAM/IonHandler.hpp"
 
-//#include "DREAM/UnknownQuantityHandler.hpp"
-
-
 namespace DREAM {
 
 class NBIElectronTerm : public FVM::EquationTerm {

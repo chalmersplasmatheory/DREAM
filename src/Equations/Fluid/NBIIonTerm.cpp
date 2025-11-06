@@ -235,6 +235,9 @@ bool NBIIonTerm::SetCSJacobianBlock(
     return true;
 }
 
+/**
+ * Compute the weight factor for ion species iIon at radial index ir.
+ */
 real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
     len_t NZ = ions->GetNZ();
     if (NZ == 0) {

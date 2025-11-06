@@ -24,7 +24,6 @@ namespace DREAM {
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
-        
 
         // Beam geometry parameters
         real_t P0[3];  // Beam entry point
@@ -90,11 +89,10 @@ namespace DREAM {
 
         // Structure for storing R,Z coordinates of flux surfaces
         struct FluxSurfacePoint{
-            real_t R, Z; // Major radius and vertical position
+            real_t R, Z; 
         };
         std::vector<std::vector<FluxSurfacePoint>> cachedFluxSurfaces;
 
-        // Precomputed beam geometry
         real_t e1[3], e2[3]; // Orthogonal basis vectors
         real_t n_norm[3];    // Normalized beam direction
 
@@ -107,13 +105,13 @@ namespace DREAM {
         }
         void PrecomputeBeamMapLUT();
 
-        void IonElectronFractions(FVM::UnknownQuantityHandler *unknowns, len_t ir, real_t &f_i, real_t &f_e, real_t &dfe_dne, real_t &dfe_dTe, 
-                                std::vector<real_t> &dfe_dn_ij, std::vector<real_t> &dfe_dT_ij, real_t &dfi_dne, real_t &dfi_dTe, 
-                                std::vector<real_t> &dfi_dn_ij, std::vector<real_t> &dfi_dT_ij, real_t Ti_beam);
+        void IonElectronFractions(
+            FVM::UnknownQuantityHandler *unknowns, len_t ir, real_t &f_i, real_t &f_e, real_t &dfe_dne, real_t &dfe_dTe, 
+            std::vector<real_t> &dfe_dn_ij, std::vector<real_t> &dfe_dT_ij, real_t &dfi_dne, real_t &dfi_dTe, 
+            std::vector<real_t> &dfi_dn_ij, std::vector<real_t> &dfi_dT_ij, real_t Ti_beam);
 
     public:
         NBIHandler(FVM::Grid *, ADAS *, IonHandler *ions);
-
         
         void ConfigureFromSettings(
             Settings* /*s*/, FVM::UnknownQuantityHandler *unknowns,
@@ -126,14 +124,13 @@ namespace DREAM {
             FVM::Interpolator1D *Power_Profile
         );
 
-
         ~NBIHandler();
         void Build(const real_t t, const real_t, FVM::UnknownQuantityHandler *unknowns, real_t Ti_beam);
 
-
-        // Calculation methods
-        void ComputeMeanFreePath(len_t ir, real_t ncold, real_t Tcold, real_t &lambda_s, real_t &dlambda_dI_e, std::vector<real_t> &dlambda_dI_ij, 
-                                real_t &dlambda_dne, std::vector<real_t> &dlambda_dn_ij, std::vector<real_t> &dI_ij_dT_ij, real_t &dI_e_dTe, real_t Ti_beam);
+        // Helpers for calculations
+        void ComputeMeanFreePath(
+            len_t ir, real_t ncold, real_t Tcold, real_t &lambda_s, real_t &dlambda_dI_e, std::vector<real_t> &dlambda_dI_ij, 
+            real_t &dlambda_dne, std::vector<real_t> &dlambda_dn_ij, std::vector<real_t> &dI_ij_dT_ij, real_t &dI_e_dTe, real_t Ti_beam);
         void ComputeDepositionProfile(FVM::UnknownQuantityHandler *unknowns, real_t Ti_beam);
         int_t CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t theta_B);
         void CartesianToCylindrical(real_t x, real_t y, real_t z, real_t &r, real_t &theta, real_t &s);
@@ -158,10 +155,7 @@ namespace DREAM {
         inline size_t idx(len_t ir, len_t iz, len_t Z0) const {
             return (static_cast<size_t>(ir) * nZ + iz) * nCharge + Z0;
         }
-        
-
     };
-
 }
 
 #endif /*_DREAM_EQUATIONS_NBI_HANDLER_HPP */

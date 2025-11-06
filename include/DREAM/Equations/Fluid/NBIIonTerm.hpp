@@ -1,16 +1,12 @@
 #ifndef _DREAM_EQUATIONS_FLUID_NBI_ION_TERM_HPP
 #define _DREAM_EQUATIONS_FLUID_NBI_ION_TERM_HPP
 
-//#include "FVM/Equation/IonEquationTerm.hpp"
 #include "DREAM/NBIHandler.hpp"
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"  
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "DREAM/IonHandler.hpp"
-
-
-
 
 
 namespace DREAM {
@@ -98,6 +94,4 @@ public:
 
 } 
 #endif /*_DREAM_EQUATIONS_FLUID_NBI_ION_TERM_HPP */
-
-
 
