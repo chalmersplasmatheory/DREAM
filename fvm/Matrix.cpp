@@ -403,15 +403,23 @@ void Matrix::SetRow(
 	PetscInt *icol, const PetscScalar *v,
 	InsertMode insert_mode
 ) {
-    // Apply offsets
-    irow += this->rowOffset;
-    for(PetscInt i=0; i<ncol; i++)
-        icol[i] += this->colOffset;
-	MatSetValues(this->petsc_mat, 1, &irow, ncol, icol, v, insert_mode);
-    // Reset offsets
-    for(PetscInt i=0; i<ncol; i++)
-        icol[i] -= this->colOffset;
-    irow -= this->rowOffset;
+	// If a mask is applied, we use the slower
+	// 'SetElement()' method.
+	if (this->localRowMask != nullptr) {
+		for (PetscInt i = 0; i < ncol; i++)
+			this->SetElement(irow, icol[i], v[i], insert_mode);
+	} else {
+		// Apply offsets
+		irow += this->rowOffset;
+		for(PetscInt i=0; i<ncol; i++)
+			icol[i] += this->colOffset;
+		MatSetValues(this->petsc_mat, 1, &irow, ncol, icol, v, insert_mode);
+
+		// Reset offsets
+		for(PetscInt i=0; i<ncol; i++)
+			icol[i] -= this->colOffset;
+		irow -= this->rowOffset;
+	}
 }
 
 /**

@@ -73,10 +73,12 @@ def setup():
     # Solver settings
     ds.solver.setType(Solver.NONLINEAR)
     ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MKL)
-    ds.solver.setMaxIterations(100)
+    ds.solver.setMaxIterations(20)
+    ds.solver.setVerbose(True)
 
     ds.solver.tolerance.set(reltol=1e-6)
     ds.solver.tolerance.set('j_hot', abstol=1)
+    ds.solver.setDebug(savejacobian=True, timestep=1, iteration=1)
 
     # Time step settings
     ds.timestep.setTmax(1e-5)

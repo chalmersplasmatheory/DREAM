@@ -99,9 +99,10 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
 			// When an alternative equation is present, we apply a
 			// row mask to both the main and alternative equations.
 			if (eqn->HasAlternativeEquation()) {
+				len_t offs = jac->GetOffset(matUqnId);
 				jac->SetLocalRowMask(
-					eqn->GetAlternativeEquationMask(), matUqnId,
-					matUqnId+eqn->NumberOfElements(), localRowMaskNot
+					eqn->GetAlternativeEquationMask(), offs,
+					offs+eqn->NumberOfElements(), localRowMaskNot
 				);
 			}
 

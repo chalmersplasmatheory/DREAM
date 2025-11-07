@@ -349,6 +349,15 @@ bool Operator::SetJacobianBlock(
 #endif
     }
 
+	// Predetermined terms?
+	if (predetermined != nullptr) {
+		bool c = predetermined->SetJacobianBlock(uqtyId, derivId, jac, x);
+		contributes |= c;
+#ifndef NDEBUG
+		if (c && printTerms) printf("Contribution from %s", predetermined->GetName().c_str());
+#endif
+	}
+
     // Boundary conditions
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {
             bool c = (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
