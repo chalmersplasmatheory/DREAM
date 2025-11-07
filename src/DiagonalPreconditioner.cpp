@@ -181,11 +181,16 @@ void DiagonalPreconditioner::SetDefaultScalings() {
         } else if (name == OptionConstants::UQTY_T_COLD) {
             uqn_scales[id] = TEMPERATURE_SCALE; // a medium temperature
             eqn_scales[id] = ENERGY_SCALE;   // 1 MJ/m^3
+		} else if (name == OptionConstants::UQTY_T_HOT) {
+			uqn_scales[id] = TEMPERATURE_SCALE;
+			eqn_scales[id] = ENERGY_SCALE;
         } else if (name == OptionConstants::UQTY_V_LOOP_WALL) {
             uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
 		} else if (name == OptionConstants::UQTY_V_P) {
 			uqn_scales[id] = eqn_scales[id] = 1;
         } else if (name == OptionConstants::UQTY_W_COLD) {
+            uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE; // 1 MJ/m^3
+		} else if (name == OptionConstants::UQTY_W_HOT) {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE; // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_WI_ENER) {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE;
