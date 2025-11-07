@@ -24,6 +24,7 @@ def setup():
     ds.collisions.collfreq_type       = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
     ds.collisions.lnlambda            = Collisions.LNLAMBDA_ENERGY_DEPENDENT
     ds.collisions.pstar_mode          = Collisions.PSTAR_MODE_COLLISIONLESS
+    ds.collisions.collfreq_mode       = Collisions.COLLFREQ_MODE_SUPERTHERMAL
 
     ds.radialgrid.setMinorRadius(1.0)
     ds.radialgrid.setWallRadius(1.2)
@@ -60,17 +61,22 @@ def setup():
     ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=0)
 
     # Set initial properties of f_hot
-    ds.eqsys.f_hot.setInitialProfiles(n0, T0, rn0=r0, rT0=r0)
+    mod = 0.9999
+    ds.eqsys.f_hot.setInitialProfiles(mod*n0, T0, rn0=r0, rT0=r0)
     ds.eqsys.f_hot.trigger.equation.enableIonJacobian(False)
     ds.eqsys.f_hot.trigger.equation.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
 
     # Enable trigger
-    ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
+    #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
+    ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=1)
 
     # Solver settings
     ds.solver.setType(Solver.NONLINEAR)
     ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MKL)
     ds.solver.setMaxIterations(100)
+
+    ds.solver.tolerance.set(reltol=1e-6)
+    ds.solver.tolerance.set('j_hot', abstol=1)
 
     # Time step settings
     ds.timestep.setTmax(1e-5)

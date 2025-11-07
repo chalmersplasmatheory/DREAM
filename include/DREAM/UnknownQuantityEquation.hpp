@@ -33,6 +33,7 @@ namespace DREAM {
 		bool solved_externally = false;
 
         std::string description;
+		std::string description_alt;
 
     public:
         UnknownQuantityEquation(
@@ -45,6 +46,7 @@ namespace DREAM {
 
 		const bool *GetAlternativeEquationMask() { return this->condition->GetTriggerMask(); }
         const std::string& GetDescription() const { return this->description; }
+        const std::string& GetDescriptionAlt() const { return this->description_alt; }
         const std::map<len_t, FVM::Operator*>& GetOperators(bool alt=false) const {
 			if (alt) return this->equations_alt;
 			else return this->equations;
@@ -67,6 +69,7 @@ namespace DREAM {
         void RebuildEquations(const real_t, const real_t, FVM::UnknownQuantityHandler*);
 
         void SetDescription(const std::string& desc) { this->description = desc; }
+		void SetDescriptionAlt(const std::string& desc) { this->description_alt = desc; }
 		void SetExternallySolved(bool s) { this->solved_externally = s; }
 		void SetTriggerCondition(EquationTriggerCondition *c);
 

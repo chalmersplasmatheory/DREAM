@@ -32,6 +32,12 @@ void EquationSystem::PrintExternallyIteratedUnknowns() {
 			uqnId, uq->GetName().c_str(), uq->NumberOfElements(),
 			eq->GetDescription().c_str()
 		);
+		
+		if (eq->HasAlternativeEquation())
+			IO::PrintInfo(
+				"                             or (%s)",
+				eq->GetDescriptionAlt().c_str()
+			);
 	}
 
 	IO::PrintInfo();
@@ -54,6 +60,12 @@ void EquationSystem::PrintNonTrivialUnknowns() {
             *it, uq->GetName().c_str(), uq->NumberOfElements(),
             eq->GetDescription().c_str()
         );
+		
+		if (eq->HasAlternativeEquation())
+			IO::PrintInfo(
+				"                             or (%s)",
+				eq->GetDescriptionAlt().c_str()
+			);
     }
 
     IO::PrintInfo();
@@ -79,6 +91,12 @@ void EquationSystem::PrintTrivialUnknowns() {
             i, uq->GetName().c_str(),
             eq->GetDescription().c_str()
         );
+		
+		if (eq->HasAlternativeEquation())
+			IO::PrintInfo(
+				"                 or (%s)",
+				eq->GetDescriptionAlt().c_str()
+			);
     }
 
     IO::PrintInfo();

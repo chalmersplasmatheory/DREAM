@@ -25,20 +25,30 @@ using namespace std;
  * Define options for the hot electron temperature module.
  */
 void SimulationGenerator::DefineOptions_T_hot(Settings *s) {
-    s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_HOT_MOMENT);
-    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/include_NBI", "Whether to include NBI heating term in T_hot evolution", (bool)false);
-	s->DefineSetting(MODULENAME "/enabled", "Whether or not T_hot should be enabled", (bool)false);
+	DefineOptions_T_hot_inner(s, MODULENAME);
+
+	// Possibility for switching equation
+	DefineOptions_TriggerCondition(s, MODULENAME "/switch");
+
+	// Also define settings for the 'alternative' equation
+	DefineOptions_T_hot_inner(s, MODULENAME "/switch/equation");
+}
+
+void SimulationGenerator::DefineOptions_T_hot_inner(Settings *s, const string &modulename) {
+    s->DefineSetting(modulename + "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_HOT_MOMENT);
+    s->DefineSetting(modulename + "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
+    s->DefineSetting(modulename + "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
+    s->DefineSetting(modulename + "/include_NBI", "Whether to include NBI heating term in T_hot evolution", (bool)false);
+	s->DefineSetting(modulename + "/enabled", "Whether or not T_hot should be enabled", (bool)false);
 
     // Prescribed data (in radius+time)
-    DefineDataRT(MODULENAME, s, "data");
+    DefineDataRT(modulename, s, "data");
 
     // Prescribed initial profile (when evolving T self-consistently)
-    DefineDataR(MODULENAME, s, "init");
+    DefineDataR(modulename, s, "init");
 
     // Transport settings
-    DefineOptions_Transport(MODULENAME, s, false);
+    DefineOptions_Transport(modulename, s, false);
 }
 
 
@@ -48,6 +58,34 @@ void SimulationGenerator::DefineOptions_T_hot(Settings *s) {
 void SimulationGenerator::ConstructEquation_T_hot(
 	EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
 	struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
+	const len_t id_W_hot = eqsys->GetUnknownID(OptionConstants::UQTY_W_HOT);
+
+	// Construct main equation
+	ConstructEquation_T_hot_inner(eqsys, s);
+	ConstructEquation_W_hot_inner(MODULENAME, eqsys, s, adas, nist, amjuel, oqty_terms);
+
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
+	
+	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_W_hot, true);
+
+		ConstructEquation_W_hot_inner(
+			MODULENAME "/switch/equation",
+			eqsys, s, adas, nist, amjuel,
+			oqty_terms
+		);
+
+		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
+		eqsys->SetTriggerCondition(id_W_hot, trig);
+
+		eqsys->SetAssignToAlternativeEquation(id_W_hot, false);
+	}
+}
+
+void SimulationGenerator::ConstructEquation_T_hot_inner(
+	EquationSystem *eqsys, Settings *s
 ) {
 	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -69,10 +107,18 @@ void SimulationGenerator::ConstructEquation_T_hot(
 	real_t *T0 = LoadDataR("eqsys/f_hot", fluidGrid->GetRadialGrid(), s, "T0");
 	eqsys->SetInitialValue(id_T_hot, T0);
 	delete [] T0;
+}
 
+/**
+ * Construct the equation for the hot electron heat.
+ */
+void SimulationGenerator::ConstructEquation_W_hot_inner(
+	const string &modulename, EquationSystem *eqsys, Settings *s, ADAS *adas,
+	NIST *nist, AMJUEL *amjuel, struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
 	// Construct W_hot equation
 	enum OptionConstants::uqty_T_hot_eqn type =
-		(enum OptionConstants::uqty_T_hot_eqn)s->GetInteger(MODULENAME "/type");
+		(enum OptionConstants::uqty_T_hot_eqn)s->GetInteger(modulename + "/type");
 	
 	switch (type) {
 		case OptionConstants::UQTY_T_HOT_MOMENT:
@@ -204,12 +250,14 @@ void SimulationGenerator::ConstructEquation_W_hot_moment(
     eqsys->SetOperator(id_W_hot, id_f_hot, Op1, desc);
 
     // Set initialization method
-    eqsys->initializer->AddRule(
-        id_W_hot,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        // Dependencies
-        id_f_hot
-    );
+	if (!eqsys->IsAssigningToAlternativeEquation(id_W_hot)) {
+		eqsys->initializer->AddRule(
+			id_W_hot,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			// Dependencies
+			id_f_hot
+		);
+	}
 }
 

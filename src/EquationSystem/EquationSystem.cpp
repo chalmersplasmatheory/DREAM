@@ -190,8 +190,13 @@ void EquationSystem::SetOperator(
 		unknown_equations[blockrow]->SetOperator(blockcol, op);
 
     if (desc != "") {
-        unknown_equations[blockrow]->SetDescription(desc);
-        unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
+		if (alternative) {
+			unknown_equations[blockrow]->SetDescriptionAlt(desc);
+			unknown_equations[blockrow]->GetUnknown()->SetEquationDescriptionAlt(desc);
+		} else {
+			unknown_equations[blockrow]->SetDescription(desc);
+			unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
+		}
     }
 
 	if (solvedExternally)
