@@ -28,13 +28,11 @@ class NBISettings:
         self.P_NBI_t = [] # Beam power profile time points [s]
         self.P_NBI_x = [] # Beam power profile values [W]
         self.P_NBI_tinterp =0 # Interpolation method for power profile
-        self.energy_fractions = [1.0,0.0,0.0] #[0.56, 0.32, 0.12] # Fractions of beam energy for multi-energy components
+        self.energy_fractions = [0.56, 0.32, 0.12] # Fractions of beam energy for multi-energy components
 
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
         self.enabled = enabled
-        if enabled:
-            print("NBI enabled.")
 
     def setTCVGaussian(self, TCVGaussian=True):
         """Enable/disable TCV Gaussian beam profile."""
