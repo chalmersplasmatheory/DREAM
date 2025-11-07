@@ -143,12 +143,14 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.type = data['type']
 
         if self.type == TYPE_PRESCRIBED:
-            self.temperature = data['data']['x']
-            self.radius = data['data']['r']
-            self.times = data['data']['t']
+            if 'data' in data:
+                self.temperature = data['data']['x']
+                self.radius = data['data']['r']
+                self.times = data['data']['t']
         elif self.type == TYPE_SELFCONSISTENT:
-            self.temperature = data['init']['x']
-            self.radius = data['init']['r']
+            if 'init' in data:
+                self.temperature = data['init']['x']
+                self.radius = data['init']['r']
 
             if 'transport' in data:
                 self.transport.fromdict(data['transport'])
