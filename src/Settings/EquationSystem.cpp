@@ -186,6 +186,9 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
+
+	if (eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
+		ConstructEquation_T_hot(eqsys, s, adas, nist, amjuel, oqty_terms);
     
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
 		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
@@ -197,7 +200,7 @@ void SimulationGenerator::ConstructEquations(
         ConstructEquation_SPI(eqsys,s);
         if(hottailGrid != nullptr){
 			// T_hot is defined, the equation for W_hot will already be set up
-			if (!eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_T_HOT))
+			if (!eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
 				ConstructEquation_W_hot_moment(eqsys,s);
 
         	ConstructEquation_q_hot(eqsys,s);
@@ -338,6 +341,11 @@ void SimulationGenerator::ConstructUnknowns(
     if (s->GetBool("eqsys/n_re/negative_re"))
         DEFU_FLD(N_RE_NEG);
 
+	if (s->GetBool("eqsys/T_hot/enabled")) {
+		DEFU_FLD(T_HOT);
+		DEFU_FLD(W_HOT);
+	}
+
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         len_t nShard;
@@ -348,7 +356,8 @@ void SimulationGenerator::ConstructUnknowns(
         
         if (hottailGrid != nullptr){
         	DEFU_FLD(Q_HOT);
-        	DEFU_FLD(W_HOT);
+			if (!eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
+				DEFU_FLD(W_HOT);
     	}
     	if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
     		DEFU_FLD_N(ION_SPECIES_ABL, nIonChargeStates);

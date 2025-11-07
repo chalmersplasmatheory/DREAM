@@ -726,6 +726,7 @@ void RunawayFluid::AllocateQuantities(){
     DComptonRateDpc = new real_t[nr];
 
     electricConductivity = new real_t[nr];
+	electricHotConductivity = new real_t[nr];
 }
 
 /**
@@ -749,6 +750,7 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
+		delete [] electricHotConductivity;
 		delete [] pStar;
 		delete [] nusnuDatPStar;
     }

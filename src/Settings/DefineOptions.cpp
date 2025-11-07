@@ -22,6 +22,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_HotTailGrid(s);
     DefineOptions_ElectricField(s);
     DefineOptions_T_cold(s);
+    DefineOptions_T_hot(s);
     DefineOptions_f_hot(s);
     DefineOptions_f_re(s);
     DefineOptions_j_hot(s);

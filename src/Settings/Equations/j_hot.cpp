@@ -261,17 +261,20 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
 
     eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(-E/nu_D * df_hot/dp) + int(v*f_hot) [hot-tail mode]");
     eqsys->SetOperator(id_jhot, id_fhot, Op2);
-    // Set initialization method
-    eqsys->initializer->AddRule(
-        id_jhot,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        // Dependencies
-        id_fhot,
-        id_Eterm,
-        id_Tcold,
-        EqsysInitializer::COLLQTYHDL_HOTTAIL
-    );
+	
+	if (!eqsys->IsAssigningToAlternativeEquation(id_jhot)) {
+		// Set initialization method
+		eqsys->initializer->AddRule(
+			id_jhot,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			// Dependencies
+			id_fhot,
+			id_Eterm,
+			id_Tcold,
+			EqsysInitializer::COLLQTYHDL_HOTTAIL
+		);
+	}
 }
 
 /**

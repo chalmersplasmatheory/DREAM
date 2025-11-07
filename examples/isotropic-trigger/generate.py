@@ -51,7 +51,7 @@ def setup():
     ds.hottailgrid.setNxi(1)
 
     # Set initial temperature
-    T0 = 20e3 * (1 - 0.99*(r0/ds.radialgrid.a)**2)
+    T0 = 20e3 * (1 - 0.99*rho**2)
     n0 = 1e20 * np.ones(r0.shape)
     ds.eqsys.T_hot.setInitialProfile(T0, r0)
 
@@ -60,7 +60,7 @@ def setup():
     ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=0)
 
     # Set initial properties of f_hot
-    ds.eqsys.f_hot.setInitialProfiles(n0, T0, rn0=r0, rT0=T0)
+    ds.eqsys.f_hot.setInitialProfiles(n0, T0, rn0=r0, rT0=r0)
     ds.eqsys.f_hot.trigger.equation.enableIonJacobian(False)
     ds.eqsys.f_hot.trigger.equation.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
 
@@ -82,6 +82,8 @@ def setup():
 def main():
     ds = setup()
     ds.save('settings.h5')
+
+    runiface(ds, 'output.h5')
 
     return 0
 

@@ -29,7 +29,7 @@ CollisionQuantityHandler::CollisionQuantityHandler(
 		const len_t id_Thot = u->GetUnknownID(OptionConstants::UQTY_T_HOT);
 		const len_t id_nhot = u->GetUnknownID(OptionConstants::UQTY_N_HOT);
 
-		lnLambdaEE = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, collQtySettings, CollisionQuantity::LNLAMBDATYPE_EE, id_Thot, id_nhot);
+		lnLambdaEEhot = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, collQtySettings, CollisionQuantity::LNLAMBDATYPE_EE, id_Thot, id_nhot);
 	}
 }
 

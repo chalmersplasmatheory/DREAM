@@ -124,6 +124,7 @@ namespace DREAM {
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
+		bool HasUnknown(const std::string &name) { return unknowns.HasUnknown(name); }
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
         IonHandler *GetIonHandler() { return this->ionHandler; }

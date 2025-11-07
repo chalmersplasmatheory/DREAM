@@ -30,7 +30,6 @@
 #include "DREAM/Equations/Kinetic/TritiumSource.hpp"
 #include "DREAM/IO.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
-#include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
@@ -76,6 +75,7 @@ void SimulationGenerator::DefineOptions_f_hot_inner(
     s->DefineSetting(modulename + "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
 	
     s->DefineSetting(modulename + "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
+	s->DefineSetting(modulename + "/maxwellian_population", "When f_hot is an instantaneous Maxwellian, determines whether to use n_cold/T_cold or n_hot/T_hot", (int_t)OptionConstants::UQTY_F_HOT_MAXWELLIAN_COLD);
 }
 
 /**
@@ -331,25 +331,26 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
 	);
 
 	string desc;
-	len_t id_T, id_n;
-	if (pop == InstantaneousMaxwellianTerm::MAXWELLIAN_POPULATION_COLD) {
+	if (pop == InstantaneousMaxwellianTerm::MAXWELLIAN_POPULATION_COLD)
 		desc = "f_hot = f_M(T_cold, n_cold)";
-		id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
-		id_n = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-	} else {
+	else
 		desc = "f_hot = f_M(T_hot, n_hot)";
-		id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_HOT);
-		id_n = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
-	}
 
 	eqsys->SetOperator(id_f_hot, id_f_hot, op, desc);
-	eqsys->initializer->AddRule(
+
+	// Set initial value for f_hot
+    bool rescaleMaxwellian = true;
+	real_t *n0 = LoadDataR(modulename, hottailGrid->GetRadialGrid(), s, "n0");
+	real_t *T0 = LoadDataR(modulename, hottailGrid->GetRadialGrid(), s, "T0");
+	ConstructEquation_f_maxwellian(id_f_hot, eqsys, hottailGrid, n0, T0, rescaleMaxwellian);
+
+	/*eqsys->initializer->AddRule(
 		id_f_hot,
 		EqsysInitializer::INITRULE_EVAL_EQUATION,
 		nullptr,
 		// Dependencies
 		id_T, id_n
-	);
+	);*/
 }
 
 /**

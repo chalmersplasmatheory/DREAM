@@ -33,6 +33,7 @@ class HotElectronTemperature(ColdElectronTemperature):
             name='T_hot', makeTrigger=False
         )
         self.setType(ttype)
+        self.enabled = False
 
         if makeTrigger:
             self.trigger = EquationTrigger(
@@ -47,6 +48,13 @@ class HotElectronTemperature(ColdElectronTemperature):
             self.trigger = None
 
 
+    def setEnabled(self, enabled=True):
+        """
+        Enable/disable this quantity in the simulation.
+        """
+        self.enabled = enabled
+
+
     def setType(self, ttype):
         """
         Specifies whether to evolve the hot electron temperature
@@ -59,6 +67,9 @@ class HotElectronTemperature(ColdElectronTemperature):
 
         self.type = ttype
 
+        if ttype == TYPE_SELFCONSISTENT:
+            self.enabled = True
+
 
     def todict(self):
         """
@@ -66,6 +77,7 @@ class HotElectronTemperature(ColdElectronTemperature):
         this HotElectronTemperature object.
         """
         data = super().todict()
+        data['enabled'] = self.enabled
 
         if self.type == TYPE_MOMENT:
             del data['data']

@@ -29,6 +29,7 @@ void SimulationGenerator::DefineOptions_T_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
     s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
     s->DefineSetting(MODULENAME "/include_NBI", "Whether to include NBI heating term in T_hot evolution", (bool)false);
+	s->DefineSetting(MODULENAME "/enabled", "Whether or not T_hot should be enabled", (bool)false);
 
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
@@ -48,18 +49,13 @@ void SimulationGenerator::ConstructEquation_T_hot(
 	EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
 	struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
-	// Define 'T_hot' as an unknown quantity
 	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-	const len_t id_T_hot = eqsys->SetUnknown(
-		OptionConstants::UQTY_T_HOT,
-		OptionConstants::UQTY_T_HOT_DESC,
-		fluidGrid
-	);
 
 	// Construct the equation T_hot = (3/2)*W_hot/n_hot
 	FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
 	FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
 
+	len_t id_T_hot = eqsys->GetUnknownID(OptionConstants::UQTY_T_HOT);
 	len_t id_W_hot = eqsys->GetUnknownID(OptionConstants::UQTY_W_HOT);
 	len_t id_n_hot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
 
@@ -134,7 +130,7 @@ void SimulationGenerator::ConstructEquation_W_hot_selfconsistent(
 	// Set initial value for 'W_hot'
 	eqsys->initializer->AddRule(
 		id_W_hot,
-		EqsysInitializer::INITRULE_EVAL_EQUATION,
+		EqsysInitializer::INITRULE_EVAL_FUNCTION,
 		initfunc_W_hot,
 		// Dependencies
 		id_T_hot, id_n_hot
