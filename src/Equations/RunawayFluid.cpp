@@ -246,12 +246,12 @@ void RunawayFluid::CalculateDerivedQuantities(){
             case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS: 
                 electricConductivity[ir] = evaluateSauterElectricConductivity(ir, true);
 				if (hasThot)
-					electricConductivity[ir] = evaluateSauterElectricConductivity_hot(ir, true);
+					electricHotConductivity[ir] = evaluateSauterElectricConductivity_hot(ir, true);
                 break;
             case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONAL: 
                 electricConductivity[ir] = evaluateSauterElectricConductivity(ir, false);
 				if (hasThot)
-					electricConductivity[ir] = evaluateSauterElectricConductivity_hot(ir, false);
+					electricHotConductivity[ir] = evaluateSauterElectricConductivity_hot(ir, false);
                 break;
             default:
                 break; // throw exception?            

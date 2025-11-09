@@ -17,6 +17,9 @@ import DREAM.Settings.Solver as Solver
 import sys
 
 
+WITH_TRIGGER = False
+
+
 def setup():
     ds = DREAMSettings()
 
@@ -58,30 +61,43 @@ def setup():
 
     # Add ion species
     ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n0, r=r0)
-    ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=0)
+    if WITH_TRIGGER:
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=0)
+    else:
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e19)
 
     # Set initial properties of f_hot
     mod = 0.9999
     ds.eqsys.f_hot.setInitialProfiles(mod*n0, T0, rn0=r0, rT0=r0)
-    ds.eqsys.f_hot.trigger.equation.enableIonJacobian(False)
-    ds.eqsys.f_hot.trigger.equation.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
+    if WITH_TRIGGER:
+        ds.eqsys.f_hot.trigger.equation.enableIonJacobian(False)
+        ds.eqsys.f_hot.trigger.equation.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
+    else:
+        ds.eqsys.f_hot.enableIonJacobian(False)
+        ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
 
     # Enable trigger
-    #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
-    ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=1)
+    if WITH_TRIGGER:
+        #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
+        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=2e-6)
+    else:
+        ds.eqsys.T_cold.setType(Tcold.TYPE_SELFCONSISTENT)
+        ds.eqsys.T_cold.setInitialProfile(1)
 
     # Solver settings
     ds.solver.setType(Solver.NONLINEAR)
     ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MKL)
-    ds.solver.setMaxIterations(20)
-    ds.solver.setVerbose(True)
+    ds.solver.setMaxIterations(100)
+    #ds.solver.setVerbose(True)
 
-    ds.solver.tolerance.set(reltol=1e-6)
+    ds.solver.tolerance.set(reltol=1e-5)
     ds.solver.tolerance.set('j_hot', abstol=1)
-    ds.solver.setDebug(savejacobian=True, timestep=1, iteration=1)
+    #ds.solver.setDebug(savejacobian=True, timestep=1, iteration=1)
+
+    ds.other.include('fluid', 'scalar')
 
     # Time step settings
-    ds.timestep.setTmax(1e-5)
+    ds.timestep.setTmax(1e-10)
     ds.timestep.setNt(100)
 
     return ds

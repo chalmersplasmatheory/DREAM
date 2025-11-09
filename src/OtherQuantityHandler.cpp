@@ -282,6 +282,9 @@ void OtherQuantityHandler::DefineQuantities() {
 
     // fluid/...
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
+	if (this->REFluid->GetElectricHotConductivity() != nullptr) {
+		DEF_FL("fluid/conductivity_hot", "Electric conductivity in SI, evaluated using hot electron properties", qd->Store(this->REFluid->GetElectricHotConductivity()););
+	}
     DEF_FL("fluid/Eceff", "Effective critical electric field [V/m]", qd->Store(this->REFluid->GetEffectiveCriticalField()););
     DEF_FL("fluid/Ecfree", "Connor-Hastie threshold field (calculated with n=n_free) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
     DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););

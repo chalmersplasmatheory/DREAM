@@ -71,17 +71,37 @@ class HotElectronTemperature(ColdElectronTemperature):
             self.enabled = True
 
 
+    def fromdict(self, data):
+        """
+        Load settings from the given dictionary.
+        """
+        if 'enabled' in data:
+            self.enabled = bool(data['enabled'])
+
+        if self.enabled:
+            super().fromdict(data)
+
+
     def todict(self):
         """
         Returns a Python dictionary containing all settings of
         this HotElectronTemperature object.
         """
-        data = super().todict()
-        data['enabled'] = self.enabled
+        print(f'T_hot: {self.enabled}')
+        if self.enabled:
+            data = super().todict()
+            data['enabled'] = self.enabled
 
-        if self.type == TYPE_MOMENT:
-            del data['data']
+            if self.type == TYPE_MOMENT:
+                del data['data']
 
-        return data
+            return data
+        else:
+            return {}
+
+
+    def verifySettings(self):
+        if self.enabled:
+            super().verifySettings()
 
 
