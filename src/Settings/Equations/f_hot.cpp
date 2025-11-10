@@ -106,7 +106,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
 		ConstructEquation_f_hot_inner(MODULENAME "/switch/equation", eqsys, s, oqty_terms);
 
 		EquationTriggerCondition *trig = LoadTriggerCondition(
-			s, MODULENAME "/switch", eqsys->GetFluidGrid(),
+			s, MODULENAME "/switch", eqsys->GetHotTailGrid(),
 			eqsys->GetUnknownHandler()
 		);
 		eqsys->SetTriggerCondition(id_f_hot, trig);

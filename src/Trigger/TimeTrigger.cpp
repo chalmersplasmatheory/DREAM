@@ -13,8 +13,8 @@ using namespace DREAM;
  */
 TimeTrigger::TimeTrigger(
 	FVM::Grid *grid, FVM::UnknownQuantityHandler *uqh,
-	const real_t trigger_time
-) : EquationTriggerCondition(grid, uqh), trigger_time(trigger_time) { }
+	const len_t nMultiples, const real_t trigger_time
+) : EquationTriggerCondition(grid, uqh, nMultiples), trigger_time(trigger_time) { }
 
 
 /**
@@ -27,7 +27,7 @@ TimeTrigger::~TimeTrigger() {}
  * Check if the condition is triggered.
  */
 void TimeTrigger::CheckCondition(const real_t t, FVM::UnknownQuantityHandler*) {
-	const len_t N = this->grid->GetNCells();
+	const len_t N = this->GetNCells();
 	bool v = (t >= this->trigger_time);
 	for (len_t i = 0; i < N; i++)
 		triggered[i] = v;

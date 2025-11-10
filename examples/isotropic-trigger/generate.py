@@ -14,19 +14,23 @@ import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.EquationTrigger as Trigger
 import DREAM.Settings.Solver as Solver
+import os
 import sys
 
 
 WITH_TRIGGER = False
+
+MINOR_RADIUS = 1.0
+NR = 20
 
 
 def set_geometry(ds):
     """
     Set the geometry of the simulation domain.
     """
-    ds.radialgrid.setMinorRadius(1.0)
-    ds.radialgrid.setWallRadius(1.2)
-    ds.radialgrid.setNr(20)
+    ds.radialgrid.setMinorRadius(MINOR_RADIUS)
+    ds.radialgrid.setWallRadius(MINOR_RADIUS*1.2)
+    ds.radialgrid.setNr(NR)
     ds.radialgrid.setB0(5.6)
 
 
@@ -64,17 +68,28 @@ def calculate_E(r, T, n, j, Ip):
     
     ds.solver.setType(Solver.NONLINEAR)
     ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MKL)
+    ds.output.setFilename('output_init.h5')
 
-    do = runiface(ds, quiet=True)
+    do = runiface(ds, 'output_init.h5', quiet=True)
 
-    return do.grid.r[:], do.eqsys.E_field[-1,:]
+    return do.grid.r[:], do.eqsys.E_field[-1,:], ds
 
 
 def setup():
     T0 = 20e3
     n0 = 1e20
 
-    ds = DREAMSettings()
+    # Radial grid for input parameters
+    r0 = np.linspace(0, MINOR_RADIUS, NR+1)
+    rho = r0 / MINOR_RADIUS
+
+    T = T0 * (1 - 0.99*rho**2)
+    n = n0 * np.ones(r0.shape)
+
+    j = (1-0.99*rho**2)
+    rE, E, ds_init = calculate_E(r=r0, T=T, n=n, j=j, Ip=15e6)
+
+    ds = DREAMSettings(ds_init)
 
     ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
     ds.collisions.collfreq_type       = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
@@ -84,24 +99,13 @@ def setup():
 
     set_geometry(ds)
 
-    # Radial grid for input parameters
-    r0 = np.linspace(0, ds.radialgrid.a, ds.radialgrid.nr+1)
-    rho = r0 / ds.radialgrid.a
-
-    T = T0 * (1 - 0.99*rho**2)
-    n = n0 * np.ones(r0.shape)
-
     # Electric field
     ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
     ds.eqsys.E_field.setBoundaryCondition(
         EField.BC_TYPE_PRESCRIBED,
         inverse_wall_time=0, V_loop_wall_R0=0
     )
-
-    j = (1-0.99*rho**2)
-    rE, E = calculate_E(r=r0, T=T, n=n, j=j, Ip=15e6)
     ds.eqsys.E_field.setInitialProfile(E, radius=rE)
-
 
     ds.hottailgrid.setEnabled(True)
     ds.runawaygrid.setEnabled(False)
@@ -115,11 +119,11 @@ def setup():
         ds.eqsys.T_hot.setInitialProfile(T, r0)
 
     # Add ion species
-    ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n, r=r0)
+    #ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n, r=r0)
     if WITH_TRIGGER:
-        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=0)
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
     else:
-        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e19)
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
 
     # Set initial properties of f_hot
     mod = 0.9999
@@ -152,6 +156,8 @@ def setup():
 
     ds.other.include('fluid', 'scalar')
 
+    ds.setIgnore(['n_i', 'T_cold', 'W_cold', 'n_hot', 'n_cold'])
+
     # Time step settings
     ds.timestep.setTmax(1e-4)
     ds.timestep.setNt(1000)
@@ -163,7 +169,19 @@ def main():
     ds = setup()
     ds.save('settings.h5')
 
-    runiface(ds, 'output.h5')
+    try:
+        if WITH_TRIGGER:
+            runiface(ds, 'output_trigger.h5')
+        else:
+            runiface(ds, 'output_notrigger.h5')
+    except: pass
+
+    if WITH_TRIGGER:
+        os.rename('petsc_jac', 'petsc_jac_trigger')
+        os.rename('residual.mat', 'residual_trigger.mat')
+    else:
+        os.rename('petsc_jac', 'petsc_jac_notrigger')
+        os.rename('residual.mat', 'residual_notrigger.mat')
 
     return 0
 

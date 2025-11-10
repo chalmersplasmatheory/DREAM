@@ -13,8 +13,8 @@ using namespace DREAM;
  */
 ColdElectronDensityRiseCondition::ColdElectronDensityRiseCondition(
 	FVM::Grid *g, FVM::UnknownQuantityHandler *u,
-	const real_t sensitivity
-) : EquationTriggerCondition(g, u), sensitivity(sensitivity) {
+	const len_t nMultiples, const real_t sensitivity
+) : EquationTriggerCondition(g, u, nMultiples), sensitivity(sensitivity) {
 
 	this->id_n_cold = u->GetUnknownID(OptionConstants::UQTY_N_COLD);
 	this->id_n_hot = u->GetUnknownID(OptionConstants::UQTY_N_HOT);
@@ -36,13 +36,20 @@ void ColdElectronDensityRiseCondition::CheckCondition(
 	const real_t *n_cold = unknowns->GetUnknownData(this->id_n_cold);
 	const real_t *n_hot = unknowns->GetUnknownData(this->id_n_hot);
 
-	const len_t N = this->grid->GetNCells();
-	for (len_t i = 0; i < N; i++) {
-		if (n_hot[i] < 1)
-			triggered[i] = true;
-		else {
-			real_t r = n_cold[i] / n_hot[i];
-			triggered[i] = (r > sensitivity);
+	const len_t nr = this->grid->GetNr();
+	const len_t Np = this->grid->GetNp1(0) * this->grid->GetNp2(0);
+	for (len_t in = 0, i = 0; in < this->nMultiples; in++) {
+		for (len_t ir = 0; ir < nr; ir++) {
+			bool v;
+			if (n_hot[ir] < 1)
+				v = true;
+			else {
+				real_t r = n_cold[ir] / n_hot[ir];
+				v = (r > sensitivity);
+			}
+
+			for (len_t ip = 0; ip < Np; ip++, i++)
+				triggered[i] = v;
 		}
 	}
 }

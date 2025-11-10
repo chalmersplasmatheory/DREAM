@@ -31,7 +31,7 @@ void SimulationGenerator::DefineOptions_TriggerCondition(
  */
 EquationTriggerCondition *SimulationGenerator::LoadTriggerCondition(
 	Settings *s, const string& name, FVM::Grid *grid,
-	FVM::UnknownQuantityHandler *uqh
+	FVM::UnknownQuantityHandler *uqh, const len_t nMultiples
 ) {
 	enum OptionConstants::eqn_trigger_type ttype =
 		(enum OptionConstants::eqn_trigger_type)s->GetInteger(name + "/condition");
@@ -42,15 +42,14 @@ EquationTriggerCondition *SimulationGenerator::LoadTriggerCondition(
 			cond = nullptr;
 			break;
 
-
 		case OptionConstants::EQN_TRIGGER_TYPE_TIME: {
 			real_t ttime = s->GetReal(name + "/trigger_time");
-			cond = new TimeTrigger(grid, uqh, ttime);
+			cond = new TimeTrigger(grid, uqh, nMultiples, ttime);
 		} break;
 
 		case OptionConstants::EQN_TRIGGER_TYPE_COLD_ELECTRON_DENSITY_RISE: {
 			real_t sensitivity = s->GetReal(name + "/sensitivity");
-			cond = new ColdElectronDensityRiseCondition(grid, uqh, sensitivity);
+			cond = new ColdElectronDensityRiseCondition(grid, uqh, nMultiples, sensitivity);
 		} break;
 		
 		default:

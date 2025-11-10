@@ -231,7 +231,7 @@ namespace DREAM {
 
 		// Equation trigger condition routines
 		static void DefineOptions_TriggerCondition(Settings*, const std::string&);
-		static EquationTriggerCondition *LoadTriggerCondition(Settings*, const std::string&, FVM::Grid*, FVM::UnknownQuantityHandler*);
+		static EquationTriggerCondition *LoadTriggerCondition(Settings*, const std::string&, FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t nMultiples=1);
 
 
         template<typename T>

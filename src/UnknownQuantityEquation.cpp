@@ -267,10 +267,10 @@ void UnknownQuantityEquation::SetVectorElements(
 		}
 
 		// Set the elements for which the condition is triggered
-		for (len_t i = 0; i < nElements; i++) {
+		const len_t N = this->condition->GetNCells();
+		for (len_t i = 0; i < N; i++)
 			if (this->condition->IsTriggered(i))
 				vec[i] = eqn_cache[i];
-		}
 	}
 }
 

@@ -12,7 +12,7 @@ namespace DREAM {
 
 	public:
 		ColdElectronDensityRiseCondition(
-			FVM::Grid*, FVM::UnknownQuantityHandler*, const real_t
+			FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t, const real_t
 		);
 		virtual ~ColdElectronDensityRiseCondition();
 
