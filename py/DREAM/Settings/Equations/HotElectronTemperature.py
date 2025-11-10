@@ -87,7 +87,6 @@ class HotElectronTemperature(ColdElectronTemperature):
         Returns a Python dictionary containing all settings of
         this HotElectronTemperature object.
         """
-        print(f'T_hot: {self.enabled}')
         if self.enabled:
             data = super().todict()
             data['enabled'] = self.enabled

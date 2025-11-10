@@ -20,7 +20,21 @@ import sys
 WITH_TRIGGER = False
 
 
-def setup():
+def set_geometry(ds):
+    """
+    Set the geometry of the simulation domain.
+    """
+    ds.radialgrid.setMinorRadius(1.0)
+    ds.radialgrid.setWallRadius(1.2)
+    ds.radialgrid.setNr(20)
+    ds.radialgrid.setB0(5.6)
+
+
+def calculate_E(r, T, n, j, Ip):
+    """
+    Calculate the electric field profile, given temperature, density, and
+    current density profiles. 
+    """
     ds = DREAMSettings()
 
     ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
@@ -29,14 +43,53 @@ def setup():
     ds.collisions.pstar_mode          = Collisions.PSTAR_MODE_COLLISIONLESS
     ds.collisions.collfreq_mode       = Collisions.COLLFREQ_MODE_SUPERTHERMAL
 
-    ds.radialgrid.setMinorRadius(1.0)
-    ds.radialgrid.setWallRadius(1.2)
-    ds.radialgrid.setNr(20)
-    ds.radialgrid.setB0(5.6)
+    ds.hottailgrid.setEnabled(False)
+    ds.runawaygrid.setEnabled(False)
+
+    set_geometry(ds)
+
+    ds.eqsys.T_cold.setPrescribedData(T, radius=r)
+    ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n, r=r)
+
+    ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
+    ds.eqsys.E_field.setBoundaryCondition(
+        EField.BC_TYPE_PRESCRIBED,
+        inverse_wall_time=0, V_loop_wall_R0=0
+    )
+
+    ds.eqsys.j_ohm.setInitialProfile(j, r, Ip0=Ip)
+
+    ds.timestep.setNt(1)
+    ds.timestep.setTmax(1e-6)
+    
+    ds.solver.setType(Solver.NONLINEAR)
+    ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MKL)
+
+    do = runiface(ds, quiet=True)
+
+    return do.grid.r[:], do.eqsys.E_field[-1,:]
+
+
+def setup():
+    T0 = 20e3
+    n0 = 1e20
+
+    ds = DREAMSettings()
+
+    ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+    ds.collisions.collfreq_type       = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
+    ds.collisions.lnlambda            = Collisions.LNLAMBDA_ENERGY_DEPENDENT
+    ds.collisions.pstar_mode          = Collisions.PSTAR_MODE_COLLISIONLESS
+    ds.collisions.collfreq_mode       = Collisions.COLLFREQ_MODE_SUPERTHERMAL
+
+    set_geometry(ds)
 
     # Radial grid for input parameters
-    r0 = np.linspace(0, ds.radialgrid.a, ds.radialgrid.nr)
+    r0 = np.linspace(0, ds.radialgrid.a, ds.radialgrid.nr+1)
     rho = r0 / ds.radialgrid.a
+
+    T = T0 * (1 - 0.99*rho**2)
+    n = n0 * np.ones(r0.shape)
 
     # Electric field
     ds.eqsys.E_field.setType(EField.TYPE_SELFCONSISTENT)
@@ -44,23 +97,25 @@ def setup():
         EField.BC_TYPE_PRESCRIBED,
         inverse_wall_time=0, V_loop_wall_R0=0
     )
-    j0 = (1 - (1-0.001**(1/0.41))*rho**2)**0.41
-    ds.eqsys.j_ohm.setInitialProfile(j0, r0, Ip0=15e6)
+
+    j = (1-0.99*rho**2)
+    rE, E = calculate_E(r=r0, T=T, n=n, j=j, Ip=15e6)
+    ds.eqsys.E_field.setInitialProfile(E, radius=rE)
+
 
     ds.hottailgrid.setEnabled(True)
     ds.runawaygrid.setEnabled(False)
 
-    ds.hottailgrid.setPmax(0.8)
+    ds.hottailgrid.setPmax(1.4)
     ds.hottailgrid.setNp(80)
     ds.hottailgrid.setNxi(1)
 
     # Set initial temperature
-    T0 = 20e3 * (1 - 0.99*rho**2)
-    n0 = 1e20 * np.ones(r0.shape)
-    ds.eqsys.T_hot.setInitialProfile(T0, r0)
+    if WITH_TRIGGER:
+        ds.eqsys.T_hot.setInitialProfile(T, r0)
 
     # Add ion species
-    ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n0, r=r0)
+    ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n, r=r0)
     if WITH_TRIGGER:
         ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=0)
     else:
@@ -68,7 +123,7 @@ def setup():
 
     # Set initial properties of f_hot
     mod = 0.9999
-    ds.eqsys.f_hot.setInitialProfiles(mod*n0, T0, rn0=r0, rT0=r0)
+    ds.eqsys.f_hot.setInitialProfiles(mod*n, T, rn0=r0, rT0=r0)
     if WITH_TRIGGER:
         ds.eqsys.f_hot.trigger.equation.enableIonJacobian(False)
         ds.eqsys.f_hot.trigger.equation.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
@@ -79,7 +134,8 @@ def setup():
     # Enable trigger
     if WITH_TRIGGER:
         #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
-        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=2e-6)
+        #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=2e-6)
+        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=-1)
     else:
         ds.eqsys.T_cold.setType(Tcold.TYPE_SELFCONSISTENT)
         ds.eqsys.T_cold.setInitialProfile(1)
@@ -92,13 +148,13 @@ def setup():
 
     ds.solver.tolerance.set(reltol=1e-5)
     ds.solver.tolerance.set('j_hot', abstol=1)
-    #ds.solver.setDebug(savejacobian=True, timestep=1, iteration=1)
+    ds.solver.setDebug(savejacobian=True, saveresidual=True, timestep=1, iteration=1)
 
     ds.other.include('fluid', 'scalar')
 
     # Time step settings
-    ds.timestep.setTmax(1e-10)
-    ds.timestep.setNt(100)
+    ds.timestep.setTmax(1e-4)
+    ds.timestep.setNt(1000)
 
     return ds
 
