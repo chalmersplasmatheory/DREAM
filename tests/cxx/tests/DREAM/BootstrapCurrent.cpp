@@ -21,10 +21,10 @@
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
-//const string INPUT_FILENAME = "/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/profiles_IDE_40655_t=2.3s.h5";
-//const string EQUIL_FILENAME = "/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/equilibrium_IDE_40655_t=2.3s.h5";
-const string INPUT_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/profiles_IDF_40655_t=2.3s.h5";
-const string EQUIL_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/equilibrium_IDE_40655_t=2.3s.h5";
+const string INPUT_FILENAME = "/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/profiles_IDF_40655_t=2.3s.h5";
+const string EQUIL_FILENAME = "/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/equilibrium_IDE_40655_t=2.3s.h5";
+//const string INPUT_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/profiles_IDF_40655_t=2.3s.h5";
+//const string EQUIL_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/equilibrium_IDE_40655_t=2.3s.h5";
 
 const len_t N_IONS = 2; // Number of ion species
 const len_t Z_IONS[N_IONS] = {1, 10}; // Vector with atomic number for each ion species, # elements == N_IONS
@@ -231,16 +231,15 @@ bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
 
 	// j_bs_IDA : <j_bs . B>
 	// j_bs : j_bs/(B/Bmin) -> multiply by Bmin * <B**2/Bmin**2>
-	const real_t *Bmin = grid->GetRadialGrid()->GetBmin();
-	const real_t *FSA_B2OverBmin2 = grid->GetRadialGrid()->GetFSA_B2();
+	const real_t *FSA_BOverBmin = grid->GetRadialGrid()->GetFSA_B();
 	for (len_t ir = 0; ir < Nr; ir ++)
-		j_bs[ir] = j_bs[ir] * Bmin[ir] * FSA_B2OverBmin2[ir];
+		j_bs[ir] = j_bs[ir] * FSA_BOverBmin[ir];
 
     // Sum of all elements should vanish
     real_t deltas;
     for (len_t ir = 0; ir < Nr; ir++) {
         deltas = abs(j_bs[ir] - j_bs_IDA[ir]) / j_bs_IDA[ir];
-        printf("ir=%ld  --  DREAM: %.1f,       IDA: %.1f\n", ir, j_bs[ir], j_bs_IDA[ir]);
+        printf("ir=%ld  --  DREAM: %.1f,       IDA: %.1f,          IDA/DREAM: %.4e\n", ir, j_bs[ir], j_bs_IDA[ir], j_bs_IDA[ir]/j_bs[ir]);
         if(deltas>successRelErrorThreshold){
             success = false;
             std::cout << "delta [rel error]: " << deltas << endl;
