@@ -219,7 +219,7 @@ namespace DREAM {
         static void ConstructEquation_W_abl(EquationSystem*, Settings*);
         
 		static void ConstructEquation_T_hot(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
-		static void ConstructEquation_T_hot_inner(EquationSystem*, Settings*);
+		static void ConstructEquation_T_hot_inner(const std::string&, EquationSystem*, Settings*);
         static void ConstructEquation_W_hot_inner(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_W_hot_moment(EquationSystem*, Settings*);
 		static void ConstructEquation_W_hot_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);

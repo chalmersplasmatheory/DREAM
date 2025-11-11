@@ -59,54 +59,77 @@ void SimulationGenerator::ConstructEquation_T_hot(
 	EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
 	struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
+	const len_t id_T_hot = eqsys->GetUnknownID(OptionConstants::UQTY_T_HOT);
 	const len_t id_W_hot = eqsys->GetUnknownID(OptionConstants::UQTY_W_HOT);
 
 	// Construct main equation
-	ConstructEquation_T_hot_inner(eqsys, s);
+	ConstructEquation_T_hot_inner(MODULENAME, eqsys, s);
 	ConstructEquation_W_hot_inner(MODULENAME, eqsys, s, adas, nist, amjuel, oqty_terms);
 
 	enum OptionConstants::eqn_trigger_type switchtype =
 		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
 	
 	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_T_hot, true);
 		eqsys->SetAssignToAlternativeEquation(id_W_hot, true);
 
+		ConstructEquation_T_hot_inner(
+			MODULENAME "/switch/equation",
+			eqsys, s
+		);
 		ConstructEquation_W_hot_inner(
 			MODULENAME "/switch/equation",
 			eqsys, s, adas, nist, amjuel,
 			oqty_terms
 		);
 
-		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
-		eqsys->SetTriggerCondition(id_W_hot, trig);
+		// Set trigger condition for T_hot
+		EquationTriggerCondition *trig1 = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
+		eqsys->SetTriggerCondition(id_T_hot, trig1);
 
+		// Set trigger condition for W_hot
+		EquationTriggerCondition *trig2 = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
+		eqsys->SetTriggerCondition(id_W_hot, trig2);
+
+		eqsys->SetAssignToAlternativeEquation(id_T_hot, false);
 		eqsys->SetAssignToAlternativeEquation(id_W_hot, false);
 	}
 }
 
 void SimulationGenerator::ConstructEquation_T_hot_inner(
-	EquationSystem *eqsys, Settings *s
+	const string &modulename, EquationSystem *eqsys, Settings *s
 ) {
+	enum OptionConstants::uqty_T_hot_eqn type =
+		(enum OptionConstants::uqty_T_hot_eqn)s->GetInteger(modulename + "/type");
+
 	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-
-	// Construct the equation T_hot = (3/2)*W_hot/n_hot
-	FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-	FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-
 	len_t id_T_hot = eqsys->GetUnknownID(OptionConstants::UQTY_T_HOT);
 	len_t id_W_hot = eqsys->GetUnknownID(OptionConstants::UQTY_W_HOT);
 	len_t id_n_hot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
 
-	Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-	Op2->AddTerm(new ElectronHeatTerm(fluidGrid, id_n_hot, eqsys->GetUnknownHandler()));
+	if (type == OptionConstants::UQTY_T_HOT_MOMENT) {
+		// W_hot as moment of f_hot  =>  fix T_hot value, set dT_hot/dt = 0
+		FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+		Op1->AddTerm(new FVM::TransientTerm(fluidGrid, id_T_hot));
+		eqsys->SetOperator(id_T_hot, id_T_hot, Op1, "dT_hot/dt = 0");
+	} else {
+		// Self-consistent W_hot  =>  solve W_hot = (3/2)*n_hot*T_hot
 
-	eqsys->SetOperator(id_T_hot, id_W_hot, Op1, "W_hot = (2/3)*n_hot*T_hot");
-	eqsys->SetOperator(id_T_hot, id_T_hot, Op2);
+		// Construct the equation T_hot = (3/2)*W_hot/n_hot
+		FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+		FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
 
-	// Set initial value for 'T_hot'
-	real_t *T0 = LoadDataR("eqsys/f_hot", fluidGrid->GetRadialGrid(), s, "T0");
-	eqsys->SetInitialValue(id_T_hot, T0);
-	delete [] T0;
+		Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+		Op2->AddTerm(new ElectronHeatTerm(fluidGrid, id_n_hot, eqsys->GetUnknownHandler()));
+
+		eqsys->SetOperator(id_T_hot, id_W_hot, Op1, "W_hot = (3/2)*n_hot*T_hot");
+		eqsys->SetOperator(id_T_hot, id_T_hot, Op2);
+
+		// Set initial value for 'T_hot'
+		real_t *T0 = LoadDataR("eqsys/f_hot", fluidGrid->GetRadialGrid(), s, "T0");
+		eqsys->SetInitialValue(id_T_hot, T0);
+		delete [] T0;
+	}
 }
 
 /**

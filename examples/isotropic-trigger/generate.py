@@ -18,10 +18,11 @@ import os
 import sys
 
 
-WITH_TRIGGER = False
+WITH_TRIGGER = True
 
 MINOR_RADIUS = 1.0
 NR = 20
+TRIGGER_TIME = 1e-7
 
 
 def set_geometry(ds):
@@ -120,10 +121,11 @@ def setup():
 
     # Add ion species
     #ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n, r=r0)
+    ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_KINETIC_APPROX_JAC)
     if WITH_TRIGGER:
-        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=3e20)
     else:
-        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=3e20)
 
     # Set initial properties of f_hot
     mod = 0.9999
@@ -138,8 +140,7 @@ def setup():
     # Enable trigger
     if WITH_TRIGGER:
         #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
-        #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=2e-6)
-        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=-1)
+        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=TRIGGER_TIME)
     else:
         ds.eqsys.T_cold.setType(Tcold.TYPE_SELFCONSISTENT)
         ds.eqsys.T_cold.setInitialProfile(1)
@@ -151,7 +152,6 @@ def setup():
     #ds.solver.setVerbose(True)
 
     ds.solver.tolerance.set(reltol=1e-5)
-    ds.solver.tolerance.set('j_hot', abstol=1)
     ds.solver.setDebug(savejacobian=True, saveresidual=True, timestep=1, iteration=1)
 
     ds.other.include('fluid', 'scalar')
@@ -159,8 +159,9 @@ def setup():
     ds.setIgnore(['n_i', 'T_cold', 'W_cold', 'n_hot', 'n_cold'])
 
     # Time step settings
-    ds.timestep.setTmax(1e-4)
-    ds.timestep.setNt(1000)
+    ds.timestep.setTmax(1e-5)
+    ds.timestep.setNt(10000)
+    #ds.timestep.setIonization(dt0=1e-8, dtmax=1e-7, tmax=1e-3)
 
     return ds
 

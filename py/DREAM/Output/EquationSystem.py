@@ -48,9 +48,11 @@ class EquationSystem:
         'S_particle':   FluidQuantity,
         'tau_coll':     FluidQuantity,
         'T_cold':       Temperature,
+        'T_hot':        FluidQuantity,
         'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
+        'W_hot':        FluidQuantity,
         'W_i':          IonThermalEnergy,
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii

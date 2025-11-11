@@ -52,6 +52,7 @@ namespace DREAM {
 			else return this->equations;
 		}
         const FVM::Operator *GetOperator(const len_t i) const { return this->equations.at(i); }
+		const FVM::Operator *GetOperatorAlt(const len_t i) const { return this->equations_alt.at(i); }
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }
         FVM::UnknownQuantity *GetUnknown() { return this->uqty; }
 
