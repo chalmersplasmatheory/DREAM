@@ -104,6 +104,7 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_T_cold(Settings*);
+        static void DefineOptions_T_cold_NBI(Settings*);
         static void DefineOptions_T_abl(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");

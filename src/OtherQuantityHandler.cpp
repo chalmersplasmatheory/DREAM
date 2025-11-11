@@ -336,6 +336,11 @@ void OtherQuantityHandler::DefineQuantities() {
                 v[ir] = gLCFS[ir] * nRE[ir];
             }
         );
+
+        DEF_SC("scalar/r_LCFS", "Radius of LCFS [m]",
+            real_t v = tracked_terms->lcfsLossRate_fluid->GetRadiusOfLCFS();
+            qd->Store(&v);
+        );
     }
 
 	if (tracked_terms->n_re_f_hot_flux != nullptr) {
@@ -514,6 +519,16 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
+        
+    if (tracked_terms->T_cold_NBI != nullptr)
+    DEF_FL("fluid/Tcold_NBI", "Collisional heating power density by NBI [J s^-1 m^-3]",
+        real_t *vec = qd->StoreEmpty();
+        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+            vec[ir] = 0;
+
+        // This assumes your NBIElectronHeatTerm implements this method
+        this->tracked_terms->T_cold_NBI->SetVectorElements(vec, nullptr);
+    );
 
     if (tracked_terms->T_cold_transport) {
         if (tracked_terms->T_cold_transport->GetAdvectionTerms().size() > 0) {
@@ -529,6 +544,7 @@ void OtherQuantityHandler::DefineQuantities() {
             );
         }
     }
+    
 
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
@@ -1076,7 +1092,7 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
 	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
-		DEF_HT_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+		DEF_RE_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
 			real_t *v = qd->StoreEmpty();
 			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
 			for (auto t : this->tracked_terms->f_re_kin_rates)

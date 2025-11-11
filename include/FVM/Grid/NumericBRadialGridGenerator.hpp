@@ -113,9 +113,12 @@ namespace DREAM::FVM {
 		virtual const len_t GetNTheta() override { return this->ntheta; }
 		virtual const real_t *GetFluxSurfaceRMinusR0() override;
 		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+
 		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
 		virtual const real_t *GetPoloidalAngle() override;
+        virtual real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) override;
+        virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) override;
 
         // Debugging method
         void __SaveB(const char*);
