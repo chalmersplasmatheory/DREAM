@@ -69,15 +69,13 @@ void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
     // Beam physics settings
     s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
     s->DefineSetting(MODULENAME "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
-    s->DefineSetting(MODULENAME "/NBI/beamPower", "Beam power [W]", (real_t)1e6);
 
     // Plasma and beam parameters
     s->DefineSetting(MODULENAME "/NBI/R0", "Major Radius", (real_t)1.0);
     s->DefineSetting(MODULENAME "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
     s->DefineSetting(MODULENAME "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
     s->DefineSetting(MODULENAME "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
-    s->DefineSetting(MODULENAME "/NBI/TCVGaussian", "Enable gaussian density profile for TCV", (bool)false);
-    s->DefineSetting(MODULENAME "/NBI/ITERGaussian", "Enable gaussian density profile for ITER", (bool)false);
+    s->DefineSetting(MODULENAME "/NBI/gaussian_profile", "Gaussian profile type for NBI: 0=disabled, 1=TCV, 2=ITER", (int_t)0);
     s->DefineSetting(MODULENAME "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
     s->DefineSetting(MODULENAME "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
     s->DefineSetting(MODULENAME "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
@@ -211,14 +209,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
         real_t Ti_beam = s->GetReal(MODULENAME "/NBI/Ti_beam");
         real_t m_i_beam = s->GetReal(MODULENAME "/NBI/m_i_beam");
-        real_t beamPower = s->GetReal(MODULENAME "/NBI/beamPower");
         real_t R0 = s->GetReal(MODULENAME "/NBI/R0");
         len_t dims[1];
         const real_t *P0 = s->GetRealArray(MODULENAME "/NBI/P0", 1, dims);
         const real_t *n = s->GetRealArray(MODULENAME "/NBI/n", 1, dims);
         const real_t *energy_fractions = s->GetRealArray(MODULENAME "/NBI/energy_fractions", 1, dims);
-        bool TCVGaussian = s->GetBool(MODULENAME "/NBI/TCVGaussian");
-        bool ITERGaussian = s->GetBool(MODULENAME "/NBI/ITERGaussian");
+        int_t gaussian_profile = s->GetInteger(MODULENAME "/NBI/gaussian_profile");
 
         // Load time-dependent j_B data
         FVM::Interpolator1D *j_B_profile = LoadDataT(
@@ -228,20 +224,20 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         FVM::Interpolator1D *Power_Profile = LoadDataT(
             MODULENAME "/NBI", s, "P_NBI"
         );
-        NBIHandler *handler = oqty_terms->NBI_handler;
+        NBIHandler *handler = eqsys->NBI_handler;
         if (handler == nullptr) {
             handler = new NBIHandler(eqsys->GetFluidGrid(), adas, ionHandler);
             handler->ConfigureFromSettings(
                 s, unknowns,
                 s_max, r_beam,
                 P0, n, energy_fractions,
-                Ti_beam, m_i_beam, beamPower,
+                Ti_beam, m_i_beam,
                 j_B_profile, R0,
-                TCVGaussian, ITERGaussian, Power_Profile
+                gaussian_profile, Power_Profile
             );
             
         }
-        oqty_terms->NBI_handler = handler;
+        eqsys->NBI_handler = handler;
   
         auto *nbi_e = new NBIElectronTerm(handler, eqsys->GetFluidGrid(), unknowns, ionHandler);
         Op4->AddTerm(nbi_e);
