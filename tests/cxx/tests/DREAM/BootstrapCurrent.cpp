@@ -21,14 +21,14 @@
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
-//const string INPUT_FILENAME = "/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/profiles_IDE_40655_t=2.3s.h5";
-//const string EQUIL_FILENAME = "/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/equilibrium_IDE_40655_t=2.3s.h5";
-const string INPUT_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/profiles_IDF_40655_t=2.3s.h5";
-const string EQUIL_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/equilibrium_IDE_40655_t=2.3s.h5";
+const string INPUT_FILENAME = "/home/ida/Desktop/THEA/profiles.h5";//"/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/profiles_IDF_40655_t=2.3s.h5";
+const string EQUIL_FILENAME = "/home/ida/Desktop/THEA/numericStellaratorSettings.h5";//"/home/ida/Desktop/DREAM/tests/cxx/tests/DREAM/equilibrium_IDE_40655_t=2.3s.h5";
+//const string INPUT_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/profiles_IDF_40655_t=2.3s.h5";
+//const string EQUIL_FILENAME = "/home/peterhalldestam/gitrepos/bootstrap_DREAM_benchmark/aug_data/equilibrium_IDE_40655_t=2.3s.h5";
 
 const len_t N_IONS = 2; // Number of ion species
-const len_t Z_IONS[N_IONS] = {1, 10}; // Vector with atomic number for each ion species, # elements == N_IONS
-const char ION_NAMES[N_IONS][3] = {"D", "Ne"}; // Vector with name of each ion species, # elements == N_IONS
+const len_t Z_IONS[N_IONS] = {1, 1}; // Vector with atomic number for each ion species, # elements == N_IONS
+const char ION_NAMES[N_IONS] = {"D", "T"}; // Vector with name of each ion species, # elements == N_IONS
 
 
 /**
@@ -37,7 +37,7 @@ const char ION_NAMES[N_IONS][3] = {"D", "Ne"}; // Vector with name of each ion s
 DREAM::IonHandler *BootstrapCurrent::GetIonHandler(
     DREAM::FVM::Grid *g, DREAM::FVM::UnknownQuantityHandler *uqh
 ) {
-    vector<string> tritiumNames(0), hydrogenNames(0); 
+    vector<string> tritiumNames(1) = {"T"}, hydrogenNames(0); 
     vector<string> names(N_IONS);
     len_t *Z = new len_t[N_IONS];// The ion charge numbers must be provided to the IONHandler as a dynamically allocated array to avoid memory issues
     for (len_t i = 0; i < N_IONS; i++){
@@ -90,8 +90,8 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(
     gsl_spline *spline_Ti  = gsl_spline_alloc(gsl_interp_steffen, dims[0]);
     gsl_spline_init(spline_Ti, input_r, input_file->GetDoubles1D("ion_temperature", dims), dims[0]);
 
-    gsl_spline *spline_Zeff  = gsl_spline_alloc(gsl_interp_steffen, dims[0]);
-    gsl_spline_init(spline_Zeff, input_r, input_file->GetDoubles1D("effective_charge", dims), dims[0]);
+    //gsl_spline *spline_Zeff  = gsl_spline_alloc(gsl_interp_steffen, dims[0]);
+    //gsl_spline_init(spline_Zeff, input_r, input_file->GetDoubles1D("effective_charge", dims), dims[0]);
 	
 
     // Set initial values
@@ -104,13 +104,15 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(
     for (len_t iIon = 0; iIon < N_IONS; iIon++) {
         for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++) {
             for (len_t ir = 0; ir < nr; ir++, rOffset++){
-                real_t ni = gsl_spline_eval(spline_ni, r[ir], acc_r);
-                real_t Zeff = gsl_spline_eval(spline_Zeff, r[ir], acc_r);
-				if (Z0 == 1 && iIon == 0) // deuterium
-					nions[rOffset] = ni * Z*(Z - Zeff) / ((Z - 1)*(Z - Zeff + 1));
-				else if (Z0 == Z_IONS[1] && iIon == 1) // impurity
-					nions[rOffset] = ni * (Zeff - 1) / (Z*Z - Zeff*(Z - 1) - 1);
-				else
+                //real_t ni = gsl_spline_eval(spline_ni, r[ir], acc_r);
+                //real_t Zeff = 1; //gsl_spline_eval(spline_Zeff, r[ir], acc_r);
+				//if (Z0 == 1 && iIon == 0) // deuterium
+				//	nions[rOffset] = ni * Z*(Z - Zeff) / ((Z - 1)*(Z - Zeff + 1));
+				//else if (Z0 == Z_IONS[1] && iIon == 1) // impurity
+				//	nions[rOffset] = ni * (Zeff - 1) / (Z*Z - Zeff*(Z - 1) - 1);
+				if (Z0 == 1)
+                    nions[rOffset] = gsl_spline_eval(spline_ni, r[ir], acc_r);
+                else
 					nions[rOffset] = 0.0;
 				Nions[iIon*nr+ir] += nions[rOffset]; // only one charge state per ion
 			}
@@ -148,7 +150,7 @@ DREAM::FVM::UnknownQuantityHandler *BootstrapCurrent::GetUnknownHandler(
     gsl_spline_free(spline_Te);
     gsl_spline_free(spline_ni);
     gsl_spline_free(spline_Ti);
-    gsl_spline_free(spline_Zeff);
+    //gsl_spline_free(spline_Zeff);
     gsl_interp_accel_free(acc_r);
 
     delete [] nions;
@@ -231,16 +233,15 @@ bool BootstrapCurrent::CheckBootstrap(bool withIonEnergy) {
 
 	// j_bs_IDA : <j_bs . B>
 	// j_bs : j_bs/(B/Bmin) -> multiply by Bmin * <B**2/Bmin**2>
-	const real_t *Bmin = grid->GetRadialGrid()->GetBmin();
-	const real_t *FSA_B2OverBmin2 = grid->GetRadialGrid()->GetFSA_B2();
+	const real_t *FSA_BOverBmin = grid->GetRadialGrid()->GetFSA_B();
 	for (len_t ir = 0; ir < Nr; ir ++)
-		j_bs[ir] = j_bs[ir] * Bmin[ir] * FSA_B2OverBmin2[ir];
+		j_bs[ir] = j_bs[ir] * FSA_BOverBmin[ir];
 
     // Sum of all elements should vanish
     real_t deltas;
     for (len_t ir = 0; ir < Nr; ir++) {
         deltas = abs(j_bs[ir] - j_bs_IDA[ir]) / j_bs_IDA[ir];
-        printf("ir=%ld  --  DREAM: %.1f,       IDA: %.1f\n", ir, j_bs[ir], j_bs_IDA[ir]);
+        printf("ir=%ld  --  DREAM: %.1f,       IDA: %.1f,          IDA/DREAM: %.4e\n", ir, j_bs[ir], j_bs_IDA[ir], j_bs_IDA[ir]/j_bs[ir]);
         if(deltas>successRelErrorThreshold){
             success = false;
             std::cout << "delta [rel error]: " << deltas << endl;

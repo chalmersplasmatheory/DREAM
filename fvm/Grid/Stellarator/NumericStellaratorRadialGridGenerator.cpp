@@ -243,7 +243,7 @@ bool NumericStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStel
 		this->BtorGOverR0[i] = BtorG / this->R0;
 		this->BpolIOverR0[i] = BpolI / this->R0; 
 		this->iota[i]        = rottr; 
-        this->psiPrimeRef[i] = psip; 
+        this->psiPrimeRef[i] = psip / this->R0; 
 	}
 	for (len_t i = 0; i < GetNr()+1; i++) {
 		real_t
@@ -263,7 +263,7 @@ bool NumericStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStel
 		this->BtorGOverR0_f[i] = BtorG / this->R0;
 		this->BpolIOverR0_f[i] = BpolI / this->R0; 
 		this->iota_f[i]   = rottr; 
-        this->psiPrimeRef_f[i] = psip; 
+        this->psiPrimeRef_f[i] = psip / this->R0; 
 	}
 	
 	rGrid->SetReferenceMagneticFieldData(

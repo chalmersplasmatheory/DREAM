@@ -140,11 +140,6 @@ class StellaratorMagneticField(NumericalMagneticField):
                 for key, value in dic.items():
                     hf[key] = value
 
-
-        with h5py.File(f"data/numericalLUKE.h5", 'w') as hf:
-            for key, value in dictemp.items():
-                hf[key] = value
-
         # TODO: Save this as quantities instead of R and Z, for ouput and for SPI in the future
         #R_mn = self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota * \
         #           self.eq.compute('nu_z', grid=self.grid)['nu_z']
