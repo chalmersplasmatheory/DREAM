@@ -526,7 +526,6 @@ void OtherQuantityHandler::DefineQuantities() {
         for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
             vec[ir] = 0;
 
-        // This assumes your NBIElectronHeatTerm implements this method
         this->tracked_terms->T_cold_NBI->SetVectorElements(vec, nullptr);
     );
 
