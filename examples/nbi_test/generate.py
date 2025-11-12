@@ -14,7 +14,7 @@ import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 import DREAM.Settings.Solver as Solver
 from DREAM.Settings.Equations import IonSpecies
 import DREAM.Settings.Equations.IonSpecies as Ions
-from DREAM.Settings.Equations.NBISettings import NBISettings 
+import DREAM.Settings.Equations.NBISettings as NBISettings 
 
 
 #############################
@@ -91,16 +91,17 @@ ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_PRESCRIBED, V_loop_wall_R0=
 
 
 ds.eqsys.T_cold.nbi.setEnabled(True)
-
+j_B_t = np.linspace(0, 0.0775, 50) # Beam current profile time points [s] (Matching ROME radius)
+j_B_x = 250e3 * np.ones(len(j_B_t)) # Beam current profile values [A/m^2]
 ##ROME
-#nbi.setTCVGaussian(True)  # Use TCV Gaussian beam profile for TCV
+ds.eqsys.T_cold.nbi.setCurrentProfile(NBISettings.NBI_PROFILE_CUSTOM, j_B_t= j_B_t, j_B_x = j_B_x)
 ds.eqsys.T_cold.nbi.setOrigin(nbi_entry_point)
 ds.eqsys.T_cold.nbi.setDirection(nbi_direction_vector)
 
-ds.eqsys.T_cold.nbi.setEnergyFractions(energy_fractions)
+ds.eqsys.T_cold.nbi.setEnergyFractions(f_full=energy_fractions[0], f_half=energy_fractions[1], f_third=energy_fractions[2])
 
 ds.eqsys.T_cold.nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
-ds.eqsys.T_cold.nbi.setPower(beam_power=100e3) #57e3
+ds.eqsys.T_cold.nbi.setPowerProfile(P_NBI_x = 1.0e6) 
 ds.eqsys.T_cold.nbi.setRadius(R0=R0)
 
 ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
