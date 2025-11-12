@@ -2,12 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+# Constants for NBI Gaussian profile types
+NBI_PROFILE_TCV = 1
+NBI_PROFILE_ITER = 2
+NBI_PROFILE_CUSTOM = 3
+    
 class NBISettings:
     """
     Handles Neutral Beam Injection settings in the DREAM framework.
     This class is used by ColdElectronTemperature to manage NBI-specific parameters.
     Pre-set values match TCV parameters.
     """
+
     
     def __init__(self):
         self.enabled = False
@@ -17,36 +23,34 @@ class NBISettings:
         self.n = [0.5547, 0.83205, 0.0] # Beam direction vector (unit vector)
         self.Ti_beam = 28*1.6021e-16 # Beam energy [J]
         self.m_i_beam = 3.344e-27 # Beam ion mass [kg] (Deuterium)
-        self.beam_power = 11e5 # Beam power [W]
         self.R0 = 0.88 # Major radius [m]
         self.j_B_t = np.linspace(0, 0.0775, 50) # Beam current profile time points [s] (Matching ROME radius)
         self.j_B_x = 250e3 * np.ones(len(self.j_B_t)) # Beam current profile values [A/m^2]
         self.j_B_tinterp = 0 # Interpolation method for time profile
-        self.TCVGaussian = False # Use TCV Gaussian beam profile if True
-        self.ITERGaussian = False # Use ITER Gaussian beam profile if True
+        self.gaussian_profile = 0 # 0=disabled, 1=TCV, 2=ITER
         self.a = 0.23 # Plasma minor radius [m]
-        self.P_NBI_t = [] # Beam power profile time points [s]
-        self.P_NBI_x = [] # Beam power profile values [W]
+        self.P_NBI_t = None # Beam power profile time points [s]
+        self.P_NBI_x = None # Beam power profile values [W]
         self.P_NBI_tinterp =0 # Interpolation method for power profile
-        self.energy_fractions = [0.56, 0.32, 0.12] # Fractions of beam energy for multi-energy components
+        self.energy_fractions = [1,0,0]# Fractions of beam energy for multi-energy components
 
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
-        self.enabled = enabled
+        self.enabled = enabled  
+        
+    def setCurrentProfile(self, profile_type, j_B_t=None, j_B_x=None, tinterp=0):
+        """Set NBI Gaussian profile type. profile_type: 0=disabled, 1=TCV, 2=ITER, 3 = custom"""
+        if profile_type not in [1,2,3,0]:
+            raise ValueError("Invalid profile_type. 1 (TCV), 2 (ITER), or 3 (custom).")
+        
+        elif  profile_type == 3:
+            if j_B_t is None or j_B_x is None:
+                raise ValueError("For custom profile, j_B_t and j_B_x must be provided.")
+            self.j_B_t = j_B_t
+            self.j_B_x = j_B_x
+            self.j_B_tinterp = tinterp
 
-    def setTCVGaussian(self, TCVGaussian=True):
-        """Enable/disable TCV Gaussian beam profile."""
-        self.TCVGaussian = TCVGaussian
-
-    def setITERGaussian(self, ITERGaussian=True):
-        """Enable/disable ITER Gaussian beam profile."""
-        self.ITERGaussian = ITERGaussian
-    
-    def setCurrentProfile(self, j_B_t, j_B_x, tinterp=0):
-        """Set beam current profile in one dimension. As an alternative to setting the TCV Gaussian."""
-        self.j_B_t = j_B_t
-        self.j_B_x = j_B_x
-        self.j_B_tinterp = tinterp
+        self.gaussian_profile = profile_type
         
     def setOrigin(self, P0):
         """Set beam entry point."""
@@ -56,8 +60,13 @@ class NBISettings:
         """Set beam direction vector."""
         self.n = n
         
-    def setEnergyFractions(self, fractions):
-        """Set energy fractions for multi-energy beam components."""
+    def setEnergyFractions(self, f_full=None, f_half=None, f_third=None):
+        """Set energy fractions for multi-energy beam components. NBI beams contain a mix of atomic (full energy) and molecular species that
+        dissociate into half and third energy components. """
+        fractions = [f_full, f_half, f_third]
+        if abs(sum(fractions) - 1.0) > 1e-6:
+            raise ValueError(f"Energy fractions must sum to 1.0, got {sum(fractions):.4f}")
+
         self.energy_fractions = fractions
 
     def setBeamParameters(self, r_beam=None, Ti_beam=None, m_i_beam=None, s_max=None):
@@ -71,14 +80,26 @@ class NBISettings:
         if R0 is not None: self.R0 = R0
         if a is not None: self.a = a
 
-    def setPower(self, beam_power):
-        """Set beam power."""
-        self.beam_power = beam_power
-
-    def setPowerProfile(self, j_B_t, j_B_x, tinterp=0):
+    def setPowerProfile(self, P_NBI_t = None, P_NBI_x = None, tinterp=0):
         """Set beam power profile in one dimension."""
-        self.P_NBI_t = j_B_t
-        self.P_NBI_x = j_B_x
+        if P_NBI_x is not None:
+            if np.isscalar(P_NBI_x):
+                # Convert scalar to array with single value
+                self.P_NBI_x = [float(P_NBI_x)]
+                if P_NBI_t is None:
+                    self.P_NBI_t = [0.0] 
+                else: 
+                    raise ValueError("Warning: P_NBI_t ignored when P_NBI_x is scalar.")
+            else:
+                self.P_NBI_x = P_NBI_x
+                if P_NBI_t is not None:
+                    self.P_NBI_t = P_NBI_t 
+                else:
+                    raise ValueError("Warning: P_NBI_t must be provided when P_NBI_x is an array.")
+    
+        else: 
+            raise ValueError("NBI: P_NBI_x must be provided.")
+            
         self.P_NBI_tinterp = tinterp
 
     def visualize_3d_tokamak(self):
@@ -183,10 +204,8 @@ class NBISettings:
             'energy_fractions' : self.energy_fractions,
             'Ti_beam'    : self.Ti_beam,
             'm_i_beam'   : self.m_i_beam,
-            'beamPower'  : self.beam_power,
             'R0'         : self.R0,
-            'TCVGaussian': self.TCVGaussian,
-            'ITERGaussian': self.ITERGaussian,
+            'gaussian_profile' : self.gaussian_profile,
             'j_B'        : {
                 't'       : self.j_B_t,
                 'x'       : self.j_B_x,
