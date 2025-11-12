@@ -22,7 +22,7 @@ using namespace std;
 #define MODULENAME "eqsys/n_i"
 
 
-void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
+void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s){
     /**
      * if the electron heat W_cold is evolved self-consistently,
      * also evolve the ion heat W_i. Otherwise set it to constant.
@@ -31,7 +31,7 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
     if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED)
         ConstructEquation_T_i_trivial(eqsys, s);
     else if (TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
-        ConstructEquation_T_i_selfconsistent(eqsys, s,oqty_terms );
+        ConstructEquation_T_i_selfconsistent(eqsys, s);
     else 
         throw SettingsException(
             "T_i: Unrecognized equation type for '%s': %d.",
@@ -75,7 +75,7 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
 /** 
  * Implements the self-consistent evolution of ion heat W_i for each species
  */
-void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
+void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     const len_t id_Wcold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
 
@@ -89,7 +89,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
     FVM::Operator *Op_Wie = new FVM::Operator(fluidGrid);
 
     CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
-    NBIHandler *handler = oqty_terms->NBI_handler;
+    NBIHandler *handler = eqsys->NBI_handler;
     for(len_t iz=0; iz<nZ; iz++){
         Op_Wij->AddTerm( 
             new IonSpeciesTransientTerm(fluidGrid, iz, id_Wi, -1.0)
