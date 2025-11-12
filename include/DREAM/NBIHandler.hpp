@@ -29,7 +29,6 @@ namespace DREAM {
         real_t P0[3];  // Beam entry point
         real_t n[3];   // Beam direction
         real_t energy_fractions[3]; // Energy fractions for multi-energy components
-        real_t a[3];   // Additional beam geometry parameter
         real_t ds;     // Step length along beam
         real_t s_max;  // Maximum beam length
         real_t r_beam; // Beam radius
@@ -40,13 +39,10 @@ namespace DREAM {
         // Beam physics parameters
         real_t Ti_beam;   // Beam ion temperature
         real_t m_i_beam;  // Beam ion mass
-        real_t beamPower; // Total beam power
         FVM::Interpolator1D *j_B_profile; // Beam current density profile
         FVM::Interpolator1D *Power_Profile; // Beam power profile
         real_t I_B;                         // Total beam current
-        bool TCVGaussian;                   // Flag for Gaussian profile
-        bool ITERGaussian;                  // Flag for ITER Gaussian profile
-
+        int gaussian_profile; // Gaussian profile type
         // Tokamak parameters
         real_t R0;           // Major radius
         real_t plasmaVolume; // Plasma volume
@@ -100,8 +96,8 @@ namespace DREAM {
         void PrecomputeFluxSurfaces();
         void PrecomputeBeamBasisVectors();
         std::vector<len_t> ir_lut; // size = n_beam_theta * n_beam_radius * n_beam_s
-        inline size_t lut_index(len_t it, len_t irad, len_t is) const {
-            return (static_cast<size_t>(it)*n_beam_radius + irad)*n_beam_s + is;
+        inline len_t lut_index(len_t it, len_t irad, len_t is) const {
+            return (it * n_beam_radius + irad)*n_beam_s + is;
         }
         void PrecomputeBeamMapLUT();
 
@@ -114,13 +110,13 @@ namespace DREAM {
         NBIHandler(FVM::Grid *, ADAS *, IonHandler *ions);
         
         void ConfigureFromSettings(
-            Settings* /*s*/, FVM::UnknownQuantityHandler *unknowns,
+            Settings*, FVM::UnknownQuantityHandler *unknowns,
             real_t s_max, real_t r_beam,
             const real_t P0[3], const real_t nvec[3], 
             const real_t energy_fractions[3],
-            real_t Ti_beam, real_t m_i_beam, real_t beamPower,
+            real_t Ti_beam, real_t m_i_beam,
             FVM::Interpolator1D *j_B_profile,
-            real_t R0, bool TCVGaussian, bool ITERGaussian,
+            real_t R0,  int gaussian_profile,
             FVM::Interpolator1D *Power_Profile
         );
 
@@ -152,8 +148,8 @@ namespace DREAM {
         const real_t* GetEnergyFractions() const { return energy_fractions; }
         
         // Index helper for flat derivative arrays: converts (ir, iz, Z0) to flat index
-        inline size_t idx(len_t ir, len_t iz, len_t Z0) const {
-            return (static_cast<size_t>(ir) * nZ + iz) * nCharge + Z0;
+        inline len_t idx(len_t ir, len_t iz, len_t Z0) const {
+            return (ir * nZ + iz) * nCharge + Z0;
         }
     };
 }
