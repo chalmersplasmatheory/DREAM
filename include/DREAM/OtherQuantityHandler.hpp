@@ -55,7 +55,6 @@ namespace DREAM {
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
             DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
             DREAM::NBIElectronTerm *T_cold_NBI = nullptr;
-            DREAM::NBIHandler *NBI_handler = nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
