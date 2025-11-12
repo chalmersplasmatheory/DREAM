@@ -53,24 +53,7 @@ public:
     NBIIonTerm(NBIHandler* h, FVM::Grid* grid, IonHandler* ionHandler,
                FVM::UnknownQuantityHandler* unknowns, const len_t iIon);
     
-    virtual ~NBIIonTerm() override {
-        delete[] Qe_1;
-        delete[] Qe_2;
-        delete[] Qe_3;
-        delete[] d_Qe1_d_Te;
-        delete[] d_Qe1_d_ne;
-        delete[] d_Qe1_d_n_ij;
-        delete[] d_Qe1_d_T_ij;
-        delete[] d_Qe2_d_Te;
-        delete[] d_Qe2_d_ne;
-        delete[] d_Qe2_d_n_ij;
-        delete[] d_Qe2_d_T_ij;
-        delete[] d_Qe3_d_Te;
-        delete[] d_Qe3_d_ne;
-        delete[] d_Qe3_d_n_ij;
-        delete[] d_Qe3_d_T_ij;
-
-    }
+    virtual ~NBIIonTerm() override;
 
     virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *unknowns) override; 
     virtual bool SetCSJacobianBlock(const len_t /*uqtyId*/, const len_t derivId,
@@ -78,7 +61,7 @@ public:
                         const len_t iIon, const len_t Z0, const len_t /*rOffset*/
     ) override;
     virtual void SetCSMatrixElements(
-        FVM::Matrix *mat, real_t *rhs,
+        FVM::Matrix*, real_t *rhs,
         const len_t iIon, const len_t Z0, const len_t /*rOffset*/
     ) override;
     virtual void SetCSVectorElements(
