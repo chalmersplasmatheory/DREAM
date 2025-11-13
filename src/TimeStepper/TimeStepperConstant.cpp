@@ -14,36 +14,19 @@ using namespace DREAM;
  */
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
-    const len_t nSaveSteps
-) : TimeStepper(u), dt(dt), tMax(tMax), nSaveSteps(nSaveSteps) {
+    EquationSystem *eqsys, const len_t nSaveSteps
+) : TimeStepper(u, eqsys), dt(dt), tMax(tMax), nSaveSteps(nSaveSteps) {
 
     this->Nt = round(tMax/dt);
     InitSaveSteps();
 }
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
-    const len_t nSaveSteps
-) : TimeStepper(u), tMax(tMax), Nt(nt), nSaveSteps(nSaveSteps) {
+    EquationSystem *eqsys, const len_t nSaveSteps
+) : TimeStepper(u, eqsys), tMax(tMax), Nt(nt), nSaveSteps(nSaveSteps) {
     
     this->dt = tMax / nt;
     InitSaveSteps();
-}
-
-/**
- * Check if a given unknown contains negative elements.
- */
-bool TimeStepperConstant::CheckNegative(const std::string& name) {
-    len_t uqtyid = unknowns->GetUnknownID(name);
-
-    if (unknowns->HasUnknown(name)) {
-        FVM::UnknownQuantity *uqty = unknowns->GetUnknown(uqtyid);
-        const real_t *data = uqty->GetData();
-        for (len_t i = 0; i < uqty->NumberOfElements(); i++)
-            if (data[i] < 0)
-                return true;
-    }
-
-    return false;
 }
 
 /**
@@ -54,29 +37,6 @@ real_t TimeStepperConstant::CurrentTime() const {
         return this->t0;
     else
         return (this->t0 + (this->tIndex-1)*this->dt);
-}
-
-/**
- * This method is called when an exception was thrown while
- * the next time step was being taken. In the constant time
- * stepper, we choose to forward this exception and just indicate
- * to the user that it might be due to the time step being too
- * short.
- *
- * ex: The exception that was caught.
- */
-void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
-    DREAM::IO::PrintError("TimeStepper: Exception caught during time stepping.");
-    DREAM::IO::PrintError("TimeStepper: Perhaps the exception could be avoided by decreasing the time step length?");
-
-//    if (CheckNegative(OptionConstants::UQTY_ION_SPECIES))
-//        DREAM::IO::PrintError("TimeStepper: Ion density 'n_i' is negative.");
-    if (CheckNegative(OptionConstants::UQTY_N_COLD))
-        DREAM::IO::PrintError("TimeStepper: Cold electron density 'n_cold' is negative.");
-    if (CheckNegative(OptionConstants::UQTY_T_COLD))
-        DREAM::IO::PrintError("TimeStepper: Cold electron temperature 'T_cold' is negative.");
-
-    throw ex;
 }
 
 /**
@@ -98,12 +58,17 @@ void TimeStepperConstant::InitSaveSteps() {
  * Returns 'true' if the time stepper has reached the maximum time.
  */
 bool TimeStepperConstant::IsFinished() {
-    return (this->tIndex>=this->Nt);
+    bool v = (this->tIndex>=this->Nt);
+#ifdef DREAM_IS_PYTHON_LIBRARY
+    return (v || this->PythonIsTerminate());
+#else
+    return v;
+#endif
 }
 
 /**
  * Returns 'true' if the current time step should be saved to
- * the final output. (Currently, we save all time steps)
+ * the final output.
  */
 bool TimeStepperConstant::IsSaveStep() {
     if (this->nSaveSteps == 0)
@@ -113,6 +78,13 @@ bool TimeStepperConstant::IsSaveStep() {
         return true;
     else
         return false;
+}
+
+/**
+ * Returns the maximum time for this simulation.
+ */
+real_t TimeStepperConstant::MaxTime() const {
+    return this->tMax;
 }
 
 /**

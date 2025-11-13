@@ -23,6 +23,14 @@ namespace DREAM {
             **Ion,         // Ionization rate coefficients (nZs x nr)
             **PartialNIon, // d/dn_cold of ionization rate coefficients (nZs x nr)
             **PartialTIon; // d/dT_cold of ionization rate coefficients (nZs x nr)
+            
+       
+        // Diagnostic utilities
+        real_t
+            **posIonizTerm,
+            **negIonizTerm,
+            **posRecTerm,
+            **negRecTerm;
     public:
         IonRateEquation(
             FVM::Grid*, IonHandler*, const len_t, ADAS*, 
@@ -62,6 +70,13 @@ namespace DREAM {
         virtual void SetCSVectorElements(
             real_t*, const real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) override;
+        
+        real_t **GetPositiveIonizationTerm() { return this->posIonizTerm; }
+        real_t **GetNegativeIonizationTerm() { return this->negIonizTerm; }
+        real_t **GetPositiveRecombinationTerm() { return this->posRecTerm; }
+        real_t **GetNegativeRecombinationTerm() { return this->negRecTerm; }
+        
+        len_t GetZ() { return this->Zion; }
     };
 }
 

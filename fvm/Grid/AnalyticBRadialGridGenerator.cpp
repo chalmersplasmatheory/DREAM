@@ -25,8 +25,10 @@ using namespace std;
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const len_t nr,  real_t r0,  real_t ra, real_t R0, len_t ntheta_interp,
-     struct shape_profiles *profiles
-) : RadialGridGenerator(nr), rMin(r0), rMax(ra), providedProfiles(profiles) {
+     struct shape_profiles *profiles, len_t ntheta_out
+) : RadialGridGenerator(nr), rMin(r0), rMax(ra), providedProfiles(profiles),
+	ntheta_out(ntheta_out) {
+
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
@@ -45,8 +47,9 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const real_t *r_f_input, const len_t nr, real_t R0, len_t ntheta_interp,
-     struct shape_profiles *profiles
-) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]), providedProfiles(profiles) {
+     struct shape_profiles *profiles, len_t ntheta_out
+) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]),
+	providedProfiles(profiles), ntheta_out(ntheta_out) {
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
@@ -89,6 +92,8 @@ AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
     }
 
     DeallocateShapeProfiles();
+
+	delete this->providedProfiles;
 }
 
 /**
@@ -131,11 +136,11 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     struct shape_profiles *pp = this->providedProfiles;
 
     DeallocateShapeProfiles();
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G_r,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi_r,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa_r, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta_r, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta_r, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
 
     if(r_f[0]==0) // standard situation
         psiPrimeRef_f[0] = 0; // no poloidal field at r=0 since no toroidal current is enclosed
@@ -328,7 +333,7 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
  */
 void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
     const len_t nr, const real_t *r, const real_t *r_f,
-    const len_t nProvided, const real_t *xProvided,
+    const len_t nProvided, const real_t *rProvided, const real_t *xProvided,
     gsl_spline *spline_x, gsl_interp_accel *spline_acc,
     real_t **x, real_t **xPrime, real_t **x_f, real_t **xPrime_f
 ) {
@@ -342,8 +347,18 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             (*x)[ir]      = xProvided[0];
             (*xPrime)[ir] = 0;
         } else {
-            (*x)[ir]      = gsl_spline_eval(spline_x, r[ir], spline_acc);
-            (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], spline_acc);
+            if (r[ir] > rProvided[nProvided-1]) {
+                (*x)[ir]      = xProvided[nProvided-1];
+                (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, rProvided[nProvided-1], spline_acc);
+			} else if (r[ir] < rProvided[0]) {
+				// Extrapolate linearly
+				real_t dx     = gsl_spline_eval_deriv(spline_x, rProvided[0], spline_acc);
+				(*x)[ir]      = xProvided[0] - (rProvided[0]-r[ir])*dx;
+				(*xPrime)[ir] = dx;
+            } else {
+                (*x)[ir]      = gsl_spline_eval(spline_x, r[ir], spline_acc);
+                (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], spline_acc);
+            }
         }
     }
     for (len_t ir=0; ir < nr+1; ir++){
@@ -351,42 +366,490 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             (*x_f)[ir]      = xProvided[0];
             (*xPrime_f)[ir] = 0;
         } else {
-            (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
-            (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
+            if (r_f[ir] > rProvided[nProvided-1]) {
+                (*x_f)[ir]      = xProvided[nProvided-1];
+                (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, rProvided[nProvided-1], spline_acc);
+			} else if (r_f[ir] < rProvided[0]) {
+				real_t dx       = gsl_spline_eval_deriv(spline_x, rProvided[0], spline_acc);
+				(*x_f)[ir]      = xProvided[0] - (rProvided[0]-r_f[ir])*dx;
+				(*xPrime_f)[ir] = dx;
+            } else {
+                (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
+                (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
+            }
         }
     }
 }
 
 /**
- * Calculate minor radius coordinate 'r' corresponding to the given
+ * Interpolates the input chaping profile at a single radius r, and extrapolates using 
+ * the maximum and minimum r for which the profile is defined. This is useful for the 
+ * GetRThetaPhiFromCartesian() and GetGradRCartesian() functions used for e.g. the SPI
+ * module in DREAM, as these functions must be able to handle coordinates outside the plasma
+ *
+ */
+real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleExtrap(real_t r,
+    const len_t nProvided, const real_t *xProvided, const real_t *xProvided_r,
+    gsl_spline *spline_x, gsl_interp_accel *spline_acc
+) {
+    if(nProvided==1){
+        return xProvided[0];
+    } else {
+        if(r>xProvided_r[nProvided-1])
+            return xProvided_r[nProvided-1];
+        else if(r<xProvided_r[0])
+            return xProvided_r[0];
+        else
+            return gsl_spline_eval(spline_x, r, spline_acc);
+    }   
+}
+
+/**
+ * Similar to InterpolateInputProfileSingleExtrap(), but for derivatives
+ */
+real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleDerivExtrap(real_t r,
+    const len_t nProvided, const real_t *xProvided_r,
+    gsl_spline *spline_x, gsl_interp_accel *spline_acc
+) {
+    if(nProvided==1){
+        return 0;
+    } else {
+        if(r>xProvided_r[nProvided-1])
+            return gsl_spline_eval_deriv(spline_x, xProvided_r[nProvided-1], spline_acc);
+        else if(r<xProvided_r[0])
+            return gsl_spline_eval_deriv(spline_x, xProvided_r[0], spline_acc);
+        else
+            return gsl_spline_eval_deriv(spline_x, r, spline_acc);
+    }   
+}
+
+/**
+* Helper function for interpolation of elongation data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputElongation(real_t r){
+	const real_t *kappaProf = this->providedProfiles->kappa;
+	const real_t *kappa_r = this->providedProfiles->kappa_r;
+	const len_t nkappa = this->providedProfiles->nkappa;
+	
+	return InterpolateInputProfileSingleExtrap(r, nkappa, kappaProf, kappa_r, 
+	            this->spline_kappa, gsl_acc_kappa);
+}
+
+/**
+* Helper function for interpolation of the derivative of the elongation data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputElongationDeriv(real_t r){
+	const real_t *kappa_r = this->providedProfiles->kappa_r;
+	const len_t nkappa = this->providedProfiles->nkappa;
+	
+	return InterpolateInputProfileSingleDerivExtrap(r, nkappa, kappa_r, 
+	            this->spline_kappa, gsl_acc_kappa);
+}
+
+/**
+* Helper function for interpolation of triangularity data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputTriangularity(real_t r){
+	const real_t *deltaProf = this->providedProfiles->delta;
+	const real_t *delta_r = this->providedProfiles->delta_r;
+	const len_t ndelta = this->providedProfiles->ndelta;
+	
+	return InterpolateInputProfileSingleExtrap(r, ndelta, deltaProf, delta_r, 
+	            this->spline_delta, gsl_acc_delta);
+}
+
+/**
+* Helper function for interpolation of the derivative of the triangularity data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputTriangularityDeriv(real_t r){
+	const real_t *delta_r = this->providedProfiles->delta_r;
+	const len_t ndelta = this->providedProfiles->ndelta;
+	
+	return InterpolateInputProfileSingleDerivExtrap(r, ndelta, delta_r, 
+	            this->spline_delta, gsl_acc_delta);
+}
+
+/**
+* Helper function for interpolation of Shafranov shift data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputShafranovShift(real_t r){
+	const real_t *DeltaProf = this->providedProfiles->Delta;
+	const real_t *Delta_r = this->providedProfiles->Delta_r;
+	const len_t nDelta = this->providedProfiles->nDelta;
+	
+	return InterpolateInputProfileSingleExtrap(r, nDelta, DeltaProf, Delta_r, 
+	            this->spline_Delta, gsl_acc_Delta);
+}
+
+/**
+* Helper function for interpolation of the derivative of the Shafranov shift data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputShafranovShiftDeriv(real_t r){
+	const real_t *Delta_r = this->providedProfiles->Delta_r;
+	const len_t nDelta = this->providedProfiles->nDelta;
+	
+	return InterpolateInputProfileSingleDerivExtrap(r, nDelta, Delta_r, 
+	            this->spline_Delta, gsl_acc_Delta);
+}
+
+/**
+ * Calculate the flux surface coordinates 'r, theta and phi' corresponding to the given
  * Cartesian coordinates (x,y,z).
  *
  * (The Cartesian coordinate system is oriented such that x and y span
  * the poloidal plane. The origin of x and y is the magnetic axis.)
+ *
+ * The coordinate transformation is solved numerically using a bisection scheme until
+ * a precision of lengthScale*CartesianCoordinatesTol is achieved. The initial search 
+ * intervall is r = startingGuess +/- lengthScale, translated by a multiple of 2*lengthScale
+ * until the search interval contains a sign change
+ *
+ * See doc/notes/SPICoordinates.pdf for more information
  */
-void AnalyticBRadialGridGenerator::GetRThetaFromCartesian(real_t* /*r*/, real_t* /*theta*/,
-    real_t /*x*/, real_t /*y*/, real_t /*z*/, real_t /*lengthScale*/, real_t /*startingGuessR*/
+void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* theta, real_t* phi,
+    real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR
 ) {
-	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
-}
-/**
- * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
- */
-void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t) {
-	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
+
+    real_t RMinusR0;
+    if(R0IsInf)
+        RMinusR0 = x;
+    else
+        RMinusR0 = hypot(R0+x, z)-R0;
+	
+                
+    // We start by finding the flux surface label 'rmin' corresponding to cos(theta)=0 (using Newton iteration)
+    // and use it to determine in which quadrant we should look for the solution
+	real_t r_tmp=std::abs(y);
+	real_t Zdiff;// y in SPI coordinates is Z in cylindrical coordinates
+	real_t kappa;
+	real_t kappa_p;
+	
+	do{
+	    kappa = InterpolateInputElongation(r_tmp);
+	    kappa_p = InterpolateInputElongationDeriv(r_tmp);
+	    Zdiff = std::abs(y)-r_tmp*kappa;
+	    r_tmp = r_tmp + Zdiff/(r_tmp*kappa_p+kappa);
+	    
+	    	
+	}while (std::abs(Zdiff)>lengthScale*CartesianCoordinateTol);
+	
+	real_t rmin=r_tmp;
+	
+	// Evaluate RMinusR0_crit corresponding to rmin
+	real_t delta;
+	real_t Delta; 
+    delta = InterpolateInputTriangularity(rmin);
+    Delta = InterpolateInputShafranovShift(rmin);
+    
+    real_t RMinusR0_crit=Delta-rmin*sin(delta);
+	
+	// Determine the quadrant
+	len_t quadrant=0;
+	if(RMinusR0>RMinusR0_crit && y>=0)
+	    quadrant=1;
+	else if(RMinusR0<RMinusR0_crit && y>=0)
+	    quadrant=2;
+    else if(RMinusR0<RMinusR0_crit && y<0)
+        quadrant=3;
+    else if(RMinusR0>RMinusR0_crit && y<0)
+        quadrant=4;
+	
+	// Bisection to find radial coordinate corresponding
+	// to 'r' at 'Z=y'...
+	// We make a guess for a valid search intervall of startingGuessR+/-lengthScale, 
+	// and check if it has to be moved before actually starting with the bisection
+	real_t ra = std::max(startingGuessR-lengthScale,rmin), rb=ra+2*lengthScale;
+	real_t RMinusR0a, RMinusR0b;
+	real_t st;
+	real_t ct;
+	do{
+	    // Calculate RMinusR0a corresponding to ra
+        delta = InterpolateInputTriangularity(ra);
+        Delta = InterpolateInputShafranovShift(ra);
+	    kappa = InterpolateInputElongation(ra);
+        
+        if(ra==0){
+        	st=1; // The value does not matter here as RMinusR0a = Delta anyway
+        }else{
+        	st = y/(ra*kappa);
+        	
+        	// As we have already made sure that ra>=rmin, an st outside [-1,1] 
+        	// should only depend on round-off errors, so it should be safe to do this
+        	if(st>1.0)
+        		st=1.0;
+        	else if(st<-1.0)
+        		st=-1.0;
+        }
+        	
+	    if(quadrant==1 || quadrant==4)
+	        ct = sqrt(1-st*st);
+	    else
+	        ct = -sqrt(1-st*st);
+	        
+        RMinusR0a = Delta + ra*(ct*cos(delta*st)-st*sin(delta*st));
+        
+        // Similarly for rb
+        delta = InterpolateInputTriangularity(rb);
+        Delta = InterpolateInputShafranovShift(rb);
+	    kappa = InterpolateInputElongation(rb);
+        
+        st = y/(rb*kappa);
+	    if(quadrant==1 || quadrant==4)
+	        ct = sqrt(1-st*st);
+	    else
+	        ct = -sqrt(1-st*st);
+	        
+        RMinusR0b = Delta + rb*(ct*cos(delta*st)-st*sin(delta*st));
+        
+        // Move the search intervall if necessary (but make sure to keep ra>=rmin)
+        if(quadrant==1 || quadrant==4){
+            if(RMinusR0a>RMinusR0 && RMinusR0b>RMinusR0){
+                ra=std::max(rmin, ra-2*lengthScale);
+                rb=ra+2*lengthScale;
+		    }
+	        else if(RMinusR0a<RMinusR0 && RMinusR0b<RMinusR0){
+	            rb+=2*lengthScale;
+	            ra+=2*lengthScale;
+            }
+        }else{
+            if(RMinusR0a>RMinusR0 && RMinusR0b>RMinusR0){
+	            rb+=2*lengthScale;
+	            ra+=2*lengthScale;
+		    }
+	        else if(RMinusR0a<RMinusR0 && RMinusR0b<RMinusR0){
+                ra-=2*lengthScale;
+                rb-=2*lengthScale;
+            }
+        }
+        
+	}while((RMinusR0a>RMinusR0 && RMinusR0b>RMinusR0) || (RMinusR0a<RMinusR0 && RMinusR0b<RMinusR0));
+	
+	// Make the bisection
+	real_t RMinusR0_tmp;
+	do{
+	    r_tmp=(ra+rb)/2.0;
+        delta = InterpolateInputTriangularity(r_tmp);
+        Delta = InterpolateInputShafranovShift(r_tmp);
+	    kappa = InterpolateInputElongation(r_tmp);
+        
+        st = y/(r_tmp*kappa);
+	    if(quadrant==1 || quadrant==4)
+	        ct = sqrt(1-st*st);
+	    else
+	        ct = -sqrt(1-st*st);
+	        
+	    RMinusR0_tmp = Delta + r_tmp*(ct*cos(delta*st)-st*sin(delta*st));
+        if(quadrant==1 || quadrant==4){
+            if(RMinusR0_tmp>RMinusR0){
+                rb=r_tmp;
+		    }
+	        else{
+	            ra=r_tmp;
+            }
+        }else{
+            if(RMinusR0_tmp>RMinusR0){
+                ra=r_tmp;
+		    }
+	        else{
+                rb=r_tmp;
+            }
+        }
+	}while(std::abs(rb-ra) > lengthScale*CartesianCoordinateTol);
+	
+	// Newton solver (disabled for now)
+	/*r_tmp=startingGuessR;
+	
+	real_t Delta_p;
+	real_t delta_p;
+	real_t st;
+	real_t st_p;
+	real_t ct;
+	real_t ct_p;
+	real_t RMinusR0_newton;
+	real_t ddrRMinusR0_newton;
+	do {
+	    kappa   = InterpolateInputElongation(r_tmp);
+	    kappa_p = InterpolateInputElongationDeriv(r_tmp);
+	    delta   = InterpolateInputTriangularity(r_tmp);
+	    delta_p = InterpolateInputTriangularityDeriv(r_tmp);
+	    Delta   = InterpolateInputShafranovShift(r_tmp);
+	    Delta_p = InterpolateInputShafranovShiftDeriv(r_tmp);
+	    
+	    st = y/(r_tmp*kappa);
+	    st_p = -y/(r_tmp*r_tmp*kappa*kappa)*(kappa+r*kappa_p);
+	    
+	    if(quadrant==1 || quadrant==4)
+	        ct = sqrt(1-st*st);
+	    else
+	        ct = -sqrt(1-st*st);
+	    ct_p = -st/ct*st_p;
+	    
+        RMinusR0_newton = Delta + r_tmp*(ct*cos(delta*st)-st*sin(delta*st));
+        ddrRMinusR0_newton = Delta_p + ct*cos(delta*st)-st*sin(delta*st)+
+                             r_tmp*(ct_p*cos(delta*st) - st_p*sin(delta*st)-
+                             (ct*sin(delta*st)+st*cos(delta*st))*(delta_p*st+delta*st_p));
+        r_tmp = r_tmp - (RMinusR0_newton - RMinusR0)/ddrRMinusR0_newton;
+	} while(std::abs(RMinusR0_newton-RMinusR0) > lengthScale * CartesianCoordinateTol);*/
+	
+	// Set the output values for the flux surface coordinates
+	*r=r_tmp;
+	
+	// We define theta to be in the range 0<=theta<2*pi
+	if(quadrant==1)
+	    *theta=asin(st);
+	else if(quadrant==4)
+	    *theta=2*M_PI+asin(st);
+	else if(RMinusR0<Delta-r_tmp*sin(delta))
+	    *theta=M_PI-asin(st);
+	    
+	*phi = atan2(z,(R0+x)); 
+    
 }
 
 /**
- * Finds the minor radius coordinate of the point of closest approach to the magnetic axis 
- * along the line between (x1,y1,z1) and (x2,y2,z2)
+ * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
+ *
+ * See section 1.2 in doc/notes/theory.pdf for derivation
  */
-real_t AnalyticBRadialGridGenerator::FindClosestApproach(
-    real_t /*x1*/, real_t /*y1*/, real_t /*z1*/,
-    real_t /*x2*/, real_t /*y2*/, real_t /*z2*/
-) {
-	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
-    return 0;
+void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, real_t theta, real_t phi) {
+	
+    real_t delta  = InterpolateInputTriangularity(r);
+    real_t deltap = InterpolateInputTriangularityDeriv(r);
+    
+    real_t Deltap = InterpolateInputShafranovShiftDeriv(r);
+    
+    real_t kappa  = InterpolateInputElongation(r);
+    real_t kappap = InterpolateInputElongationDeriv(r);
+    
+    real_t st = sin(theta);
+    real_t ct = cos(theta);
+    
+    real_t dRdr = Deltap + cos(theta + delta*st) - r*deltap*st*sin(theta + delta*st);
+    real_t dRdtheta = -r*(1+delta*ct)*sin(theta + delta*st);
+    real_t dzdr = kappa*(1+r*kappap/kappa)*st;
+    real_t dzdtheta = r*kappa*ct;
+    
+    real_t prefactor = 1/(dRdr*dzdtheta - dRdtheta*dzdr);
+    real_t Rhatfactor = prefactor*dzdtheta;
+    
+    gradr[0] = cos(phi)*Rhatfactor;
+    gradr[1] = -dRdtheta*prefactor;
+    gradr[2] = sin(phi)*Rhatfactor; 
+    
 }
+
+
+/**
+ * Returns a list flux surface R coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *R = new real_t[nr*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			R[i] = ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
+	}
+
+	return R;
+}
+
+
+/**
+ * Returns a list flux surface R coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *R = new real_t[(nr+1)*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			R[i] = ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+	}
+
+	return R;
+}
+/**
+ * Returns the flux surface R coordinates on the simulation grid edges,
+ * not shifted by R0.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta){
+    return ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+}
+ 
+
+/**
+ * Returns the flux surface Z coordinates on the simulation grid edges.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta){
+
+    return this->r_f[ir] * this->kappa_f[ir] * sin(theta);
+}
+
+
+
+/**
+ * Returns a list flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *Z = new real_t[nr*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			Z[i] = this->r[ir] * kappa[ir] * sin(theta);
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *Z = new real_t[(nr+1)*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			Z[i] = this->r_f[ir] * kappa_f[ir] * sin(theta);
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns the poloidal angle array corresponding
+ * to the 'GetFluxSurface()' methods.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetPoloidalAngle() {
+	const len_t ntheta = this->GetNTheta();
+	real_t *theta = new real_t[ntheta];
+
+	for (len_t i = 0; i < ntheta; i++)
+		theta[i] = 2*M_PI*i / ntheta;
+	
+	return theta;
+}
+
 
 /**
  * Deallocates shape profiles that have been interpolated to the grid.

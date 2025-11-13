@@ -23,6 +23,7 @@ namespace DREAM::FVM {
     private:
         real_t rMin, rMax;
         struct shape_profiles *providedProfiles;
+		len_t ntheta_out = 120;
 
         real_t *psi = nullptr, *kappa, *delta, *Delta,
             *GPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
@@ -39,10 +40,26 @@ namespace DREAM::FVM {
 
         void InterpolateInputProfileToGrid(
             const len_t, const real_t*, const real_t*,
-            const len_t, const real_t*,
+            const len_t, const real_t*, const real_t*,
             gsl_spline*, gsl_interp_accel*,
             real_t**, real_t**, real_t**, real_t**
         );
+        
+        real_t InterpolateInputProfileSingleExtrap(real_t r,
+    		const len_t nProvided, const real_t *xProvided, const real_t *xProvided_r,
+    		gsl_spline *spline_x, gsl_interp_accel *spline_acc
+			);
+        real_t InterpolateInputProfileSingleDerivExtrap(real_t r,
+    		const len_t nProvided, const real_t *xProvided_r,
+    		gsl_spline *spline_x, gsl_interp_accel *spline_acc
+			);
+		real_t InterpolateInputElongation(real_t r);
+		real_t InterpolateInputElongationDeriv(real_t r);
+		real_t InterpolateInputTriangularity(real_t r);
+		real_t InterpolateInputTriangularityDeriv(real_t r);
+		real_t InterpolateInputShafranovShift(real_t r);
+		real_t InterpolateInputShafranovShiftDeriv(real_t r);
+			
         gsl_spline *spline_G=nullptr, *spline_psi=nullptr, *spline_kappa=nullptr, *spline_delta=nullptr, *spline_Delta=nullptr;
         gsl_interp_accel *gsl_acc_G, *gsl_acc_psi, *gsl_acc_kappa, *gsl_acc_delta, *gsl_acc_Delta;
 
@@ -57,11 +74,13 @@ namespace DREAM::FVM {
     public:
         AnalyticBRadialGridGenerator(
             const len_t nr, real_t r0, real_t ra, real_t R0,
-            len_t ntheta_interp, struct shape_profiles*
+            len_t ntheta_interp, struct shape_profiles*,
+			len_t ntheta_out=120
         );
         AnalyticBRadialGridGenerator(
             const real_t *r_f, const len_t nr, real_t R0,
-            len_t ntheta_interp, struct shape_profiles*
+            len_t ntheta_interp, struct shape_profiles*,
+			len_t ntheta_out=120
         );
         ~AnalyticBRadialGridGenerator();
 
@@ -78,10 +97,19 @@ namespace DREAM::FVM {
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         
-		virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
-		virtual void GetGradRCartesian(real_t*, real_t , real_t) override;
-		virtual real_t FindClosestApproach(real_t , real_t, real_t , real_t, real_t, real_t ) override;
+		virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
+		virtual void GetGradRCartesian(real_t*, real_t , real_t, real_t ) override;
 
+		virtual const real_t GetZ0() override { return 0; }
+		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNTheta() override { return this->ntheta_out; }
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
+		virtual const real_t *GetPoloidalAngle() override;
+        virtual real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) override;
+        virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) override;
     };
 }
 

@@ -68,6 +68,13 @@ class DataObject:
                 return self.data[index]
         else:
             return self.data[index]
+
+
+    def __int__(self):
+        if self.type == DATA_TYPE_ARRAY:
+            return int(self.data)
+        else:
+            return int(self[:])
     
 
     def __len__(self):
@@ -108,9 +115,17 @@ class DataObject:
         if self.type == DATA_TYPE_H5STRING:
             # Convert string properly
             if (self.data.dtype == 'S1') or (str(self.data.dtype).startswith('|S')):  # Regular strings
-                return self.data[:].tostring().decode('utf-8')
+                return self.data[:].tobytes().decode('utf-8')
             elif self.data.dtype == 'object':  # New strings
-                return self.data[:][0].decode()
+                if self.data.shape == ():
+                    if type(self.data[()]) == str:
+                        return self.data[()]
+                    else:
+                        return self.data[()].decode()
+                elif type(self.data[:][0]) == str:
+                    return self.data[:][0]
+                else:
+                    return self.data[:][0].decode()
         elif self.type == DATA_TYPE_STRING:
             return self.data
         else:

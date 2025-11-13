@@ -67,6 +67,12 @@ void IonTransientTerm::SetCSMatrixElements(
     FVM::Matrix *mat, real_t *rhs,
     const len_t /*iIon*/, const len_t /*Z0*/, const len_t rOffset
 ) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     const len_t N = grid->GetNCells();
     for (len_t i = 0; i < N; i++)
         mat->SetElement(rOffset+i, rOffset+i, -1/this->dt);
@@ -89,6 +95,12 @@ void IonTransientTerm::SetCSVectorElements(
     real_t *vec, const real_t *nions,
     const len_t /*iIon*/, const len_t /*Z0*/, const len_t rOffset
 ) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
+
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)

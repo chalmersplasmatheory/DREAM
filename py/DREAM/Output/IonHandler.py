@@ -1,6 +1,8 @@
 # Object for handling the ion density 'n_i'
 
+import matplotlib.pyplot as plt
 import numpy as np
+
 from .IonSpecies import IonSpecies
 from .OutputException import OutputException
 from .UnknownQuantity import UnknownQuantity
@@ -15,6 +17,7 @@ class IonHandler(UnknownQuantity):
         """
         super(IonHandler, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
+        self.data = data
         self.meta = output.ionmeta
         self.ions = list()
 
@@ -31,6 +34,17 @@ class IonHandler(UnknownQuantity):
             iidx += Z+1
 
 
+    def __contains__(self, name):
+        """
+        Check if this list of ions contains an ion with the given name.
+        """
+        for ion in self.ions:
+            if ion.getName() == name:
+                return True
+
+        return False
+
+
     def __getitem__(self, i):
         """
         If i is a string, retrieves an 'IonSpecies' object by name.
@@ -45,7 +59,7 @@ class IonHandler(UnknownQuantity):
         if type(i) == str:
             ion = self.getIonByName(i)
         else:
-            if len(i) == 2:
+            if type(i) == tuple or type(i) == list:
                 idx = i[0]
                 Z0 = i[1]
             else:
@@ -114,5 +128,63 @@ class IonHandler(UnknownQuantity):
                 return i
 
         raise KeyError("No ion named '{}' found in the output.".format(name))
+
+
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        n = 0
+        for ion in self.ions:
+            n += ion.Z+1
+
+        return n
+
+
+    def plot(self, t=-1, ax=None, show=None, **kwargs):
+        """
+        Visualize the ion charge state densities.
+        """
+        self.histogram(t=t, ax=ax, show=show, **kwargs)
+
+
+    def histogram(self, t=-1, ax=None, show=None, **kwargs):
+        """
+        Create a histogram of the ion charge state densities.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        x = [0]
+        y = [0]
+        labels = ['']
+        for i in range(len(self.ions)):
+            ion = self.ions[i]
+            for state in ion.ionstates:
+                x.append(x[-1]+1)
+                y.append(state.integral(t=t))
+                labels.append(state.getRomanName())
+        
+        x = x[1:]
+        y = y[1:]
+        labels = labels[1:]
+
+        #ax.hist(y, weights=x)
+        ax.bar(x, y, tick_label=labels, **kwargs)
+        lbls = ax.get_xticklabels()
+        plt.setp(lbls, rotation=45)
+
+        if show:
+            plt.show(block=False)
+
+        return ax
 
 

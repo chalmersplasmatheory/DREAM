@@ -110,6 +110,18 @@ void Settings::_DefineSetting(
 }
 
 /**
+ * Remove the definition of the named setting from the settings object.
+ * No check is made to verify that the setting has already been defined,
+ * so if an attempt is made to remove a non-existant setting, an exception
+ * will be thrown.
+ *
+ * name: Name of setting to remove.
+ */
+void Settings::UndefineSetting(const string& name) {
+	settings.erase(name);
+}
+
+/**
  * Returns the setting with the given name, if defined.
  *
  * name:     Name of setting to retrieve.
@@ -150,7 +162,7 @@ T *Settings::_GetArray(
     const len_t nExpectedDims, len_t ndims[],
     enum setting_type type, bool markused
 ) {
-    setting_t *s = _GetSetting(name, type);
+    setting_t *s = _GetSetting(name, type, markused);
 
     if (nExpectedDims != s->ndims)
         throw SettingsException(
@@ -260,6 +272,17 @@ void Settings::DefineSetting(const string& name, const string& desc, len_t n, co
 void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const real_t *defaultValue, bool mandatory)
 { this->_DefineSetting<real_t>(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
+void Settings::DefineSetting(const string& name, const string& desc, void *defaultValue, bool mandatory)
+{ this->_DefineSetting<void*>(name, desc, defaultValue, SETTING_TYPE_ADDRESS, mandatory); }
+
+/**
+ * Returns 'true' if the named setting has been defined.
+ */
+bool Settings::HasSetting(const string& name) {
+    auto it = settings.find(name);
+    return (it != settings.end());
+}
+
 /**
  * Returns the data type of the specified setting.
  *
@@ -272,6 +295,13 @@ enum Settings::setting_type Settings::GetType(const string& name) {
 
     setting_t *s = it->second;
     return s->type;
+}
+
+/**
+ * Returns the specified setting as an address.
+ */
+void *Settings::GetAddress(const string& name, bool markused) {
+    return *((void**)(_GetSetting(name, SETTING_TYPE_ADDRESS, markused)->value));
 }
 
 /**
@@ -404,6 +434,8 @@ void Settings::SetSetting(const string& name, const len_t n, real_t *value)
 void Settings::SetSetting(const string& name, const len_t ndims, const len_t dims[], real_t *value)
 { this->_SetSetting(name, ndims, dims, value, SETTING_TYPE_REAL_ARRAY); }
 
+void Settings::SetSetting(const string& name, void *value)
+{ this->_SetSetting(name, value, SETTING_TYPE_ADDRESS); }
 
 /**
  * Print a list of all available settings.

@@ -17,13 +17,15 @@ class DREAMEqsys:
     matrix indices.
     """
 
-    def __init__(self, filename):
+    def __init__(self, filename, nions=None):
         """
         Constructor.
+
+        :param nions: Number of ion species in simulation (not required if 'N_i' and/or 'W_i' is present in the equation system).
         """
         self.unknowns = []
         self.nr = None
-        self.nions = None
+        self.nions = nions
         self.nZ0 = None
         self.hot_npnxi = None
         self.hot_np = None

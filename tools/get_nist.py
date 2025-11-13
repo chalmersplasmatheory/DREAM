@@ -35,7 +35,8 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
     """
     dt = '0' if datatype == 'ionization' else '1'
     data = {
-        'encodelist': 'XXT2',           # Hard-coded value
+    	# Part of the input (in comments) is no longer required by NIST website and can cause error
+        #'encodelist': 'XXT2',           # Hard-coded value
         'spectra': ','.join(elements),  # List of elements to retrieve
         'units': '1',                   # Energy units (1 = eV, 0 = cm-1, 2 = Rydberg
         'format': '1',                  # Output format (0 = HTML, 1 = ASCII)
@@ -44,7 +45,7 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
         'ion_charge_out': 'on',         # We also want the ion charge as X data
         'sp_name_out': 'on',            # Spectrum name
         'e_out': dt,                    # 0 = ionization energy, 1 = total binding energy
-        'submit': 'Retrieve+Data'       # Name of button
+        #'submit': 'Retrieve+Data'       # Name of button
     }
 
     fname = 'nist_{}.html'.format(datatype)
@@ -165,9 +166,25 @@ def load_elements(elements, datatype='binding', cache=False, cachedir=None):
 
     names, Z, data = parse_data(data)
 
+    if 'H' in names:
+        if 'T' not in names:
+            names.insert(1, 'T')
+            Z.insert(1, Z[0])
+            data.insert(1, data[0])
+        if 'D' not in names:
+            names.insert(1, 'D')
+            Z.insert(1, Z[0])
+            data.insert(1, data[0])
+
     # Check that 'elements' is a subset of 'names'
     for e in elements:
-        if e not in names:
+        # All hydrogenic species have the same ionization/binding energies
+        if e == 'D' or e == 'T':
+            ename = 'H'
+        else:
+            ename = e
+
+        if ename not in names:
             if cache:
                 # Force download of elements
                 return load_elements(elements=elements, datatype=datatype, cache=False)
@@ -181,7 +198,7 @@ def load_elements(elements, datatype='binding', cache=False, cachedir=None):
         # Select only requested elements
         nnames, nZ, ndata = [], [], []
         for n,z,d in zip(names,Z,data):
-            if n in elements:
+            if n in elements or (n=='H' and ('D' in elements or  'T' in elements)):
                 nnames.append(n)
                 nZ.append(z)
                 ndata.append(d)

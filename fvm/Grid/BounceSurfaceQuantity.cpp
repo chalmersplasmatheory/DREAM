@@ -184,7 +184,16 @@ const real_t BounceSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, flux
 real_t BounceSurfaceQuantity::ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType){ 
     real_t t1 = Theta_B1(ir,i,j,fluxGridType,grid);
     real_t t2 = Theta_B2(ir,i,j,fluxGridType,grid);
-    return t1 + (t2-t1) * quad_x_ref[it]; 
+
+	real_t tval;
+	if (t1 > t2) {
+		tval = (t1-2*M_PI) + (t2-t1+2*M_PI) * quad_x_ref[it];
+		if (tval < 0)
+			tval += 2*M_PI;
+	} else
+		tval = t1 + (t2-t1) * quad_x_ref[it]; 
+	
+	return tval;
 }
 
 /**
@@ -205,11 +214,13 @@ void BounceSurfaceQuantity::DeleteData(real_t ***&data, len_t nr, len_t np1, len
                 }
 
                 if (del)
-                    delete [] data[ir][j*np2+i];
+                    delete [] data[ir][j*np1+i];
             }
         delete [] data[ir];
     }
     delete [] data;
+
+	data = nullptr;
 }
 
 /**

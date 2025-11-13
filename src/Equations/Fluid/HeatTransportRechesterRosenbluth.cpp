@@ -2,6 +2,7 @@
  * Implementation of a Rechester-Rosenbluth operator for heat transport.
  */
 
+#include <cmath>
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -15,9 +16,9 @@ using namespace DREAM;
  * Constructor.
  */
 HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
-    FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
+    FVM::Grid *grid,
     FVM::Interpolator1D *dB_B, FVM::UnknownQuantityHandler *unknowns
-) : FVM::DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) {
+) : FVM::DiffusionTerm(grid), deltaBOverB(dB_B) {
 
     SetName("HeatTransportRechesterRosenbluth");
 
@@ -35,7 +36,8 @@ HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
  * Destructor.
  */
 HeatTransportRechesterRosenbluth::~HeatTransportRechesterRosenbluth() {
-    delete this->deltaBOverB;
+	if (this->deltaBOverB != nullptr)
+		delete this->deltaBOverB;
     delete [] this->dD;
 }
 
@@ -66,7 +68,7 @@ bool HeatTransportRechesterRosenbluth::GridRebuilt() {
 void HeatTransportRechesterRosenbluth::Rebuild(
     const real_t t, const real_t, FVM::UnknownQuantityHandler *unknowns
 ) {
-    const real_t *dB_B = this->deltaBOverB->Eval(t);
+    const real_t *dB_B = this->EvaluateDeltaBOverB(t);
     const len_t nr = this->grid->GetNr();
     const real_t mc2 = Constants::mc2inEV;
 
@@ -90,7 +92,12 @@ void HeatTransportRechesterRosenbluth::Rebuild(
         
         const real_t B_Bmin = rg->GetFSA_B_f(ir);
         const real_t xiT0   = rg->GetXi0TrappedBoundary_fr(ir);
-        const real_t qR0 = 1.0;       // TODO (safety factor)
+        real_t qR0;
+        const real_t R0 = rg->GetR0();
+        if(isinf(R0))
+            qR0 = 1;       // TODO (safety factor)
+        else
+            qR0 = R0;       // TODO (safety factor)
 
         real_t D = PREFAC * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0*xiT0); // mc2;
         this->dD[ir] = D;
@@ -128,7 +135,12 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
             n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
         }
         real_t Theta = T / mc2;
-        const real_t qR0 = 1.0; // TODO: safety factor with j_tot jacobian
+        real_t qR0;
+        const real_t R0 = this->grid->GetRadialGrid()->GetR0();
+        if(isinf(R0))
+            qR0 = 1;       // TODO: safety factor with j_tot jacobian
+        else
+            qR0 = R0;       // TODO: safety factor with j_tot jacobian
 
         if (derivId == this->id_n_cold)
             dDrr(ir, 0, 0) = qR0 * this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);

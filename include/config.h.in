@@ -14,9 +14,16 @@ typedef int64_t int_t;
 #define INT_T_PRINTF_FMT_PART "lld"
 
 #cmakedefine COLOR_TERMINAL
+#cmakedefine DREAM_BUILD_PYFACE
+
+#ifdef DREAM_BUILD_PYFACE
+#   define DREAM_IS_PYTHON_LIBRARY
+#endif
 
 #define DREAM_GIT_REFSPEC "@GIT_REFSPEC@"
 #define DREAM_GIT_SHA1 "@GIT_SHA1@"
 #define DREAM_GIT_TAG "@GIT_TAG@"
+#define DREAM_GIT_HAS_CHANGES "@GIT_HAS_CHANGES@"
+#define DREAM_GIT_TIME "@GIT_TIME@"
 
 #endif/*_DREAM_CONFIG_H*/

@@ -9,6 +9,15 @@
 
 namespace DREAM {
     class DiagonalPreconditioner {
+	public:
+		static const real_t
+			DENSITY_SCALE,
+			CURRENT_SCALE,
+			ENERGY_SCALE,
+			FLUX_SCALE,
+			TEMPERATURE_SCALE,
+			RUNAWAY_FRACTION;
+
     private:
         FVM::UnknownQuantityHandler *uqh;
         std::vector<len_t> nontrivials;
@@ -24,6 +33,9 @@ namespace DREAM {
             FVM::UnknownQuantityHandler*, const std::vector<len_t>&
         );
         ~DiagonalPreconditioner();
+
+		real_t GetEquationScale(const len_t i) { return this->eqn_scales[i]; }
+		real_t GetUnknownScale(const len_t i) { return this->uqn_scales[i]; }
 
         void Build();
         void SetEquationScale(const len_t, const real_t);

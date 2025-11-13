@@ -9,9 +9,13 @@
 #include "DREAM/Solver/Backtracker.hpp"
 #include "DREAM/Solver/PhysicalStepAdjuster.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
+<<<<<<< HEAD
 #include <string>
 #include <vector>
 
+=======
+#include "DREAM/QuitException.hpp"
+>>>>>>> master
 
 using namespace DREAM;
 using namespace std;
@@ -26,11 +30,18 @@ SolverNonLinear::SolverNonLinear(
     EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls,
     enum OptionConstants::linear_solver bk,
+<<<<<<< HEAD
     enum OptionConstants::newton_step_adjuster nsa,
     const int_t maxiter, const real_t reltol,
     bool verbose
 ) : Solver(unknowns, unknown_equations, ls, bk), eqsys(eqsys),
     maxiter(maxiter), reltol(reltol), verbose(verbose), stepAdjusterType(nsa) {
+=======
+	const int_t maxiter, const real_t reltol,
+	bool verbose, bool checkResidual
+) : Solver(unknowns, unknown_equations, eqsys, verbose, ls, bk),
+	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual) {
+>>>>>>> master
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -59,7 +70,12 @@ void SolverNonLinear::AcceptSolution() {
     this->x1  = this->x0;
     this->x0  = x;
 
+<<<<<<< HEAD
     this->StoreSolution(x);
+=======
+	this->StoreSolution(x);
+    this->IterationFinished();
+>>>>>>> master
 }
 
 /**
@@ -126,11 +142,15 @@ void SolverNonLinear::AllocateJacobianMatrix() {
  * Deallocate memory used by this solver.
  */
 void SolverNonLinear::Deallocate() {
+<<<<<<< HEAD
     if (backupInverter != nullptr)
         delete backupInverter;
 
     delete mainInverter;
     delete jacobian;
+=======
+	delete jacobian;
+>>>>>>> master
 
     delete [] this->x_2norm;
     delete [] this->dx_2norm;
@@ -164,7 +184,7 @@ void SolverNonLinear::initialize_internal(
 
     if (this->convChecker == nullptr)
         this->SetConvergenceChecker(
-            new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol)
+            new ConvergenceChecker(unknowns, this->unknown_equations, this->nontrivial_unknowns, this->diag_prec, this->reltol)
         );
 
     InitStepAdjuster(this->stepAdjusterType);
@@ -204,7 +224,22 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
     if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
-    return convChecker->IsConverged(x, dx, printVerbose);
+    return convChecker->IsConverged(x, dx, this->nTimeStep, printVerbose);
+}
+
+/**
+ * Check if the residual is converged.
+ */
+bool SolverNonLinear::IsResidualConverged() {
+	real_t *F;
+	VecGetArray(this->petsc_F, &F);
+
+	bool rescaled = (this->diag_prec != nullptr);
+	bool c = convChecker->IsResidualConverged(this->nTimeStep, this->dt, F, rescaled);
+
+	VecRestoreArray(this->petsc_F, &F);
+
+	return c;
 }
 
 /**
@@ -253,7 +288,10 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
     try {
         this->_InternalSolve();
-    } catch (FVM::FVMException &ex) {
+    } catch (DREAM::QuitException& ex) {
+		// Rethrow quit exception
+		throw ex;
+	} catch (FVM::FVMException &ex) {
         // Retry with backup-solver (if allowed and not already used)
         if (this->backupInverter != nullptr && this->inverter != this->backupInverter) {
             if (this->Verbose()) {
@@ -271,6 +309,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
     }
 
     // Save basic statistics for step
+	this->solver_time.push_back(this->t);
     this->nIterations.push_back(this->iteration);
     this->usedBackupInverter.push_back(this->inverter == this->backupInverter);
 
@@ -278,6 +317,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 }
 
 void SolverNonLinear::_InternalSolve() {
+<<<<<<< HEAD
     // Take Newton steps
     len_t iter = 0;
     const real_t *x, *dx;
@@ -299,6 +339,46 @@ REDO_ITER:
         
         AcceptSolution();
     } while (!IsConverged(x, dx));
+=======
+	// Take Newton steps
+	len_t iter = 0;
+	const real_t *x, *dx;
+	bool extiter_conv = (this->extiter == nullptr);
+	do {
+		do {
+			iter++;
+			this->SetIteration(iter);
+
+REDO_ITER:
+			dx = this->TakeNewtonStep();
+			// Solution rejected (solver likely switched)
+			if (dx == nullptr) {
+				if (iter < this->MaxIter())
+					goto REDO_ITER;
+				else
+					throw SolverException("Maximum number of iterations reached while dx=nullptr.");
+			}
+
+			x  = UpdateSolution(dx);
+
+			// TODO backtracking...
+			
+			AcceptSolution();
+		} while (!IsConverged(x, dx));
+
+		if (this->checkResidual && !IsResidualConverged()) {
+			DREAM::IO::PrintWarning(
+				DREAM::IO::WARNING_RESIDUAL_NOT_CONVERGED,
+				"Newton solver converged, but the converged point does not solve the system of equations."
+			);
+		}
+
+		// External iterator
+		if (this->extiter != nullptr)
+			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
+
+	} while (!extiter_conv);
+>>>>>>> master
 }
 
 /**
@@ -360,12 +440,14 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
-
-    // Print/save debug info (if requested)
-    this->SaveDebugInfo(this->nTimeStep, this->iteration);
-
-    // Apply preconditioner (if enabled)
-    this->Precondition(this->jacobian, this->petsc_F);
+    // Print/save debug info and apply preconditioner (if enabled)
+    if (this->debugrescaled) {
+        this->Precondition(this->jacobian, this->petsc_F);
+        this->SaveDebugInfoBefore(this->nTimeStep, this->iteration);
+    } else {
+        this->SaveDebugInfoBefore(this->nTimeStep, this->iteration);
+        this->Precondition(this->jacobian, this->petsc_F);
+    }
 
     // Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
@@ -382,8 +464,14 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
     this->timeKeeper->StopTimer(timerInvert);
 
-    // Undo preconditioner (if enabled)
-    this->UnPrecondition(this->petsc_dx);
+    // Undo preconditioner and save additional debug info (if requested)
+    if (this->debugrescaled) {
+        this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
+        this->UnPrecondition(this->petsc_dx);
+    } else {
+        this->UnPrecondition(this->petsc_dx);
+        this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
+    }
 
     // Copy dx
     VecGetArray(this->petsc_dx, &fvec);
@@ -431,12 +519,13 @@ void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
 }
 
 /**
- * Save debugging information for the current iteration.
+ * Save debugging information for the current iteration,
+ * _before_ the new solution has been calculated.
  *
  * iTimeStep:  Current time step index.
  * iIteration: Current iteration index.
  */
-void SolverNonLinear::SaveDebugInfo(
+void SolverNonLinear::SaveDebugInfoBefore(
     len_t iTimeStep, len_t iIteration
 ) {
     if ((this->savetimestep == iTimeStep &&
@@ -482,6 +571,27 @@ void SolverNonLinear::SaveDebugInfo(
             SaveNumericalJacobian(jacname);
         }
 
+        if (this->printjacobianinfo)
+            this->jacobian->PrintInfo();
+    }
+}
+
+/**
+ * Save debugging information for the current iteration,
+ * _after_ the new solution has been calculated.
+ *
+ * iTimeStep:  Current time step index.
+ * iIteration: Current iteration index.
+ */
+void SolverNonLinear::SaveDebugInfoAfter(
+    len_t iTimeStep, len_t iIteration
+) {
+    if ((this->savetimestep == iTimeStep &&
+        (this->saveiteration == iIteration || this->saveiteration == 0)) ||
+         this->savetimestep == 0) {
+
+        string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
+
         if (this->savesolution) {
             string solname = "solution_dx";
             if (this->savetimestep == 0 || this->saveiteration == 0)
@@ -505,15 +615,12 @@ void SolverNonLinear::SaveDebugInfo(
                 outname += suffix;
             outname += ".h5";
 
-            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname);
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname, true);
             outgen->SaveCurrent();
             delete outgen;
         }
-
-        if (this->printjacobianinfo)
-            this->jacobian->PrintInfo();
     }
-}
+}        
 
 /**
  * Enable or disable debug mode.
@@ -534,10 +641,11 @@ void SolverNonLinear::SaveDebugInfo(
  * savesystem:        If true, saves the full equation system, including grid information,
  *                    to a proper DREAMOutput file. However, only the most recently obtained
  *                    solution is saved.
+ * rescaled:          If true, saves the rescaled version of the jacobian/solution/residual.
  */
 void SolverNonLinear::SetDebugMode(
     bool printjacobianinfo, bool savesolution, bool savejacobian, bool savevector,
-    bool savenumjac, int_t timestep, int_t iteration, bool savesystem
+    bool savenumjac, int_t timestep, int_t iteration, bool savesystem, bool rescaled
 ) {
     this->printjacobianinfo = printjacobianinfo;
     this->savejacobian      = savejacobian;
@@ -547,6 +655,7 @@ void SolverNonLinear::SetDebugMode(
     this->savetimestep      = timestep;
     this->saveiteration     = iteration;
     this->savesystem        = savesystem;
+    this->debugrescaled     = rescaled;
 }
 
 
@@ -569,21 +678,27 @@ void SolverNonLinear::SwitchToBackupInverter() {
  * name: Name of group within file to store data in.
  */
 void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
-    sf->CreateStruct(name);
+	sf->CreateStruct(name);
 
-    int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
-    sf->WriteList(name+"/type", &type, 1);
+	int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
+	sf->WriteList(name+"/type", &type, 1);
 
-    // Number of iterations per time step
-    sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
+	// Time array
+	sf->WriteList(name+"/solvertime", this->solver_time.data(), this->solver_time.size());
 
-    // Whether or not backup inverter was used for a given time step
-    len_t nubi = this->usedBackupInverter.size();
-    int32_t *ubi = new int32_t[nubi];
-    for (len_t i = 0; i < nubi; i++)
-        ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
+	// Number of iterations per time step
+	sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
 
-    sf->WriteList(name+"/backupinverter", ubi, nubi);
-    delete [] ubi;
+	// Whether or not backup inverter was used for a given time step
+	len_t nubi = this->usedBackupInverter.size();
+	int32_t *ubi = new int32_t[nubi];
+	for (len_t i = 0; i < nubi; i++)
+		ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
+
+	sf->WriteList(name+"/backupinverter", ubi, nubi);
+	delete [] ubi;
+
+	if (this->checkResidual)
+		this->convChecker->SaveData(sf, name);
 }
 

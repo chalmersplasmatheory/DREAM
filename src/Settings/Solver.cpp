@@ -33,6 +33,8 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/stepadjust", "Method to use for adjusting Newton step", (int_t)OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
+	s->DefineSetting(MODULENAME "/checkresidual", "If true, prints a warning if the residual is not close to zero at the end of non-linear iteration", (bool)true);
+	s->DefineSetting(MODULENAME "/saveconvergenceinfo", "If true, saves information about non-linear convergence to the output file", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
     DefinePreconditionerSettings(s);
@@ -47,6 +49,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/debug/saverhs", "If true, saves the RHS vector in the specified iteration(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/saveresidual", "If true, saves the residual vector in the specified iteration(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/savesystem", "If true, saves the full equation system in the most recent iteration/time step", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/rescaled", "If true, saves the rescaled version of the jacobian/solution/residual.", (bool)false);
     s->DefineSetting(MODULENAME "/debug/timestep", "Index of time step to save debug info for. If '0', saves debug info for all time steps and iterations", (int_t)0);
     s->DefineSetting(MODULENAME "/debug/iteration", "Index of iteration to save debug info for.", (int_t)1);
 }
@@ -90,12 +93,17 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     );
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
-        MODULENAME, s, u, solver->GetNonTrivials()
+        MODULENAME, s, eqns, u, solver->GetNonTrivials()
     ));
+	solver->SetExternalIteratorConvergenceChecker(LoadToleranceSettings(
+        MODULENAME, s, eqns, u, *eqsys->GetExternallyIteratedUnknowns()
+	));
 
     solver->SetPreconditioner(LoadPreconditionerSettings(
         s, u, solver->GetNonTrivials()
     ));
+
+	solver->SetExternalIteratorMaxIterations(s->GetInteger(MODULENAME "/maxiter"));
 }
 
 
@@ -116,13 +124,14 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
     
+    bool verbose    = s->GetBool(MODULENAME "/verbose");
     bool printdebug = s->GetBool(MODULENAME "/debug/printmatrixinfo");
     bool savematrix = s->GetBool(MODULENAME "/debug/savematrix");
     bool saverhs    = s->GetBool(MODULENAME "/debug/saverhs");
     int_t timestep  = s->GetInteger(MODULENAME "/debug/timestep");
     bool savesystem = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto *sli = new SolverLinearlyImplicit(u, eqns, eqsys, linsolv);
+    auto sli = new SolverLinearlyImplicit(u, eqns, eqsys, verbose, linsolv);
     sli->SetDebugMode(printdebug, savematrix, saverhs, timestep, savesystem);
 
     return sli;
@@ -146,17 +155,19 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t maxiter     = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
     bool verbose      = s->GetBool(MODULENAME "/verbose");
+	bool checkRes     = s->GetBool(MODULENAME "/checkresidual");
     bool savejacobian = s->GetBool(MODULENAME "/debug/savejacobian");
     bool savesolution = s->GetBool(MODULENAME "/debug/savesolution");
     bool savenumjac   = s->GetBool(MODULENAME "/debug/savenumericaljacobian");
     bool saveresidual = s->GetBool(MODULENAME "/debug/saveresidual");
     bool printdebug   = s->GetBool(MODULENAME "/debug/printjacobianinfo");
+    bool rescaled     = s->GetBool(MODULENAME "/debug/rescaled");
     int_t timestep    = s->GetInteger(MODULENAME "/debug/timestep");
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto *snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, nsa, maxiter, reltol, verbose);
-    snl->SetDebugMode(printdebug, savejacobian, savesolution, saveresidual, savenumjac, timestep, iteration, savesystem);
+    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, nsa, maxiter, reltol, verbose, checkRes);
+    snl->SetDebugMode(printdebug, savesolution, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem, rescaled);
 
     return snl;
 }

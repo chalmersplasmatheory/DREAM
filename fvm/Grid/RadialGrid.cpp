@@ -8,6 +8,7 @@
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
 
+
 using namespace std;
 using namespace DREAM::FVM;
 
@@ -46,6 +47,11 @@ RadialGrid::~RadialGrid(){
         delete [] this->VpVol;
         delete [] this->VpVol_f;
     }
+	if (this->psiToroidal != nullptr) {
+		delete [] this->psiToroidal;
+		delete [] this->psiToroidal_f;
+	}
+
     delete this->generator;
     delete this->fluxSurfaceAverager;
 }
@@ -206,13 +212,13 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     this->psiToroidal_f = new real_t[nr+1];
 
     // Calculate psi_t by integrating using a trapezoidal rule.
-    real_t x, x_f = VpVol_f[0]*BtorGOverR0_f[0]*FSA_1OverR2_f[0];
+    real_t x, x_f = (1. /(2. * M_PI)) * VpVol_f[0]*BtorGOverR0_f[0]*FSA_1OverR2_f[0];
     psiToroidal_f[0] = 0;
     for (len_t ir = 0; ir < nr; ir++) {
-        x    = VpVol[ir]*BtorGOverR0[ir]*FSA_1OverR2[ir];
+        x    = (1. /(2. * M_PI)) * VpVol[ir]*BtorGOverR0[ir]*FSA_1OverR2[ir];
         psiToroidal[ir] = psiToroidal_f[ir] + 0.5*(x_f+x)*(r[ir]-r_f[ir]);
 
-        x_f  = VpVol_f[ir+1]*BtorGOverR0_f[ir+1]*FSA_1OverR2_f[ir+1];
+        x_f  = (1. /(2. * M_PI)) * VpVol_f[ir+1]*BtorGOverR0_f[ir+1]*FSA_1OverR2_f[ir+1];
         psiToroidal_f[ir+1] = psiToroidal[ir] + 0.5*(x_f+x)*(r_f[ir+1]-r[ir]);
     }
 }
@@ -295,6 +301,7 @@ void RadialGrid::InitializeFSAvg(
     this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;   
 }
 
+
 /**
  * Deallocate flux surface averages
  */
@@ -313,3 +320,22 @@ void RadialGrid::DeallocateFSAvg(){
     delete [] this->FSA_1OverR2_f;
 }
 
+/**
+* Evaluate the major radius  R coordinate the given (r, theta) point on a flux surface.
+*/
+real_t RadialGrid::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceRMinusR0_theta(ir, theta);
+}
+/**
+* Evaluate the Z coordinate the given (r, theta) point on a flux surface.
+*/
+real_t RadialGrid::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) {
+    return this->generator->GetFluxSurfaceZMinusZ0_theta(ir, theta);
+}
+
+/**
+* Help function to import the jacobian of the numerical grid 
+*/
+real_t RadialGrid::ComputeConfigurationSpaceJacobian(len_t ir, real_t theta) {
+    return this->generator->JacobianAtTheta(this->r[ir], theta);
+}

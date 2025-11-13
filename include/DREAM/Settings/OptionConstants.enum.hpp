@@ -14,7 +14,8 @@ enum prescribed_data_interp {
     // We start from 0 here to remain somewhat compatible
     // with the GSL interpolation interface
     PRESCRIBED_DATA_INTERP_NEAREST=0,
-    PRESCRIBED_DATA_INTERP_LINEAR=1
+    PRESCRIBED_DATA_INTERP_LINEAR=1,
+    PRESCRIBED_DATA_INTERP_LOGARITHMIC=2
 };
 enum prescribed_data_interp_gsl {
     PRESCRIBED_DATA_INTERP_GSL_LINEAR=1,
@@ -25,7 +26,8 @@ enum prescribed_data_interp_gsl {
 };
 enum prescribed_data_interp3d {
     PRESCRIBED_DATA_INTERP3D_NEAREST=0,
-    PRESCRIBED_DATA_INTERP3D_LINEAR=1
+    PRESCRIBED_DATA_INTERP3D_LINEAR=1,
+    PRESCRIBED_DATA_INTERP3D_LOGARITHMIC=2
 };
 
 enum ion_data_type {
@@ -37,6 +39,31 @@ enum ion_data_type {
 enum ion_opacity_mode {
 	OPACITY_MODE_TRANSPARENT=1,
 	OPACITY_MODE_GROUND_STATE_OPAQUE=2
+};
+
+enum ion_charged_diffusion_mode {
+	ION_CHARGED_DIFFUSION_MODE_NONE=1,
+	ION_CHARGED_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_diffusion_mode {
+	ION_NEUTRAL_DIFFUSION_MODE_NONE=1,
+	ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED=2
+};
+
+enum ion_charged_advection_mode {
+	ION_CHARGED_ADVECTION_MODE_NONE=1,
+	ION_CHARGED_ADVECTION_MODE_PRESCRIBED=2
+};
+
+enum ion_neutral_advection_mode {
+	ION_NEUTRAL_ADVECTION_MODE_NONE=1,
+	ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED=2
+};
+
+enum ion_source_type {
+	ION_SOURCE_NONE=1,
+	ION_SOURCE_PRESCRIBED=2
 };
 
 // Interpolation method for ADAS rate coefficients
@@ -82,9 +109,9 @@ enum pxigrid_xitype {
 
 // Type of advection interpolation coefficient for jacobian
 enum adv_jacobian_mode {
-    AD_INTERP_JACOBIAN_LINEAR=1, // does not include non-linear jacobian from flux limiter 
+    AD_INTERP_JACOBIAN_LINEAR=1, // does not include non-linear jacobian from flux limiter
     AD_INTERP_JACOBIAN_FULL=2,   // includes non-linear jacobian from flux limiter
-    AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
+    AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian
 };
 
 enum radialgrid_numeric_format {
@@ -124,7 +151,9 @@ enum newton_step_adjuster {
 /////////////////////////////////////
 enum timestepper_type {
     TIMESTEPPER_TYPE_CONSTANT=1,
-    TIMESTEPPER_TYPE_ADAPTIVE=2
+    TIMESTEPPER_TYPE_ADAPTIVE=2,
+	TIMESTEPPER_TYPE_IONIZATION=3,
+    TIMESTEPPER_TYPE_PYTHON_TERMINATE=4
 };
 
 /////////////////////////////////////
@@ -145,19 +174,33 @@ enum corrected_conductivity {
 
 /////////////////////////////////////
 ///
+/// CURRENT DENSITY OPTIONS
+///
+/////////////////////////////////////
+enum current_profile_type {
+	CURRENT_PROFILE_TYPE_J_PARALLEL = 1,
+	CURRENT_PROFILE_TYPE_J_DOT_GRADPHI = 2,
+	CURRENT_PROFILE_TYPE_JTOR_OVER_R = 3
+};
+
+/////////////////////////////////////
+///
 /// UNKNOWN QUANTITY OPTIONS
 ///
 /////////////////////////////////////
 enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_PRESCRIBED=1,     // E_field is prescribed by the user
     UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
+	UQTY_E_FIELD_EQN_PRESCRIBED_CURRENT=3,// j_ohm is prescribed by the user
 };
 
 enum uqty_f_re_inittype {
     UQTY_F_RE_INIT_FORWARD=1,           // Put all particles in p=pMin, xi=+/-1 (sign depending on E)
     UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
     UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
-    UQTY_F_RE_INIT_ISOTROPIC=4          // Distribute all particles isotropically in p=pMin
+    UQTY_F_RE_INIT_ISOTROPIC=4,         // Distribute all particles isotropically in p=pMin
+    UQTY_F_RE_INIT_AVALANCHE=5,			// Distribute particles according to an analytical avalanche distribution
+    UQTY_F_RE_INIT_PRESCRIBED=6			// Set prescribed distribution through f_re.setInitialValue
 };
 
 enum uqty_V_loop_wall_eqn {
@@ -188,7 +231,8 @@ enum uqty_T_i_eqn {
 
 enum uqty_distribution_mode {
     UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
-    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2    // distribution modelled with analytical distribution function
+    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2,   // distribution modelled with analytical distribution function
+	UQTY_DISTRIBUTION_MODE_PRESCRIBED=3    // distribution is prescribed in time from user input
 };
 
 enum uqty_f_hot_dist_mode {                     // Model used for analytic hottail distribution
@@ -201,7 +245,7 @@ enum uqty_f_hot_dist_mode {                     // Model used for analytic hotta
 /// COLLISION QUANTITY HANDLER SETTINGS
 ///
 /////////////////////////////////////
-enum collqty_lnLambda_type {             // The Coulomb logarithm is... 
+enum collqty_lnLambda_type {             // The Coulomb logarithm is...
     COLLQTY_LNLAMBDA_CONSTANT=1,         // the relativistic lnLambda, lnL = lnLc
     COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2, // energy dependent, separate for collisions with electrons and ions
     COLLQTY_LNLAMBDA_THERMAL=3,          // the thermal lnLambda, lnL = lnLT
@@ -215,9 +259,10 @@ enum collqty_collfreq_mode {
 };
 
 enum collqty_collfreq_type {
-    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
-    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
-    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies etc
+    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1,           // only free electrons contribute
+    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,                  // free and bound electrons contribute equally
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3,            // bound electrons contribute via mean excitation energies etc
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED_WALKOWIAK=4   // bound electrons contribution with Walkowiak model https://doi.org/10.1063/5.0075859
 };
 
 enum collqty_pstar_mode {                // Runaway growth rates are determined from dynamics that are
@@ -225,7 +270,7 @@ enum collqty_pstar_mode {                // Runaway growth rates are determined 
     COLLQTY_PSTAR_MODE_COLLISIONLESS = 2 // collisionless (with trapping correction)
 };
 
-enum collqty_screened_diffusion_mode {              // The energy diffusion frequency due to bound electrons are 
+enum collqty_screened_diffusion_mode {              // The energy diffusion frequency due to bound electrons are
     COLLQTY_SCREENED_DIFFUSION_MODE_ZERO = 1,       // set to zero
     COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN = 2  // such that equilibrium distribution is Maxwellian
 };
@@ -255,7 +300,7 @@ enum eqterm_avalanche_mode {                        // Avalanche generation is..
 
 enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...
     EQTERM_NONLINEAR_MODE_NEGLECT = 1,              // neglected
-    EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2,    // accounted for with isotropic Landau-Fokker-Planck operator 
+    EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2,    // accounted for with isotropic Landau-Fokker-Planck operator
     EQTERM_NONLINEAR_MODE_NORSEPP = 3               // included with full NORSE++ formalism
 };
 
@@ -272,8 +317,13 @@ enum eqterm_ripple_mode {                           // Magnetic ripple pitch sca
 };
 
 enum eqterm_synchrotron_mode {                      // Synchrotron radiation reaction is...
-    EQTERM_SYNCHROTRON_MODE_NEGLECT=1,              // neglected 
+    EQTERM_SYNCHROTRON_MODE_NEGLECT=1,              // neglected
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included
+};
+
+enum eqterm_timevaryingb_mode {						// Pitch angle advection due to time-varying B...
+	EQTERM_TIMEVARYINGB_MODE_NEGLECT=1,				// neglected
+	EQTERM_TIMEVARYINGB_MODE_INCLUDE=2				// included
 };
 
 enum eqterm_dreicer_mode {
@@ -289,19 +339,43 @@ enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_KINETIC=3,                  // Kinetic Compton source
 };
 
+enum eqterm_transport_type {
+	EQTERM_TRANSPORT_NONE=1,						// No transport
+	EQTERM_TRANSPORT_PRESCRIBED=2,					// Prescribed advection-diffusion coefficient(s)
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH=3,		// Diffusive transport with a Rechester-Rosenbluth coefficient
+	EQTERM_TRANSPORT_SVENSSON=4,					// Svensson transport model (only n_re)
+	EQTERM_TRANSPORT_FROZEN_CURRENT=5,				// Frozen current transport (only n_re)
+	EQTERM_TRANSPORT_MHD_LIKE=6,					// MHD-like adaptive transport (n_re and T_cold)
+	EQTERM_TRANSPORT_MHD_LIKE_LOCAL=7				// MHD-like adaptive transport, applied locally (n_re and T_cold)
+};
+
+enum eqterm_frozen_current_mode {
+	EQTERM_FROZEN_CURRENT_MODE_DISABLED=1,			// Disable the frozen current mode transport
+	EQTERM_FROZEN_CURRENT_MODE_CONSTANT=2,			// Assume momentum-independent radial transport
+	EQTERM_FROZEN_CURRENT_MODE_BETAPAR=3			// Assume v_|| scaling of radial transport
+};
+
 enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
     EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
-    EQTERM_TRANSPORT_BC_DF_CONST=3                  // Assume d^2 f / dr^2 = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_DF_CONST=3,                  // Assume d^2 f / dr^2 = 0 at r > rmax
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
     EQTERM_IONIZATION_MODE_FLUID=1,                 // fluid ADAS rate coefficients
     EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
     EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
+    EQTERM_IONIZATION_MODE_FLUID_RE=4,              // approximation of the kinetic ionization rate assuming a mono-energetic RE distribution at 20mc, can be used in both fluid and kinetic mode
 };
 
-enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source) 
+enum eqterm_hyperresistivity_mode {
+	EQTERM_HYPERRESISTIVITY_MODE_NEGLECT=1,			// No hyper-resistive term
+	EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED=2,		// Hyper-resistive term with prescribed diffusion coefficient Lambda = Lambda(t,r)
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE=3,		// Hyper-resistive term with adaptive diffusion coefficient
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL=4 	// Hyper-resistive term with adaptive diffusion coefficient, applied locally
+};
+
+enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source)
     EQTERM_PARTICLE_SOURCE_ZERO     = 1,            // S_particle = 0
     EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
@@ -326,6 +400,12 @@ enum eqterm_spi_deposition_mode {
     EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN=4
 };
 
+enum eqterm_spi_shift_mode {
+    EQTERM_SPI_SHIFT_MODE_NEGLECT=1,
+    EQTERM_SPI_SHIFT_MODE_PRESCRIBED=2,
+    EQTERM_SPI_SHIFT_MODE_ANALYTICAL=3
+};
+
 enum eqterm_spi_heat_absorbtion_mode {
     EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT=1,
     EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS=2,
@@ -339,8 +419,14 @@ enum eqterm_spi_cloud_radius_mode {
 };
 
 enum eqterm_spi_abl_ioniz_mode {
-    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
-    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
+    EQTERM_SPI_ABL_IONIZ_MODE_NEUTRAL=1,
+    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=2,
+    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=3
+};
+
+enum eqterm_spi_magnetic_field_dependence_mode {
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT=1,
+    EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_JOREK=2,
 };
 
 enum eqterm_particle_source_shape {
@@ -354,10 +440,21 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
 
+enum eqterm_lcfs_loss_mode {                        // Loss term
+    EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
+    EQTERM_LCFS_LOSS_MODE_FLUID = 2,
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3
+};
+
+enum eqterm_tritium_mode {                        // Tritium generation is...
+    EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
+    EQTERM_TRITIUM_MODE_FLUID = 2,                // Fluid tritium generation rate
+    EQTERM_TRITIUM_MODE_KINETIC = 3               // Kinetic tritium generation rate
+};
+
 
 // Option for which parameter to do the 1D interpolation (time or plasma current)
 enum svensson_interp1d_param {
     SVENSSON_INTERP1D_TIME=1,
     SVENSSON_INTERP1D_IP=2
 };
-        

@@ -46,8 +46,9 @@ DiagonalPreconditioner::DiagonalPreconditioner(
  * Destructor.
  */
 DiagonalPreconditioner::~DiagonalPreconditioner() {
-    VecDestroy(&this->eqn);
-    VecDestroy(&this->iuqn);
+	// These seem to (somehow) be deleted anyway...
+    //VecDestroy(&this->eqn);
+    //VecDestroy(&this->iuqn);
 }
 
 
@@ -120,12 +121,12 @@ void DiagonalPreconditioner::SetUnknownScale(
 
 
 // Default characteristic sizes of various types of quantities
-static constexpr real_t DENSITY_SCALE = 1e20;
-static constexpr real_t CURRENT_SCALE = 1e6;
-static constexpr real_t ENERGY_SCALE = 1e6;
-static constexpr real_t FLUX_SCALE = 1;
-static constexpr real_t TEMPERATURE_SCALE = 100;
-static constexpr real_t RUNAWAY_FRACTION = 1e-10;
+const real_t DiagonalPreconditioner::DENSITY_SCALE = 1e20;
+const real_t DiagonalPreconditioner::CURRENT_SCALE = 1e6;
+const real_t DiagonalPreconditioner::ENERGY_SCALE = 1e6;
+const real_t DiagonalPreconditioner::FLUX_SCALE = 1;
+const real_t DiagonalPreconditioner::TEMPERATURE_SCALE = 100;
+const real_t DiagonalPreconditioner::RUNAWAY_FRACTION = 1e-10;
 
 /**
  * Set default scalings.
@@ -161,6 +162,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_RE) {
             uqn_scales[id] = eqn_scales[id] = RUNAWAY_FRACTION*DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_N_RE_NEG) {
+            uqn_scales[id] = eqn_scales[id] = RUNAWAY_FRACTION*DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_TOT) {
             uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_NI_DENS) {
@@ -180,10 +183,16 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             eqn_scales[id] = ENERGY_SCALE;   // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_V_LOOP_WALL) {
             uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
+		} else if (name == OptionConstants::UQTY_V_P) {
+			uqn_scales[id] = eqn_scales[id] = 1;
         } else if (name == OptionConstants::UQTY_W_COLD) {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE; // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_WI_ENER) {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE;
+		} else if (name == OptionConstants::UQTY_X_P) {
+			uqn_scales[id] = eqn_scales[id] = 1;
+		} else if (name == OptionConstants::UQTY_Y_P) {
+			uqn_scales[id] = eqn_scales[id] = 1;
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "

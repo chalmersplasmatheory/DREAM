@@ -6,6 +6,8 @@
 #include <algorithm>
 #include "FVM/Equation/Operator.hpp"
 
+#include <iostream>
+#include <stdlib.h>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -19,29 +21,65 @@ Operator::Operator(Grid *grid) : grid(grid) {}
 /**
  * Destructor.
  */
-Operator::~Operator() {}
+Operator::~Operator() {
+	if (this->adterm != nullptr)
+		delete this->adterm;
+	if (this->predetermined != nullptr)
+		delete this->predetermined;
+	
+	for (auto term : this->terms)
+		delete term;
+	for (auto term : this->eval_terms)
+		delete term;
+	for (auto bc : this->boundaryConditions)
+		delete bc;
+}
 
 
 /**
  * Add an advection term to this operator.
+ * The optional argument addAsEquationTerm is included
+ * to make it possible to add also advection-diffusion
+ * terms as ordinary terms, ie not via an AdvectionDiffusionTerm.
+ * This is needed for example for advection-diffusion terms on a
+ * quantity with more multiples than one (e.g. ions in DREAM), as the
+ * AdvectionDiffusionTerm class is presently not adapted for such terms.
  */
-void Operator::AddTerm(AdvectionTerm *a) {
-    if (adterm == nullptr)
-        adterm = new AdvectionDiffusionTerm(this->grid);
+void Operator::AddTerm(AdvectionTerm *a, bool addAsEquationTerm) {
 
-    adterm->Add(a);
-    CheckConsistency();
+    if(addAsEquationTerm){
+        terms.push_back(a);
+        CheckConsistency();
+    }else{
+        if (adterm == nullptr)
+            adterm = new AdvectionDiffusionTerm(this->grid);
+
+        adterm->Add(a);
+        CheckConsistency();
+    }
 }
 
 /**
  * Add a diffusion term to this operator.
+ * The optional argument addAsEquationTerm is included
+ * to make it possible to add also advection-diffusion
+ * terms as ordinary terms, ie not via an AdvectionDiffusionTerm.
+ * This is needed for example for advection-diffusion terms on a
+ * quantity with more multiples than one (e.g. ions in DREAM), as the
+ * AdvectionDiffusionTerm class is presently not adapted for such terms.
  */
-void Operator::AddTerm(DiffusionTerm *d) {
-    if (adterm == nullptr)
-        adterm = new AdvectionDiffusionTerm(this->grid);
+void Operator::AddTerm(DiffusionTerm *d, bool addAsEquationTerm) {
 
-    adterm->Add(d);
-    CheckConsistency();
+    if(addAsEquationTerm){
+        terms.push_back(d);
+        CheckConsistency();
+    }else{
+        if (adterm == nullptr)
+            adterm = new AdvectionDiffusionTerm(this->grid);
+
+        adterm->Add(d);
+        CheckConsistency();
+    }
 }
 
 /**
@@ -69,6 +107,15 @@ void Operator::AddTerm(EvaluableEquationTerm *t)  {
 void Operator::AddTerm(EquationTerm *t)  {
     terms.push_back(t);
     CheckConsistency();
+}
+
+/**
+ * Add a transient term to this operator.
+ */
+void Operator::AddTerm(TransientTerm *t) {
+	this->hasTransientTerm = true;
+	terms.push_back(t);
+	CheckConsistency();
 }
 
 /**

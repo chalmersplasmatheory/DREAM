@@ -11,6 +11,7 @@ from . Preconditioner import Preconditioner
 LINEAR_IMPLICIT = 1
 NONLINEAR       = 2
 
+BACKUP_SOLVER_NONE    = 0
 LINEAR_SOLVER_LU      = 1
 LINEAR_SOLVER_MUMPS   = 2
 LINEAR_SOLVER_MKL     = 3
@@ -21,7 +22,7 @@ LINEAR_SOLVER_GMRES   = 5
 class Solver:
     
 
-    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False):
+    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False, checkresidual=True):
         """
         Constructor.
         """
@@ -38,16 +39,17 @@ class Solver:
         self.debug_savesystem = False
         self.debug_timestep = 0
         self.debug_iteration = 1
+        self.debug_rescaled = False
 
         self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
-        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
+        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
                  savesolution=False, savematrix=False, savenumericaljacobian=False, saverhs=False,
-                 saveresidual=False, savesystem=False, timestep=0, iteration=1):
+                 saveresidual=False, savesystem=False, rescaled=False, timestep=0, iteration=1):
         """
         Enable output of debug information.
 
@@ -65,6 +67,7 @@ class Solver:
         :param bool savesolution:          If ``True``, saves the solution vector to a ``.mat`` file.
         :param bool savenumericaljacobian: If ``True``, evaluates the jacobian matrix numerically and saves it using a PETSc viewer.
         :param bool saveresidual:          If ``True``, saves the residual vector to a ``.mat`` file.
+        :param bool rescaled:              If ``True``, saves the rescaled versions of the jacobian/solution/residual.
         :param int iteration:              Index of iteration to save debug info for. If ``0``, saves in all iterations. If ``timestep`` is ``0``, this parameter is always ignored.
         """
         self.debug_printmatrixinfo = printmatrixinfo
@@ -76,6 +79,7 @@ class Solver:
         self.debug_saverhs = saverhs
         self.debug_saveresidual = saveresidual
         self.debug_savesystem = savesystem
+        self.debug_rescaled = rescaled
         self.debug_timestep = timestep
         self.debug_iteration = iteration
 
@@ -117,7 +121,26 @@ class Solver:
         self.setOption(verbose=verbose)
 
 
-    def setOption(self, linsolv=None, maxiter=None, verbose=None):
+    def setCheckResidual(self, checkresidual):
+        """
+        If 'True', ensures that the residual is close to zero at the end of
+        non-linear iteration in each time step.
+        """
+        self.setOption(checkresidual=checkresidual)
+
+
+    def setSaveConvergenceInfo(self, saveconvergenceinfo):
+        """
+        If 'True', saves information about the non-linear convergence to the
+        output file (|x| and |dx| norms in each time step and iteration).
+        """
+        self.setOption(saveconvergenceinfo=saveconvergenceinfo)
+
+
+    def setOption(
+        self, linsolv=None, maxiter=None, verbose=None,
+        checkresidual=None, saveconvergenceinfo=None
+    ):
         """
         Sets a solver option.
         """
@@ -127,6 +150,10 @@ class Solver:
             self.maxiter = maxiter
         if verbose is not None:
             self.verbose = verbose
+        if checkresidual is not None:
+            self.checkresidual = checkresidual
+        if saveconvergenceinfo is not None:
+            self.saveconvergenceinfo = saveconvergenceinfo
 
         self.verifySettings()
 
@@ -154,8 +181,15 @@ class Solver:
 
         self.type = int(scal(data['type']))
         self.linsolv = int(data['linsolv'])
-        self.maxiter = int(data['maxiter'])
-        self.verbose = bool(data['verbose'])
+        
+        if 'maxiter' in data:
+            self.maxiter = int(data['maxiter'])
+
+        if 'verbose' in data:
+            self.verbose = bool(data['verbose'])
+
+        if 'checkresidual' in data:
+            self.checkresidual = bool(data['checkresidual'])
 
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
@@ -166,8 +200,11 @@ class Solver:
         if 'backupsolver' in data:
             self.backupsolver = int(data['backupsolver'])
 
+        if 'saveconvergenceinfo' in data:
+            self.saveconvergenceinfo = bool(data['saveconvergenceinfo'])
+
         if 'debug' in data:
-            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
+            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
 
             for f in flags:
                 if f in data['debug']:
@@ -193,11 +230,14 @@ class Solver:
             'type': self.type,
             'linsolv': self.linsolv,
             'maxiter': self.maxiter,
-            'verbose': self.verbose
+            'verbose': self.verbose,
+            'checkresidual': self.checkresidual,
+            'saveconvergenceinfo': self.saveconvergenceinfo
         }
 
         data['preconditioner'] = self.preconditioner.todict()
 
+        data['tolerance'] = self.tolerance.todict()
         if self.type == LINEAR_IMPLICIT:
             data['debug'] = {
                 'printmatrixinfo': self.debug_printmatrixinfo,
@@ -207,7 +247,6 @@ class Solver:
                 'timestep': self.debug_timestep
             }
         elif self.type == NONLINEAR:
-            data['tolerance'] = self.tolerance.todict()
             data['debug'] = {
                 'printjacobianinfo': self.debug_printjacobianinfo,
                 'savejacobian': self.debug_savejacobian,
@@ -215,6 +254,7 @@ class Solver:
                 'savenumericaljacobian': self.debug_savenumericaljacobian,
                 'saveresidual': self.debug_saveresidual,
                 'savesystem': self.debug_savesystem,
+                'rescaled': self.debug_rescaled,
                 'timestep': self.debug_timestep,
                 'iteration': self.debug_iteration
             }
@@ -243,9 +283,13 @@ class Solver:
 
         elif self.type == NONLINEAR:
             if type(self.maxiter) != int:
-                raise DREAMException("Solver: Invalid type of parameter 'maxiter': {}. Expected integer.".format(type(self.maxiter)))
+                raise DREAMException(f"Solver: Invalid type of parameter 'maxiter': {type(self.maxiter)}. Expected integer.")
             elif type(self.verbose) != bool:
-                raise DREAMException("Solver: Invalid type of parameter 'verbose': {}. Expected boolean.".format(type(self.verbose)))
+                raise DREAMException(f"Solver: Invalid type of parameter 'verbose': {type(self.verbose)}. Expected boolean.")
+            elif type(self.checkresidual) != bool:
+                raise DREAMException(f"Solver: Invalid type of parameter 'checkresidual': {type(self.checkresidual)}. Expected boolean.")
+            elif type(self.saveconvergenceinfo) != bool:
+                raise DREAMException(f"Solver: Invalid type of parameter 'saveconvergenceinfo': {type(self.saveconvergenceinfo)}. Expected boolean.")
 
             if type(self.debug_printjacobianinfo) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_printjacobianinfo': {}. Expected boolean.".format(type(self.debug_printjacobianinfo)))
@@ -257,6 +301,8 @@ class Solver:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_saverhs': {}. Expected boolean.".format(type(self.debug_saverhs)))
             elif type(self.debug_saveresidual) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_saveresidual': {}. Expected boolean.".format(type(self.debug_saveresidual)))
+            elif type(self.debug_rescaled) != bool:
+                raise DREAMException("Solver: Invalid type of parameter 'debug_rescaled': {}. Expected boolean.".format(type(self.debug_rescaled)))
             elif type(self.debug_timestep) != int:
                 raise DREAMException("Solver: Invalid type of parameter 'debug_timestep': {}. Expected integer.".format(type(self.debug_timestep)))
             elif type(self.debug_iteration) != int:
@@ -278,7 +324,7 @@ class Solver:
         solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL, LINEAR_SOLVER_SUPERLU, LINEAR_SOLVER_GMRES]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
-        elif self.backupsolver is not None and self.backupsolver not in solv:
+        elif self.backupsolver is not None and (self.backupsolver not in solv and self.backupsolver != BACKUP_SOLVER_NONE):
             raise DREAMException("Solver: Unrecognized backup linear solver type: {}.".format(self.backupsolver))
 
 

@@ -22,14 +22,16 @@ using namespace std;
 EquationSystem::EquationSystem(
     FVM::Grid *emptygrid, FVM::Grid *rgrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
-    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid
+    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
+    Settings *s
 ) : scalarGrid(emptygrid), fluidGrid(rgrid),
     hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    hottailGrid_type(ht_type), runawayGrid_type(re_type) {
-    
+    hottailGrid_type(ht_type), runawayGrid_type(re_type),
+    settings(s) {
+
     this->initializer = new EqsysInitializer(
         &this->unknowns, &this->unknown_equations,
-        fluidGrid, hottailGrid, runawayGrid,
+        this, fluidGrid, hottailGrid, runawayGrid,
         ht_type, re_type
     );
 }
@@ -40,25 +42,75 @@ EquationSystem::EquationSystem(
 EquationSystem::~EquationSystem() {
     if (this->ionHandler != nullptr)
         delete this->ionHandler;
+
     if (this->solver != nullptr)
         delete this->solver;
+    
     if (this->timestepper != nullptr)
         delete this->timestepper;
 
     if (this->cqh_hottail != nullptr)
         delete this->cqh_hottail;
+
     if (this->cqh_runaway != nullptr)
         delete this->cqh_runaway;
 
     if (this->REFluid != nullptr)
         delete this->REFluid;
+
     if (this->distRE != nullptr)
         delete this->distRE;
+
     if (this->distHT != nullptr)
         delete this->distHT;
     
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
+
+    if (this->initializer != nullptr)
+        delete this->initializer;
+
+    if (this->settings != nullptr)
+        delete this->settings;
+	
+	for (auto rsth : this->rsths)
+		delete rsth;
+
+    if (this->otherQuantityHandler != nullptr)
+		delete this->otherQuantityHandler;
+
+    if (this->SPI != nullptr)
+		delete this->SPI;
+
+	for (auto eqn : this->unknown_equations)
+		delete eqn;
+    
+	FVM::RadialGrid *rgrid=nullptr;
+    if (this->fluidGrid != nullptr){
+        rgrid = this->fluidGrid->GetRadialGrid();
+		delete this->fluidGrid;
+    }
+
+    if (this->hottailGrid != nullptr) {
+		if (rgrid == nullptr)
+			rgrid = this->hottailGrid->GetRadialGrid();
+		delete this->hottailGrid;
+	}
+
+    if (this->runawayGrid != nullptr) {
+		if (rgrid == nullptr)
+			rgrid = this->runawayGrid->GetRadialGrid();
+		delete this->runawayGrid;
+	}
+
+    if (this->scalarGrid != nullptr) {
+		FVM::RadialGrid *rgs = this->scalarGrid->GetRadialGrid();
+		delete this->scalarGrid;
+		delete rgs;
+	}
+
+	if (rgrid != nullptr)
+		delete rgrid;
 }
 
 /**
@@ -80,13 +132,14 @@ void EquationSystem::ProcessSystem(const real_t t0) {
             DREAM::IO::PrintError("No equation has been declared for unknown '%s'", unknowns.GetUnknown(i)->GetName().c_str());
             unknownMissing = true;
         } else {
-            if (!unknown_equations[i]->IsPredetermined()) {
+			if (unknown_equations[i]->IsSolvedExternally()) {
+				external_unknowns.push_back(i);
+            } else if (!unknown_equations[i]->IsPredetermined()) {
                 nontrivial_unknowns.push_back(i);
                 totsize += unknowns[i]->NumberOfElements();
             }
         }
     }
-
 
     // Initialize from output...
     if (this->initializerFile != "") 
@@ -94,6 +147,12 @@ void EquationSystem::ProcessSystem(const real_t t0) {
             this->initializerFile, this->currentTime, this->initializerFileIndex,
             this->ionHandler, this->initializerFileIgnore
         );
+	
+	// Set external iterator
+	this->extiter = new ExternalIterator(
+		&this->unknowns, &this->unknown_equations
+	);
+	this->extiter->Initialize(this->external_unknowns);
     
     // Set initial values
     this->initializer->Execute(t0);
@@ -107,7 +166,10 @@ void EquationSystem::ProcessSystem(const real_t t0) {
 /**
  * Set one equation of the specified unknown.
  */
-void EquationSystem::SetOperator(const len_t blockrow, const len_t blockcol, FVM::Operator *op, const std::string& desc) {
+void EquationSystem::SetOperator(
+	const len_t blockrow, const len_t blockcol, FVM::Operator *op,
+	const std::string& desc, const bool solvedExternally
+) {
     // Verify that the list is sufficiently large
     if (unknown_equations.size() < blockrow+1)
         unknown_equations.resize(unknowns.Size(), nullptr);
@@ -123,20 +185,23 @@ void EquationSystem::SetOperator(const len_t blockrow, const len_t blockcol, FVM
         unknown_equations[blockrow]->SetDescription(desc);
         unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
     }
+
+	if (solvedExternally)
+		unknown_equations[blockrow]->SetExternallySolved(true);
 }
 
 /**
  * Same as 'SetEquation(len_t, len_t, Equation*)', but specifies
  * the unknowns by name rather than by index.
  */
-void EquationSystem::SetOperator(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc) {
-    SetOperator(blockrow, GetUnknownID(blockcol), op, desc);
+void EquationSystem::SetOperator(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperator(blockrow, GetUnknownID(blockcol), op, desc, solvedExternally);
 }
-void EquationSystem::SetOperator(const std::string& blockrow, len_t blockcol, FVM::Operator *op, const std::string& desc) {
-    SetOperator(GetUnknownID(blockrow), blockcol, op, desc);
+void EquationSystem::SetOperator(const std::string& blockrow, len_t blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperator(GetUnknownID(blockrow), blockcol, op, desc, solvedExternally);
 }
-void EquationSystem::SetOperator(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc) {
-    SetOperator(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc);
+void EquationSystem::SetOperator(const std::string& blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
+    SetOperator(GetUnknownID(blockrow), GetUnknownID(blockcol), op, desc, solvedExternally);
 }
 
 /**
@@ -167,6 +232,9 @@ void EquationSystem::SetSolver(Solver *solver) {
 
     this->solver = solver;
     this->solver->Initialize(this->matrix_size, this->nontrivial_unknowns);
+
+	if (this->extiter != nullptr)
+		this->solver->SetExternalIterator(this->extiter);
 }
 
 /**
@@ -178,9 +246,8 @@ void EquationSystem::Solve() {
     this->timestepper->SetSolver(solver);
 
     this->PrintNonTrivialUnknowns();
+	this->PrintExternallyIteratedUnknowns();
     this->PrintTrivialUnknowns();
-
-    // TODO Set initial state (or ensure that it has been set?)
 
     // Set initial guess in solver
     const real_t *guess = unknowns.GetLongVector(this->nontrivial_unknowns);
@@ -197,6 +264,8 @@ void EquationSystem::Solve() {
         this->currentTime = timestepper->CurrentTime();
         real_t dt = tNext - this->currentTime;
 
+        this->fluidGrid->Rebuild(tNext);
+
         try {
             istep++;
             solver->Solve(tNext, dt);
@@ -208,6 +277,8 @@ void EquationSystem::Solve() {
             this->postProcessor->Process(tNext);
 
             if (timestepper->IsSaveStep()) {
+                this->TimestepFinished();
+
                 // true = Really save the step (if it's false, we just
                 // indicate that we have taken another timestep). This
                 // should only be true for time steps which we want to
@@ -239,5 +310,41 @@ void EquationSystem::Solve() {
         this->solver->PrintTimings();
         this->REFluid->PrintTimings();
     }
+
+	DREAM::IO::Deinit();
 }
 
+/**
+ * Call all functions in 'callbacks_timestepFinished'.
+ */
+void EquationSystem::TimestepFinished() {
+    for (auto f : this->callbacks_timestepFinished)
+        (*f)(this->simulation);
+}
+
+/**
+ * Register a function to call whenever a time step
+ * has been taken.
+ */
+void EquationSystem::RegisterCallback_TimestepFinished(
+    timestep_finished_func_t f
+) {
+    this->callbacks_timestepFinished.push_back(f);
+}
+
+/**
+ * Register a function to call whenever a solver iteration
+ * has been finished.
+ */
+void EquationSystem::RegisterCallback_IterationFinished(
+    Solver::iteration_finished_func_t f
+) {
+    this->solver->RegisterCallback_IterationFinished(f);
+}
+
+/**
+ * Returns the maximum simulation time for this simulation.
+ */
+real_t EquationSystem::GetMaxTime() const {
+    return this->timestepper->MaxTime();
+}

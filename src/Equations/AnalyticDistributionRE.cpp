@@ -140,10 +140,11 @@ void AnalyticDistributionRE::constructXiSpline(){
                 ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, FVM::RadialGrid::FSA_FUNC_XI, &xi0
             );
         }
+        xiArr[N_SPLINE-1] = 1.0;
         gsl_spline_init (xi0OverXiSpline[ir], xiArr, FuncArr, N_SPLINE);
         // the integral int( xi0/<xi>, xiT, 1 ) over the entire spline 
         // will appear repeatedly and is therefore stored 
-        integralOverFullPassing[ir] = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiT,1.0,xiSplineAcc[ir]);
+        integralOverFullPassing[ir] = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiArr[0],1.0,xiSplineAcc[ir]);
     }
     delete [] xiArr;
     delete [] FuncArr;
@@ -179,13 +180,13 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     real_t dist2 = 0; // contribution to exponent from negative pitch
 
     if (xi0>xiT)
-        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi0,1.0,xiSplineAcc[ir],&dist1);
+        dist1 = gsl_spline_eval_integ(xi0OverXiSpline[ir],xi0,1.0,xiSplineAcc[ir]);
     else 
         dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,&dist1)
     
     if(xi0<-xiT) // add [xi0, -xiT] part but mirror the interval: spline is 
                  // only defined for positive pitch since it's symmetric
-        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir],&dist2);
+        dist2 = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir]);
     
     return exp(-A*(dist1+dist2));
 }
@@ -223,6 +224,13 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
 real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *, real_t *){
     // implement avalanche distribution
     real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+	return evaluateEnergyDistributionWithE(ir, p, Eterm);
+}
+
+real_t AnalyticDistributionRE::evaluateEnergyDistributionWithE(
+	len_t ir, real_t p, real_t Eterm,
+	real_t*, real_t*
+) {
     real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
     real_t Eceff = REFluid->GetEffectiveCriticalField(ir);
     real_t GammaAva = REFluid->GetAvalancheGrowthRate(ir);
@@ -265,6 +273,16 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
     return D;
 }
 
+real_t AnalyticDistributionRE::evaluatePitchDistributionWithE(
+    len_t ir, real_t xi0, real_t p, real_t E,
+    real_t * /*dfdxi0*/, real_t * /*dfdp*/, real_t * /*dfdr*/
+    /*, real_t *dfdA */
+) {
+	real_t A = GetAatP(ir, p, this->collSettings, &E);
+	real_t D = evaluatePitchDistributionFromA(ir, xi0, A) * rGrid->GetVpVol(ir) / EvaluateVpREAtA(ir, A);
+	return D;
+}
+
 /**
  * Evaluates the pitch distribution width parameter 'A'
  */
@@ -274,6 +292,17 @@ real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::col
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(rGrid->GetFSA_B2(ir)); 
     real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);    
     return 2*E/pNuD;
+}
+
+/**
+ * Evaluate the full distribution function at the given electric field strength.
+ */
+real_t AnalyticDistributionRE::evaluateFullDistributionWithE(
+	len_t ir, real_t xi0, real_t p, real_t E,
+	real_t *dfdxi0, real_t *dfdp, real_t *dfdr
+) {
+	return evaluateEnergyDistribution(ir, p, dfdp, dfdr) *
+		evaluatePitchDistributionWithE(ir, xi0, p, E, dfdxi0, dfdp, dfdr);
 }
 
 /**

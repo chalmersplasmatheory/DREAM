@@ -4,10 +4,15 @@
 
 #include "DREAM/Equations/Fluid/HeatTransportDiffusion.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
+#include "DREAM/Equations/Fluid/HeatTransportRRAdaptiveMHDLike.hpp"
+#include "DREAM/Equations/Fluid/RunawayTransportRechesterRosenbluth.hpp"
+#include "DREAM/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
+#include "DREAM/Equations/FrozenCurrentCoefficient.hpp"
+#include "DREAM/Equations/FrozenCurrentTransport.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -23,6 +28,13 @@ using namespace std;
 void SimulationGenerator::DefineOptions_Transport(
     const string& mod, Settings *s, bool kinetic, const string& subname
 ) {
+	// Transport type
+	s->DefineSetting(
+		mod + "/" + subname + "/type",
+		"Type of transport to apply.",
+		(int_t)OptionConstants::EQTERM_TRANSPORT_NONE
+	);
+
     // Advection
     if (kinetic)
         DefineDataTR2P(mod + "/" + subname, s, "ar");
@@ -44,12 +56,51 @@ void SimulationGenerator::DefineOptions_Transport(
         "Which parameter (time or plasma current) to use in the 1D interpolation.",
                      (int_t) OptionConstants::svensson_interp1d_param::SVENSSON_INTERP1D_TIME);
     
-
     // Boundary condition
     s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
 
     // Rechester-Rosenbluth diffusion
     DefineDataRT(mod + "/" + subname, s, "dBB");
+
+	// Adaptive MHD-like transport options
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_dBB0",
+		"Magnetic perturbation for adaptive MHD-like Rechester-Rosenbluth transport.",
+		(real_t)0.0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_grad_j_tot_max",
+		"Maximum current density gradient prior to activation of hyperresistive term",
+		(real_t)0.0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_gradient_normalized",
+		"Flag indicating whether or not 'mhdlike_grad_j_tot_max' is normalized to the average j_tot",
+		(bool)false
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/mhdlike_suppression_level",
+		"Fraction of the maximum current density gradient below which the adaptive transport should be disabled",
+		(real_t)0.9
+	);
+
+	// Frozen current mode
+	s->DefineSetting(
+		mod + "/" + subname + "/frozen_current_mode",
+		"Type of transport operator to use in the frozen current mode.",
+		(int_t)OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_DISABLED
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/D_I_min",
+		"Minimum value allowed for frozen current diffusion coefficient.",
+		(real_t)0
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/D_I_max",
+		"Maximum value allowed for frozen current diffusion coefficient.",
+		(real_t)1000
+	);
+	DefineDataT(mod + "/" + subname, s, "I_p_presc");
 }
 
 /**
@@ -166,6 +217,49 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
 }
 
 /**
+ * Construct the equation for the frozen current coefficient 'D_I'.
+ */
+void SimulationGenerator::ConstructEquation_D_I(
+	EquationSystem *eqsys, Settings *s, const string& path
+) {
+	if (eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_D_I))
+		return;
+
+	// Define unknown quantity
+	eqsys->SetUnknown(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I_DESC,
+		eqsys->GetScalarGrid()
+	);
+
+	FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
+	FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+
+	FVM::Interpolator1D *I_p_presc = LoadDataT(path, s, "I_p_presc");
+	real_t D_I_min = s->GetReal(path + "/D_I_min");
+	real_t D_I_max = s->GetReal(path + "/D_I_max");
+
+	FVM::Operator *eqn = new FVM::Operator(scalarGrid);
+	FrozenCurrentCoefficient *fcc =
+		new FrozenCurrentCoefficient(
+			scalarGrid, fluidGrid, I_p_presc, eqsys->GetUnknownHandler(),
+			D_I_min, D_I_max
+		);
+	eqn->AddTerm(fcc);
+
+	eqsys->SetOperator(
+		OptionConstants::UQTY_D_I,
+		OptionConstants::UQTY_D_I,
+		eqn,
+		"I_p = I_p_presc",
+		true	// Solved externally
+	);
+
+	real_t v = 0;
+	eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_D_I), &v);
+}
+
+/**
  * Construct the transport term(s) to add to the given operator.
  *
  * oprtr:        Operator to add the transport term to.
@@ -216,6 +310,8 @@ bool SimulationGenerator::ConstructTransportTerm(
         return (c!=nullptr);
     };
 
+	enum OptionConstants::eqterm_transport_type type =
+		(enum OptionConstants::eqterm_transport_type)s->GetInteger(path + "/type");
     enum OptionConstants::eqterm_transport_bc bc =
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
@@ -283,12 +379,6 @@ bool SimulationGenerator::ConstructTransportTerm(
                 "Rechester-Rosenbluth transport applied alongside other transport model."
             );
 
-        if (!kinetic && !heat)
-            throw SettingsException(
-                "%s: Rechester-Rosenbluth diffusion can only be applied to kinetic quantities and heat.",
-                path.c_str()
-            );
-
         hasNonTrivialTransport = true;
 
         FVM::Interpolator1D *dBB = LoadDataRT_intp(
@@ -297,21 +387,28 @@ bool SimulationGenerator::ConstructTransportTerm(
         );
 
         FVM::DiffusionTerm *dt;
-        if (not heat) { // Particle transport
+        if (kinetic) { // Particle transport
             RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
                 grid, momtype, dBB
             );
             oprtr->AddTerm(rrt);
 
             dt = rrt;
-        } else {
+        } else if (heat) {	// Heat transport
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
-                grid, momtype, dBB, eqsys->GetUnknownHandler()
+                grid, dBB, eqsys->GetUnknownHandler()
             );
             oprtr->AddTerm(htrr);
 
             dt = htrr;
-        }
+        } else {	// Fluid transport
+			RunawayTransportRechesterRosenbluth *rtrr = new RunawayTransportRechesterRosenbluth(
+				grid, dBB
+			);
+			oprtr->AddTerm(rtrr);
+
+			dt = rtrr;
+		}
 
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
@@ -323,6 +420,68 @@ bool SimulationGenerator::ConstructTransportTerm(
         if (diffusive_bc != nullptr)
             *diffusive_bc = dbc;
     }
+
+	// MHD-like Rechester-Rosenbluth heat transport
+	if (
+		type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE ||
+		type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE_LOCAL
+	) {
+        if (hasNonTrivialTransport)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_INCOMPATIBLE_TRANSPORT,
+                "Rechester-Rosenbluth transport applied alongside other transport model."
+            );
+
+		real_t dBB0 = s->GetReal(mod + "/" + subname + "/mhdlike_dBB0");
+		real_t grad_j_tot_max = s->GetReal(mod + "/" + subname + "/mhdlike_grad_j_tot_max");
+		bool gradient_normalized = s->GetBool(mod + "/" + subname + "/mhdlike_gradient_normalized");
+		real_t suppression_level = s->GetReal(mod + "/" + subname + "/mhdlike_suppression_level");
+		bool localized = (type == OptionConstants::EQTERM_TRANSPORT_MHD_LIKE_LOCAL);
+
+        if (heat) {
+			hasNonTrivialTransport = true;
+
+			HeatTransportRRAdaptiveMHDLike *hrr = new HeatTransportRRAdaptiveMHDLike(
+				grid, eqsys->GetUnknownHandler(),
+				grad_j_tot_max, gradient_normalized,
+				dBB0, suppression_level, localized
+			);
+
+			oprtr->AddTerm(hrr);
+
+			// Add boundary condition...
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, hrr, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
+		} else if (!kinetic) {
+			hasNonTrivialTransport = true;
+
+			RunawayTransportRRAdaptiveMHDLike *rrr = new RunawayTransportRRAdaptiveMHDLike(
+				grid, eqsys->GetUnknownHandler(),
+				grad_j_tot_max, gradient_normalized,
+				dBB0, suppression_level, localized
+			);
+			oprtr->AddTerm(rrr);
+
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, rrr, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
+		} else
+            throw SettingsException(
+                "%s: Adaptive Rechester-Rosenbluth diffusion can only be applied to heat.",
+                path.c_str()
+            );
+	}
 
     bool hasSvenssonA = false;
     if (hasCoeff("s_ar", 4)) {
@@ -338,9 +497,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
-        ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-            bc, tt, oprtr, path, grid
+		TransportAdvectiveBC *abc =
+			ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+				bc, tt, oprtr, path, grid
             );
+
+        // Store B.C. for OtherQuantityHandler
+        if (advective_bc != nullptr)
+            *advective_bc = abc;
     }
     
     if (hasCoeff("s_drr", 4)) {
@@ -361,20 +525,84 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt_ar);
 
         // Add boundary condition...
-        ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-            bc, tt_drr, oprtr, path, grid
-            );
+        TransportDiffusiveBC *dbc =
+			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+				bc, tt_drr, oprtr, path, grid
+			);
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
+
         if ( not hasSvenssonA ){
             // Add boundary condition...
-            ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-                bc, tt_ar, oprtr, path, grid
+			TransportAdvectiveBC *abc =
+				ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+					bc, tt_ar, oprtr, path, grid
                 );
+
+			// Store B.C. for OtherQuantityHandler
+			if (advective_bc != nullptr)
+				*advective_bc = abc;
         }
     }
 
-    
+	// Frozen current mode?
+	if (
+		s->GetInteger(path + "/frozen_current_mode", false) !=
+		OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_DISABLED
+	) {
+		enum OptionConstants::eqterm_frozen_current_mode mode =
+			(enum OptionConstants::eqterm_frozen_current_mode)
+				s->GetInteger(path + "/frozen_current_mode");
+
+		enum FrozenCurrentTransport::TransportMode ts;
+		switch (mode) {
+			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_CONSTANT:
+				ts = FrozenCurrentTransport::TRANSPORT_MODE_CONSTANT;
+				break;
+
+			case OptionConstants::eqterm_frozen_current_mode::EQTERM_FROZEN_CURRENT_MODE_BETAPAR:
+				ts = FrozenCurrentTransport::TRANSPORT_MODE_BETAPAR;
+				break;
+
+			default:
+				throw SettingsException(
+					"Frozen current transport: Unrecognized transport mode: %d.",
+					mode
+				);
+		}
+
+		// Add D_I to system of equations
+		ConstructEquation_D_I(eqsys, s, path);
+
+		// Add transport operator
+		if (!heat) {
+			FrozenCurrentTransport *fct = new FrozenCurrentTransport(
+				grid, eqsys->GetUnknownHandler(), ts
+			);
+			oprtr->AddTerm(fct);
+
+			// Add boundary condition
+			TransportDiffusiveBC *dbc =
+				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+					bc, fct, oprtr, path, grid
+				);
+
+			// Store B.C. for OtherQuantityHandler
+			if (diffusive_bc != nullptr)
+				*diffusive_bc = dbc;
+		} else {
+			// TODO Heat transport
+			throw SettingsException(
+				"Heat transport in frozen current mode not yet implemented."
+			);
+		}
+	}
+            
     return hasNonTrivialTransport;
 }
+
 
 template<class T1, class T2>
 T1 *SimulationGenerator::ConstructTransportBoundaryCondition(

@@ -15,6 +15,7 @@ COLLFREQ_MODE_ULTRA_RELATIVISTIC = 3
 COLLFREQ_TYPE_COMPLETELY_SCREENED = 1
 COLLFREQ_TYPE_NON_SCREENED = 2
 COLLFREQ_TYPE_PARTIALLY_SCREENED = 3
+COLLFREQ_TYPE_WALKOWIAK = 4
 
 #NONLINEAR_MODE_NEGLECT = 1
 #NONLINEAR_MODE_NON_REL_ISOTROPIC = 2
@@ -53,11 +54,16 @@ class CollisionHandler:
         """
         Load settings from dictionary.
         """
-        self.bremsstrahlung_mode = data['bremsstrahlung_mode']
-        self.collfreq_mode = data['collfreq_mode']
-        self.collfreq_type = data['collfreq_type']
-        self.lnlambda = data['lnlambda']
-        self.pstar_mode = data['pstar_mode']
+        if 'bremsstrahlung_mode' in data:
+            self.bremsstrahlung_mode = data['bremsstrahlung_mode']
+        if 'collfreq_mode' in data:
+            self.collfreq_mode = data['collfreq_mode']
+        if 'collfreq_type' in data:
+            self.collfreq_type = data['collfreq_type']
+        if 'lnlambda' in data:
+            self.lnlambda = data['lnlambda']
+        if 'pstar_mode' in data:
+            self.pstar_mode = data['pstar_mode']
         if 'screened_diffusion_mode' in data:
             self.screened_diffusion = data['screened_diffusion_mode']
 

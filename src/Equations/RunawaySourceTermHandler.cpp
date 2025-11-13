@@ -23,9 +23,9 @@ RunawaySourceTermHandler::RunawaySourceTermHandler() { }
  * Destructor.
  */
 RunawaySourceTermHandler::~RunawaySourceTermHandler() {
-    this->applyToAll([](FVM::EquationTerm *eqterm) {
+    /*this->applyToAll([](FVM::EquationTerm *eqterm) {
         delete eqterm;
-    });
+    });*/
 }
 
 /**
@@ -41,6 +41,8 @@ void RunawaySourceTermHandler::applyToAll(std::function<void(FVM::EquationTerm*)
         op(this->dreicer);
     if (this->hottail != nullptr)
         op(this->hottail);
+    if (this->lcfs_loss != nullptr)
+        op(this->lcfs_loss);
     if (!this->tritium.empty()) {
         for (auto t : this->tritium)
             op(t);
@@ -55,6 +57,8 @@ void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::Equation
         op(this->dreicer);
     if (this->hottail != nullptr)
         op(this->hottail);
+    if (this->lcfs_loss != nullptr)
+        op(this->lcfs_loss);
     if (!this->tritium.empty()) {
         for (auto t : this->tritium)
             op(t);
@@ -64,13 +68,14 @@ void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::Equation
 /**
  * Add the available source terms to the given operators.
  *
- * op_nRE:  Operator operating on n_re (runaway electron density).
- * op_nTot: Operator operating on n_tot (total electron density).
- * op_ni:   Operator operating on n_i (ions).
+ * op_nRE:     Operator operating on n_re (runaway electron density).
+ * op_nTot:    Operator operating on n_tot (total electron density).
+ * op_ni:      Operator operating on n_i (ions).
+ * op_nRE_neg: Operator operating on n_re_neg (density of runaways travelling in the xi0<0 direction).
  */
 void RunawaySourceTermHandler::AddToOperators(
     FVM::Operator *op_nRE, FVM::Operator *op_nTot,
-    FVM::Operator *op_ni
+    FVM::Operator *op_ni, FVM::Operator *op_nRE_neg
 ) {
     // n_re
     if (this->avalanche != nullptr) {
@@ -81,6 +86,14 @@ void RunawaySourceTermHandler::AddToOperators(
             );
         else
             op_nRE->AddTerm(this->avalanche);
+
+        if (op_nRE_neg != nullptr &&
+            this->avalanche_neg != nullptr &&
+            this->avalanche_negpos != nullptr) {
+            
+            op_nRE_neg->AddTerm(this->avalanche_neg);
+            op_nRE_neg->AddTerm(this->avalanche_negpos);
+        }
     }
     if (this->dreicer != nullptr) {
         if (op_nRE == nullptr)
@@ -99,6 +112,15 @@ void RunawaySourceTermHandler::AddToOperators(
             );
         else
             op_nRE->AddTerm(this->hottail);
+    }
+    if (this->lcfs_loss != nullptr) {
+        if (op_nRE == nullptr)
+            throw DREAMException(
+                "RunawaySourceTermHandler: LCFS loss term enabled, but no operator "
+                "for n_re provided."
+            );
+        else
+            op_nRE->AddTerm(this->lcfs_loss);
     }
 
     // n_tot

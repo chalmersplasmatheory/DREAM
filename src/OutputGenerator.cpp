@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/OutputGenerator.hpp"
+#include "DREAM/Settings/Settings.hpp"
 
 
 using namespace DREAM;
@@ -12,11 +13,12 @@ using namespace DREAM;
  * Constructor.
  */
 OutputGenerator::OutputGenerator(
-	EquationSystem *eqsys
+	EquationSystem *eqsys, bool savesettings
 ) : scalarGrid(eqsys->GetScalarGrid()), fluidGrid(eqsys->GetFluidGrid()),
     hottailGrid(eqsys->GetHotTailGrid()), runawayGrid(eqsys->GetRunawayGrid()),
     unknowns(eqsys->GetUnknownHandler()), ions(eqsys->GetIonHandler()),
-    oqty(eqsys->GetOtherQuantityHandler()), eqsys(eqsys) { }
+    oqty(eqsys->GetOtherQuantityHandler()), eqsys(eqsys),
+    savesettings(savesettings) { }
 
 OutputGenerator::~OutputGenerator() {}
 
@@ -27,16 +29,18 @@ OutputGenerator::~OutputGenerator() {}
  *          iteration or time step.
  */
 void OutputGenerator::Save(bool current) {
-    // TODO Save settings
-
     // Save grids
     this->SaveGrids("grid", current);
-    
+
     // Save unknowns
     this->SaveUnknowns("eqsys", current);
 
     // Save ion metadata
     this->SaveIonMetaData("ionmeta");
+
+    // Save settings
+    if (this->savesettings)
+        this->SaveSettings("settings");
 
     // Save solver statistics
     this->SaveSolverData("solver");
@@ -47,5 +51,8 @@ void OutputGenerator::Save(bool current) {
     // Save "other" quantities (if any)
     if (oqty->GetNRegistered() > 0 && !current)
         this->SaveOtherQuantities("other");
+	
+	// Save information about the code
+	this->SaveCodeInfo("code");
 }
 

@@ -61,7 +61,7 @@ void SimulationGenerator::ConstructEquation_Ion_Ni(EquationSystem *eqsys, Settin
     // we will load initial values for Ni from settings, and then n_i will be 
     // initialized from those, somehow (probably by evaluating the corresponding
     // equation for the steady state charge distribution).
-    len_t nr = fluidGrid->GetNr();
+    /*len_t nr = fluidGrid->GetNr();
     const real_t *ni = eqsys->GetUnknownHandler()->GetUnknownInitialData(id_ni);
     real_t *Ni0 = new real_t[nZ*nr];
     for(len_t iz=0; iz<nZ; iz++)
@@ -72,7 +72,28 @@ void SimulationGenerator::ConstructEquation_Ion_Ni(EquationSystem *eqsys, Settin
                 Ni0[iz*nr+ir] += ni[indZ*nr+ir];
             }
         }
+	*/
 
-    eqsys->SetInitialValue(id_Ni, Ni0);
+	std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_Ni =
+		[fluidGrid,id_ni,nZ,ih](FVM::UnknownQuantityHandler *u, real_t *Ni) {
+		len_t nr = fluidGrid->GetNr();
+		const real_t *ni = u->GetUnknownInitialData(id_ni);
+		for(len_t iz=0; iz<nZ; iz++)
+			for(len_t ir=0; ir<nr; ir++){
+				Ni[iz*nr+ir] = 0;
+				for(len_t Z0=0; Z0<=ih->GetZ(iz); Z0++){
+					len_t indZ = ih->GetIndex(iz,Z0);
+					Ni[iz*nr+ir] += ni[indZ*nr+ir];
+				}
+			}
+	};
+
+    //eqsys->SetInitialValue(id_Ni, Ni0);
+	eqsys->initializer->AddRule(
+		id_Ni,
+		EqsysInitializer::INITRULE_EVAL_FUNCTION,
+		initfunc_Ni,
+		id_ni
+	);
     delete [] types;
 }

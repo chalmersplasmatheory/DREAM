@@ -31,7 +31,7 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
  */
 RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
+    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, bool extrapolateDreicer,
     CoulombLogarithm *lnLei, IonHandler *ions, AnalyticDistributionRE *distRE,
     CollisionQuantity::collqty_settings *cqsetForPc,
     CollisionQuantity::collqty_settings *cqsetForEc,
@@ -40,13 +40,16 @@ RunawayFluid::RunawayFluid(
     OptionConstants::collqty_Eceff_mode Eceff_mode,
     OptionConstants::eqterm_avalanche_mode ava_mode,
     OptionConstants::eqterm_compton_mode compton_mode,
-    real_t compton_photon_flux
-) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), analyticRE(distRE), 
+    FVM::Interpolator1D *compton_photon_flux, 
+    real_t integratedComptonSpectrum, real_t C1_Compton, real_t C2_Compton, real_t C3_Compton
+) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), extrapolateDreicer(extrapolateDreicer),
+    lnLambdaEI(lnLei), unknowns(u), ions(ions), analyticRE(distRE), 
     collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
     cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
-    ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
- {
+    ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux),
+    integratedComptonSpectrum(integratedComptonSpectrum), 
+    C1_Compton(C1_Compton), C2_Compton(C2_Compton), C3_Compton(C3_Compton)
+{
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
 
@@ -120,6 +123,18 @@ RunawayFluid::~RunawayFluid(){
         delete dreicer_ConnorHastie;
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
+	
+	if (this->nuS != nullptr)
+		delete this->nuS;
+	if (this->nuD != nullptr)
+		delete this->nuD;
+	if (this->lnLambdaEE != nullptr)
+		delete this->lnLambdaEE;
+	if (this->lnLambdaEI != nullptr)
+		delete this->lnLambdaEI;
+	
+	if (this->compton_photon_flux != nullptr)
+		delete this->compton_photon_flux;
 
     delete effectiveCriticalFieldObject;
 
@@ -133,7 +148,7 @@ RunawayFluid::~RunawayFluid(){
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
  */
-void RunawayFluid::Rebuild(){
+void RunawayFluid::Rebuild(const real_t t){
     this->timeKeeper->StartTimer(timerTot);
 
     // Macro for running accumulating timers
@@ -164,7 +179,7 @@ void RunawayFluid::Rebuild(){
     TIME(Derived, CalculateDerivedQuantities());
     TIME(EcEff, effectiveCriticalFieldObject->CalculateEffectiveCriticalField(Ec_tot, Ec_free,effectiveCriticalField));
     TIME(PCrit, CalculateCriticalMomentum());
-    TIME(Growthrates, CalculateGrowthRates());
+    TIME(Growthrates, CalculateGrowthRates(t));
 
     this->timeKeeper->StopTimer(timerTot);
 }
@@ -328,7 +343,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  * the critical runaway momentum, which has been generalized to account for 
  * arbitrary inhomogeneous magnetic fields, see DREAM/doc/notes/theory.
  */
-void RunawayFluid::CalculateGrowthRates(){
+void RunawayFluid::CalculateGrowthRates(const real_t t){
     real_t *E      = unknowns->GetUnknownData(id_Eterm);
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
     real_t *n_tot  = unknowns->GetUnknownData(id_ntot); 
@@ -337,9 +352,12 @@ void RunawayFluid::CalculateGrowthRates(){
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
         real_t pc = criticalREMomentum[ir]; 
+		real_t cmptnFlux = 0;
+		if (compton_photon_flux != nullptr)
+			cmptnFlux = compton_photon_flux->Eval(t)[0];
         tritiumRate[ir] = evaluateTritiumRate(pc);
-        comptonRate[ir] = evaluateComptonRate(pc, compton_photon_flux, gsl_ad_w);
-        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,compton_photon_flux, gsl_ad_w);
+        comptonRate[ir] = evaluateComptonRate(pc, cmptnFlux, integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton, gsl_ad_w);
+        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc, cmptnFlux, integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton, gsl_ad_w);
 
         // Dreicer runaway rate
         bool nnapp = false;
@@ -419,27 +437,29 @@ real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
         * pc/gamma_c;                                       // dWc/dpc                                
 }
 
-// Integral of the photon flux spectrum over all Eg (in units of mc2).
-const real_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844;
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
  */
-real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux){
-    real_t z = (1.2 + log(Eg * Constants::mc2inEV/1e6) ) / 0.8;
-    return photonFlux * exp( - exp(-z) - z + 1 ) / NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM;
+real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3){
+    real_t z = (C1 + log(Eg * Constants::mc2inEV/1e6) ) / C2 + C3 * (Eg * Constants::mc2inEV/1e6) * (Eg * Constants::mc2inEV/1e6);
+    return photonFlux * exp( - exp(-z) - z + 1 ) / integratedComptonSpectrum;
 }
 
 /**
  * Returns the integrand appearing in the evaluation of the total production rate integral (flux density x cross section ) 
  */
-struct ComptonParam {real_t pc; real_t photonFlux;};
+struct ComptonParam {real_t pc; real_t photonFlux; real_t intConst; real_t c1; real_t c2; real_t c3;};
 real_t ComptonIntegrandFunc(real_t Eg, void *par){
     struct ComptonParam *params = (struct ComptonParam *) par;
     
     real_t pc = params->pc;
     real_t photonFlux = params->photonFlux;
+    real_t integratedComptonSpectrum = params->intConst;
+    real_t C1 = params->c1;
+    real_t C2 = params->c2;
+    real_t C3 = params->c3;
 
-    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg, photonFlux) * RunawayFluid::evaluateComptonTotalCrossSectionAtP(Eg,pc);
+    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg, photonFlux, integratedComptonSpectrum, C1, C2, C3) * RunawayFluid::evaluateComptonTotalCrossSectionAtP(Eg,pc);
 }
 
 /**
@@ -451,20 +471,24 @@ real_t DComptonDpcIntegrandFunc(real_t Eg, void *par){
     
     real_t pc = params->pc;
     real_t photonFlux = params->photonFlux;
+    real_t integratedComptonSpectrum = params->intConst;
+    real_t C1 = params->c1;
+    real_t C2 = params->c2;
+    real_t C3 = params->c3;
 
-    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg, photonFlux) * RunawayFluid::evaluateDSigmaComptonDpcAtP(Eg,pc);
+    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg, photonFlux, integratedComptonSpectrum, C1, C2, C3) * RunawayFluid::evaluateDSigmaComptonDpcAtP(Eg,pc);
 }
 
 /**
  * Returns the runaway rate due to Compton scattering on gamma rays. The net runaway rate
  * dnRE/dt is obtained after multiplication by the total electron density n_tot.
  */
-real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w){
+real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, gsl_integration_workspace *gsl_ad_w){
     if(isinf(pc))
         return 0;
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammacMinusOne = pc*pc/(gamma_c+1); // = gamma_c-1
-    struct ComptonParam  params= {pc, photonFlux};
+    struct ComptonParam  params= {pc, photonFlux, integratedComptonSpectrum, C1, C2, C3};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(ComptonIntegrandFunc);
     ComptonFunc.params = &params;
@@ -481,12 +505,12 @@ real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integ
 /**
  * Returns the derivative of the runaway rate due to Compton scattering on gamma rays w r t pc (factor n_tot NOT included). 
  */
-real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, gsl_integration_workspace *gsl_ad_w){
+real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, gsl_integration_workspace *gsl_ad_w){
     if(isinf(pc))
         return 0;
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammacMinusOne = pc*pc/(gamma_c+1); // = gamma_c-1
-    struct ComptonParam  params = {pc, photonFlux};
+    struct ComptonParam  params = {pc, photonFlux, integratedComptonSpectrum, C1, C2, C3};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(DComptonDpcIntegrandFunc);
     ComptonFunc.params = &params;
@@ -627,6 +651,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
             criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
+
+		// Store effective critical momentum
+		this->pStar[ir] = pStar;
+		// Store product of collision frequencies
+		this->nusnuDatPStar[ir] = nuSnuDTerm;
     }
 }
     
@@ -655,13 +684,15 @@ void RunawayFluid::AllocateQuantities(){
     tauEETh  = new real_t[nr];
     EDreic   = new real_t[nr];
 
-    effectiveCriticalField  = new real_t[nr]; 
-    criticalREMomentum      = new real_t[nr];
-    criticalREMomentumInvSq = new real_t[nr];
-    pc_COMPLETESCREENING    = new real_t[nr];
-    pc_NOSCREENING          = new real_t[nr];
-    avalancheGrowthRate     = new real_t[nr];
-    dreicerRunawayRate      = new real_t[nr];
+    effectiveCriticalField    = new real_t[nr]; 
+    criticalREMomentum        = new real_t[nr];
+    criticalREMomentumInvSq   = new real_t[nr];
+    pc_COMPLETESCREENING      = new real_t[nr];
+    pc_NOSCREENING            = new real_t[nr];
+    avalancheGrowthRate       = new real_t[nr];
+    dreicerRunawayRate        = new real_t[nr];
+	pStar                     = new real_t[nr];
+	nusnuDatPStar             = new real_t[nr];
 
     tritiumRate = new real_t[nr];
     comptonRate = new real_t[nr];
@@ -691,6 +722,8 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
+		delete [] pStar;
+		delete [] nusnuDatPStar;
     }
 }
 
@@ -750,6 +783,9 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         real_t lnLee = 31.3 - log(sqrt(ncold)/Tcold);
         real_t nuEStar = 6.921e-18*ncold*lnLee*Zeff * qR0/(eps*sqrt(eps) * Tcold*Tcold);
 
+        if (Zeff < 1)
+            Zeff = 1;
+
         // SAUTER MODEL: X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
         X /= 1 + 0.25*(1.0 - 0.7*ft)*sqrt(nuEStar)*(1+0.45*sqrt(Zeff-1)) 
             + 0.61*(1.0 - 0.41*ft) * nuEStar/sqrt(Zeff);
@@ -808,7 +844,7 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
         real_t h = 1e-6*Zeff;
         real_t sigma = evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless);
         real_t dsigma = Z0/nfree * (Z0 - nZ0Z0/nfree) * ( -sigma
-            + evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless) ) / h;
+            + evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff-h,ncold[ir],collisionless) ) / (2*h);
         real_t lnLT = lnLambdaEE->evaluateLnLambdaT(Tcold[ir],nfree);
         dsigma -= sigma/lnLT *  Z0/nfree; // d/dni lnLambda
         return dsigma;

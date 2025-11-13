@@ -1,10 +1,13 @@
 *.h5
+*.swp
+.cache
 .gdb_history
 .vscode
 __pycache__
 \#*\#
 build
 build-*.sh
+.cache
 doc/*/*.aux
 doc/*/*.bcf
 doc/*/*.blg
@@ -25,8 +28,11 @@ doc/*/*/*.pdf
 doc/*/*/*.run.xml
 doc/*/*/*.snm
 doc/*/*/*.toc
+doc/notes/pdf
 doc/sphinx/build
 petsc_matrix
 petsc_matrix.info
 src/Atomics/adasdata.cpp
 tools/cache
+*.CDF
+*.cdf

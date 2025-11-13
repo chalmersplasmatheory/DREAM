@@ -72,6 +72,7 @@ namespace DREAM::FVM {
             BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1},
             BA_PARAM_B_CUBED[5] = {0,3,0,0,1},
             BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};
+        
 
 	private:
         // Flux-surface averaged quantities.
@@ -215,8 +216,8 @@ namespace DREAM::FVM {
             this->VpVol_f = VpVol_f;
         }
 
-        void GetRThetaFromCartesian(real_t *r, real_t *theta, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaFromCartesian(r,theta,x,y,z,lengthScale, startingGuessR);}
-        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta){return this->generator->GetGradRCartesian(gradRCartesian,r,theta);}
+        void GetRThetaPhiFromCartesian(real_t *r, real_t *theta, real_t *phi, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaPhiFromCartesian(r,theta,phi,x,y,z,lengthScale, startingGuessR);}
+        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta, real_t phi){return this->generator->GetGradRCartesian(gradRCartesian,r,theta, phi);}
         real_t FindClosestApproach(real_t x1, real_t y1, real_t z1, real_t x2, real_t y2, real_t z2){
             return this->generator->FindClosestApproach(x1, y1, z1, x2, y2, z2);
         }
@@ -267,6 +268,20 @@ namespace DREAM::FVM {
         const real_t  GetDr_f(const len_t i) const { return this->dr_f[i]; }
         
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
+
+		// Routines used for saving equilibrium to output file
+		virtual const real_t GetZ0() { return this->generator->GetZ0(); }
+		virtual const len_t GetNPsi() { return this->generator->GetNPsi(); }
+		virtual const len_t GetNTheta() { return this->generator->GetNTheta(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0() { return this->generator->GetFluxSurfaceRMinusR0(); }
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() { return this->generator->GetFluxSurfaceRMinusR0_f(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
+		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
+        real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta);
+        real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta);
+        real_t ComputeConfigurationSpaceJacobian(len_t ir, real_t theta);
+
         
         /**
          * Returns q*R0 on the distribution grid where q 

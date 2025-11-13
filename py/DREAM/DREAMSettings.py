@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import os
 from . import DREAMIO as DREAMIO
+from . helpers import merge_dicts
 
 # Settings objects
 from .Settings.CollisionHandler import CollisionHandler
@@ -59,8 +60,25 @@ class DREAMSettings:
         if filename is not None:
             if type(filename) == str:
                 self.load(filename, path=path, lazy=False)
+            elif type(filename) == dict:
+                # We first generate an empty settings object so that we
+                # get all default values in a dict...
+                self.hottailgrid.setEnabled(False)
+                self.runawaygrid.setEnabled(False)
+                dct = self.todict(verify=False)
+                s = merge_dicts(dct, filename)
+
+                self.fromdict(s)
+
+                if chain:
+                    if 'output' in s and 'filename' in s['output']:
+                        self.fromOutput(s['output']['filename'])
+                        self.output.setFilename('output.h5')
+
+                        if not keepignore:
+                            self.clearIgnore()
             elif type(filename) == DREAMSettings:
-                self.fromdict(filename.todict())
+                self.fromdict(filename.todict(verify=False))
 
                 if chain:
                     self.fromOutput(filename.output.filename)
@@ -102,7 +120,14 @@ class DREAMSettings:
         sets  = list(self.settings.keys())
         other = ['init']
 
-        for key in data:
+        # Settings to remove first
+        special = ['hottailgrid', 'runawaygrid']
+
+        datakeys = list(data.keys())
+        for k in special:
+            datakeys.remove(k)
+
+        for key in special+datakeys:
             # Warn about unrecognized settings
             if key in sets:
                 # Remove from list of not-found settings
@@ -139,6 +164,14 @@ class DREAMSettings:
         simulation.
         """
         self.init['eqsysignore'] = []
+
+
+    def setIgnore(self, ignorelist):
+        """
+        Set the list of quantities to ignore when initializing from an output
+        file.
+        """
+        self.init['eqsysignore'] = ignorelist
 
 
     def fromOutput(self, filename, relpath=False, ignore=list(), timeindex=-1):
@@ -180,7 +213,12 @@ class DREAMSettings:
         the DREAMSettings object is stored.
         """
         data = DREAMIO.LoadHDF5AsDict(filename, path=path, lazy=lazy)
-        self.fromdict(data, filename=filename)
+
+        # Is this an output file (which contains a separate settings object)?
+        if 'settings' in data:
+            self.fromdict(data['settings'], filename=filename)
+        else:
+            self.fromdict(data, filename=filename)
 
 
     def save(self, filename):
@@ -211,7 +249,7 @@ class DREAMSettings:
 
         if 'timeindex' in self.init:
             data['init']['filetimeindex'] = self.init['timeindex']
-        if 'fromfile' in self.init:
+        if 'fromfile' in self.init and self.init['fromfile'] != '':
             data['init']['fromfile'] = self.init['fromfile']
 
         return data

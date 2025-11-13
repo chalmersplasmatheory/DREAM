@@ -441,6 +441,25 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
         FindBouncePoints(ir, Bmin, theta_Bmin, theta_Bmax, this, xi0, fluxGridType, &theta_b1, &theta_b2,gsl_fsolver,geometryIsSymmetric);
         if(theta_b1==theta_b2)
             return 0;
+
+		// Make sure that the angles are on the interval [theta_Bmax-2*pi,theta_Bmax]
+		if (theta_b1 > theta_Bmax)
+			theta_b1 -= 2*M_PI;
+		else if (theta_b1 < (theta_Bmax-2*M_PI))
+			theta_b1 += 2*M_PI;
+
+		if (theta_b2 > theta_Bmax)
+			theta_b2 -= 2*M_PI;
+		else if (theta_b2 < (theta_Bmax-2*M_PI))
+			theta_b2 += 2*M_PI;
+
+		// If necessary, swap the two angles so that the integration limits
+		// are given in ascending order.
+		if (theta_b1 > theta_b2) {
+			real_t t = theta_b1;
+			theta_b1 = theta_b2;
+			theta_b2 = t;
+		}
     } else { 
         F_eval = BA_FUNC_PASSING;
         theta_b1 = 0;
@@ -460,7 +479,10 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     real_t bounceIntegral, error; 
 
     real_t epsabs = 0, epsrel = 1e-3, lim = gsl_adaptive->limit; 
-    if(params.integrateQAWS)
+	// For xi0, theta_b1=theta_b2 and the integral goes to zero
+	if (theta_b1 == theta_b2)
+		bounceIntegral = 0;
+    else if(params.integrateQAWS)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     else
         gsl_integration_qag(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&bounceIntegral,&error);
@@ -786,3 +808,20 @@ real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, r
 
     return (partResult1+partResult2+partResult3)/dxi;
 }
+
+/**
+ * Print the variation of B(theta) to stdout.
+ */
+void FluxSurfaceAverager::PrintBOfTheta(const len_t ir, const len_t N, enum fluxGridType fgt) {
+	printf("B(theta) at ir = " LEN_T_PRINTF_FMT "\n", ir);
+	printf("theta = [%.12e", -M_PI);
+	for (len_t i = 1; i < N; i++)
+		printf(",%.12e", 2*M_PI * (i/((real_t)N)) - M_PI);
+	printf("]\n");
+		
+	printf("B     = [%.12e", BAtTheta(ir, -M_PI, fgt));
+	for (len_t i = 0; i < N; i++)
+		printf(",%.12e", BAtTheta(ir, 2*M_PI * (i/((real_t)N)) - M_PI, fgt));
+	printf("]\n");
+}
+

@@ -11,6 +11,9 @@ from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
 
+anim_contours = None
+
+
 class FluidQuantity(UnknownQuantity):
     
 
@@ -151,8 +154,18 @@ class FluidQuantity(UnknownQuantity):
         else:
             return self.data[t,r]
 
+
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        return 1
+
         
-    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, unit='s', **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
@@ -191,9 +204,11 @@ class FluidQuantity(UnknownQuantity):
             if log:
                 data = np.log10(np.abs(data))
 
-            cp = ax.contourf(self.radius, self.time, data, cmap='GeriMap', **kwargs)
+            time = self.time * self._getTimeUnitFactor(unit)
+
+            cp = ax.contourf(self.radius, time, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
-            ax.set_ylabel(r'Time $t$')
+            ax.set_ylabel(fr'Time $t$ ({unit})')
 
             cb = None
             if colorbar:
@@ -211,26 +226,20 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
         """
         Plot the radial profile of this quantity revolved over a 
         poloidal cross section at the specified time step. 
         NOTE: Currently assumes a cylindrical flux surface geometry!
         
-        :param matplotlib.pyplot.axis ax:   Matplotlib axes object to use for plotting.
-        :param bool show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
-        :param int t: Time index to plot
-        :param matplotlib.pyplot.colorbar colorbar: Specify wether or not to include a colorbar
-        :param bool displayGrid: Specify wether or not to display a polar grid in the plot
-        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the 
-                     maximum and minimum values of the data stored by this object
-                     over all time steps
+        :param matplotlib.pyplot.Axis ax:   Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to 'matplotlib.pyplot.show()' with 'block=False'. If 'None', this is interpreted as 'True' if 'ax' is also 'None'.
+        :param int t: Time index to plot.
+        :param matplotlib.pyplot.Colorbar colorbar: Specify wether or not to include a colorbar.
+        :param bool displayGrid: Specify wether or not to display a polar grid in the plot.
+        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the maximum and minimum values of the data stored by this object over all time steps.
 
-        :return: a matplotlib axis object and a colorbar object
-        (which may be 'None' if not used).
+        :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
         
         genax = ax is None
@@ -250,21 +259,34 @@ class FluidQuantity(UnknownQuantity):
                 show = True
                 
         theta=np.linspace(0,2*np.pi)
-        data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        if logscale:
+        	data_mat=np.log10(self.data[t,:])*np.ones((len(theta),len(self.grid.r)))
+        else:
+        	data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        	
         if maxMinScale:
-            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
+            if logscale:
+                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data))), **kwargs)
+            else:
+                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
         else:
             cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
 			
         cb = None
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
-            cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+            if logscale:
+                cb.ax.set_ylabel(r'$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
+            else:
+                cb.ax.set_ylabel('{}'.format(self.getTeXName()))
             
         if show:
             plt.show(block=False)
             
-        return ax, cb
+        if return_contours:
+            return ax, cb, cp
+        else:
+            return ax, cb
 
         
     def animatePoloidal(self, t=None, repeat=False, repeat_delay=None, speed=None, dpi=100, save=None,**kwargs):
@@ -279,19 +301,28 @@ class FluidQuantity(UnknownQuantity):
         :param float dpi: animation resolution
         :param str save: title of the file (if any) into which the animation is saved
         """
+        global anim_contours
         
         fig, ax=plt.subplots(1,1)
         
         if t is None:
             t=range(len(self.grid.t))
             
-        ax,cb=self.plotPoloidal(show=False,t=0,**kwargs)
+        ax, cb, anim_contours = self.plotPoloidal(show=False, t=0, return_contours=True, **kwargs)
         
         def update_ani(t, fq, ax):
-            ax.clear()
-            ax=fq.plotPoloidal(colorbar=False, show=False,t=t,**kwargs)
-        
+            global anim_contours
+
+            for c in anim_contours.collections:
+                c.remove()
+
+            anim_contours, cb = fq.plotPoloidal(ax=ax, show=False, t=t, colorbar=False, **kwargs)
+
+            return anim_contours
             
+        if speed is None:
+            speed = 50
+
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=t,
             repeat=repeat, repeat_delay=repeat_delay, interval=speed,
@@ -299,7 +330,7 @@ class FluidQuantity(UnknownQuantity):
         
         if save:
             # Make animation
-            writer = animation.FFMpegFileWriter(fps=fps)
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
             writer.setup(fig, save, dpi=dpi)
             ani.save(save, writer=writer)
             print("Done saving video to '{}'.".format(save))
@@ -343,9 +374,9 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data, **kwargs)
+                    ax.semilogy(self.radius, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--', **kwargs)
+                    ax.semilogy(self.radius, -data, '--', **kwargs)
             else:
                 ax.plot(self.radius, data, **kwargs)
 
@@ -421,7 +452,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None, **kwargs):
+    def plotIntegral(self, ax=None, show=None, unit='s', time_shift = 0, time_scale_factor = 1.0, w=1.0, time_derivative = False, log=False, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -436,14 +467,68 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.time, self.integral(), **kwargs)
-        ax.set_xlabel(r'Time $t$')
+        time = self.time * self._getTimeUnitFactor(unit)
+        time = time + time_shift
+        time = time*time_scale_factor
+
+        if time_derivative:
+            integrated_data = self.integral(w=w)
+            tm = time[1:-1]
+            v = (integrated_data[2:]-integrated_data[:-2])/((time[2:]-time[:-2])/time_scale_factor)
+        else:
+            tm = time
+            v = self.integral(w=w)
+
+        if log:
+            ax.semilogy(tm, v, **kwargs)
+        else:
+            ax.plot(tm, v, **kwargs)
+
+        ax.set_xlabel(fr'Time $t$ ({unit})')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 
         if show:
             plt.show(block=False)
 
         return ax
+
+
+    def lineIntegrated(self, t=None, x0=np.array([0,10,0]), n = np.array([0,-1,0]), lmax = 20, nl = 1000, normaliseToPathLength=False):
+        """
+        Evaluate the line integral of this fluid quantity along a specified line.
+        
+        :param t: Time steps to evaluate the line integrated density for. If ``None``, the line integral is calculated for all time steps. May be a slice
+        :param x0: Starting point for the line to integrate along, in cartesian coordinates centered at the magnetic axis at pho=0 (same coordinates as used to track the SPI shards). One probably wants to set this point outside the plasma (the integrand is set to zero outside the plasma).
+        :param n: Vector specifying the direction to integrate along
+        :param lmax: Length of the line to integrate over.
+        :param nl: number of points along the line used for the numerical integration
+        :param normaliseToPathLength: If ``True``, divide the integral by the length of the part of the line residing inside the plasma
+        """
+        if t is None:
+            t=slice(t)
+
+        # define line in Cartesian coordinates (SPI coordinates)
+        l = np.linspace(0,lmax,nl)
+        dl = l[1]-l[0]
+        x = x0[0] + n[0]*l
+        y = x0[1] + n[1]*l
+        z = x0[2] + n[2]*l
+
+        # get r coordinates for all points along the line
+        r, _, _ = self.output.grid.eq.getRThetaPhiFromCartesian(x,y,z)
+
+        # compute line-integral
+        lineIntegral = np.zeros((len(self.grid.t[t]),1))
+        for i in range(nl):
+            if r[i]<self.grid.a:
+                lineIntegral+=self.data.data[t, (r[i]>self.grid.r_f[:-1]) & (r[i]<self.grid.r_f[1:])]*dl
+        
+        # divide by path length?
+        if normaliseToPathLength:
+            L = np.max(l[r<self.grid.a]) - np.min(l[r<self.grid.a])
+            return lineIntegral / L
+        
+        return lineIntegral
 
 
     def dumps(self, r=None, t=None):
@@ -469,5 +554,19 @@ class FluidQuantity(UnknownQuantity):
             return self.grid.integrate(self.data[:], w)
         else:
             return self.grid.integrate(self.data[t,:], w)
+
+
+    def _getTimeUnitFactor(self, unit):
+        """
+        Converts a time unit given as a string to a numeric factor
+        for converting the 'grid.time' vector to the specified units
+        (i.e. from seconds).
+        """
+        if unit == 's': return 1
+        elif unit == 'ms': return 1e3
+        elif unit == 'µs': return 1e6
+        elif unit == 'ns': return 1e9
+        else:
+            raise ValueError(f"Unrecognized time unit: '{unit}'.")
         
 

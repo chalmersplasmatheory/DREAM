@@ -9,6 +9,7 @@ import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
+from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
 
 
 TYPE_CYLINDRICAL = 1
@@ -19,7 +20,7 @@ TYPE_NUMERICAL = 3
 FILE_FORMAT_LUKE = 1
 
 
-class RadialGrid:
+class RadialGrid(PrescribedScalarParameter):
     
 
     def __init__(self, ttype=1):
@@ -34,9 +35,10 @@ class RadialGrid:
         self.B0 = 0.0
         self.nr = int(0)
         self.r0 = 0.0
+        self.ntheta_out = 120
 
         # Analytic toroidal settings
-        self.R0 = 2.0
+        self.R0 = None
         self.ntheta = 20
         self.Delta = None       # Shafranov shift
         self.Delta_r = None
@@ -56,6 +58,9 @@ class RadialGrid:
         self.ripple_dB_B = None
         self.ripple_r = None
         self.ripple_t = None
+        # Time-varying magnetic field parameter
+        self.dlnB0dt_x = None
+        self.dlnB0dt_t = None
 
         # Numerical magnetic field parameters
         self.num_filename = None
@@ -63,7 +68,10 @@ class RadialGrid:
         self.num_magneticfield = None   # Magnetic field class parsing data
 
         # prescribed arbitrary grid
+        self.custom_grid = False
         self.r_f = None 
+
+
 
 
     #######################
@@ -83,9 +91,9 @@ class RadialGrid:
         if self.nr != 0 or self.a != 0 or self.r0 != 0:
             #raise EquationException("RadialGrid: Cannot assign custom grid points while prescribing 'nr', 'a' or 'r0'.")         
             print("*WARNING* RadialGrid: Prescibing custom radial grid overrides 'nr', 'a' and 'r0'.")
-            self.nr = int(0)
-            self.a  = 0.0
-            self.r0 = 0.0
+            self.nr = r_f.size - 1
+            self.a  = max(r_f)
+            self.r0 = min(r_f)
 
         if type(r_f)==list:
             r_f = np.array(r_f)
@@ -97,6 +105,7 @@ class RadialGrid:
         if np.min(r_f)<0:
             raise EquationException("RadialGrid: Custom grid points must be non-negative.")
         self.r_f = r_f
+        self.custom_grid = True
 
     def setB0(self, B0):
         """
@@ -119,6 +128,7 @@ class RadialGrid:
         if self.r_f is not None:
             print("*WARNING* RadialGrid: Prescibing 'Inner radius' r0 overrides the custom radial grid 'r_f'.")
             self.r_f = None
+            self.custom_grid = False
 
         self.r0 = r0
 
@@ -133,6 +143,7 @@ class RadialGrid:
         if self.r_f is not None:
             print("*WARNING* RadialGrid: Prescibing 'Minor radius' a overrides the custom radial grid 'r_f'.")
             self.r_f = None
+            self.custom_grid = False
 
         self.a = float(a)
 
@@ -164,6 +175,7 @@ class RadialGrid:
         if self.r_f is not None:
             print("*WARNING* RadialGrid: Prescibing 'Nr' overrides the custom radial grid 'r_f'.")
             self.r_f = None
+            self.custom_grid = False
             
         self.nr = int(nr)
 
@@ -178,6 +190,18 @@ class RadialGrid:
             raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}".format(ntheta))
 
         self.ntheta = ntheta
+
+
+    def setNthetaOut(self, ntheta):
+        """
+        (Cylindrical and analytic toroidal)
+        Set the number of poloidal grid points to use for the flux surfaces
+        which are saved to the output file.
+        """
+        if ntheta <= 0:
+            raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {ntheta}.")
+
+        self.ntheta_out = ntheta_out
 
 
     def setShapeParameter(self, name, data, r=0.0):
@@ -274,6 +298,20 @@ class RadialGrid:
         self.ripple_t = t
 
 
+    def setTimeVaryingB(self, dB0dt_B0, t=0):
+        """
+        Set the time-rate-of-change of the magnetic field strength (for the
+        approximate time varying B compression force operator). Note that the
+        specified parameter should be (1/B0)*(dB0/dt), where B0 is the on-axis
+        magnetic field strength and dB0/dt denotes the absolute
+        time-rate-of-change of B0.
+
+        :param dB0dt_B0: Normalized time-rate-of-change of the on-axis magnetic field strength.
+        :param t: Time vector corresponding to the given time-rate-of-change.
+        """
+        self.dlnB0dt_x, self.dlnB0dt_t = self._setScalarData(data=dB0dt_B0, times=t)
+
+
     def setNumerical(self, filename, format=FILE_FORMAT_LUKE):
         """
         Sets the numerical magnetic field to use for the simulation.
@@ -320,9 +358,20 @@ class RadialGrid:
             self.num_magneticfield.visualize(*args, ax=ax, show=show, **kwargs)
         else:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
+    
 
+    def getMajorRadius(self):
+        if self.type==TYPE_CYLINDRICAL:
+            return np.inf
+        elif self.type==TYPE_ANALYTIC_TOROIDAL:
+            return self.R0
+        elif self.type==TYPE_NUMERICAL:
+            return self.num_magneticfield.Rp
+        else: 
+            raise Exception('Unrecognized radial grid type')
         
-    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None):
+
+    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None, **kwargs):
         """
         Visualize an analytic toroidal magnetic field.
         """
@@ -373,18 +422,24 @@ class RadialGrid:
         kappa = lambda r : interppar(r, self.kappa_r, self.kappa)
 
         # Construct flux surfaces
-        R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        if np.isinf(self.R0):
+            R = lambda r, t : Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        else:
+            R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
         Z = lambda r, t : r*kappa(r)*np.sin(t)
 
         # Flux surfaces
-        ax.plot(R(rr, tt), Z(rr, tt), color=gray, linewidth=1)
+        ax.plot(R(rr, tt), Z(rr, tt), color=gray, linewidth=1, **kwargs)
         # Limiter
-        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), color=black, linewidth=2)
+        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), color=black, linewidth=2, **kwargs)
         # Wall
-        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2)
+        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), color=red, linewidth=2, **kwargs)
         ax.axis('equal')
 
-        ax.set_xlabel('Major radius $R$ (m)')
+        if np.isinf(self.R0):
+            ax.set_xlabel('Major radius $R-R_0$ (m)')
+        else:
+            ax.set_xlabel('Major radius $R$ (m)')
         ax.set_ylabel('Height $Z$ (m)')
 
         if show:
@@ -416,12 +471,20 @@ class RadialGrid:
             self.r0 = data['r0']
             if 'r_f' in data:
                 self.r_f = data['r_f']
+            if 'custom_grid' in data:
+                self.custom_grid = bool(data['custom_grid'])
 
         if self.type == TYPE_CYLINDRICAL:
             self.B0 = data['B0']
+
+            if 'ntheta_out' in data:
+                self.ntheta_out = data['ntheta_out']
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
             self.R0 = data['R0']
             self.ntheta = data['ntheta']
+
+            if 'ntheta_out' in data:
+                self.ntheta_out = data['ntheta_out']
 
             self.Delta = data['Delta']['x']
             self.Delta_r = data['Delta']['r']
@@ -439,6 +502,11 @@ class RadialGrid:
 
             if 'fileformat' in data:
                 self.num_fileformat = data['fileformat']
+                if self.num_fileformat == FILE_FORMAT_LUKE:
+                    try:
+                        self.num_magneticfield = LUKEMagneticField(self.num_filename)
+                    except:
+                        self.num_magneticfield = None
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -450,6 +518,10 @@ class RadialGrid:
             self.ripple_dB_B = data['ripple']['x']
             self.ripple_r = data['ripple']['r']
             self.ripple_t = data['ripple']['t']
+
+        if 'dlnB0dt' in data:
+            self.dlnB0dt_x = data['dlnB0dt']['x']
+            self.dlnB0dt_t = data['dlnB0dt']['t']
 
 
     def todict(self, verify=True):
@@ -470,12 +542,15 @@ class RadialGrid:
             data['wall_radius'] = self.b
             if self.r_f is not None:
                 data['r_f'] = self.r_f
+                data['custom_grid'] = int(self.custom_grid)
 
         if self.type == TYPE_CYLINDRICAL:
             data['B0'] = self.B0
+            data['ntheta_out'] = self.ntheta_out
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
             data['R0'] = self.R0
             data['ntheta'] = self.ntheta
+            data['ntheta_out'] = self.ntheta_out
 
             data['Delta']   = {'x': self.Delta, 'r': self.Delta_r}
             data['delta']   = {'x': self.delta, 'r': self.delta_r}
@@ -502,6 +577,12 @@ class RadialGrid:
                 't': self.ripple_t
             }
 
+        if self.dlnB0dt_x is not None:
+            data['dlnB0dt'] = {
+                'x': self.dlnB0dt_x,
+                't': self.dlnB0dt_t
+            }
+
         return data
         
             
@@ -526,12 +607,16 @@ class RadialGrid:
 
         if self.type == TYPE_CYLINDRICAL:
             if self.B0 is None or self.B0 <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to 'B0': {}".format(self.B0))
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'B0': {self.B0}")
+            elif self.ntheta_out <= 0:
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {self.ntheta_out}. Must be > 0.")
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
             if self.R0 is None or self.R0 <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to tokamak major radius 'R0': {}".format(self.R0))
+                raise DREAMException(f"RadialGrid: Invalid value assigned to tokamak major radius 'R0': {self.R0}")
             elif self.ntheta <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}. Must be > 0.".format(self.ntheta))
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta': {self.ntheta}. Must be > 0.")
+            elif self.ntheta_out <= 0:
+                raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {self.ntheta_out}. Must be > 0.")
 
             self.verifySettingsShapeParameter('Delta')
             self.verifySettingsShapeParameter('delta')
@@ -575,6 +660,7 @@ class RadialGrid:
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_t'.")
             elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_t.size, self.ripple_r.size):
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
+
         
     def verifySettingsShapeParameter(self, shapeparam):
         """

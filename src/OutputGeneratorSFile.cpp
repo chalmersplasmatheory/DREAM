@@ -3,8 +3,12 @@
  * SFile object.
  */
 
+#include <ctime>
 #include <string>
+#include <DREAM/IO.hpp>
 #include "DREAM/OutputGeneratorSFile.hpp"
+#include "DREAM/Settings/Settings.hpp"
+#include "DREAM/Settings/SFile.hpp"
 
 
 using namespace DREAM;
@@ -14,12 +18,14 @@ using namespace std;
  * Constructor.
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
-	EquationSystem *eqsys, const std::string& filename
-) : OutputGenerator(eqsys), filename(filename) {}
+	EquationSystem *eqsys, const std::string& filename,
+    bool savesettings
+) : OutputGenerator(eqsys, savesettings), filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
-	EquationSystem *eqsys, SFile *sf
-) : OutputGenerator(eqsys), sf(sf) {}
+	EquationSystem *eqsys, SFile *sf,
+    bool savesettings
+) : OutputGenerator(eqsys, savesettings), sf(sf) {}
 
 /**
  * Destructor.
@@ -42,7 +48,41 @@ void OutputGeneratorSFile::Save(bool current) {
     if (close) {
         this->sf->Close();
         delete this->sf;
+
+		IO::PrintInfo("Saved output file to '%s'.", this->filename.c_str());
     }
+}
+
+
+/**
+ * Save info about the code that generated the output file.
+ */
+void OutputGeneratorSFile::SaveCodeInfo(const std::string& name) {
+	this->sf->CreateStruct(name);
+
+	string group;
+	if (name.back() == '/')
+		group = name;
+	else
+		group = name + "/";
+	
+	// Commit hash
+	sf->WriteString(group + "commit", DREAM_GIT_SHA1);
+
+	// Refspec
+	sf->WriteString(group + "refspec", DREAM_GIT_REFSPEC);
+
+	// Status of changes
+	sf->WriteString(group + "changes", DREAM_GIT_HAS_CHANGES);
+
+	// Time of commit
+	sf->WriteString(group + "datetime_commit", DREAM_GIT_TIME);
+
+	// Current date and time
+	char ts[26];
+	time_t now = time({});
+	if (strftime(data(ts), 26, "%F %T %z", localtime(&now)))
+		sf->WriteString(group + "datetime_simulation", ts);
 }
 
 
@@ -82,6 +122,8 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     // Volume elements
     const real_t *VpVol = this->fluidGrid->GetVpVol();
     this->sf->WriteList(group + "VpVol", VpVol, nr);
+	const real_t *VpVol_f = this->fluidGrid->GetVpVol_f();
+	this->sf->WriteList(group + "VpVol_f", VpVol_f, nr+1);
 
     // Plasma size
     const real_t R0 = rgrid->GetR0();
@@ -114,7 +156,9 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
     this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
 
-
+	// Equilibrium data
+	this->sf->CreateStruct(group + "eq");
+	SaveEquilibrium(this->sf, group + "eq/");
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -127,6 +171,45 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
         this->sf->CreateStruct(group + "runaway");
         SaveMomentumGrid(this->sf, group + "runaway/", this->runawayGrid, this->eqsys->GetRunawayGridType());
     }
+}
+
+/**
+ * Save equilibrium data to the output.
+ *
+ * sf:    SFile object to write data to.
+ * group: Full path to the equilibrium in the output.
+ */
+void OutputGeneratorSFile::SaveEquilibrium(
+	SFile *sf, const string& group
+) {
+	FVM::RadialGrid *rg = this->fluidGrid->GetRadialGrid();
+
+	sf->WriteScalar(group + "R0", rg->GetR0());
+	sf->WriteScalar(group + "Z0", rg->GetZ0());
+
+	// Flux surface coordinates
+	len_t npsi = rg->GetNPsi();
+	len_t ntheta = rg->GetNTheta();
+
+	const real_t *R = rg->GetFluxSurfaceRMinusR0();
+	const real_t *R_f = rg->GetFluxSurfaceRMinusR0_f();
+	const real_t *Z = rg->GetFluxSurfaceZMinusZ0();
+	const real_t *Z_f = rg->GetFluxSurfaceZMinusZ0_f();
+	const real_t *theta = rg->GetPoloidalAngle();
+
+	sfilesize_t dims[2] = {ntheta, npsi};
+	sfilesize_t dims_f[2] = {ntheta, npsi+1};
+	sf->WriteMultiArray(group + "RMinusR0", R, 2, dims);
+	sf->WriteMultiArray(group + "RMinusR0_f", R_f, 2, dims_f);
+	sf->WriteMultiArray(group + "ZMinusZ0", Z, 2, dims);
+	sf->WriteMultiArray(group + "ZMinusZ0_f", Z_f, 2, dims_f);
+	sf->WriteList(group + "theta", theta, ntheta);
+
+	delete [] theta;
+	delete [] Z_f;
+	delete [] Z;
+	delete [] R_f;
+	delete [] R;
 }
 
 /**
@@ -212,9 +295,10 @@ void OutputGeneratorSFile::SaveOtherQuantities(const std::string& name) {
 
 /**
  * Save settings used for this simulation
- * TODO TODO TODO
  */
-void OutputGeneratorSFile::SaveSettings(const std::string&) {
+void OutputGeneratorSFile::SaveSettings(const std::string& name) {
+    this->sf->CreateStruct(name);
+    SettingsSFile::SaveSettings(this->eqsys->GetSettings(), this->sf, name);
 }
 
 /**
@@ -239,7 +323,7 @@ void OutputGeneratorSFile::SaveTimings(const std::string& name) {
  */
 void OutputGeneratorSFile::SaveUnknowns(const std::string& name, bool current) {
     this->sf->CreateStruct(name);
-    
+
     if (current)
         this->unknowns->SaveSFileCurrent(this->sf, name, false);
     else

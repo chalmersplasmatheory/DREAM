@@ -121,6 +121,8 @@ namespace DREAM::FVM {
         real_t *delta_prev;
         real_t *delta_tmp;
         len_t id_unknown;
+        
+        len_t offset;
 
         // Helper variables that are used in setting coefficients
         // (essentially used like global variables within this class)
@@ -177,7 +179,8 @@ namespace DREAM::FVM {
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,
             adv_bc bc_lower = AD_BC_DIRICHLET,
-            adv_bc bc_upper = AD_BC_DIRICHLET
+            adv_bc bc_upper = AD_BC_DIRICHLET,
+            len_t offset = 0
         );
         ~AdvectionInterpolationCoefficient();
 

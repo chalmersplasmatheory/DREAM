@@ -9,6 +9,8 @@ from . RunawayElectronDistributionFunction import RunawayElectronDistributionFun
 from . IonHandler import IonHandler
 from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
 from . IonThermalEnergy import IonThermalEnergy
+from . PlasmaCurrent import PlasmaCurrent
+from . PoloidalFlux import PoloidalFlux
 from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
@@ -22,10 +24,11 @@ class EquationSystem:
 
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
+        'D_I':          ScalarQuantity,
         'E_field':      ElectricField,
         'f_hot':        HotElectronDistributionFunction,
         'f_re':         RunawayElectronDistributionFunction,
-        'I_p':          ScalarQuantity,
+        'I_p':          PlasmaCurrent,
         'I_wall':       ScalarQuantity,
         'j_hot':        CurrentDensity,
         'j_ohm':        CurrentDensity,
@@ -36,9 +39,10 @@ class EquationSystem:
         'n_i':          IonHandler,
         'N_i':          IonSpeciesFluidQuantity,
         'n_re':         RunawayElectronDensity,
+        'n_re_neg':     RunawayElectronDensity,
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
-        'psi_p':        FluidQuantity,
+        'psi_p':        PoloidalFlux,
         'psi_trans':    ScalarQuantity,
         'psi_wall':     ScalarQuantity,
         'S_particle':   FluidQuantity,

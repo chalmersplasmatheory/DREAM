@@ -90,9 +90,8 @@ namespace DREAM::FVM {
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta, const real_t, const real_t) { return NablaR2AtTheta(r_f[ir], theta); }
         real_t NablaR2AtTheta(const real_t, const real_t);
         
-        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t) override;
-        virtual void GetGradRCartesian(real_t*, real_t, real_t) override;
-        virtual real_t FindClosestApproach(real_t, real_t, real_t, real_t, real_t, real_t) override;
+        virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t, real_t, real_t, real_t) override;
+        virtual void GetGradRCartesian(real_t*, real_t, real_t, real_t) override;
 
         virtual void EvaluateGeometricQuantities(
             const len_t ir, const real_t theta, real_t &B,
@@ -107,6 +106,19 @@ namespace DREAM::FVM {
             const real_t r, const real_t theta, real_t &B,
             real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
         );
+
+		// Output generation helper routines
+		virtual const real_t GetZ0() override { return this->Zp; }
+		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNTheta() override { return this->ntheta; }
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
+		virtual const real_t *GetPoloidalAngle() override;
+        virtual real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) override;
+        virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) override;
 
         // Debugging method
         void __SaveB(const char*);

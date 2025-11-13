@@ -25,6 +25,10 @@ void SimulationGenerator::ConstructEquation_SPI(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
+	// Mark the "/init/Ninj" setting as used, so that it
+	// appears in the output file.
+	s->MarkUsed(MODULENAME "/init/Ninj");
+
     // Get data for shard content
     len_t nShard;
     const real_t *rp_init = s->GetRealArray(MODULENAME "/init/rp", 1, &nShard);
@@ -48,6 +52,7 @@ void SimulationGenerator::ConstructEquation_SPI(
 
     // Initialize shard radii-variable
     eqsys->SetInitialValue(id_Yp, Yp_init);
+	delete [] Yp_init;
 
     // Shard velocity and position terms
     switch (spi_velocity_mode) {
@@ -78,6 +83,7 @@ void SimulationGenerator::ConstructEquation_v_p_prescribed_constant(
     vp_init=s->GetRealArray(MODULENAME "/init/vp", 1, &nShard);
 
     eqn->AddTerm(new ConstantSPIVelocityTerm(scalarGrid, u, vp_init));
+    
 
     eqsys->SetOperator(OptionConstants::UQTY_V_P, OptionConstants::UQTY_V_P, eqn, "Prescribed");
 
@@ -96,8 +102,11 @@ void SimulationGenerator::ConstructEquation_x_p_prescribed_constant_velocity(
     len_t nShard;
     const real_t *xp_init;
     xp_init=s->GetRealArray(MODULENAME "/init/xp", 1, &nShard);
-
-    eqn->AddTerm(new ConstantSPIVelocityPositionTerm(scalarGrid, u, xp_init));
+    
+    const real_t *t_delay;
+    t_delay=s->GetRealArray(MODULENAME "/init/t_delay", 1, &nShard);
+    
+    eqn->AddTerm(new ConstantSPIVelocityPositionTerm(scalarGrid, u, xp_init, t_delay));
 
     eqsys->SetOperator(OptionConstants::UQTY_X_P, OptionConstants::UQTY_X_P, eqn, "Prescribed");
 

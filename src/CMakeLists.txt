@@ -13,6 +13,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Info.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Save.cpp"
     "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.cpp"
+    "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.nonlinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
@@ -23,14 +24,17 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/OtherQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/PostProcessor.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepper.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperAdaptive.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperConstant.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperIonization.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
+    "${PROJECT_SOURCE_DIR}/src/Equations/AdaptiveMHDLikeTransportTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionHottail.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"  
+    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ConnorHastie.cpp"
@@ -38,7 +42,9 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/DreicerNeuralNetwork.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ComptonRateTerm.cpp"
@@ -51,17 +57,29 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/FreeElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportDiffusion.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRechesterRosenbluth.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRRAdaptiveMHDLike.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTermHighZ.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/LCFSLossRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedDiffusionStochasticBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralPrescribedAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonChargedPrescribedDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonNeutralPrescribedDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEnergyFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatFluxFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonFluidRunawayIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSPIDepositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIAblationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIHeatAbsorbtionTerm.cpp"
@@ -69,32 +87,43 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonTransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronHeatTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRechesterRosenbluth.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HaloRegionHeatLossTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SvenssonTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TritiumRateTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ComptonSource.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/EnergyDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PitchScatterTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ParticleSourceTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PrescribedKineticParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RechesterRosenbluthTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RipplePitchScattering.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TritiumSource.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTermHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Scalar/ConstantSPIVelocityPositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"  
+    "${PROJECT_SOURCE_DIR}/src/Equations/SPIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
+    
 )
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/AnalyticDistribution.hpp"
@@ -109,7 +138,6 @@ set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/WallCurrentTerms.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/ConstantSPIVelocityTerm.hpp"
-    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/ConstantSPIVelocityPositionTerm.hpp"
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
@@ -142,6 +170,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/spi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/IonEquilibrium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"
@@ -167,14 +196,18 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/Backtracker.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/PhysicalStepAdjuster.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Solver/ExternalIterator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/Solver.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverLinearlyImplicit.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverNonLinear.cpp"
 )
 
+
+
 add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
+
 
 set_target_properties(dream PROPERTIES
     # Require C++17
@@ -203,21 +236,22 @@ if (MATH_LIBRARY)
 endif()
 
 # Interprocedural optimizations
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    include(CheckIPOSupported)
-    # Clang does not support IPO (although Clang++ does), so we need
-    # to explicitly check both C and C++ (since Clang is used for linking)
-    check_ipo_supported(RESULT result LANGUAGES C CXX)
-    if (result)
-        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
-    endif()
-endif ()
+#if (INTERPROC_OPTIM AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+#	message("INTERPROCESS OPTIMIZATIONS ENABLED")
+#    include(CheckIPOSupported)
+#    # Clang does not support IPO (although Clang++ does), so we need
+#    # to explicitly check both C and C++ (since Clang is used for linking)
+#    check_ipo_supported(RESULT result LANGUAGES C CXX)
+#    if (result)
+#        set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+#    endif()
+#endif ()
 
 # GNU Scientific Library
 find_package(GSL REQUIRED)
 if (GSL_FOUND)
-    if (GSL_VERSION VERSION_LESS 2.0)
-        message(FATAL_ERROR "dream needs GSL >= 2.0")
+    if (GSL_VERSION VERSION_LESS 2.4)
+        message(FATAL_ERROR "dream needs GSL >= 2.4")
     endif()
 
     target_include_directories(dream PUBLIC "${GSL_INCLUDE_DIRS}")
@@ -243,13 +277,20 @@ target_link_libraries(dream PUBLIC softlib)
 #endif()
 
 # MPI (just as a dependency for PETSc)
-find_package(MPI COMPONENTS CXX)
-if (MPI_CXX_FOUND)
-    target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
-	set_target_properties(dream PROPERTIES COMPILE_FLAGS "${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS}")
-	set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
-	target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
-endif (MPI_CXX_FOUND)
+if (PETSC_WITH_MPI)
+	message(STATUS "PETSc was compiled with MPI. Will attempt to find an MPI installation...")
+	find_package(MPI COMPONENTS CXX)
+	if (MPI_CXX_FOUND)
+		target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
+		#set_target_properties(dream PROPERTIES COMPILE_FLAGS ${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS})
+		#set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
+		set_property(TARGET dream PROPERTY COMPILE_FLAGS ${MPI_CXX_COMPILE_OPT} ${MPI_CXX_COMPILE_DEFINITIONS})
+		set_property(TARGET dream PROPERTY LINK_FLAGS ${MPI_CXX_LINK_FLAGS})
+		target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
+	endif (MPI_CXX_FOUND)
+else (PETSC_WITH_MPI)
+	message(STATUS "PETSc does not require MPI.")
+endif (PETSC_WITH_MPI)
 
 # PETSc
 find_package(PETSc COMPONENTS CXX REQUIRED)
@@ -258,4 +299,3 @@ if (PETSC_FOUND)
     target_link_libraries(dream PUBLIC "${PETSC_LIBRARIES}")
     add_definitions(${PETSC_DEFINITIONS})
 endif()
-

@@ -29,6 +29,12 @@ void SPITransientTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuanti
 }
 
 bool SPITransientTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return false;
+
     if(derivId==this->unknownId){
         for (len_t i = 0; i < nShard; i++){
             jac->SetElement(i,i, scaleFactor/this->dt);
@@ -50,6 +56,11 @@ void SPITransientTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
  * xnp1:   Current solution.
  */
 void SPITransientTerm::SetVectorElements(real_t *vec, const real_t *xnp1) {
+	// Transient term disabled? (mainly applicable for
+	// equation system initializer, which seeks solutions for
+	// which dX/dt -> 0)
+	if (this->dt == 0)
+		return;
 
     for (len_t i = 0; i < nShard; i++)
         vec[i] += scaleFactor*(xnp1[i] - xn[i]) / this->dt;

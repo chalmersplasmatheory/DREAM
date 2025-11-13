@@ -62,7 +62,16 @@ class KineticQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        return '({}) Kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}\n{}'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn, self.data)
+        s = f'({self.name}) Kinetic quantity of size NT x NR x NP2 x NP1 = {self.data.shape[0]} x {self.data.shape[1]} x {self.data.shape[2]} x {self.data.shape[3]}'
+
+        if hasattr(self, 'description'):
+            s += f'\n:: {self.description}'
+        if hasattr(self, 'description_eqn'):
+            s += f'\n:: Evolved using: {self.description_eqn}'
+
+        s += f'\n{self.data}'
+
+        return s
 
 
     def __getitem__(self, index):
@@ -287,17 +296,15 @@ class KineticQuantity(UnknownQuantity):
             elif np.ndim(weight) == 3:
                 weight = _weight*weight[np.newaxis,:]
                 
-        q = []
+        q = np.zeros((len(t), len(r)))
         for iT in range(len(t)):
-            qr = []
             for iR in range(len(r)):
-                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[0])
-            q.append(qr)
+                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[iR]
         
-        return np.asarray(q)
+        return q
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, **kwargs):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, **kwargs):
         """
         Visualize this kinetic quantity at one time and radius using a filled
         contour plot.
@@ -322,8 +329,13 @@ class KineticQuantity(UnknownQuantity):
                 show = True
 
         data = None
+        sign = ''
         if logarithmic:
-            data = np.log10(self.data[t,r,:])
+            if np.all(self.data[t,r,:] <=0):
+                sign = '$-$'
+                data = np.log10(-self.data[t,r,:])
+            else:
+                data = np.log10(self.data[t,r,:])
         else:
             data = self.data[t,r,:]
 
@@ -337,14 +349,31 @@ class KineticQuantity(UnknownQuantity):
         # Accept 'spherical' or 'spherica' or 'spheric' or ... 's':
         elif coordinates == 'spherical'[:len(coordinates)]:
             cp = ax.contourf(self.momentumgrid.P, self.momentumgrid.XI, data, cmap='GeriMap', **kwargs)
-            ax.set_xlabel(r'$p$')
+            ax.set_xlabel(r'$p/mc$')
             ax.set_ylabel(r'$\xi$')
         elif coordinates == 'cylindrical'[:len(coordinates)]:
-            cp = ax.contourf(self.momentumgrid.PPAR, self.momentumgrid.PPERP, data, cmap='GeriMap', **kwargs)
-            ax.set_xlabel(r'$p_\parallel$')
-            ax.set_ylabel(r'$p_\perp$')
+            if data.shape[1] == self.momentumgrid.PPAR.shape[1] + 1:
+                data = (data[:,1:] + data[:,:-1]) / 2
+            if data.shape[0] == self.momentumgrid.PPAR.shape[0] + 1:
+                data = (data[1:,:] + data[:-1, :]) / 2
+            
+            if interpolateCylindrical:
+                pperp = np.concatenate((self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
+                
+                ppar_new = (self.momentumgrid.PPAR[-1,:] + (self.momentumgrid.PPAR[-1,:] - self.momentumgrid.PPAR[-2,:])/2).reshape((1,-1))
+                ppar = np.concatenate((self.momentumgrid.PPAR, ppar_new), axis=0)
+                
+                data_int = np.concatenate((data, data[-1,:].reshape((1,-1))), axis=0)
+                
+                cp = ax.contourf(ppar, pperp, data_int, cmap='GeriMap', **kwargs)
+            else:
+                cp = ax.contourf(self.momentumgrid.PPAR, self.momentumgrid.PPERP, data, cmap='GeriMap', **kwargs)
+            ax.set_xlabel(r'$p_\parallel/mc$')
+            ax.set_ylabel(r'$p_\perp/mc$')
         else:
             raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
+
+        ax.set_title(f'{sign}{self.getTeXName()}')
 
         cb = None
         if genax:
@@ -353,7 +382,7 @@ class KineticQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
 
-        return ax
+        return ax, cp
         
         
         
@@ -483,3 +512,13 @@ class KineticQuantity(UnknownQuantity):
         plt.show()
 		
 
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        return 1
+
+        

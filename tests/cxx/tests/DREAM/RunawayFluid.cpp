@@ -217,13 +217,13 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpurit
 DREAM::IonHandler *RunawayFluid::GetIonHandler(
     DREAM::FVM::Grid *g, DREAM::FVM::UnknownQuantityHandler *uqh, const len_t N_IONS, const len_t *Z_IONS
 ) {
-    vector<string> tritiumNames(0);
+    vector<string> tritiumNames(0), hydrogenNames(0);
     vector<string> names(N_IONS);
     for (len_t i = 0; i < N_IONS; i++)
         names[i] = "";//ION_NAMES[i];
 
     return new DREAM::IonHandler(
-        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames
+        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames, hydrogenNames
     );
 }
 
@@ -292,13 +292,21 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
     DREAM::AnalyticDistributionRE::dist_mode re_dist_mode = (eceff_mode==DREAM::OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
             DREAM::AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : DREAM::AnalyticDistributionRE::RE_PITCH_DIST_FULL;
     DREAM::AnalyticDistributionRE *distRE =  new DREAM::AnalyticDistributionRE(grid->GetRadialGrid(), unknowns, nuD, cqEc, re_dist_mode, 100*sqrt(std::numeric_limits<real_t>::epsilon()));
+	real_t comptonFlux = 0.0, comptonFlux_t = 0.0;
+	DREAM::FVM::Interpolator1D *comptonFlux_i = new DREAM::FVM::Interpolator1D(
+		1, 1, &comptonFlux_t, &comptonFlux,
+		DREAM::FVM::Interpolator1D::INTERP_NEAREST, false
+	);
+    real_t integratedComptonSpectrum = 5.8844190260298, C1_Compton = 1.2, C2_Compton = 0.8, C3_Compton = 0.;
+    bool extrapolateDreicer = true;
     DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
-        grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
+        grid, unknowns, nuS, nuD,lnLEE, extrapolateDreicer, lnLEI, ionHandler, distRE, cqPc, cqEc,
         DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
         eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
-        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0
+        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, comptonFlux_i,
+        integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton
     );
-    REFluid->Rebuild();
+    REFluid->Rebuild(0);
     return REFluid;
 }
 

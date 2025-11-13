@@ -20,8 +20,9 @@
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
-#include "DREAM/TimeStepper/TimeStepperConstant.hpp"
 #include "DREAM/TimeStepper/TimeStepperAdaptive.hpp"
+#include "DREAM/TimeStepper/TimeStepperConstant.hpp"
+#include "DREAM/TimeStepper/TimeStepperIonization.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -73,6 +74,9 @@ namespace DREAM {
             enum OptionConstants::momentumgrid_type
         );
 
+		static bool HasInitialEfield(EquationSystem*, Settings*);
+		static bool HasInitialJtot(EquationSystem*, Settings*);
+
         static void DefineOptions_RadialGrid(Settings*);
 
         static void DefineOptions_ADAS(Settings*);
@@ -86,6 +90,7 @@ namespace DREAM {
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
         static void DefineOptions_f_ripple(const std::string&, Settings*);
+		static void DefineOptions_f_timevaryingb(const std::string&, Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
@@ -99,12 +104,13 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_T_cold(Settings*);
+        static void DefineOptions_T_cold_NBI(Settings*);
         static void DefineOptions_T_abl(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
 
         static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
-        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
+        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, std::vector<UnknownQuantityEquation*>*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
         static void DefinePreconditionerSettings(Settings*);
         static DiagonalPreconditioner *LoadPreconditionerSettings(Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&);
 
@@ -124,22 +130,30 @@ namespace DREAM {
         static void ConstructEquation_E_field(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_E_field_prescribed_current(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_f_hot_kineq(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_f_hot_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
         static void ConstructEquation_f_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);
+        static void ConstructEquation_f_re_kineq(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator**);
+        static void ConstructEquation_f_re_prescribed(EquationSystem*, Settings*);
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
             bool, bool, DREAM::FVM::Operator **transport=nullptr,
             DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
-            DREAM::RipplePitchScattering **rps=nullptr, bool rescaleMaxwellian=false
+            DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
+			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
         );
+		static void ConstructEquation_f_prescribed(const len_t, EquationSystem*, FVM::Grid*, Settings*, const std::string&);
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
+        static DREAM::TimeVaryingBTerm *ConstructEquation_f_timevaryingb(Settings*, const std::string&, FVM::Grid*);
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
-        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*);
+        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_Ions_abl(EquationSystem*, Settings*, ADAS*, AMJUEL*);
         static void ConstructEquation_Ion_Ni(EquationSystem*, Settings*);
         static void ConstructEquation_T_i(EquationSystem*, Settings*);
@@ -150,6 +164,7 @@ namespace DREAM {
         static void ConstructEquation_n_abl(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_selfconsistent(EquationSystem*, Settings*);
+		static void ConstructEquation_D_I(EquationSystem*, Settings*, const std::string&);
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
@@ -158,12 +173,25 @@ namespace DREAM {
         static void ConstructEquation_j_ohm(EquationSystem*, Settings*);
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
+		static void ConstructEquation_Ip(EquationSystem*);
+        static void ConstructEquation_j_tot_prescribed(EquationSystem*, Settings*);
+        static void ConstructEquation_j_tot_consistent(EquationSystem*, Settings*);
+
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
 
+		static void ConstructEquation_psi_init_integral(
+			EquationSystem*, Settings *s, FVM::Grid*,
+			const len_t, const len_t, const len_t
+		);
+		static void ConstructEquation_psi_init_nl(
+			EquationSystem*, const len_t, const len_t, const len_t, const len_t
+		);
+
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);
+        static void ConstructEquation_n_re_neg(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
@@ -180,6 +208,9 @@ namespace DREAM {
         static void ConstructEquation_W_hot(EquationSystem*, Settings*);
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
+
+		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
 
 
         template<typename T>
@@ -209,8 +240,9 @@ namespace DREAM {
         static void ConstructEquation_x_p_prescribed_constant_velocity(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
-        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
-        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<len_t>*);
+        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
+        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*, std::vector<len_t>*);
+        static TimeStepperIonization *ConstructTimeStepper_ionization(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
 
         // Data loading routines
         static void DefineDataR(const std::string&, Settings*, const std::string& name="data");
@@ -226,8 +258,10 @@ namespace DREAM {
         static struct dream_4d_data *LoadDataTR2P(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataIonR(const std::string&, Settings*, const std::string& name="data");
         static real_t *LoadDataIonR(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+		static void DefineDataIonT(const std::string&, Settings*, const std::string& name="data");
+		static MultiInterpolator1D *LoadDataIonT(const std::string&, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
-        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data", bool fluxGrid=false);
 
         static real_t *InterpolateR(
             const len_t, const real_t*, const real_t*,

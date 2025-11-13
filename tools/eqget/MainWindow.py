@@ -1,13 +1,20 @@
 
 import numpy as np
+import traceback
+
+import sys
+sys.path.append('../../py')
 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QFileDialog, QMessageBox
 from ui import MainWindow_design
 from PlotWindow import PlotWindow
+from PlotShapingWindow import PlotShapingWindow
 from DREAM import DREAMIO
+from pathlib import Path
 
 import AUG
+import TCV
 import EqFile
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -39,11 +46,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
         if AUG.isAvailable():
             self.ui.cbTokamak.addItem('ASDEX Upgrade', AUG)
+        if TCV.isAvailable():
+            self.ui.cbTokamak.addItem('TCV', TCV)
 
         self.ui.cbTokamak.addItem('File', EqFile)
+        self.tokamakChanged()
 
         self.toggleEnabled(False)
         self.bindEvents()
+
+        if len(argv) == 1:
+            self.parsearg(argv[0])
 
 
     def bindEvents(self):
@@ -60,7 +73,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btnPlotBz.clicked.connect(self.plotBz)
         self.ui.btnPlotBphi.clicked.connect(self.plotBphi)
 
+        self.ui.btnShaping.clicked.connect(self.calculateShaping)
         self.ui.btnSave.clicked.connect(self.save)
+
+        self.ui.cbTokamak.currentTextChanged.connect(self.tokamakChanged)
 
 
     def closeEvent(self, event):
@@ -88,13 +104,29 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btnPlotBr.setEnabled(enabled)
         self.ui.btnPlotBz.setEnabled(enabled)
         self.ui.btnPlotBphi.setEnabled(enabled)
+        self.ui.btnShaping.setEnabled(enabled)
         self.ui.btnSave.setEnabled(enabled)
 
-    
-    def load(self):
+
+    def tokamakChanged(self, e=None):
         """
-        Load data using the selected module.
+        Event fired when the selected tokamak handler changes.
         """
+        if self.ui.cbTokamak.currentText() == "File":
+            self.ui.lblDischarge.setText("Equilibrium file")
+            self.ui.btnLoad.setText("Open...")
+            
+            self.ui.lblTime.setText('Psi override')
+            self.ui.tbTime.setText('')
+        else:
+            self.ui.lblDischarge.setText("Discharge")
+            self.ui.btnLoad.setText("Load")
+
+            self.ui.lblTime.setText('Time')
+            self.ui.tbTime.setText('1.0')
+
+
+    def getShot(self):
         shot = self.ui.tbShot.text()
 
         # Try to convert to integer. If that fails, the user may
@@ -102,15 +134,64 @@ class MainWindow(QtWidgets.QMainWindow):
         try: shot = int(shot)
         except: pass
 
+        return shot
+
+    
+    def load(self):
+        """
+        Load data using the selected module.
+        """
+        shot = self.getShot()
+
+        if self.ui.cbTokamak.currentText() == "File" and not shot:
+            shot, _ = QFileDialog.getOpenFileName(self, caption="Open equilibrium file", filter="All supported equilibria (*.eqdsk *.geqdsk *.h5 *.mat);;LUKE equilibrium (*.h5 *.mat);;EQDSK file (*.eqdsk *.geqdsk);;All files (*.*)")
+            if not shot:
+                return
+
+            self.ui.tbShot.setText(shot)
+
+        self._load_internal(shot)
+
+
+    def _load_internal(self, data):
         try:
             mod = self.ui.cbTokamak.currentData()
-            self.equil = mod.getLUKE(shot)
-            print("Loaded '{}'...".format(shot))
+            time = self.ui.tbTime.text()
+            if not time: time = False
+            else: time = float(time)
+
+            self.equil = mod.getLUKE(data, time)
+            print("Loaded '{}'...".format(data))
 
             self.plotFluxSurfaces()
             self.toggleEnabled(True)
         except Exception as ex:
-            QMessageBox.critical(self, 'Error loading shot', "The specified shot file could not be loaded:\n\n{}".format(ex))
+            QMessageBox.critical(self, 'Error loading data', f"The specified data file could not be loaded:\n\n{traceback.format_exc()}")
+
+
+    def calculateShaping(self):
+        """
+        Calculate shaping parameters for the loaded magnetic equilibrium.
+        """
+        pass
+        try:
+            mod = self.ui.cbTokamak.currentData()
+            if not hasattr(mod, 'getShaping'):
+                raise Exception("The selected equilibrium handler does not support calculating shaping parameters.")
+
+            params = mod.getShaping(self.getShot(), equil=self.equil)
+            self.plotShaping(params)
+        except Exception as ex:
+            QMessageBox.critical(self, 'Error loading shot', f"The specified shot file could not be loaded:\n\n{ex}\n\n{traceback.format_exc()}")
+
+
+    def parsearg(self, arg):
+        """
+        Parse an input argument.
+        """
+        if Path(arg).is_file():
+            self.ui.cbTokamak.setCurrentText('File')
+            self._load_internal(arg)
 
 
     def plotFluxSurfaces(self):
@@ -224,6 +305,18 @@ class MainWindow(QtWidgets.QMainWindow):
         Plot the toroidal magnetic field component.
         """
         self.plot2D(r'$B_\varphi$', self.equil['ptBPHI'])
+
+
+    def plotShaping(self, params):
+        """
+        Plot the DREAM shaping parameters.
+        """
+        if 'shaping' in self.windows:
+            self.windows['shaping'].close()
+
+        w = PlotShapingWindow(params)
+        w.show()
+        self.windows['shaping'] = w
 
 
     def save(self):

@@ -36,6 +36,30 @@ class DistributionFunction(KineticQuantity):
                 p1name, p2name = 'PAR', 'PERP'
 
         return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn)
+    
+
+    #########################################
+    # VOLUME INTEGRATED DISTRIBUTION FUNCTION
+    #########################################
+
+    def volumeIntegratedDistributionFunction(self, t=None, normalized=False):
+        """
+        Calculates the volume integrated (real space) integral of the distribution function,
+        F(t,p,xi)=\int Vprime/p^2 * f(t,r,p,xi) dr
+        """
+        if t is None:
+            t = range(len(self.time))
+
+        if np.isscalar(t):
+            t = np.asarray([t])
+
+        Vprime = self.momentumgrid.Vprime[:,:,:]
+        Vprime = Vprime.reshape(1, *Vprime.shape)
+        p2 = (self.momentumgrid.p1[:]**2).reshape(1,1,1,-1)
+        dr = self.grid.dr[:].reshape(1,-1,1,1)
+        if normalized:
+            return (Vprime / p2 * dr * self.data[t,:,:,:]).sum(1) / self.grid.integrate(self.density(t=t))
+        return (Vprime * dr * self.data[t,:,:,:]).sum(1)
 
 
     #########################################
@@ -75,7 +99,104 @@ class DistributionFunction(KineticQuantity):
         this distribution function.
         """
         j = self.currentDensity(t=t)
-        return self.grid.integrate(j)
+        geom = self.grid.GR0/self.grid.Bmin * self.grid.FSA_R02OverR2
+        return self.grid.integrate(j, geom)/ (2*np.pi)
+
+
+    def pressure(self, t=None, r=None):
+        r"""
+        Evaluates the parallel and perpendicular pressure moments of the
+        distribution function according to
+
+          P_||    = mc^2 <p_||^2 / sqrt(1+p^2)>
+          P_\perp = mc^2 <p_\perp^2 / (2*sqrt(1+p^2))>
+
+        where <...> denotes an integral over all of momentum space. The
+        pressure is returned in units of Pa.
+
+        :returns: Tuple consisting of parallel and perpendicular pressures.
+        """
+        p, xi  = self.momentumgrid.p1[:], self.momentumgrid.p2[:]
+        P, XI  = np.meshgrid(p, xi)
+        PPAR2  = (P*XI)**2
+        PPERP2 = P**2*(1-XI**2)
+
+        GAMMA = self.momentumgrid.getGamma()
+        mc2 = scipy.constants.m_e * scipy.constants.c**2
+
+        Ppar = self.moment(PPAR2/GAMMA, t=t, r=r) * mc2
+        Pperp = self.moment(PPERP2/GAMMA, t=t, r=r) * 0.5*mc2
+
+        return Ppar, Pperp
+
+
+    def partialDensity(self, t=None, r=None, pc=None):
+        """
+        Calculate the density of electrons contained above a momentum ``pc``. If
+        a value for ``pc`` is not explicitly given, it is taken as either the
+        critical momentum ``other.fluid.pCrit`` if available, or as the
+        approximation ``pc = 1/sqrt(E/Ec-1)``.
+
+        The parameter ``pc`` may be a scalar or a fluid quantity, varying in
+        time and space.
+        """
+        if t is None:
+            t = list(range(len(self.time)))
+        elif np.isscalar(t):
+            t = np.array([t])
+
+        if r is None:
+            r = list(range(len(self.grid.r)))
+        elif np.isscalar(t):
+            r = np.array([r])
+
+        if pc is None:
+            if 'fluid' in self.output.other:
+                if 'pCrit' in self.output.other.fluid:
+                    pc = self.output.other.fluid.pCrit[:]
+                elif 'Ecfree' in self.output.other.fluid:
+                    Ec = self.output.other.fluid.Ecfree[:]
+                    E = self.output.eqsys.E_field[1:,:]
+                    pc = 1/np.sqrt(E/Ec - 1)
+
+            if pc is None:
+                T = self.output.eqsys.T_cold[:]
+                n = self.output.eqsys.n_cold[:]
+                E = self.output.eqsys.E_field[:]
+
+                Ec = Formulas.Ec(T=T, n=n)
+                pc = 1/np.sqrt(E/Ec-1)
+
+            if pc.shape[0] == self.grid.t.size-1:
+                ppc = np.zeros((self.grid.t.size, pc.shape[1]))
+                ppc[1:,:] = pc[:]
+                ppc[0,:]  = np.inf
+                pc = ppc
+        elif np.isscalar(pc):
+            pc = pc*np.ones((self.time.size, self.grid.r.size))
+
+        p = self.momentumgrid.p1
+        data = np.zeros((len(t), len(r)))
+        for i in range(len(t)):
+            for j in range(len(r)):
+                F = self.data
+                mask = np.zeros((F.shape[2], F.shape[3]))
+                mask[:,np.where(p >= pc[t[i],r[j]])] = 1
+                data[i,j] = self.moment(mask, t=t[i], r=r[j])
+
+        return data
+
+
+    def runawayRate(self, t=None, r=None, pc=None):
+        """
+        Calculate the runaway rate, with the given definition of critical
+        momentum, as a moment of the distribution function.
+        """
+        n = self.partialDensity(pc=pc)
+        dt = np.diff(self.grid.t)
+        dndt = (np.diff(n, axis=0).T / dt).T
+
+        return dndt
 
 
     def synchrotron(self, model='spectrum', B=3.1, wavelength=700e-9, t=None, r=None):
@@ -88,28 +209,29 @@ class DistributionFunction(KineticQuantity):
         :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
         """
         if t is None:
-            t = range(len(self.time))
-        elif np.isscalar(t):
-            t = np.array([t])
-
+            t = np.arange(len(self.time))
+        else:
+            t = np.arange(len(self.time))[t]
+        
         if r is None:
-            r = range(len(self.grid.r))
-        elif np.isscalar(r):
-            r = np.array([r])
+            r = np.arange(len(self.grid.r))
+        else:
+            t = np.arange(len(self.grid.r[:]))[r]
 
         data = None
         if model == 'total':
+            data = np.zeros((len(t), len(r), self.data.shape[-2], self.data.shape[-1]))
             pperp2 = self.momentumgrid.PPERP**2
             m2c2   = (scipy.constants.m_e * scipy.constants.c)**2
-            data = pperp2 * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
+            for i in range(len(t)):
+                for j in range(len(r)):
+                    data[i,j,:,:] = pperp2 * self.data[t[i],r[j],:,:] * self.momentumgrid.Vprime_VpVol[r[j],:,:]
         elif model == 'spectrum':
             S = []
             W = Bekefi.synchrotron(self.momentumgrid.P, self.momentumgrid.XI, wavelength, B)
             data = W * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
         else:
             raise OutputException("Unrecognized model for calculating synchrotron moment with: '{}'.".format(model))
-
-        data = data.reshape((len(t), len(r), data.shape[-2], data.shape[-1]))
         return KineticQuantity('synchrotron({})'.format(self.name), data=data, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid, attr={'description': 'Synchrotron moment of {}'.format(self.name), 'equation': 'synchrotron({})'.format(self.name)})
 
 
@@ -130,7 +252,7 @@ class DistributionFunction(KineticQuantity):
         return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, **kwargs):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, interpolateCylindrical=False, **kwargs):
         """
         Make a contour plot of this quantity.
 
@@ -142,7 +264,7 @@ class DistributionFunction(KineticQuantity):
         :param str coordinates:  Name of coordinates to use (either 'spherical' (p/xi) or 'cylindrical' (ppar/pperp)).
         :param kwargs:           Keyword arguments passed on to matplotlib.contourf().
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, **kwargs)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, interpolateCylindrical=interpolateCylindrical, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None, **kwargs):

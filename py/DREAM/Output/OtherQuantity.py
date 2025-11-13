@@ -11,7 +11,7 @@ from . UnknownQuantity import UnknownQuantity
 class OtherQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, description, grid, output):
+    def __init__(self, name, data, description, grid, output, momentumgrid=None):
         """
         Constructor.
         """
@@ -62,3 +62,13 @@ class OtherQuantity(UnknownQuantity):
         return t
 
 
+    def getMultiples(self):
+        """
+        Get the number of "multiples" (e.g. number of ion species and
+        charge states) covered by this quantity. The total number of elements
+        in 'self.data' is the size of the grid on which this quantity lives
+        (i.e. scalar grid, fluid grid, or a kinetic grid) times this number.
+        """
+        return 1
+
+        

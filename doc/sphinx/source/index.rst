@@ -10,7 +10,7 @@
 Welcome to the documentation for DREAM!
 =======================================
 
-DREAM (for *Disruption and Runaway Electron Avoidance Model*) is a scientific
+DREAM (for *Disruption and Runaway Electron Analysis Model*) is a scientific
 code which solves a system of equations describing the evolution of a tokamak
 plasma during a disruption. The tool is primarily designed for studying the
 evolution of runaway electrons in the disruption.
@@ -24,8 +24,10 @@ developers, while the latter is intended for code users.
 For more details on the physical models implemented in DREAM, please consult
 the physics manuals available in the DREAM GitHub repository.
 
-The DREAM code is developed and maintained by the
-`Plasma Theory group <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
+The DREAM code is developed and maintained by European fusion scientists from
+several labs, lead by the fast electron group at KTH Royal Institute of
+Technology, Stockholm and the
+`Technology <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
 Technology, Gothenburg, Sweden.
 
 .. note::
@@ -42,7 +44,9 @@ Table of contents
    compiling
    kernel/index
    frontend/index
+   tools/index
    start/index
+   imas/index
    todo
 
 .. raw:: html
@@ -69,10 +73,30 @@ Table of contents
      <p>Browse the Python output interface documentation</p>
    </div>
    <div style="clear:both"></div>
+   <div class="admonition note" style="width:49%; float:left">
+     <a href="tools/index.html">
+       <p class="admonition-title">Tools</p>
+     </a>
+     <p>Learn how to add support for more elements</p>
+   </div>
+   <div class="admonition note" style="width:49%; float:right">
+     <a href="start/examples/index.html">
+       <p class="admonition-title">Examples</p>
+     </a>
+     <p>View examples of DREAM simulations</p>
+   </div>
+   <div style="clear:both"></div>
+   <div class="admonition note" style="width:49%; float:left">
+     <a href="imas/index.html">
+       <p class="admonition-title">IMAS interface</p>
+     </a>
+     <p>See the details of the IMAS interfacing</p>
+   </div>
+   <div style="clear:both"></div>
 
 Introduction
 ************
-The **Disruption Runaway Electron Avoidance Model** DREAM is designed to
+The **Disruption Runaway Electron Analysis Model** DREAM is designed to
 simulate runaway electron generation during a tokamak disruption.
 
 For users

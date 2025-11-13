@@ -15,6 +15,7 @@ class Output:
         Constructor.
         """
         self.filename = filename
+        self.savesettings = True
         self.timingstdout = False
         self.timingfile = True
 
@@ -29,6 +30,16 @@ class Output:
         :param str filename: Name of output file to store simulation data to.
         """
         self.filename = filename
+
+
+    def setSaveSettings(self, save=True):
+        """
+        Specify whether or not to save a copy of the input settings to the
+        output file (enabled by default).
+
+        :param bool save: If ``True``, copy settings to the output file.
+        """
+        self.savesettings = save
 
 
     def setTiming(self, stdout=None, file=None):
@@ -55,6 +66,9 @@ class Output:
         self.timingstdout = bool(data['timingstdout'])
         self.timingfile = bool(data['timingfile'])
 
+        if 'savesettings' in data:
+            self.savesettings = bool(data['savesettings'])
+
         self.verifySettings()
 
 
@@ -70,6 +84,7 @@ class Output:
 
         data = {
             'filename': self.filename,
+            'savesettings': self.savesettings,
             'timingfile': self.timingfile,
             'timingstdout': self.timingstdout
         }
@@ -83,6 +98,8 @@ class Output:
         """
         if type(self.filename) != str:
             raise DREAMException("The output file name must be string.")
+        elif type(self.savesettings) != bool:
+            raise DREAMException("The option 'savesettings' must be a bool.")
         elif type(self.timingfile) != bool:
             raise DREAMException("The option 'timingfile' must be a bool.")
         elif type(self.timingstdout) != bool:

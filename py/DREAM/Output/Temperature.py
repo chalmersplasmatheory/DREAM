@@ -19,8 +19,9 @@ class Temperature(FluidQuantity):
         """
         Plot all the terms appearing in the energy balance equation.
         """
+        integrate = False
         if t is None and r is None:
-            raise OutputException("When plotting the energy balance, at least one of 'r' and 't' must be specified.")
+            integrate = True
 
         labels = []
         for o in self.output.other.fluid.keys():
@@ -29,8 +30,17 @@ class Temperature(FluidQuantity):
 
             q = self.output.other.fluid[o]
 
-            ax = q.plot(r=r, t=t, ax=ax, show=False, log=log)
+            if integrate:
+                ax = q.plotIntegral(ax=ax, show=show)
+            else:
+                ax = q.plot(r=r, t=t, ax=ax, show=False, log=log)
+
             labels.append(o[6:].replace(r'_', r'\_'))
+
+        if integrate and 'energyloss_T_cold' in self.output.other.scalar.keys():
+            o = self.output.other.scalar.energyloss_T_cold
+            ax = o.plot(ax=ax, show=show)
+            labels.append(o.name.replace(r'_', r'\_'))
 
         plt.legend(labels)
 

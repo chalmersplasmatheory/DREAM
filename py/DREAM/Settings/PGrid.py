@@ -11,7 +11,7 @@ TYPE_CUSTOM = 3
 class PGrid:
 
 
-    def __init__(self, name, ttype=1, np=0, pmax=None, data=None):
+    def __init__(self, name, parent, ttype=1, np=0, pmax=None, data=None):
         """
         Constructor.
 
@@ -25,11 +25,14 @@ class PGrid:
                  (except 'ttype' should be called 'pgrid')
         """
         self.name = name
+        self.parent = parent
 
         self.npsep = None
         self.npsep_frac = None
         self.psep  = None
         self.p_f = None
+        self.pmin = 0
+
         if data is not None:
             self.fromdict(data)
         else:
@@ -47,6 +50,7 @@ class PGrid:
     ####################
     def getNp(self): return self.np
     def getPmax(self): return self.pmax
+    def getPmin(self): return self.pmin
     def getType(self): return self.type
 
 
@@ -64,6 +68,14 @@ class PGrid:
             raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, pmax))
 
         self.pmax = float(pmax)
+
+
+    def setPmin(self, pmin):
+        if pmin < 0:
+            raise DREAMException("PGrid {}: Invalid value assigned to 'pmin': {}. Must be >= 0.".format(self.name, pmin))
+
+        self.pmin = float(pmin)
+
 
     def setBiuniform(self, psep, npsep = None, npsep_frac = None):
         self.type = TYPE_BIUNIFORM
@@ -108,6 +120,8 @@ class PGrid:
             print("*WARNING* PGrid: Prescibing custom momentum grid overrides 'pmax'.")
         self.pmax = float(p_f[-1])        
 
+        if self.pmin is not None:
+            print("*WARNING* PGrid: Prescribing custom momentum grid overrides 'pmin'.")
 
 
     def setType(self, ttype):
@@ -128,11 +142,14 @@ class PGrid:
         self.np   = data['np']
         self.pmax = data['pmax']
 
+        if 'pmin' in data:
+            self.pmin = data['pmin']
+
         if self.type == TYPE_BIUNIFORM:
             if 'npsep' in data:
-                self.npsep = data['npsep']
+                self.npsep = int(data['npsep'])
             if 'npsep_frac' in data:
-                self.npsep_frac = data['npsep_frac']
+                self.npsep_frac = float(data['npsep_frac'])
 
             self.psep  = data['psep']
         elif self.type == TYPE_CUSTOM:
@@ -154,6 +171,7 @@ class PGrid:
             'pgrid': self.type, 
             'np': self.np,
             'pmax': self.pmax,
+            'pmin': self.pmin
         }
         if self.type == TYPE_BIUNIFORM:
             if self.npsep is not None:
@@ -171,11 +189,16 @@ class PGrid:
         """
         Verify that all (mandatory) settings are set and consistent.
         """
-        if self.type == TYPE_UNIFORM or self.type == TYPE_BIUNIFORM or self.type == TYPE_CUSTOM:
+        if not self.parent.enabled:
+            return
+
+        if self.type in [TYPE_UNIFORM, TYPE_BIUNIFORM, TYPE_CUSTOM]:
             if self.np is None or self.np <= 0:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, self.np))
             elif self.pmax is None or self.pmax <= 0:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, self.pmax))
+            elif self.pmin is None or self.pmin < 0:
+                raise DREAMException("PGrid {}: Invalid value assigned to 'pmin': {}. Must be >= 0.".format(self.name, self.pmin))
         else:
             raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
         if self.type == TYPE_BIUNIFORM:
