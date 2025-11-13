@@ -31,33 +31,33 @@ NBIHandler::NBIHandler(FVM::Grid* grid, ADAS* adas, IonHandler* ions
     size_t maxidx =
         static_cast<size_t>(nr) * static_cast<size_t>(nZ) * static_cast<size_t>(nCharge);
 
-    NBIHeatTerm_e = new real_t[nr]();
-    NBIHeatTerm_i = new real_t[nr]();
-    Deposition_profile = new real_t[nr]();
-    Deposition_profile_times_Vprime = new real_t[nr]();
-    dV_beam_prime_tot = new real_t[nr]();
-    H_r_dTe = new real_t[nr]();
-    H_r_dne = new real_t[nr]();
-    d_NBIHeatTerm_e_d_Te = new real_t[nr]();
-    d_NBIHeatTerm_e_d_ne = new real_t[nr]();
-    d_NBIHeatTerm_i_d_Te = new real_t[nr]();
-    d_NBIHeatTerm_i_d_ne = new real_t[nr]();
-    d_NBIHeatTerm_i_d_T_ij = new real_t[maxidx]();
-    d_NBIHeatTerm_i_d_n_ij = new real_t[maxidx]();
-    d_NBIHeatTerm_e_d_T_ij = new real_t[maxidx]();
-    d_NBIHeatTerm_e_d_n_ij = new real_t[maxidx]();
-    H_r_dn_ij = new real_t[maxidx]();
-    H_r_dT_ij = new real_t[maxidx]();
+    NBIHeatTerm_e = new real_t[nr];
+    NBIHeatTerm_i = new real_t[nr];
+    Deposition_profile = new real_t[nr];
+    Deposition_profile_times_Vprime = new real_t[nr];
+    dV_beam_prime_tot = new real_t[nr];
+    H_r_dTe = new real_t[nr];
+    H_r_dne = new real_t[nr];
+    d_NBIHeatTerm_e_d_Te = new real_t[nr];
+    d_NBIHeatTerm_e_d_ne = new real_t[nr];
+    d_NBIHeatTerm_i_d_Te = new real_t[nr];
+    d_NBIHeatTerm_i_d_ne = new real_t[nr];
+    d_NBIHeatTerm_i_d_T_ij = new real_t[maxidx];
+    d_NBIHeatTerm_i_d_n_ij = new real_t[maxidx];
+    d_NBIHeatTerm_e_d_T_ij = new real_t[maxidx];
+    d_NBIHeatTerm_e_d_n_ij = new real_t[maxidx];
+    H_r_dn_ij = new real_t[maxidx];
+    H_r_dT_ij = new real_t[maxidx];
 }
 
 /**
  * Configure the NBIHandler from NBI settings. Called at the start of the simulation.
  */
 void NBIHandler::ConfigureFromSettings(
-    Settings* /*s*/, FVM::UnknownQuantityHandler* unknowns, real_t s_max, real_t r_beam,
+    Settings* , FVM::UnknownQuantityHandler* unknowns, real_t s_max, real_t r_beam,
     const real_t P0[3], const real_t n[3], const real_t energy_fractions[3],
-    real_t Ti_beam, real_t m_i_beam, real_t beamPower, FVM::Interpolator1D* j_B_profile,
-    real_t R0, bool TCVGaussian, bool ITERGaussian, FVM::Interpolator1D* Power_Profile
+    real_t Ti_beam, real_t m_i_beam, FVM::Interpolator1D* j_B_profile,
+    real_t R0,  int gaussian_profile, FVM::Interpolator1D* Power_Profile
 ) {
 
     this->unknowns = unknowns;
@@ -74,12 +74,12 @@ void NBIHandler::ConfigureFromSettings(
     this->s_max = s_max;
     this->r_beam = r_beam;
     this->Ti_beam = Ti_beam;
-    this->beamPower = beamPower;
     this->m_i_beam = m_i_beam;
     this->R0 = R0;
-    if (P0 == nullptr || n == nullptr)
-        throw DREAMException(
-            "Either direction or starting point of the beam is not set correctly");
+    if (P0 == nullptr)
+        throw DREAMException("Starting point of the beam is not set correctly");
+    if (n == nullptr)
+        throw DREAMException("Direction vector of the beam is not set correctly");
 
     for (int i = 0; i < 3; ++i) {
         this->P0[i] = P0[i];
@@ -92,30 +92,30 @@ void NBIHandler::ConfigureFromSettings(
     this->s_stop = 0;
     PrecomputeBeamBasisVectors();
     PrecomputeFluxSurfaces();
-    if (s_start > s_stop) {
+
+    if (s_start > s_stop) 
         throw DREAMException("Beam does not intersect with any flux surface.");
-    }
-    if (s_max < s_stop) {
+    if (s_max < s_stop) 
         throw DREAMException("Beam does not extend all the way through the plasma.");
-    }
-    if (s_start < 0) {
+    if (s_start < 0) 
         throw DREAMException("Beam starts in the plasma (s_start < 0).");
-    }
-    if (TCVGaussian && ITERGaussian) {
-        throw DREAMException(
-            "Cannot use both TCV and ITER Gaussian beam profiles simultaneously.");
-    }
 
     this->j_B_profile = j_B_profile;
     this->Power_Profile = Power_Profile;
+    this->gaussian_profile = gaussian_profile;
+
+    if (Power_Profile == nullptr) 
+        throw DREAMException("NBI: Power profile must be provided (P_NBI).");
+
+    if (Power_Profile->GetNx() == 0) 
+        throw DREAMException("NBI: Power profile is empty.");
+
     this->n_beam_radius = 25;
     this->d_beam_radius = r_beam / n_beam_radius;
     this->n_beam_theta = 25;
     this->d_beam_theta = 2.0 * M_PI / n_beam_theta;
     this->n_beam_s = 50;
     this->d_beam_s = (s_stop - s_start) / n_beam_s;
-    this->TCVGaussian = TCVGaussian;
-    this->ITERGaussian = ITERGaussian;
 
     //Precompute the ir-flux surface mapping
     PrecomputeBeamMapLUT();
@@ -142,7 +142,7 @@ void NBIHandler::ConfigureFromSettings(
  * Calculate the beam current density j_B divided by I_B.
  */
 real_t NBIHandler::Calculate_jB_IB(real_t r_B, real_t theta_B) {
-    if (ITERGaussian) {
+    if (this->gaussian_profile == OptionConstants::EQTERM_NBI_GAUSSIAN_PROFILE_ITER) {
         // ITER-like beam cross-section, elliptical Gaussian profile
         real_t Dx = 1.0;
         real_t Dy = 0.5;
@@ -152,7 +152,7 @@ real_t NBIHandler::Calculate_jB_IB(real_t r_B, real_t theta_B) {
         real_t exponent = -4.0 * r_B * r_B * (cs * cs / (Dx * Dx) + sn * sn / (Dy * Dy));
         return A * std::exp(exponent);
 
-    } else if (TCVGaussian) {
+    } else if (this->gaussian_profile == OptionConstants::EQTERM_NBI_GAUSSIAN_PROFILE_TCV) {
         // TCV-like beam cross-section, elliptical Gaussian profile
         real_t Dx = 0.3;
         real_t Dy = 0.1;
@@ -162,11 +162,14 @@ real_t NBIHandler::Calculate_jB_IB(real_t r_B, real_t theta_B) {
         real_t exponent = -4.0 * r_B * r_B * (cs * cs / (Dx * Dx) + sn * sn / (Dy * Dy));
         real_t jB_divided_IB = A * std::exp(exponent);
         return jB_divided_IB;
-    } else {
+    } else if (this->gaussian_profile == OptionConstants::EQTERM_NBI_GAUSSIAN_PROFILE_CUSTOM) {
         // Default case: use jB_profile
         const real_t* j_B_values = j_B_profile->Eval(r_B);
         real_t j_B_r = j_B_values[0];
         return j_B_r / this->I_B;
+    }
+    else {
+        throw DREAMException("NBI: Unrecognized Gaussian profile type %d.", this->gaussian_profile);
     }
 }
 
@@ -311,19 +314,9 @@ void NBIHandler::Build(const real_t t, const real_t,
             }
         }
     }
-
-    // Set the beam power, either constant or time-dependent
-    real_t powerNow = 0;
-    if (this->Power_Profile != nullptr) {
-        const real_t* p = this->Power_Profile->Eval(t);
-        powerNow = p[0];
-    } else {
-        // If the constant value is set:
-        if (this->beamPower > 0)
-            powerNow = this->beamPower;
-        else
-            throw DREAMException("No beam power set (neither constant nor profile)");
-    }
+    const real_t* p = this->Power_Profile->Eval(t);
+    real_t powerNow = p[0];
+    
     // If the power is not 0, then compute the calculation
     if (powerNow != 0) {
 
@@ -419,7 +412,7 @@ void NBIHandler::ComputeMeanFreePath(
             niZ_tot += ions->GetIonDensity(ir, iz, Z0);
         }
         // Calculate temperature for individual species
-        real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /(1.5 * niZ_tot * 1.602e-19);
+        real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /(1.5 * niZ_tot * Constants::ec);
 
         // Calculate total CX rate
         ADASRateInterpolator* ccd = adas->GetCCD(Zmax);
@@ -443,7 +436,7 @@ void NBIHandler::ComputeMeanFreePath(
         }
 
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /
-            (1.5 * niZ_tot * 1.602e-19);
+            (1.5 * niZ_tot * Constants::ec);
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             real_t niZ = ions->GetIonDensity(ir, iz, Z0);
             real_t I_ij = ccd->Eval(Z0, niZ, TiZ);
@@ -603,10 +596,11 @@ void NBIHandler::ComputeDepositionProfile(FVM::UnknownQuantityHandler* unknowns,
                 len_t ir_now = ir_lut[lut_index(i_beam_theta, i_beam_radius, i_beam_s)];
 
                 if (ir_now >= nr) {
-                    throw DREAMException("NBIElectronHeatTerm: ir_now out of bounds: "
-                                         "ir_now = " LEN_T_PRINTF_FMT
-                                         " (s_B = %.4f, r_B = %.4f, theta_B = %.4f)",
-                                         ir_now, beam_s, beam_radius, beam_theta);
+                    throw DREAMException(
+                        "NBIElectronHeatTerm: ir_now out of bounds: ir_now = "
+                        LEN_T_PRINTF_FMT " (s_B = %.4f, r_B = %.4f, theta_B = %.4f)",
+                        ir_now, beam_s, beam_radius, beam_theta
+                    );
                 }
                 real_t ncold = unknowns->GetUnknownData(id_ncold)[ir_now];
                 real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir_now];
@@ -616,7 +610,8 @@ void NBIHandler::ComputeDepositionProfile(FVM::UnknownQuantityHandler* unknowns,
                     ComputeMeanFreePath(
                         ir_now, ncold, Tcold, lambda_s, dlambda_dI_e,
                         dlambda_dI_ij, dlambda_dne, dlambda_dn_ij,
-                        dI_ij_dT_ij, dI_e_dTe, Ti_beam_input);
+                        dI_ij_dT_ij, dI_e_dTe, Ti_beam_input
+                    );
 
                     lambda_cache[ir_now] = lambda_s;
                     dlambda_dI_cache[ir_now] = dlambda_dI_e;
