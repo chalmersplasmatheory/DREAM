@@ -191,37 +191,38 @@ For visualization, it is necessary to set up the minor and major radius of the t
 The NBI power and current density profiles can be defined using the methods
 ``nbi.setPowerProfile()`` and ``nbi.setCurrentProfile()``, respectively.
 The power profile specifies the total injected beam power as a function of time,
-allowing the beam power to vary during the simulation.
-In contrast, the current density profile defines how the beam current is distributed
-across the beam radius and is assumed to remain constant over time.
+allowing the beam power to vary during the simulation. If a scalar value is provided, the specified power will be applied throughout the entire simulation.
+The current profile definesthe radial distribution of beam current density.
 
-Alternatively, predefined normalized Gaussian profiles can be used for typical TCV or
-ITER configurations via the methods
-``nbi.setPowerProfileGaussianTCV()`` and ``nbi.setPowerProfileGaussianITER()``.
-These automatically apply beam shapes consistent with the experimental setups of the
-respective devices.
+Predefined current profile types are available for typical TCV or ITER configurations
+via the method ``nbi.setCurrentProfile()``, which accepts ``profile_type`` values:
+``NBI_PROFILE_TCV`` (1), ``NBI_PROFILE_ITER`` (2), or ``NBI_PROFILE_CUSTOM`` (3) for
+user-defined profiles. These automatically apply beam shapes consistent with the
+experimental setups of the respective devices.
 
-The energy partition between beam components (e.g., full, half, and third energy)
-can be configured using the method ``nbi.setEnergyFractions()``.
+The energy partition between beam components (full, half, and third energy) can be
+configured using the method ``nbi.setEnergyFractions()``. NBI beams contain a mix
+of atomic (full energy) and molecular species that dissociate into half and third
+energy components.
 
 
 .. code-block:: python
 
+   from DREAM.Settings.Equations.NBISettings import NBI_PROFILE_TCV, NBI_PROFILE_ITER, NBI_PROFILE_CUSTOM
+
    ...
    # Set time-dependent power profile (in Watts)
-   ds.eqsys.T_cold.nbi.setPowerProfile(power = powerArray, times = timeArray)
+   ds.eqsys.T_cold.nbi.setPowerProfile(P_NBI_t = timeArray, P_NBI_x = powerArray)
 
-   # Set time-dependent current profile (in Amperes)
-   ds.eqsys.T_cold.nbi.setCurrentProfile(current = currentArray, times = timeArray)
+   # Set current profile type (TCV, ITER, or custom)
+   ds.eqsys.T_cold.nbi.setCurrentProfile(profile_type = NBI_PROFILE_TCV)
 
-   # Set energy fractions
-   ds.eqsys.T_cold.nbi.setEnergyFractions(fractions = [0.5, 0.4, 0.1])
+   # For custom current profile, provide j_B_t and j_B_x arrays
+   ds.eqsys.T_cold.nbi.setCurrentProfile(profile_type = NBI_PROFILE_CUSTOM, 
+                                          j_B_t = timeArray, j_B_x = currentArray)
 
-   # Set normalized gaussian power profile for TCV
-   ds.eqsys.T_cold.nbi.setTCVGaussian(False)
-
-   # Set normalized gaussian power profile for ITER
-   ds.eqsys.T_cold.nbi.setITERGaussian(False)
+   # Set energy fractions (must sum to 1.0)
+   ds.eqsys.T_cold.nbi.setEnergyFractions(f_full = 0.5, f_half = 0.4, f_third = 0.1)
 
 
 
