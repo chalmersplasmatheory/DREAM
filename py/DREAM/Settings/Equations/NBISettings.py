@@ -40,7 +40,7 @@ class NBISettings:
         
     def setCurrentProfile(self, profile_type, j_B_t=None, j_B_x=None, tinterp=0):
         """Set NBI Gaussian profile type. profile_type: 0=disabled, 1=TCV, 2=ITER, 3 = custom"""
-        if profile_type not in [1,2,3,0]:
+        if profile_type not in [1,2,3]:
             raise ValueError("Invalid profile_type. 1 (TCV), 2 (ITER), or 3 (custom).")
         
         elif  profile_type == 3:
