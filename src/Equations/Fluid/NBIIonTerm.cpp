@@ -5,6 +5,7 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/IO.hpp"
 
 
 
@@ -35,9 +36,7 @@ NBIIonTerm::NBIIonTerm(
     for (len_t iz = 0; iz <nZ; ++iz)
         Zmax_max = std::max(Zmax_max, ions->GetZ(iz));   
     len_t nCharge = Zmax_max + 1;
-    size_t deriv_size = static_cast<size_t>(nr) *
-                    static_cast<size_t>(nZ) *
-                    static_cast<size_t>(nCharge);
+    len_t deriv_size =(nr * nZ * nCharge);
     
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
@@ -57,7 +56,23 @@ NBIIonTerm::NBIIonTerm(
     d_Qe3_d_n_ij = new real_t[deriv_size];
     d_Qe3_d_T_ij = new real_t[deriv_size];
 }
-
+NBIIonTerm::~NBIIonTerm(){
+        delete[] Qe_1;
+        delete[] Qe_2;
+        delete[] Qe_3;
+        delete[] d_Qe1_d_Te;
+        delete[] d_Qe1_d_ne;
+        delete[] d_Qe1_d_n_ij;
+        delete[] d_Qe1_d_T_ij;
+        delete[] d_Qe2_d_Te;
+        delete[] d_Qe2_d_ne;
+        delete[] d_Qe2_d_n_ij;
+        delete[] d_Qe2_d_T_ij;
+        delete[] d_Qe3_d_Te;
+        delete[] d_Qe3_d_ne;
+        delete[] d_Qe3_d_n_ij;
+        delete[] d_Qe3_d_T_ij;
+    }
 /**
  * Rebuild the term (called once per time step). Call of the build function in NBIHandler
  */
@@ -105,6 +120,7 @@ void NBIIonTerm::SetCSVectorElements(
             real_t *vec, const real_t* /*x*/,
         const len_t iIon, const len_t Z0, const len_t /*rOffset*/
 ){
+    if (Z0 != 0) return; 
     const real_t* energy_fractions = handler->GetEnergyFractions();
     
     len_t NZ = ions->GetNZ(); 
@@ -114,7 +130,7 @@ void NBIIonTerm::SetCSVectorElements(
     std::vector<real_t> ni_species(NZ, 0.0);   
     std::vector<real_t> Zi(NZ, 0.0);           
     std::vector<real_t> Mi(NZ, 0.0);  
-    if (Z0 != 0) return; 
+    
     for (len_t ir=0; ir<nr; ++ir){
         real_t w = ComputeWeightFactor(ir, iIon);
         len_t idx = iIon * nr + ir;
@@ -127,12 +143,11 @@ void NBIIonTerm::SetCSVectorElements(
  * Set the matrix elements corresponding to this term.
  */
 void NBIIonTerm::SetCSMatrixElements(
-            FVM::Matrix *mat, real_t *rhs,
+            FVM::Matrix* /*mat*/, real_t *rhs,
         const len_t iIon, const len_t Z0, const len_t /*rOffset*/
 ){
-    (void)mat;
-    const real_t* energy_fractions = handler->GetEnergyFractions();
     if (Z0 != 0) return; 
+    const real_t* energy_fractions = handler->GetEnergyFractions();
     len_t NZ = ions->GetNZ();
     if (NZ == 0) {
         throw DREAMException("No ion species found in NBIIonTerm");
@@ -158,17 +173,8 @@ bool NBIIonTerm::SetCSJacobianBlock(
 ){
     const real_t* energy_fractions = handler->GetEnergyFractions(); 
 
-    if (derivId != id_ncold && derivId != id_Tcold &&
-        derivId != id_ni && derivId != id_ion_temperature) {
-        return false;
-    }
-    // For ion density derivatives, only set for Z0 == 0 (ion species), since Wi is per species
-    if (derivId != id_ni && Z0 != 0) {
-        return true;
-    }
-
     // Set Jacobian elements for each radial point
-    if (derivId == id_ncold) {
+    if (derivId == id_ncold && Z0 == 0) {
         for (len_t ir = 0; ir < nr; ++ir) {
             len_t row = iIon*nr+ir;
             len_t col = ir;
@@ -180,7 +186,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
         }
     }
     
-    if (derivId == id_Tcold) {
+    else if (derivId == id_Tcold && Z0 == 0) {
         for (len_t ir = 0; ir < nr; ++ir) {
             len_t row = iIon*nr+ir;
             len_t col = ir;
@@ -192,7 +198,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
         }
     }
     
-    if (derivId == id_ni) {
+    else if (derivId == id_ni && Z0 == 0) {
         for (len_t ir = 0; ir < nr; ++ir) {
             len_t row = iIon * nr + ir;
             len_t col = ions->GetIndex(iIon, Z0) * nr + ir;
@@ -205,7 +211,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
         }
     }
     
-    if (derivId == id_ion_temperature) {
+    else if (derivId == id_ion_temperature && Z0 == 0) {
         for (len_t ir = 0; ir < nr; ++ir) {
             
             
@@ -231,6 +237,9 @@ bool NBIIonTerm::SetCSJacobianBlock(
             real_t w= ComputeWeightFactor(ir, iIon);
             jac->SetElement(row, col, w*dP);
         }
+    }
+    else {
+        return false;
     }
     return true;
 }
@@ -266,7 +275,10 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
     real_t zIon = ions->GetZ(iIon);
     const real_t denom_min = 1e5;
     if (denom < denom_min){
-        printf("Warning: NBIIonTerm weight factor denom too small: %e. Setting to %e\n", denom, denom_min);
+        DREAM::IO::PrintWarning(
+				DREAM::IO::WARNING_ION_DENSITY_TOO_SMALL,
+				"Warning: NBIIonTerm weight factor denom too small."
+			);
         denom = denom_min;
     }
     real_t w = ni_species[iIon] * zIon / MiIon / denom;

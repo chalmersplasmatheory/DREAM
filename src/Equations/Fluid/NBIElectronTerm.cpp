@@ -27,8 +27,7 @@ NBIElectronTerm::NBIElectronTerm(
     for (len_t iz = 0; iz < nZ; ++iz)
         Zmax_max = std::max(Zmax_max, ions->GetZ(iz));
     len_t nCharge = Zmax_max + 1;
-    size_t deriv_size =
-        static_cast<size_t>(nr) * static_cast<size_t>(nZ) * static_cast<size_t>(nCharge);
+    len_t deriv_size =(nr * nZ * nCharge);
 
 
     Qe_1 = new real_t[nr];
@@ -55,7 +54,23 @@ NBIElectronTerm::NBIElectronTerm(
     AddUnknownForJacobian(unknowns, id_ion_temperature);
 }
 
-
+NBIElectronTerm::~NBIElectronTerm() {
+        delete[] Qe_1;
+        delete[] Qe_2;
+        delete[] Qe_3;
+        delete[] d_Qe1_d_Te;
+        delete[] d_Qe1_d_ne;
+        delete[] d_Qe1_d_n_ij;
+        delete[] d_Qe1_d_T_ij;
+        delete[] d_Qe2_d_Te;
+        delete[] d_Qe2_d_ne;
+        delete[] d_Qe2_d_n_ij;
+        delete[] d_Qe2_d_T_ij;
+        delete[] d_Qe3_d_Te;
+        delete[] d_Qe3_d_ne;
+        delete[] d_Qe3_d_n_ij;
+        delete[] d_Qe3_d_T_ij;
+    }
 /**
  * Rebuild the term (called once per time step). Call of the build function in NBIHandler
  */
@@ -123,11 +138,8 @@ void NBIElectronTerm::SetMatrixElements(FVM::Matrix*, real_t* rhs) {
  * Set the Jacobian elements corresponding to this term.
  */
 bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix* jac, const real_t*) {
-    if (derivId != id_ncold && derivId != id_Tcold && derivId != id_ni &&
-        derivId != id_ion_temperature)
-        return false;
-
     const real_t* energy_fractions = handler->GetEnergyFractions();
+
     if (derivId == id_Tcold) {
         for (len_t ir = 0; ir < nr; ++ir) {
             real_t deriv = energy_fractions[0] * d_Qe1_d_Te[ir] +
@@ -137,7 +149,7 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
         }
     }
 
-    if (derivId == id_ncold) {
+    else if (derivId == id_ncold) {
         for (len_t ir = 0; ir < nr; ++ir) {
             real_t deriv = energy_fractions[0] * d_Qe1_d_ne[ir] +
                 energy_fractions[1] * d_Qe2_d_ne[ir] +
@@ -146,7 +158,7 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
         }
     }
 
-    if (derivId == id_ni) {
+     else if (derivId == id_ni) {
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
                 const len_t Zmax = ions->GetZ(iIon);
@@ -163,7 +175,7 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
         }
     }
 
-    if (derivId == id_ion_temperature) {
+     else if (derivId == id_ion_temperature) {
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
                 real_t deriv_sum = 0.0;
@@ -177,6 +189,9 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
                 jac->SetElement(ir, col, deriv_sum);
             }
         }
+    }
+    else {
+        return false;
     }
 
     return true;
