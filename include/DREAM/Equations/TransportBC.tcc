@@ -67,26 +67,29 @@ bool DREAM::TransportBC<T>::AddToJacobianBlock(
         return contributes;
 
     SetPartialTerm(derivId, nMultiples);
+	bool isScalar = transportOperator->IsDerivativeScalar(derivId);
 
     for (len_t n = 0; n < nMultiples; n++) {
         SetPartialJacobianContribution(
             0, n, jac, x, JACOBIAN_SET_CENTER,
-            GetDiffCoefficient()+n*(nr+1)
+            GetDiffCoefficient()+n*(nr+1), isScalar
         );
 
         // Add terms corresponding to radial interpolation
         // (for coefficients evaluated on the flux grid, which
         // depend on quantities only known on the radial
         // distribution grid)
-        SetPartialJacobianContribution(
-            -1, n, jac, x, JACOBIAN_SET_LOWER,
-            GetDiffCoefficient()+n*(nr+1)
-        );
+		if (not isScalar) {
+			SetPartialJacobianContribution(
+				-1, n, jac, x, JACOBIAN_SET_LOWER,
+				GetDiffCoefficient()+n*(nr+1), isScalar
+			);
 
-        SetPartialJacobianContribution(
-            +1, n, jac, x, JACOBIAN_SET_UPPER,
-            GetDiffCoefficient()+n*(nr+1)
-        );
+			SetPartialJacobianContribution(
+				+1, n, jac, x, JACOBIAN_SET_UPPER,
+				GetDiffCoefficient()+n*(nr+1), isScalar
+			);
+		}
     }
 
     return contributes;
@@ -250,7 +253,8 @@ void DREAM::TransportBC<T>::__SetElements(
 template<typename T>
 void DREAM::TransportBC<T>::SetPartialJacobianContribution(
     const int_t diagOffs, const len_t n, DREAM::FVM::Matrix *jac, const real_t *x,
-    jacobian_interp_mode set_mode, const real_t *const* coeff
+    jacobian_interp_mode set_mode, const real_t *const* coeff,
+	bool isScalar
 ) {
     ResetJacobianColumn();
     AddToVectorElements_c(jacobianColumn, x, coeff, set_mode);
@@ -261,7 +265,12 @@ void DREAM::TransportBC<T>::SetPartialJacobianContribution(
             continue;
 
         const len_t N = this->grid->GetMomentumGrid(ir)->GetNCells();
-        len_t col = n*nr + ir + diagOffs;
+		len_t col;
+		if (isScalar)
+			col = diagOffs;
+		else
+			col = n*nr + ir + diagOffs;
+
         for (len_t i = offset; i < offset+N; i++)
             jac->SetElement(i, col, jacobianColumn[i]);
 

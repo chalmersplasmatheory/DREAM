@@ -65,7 +65,7 @@ namespace DREAM {
 
         void SetPartialJacobianContribution(
             const int_t, const len_t, DREAM::FVM::Matrix*, const real_t*,
-            jacobian_interp_mode, const real_t *const*
+            jacobian_interp_mode, const real_t *const*, bool
         );
     };
 

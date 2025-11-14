@@ -519,6 +519,8 @@ void Solver::SetPreconditioner(DiagonalPreconditioner *dp) {
 void Solver::SwitchToBackupInverter() {
     if (this->inverter == this->backupInverter)
         throw DREAMException("Backup matrix inverter failed with PETSc error: " INT_T_PRINTF_FMT, inverter->GetReturnCode());
+	else if (this->backupInverter == nullptr)
+		throw DREAMException("Main matrix inverter failed, and no backup inverter has been specified.");
 
     this->inverter = this->backupInverter;
 }
