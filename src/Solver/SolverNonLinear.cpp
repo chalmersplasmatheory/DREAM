@@ -3,19 +3,16 @@
  * the linear solvers of PETSc.
  */
 #include <iostream>
+#include <string>
+#include <vector>
 
 #include "DREAM/IO.hpp"
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Solver/Backtracker.hpp"
 #include "DREAM/Solver/PhysicalStepAdjuster.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
-<<<<<<< HEAD
-#include <string>
-#include <vector>
-
-=======
 #include "DREAM/QuitException.hpp"
->>>>>>> master
+
 
 using namespace DREAM;
 using namespace std;
@@ -30,18 +27,13 @@ SolverNonLinear::SolverNonLinear(
     EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls,
     enum OptionConstants::linear_solver bk,
-<<<<<<< HEAD
     enum OptionConstants::newton_step_adjuster nsa,
-    const int_t maxiter, const real_t reltol,
-    bool verbose
-) : Solver(unknowns, unknown_equations, ls, bk), eqsys(eqsys),
-    maxiter(maxiter), reltol(reltol), verbose(verbose), stepAdjusterType(nsa) {
-=======
+	const vector<string> &nsa_monitor,
 	const int_t maxiter, const real_t reltol,
 	bool verbose, bool checkResidual
 ) : Solver(unknowns, unknown_equations, eqsys, verbose, ls, bk),
-	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual) {
->>>>>>> master
+	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual),
+	stepAdjusterType(nsa), stepAdjusterMonitor(nsa_monitor) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -70,12 +62,8 @@ void SolverNonLinear::AcceptSolution() {
     this->x1  = this->x0;
     this->x0  = x;
 
-<<<<<<< HEAD
-    this->StoreSolution(x);
-=======
 	this->StoreSolution(x);
     this->IterationFinished();
->>>>>>> master
 }
 
 /**
@@ -142,15 +130,10 @@ void SolverNonLinear::AllocateJacobianMatrix() {
  * Deallocate memory used by this solver.
  */
 void SolverNonLinear::Deallocate() {
-<<<<<<< HEAD
     if (backupInverter != nullptr)
         delete backupInverter;
 
-    delete mainInverter;
     delete jacobian;
-=======
-	delete jacobian;
->>>>>>> master
 
     delete [] this->x_2norm;
     delete [] this->dx_2norm;
@@ -187,21 +170,24 @@ void SolverNonLinear::initialize_internal(
             new ConvergenceChecker(unknowns, this->unknown_equations, this->nontrivial_unknowns, this->diag_prec, this->reltol)
         );
 
-    InitStepAdjuster(this->stepAdjusterType);
+    InitStepAdjuster(this->stepAdjusterType, this->stepAdjusterMonitor);
 }
 
 /**
  * Construct and initialize the Newton step adjuster algorithm
  * to use with this Newton solver.
  */
-void SolverNonLinear::InitStepAdjuster(enum OptionConstants::newton_step_adjuster nsa) {
+void SolverNonLinear::InitStepAdjuster(
+	enum OptionConstants::newton_step_adjuster nsa,
+	vector<string> &monitor
+) {
     switch (nsa) {
         case OptionConstants::NEWTON_STEP_ADJUSTER_BACKTRACK:
-            this->adjuster = new Backtracker(this->nontrivial_unknowns, this->unknowns, this->ionHandler);
+            this->adjuster = new Backtracker(this->nontrivial_unknowns, this->unknowns, this->ionHandler, monitor);
             break;
 
         default:
-            this->adjuster = new PhysicalStepAdjuster(this->nontrivial_unknowns, this->unknowns, this->ionHandler, this->Verbose());
+            this->adjuster = new PhysicalStepAdjuster(this->nontrivial_unknowns, this->unknowns, this->ionHandler);
             break;
     }
 }
@@ -317,29 +303,6 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 }
 
 void SolverNonLinear::_InternalSolve() {
-<<<<<<< HEAD
-    // Take Newton steps
-    len_t iter = 0;
-    const real_t *x, *dx;
-    do {
-        iter++;
-        this->SetIteration(iter);
-
-REDO_ITER:
-        dx = this->TakeNewtonStep();
-        // Solution rejected (solver likely switched)
-        if (dx == nullptr) {
-            if (iter < this->MaxIter())
-                goto REDO_ITER;
-            else
-                throw SolverException("Maximum number of iterations reached while dx=nullptr.");
-        }
-
-        x  = UpdateSolution(dx);
-        
-        AcceptSolution();
-    } while (!IsConverged(x, dx));
-=======
 	// Take Newton steps
 	len_t iter = 0;
 	const real_t *x, *dx;
@@ -378,7 +341,6 @@ REDO_ITER:
 			extiter_conv = this->extiter->Solve(t, dt, this->nTimeStep);
 
 	} while (!extiter_conv);
->>>>>>> master
 }
 
 /**

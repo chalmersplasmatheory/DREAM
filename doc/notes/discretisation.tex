@@ -682,15 +682,15 @@
 
     \subsubsection{Acceleration of Newton solver: line search}
     If the initial guess $\bb{x}^{(0)}$ used is far from the true to solution,
-    the Newton solver may overshoot the true solution and first oscillate around
-    it, or even diverge completely. One method of accelerating convergence is
-    given in {\em Numerical Recipes} and is based on the optimization of an
-    equivalent one-dimensional problem. The purpose of the method is to
-    determine the optimal damping factor $\lambda$ such that the Newton update
+    the Newton solver may overshoot and first oscillate around the solution,
+    or even diverge completely. One method of accelerating convergence is given
+    in {\em Numerical Recipes} and is based on the optimization of an equivalent
+    one-dimensional problem. The purpose of the method is to determine the
+	optimal damping factor $\lambda$ such that the Newton update
     \begin{equation}
         \bb{x}^{(k+1)} = \bb{x}^{(k)} + \lambda\delta\bb{x},
     \end{equation}
-    with $\delta\bb{x}\equiv\Jac^{-1}\bb{F}$, takes as close to the true
+    with $\delta\bb{x}\equiv\Jac^{-1}\bb{F}$, takes us as close to the true
     solution as possible. If we are sufficiently close to the true solution,
     $\lambda=1$ and no damping is needed.
 
@@ -707,7 +707,7 @@
     \end{equation}
     Note, however, that we are only guaranteed that $\delta\bb{x}$ {\em points}
     in the descent direction from the previous guess $\bb{x}^{(k)}$; the step
-    may however be too long and actually lead to an increase in $f$ is taken
+    may however be too long and actually lead to an increase in $f$ if taken
     fully. Thus, to prevent overshoot, we should verify that $f$ actually
     decreases by taking the step $\delta\bb{x}$, and if not, backtrack along
     $\delta\bb{x}$ until $f(\bb{x}^{(k+1)}) < f(\bb{x}^{(k)})$. In practice,
@@ -727,9 +727,11 @@
     optimization problem that will allow us to determine the damping factor
     $\lambda$. We do so by introducing the function
     \begin{equation}
-        g(\lambda) = f\left(\bb{x}^{(k)} + \lambda\delta\bb{x}\right) = f\left(\bb{x}^{(k+1)}\right).
+        g(\lambda) = f\left(\bb{x}^{(k)} + \lambda\delta\bb{x}\right)
+			= f\left(\bb{x}^{(k+1)}\right).
     \end{equation}
-    This in turn implies that the derivative of this function is
+    This in turn implies that the derivative of this function with respect to
+	$\lambda$ is
     \begin{equation}
         g'(\lambda) = \nabla f\cdot\delta\bb{x}.
     \end{equation}

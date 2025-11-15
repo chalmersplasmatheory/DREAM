@@ -166,8 +166,16 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, nsa, maxiter, reltol, verbose, checkRes);
-    snl->SetDebugMode(printdebug, savesolution, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem, rescaled);
+	vector<string> nsaMonitor = s->GetStringList(MODULENAME "/stepadjustquantities");
+
+    auto snl = new SolverNonLinear(
+		u, eqns, eqsys, linsolv, backups, nsa, nsaMonitor,
+		maxiter, reltol, verbose, checkRes
+	);
+    snl->SetDebugMode(
+		printdebug, savesolution, savejacobian, saveresidual,
+		savenumjac, timestep, iteration, savesystem, rescaled
+	);
 
     return snl;
 }

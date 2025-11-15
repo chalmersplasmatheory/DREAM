@@ -7,9 +7,11 @@
  * 'doc/notes/discretisation.pdf'.
  */
 
+#include <string>
+#include <vector>
+#include <petsc.h>
 #include "DREAM/Solver/Backtracker.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
-#include <petsc.h>
 
 
 using namespace DREAM;
@@ -20,10 +22,25 @@ using namespace DREAM;
  */
 Backtracker::Backtracker(
     std::vector<len_t>& nu, FVM::UnknownQuantityHandler *uqh,
-    IonHandler *ions
+    IonHandler *ions, std::vector<std::string>& monitor
 ) : PhysicalStepAdjuster(nu, uqh, ions) {
 
     this->nnu = nu.size();
+
+	// Set up list of unknowns to monitor
+	this->nMonitor = monitor.size();
+	if (this->nMonitor > 0) {
+		this->monitor = new len_t[this->nMonitor];
+		for (len_t i = 0; i < this->nMonitor; i++)
+			this->monitor[i] = uqh->GetUnknownID(monitor[i]);
+	} else {
+		// If the list is empty, we consider all non-trivial unknowns
+		this->nMonitor = nnu;
+		this->monitor = new len_t[this->nMonitor];
+		for (len_t i = 0; i < this->nMonitor; i++)
+			this->monitor[i] = nu[i];
+	}
+
     this->f0 = new real_t[nnu];
     this->f1 = new real_t[nnu];
     this->f2 = new real_t[nnu];
@@ -40,6 +57,7 @@ Backtracker::~Backtracker() {
     delete [] this->f2;
     delete [] this->f1;
     delete [] this->f0;
+	delete [] this->monitor;
 }
 
 
@@ -68,7 +86,7 @@ real_t Backtracker::Adjust(
     this->lambda2 = this->lambda1;
     this->lambda1 = lambda;
 
-    // TODO Prevent Newton step from making key quantities negative
+    // Prevent Newton step from making key quantities negative
     real_t alpha = this->PhysicalStepAdjuster::Adjust(iteration, x, dx, F, jac);
 
     // If step must be constrained further due to physical reasons,
@@ -85,8 +103,8 @@ real_t Backtracker::Adjust(
 real_t Backtracker::CalculateLambda() {
     real_t lambda = 1;
 
-    // Iterate over non-trivial unknowns
-    for (len_t i = 0; i < nnu; i++) {
+    // Iterate over monitored unknowns
+    for (len_t i = 0; i < this->nMonitor; i++) {
         real_t l = 1;
 
         if (this->nIteration == 2) {    // quadratic approximation to g(lambda)
@@ -116,7 +134,7 @@ real_t Backtracker::CalculateLambda() {
         // each of the unknowns...
         if (l < lambda) {
             lambda = l;
-            this->limitingUnknown = i;
+            this->limitingUnknown = monitor[i];
         }
     }
 
@@ -138,9 +156,9 @@ void Backtracker::EvaluateTargetFunction(Vec &F, FVM::BlockMatrix *jac) {
 
     VecGetArray(F, &fvec);
 
-    for (len_t i = 0; i < nnu; i++) {
-        FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(nontrivial_unknowns[i]);
-        len_t offset = jac->GetOffset(i);
+    for (len_t i = 0; i < this->nMonitor; i++) {
+        FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(monitor[i]);
+        len_t offset = jac->GetOffsetById(monitor[i]);
         len_t N = uqn->NumberOfElements();
 
         // Copy value of f(x) at previous lambda
@@ -182,7 +200,7 @@ bool Backtracker::IsDecreasing(bool *dec) {
         return true;
 
     bool v = true;
-    for (len_t i = 0; i < nnu; i++) {
+    for (len_t i = 0; i < this->nMonitor; i++) {
         dec[i] = (f1[i] > f2[i]+ALPHA*gradf_deltax[i]);
         v = v && dec[i];
     }

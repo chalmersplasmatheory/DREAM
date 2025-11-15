@@ -14,6 +14,8 @@ namespace DREAM {
         real_t *gradf_deltax;
         real_t lambda1, lambda2;
 
+		len_t *monitor, nMonitor=0;
+
         // Index of non-trivial unknown currently causing
         // 'lambda' to be most limited...
         len_t limitingUnknown=0;
@@ -35,7 +37,10 @@ namespace DREAM {
         void ResetBacktracking();
 
     public:
-        Backtracker(std::vector<len_t>&, FVM::UnknownQuantityHandler*, IonHandler*);
+        Backtracker(
+			std::vector<len_t>&, FVM::UnknownQuantityHandler*,
+			IonHandler*, std::vector<std::string>&
+		);
         virtual ~Backtracker();
 
         virtual real_t Adjust(

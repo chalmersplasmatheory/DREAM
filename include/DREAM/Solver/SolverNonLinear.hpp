@@ -12,6 +12,7 @@
 #include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include <petsc.h>
+#include <string>
 #include <vector>
 
 namespace DREAM {
@@ -28,13 +29,14 @@ namespace DREAM {
 		real_t *x0, *x1, *dx, *xinit;
 		real_t *x_2norm, *dx_2norm;
 
-        NewtonStepAdjuster *adjuster;
-        enum OptionConstants::newton_step_adjuster stepAdjusterType = OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL;
-
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
 		bool checkResidual = true;
+
+        NewtonStepAdjuster *adjuster;
+        enum OptionConstants::newton_step_adjuster stepAdjusterType = OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL;
+		std::vector<std::string> stepAdjusterMonitor;
 
         // Debug settings
         bool printjacobianinfo = false, savejacobian = false, savesolution = false,
@@ -59,6 +61,7 @@ namespace DREAM {
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
             enum OptionConstants::newton_step_adjuster nsa=OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL,
+			const std::vector<std::string> &nsaMonitor=std::vector<std::string>(),
 			const int_t maxiter=100, const real_t reltol=1e-6,
 			bool verbose=false, bool checkResidual=true
 		);
@@ -68,7 +71,7 @@ namespace DREAM {
         void AllocateJacobianMatrix();
 		void Deallocate();
 		const std::string& GetNonTrivialName(const len_t);
-        void InitStepAdjuster(enum OptionConstants::newton_step_adjuster);
+        void InitStepAdjuster(enum OptionConstants::newton_step_adjuster, std::vector<std::string>&);
 
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }

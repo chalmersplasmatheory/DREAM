@@ -17,6 +17,8 @@ void EqsysInitializer::NonLinearSolve(const real_t t0, vector<len_t>& ssQty) {
 	SolverNonLinear *snl = new SolverNonLinear(
 		this->unknowns, this->unknown_equations, this->eqsys,
 		this->linear_solver, this->backup_solver,
+		OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL,
+		std::vector<std::string>(),
 		this->solver_maxiter, this->solver_reltol, this->solver_verbose
 	);
 
