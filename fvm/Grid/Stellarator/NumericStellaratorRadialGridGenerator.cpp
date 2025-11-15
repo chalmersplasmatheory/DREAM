@@ -27,6 +27,7 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
 ) : RadialGridGeneratorStellarator(nr), providedData(eqdata), rMin(r0), rMax(ra), rWall(rw) {
 
     this->nfp = nfp;
+    this->phiMax = 2*M_PI / this->nfp;
     this->R0 = R0;
 
     this->nrho = eqdata->nrho;
@@ -65,7 +66,10 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
 ) : RadialGridGeneratorStellarator(nr), providedData(eqdata), rWall(rw) {
 
     this->nfp = nfp;
+    this->phiMax = 2*M_PI / this->nfp;
     this->R0 = R0;
+    this->rMin = r_f[0];
+    this->rMax = r_f[nr];
 
     this->rf_provided = new real_t[nr+1];
     for (len_t i = 0; i < nr+1; i++)
@@ -129,15 +133,15 @@ NumericStellaratorRadialGridGenerator::~NumericStellaratorRadialGridGenerator() 
  * Make sure that the given poloidal angle is on the interval
  * [0, 2pi], and if not, shift so that it is.
  */
-real_t NumericStellaratorRadialGridGenerator::_angleBounded(const real_t angle) const {
-    if (angle >= 0 && angle <= 2*M_PI)
+real_t NumericStellaratorRadialGridGenerator::_angleBounded(const real_t angle, const real_t angleMax) const {
+    if (angle >= 0 && angle <= angleMax)
         return angle;
 
     // if angle > 0
     //   floor(...) = N
     // if angle < 0
     //   floor(...) = -(N+1)
-    return angle - 2*M_PI*std::floor(angle/(2*M_PI));
+    return angle - angleMax*std::floor(angle/angleMax);
 }
 
 /**
@@ -288,9 +292,8 @@ bool NumericStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStel
 real_t NumericStellaratorRadialGridGenerator::JacobianAtThetaPhi(
     const real_t radius, const real_t theta, const real_t phi
 ) {
-    
-    real_t t[1] = {this->_angleBounded(theta)};
-    real_t p[1] = {this->_angleBounded(phi)};
+    real_t t[1] = {this->_angleBounded(theta, this->thetaMax)};
+    real_t p[1] = {this->_angleBounded(phi, this->phiMax)};
     real_t r[1] = {radius};
 
     real_t *Jacobian = new real_t[1];
@@ -313,8 +316,8 @@ real_t NumericStellaratorRadialGridGenerator::JacobianAtThetaPhi(
 real_t NumericStellaratorRadialGridGenerator::BdotGradphiAtThetaPhi(
     const real_t radius, const real_t theta, const real_t phi
 ) {
-    real_t t[1] = {this->_angleBounded(theta)};
-    real_t p[1] = {this->_angleBounded(phi)};
+    real_t t[1] = {this->_angleBounded(theta, this->thetaMax)};
+    real_t p[1] = {this->_angleBounded(phi, this->phiMax)};
     real_t r[1] = {radius};
 
     real_t *BdotGradphi = new real_t[1];
@@ -340,8 +343,8 @@ real_t NumericStellaratorRadialGridGenerator::gttAtThetaPhi(
 ) {
 	if (radius == 0)
 		return 1.0; 
-    real_t t[1] = {this->_angleBounded(theta)};
-    real_t p[1] = {this->_angleBounded(phi)};
+    real_t t[1] = {this->_angleBounded(theta, this->thetaMax)};
+    real_t p[1] = {this->_angleBounded(phi, this->phiMax)};
     real_t r[1] = {radius};
 
     real_t *gtt = new real_t[1];
@@ -366,8 +369,8 @@ real_t NumericStellaratorRadialGridGenerator::gttAtThetaPhi(
 real_t NumericStellaratorRadialGridGenerator::gtpAtThetaPhi(
     const real_t radius, const real_t theta, const real_t phi
 ) {
-    real_t t[1] = {this->_angleBounded(theta)};
-    real_t p[1] = {this->_angleBounded(phi)};
+    real_t t[1] = {this->_angleBounded(theta, this->thetaMax)};
+    real_t p[1] = {this->_angleBounded(phi, this->phiMax)};
     real_t r[1] = {radius};
 
     real_t *gtt = new real_t[1];
@@ -396,9 +399,9 @@ real_t NumericStellaratorRadialGridGenerator::gtpAtThetaPhi(
 void NumericStellaratorRadialGridGenerator::EvaluateGeometricQuantities(
     const real_t r, const real_t theta, real_t phi, real_t &B, real_t &Jacobian, real_t &BdotGradphi, real_t &gttOverJ2, real_t &gtpOverJ2
 ) {
-    real_t t = this->_angleBounded(theta);
+    real_t t = this->_angleBounded(theta, this->thetaMax);
     
-    real_t p = this->_angleBounded(phi);
+    real_t p = this->_angleBounded(phi, this->phiMax);
 
     Jacobian = JacobianAtThetaPhi(r, t, p);
     
@@ -417,8 +420,8 @@ void NumericStellaratorRadialGridGenerator::EvaluateGeometricQuantities(
  */
 real_t NumericStellaratorRadialGridGenerator::EvalB(const real_t radius, const real_t theta, const real_t phi) {
     
-    real_t t[1] = {this->_angleBounded(theta)};
-    real_t p[1] = {this->_angleBounded(phi)};
+    real_t t[1] = {this->_angleBounded(theta, this->thetaMax)};
+    real_t p[1] = {this->_angleBounded(phi, this->phiMax)};
     real_t r[1] = {radius};
 
     real_t *B = new real_t[1];
@@ -452,8 +455,8 @@ const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 	for (len_t ip = 0, i = 0; ip < nphi; ip++)
         for (len_t it = 0; it < ntheta; it++)
 		    for (len_t ir = 0; ir < nr; ir++, i++){
-                real_t t[1] = {this->_angleBounded(theta[it])};
-                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t t[1] = {this->_angleBounded(theta[it], this->thetaMax)};
+                real_t p[1] = {this->_angleBounded(phi[ip], this->phiMax)};
                 real_t r[1] = {this->r[ir]};
                 real_t *iR = new real_t[1];
                 this->interp_R->Eval(1,1,1, p, r, t, iR);
@@ -480,8 +483,8 @@ const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceRMinusR0_f() 
     for (len_t ip = 0, i = 0; ip < nphi; ip++)
         for (len_t it = 0; it < ntheta; it++)
 		    for (len_t ir = 0; ir < nr+1; ir++, i++){
-                real_t t[1] = {this->_angleBounded(theta[it])};
-                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t t[1] = {this->_angleBounded(theta[it], this->thetaMax)};
+                real_t p[1] = {this->_angleBounded(phi[ip], this->phiMax)};
                 real_t r[1] = {this->r_f[ir]};
                 real_t *iR = new real_t[1];
                 this->interp_R->Eval(1,1,1, p, r, t, iR);
@@ -508,8 +511,8 @@ const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
     for (len_t ip = 0, i = 0; ip < nphi; ip++)
         for (len_t it = 0; it < ntheta; it++)
 		    for (len_t ir = 0; ir < nr; ir++, i++){
-                real_t t[1] = {this->_angleBounded(theta[it])};
-                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t t[1] = {this->_angleBounded(theta[it], this->thetaMax)};
+                real_t p[1] = {this->_angleBounded(phi[ip], this->phiMax)};
                 real_t r[1] = {this->r[ir]};
                 real_t *iZ = new real_t[1];
                 this->interp_Z->Eval(1,1,1, p, r, t, iZ);
@@ -536,8 +539,8 @@ const real_t *NumericStellaratorRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() 
     for (len_t ip = 0, i = 0; ip < nphi; ip++)
         for (len_t it = 0; it < ntheta; it++)
 		    for (len_t ir = 0; ir < nr+1; ir++, i++){
-                real_t t[1] = {this->_angleBounded(theta[it])};
-                real_t p[1] = {this->_angleBounded(phi[ip])};
+                real_t t[1] = {this->_angleBounded(theta[it], this->thetaMax)};
+                real_t p[1] = {this->_angleBounded(phi[ip], this->phiMax)};
                 real_t r[1] = {this->r_f[ir]};
                 real_t *iZ = new real_t[1];
                 this->interp_Z->Eval(1,1,1, p, r, t, iZ);
@@ -576,7 +579,7 @@ const real_t *NumericStellaratorRadialGridGenerator::GetToroidalAngle() {
 
     real_t factor = 1;
     if (this->nfp > 0)
-        factor /= 2*nfp;
+        factor /= nfp;
 
 	for (len_t i = 0; i < nphi; i++)
 		phi[i] = 2*M_PI*i / nphi * factor; // TODO: Ok? 

@@ -85,7 +85,8 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t FSA_1OverB = rGrid->GetFSA_1OverB(ir);    // <1 / B> * Bmin
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
-            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
+            const real_t Bmax = rGrid->GetBmax(ir);                // Bmax
+            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
 
             // For stellarators, density and temperature gradients dX/dr->(dX/dr)/iota in the Redl formula
             constantPrefactor[ir] = -BtorGOverR0 / rGrid->GetIota(ir) / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
@@ -106,12 +107,11 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             // TODO: Change this?
             qR0[ir] = (BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin;
 
-            eps[ir] = (rGrid->GetBmax(ir) - rGrid->GetBmin(ir)) / (rGrid->GetBmax(ir) + rGrid->GetBmin(ir));
+            eps[ir] = (Bmax - Bmin) / (Bmax + Bmin);
         }
     } /*else {
         Possibly do a warning here?
     }*/
-
     // locate the main ion index
     bool isFound = false;
     // IE: is this (below) the best practice?

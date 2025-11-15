@@ -231,7 +231,7 @@ void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_me
     std::function<real_t(real_t,real_t,real_t)>  QuadWeightFunction;
     theta_max = 2 * M_PI; 
     if(this->nfp > 0)
-        phi_max = M_PI / this->nfp;
+        phi_max = 2*M_PI / this->nfp;
     else 
         phi_max = 2 * M_PI;
     
@@ -276,7 +276,7 @@ void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_me
     // If symmetric field we integrate from 0 to pi and multiply result by 2. 
     if(this->nfp > 0)
         for(len_t it=0; it<ntheta_interp; it++)
-            weights_phi[it] *= 2 * this->nfp;
+            weights_phi[it] *= this->nfp;
 }
 
 /**

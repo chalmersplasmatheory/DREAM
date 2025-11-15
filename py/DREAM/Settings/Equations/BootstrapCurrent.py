@@ -32,7 +32,7 @@ class BootstrapCurrent(UnknownQuantity):
         current density. If enabled, this contribution is calculated using the Redl-Sauter
         model, which is based on A. Redl et al (DOI: https://doi.org/10.1063/5.0012664).
         """
-        if mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_ENABLED]:
+        if mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_ENABLED, BOOTSTRAP_MODE_STELLARATOR]:
             self.mode = mode
         else:
             raise EquationException(f"j_bs: Unrecognized bootstrap current mode: {mode}")

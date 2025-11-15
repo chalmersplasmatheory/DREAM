@@ -203,20 +203,24 @@ void RadialGridStellarator::RebuildFluxSurfaceAveragedQuantities(){
     SetFluxSurfaceAverage(FSA_gtpOverJ2,FSA_gtpOverJ2_f, FSA_FUNC_GTP_OVER_JACOBIAN_SQUARED, nullptr, FSA_PARAM_GTP_OVER_JACOBIAN_SQUARED);
 
     if (nr >= 1 && r_f[nr-1] != r_f[nr]){
-        real_t C_gtt[2], C_gtp[2], C_psi[2];
-        extrapolator(r_f, FSA_gttOverJ2_f, nr, C_gtt);
-        extrapolator(r_f, FSA_gtpOverJ2_f, nr, C_gtp);
-        extrapolator(r_f, psiPrimeRef_f, nr, C_psi);
-        
-        struct paramsPsiBC params = {C_gtt, C_gtp, C_psi};
         real_t a = this->generator->GetMinorRadius(), b = this->generator->GetWallRadius();
-        
-        gsl_integration_workspace *gsl_adaptive = gsl_integration_workspace_alloc(1000);
-        gsl_function GSL_func; 
-        GSL_func.function = &(integrandPsiBC);
-        GSL_func.params = &params;
-        real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
-        gsl_integration_qag(&GSL_func, a, b, epsabs, epsrel, lim, GSL_INTEG_GAUSS41, gsl_adaptive, &psiExtraAtWall, &error);
+        if (b > a){
+            real_t C_gtt[2], C_gtp[2], C_psi[2];
+            extrapolator(r_f, FSA_gttOverJ2_f, nr, C_gtt);
+            extrapolator(r_f, FSA_gtpOverJ2_f, nr, C_gtp);
+            extrapolator(r_f, psiPrimeRef_f, nr, C_psi);
+            
+            
+            struct paramsPsiBC params = {C_gtt, C_gtp, C_psi};
+            
+            gsl_integration_workspace *gsl_adaptive = gsl_integration_workspace_alloc(1000);
+            gsl_function GSL_func; 
+            GSL_func.function = &(integrandPsiBC);
+            GSL_func.params = &params;
+            real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+            gsl_integration_qag(&GSL_func, a, b, epsabs, epsrel, lim, GSL_INTEG_GAUSS41, gsl_adaptive, &psiExtraAtWall, &error);
+        } else 
+            psiExtraAtWall = 0.;
     } else {
         psiExtraAtWall = 0;
     }
