@@ -371,6 +371,16 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
     if (Tcold_init == nullptr)
         throw SettingsException("No initial data loaded for T_cold (from " MODULENAME "/init). Perhaps it has not been provided correctly?" );
+	
+	for (len_t i = 0; i < fluidGrid->GetNr(); i++) {
+		if (Tcold_init[i] <= 0)
+			throw SettingsException(
+				"Invalid value for 'T_cold' at r = %.3f m: %.3f eV.",
+				fluidGrid->GetRadialGrid()->GetR(i),
+				Tcold_init[i]
+			);
+	}
+
     eqsys->SetInitialValue(id_T_cold, Tcold_init);
     delete [] Tcold_init;
 
