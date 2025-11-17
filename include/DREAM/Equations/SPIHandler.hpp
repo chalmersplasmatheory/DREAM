@@ -97,6 +97,7 @@ namespace DREAM{
         int_t *nbrShiftGridCell=nullptr;
         int_t *nbrShiftGridCellPrescribed=nullptr;
         real_t *shift_store=nullptr;
+        real_t *shift_store_major_radius=nullptr;
         real_t *ncoldPrevious=nullptr;
         real_t *TcoldPrevious=nullptr;
         real_t *YpdotPrevious=nullptr;
@@ -187,6 +188,9 @@ namespace DREAM{
 
         real_t* GetDrift()
         { return this->shift_store; }
+
+        real_t* GetDriftMajorRadius()
+        { return this->shift_store_major_radius; }
 
         void Rebuild(real_t dt, real_t t);
 
