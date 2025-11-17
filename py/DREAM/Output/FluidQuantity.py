@@ -226,52 +226,92 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxis = False, shifted = True, maxMinScale=True, levels = None, logscale=False, **kwargs):
         """
-        Plot the radial profile of this quantity revolved over a 
-        poloidal cross section at the specified time step. 
-        NOTE: Currently assumes a cylindrical flux surface geometry!
-        
+        Plot the radial profile of this quantity revolved over a
+        poloidal cross section at the specified time step.
+
         :param matplotlib.pyplot.Axis ax:   Matplotlib axes object to use for plotting.
         :param bool show: If 'True', shows the plot immediately via a call to 'matplotlib.pyplot.show()' with 'block=False'. If 'None', this is interpreted as 'True' if 'ax' is also 'None'.
         :param int t: Time index to plot.
         :param matplotlib.pyplot.Colorbar colorbar: Specify wether or not to include a colorbar.
-        :param bool displayGrid: Specify wether or not to display a polar grid in the plot.
+        :param bool return_contours: Specify wether or not to return the contours
+        :param bool displayGrid: Specify wether or not to display the flux surfaces separating the grid cells in the plot.
+        :param bool maxis: Specify wether or not to display the magnetic axis
+        :param bool shifted: If 'True', the origin is shifted to the magnetic axis, otherwise the origin is in the center of the torus
         :param bool maxMinScale: If 'True', set tha max and min of the color scale to the maximum and minimum values of the data stored by this object over all time steps.
+        :param numpy.ndarray levels: Levels for the color scale (only used if maxMinScale is False)
+        :param bool logscale: If 'True', plot the contours with a logarithmic color scale
 
         :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
         
+        black = (87/255, 117/255, 144/255)
+        
         genax = ax is None
 
         if genax:
-            ax = plt.subplot(polar=True)
-            ax.set_facecolor('k')
-            ax.set_ylim([self.grid.r[0],self.grid.r[-1]])
+            ax = plt.axes()
             ax.set_title('t = '+str(self.grid.t[t]))
+            if shifted:
+                ax.set_xlabel('Radius $R-R_0$ (m)')
+                ax.set_ylabel('Height $Z-Z_0$ (m)')
+            else:
+                ax.set_xlabel('Radius $R$ (m)')
+                ax.set_ylabel('Height $Z$ (m)')
 
-            if not displayGrid:
-                ax.grid(None)
-                ax.set_yticklabels([])
-                ax.set_xticklabels([])
+            ax.axis('equal')
 
             if show is None:
                 show = True
-                
-        theta=np.linspace(0,2*np.pi)
+
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal contrours when equilibrium data is not stored in output.")
+
+        theta = self.grid.eq.theta
+
+        # Shift origin as requested
+        if shifted:
+            R = self.grid.eq.RMinusR0
+            R_f = self.grid.eq.RMinusR0_f
+            Z = self.grid.eq.ZMinusZ0
+            Z_f = self.grid.eq.ZMinusZ0_f
+        else:
+            R = self.grid.eq.RMinusR0 + self.grid.eq.R0
+            R_f = self.grid.eq.RMinusR0_f + self.grid.eq.R0
+            Z = self.grid.eq.ZMinusZ0 + self.grid.eq.Z0
+            Z_f = self.grid.eq.ZMinusZ0_f + self.grid.eq.Z0
+            
+        # Add the innermost and outermost flux surfaces of the flux grid,
+        # so that the contours fill the entire plasma cross section
+        R = np.hstack((R_f[:,0].reshape(-1,1), R))
+        R = np.hstack((R, R_f[:,-1].reshape(-1,1)))
+        Z = np.hstack((Z_f[:,0].reshape(-1,1), Z))
+        Z = np.hstack((Z, Z_f[:,-1].reshape(-1,1)))
+        
+        # Create matrix with the data in each radial grid cell copied to all values of theta
+        # Take logarithm of data if requested
         if logscale:
         	data_mat=np.log10(self.data[t,:])*np.ones((len(theta),len(self.grid.r)))
         else:
         	data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
         	
+        # Duplicate the data in the innermost and outermost grid cell centers
+        # to be plotted at the edges of the flux grid so that the contours fill the entire plasma cross section
+        data_mat = np.hstack((data_mat[:,0].reshape(-1,1),data_mat))
+        data_mat = np.hstack((data_mat,data_mat[:,-1].reshape(-1,1)))
+        	
+    # Calculate contour levels ranging between the maximum and minimum value of this fluidQuantity, if requested
         if maxMinScale:
             if logscale:
-                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data))), **kwargs)
+                levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data)))
             else:
-                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
-        else:
-            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
+                levels=np.linspace(np.min(self.data),np.max(self.data))
+
+        # Plot contours of this fluidQuantity
+        cp = ax.contourf(R, Z, data_mat, cmap='GeriMap', levels = levels, **kwargs)
 			
+        # Create colorbar, if requested
         cb = None
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
@@ -279,6 +319,14 @@ class FluidQuantity(UnknownQuantity):
                 cb.ax.set_ylabel(r'$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
             else:
                 cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+                
+        # Display grid cells, if requested
+        if displayGrid:
+            self.grid.eq.visualize(ax=ax, maxis=maxis, shifted = shifted)
+        else:
+            # We display the edge of the plasma even when we do not display the whole grid
+            ax.plot(R[:,-1], Z[:,-1], color=black, linewidth=2, **kwargs)
+            ax.plot(R[(0,-1),-1], Z[(0,-1),-1], color=black, linewidth=2, **kwargs) # Close contour
             
         if show:
             plt.show(block=False)
