@@ -12,7 +12,6 @@
 #include <tuple>
 #include <algorithm>
 #include "FVM/UnknownQuantityHandler.hpp"
-#include <omp.h>
 #include <unistd.h>
 #include "FVM/Interpolator1D.hpp"
 #include "DREAM/DREAMException.hpp"
