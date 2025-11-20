@@ -125,6 +125,7 @@ namespace DREAM {
 
         void Precondition(FVM::Matrix*, Vec);
         void UnPrecondition(Vec);
+		void UnPreconditionRHS(Vec);
 		bool Verbose() const  { return this->verbose; }
         
         virtual void PrintTimings() = 0;

@@ -440,6 +440,38 @@
             {p^{\rm RE}_{1/2} - p^{\rm hot}_{N_p+1/2}}.
     \end{equation}
 
+    \subsubsection{Boundary conditions on $r$ grid}
+    On a radial grid, we need to prescribe $f_{N_r+1,i,j}$. There are numerous
+    potential ways of doing this, and in \DREAM\ we provide two options.
+
+    \paragraph{Assume $f=0$}
+    In this mode we simply assume $f = 0$ outside the plasma, setting
+    $f_{N_r+1,i,j}=0$. In addition to specifying $f$, we must also choose the
+    location of the point $k=N_r+1$. For simplicity, we choose $N_r+1=N_r+1/2$,
+    so that $f_{N_r+1,i,j}$ corresponds exactly to the edge of the plasma. The
+    boundary term therefore becomes
+    \begin{equation}
+        -\frac{\Vp D_{rr;N_r+1/2}}{\Vp_{N_r}\Delta r_{N_r}\left( r_{N_r+1/2}-r_{N_r} \right)}
+        f_{N_r,i,j}
+    \end{equation}
+
+    \paragraph{Constant derivative}
+    We could also determine $f_{k+1,i,j}$ by interpolating in $f$, assuming a
+    constant $\partial f/\partial r$ on the plasma edge. In this case, again
+    assuming $r_{N_r+1} = r_{N_r+1/2}$, we obtain the set of equations
+    \begin{equation}
+        \begin{cases}
+            f_{N_r} &= f_{N_r+1/2} - \left( r_{N_r+1/2}-r_{N_r} \right)\left.\frac{\partial f}{\partial r}\right|_{N_r+1/2},\\
+            f_{N_r-1} &= f_{N_r+1/2} - \left( r_{N_r+1/2}-r_{N_r} + \Delta r_{N_r-1/2} \right)\left.\frac{\partial f}{\partial r}\right|_{N_r+1/2}.
+        \end{cases}
+    \end{equation}
+    Solving the first of these equations for $\partial f/\partial r$ and
+    substituting the result into the second equation, we obtain
+    \begin{equation}
+        f_{N_r+1/2} = \left( 1 + \delta\right) f_{N_r} - \delta f_{N_r-1}
+    \end{equation}
+    with $\delta = (r_{N_r+1/2}-r_{N-r})/\Delta r_{N_r-1/2}$.
+
     \subsection{Calculation of jacobian}
     The jacobian matrix is used with Newton's method to solve a non-linear set
     of equations. Each element of the matrix corresponds to a derivative of an
@@ -650,15 +682,15 @@
 
     \subsubsection{Acceleration of Newton solver: line search}
     If the initial guess $\bb{x}^{(0)}$ used is far from the true to solution,
-    the Newton solver may overshoot the true solution and first oscillate around
-    it, or even diverge completely. One method of accelerating convergence is
-    given in {\em Numerical Recipes} and is based on the optimization of an
-    equivalent one-dimensional problem. The purpose of the method is to
-    determine the optimal damping factor $\lambda$ such that the Newton update
+    the Newton solver may overshoot and first oscillate around the solution,
+    or even diverge completely. One method of accelerating convergence is given
+    in {\em Numerical Recipes} and is based on the optimization of an equivalent
+    one-dimensional problem. The purpose of the method is to determine the
+	optimal damping factor $\lambda$ such that the Newton update
     \begin{equation}
         \bb{x}^{(k+1)} = \bb{x}^{(k)} + \lambda\delta\bb{x},
     \end{equation}
-    with $\delta\bb{x}\equiv\Jac^{-1}\bb{F}$, takes as close to the true
+    with $\delta\bb{x}\equiv\Jac^{-1}\bb{F}$, takes us as close to the true
     solution as possible. If we are sufficiently close to the true solution,
     $\lambda=1$ and no damping is needed.
 
@@ -675,14 +707,14 @@
     \end{equation}
     Note, however, that we are only guaranteed that $\delta\bb{x}$ {\em points}
     in the descent direction from the previous guess $\bb{x}^{(k)}$; the step
-    may however be too long and actually lead to an increase in $f$ is taken
+    may however be too long and actually lead to an increase in $f$ if taken
     fully. Thus, to prevent overshoot, we should verify that $f$ actually
     decreases by taking the step $\delta\bb{x}$, and if not, backtrack along
     $\delta\bb{x}$ until $f(\bb{x}^{(k+1)}) < f(\bb{x}^{(k)})$. In practice,
     we impose the less strict condition
     \begin{equation}\label{eq:newton:acc:cond}
         f\left(\bb{x}^{(k+1)}\right) \leq f\left(\bb{x}^{(k)}\right) +
-        \alpha\nabla f^{(0)}\cdot\delta\bb{x},
+        \alpha\nabla f\cdot\delta\bb{x},
     \end{equation}
     where $\alpha$ is an arbitrary coefficient satisfying $0<\alpha<1$ (which
     the authors of {\em Numerical Recipes}---and we---set to $\alpha=10^{-4}$)
@@ -695,9 +727,11 @@
     optimization problem that will allow us to determine the damping factor
     $\lambda$. We do so by introducing the function
     \begin{equation}
-        g(\lambda) = f\left(\bb{x}^{(k)} + \lambda\delta\bb{x}\right) = f\left(\bb{x}^{(k)}\right).
+        g(\lambda) = f\left(\bb{x}^{(k)} + \lambda\delta\bb{x}\right)
+			= f\left(\bb{x}^{(k+1)}\right).
     \end{equation}
-    This in turn implies that the derivative of this function is
+    This in turn implies that the derivative of this function with respect to
+	$\lambda$ is
     \begin{equation}
         g'(\lambda) = \nabla f\cdot\delta\bb{x}.
     \end{equation}

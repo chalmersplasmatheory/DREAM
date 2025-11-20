@@ -2,10 +2,10 @@
  * Construct a time stepper object.
  */
 
-#include "DREAM/IO.hpp"
-#include "DREAM/EquationSystem.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/Solver.hpp"
+#include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
@@ -34,6 +34,9 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 	s->DefineSetting(MODULENAME "/checkresidual", "If true, prints a warning if the residual is not close to zero at the end of non-linear iteration", (bool)true);
 	s->DefineSetting(MODULENAME "/saveconvergenceinfo", "If true, saves information about non-linear convergence to the output file", (bool)false);
+
+    s->DefineSetting(MODULENAME "/stepadjust/type", "Algorithm to use for adjusting Newton step", (int_t)OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL);
+	s->DefineSetting(MODULENAME "/stepadjust/quantities", "Names of unknown quantities to consider when adjusting the Newton step", (const string)"");
 
     DefineToleranceSettings(MODULENAME, s);
     DefinePreconditionerSettings(s);
@@ -81,16 +84,15 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
             );
     }
 
+    solver->SetSPIHandler(eqsys->GetSPIHandler());
+    solver->SetIonHandler(eqsys->GetIonHandler());
+
     eqsys->SetSolver(solver);
     solver->SetCollisionHandlers(
         eqsys->GetHotTailCollisionHandler(),
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
-
-    solver->SetSPIHandler(eqsys->GetSPIHandler());
-
-    solver->SetIonHandler(eqsys->GetIonHandler());
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
         MODULENAME, s, eqns, u, solver->GetNonTrivials()
@@ -149,6 +151,8 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     enum OptionConstants::linear_solver
         backups = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/backupsolver"),
         linsolv = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
+    enum OptionConstants::newton_step_adjuster
+        nsa = (enum OptionConstants::newton_step_adjuster)s->GetInteger(MODULENAME "/stepadjust/type");
 
     int_t maxiter     = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
@@ -164,8 +168,16 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose, checkRes);
-    snl->SetDebugMode(printdebug, savesolution, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem, rescaled);
+	vector<string> nsaMonitor = s->GetStringList(MODULENAME "/stepadjust/quantities");
+
+    auto snl = new SolverNonLinear(
+		u, eqns, eqsys, linsolv, backups, nsa, nsaMonitor,
+		maxiter, reltol, verbose, checkRes
+	);
+    snl->SetDebugMode(
+		printdebug, savesolution, savejacobian, saveresidual,
+		savenumjac, timestep, iteration, savesystem, rescaled
+	);
 
     return snl;
 }

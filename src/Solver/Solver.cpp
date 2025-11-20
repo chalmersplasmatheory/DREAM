@@ -346,6 +346,12 @@ void Solver::UnPrecondition(Vec x) {
 
     this->diag_prec->UnscaleUnknownVector(x);
 }
+void Solver::UnPreconditionRHS(Vec b) {
+	if (this->diag_prec == nullptr)
+		return;
+	
+	this->diag_prec->UnscaleRHSVector(b);
+}
 
 /**
  * Print timing information for the 'Rebuild' stage of the solver.

@@ -3,15 +3,17 @@
 
 #include "FVM/config.h"
 
-#include <petsc.h>
-#include <vector>
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Solver/NewtonStepAdjuster.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include <petsc.h>
+#include <string>
+#include <vector>
 
 namespace DREAM {
 	class SolverNonLinear : public Solver {
@@ -31,6 +33,10 @@ namespace DREAM {
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
 		bool checkResidual = true;
+
+        NewtonStepAdjuster *adjuster;
+        enum OptionConstants::newton_step_adjuster stepAdjusterType = OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL;
+		std::vector<std::string> stepAdjusterMonitor;
 
         // Debug settings
         bool printjacobianinfo = false, savejacobian = false, savesolution = false,
@@ -54,6 +60,8 @@ namespace DREAM {
 			std::vector<UnknownQuantityEquation*>*, EquationSystem*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
+            enum OptionConstants::newton_step_adjuster nsa=OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL,
+			const std::vector<std::string> &nsaMonitor=std::vector<std::string>(),
 			const int_t maxiter=100, const real_t reltol=1e-6,
 			bool verbose=false, bool checkResidual=true
 		);
@@ -63,6 +71,7 @@ namespace DREAM {
         void AllocateJacobianMatrix();
 		void Deallocate();
 		const std::string& GetNonTrivialName(const len_t);
+        void InitStepAdjuster(enum OptionConstants::newton_step_adjuster, std::vector<std::string>&);
 
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }
@@ -89,8 +98,8 @@ namespace DREAM {
         void SaveJacobian();
         void SaveJacobian(const std::string& name);
 		void StoreSolution(const real_t*);
-		const real_t *TakeNewtonStep();
-		const real_t *UpdateSolution(const real_t*);
+		void EvaluateResidual();
+		const real_t *EvaluateNewtonStep();
 
         virtual void PrintTimings() override;
         virtual void SaveTimings(SFile*, const std::string& path="") override;
@@ -98,6 +107,10 @@ namespace DREAM {
         void SaveDebugInfoBefore(len_t, len_t);
         void SaveDebugInfoAfter(len_t, len_t);
         void SetDebugMode(bool, bool, bool, bool, bool, int_t, int_t, bool, bool);
+
+        // Routines for backtracking
+        void EvaluateTargetFunction(Vec*);
+        void PushTargetFunction(const real_t);
 
         virtual void SwitchToBackupInverter() override;
 
