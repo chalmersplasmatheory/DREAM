@@ -109,6 +109,13 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
         id_qhot = unknowns->GetUnknownID(OptionConstants::UQTY_Q_HOT);
         id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     }
+
+	if (unknowns->HasUnknown(OptionConstants::UQTY_T_HOT)) {
+		this->id_Thot = unknowns->GetUnknownID(OptionConstants::UQTY_T_HOT);
+		this->id_nhot = unknowns->GetUnknownID(OptionConstants::UQTY_N_HOT);
+		this->hasThot = true;
+	}
+
     // Get number of grid points and number of shards
     this->nr=rGrid->GetNr();
     this->nShard=unknowns->GetUnknown(id_Yp)->NumberOfMultiples();
@@ -530,6 +537,11 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
         ntot=unknowns->GetUnknownData(id_ntot);
     }
 
+	if (this->hasThot) {
+		this->nhot = unknowns->GetUnknownData(id_nhot);
+		this->Thot = unknowns->GetUnknownData(id_Thot);
+	}
+
     // We use YpPrevious>0 as condition to keep the pellet terms active, 
     // to avoid making the functions discontinuous within a single time step
     YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
@@ -744,7 +756,9 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
 void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
         if(YpPrevious[ip]>0 && irp[ip]<nr){
-            Ypdot[ip]=-NGSConstantFactor[ip]*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
+            Ypdot[ip] = -NGSConstantFactor[ip]*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
+			if (this->hasThot)
+				Ypdot[ip] = -NGSConstantFactor[ip]*pow(Thot[irp[ip]], 5.0/3.0)*cbrt(nhot[irp[ip]]);
         }else
             Ypdot[ip]=0;
     }

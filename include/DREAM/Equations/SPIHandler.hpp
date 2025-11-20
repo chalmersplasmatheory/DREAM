@@ -47,10 +47,13 @@ namespace DREAM{
         len_t nSplit=1;
         len_t iSplit=0;
         bool turningPointPassed;
+		bool hasThot=false;
 
         len_t id_ncold;
         len_t id_ni;
+		len_t id_nhot;
         len_t id_Tcold;
+		len_t id_Thot;
         len_t id_Yp;
         len_t id_xp;
         len_t id_vp;
@@ -60,7 +63,9 @@ namespace DREAM{
         len_t id_ntot;
 
         real_t *ncold;
+		real_t *nhot=nullptr;
         real_t *Tcold;
+		real_t *Thot=nullptr;
         real_t *Yp;
         real_t *Yp_initial;
         real_t *YpPrevious;
