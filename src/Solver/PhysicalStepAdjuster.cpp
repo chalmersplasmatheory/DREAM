@@ -14,19 +14,64 @@ using namespace std;
  */
 PhysicalStepAdjuster::PhysicalStepAdjuster(
 	std::vector<len_t>& nu, FVM::UnknownQuantityHandler *uqh,
-	IonHandler *ions
-) : NewtonStepAdjuster(nu, uqh), ionHandler(ions) { }
+	IonHandler *ions, const len_t ms
+) : NewtonStepAdjuster(nu, uqh, ms), ionHandler(ions) {
+
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
+
+	this->id_ni = uqh->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+}
 
 
 /**
- * Adjust the Newton step.
+ * Destructor.
  */
-real_t PhysicalStepAdjuster::Adjust(
-	len_t iteration, const real_t *x, const real_t *dx,
+PhysicalStepAdjuster::~PhysicalStepAdjuster() { }
+
+
+/**
+ * Check if the Newton step needs to be updated.
+ */
+bool PhysicalStepAdjuster::AdjustmentNeeded(
+	const len_t, Vec&, FVM::BlockMatrix*
+) {
+	return false;
+}
+
+
+/**
+ * Adjust solution (not used by the physical step adjuster).
+ */
+void PhysicalStepAdjuster::AdjustSolution(const len_t iteration, real_t *sol) {
+	this->UpdateSolution(sol, this->maximalPhysicalStepLength);
+}
+
+
+/**
+ * First evaluation of the next Newton solution.
+ */
+void PhysicalStepAdjuster::Reset(
 	Vec&, FVM::BlockMatrix*
 ) {
-	return MaximalPhysicalStepLength(
-		x, dx, iteration
+	this->maximalPhysicalStepLength = 1;
+}
+
+/**
+ * Set the initial solution and Newton step.
+ */
+void PhysicalStepAdjuster::SetX0(const len_t iteration, const real_t *x0, const real_t *dx) {
+	this->NewtonStepAdjuster::SetX0(iteration, x0, dx);
+
+	this->maximalPhysicalStepLength = MaximalPhysicalStepLength(
+		x0, dx, iteration
 	);
 }
 
@@ -45,6 +90,7 @@ real_t PhysicalStepAdjuster::MaximalStepLengthAtGridPoint(
 	return maxStepAtI;
 }
 
+
 /**
  * Returns a dampingFactor such that x1 = x0 - dampingFactor*dx satisfies
  * physically-motivated constraints, such as positivity of temperature.
@@ -56,21 +102,9 @@ real_t PhysicalStepAdjuster::MaximalPhysicalStepLength(
 	real_t maxStepLength = 1.0;
 	real_t threshold = 0.1;
 
-	std::vector<len_t> ids_nonNegativeQuantities;
 	// add those quantities which we expect to be non-negative
 	// T_cold and n_cold will crash the simulation if negative, so they should always be added
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-	if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
-		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
-	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
-		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
-	if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
-		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
-
 	bool nonNegativeZeff = true;
-	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
 	const len_t N = nontrivial_unknowns.size();
 	const len_t N_nn = ids_nonNegativeQuantities.size();

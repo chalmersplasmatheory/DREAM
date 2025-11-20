@@ -14,6 +14,11 @@ namespace DREAM {
 		// ID of unknown quantity which is currently
 		// limited the step length the most.
 		len_t limitingUnknown = 0;
+		real_t maximalPhysicalStepLength = 1;
+		bool hasAdjusted = false;
+
+		std::vector<len_t> ids_nonNegativeQuantities;
+		len_t id_ni;
 
 		real_t MaximalStepLengthAtGridPoint(real_t, real_t, real_t);
 		real_t MaximalPhysicalStepLength(const real_t*, const real_t*, len_t);
@@ -21,13 +26,17 @@ namespace DREAM {
 	public:
 		PhysicalStepAdjuster(
 			std::vector<len_t>& nu, FVM::UnknownQuantityHandler *uqh,
-			IonHandler *ions
+			IonHandler *ions, const len_t
 		);
+		virtual ~PhysicalStepAdjuster();
 
-		virtual real_t Adjust(
-			len_t, const real_t*, const real_t*,
-			Vec&, FVM::BlockMatrix*
-		);
+		virtual bool AdjustmentNeeded(const len_t, Vec&, FVM::BlockMatrix*) override;
+		virtual void AdjustSolution(const len_t, real_t*) override;
+		virtual void Reset(Vec&, FVM::BlockMatrix*) override;
+
+		virtual real_t GetCurrentDamping() override { return this->maximalPhysicalStepLength; }
+
+		virtual void SetX0(const len_t, const real_t*, const real_t*) override;
 	};
 }
 

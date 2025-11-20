@@ -12,13 +12,14 @@ namespace DREAM {
     protected:
         real_t *f0, *f1, *f2;
         real_t *gradf_deltax;
-        real_t lambda1, lambda2;
+        real_t lambda1=1, lambda2=1;
 
 		len_t *monitor, nMonitor=0;
 
         // Index of non-trivial unknown currently causing
         // 'lambda' to be most limited...
         len_t limitingUnknown=0;
+		bool stepIsPhysicallyLimited = false;
 
         bool *decreasing;
 
@@ -39,14 +40,15 @@ namespace DREAM {
     public:
         Backtracker(
 			std::vector<len_t>&, FVM::UnknownQuantityHandler*,
-			IonHandler*, std::vector<std::string>&
+			IonHandler*, std::vector<std::string>&, const len_t
 		);
         virtual ~Backtracker();
 
-        virtual real_t Adjust(
-            len_t, const real_t*, const real_t*,
-            Vec&, FVM::BlockMatrix*
-        ) override;
+		virtual bool AdjustmentNeeded(const len_t, Vec&, FVM::BlockMatrix*) override;
+		virtual void AdjustSolution(const len_t, real_t*) override;
+		virtual void Reset(Vec&, FVM::BlockMatrix*) override;
+		
+		virtual real_t GetCurrentDamping() override;
     };
 }
 

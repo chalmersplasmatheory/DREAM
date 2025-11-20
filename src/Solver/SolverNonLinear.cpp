@@ -183,11 +183,11 @@ void SolverNonLinear::InitStepAdjuster(
 ) {
     switch (nsa) {
         case OptionConstants::NEWTON_STEP_ADJUSTER_BACKTRACK:
-            this->adjuster = new Backtracker(this->nontrivial_unknowns, this->unknowns, this->ionHandler, monitor);
+            this->adjuster = new Backtracker(this->nontrivial_unknowns, this->unknowns, this->ionHandler, monitor, this->matrix_size);
             break;
 
         default:
-            this->adjuster = new PhysicalStepAdjuster(this->nontrivial_unknowns, this->unknowns, this->ionHandler);
+            this->adjuster = new PhysicalStepAdjuster(this->nontrivial_unknowns, this->unknowns, this->ionHandler, this->matrix_size);
             break;
     }
 }
@@ -305,15 +305,20 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 void SolverNonLinear::_InternalSolve() {
 	// Take Newton steps
 	len_t iter = 0;
-	const real_t *x, *dx;
+	const real_t *x=nullptr, *dx=nullptr;
 	bool extiter_conv = (this->extiter == nullptr);
+
+	// Evaluate residual once for initial condition
+	this->EvaluateResidual();
+
 	do {
 		do {
 			iter++;
 			this->SetIteration(iter);
 
 REDO_ITER:
-			dx = this->TakeNewtonStep();
+			// Evaluate dx
+			dx = this->EvaluateNewtonStep();
 			// Solution rejected (solver likely switched)
 			if (dx == nullptr) {
 				if (iter < this->MaxIter())
@@ -322,10 +327,21 @@ REDO_ITER:
 					throw SolverException("Maximum number of iterations reached while dx=nullptr.");
 			}
 
-			x  = UpdateSolution(dx);
+			// Give upcoming Newton solution to stepper
+			this->adjuster->SetX0(iter, this->x0, dx);
 
-			// TODO backtracking...
-			
+			do {
+				this->adjuster->AdjustSolution(iter, this->x1);
+				x = this->x1;
+				this->StoreSolution(x);
+				this->EvaluateResidual();
+			} while (
+				this->adjuster->AdjustmentNeeded(iter, this->petsc_F, this->jacobian)
+			);
+
+			// Reset the step adjustment algorithm
+			this->adjuster->Reset(this->petsc_F, this->jacobian);
+
 			AcceptSolution();
 		} while (!IsConverged(x, dx));
 
@@ -375,21 +391,27 @@ void SolverNonLinear::StoreSolution(const real_t *x) {
 }
 
 /**
- * Calculate the next Newton step to take.
+ * Evaluate the residual function.
  */
-const real_t *SolverNonLinear::TakeNewtonStep() {
+void SolverNonLinear::EvaluateResidual() {
+    real_t *fvec;
+
     this->timeKeeper->StartTimer(timerRebuild);
     this->RebuildTerms(this->t, this->dt);
     this->timeKeeper->StopTimer(timerRebuild);
 
     // Evaluate function vector
     this->timeKeeper->StartTimer(timerResidual);
-    real_t *fvec;
     VecGetArray(this->petsc_F, &fvec);
     this->BuildVector(this->t, this->dt, fvec, this->jacobian);
     VecRestoreArray(this->petsc_F, &fvec);
     this->timeKeeper->StopTimer(timerResidual);
-    
+}
+
+/**
+ * Calculate the next Newton step to take.
+ */
+const real_t *SolverNonLinear::EvaluateNewtonStep() {
     // Reconstruct the jacobian matrix after taking the first
     // iteration.
     // (See the comment above 'AllocateJacobianMatrix()' for
@@ -430,12 +452,15 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     if (this->debugrescaled) {
         this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
         this->UnPrecondition(this->petsc_dx);
+		this->UnPreconditionRHS(this->petsc_F);
     } else {
         this->UnPrecondition(this->petsc_dx);
+		this->UnPreconditionRHS(this->petsc_F);
         this->SaveDebugInfoAfter(this->nTimeStep, this->iteration);
     }
 
     // Copy dx
+	real_t *fvec;
     VecGetArray(this->petsc_dx, &fvec);
     for (len_t i = 0; i < this->matrix_size; i++)
         this->dx[i] = fvec[i];
@@ -449,15 +474,15 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
  *
  * dx: Newton step to take.
  */
-const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
+/*const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
     //real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,ionHandler,id_uqn);
-    real_t dampingFactor = this->adjuster->Adjust(iteration, x0, dx, this->petsc_F, this->jacobian);
+    //real_t dampingFactor = this->adjuster->Adjust(iteration, x0, dx, this->petsc_F, this->jacobian);
     
     for (len_t i = 0; i < this->matrix_size; i++)
         this->x1[i] = this->x0[i] - dampingFactor*dx[i];
     
     return this->x1;
-}
+}*/
 
 /**
  * Print timing information after the solve.

@@ -5,6 +5,15 @@
  *
  * Notes on the implementation of this module can be found in
  * 'doc/notes/discretisation.pdf'.
+ *
+ * The following is expected to be evaluated on subsequent iterations of
+ * the algorithm:
+ *
+ *   ITERATION        SOLUTION X
+ *   0                x0
+ *   1                x0 + dx
+ *   2                x0 + lambda1 * dx
+ *   ...              ...
  */
 
 #include <string>
@@ -22,8 +31,9 @@ using namespace DREAM;
  */
 Backtracker::Backtracker(
     std::vector<len_t>& nu, FVM::UnknownQuantityHandler *uqh,
-    IonHandler *ions, std::vector<std::string>& monitor
-) : PhysicalStepAdjuster(nu, uqh, ions) {
+    IonHandler *ions, std::vector<std::string>& monitor,
+	const len_t ms
+) : PhysicalStepAdjuster(nu, uqh, ions, ms) {
 
     this->nnu = nu.size();
 
@@ -48,6 +58,7 @@ Backtracker::Backtracker(
     this->decreasing = new bool[nnu];
 }
 
+
 /**
  * Destructor.
  */
@@ -62,39 +73,63 @@ Backtracker::~Backtracker() {
 
 
 /**
- * Determine the factor 'lambda' with which the next Newton step
- * should be adjusted.
+ * Determine if the Newton step needs to be adjusted.
  */
-real_t Backtracker::Adjust(
-    len_t iteration,
-    const real_t *x, const real_t *dx, Vec &F,
-    FVM::BlockMatrix *jac
+bool Backtracker::AdjustmentNeeded(
+	const len_t iteration, Vec &F, FVM::BlockMatrix *jac
 ) {
-    real_t lambda=1;
+	// If the physical step adjuster was previously enabled, we have
+	// now taken that step and can proceed to the next Newton iteration.
+	if (this->maximalPhysicalStepLength < 1)
+		return false;
+	else if (this->PhysicalStepAdjuster::AdjustmentNeeded(iteration, F, jac))
+		return true;
 
+	// Evaluate target function f = F*F
     EvaluateTargetFunction(F, jac);
 
-    // Is backtracking necessary?
-    if (!IsDecreasing(decreasing)) {
-        if (this->nIteration > 1)
-            lambda = CalculateLambda();
-        else {} // First, we take a step with lambda=1
-    } else
-        // Successfull Newton step -- reset backtracking
-        ResetBacktracking();
-    
+    // If the target function is not decreasing, backtracking
+	// should be done.
+	return (!IsDecreasing(decreasing));
+}
+
+
+/**
+ * Adjust the Newton solution.
+ */
+void Backtracker::AdjustSolution(
+	const len_t, real_t *sol
+) {
+	this->nIteration++;
+
+	real_t lambda = 1;
+
+	// If physical step adjuster is activated, use that step
+	if (this->maximalPhysicalStepLength < 1)
+		lambda = this->maximalPhysicalStepLength;
+	// Otherwise, at first we take one step with lambda = 1.
+	// Subsequent steps (nIteration > 1) should be adjusted.
+	else if (this->nIteration > 1)
+		lambda = CalculateLambda();
+
     this->lambda2 = this->lambda1;
     this->lambda1 = lambda;
 
-    // Prevent Newton step from making key quantities negative
-    real_t alpha = this->PhysicalStepAdjuster::Adjust(iteration, x, dx, F, jac);
+	UpdateSolution(sol, lambda);
+}
 
-    // If step must be constrained further due to physical reasons,
-    // do so...
-    if (lambda > alpha)
-        lambda = alpha;
 
-    return lambda;
+/**
+ * First evaluation of the next Newton solution.
+ */
+void Backtracker::Reset(
+	Vec &F, FVM::BlockMatrix *jac
+) {
+	ResetBacktracking();
+	// Calculate g(lambda=0)
+	EvaluateTargetFunction(F, jac);
+
+	this->PhysicalStepAdjuster::Reset(F, jac);
 }
 
 /**
@@ -106,6 +141,11 @@ real_t Backtracker::CalculateLambda() {
     // Iterate over monitored unknowns
     for (len_t i = 0; i < this->nMonitor; i++) {
         real_t l = 1;
+
+		// If this quantity has g(0) = 0 then it already
+		// solves the equation perfectly and needs no adjustment
+		if (f0[i] == 0)
+			continue;
 
         if (this->nIteration == 2) {    // quadratic approximation to g(lambda)
             real_t gp0 = gradf_deltax[i];
@@ -139,10 +179,15 @@ real_t Backtracker::CalculateLambda() {
     }
 
     // Prevent slow convergence by limiting lambda...
-    if (lambda < 0.1*lambda1)
-        lambda = 0.1*lambda;
-    else if (lambda > 0.5*lambda)
-        lambda = 0.5*lambda;
+	if (this->nIteration <= 2) {
+		if (lambda < 0.1)
+			lambda = 0.1;
+	} else {
+		if (lambda < 0.1*lambda1)
+			lambda = 0.1*lambda1;
+		else if (lambda > 0.5*lambda1)
+			lambda = 0.5*lambda1;
+	}
     
     return lambda;
 }
@@ -174,14 +219,12 @@ void Backtracker::EvaluateTargetFunction(Vec &F, FVM::BlockMatrix *jac) {
         if (nIteration == 0) {
             gradf_deltax[i] = -f1[i];
             f0[i] = 0.5*f1[i];
-        }
+		}
 
         f1[i] *= 0.5;
     }
 
     VecRestoreArray(F, &fvec);
-
-    nIteration++;
 }
 
 /**
@@ -195,17 +238,23 @@ void Backtracker::EvaluateTargetFunction(Vec &F, FVM::BlockMatrix *jac) {
  *      to a more optimal value for the unknown.
  */
 bool Backtracker::IsDecreasing(bool *dec) {
-    // Assume that all is well on the first Newton step...
-    if (this->nIteration == 0)
-        return true;
-
     bool v = true;
     for (len_t i = 0; i < this->nMonitor; i++) {
-        dec[i] = (f1[i] > f2[i]+ALPHA*gradf_deltax[i]);
+        dec[i] = (f1[i] <= f0[i]-ALPHA*gradf_deltax[i]);
         v = v && dec[i];
     }
 
     return v;
+}
+
+/**
+ * Returns the current Newton step damping coefficient.
+ */
+real_t Backtracker::GetCurrentDamping() {
+	if (this->stepIsPhysicallyLimited)
+		return this->PhysicalStepAdjuster::GetCurrentDamping();
+	else
+		return this->lambda1;
 }
 
 /**
@@ -214,5 +263,6 @@ bool Backtracker::IsDecreasing(bool *dec) {
  */
 void Backtracker::ResetBacktracking() {
     this->nIteration = 0;
+	this->lambda1 = this->lambda2 = 1;
 }
 

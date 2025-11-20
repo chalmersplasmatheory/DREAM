@@ -31,10 +31,12 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/linsolv", "Type of linear solver to use", (int_t)OptionConstants::LINEAR_SOLVER_LU);
     s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
-    s->DefineSetting(MODULENAME "/stepadjust", "Method to use for adjusting Newton step", (int_t)OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 	s->DefineSetting(MODULENAME "/checkresidual", "If true, prints a warning if the residual is not close to zero at the end of non-linear iteration", (bool)true);
 	s->DefineSetting(MODULENAME "/saveconvergenceinfo", "If true, saves information about non-linear convergence to the output file", (bool)false);
+
+    s->DefineSetting(MODULENAME "/stepadjust/type", "Algorithm to use for adjusting Newton step", (int_t)OptionConstants::NEWTON_STEP_ADJUSTER_PHYSICAL);
+	s->DefineSetting(MODULENAME "/stepadjust/quantities", "Names of unknown quantities to consider when adjusting the Newton step", (const string)"");
 
     DefineToleranceSettings(MODULENAME, s);
     DefinePreconditionerSettings(s);
@@ -150,7 +152,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
         backups = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/backupsolver"),
         linsolv = (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
     enum OptionConstants::newton_step_adjuster
-        nsa = (enum OptionConstants::newton_step_adjuster)s->GetInteger(MODULENAME "/stepadjust");
+        nsa = (enum OptionConstants::newton_step_adjuster)s->GetInteger(MODULENAME "/stepadjust/type");
 
     int_t maxiter     = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
@@ -166,7 +168,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-	vector<string> nsaMonitor = s->GetStringList(MODULENAME "/stepadjustquantities");
+	vector<string> nsaMonitor = s->GetStringList(MODULENAME "/stepadjust/quantities");
 
     auto snl = new SolverNonLinear(
 		u, eqns, eqsys, linsolv, backups, nsa, nsaMonitor,

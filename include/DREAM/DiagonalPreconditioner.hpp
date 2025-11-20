@@ -45,6 +45,7 @@ namespace DREAM {
         void RescaleMatrix(FVM::Matrix*);
         void RescaleRHSVector(Vec);
 
+		void UnscaleRHSVector(Vec);
         void UnscaleUnknownVector(Vec);
     };
 }

@@ -6,6 +6,7 @@ import numpy as np
 from .. DREAMException import DREAMException
 from . ToleranceSettings import ToleranceSettings
 from . Preconditioner import Preconditioner
+from . NewtonStepAdjust import NewtonStepAdjust
 
 
 LINEAR_IMPLICIT = 1
@@ -45,6 +46,8 @@ class Solver:
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
         self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False)
+
+        self.stepadjust = NewtonStepAdjust()
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
@@ -215,6 +218,9 @@ class Solver:
             if 'iteration' in data['debug']:
                 self.debug_iteration = int(data['debug']['iteration'])
 
+        if 'stepadjust' in data:
+            self.stepadjust.fromdict(data['stepadjust'])
+
         self.verifySettings()
 
 
@@ -258,6 +264,8 @@ class Solver:
                 'timestep': self.debug_timestep,
                 'iteration': self.debug_iteration
             }
+
+            data['stepadjust'] = self.stepadjust.todict()
 
             if self.backupsolver is not None:
                 data['backupsolver'] = self.backupsolver

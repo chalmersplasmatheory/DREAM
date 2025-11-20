@@ -194,6 +194,7 @@ set(dream_headers
 
 set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/Backtracker.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Solver/NewtonStepAdjuster.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/PhysicalStepAdjuster.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/ExternalIterator.cpp"

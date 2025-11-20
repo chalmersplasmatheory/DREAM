@@ -228,6 +228,13 @@ void DiagonalPreconditioner::RescaleRHSVector(Vec b) {
 }
 
 /**
+ * Undo a rescale of the RHS vector.
+ */
+void DiagonalPreconditioner::UnscaleRHSVector(Vec b) {
+	VecPointwiseDivide(b, b, this->eqn);
+}
+
+/**
  * Rescale the given unknown vector according to the transformation
  *
  *   y = Q^-1x

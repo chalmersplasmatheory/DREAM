@@ -98,8 +98,8 @@ namespace DREAM {
         void SaveJacobian();
         void SaveJacobian(const std::string& name);
 		void StoreSolution(const real_t*);
-		const real_t *TakeNewtonStep();
-		const real_t *UpdateSolution(const real_t*);
+		void EvaluateResidual();
+		const real_t *EvaluateNewtonStep();
 
         virtual void PrintTimings() override;
         virtual void SaveTimings(SFile*, const std::string& path="") override;
