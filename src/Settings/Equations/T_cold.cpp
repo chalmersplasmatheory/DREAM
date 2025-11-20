@@ -20,7 +20,8 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
-#include "DREAM/Equations/Fluid/NBIElectronHeatTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIElectronTerm.hpp"
+#include "DREAM/NBIHandler.hpp"
 
 
 
@@ -69,28 +70,27 @@ void SimulationGenerator::DefineOptions_T_cold_inner(Settings *s, const string& 
 void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s, const string& modulename) {
     const string NBI_PATH = string(modulename) + "/NBI";
 
+    s->DefineSetting(MODULENAME "/NBI/enabled", "Enable/disable NBI heating", (bool)false);
     // Beam geometry settings
-    s->DefineSetting(modulename + "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
-    s->DefineSetting(modulename + "/NBI/r_beam", "Beam radius", (real_t)0.1);
-    s->DefineSetting(modulename + "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
-    s->DefineSetting(modulename + "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
+    s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
+    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
 
     // Beam physics settings
-    s->DefineSetting(modulename + "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
-    s->DefineSetting(modulename + "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
-    s->DefineSetting(modulename + "/NBI/beamPower", "Beam power [W]", (real_t)1e6);
+    s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
+    s->DefineSetting(MODULENAME "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
 
     // Plasma and beam parameters
-    s->DefineSetting(modulename + "/NBI/Z0", "Charge state before the process", (real_t)1.0);
-    s->DefineSetting(modulename + "/NBI/Zion", "Charge of the ion species ", (real_t)1.0);
-    s->DefineSetting(modulename + "/NBI/R0", "Major Radius", (real_t)1.0);
-    s->DefineSetting(modulename + "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
-    s->DefineSetting(modulename + "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
-    s->DefineSetting(modulename + "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
-    s->DefineSetting(modulename + "/NBI/TCVGaussian", "Enable gaussian density profile for TCV", (bool)false);
-    s->DefineSetting(modulename + "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
-    s->DefineSetting(modulename + "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
-    s->DefineSetting(modulename + "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(MODULENAME "/NBI/R0", "Major Radius", (real_t)1.0);
+    s->DefineSetting(MODULENAME "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(MODULENAME "/NBI/gaussian_profile", "Gaussian profile type for NBI: 0=disabled, 1=TCV, 2=ITER", (int_t)0);
+    s->DefineSetting(MODULENAME "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
 }
 
 
@@ -272,20 +272,21 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetOperator(id_eqn, id_n,Op3);
     string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
-    bool includeNBI = s->GetBool(modulename + "/include_NBI");
+    bool includeNBI = false;
+    if (s->HasSetting(MODULENAME "/NBI/enabled"))
+        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
+
     if (includeNBI) {
-        real_t s_max = s->GetReal(modulename + "/NBI/s_max");
-        real_t r_beam = s->GetReal(modulename + "/NBI/r_beam");
-        real_t Ti_beam = s->GetReal(modulename + "/NBI/Ti_beam");
-        real_t m_i_beam = s->GetReal(modulename + "/NBI/m_i_beam");
-        real_t beamPower = s->GetReal(modulename + "/NBI/beamPower");
-        real_t Z0 = s->GetReal(modulename + "/NBI/Z0");
-        real_t Zion = s->GetReal(modulename + "/NBI/Zion");
-        real_t R0 = s->GetReal(modulename + "/NBI/R0");
+        real_t s_max = s->GetReal(MODULENAME "/NBI/s_max");
+        real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
+        real_t Ti_beam = s->GetReal(MODULENAME "/NBI/Ti_beam");
+        real_t m_i_beam = s->GetReal(MODULENAME "/NBI/m_i_beam");
+        real_t R0 = s->GetReal(MODULENAME "/NBI/R0");
         len_t dims[1];
-        const real_t *P0 = s->GetRealArray(modulename + "/NBI/P0", 1, dims);
-        const real_t *n = s->GetRealArray(modulename + "/NBI/n", 1, dims);
-        bool TCVGaussian = s->GetBool(modulename + "/NBI/TCVGaussian");
+        const real_t *P0 = s->GetRealArray(MODULENAME "/NBI/P0", 1, dims);
+        const real_t *n = s->GetRealArray(MODULENAME "/NBI/n", 1, dims);
+        const real_t *energy_fractions = s->GetRealArray(MODULENAME "/NBI/energy_fractions", 1, dims);
+        int_t gaussian_profile = s->GetInteger(MODULENAME "/NBI/gaussian_profile");
 
         // Load time-dependent j_B data
         FVM::Interpolator1D *j_B_profile = LoadDataT(
@@ -300,7 +301,27 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op4->AddTerm(nbi);
         oqty_terms->NBI = nbi;
         eqsys->SetOperator(id_eqn, id_T, Op4);
+
+        NBIHandler *handler = eqsys->NBI_handler;
+        if (handler == nullptr) {
+            handler = new NBIHandler(eqsys->GetFluidGrid(), adas, ionHandler);
+            handler->ConfigureFromSettings(
+                s, unknowns,
+                s_max, r_beam,
+                P0, n, energy_fractions,
+                Ti_beam, m_i_beam,
+                j_B_profile, R0,
+                gaussian_profile, Power_Profile
+            );
+            
+        }
+        eqsys->NBI_handler = handler;
+  
+        auto *nbi_e = new NBIElectronTerm(handler, eqsys->GetFluidGrid(), unknowns, ionHandler);
+        Op4->AddTerm(nbi_e);
+        oqty_terms->T_cold_NBI = nbi_e;
         desc += " + NBI";
+        eqsys->SetOperator(id_T_cold, id_T_cold, Op4); 
     }
 
     // SPI heat absorbtion

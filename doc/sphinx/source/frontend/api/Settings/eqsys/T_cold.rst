@@ -131,6 +131,104 @@ must call the method ``setRecombinationRadiation`` with the option
    ds.eqsys.T_cold.setRecombinationRadiation(True)
 
 
+Neutral Beam Injection (NBI)
+****************************
+The cold electron temperature equation can include heating from **Neutral Beam Injection (NBI)**. The **NBI** 
+settings are handled through the ``NBISettings`` class.  This class is used to define the beam geometry, 
+physical tokamak properties, and optional radial or time-dependant profiles for current density and beam power. To include NBI heating, the user must call the method
+``nbi.setEnabled()`` with the argument ``True``. 
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.T_cold.nbi.setEnabled(True)
+
+
+The beam geometry can be set using the methods ``nbi.setOrigin()``, ``nbi.setDirection()``, and ``nbi.setBeamParameters()``, which requires the following parameters:
+
+.. code-block:: python
+
+   ...
+   # Set beam origin point in X, Y, Z (in meters)
+   ds.eqsys.T_cold.nbi.setOrigin(P0 = [X0, Y0, Z0]) 
+   
+   # Set beam direction
+   ds.eqsys.T_cold.nbi.setDirection(n = [nX, nY, nZ]) 
+
+   # Set beam physical parameters, including:
+   # r_beam: beam radius (in meters)
+   # Ti_beam: beam energy (in Joules)
+   # m_i_beam: mass of beam ions (in kg)
+   # s_max: maximum path length of beam in plasma (in meters)
+   ds.eqsys.T_cold.nbi.setBeamParameters(r_beam = beamRadius, Ti_beam = beamEnergy, m_i_beam = beamMass, s_max = beamPathLength) 
+
+
+
+The beam and tokamak geometry can be visualized using the methods ``nbi.visualize_3d_tokamak()`` and ``nbi.visualize_flux_surfaces_top_view()``,
+
+.. code-block:: python
+
+   ...
+   # Visualize beam and tokamak in 3D
+   ds.eqsys.T_cold.nbi.visualize_3d_tokamak()
+
+   # Visualize flux surfaces in top view. Needs the radial grid as input
+   ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(radialGrid = radialGrid)
+
+For visualization, it is necessary to set up the minor and major radius of the tokamak, which is done using the method ``nbi.setRadius()``,
+
+.. code-block:: python
+
+   ...
+   # Set major and minor radius of tokamak (in meters)
+   ds.eqsys.T_cold.nbi.setR0_NBI( R0 = majorRadius, a = minorRadius )
+
+
+
+The NBI power and current density profiles can be defined using the methods
+``nbi.setPowerProfile()`` and ``nbi.setCurrentProfile()``, respectively.
+The power profile specifies the total injected beam power as a function of time,
+allowing the beam power to vary during the simulation. If a scalar value is provided, the specified power will be applied throughout the entire simulation.
+The current profile definesthe radial distribution of beam current density.
+
+Predefined current profile types are available for typical TCV or ITER configurations
+via the method ``nbi.setCurrentProfile()``, which accepts ``profile_type`` values:
+``NBI_PROFILE_TCV`` (1), ``NBI_PROFILE_ITER`` (2), or ``NBI_PROFILE_CUSTOM`` (3) for
+user-defined profiles. These automatically apply beam shapes consistent with the
+experimental setups of the respective devices.
+
+The energy partition between beam components (full, half, and third energy) can be
+configured using the method ``nbi.setEnergyFractions()``. NBI beams contain a mix
+of atomic (full energy) and molecular species that dissociate into half and third
+energy components.
+
+
+.. code-block:: python
+
+   from DREAM.Settings.Equations.NBISettings import NBI_PROFILE_TCV, NBI_PROFILE_ITER, NBI_PROFILE_CUSTOM
+
+   ...
+   # Set time-dependent power profile (in Watts)
+   ds.eqsys.T_cold.nbi.setPowerProfile(P_NBI_t = timeArray, P_NBI_x = powerArray)
+
+   # Set current profile type (TCV, ITER, or custom)
+   ds.eqsys.T_cold.nbi.setCurrentProfile(profile_type = NBI_PROFILE_TCV)
+
+   # For custom current profile, provide j_B_t and j_B_x arrays
+   ds.eqsys.T_cold.nbi.setCurrentProfile(profile_type = NBI_PROFILE_CUSTOM, 
+                                          j_B_t = timeArray, j_B_x = currentArray)
+
+   # Set energy fractions (must sum to 1.0)
+   ds.eqsys.T_cold.nbi.setEnergyFractions(f_full = 0.5, f_half = 0.4, f_third = 0.1)
+
+
+
+
+
+
 Class documentation
 -------------------
 
