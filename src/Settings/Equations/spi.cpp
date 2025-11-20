@@ -1,7 +1,6 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Fluid/SPIAblationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonSPIDepositionTerm.hpp"
-#include "DREAM/Equations/Fluid/SPIHeatAbsorbtionTerm.hpp"
 #include "DREAM/Equations/Fluid/SPITransientTerm.hpp"
 #include "DREAM/Equations/Scalar/ConstantSPIVelocityTerm.hpp"
 #include "DREAM/Equations/Scalar/ConstantSPIVelocityPositionTerm.hpp"
