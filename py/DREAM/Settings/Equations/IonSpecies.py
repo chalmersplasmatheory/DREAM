@@ -143,10 +143,10 @@ class IonSpecies:
         if name == 'H' and hydrogen == False:
             print("WARNING: Ion species with name 'H' added, but 'hydrogen = False'.")
 
-        self.source_n = np.zeros((self.Z+1, 1))
+        self.source_n = np.zeros((self.Z+1, 1, 1))
         self.source_t = np.array([0])
+        self.source_r = np.array([0])
         self.source_type = ION_SOURCE_NONE
-        self.source_r = None
 
         self.n = None
         self.r = None
@@ -289,6 +289,13 @@ class IonSpecies:
         return self.source_type
 
 
+    def getSourceRadialGrid(self):
+        """
+        Returns the ion source radial grid.
+        """
+        return self.source_r
+
+
     # Getters for diffusion-related quantities
     def getChargedPrescribedDiffusion(self):
         """
@@ -387,11 +394,6 @@ class IonSpecies:
         """
         return self.source_t
 
-    def getSourceRadialGrid(self):
-        """
-        Returns the radial grid on which the ion source is defined.
-        """
-        return self.source_r
 
     def getTime(self):
         """
@@ -942,27 +944,27 @@ class IonSpecies:
                 raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")
 
             # Convert lists to NumPy arrays
-            if type(n) == list:
+            if not isinstance(n, np.ndarray):
                 n = np.array(n)
 
             # Scalar (assume density constant in spacetime)
             #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
             if np.isscalar(n):
                 self.source_t = np.array([0])
-                self.source_n = np.zeros((self.Z+1,1))
-                self.source_n[Z0,:] = n
+                self.source_n = np.zeros((self.Z+1,1,1))
+                self.source_n[Z0,:,0] = n
                 return
 
             # Time evolution of neutral atoms
-            if len(n.shape) == 1:
+            if n.ndim == 1:
                 if n.size != t.size:
                     raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, by shape(n) != shape(t), {n.shape} != {t.shape}.")
 
                 self.source_t = t
-                self.source_n = np.zeros((self.Z+1, t.size))
-                self.source_n[Z0,:] = n
+                self.source_n = np.zeros((self.Z+1, t.size, 1))
+                self.source_n[Z0,:,0] = n
             # Time evolution of all charge states
-            elif len(n.shape) == 2:
+            elif n.ndim == 2:
                 if t is None:
                     raise EquationException(f"ion_species: '{self.name}': Full ion charge state density source prescribed, but no time coordinates given.")
 
@@ -970,26 +972,95 @@ class IonSpecies:
                     raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
 
                 self.source_t = t
+                self.source_n = np.zeros((self.Z+1, t.size, 1))
+                self.source_n[:,0] = n
+            else:
+                raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
+
+        elif source_type == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
+            if n is None:
+                raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")
+
+            # Convert lists to NumPy arrays
+            if not isinstance(n, np.ndarray):
+                n = np.array(n)
+
+            # Scalar (assume density constant in spacetime)
+            if np.isscalar(n):
+                self.source_t = np.array([0])
+                self.source_n = np.zeros((self.Z+1, 1, 1))
+                self.source_n[Z0,:] = n
+                return
+            elif n.ndim == 1:
+                # Time evolution
+                if t is not None:
+                    if n.size != t.size:
+                        raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, by shape(n) != shape(t), {n.shape} != {t.shape}.")
+
+                    self.source_t = t
+                    self.source_r = np.array([0])
+                    self.source_n = np.zeros((self.Z+1, t.size, 1))
+                    self.source_n[Z0,:,0] = n
+                # Spatially inhomogeneous source
+                elif r is not None:
+                    if n.size != r.size:
+                        raise EquationException(f"ion_species: '{self.name}': Spatially inhomogeneous source specified, but shape(n) != shape(r), {n.shape} != {r.shape}.")
+
+                    self.source_t = np.array([0])
+                    self.source_r = r
+                    self.source_n = np.zeros((self.Z+1, 1, r.size))
+                    self.source_n[Z0,0,:] = n
+                # Different source at different charge states
+                else:
+                    if n.size != self.Z+1:
+                        raise EquationException(f"ion_species: '{self.name}': Particle source term specified, but no time/radius vector and the number of elements is different from the number of charge states.")
+
+                    self.source_t = np.array([0])
+                    self.source_r = np.array([0])
+                    self.source_n = np.zeros((self.Z+1, 1, 1))
+                    self.source_n[:,0,0] = n
+
+            elif n.ndim == 2:
+                if t is not None and r is not None:
+                    if n.shape[0] != t.size or n.shape[1] != r.size:
+                        raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, but shape(n) != (size(t), size(r)), {n.shape} != ({t.size}, {r.size}).")
+
+                    self.source_t = t
+                    self.source_r = r
+                    self.source_n = np.zeros((self.Z+1, t.size, r.size))
+                    self.source_n[Z0,:] = n
+                elif t is not None:
+                    if n.shape[0] != (self.Z+1) or n.shape[1] != t.size:
+                        raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, but shape(n) != (Z+1, size(t)), {n.shape} != ({self.Z+1}, {t.size}).")
+
+                    self.source_t = t
+                    self.source_r = np.array([0])
+                    self.source_n = np.zeros((self.Z+1, t.size, 1))
+                    self.source_n[:,:,0] = n
+                elif r is not None:
+                    if n.shape[0] != (self.Z+1) or n.shape[1] != r.size:
+                        raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, but shape(n) != (Z+1, size(r)), {n.shape} != ({self.Z+1}, {r.size}).")
+
+                    self.source_t = np.array([0])
+                    self.source_r = r
+                    self.source_n = np.zeros((self.Z+1, 1, r.size))
+                    self.source_n[:,0,:] = n
+                else:
+                    raise EquationException(f"ion_species: '{self.name}': 2D ion source specified but no r and/or t vectors given.")
+            elif n.ndim == 3:
+                if t is None:
+                    raise EquationException(f"ion_species: '{self.name}': 3D ion source specified but no t vector is given.")
+                elif r is None:
+                    raise EquationException(f"ion_species: '{self.name}': 3D ion source specified but no r vector is given.")
+
+                self.source_t = t
+                self.source_r = r
                 self.source_n = n
             else:
                 raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
-        if source_type == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
-            
 
             if n is None:
                 raise EquationException(f"ion_species: '{self.name}': Input volumetric source density must not be 'None'.")
-            if len(n.shape) != 3:
-                raise EquationException(f"ion_species: '{self.name}': Volumetric source density must be 3D (charge states x time x radius).")
-            if self.Z+1 != n.shape[0]:
-                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed volumetric source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
-            if t is None:
-                raise EquationException(f"ion_species: '{self.name}': Volumetric source density prescribed, but no time coordinates given.")
-            if t.size != n.shape[1]:
-                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed volumetric source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")   
-            self.source_t = t
-            self.source_n = n
-            self.source_r = r
-
         
 
     def setChargedDiffusion(

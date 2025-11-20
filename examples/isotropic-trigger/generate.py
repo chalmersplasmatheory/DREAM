@@ -76,7 +76,7 @@ def calculate_E(r, T, n, j, Ip):
     return do.grid.r[:], do.eqsys.E_field[-1,:], ds
 
 
-def setup():
+def setup(tMax=1e-5, nt=10000):
     T0 = 20e3
     n0 = 1e20
 
@@ -123,7 +123,18 @@ def setup():
     #ds.eqsys.n_i.addIon('D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n, r=r0)
     ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_KINETIC_APPROX_JAC)
     if WITH_TRIGGER:
-        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=3e20)
+        ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e6)
+        
+        neon_start = 0.1*tMax
+        neon_stop = 0.2*tMax
+        neon_time = np.array([neon_start, neon_stop, neon_stop+tMax/nt, tMax])
+        neon_rate = 2e18 / (neon_stop - neon_start)
+        neon_rate_array = np.array([neon_rate, neon_rate, 0.0, 0.0])
+
+        ds.eqsys.n_i.addIonSource(
+            'Ne', dNdt=neon_rate_array, t=neon_time, Z0=0,
+            source_type=Ions.ION_SOURCE_PRESCRIBED_VOLUMETRIC
+        )
     else:
         ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=3e20)
 
@@ -159,8 +170,8 @@ def setup():
     ds.setIgnore(['n_i', 'T_cold', 'W_cold', 'n_hot', 'n_cold'])
 
     # Time step settings
-    ds.timestep.setTmax(1e-5)
-    ds.timestep.setNt(10000)
+    ds.timestep.setTmax(tMax)
+    ds.timestep.setNt(nt)
     #ds.timestep.setIonization(dt0=1e-8, dtmax=1e-7, tmax=1e-3)
 
     return ds

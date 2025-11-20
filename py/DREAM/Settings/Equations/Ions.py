@@ -819,15 +819,7 @@ class Ions(UnknownQuantity):
                 n1 = sourceterm
                 n2 = ion.getSourceDensity()
 
-                # Ensure both arrays have same number of dimensions
-                if len(n1.shape) == 2 and len(n2.shape) == 3:
-                    # Expand n1 from (Z+1, nt) to (Z+1, nt, 1)
-                    n1 = n1[:, :, np.newaxis]
-                elif len(n1.shape) == 3 and len(n2.shape) == 2:
-                    # Expand n2 from (Z+1, nt) to (Z+1, nt, 1)
-                    n2 = n2[:, :, np.newaxis]
-
-                # Now match time dimensions
+                # Match time dimensions
                 if n1.shape[1] != n2.shape[1]:
                     if n1.shape[1] == 1:
                         n1 = np.repeat(n1, n2.shape[1], axis=1)
@@ -835,16 +827,15 @@ class Ions(UnknownQuantity):
                         n2 = np.repeat(n2, n1.shape[1], axis=1)
                     else:
                         raise EquationException("All ion sources must be defined in the same time points.")
-                
-                # Match radial dimensions (only if both are 3D)
-                if len(n1.shape) == 3 and len(n2.shape) == 3:
-                    if n1.shape[2] != n2.shape[2]:
-                        if n1.shape[2] == 1:
-                            n1 = np.repeat(n1, n2.shape[2], axis=2)
-                        elif n2.shape[2] == 1:
-                            n2 = np.repeat(n2, n1.shape[2], axis=2)
-                        else:
-                            raise EquationException("All ion sources must be defined on the same radial grid.")
+
+                # Match radial dimensions
+                if n1.shape[2] != n2.shape[2]:
+                    if n1.shape[2] == 1:
+                        n1 = np.repeat(n1, n2.shape[2], axis=2)
+                    elif n2.shape[2] == 1:
+                        n2 = np.repeat(n2, n1.shape[2], axis=2)
+                    else:
+                        raise EquationException("All ion sources must be defined on the same radial grid.")
 
                 sourceterm = np.concatenate((n1, n2))
 
