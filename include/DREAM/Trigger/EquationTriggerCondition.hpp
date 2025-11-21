@@ -11,18 +11,25 @@ namespace DREAM {
 		const len_t nMultiples = 1;
 
 		bool *triggered;
+		bool saveTriggerState = true;
+		std::vector<bool*> trigger_states;
 
 		void SetTriggered(const len_t i, bool v) { this->triggered[i] = v; }
 
+		virtual void _CheckCondition(const real_t, FVM::UnknownQuantityHandler*) = 0;
+
 	public:
-		EquationTriggerCondition(FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t nMultiples);
+		EquationTriggerCondition(FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t nMultiples, bool saveTriggerState=true);
 		virtual ~EquationTriggerCondition();
 
-		virtual void CheckCondition(const real_t, FVM::UnknownQuantityHandler*) = 0;
+		void CheckCondition(const real_t, FVM::UnknownQuantityHandler*);
 		const bool *GetTriggerMask() { return this->triggered; }
 		const len_t GetNCells() { return this->nMultiples * this->grid->GetNCells(); }
 
 		bool IsTriggered(const len_t i) { return this->triggered[i]; }
+
+		std::vector<bool*> *GetSavedTriggerState() { return &this->trigger_states; }
+		void SaveTriggerState();
 	};
 }
 

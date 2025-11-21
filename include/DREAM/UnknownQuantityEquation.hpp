@@ -55,8 +55,10 @@ namespace DREAM {
 		const FVM::Operator *GetOperatorAlt(const len_t i) const { return this->equations_alt.at(i); }
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }
         FVM::UnknownQuantity *GetUnknown() { return this->uqty; }
+		EquationTriggerCondition *GetTriggerCondition() { return this->condition; }
 		bool HasOperatorAt(const len_t i) const { return (this->equations.find(i) != this->equations.end()); }
 
+		void CheckTriggerCondition(const real_t, FVM::UnknownQuantityHandler*);
 		bool HasAlternativeEquation() const { return (this->condition != nullptr); }
 		bool HasTransientTerm() const;
 
@@ -86,6 +88,9 @@ namespace DREAM {
         void SetVectorElements(
             real_t*, FVM::UnknownQuantityHandler*
         );
+
+		// Write trigger condition diagnostic information
+		void SaveTriggerConditionDiagnostics(SFile*, const std::string&);
     };
 }
 

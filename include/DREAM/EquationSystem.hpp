@@ -127,6 +127,7 @@ namespace DREAM {
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
+		void CheckTriggerConditions(const real_t);
 		bool HasUnknown(const std::string &name) { return unknowns.HasUnknown(name); }
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
@@ -231,6 +232,7 @@ namespace DREAM {
 
         void SaveSolverData(SFile *sf, const std::string& n);
         void SaveTimings(SFile*, const std::string&);
+		void SaveTriggerConditionDiagnostics(SFile*, const std::string&);
 
         void Solve();
         // Info routines

@@ -310,6 +310,8 @@ void EquationSystem::Solve() {
 
         this->fluidGrid->Rebuild(tNext);
 
+		this->CheckTriggerConditions(tNext);
+
         try {
             istep++;
             solver->Solve(tNext, dt);
@@ -356,6 +358,34 @@ void EquationSystem::Solve() {
     }
 
 	DREAM::IO::Deinit();
+}
+
+/**
+ * Checks trigger conditions for all equations.
+ */
+void EquationSystem::CheckTriggerConditions(const real_t t) {
+	for (auto eqn : unknown_equations) {
+		if (eqn->HasAlternativeEquation())
+			eqn->CheckTriggerCondition(t, &this->unknowns);
+	}
+}
+
+/**
+ * Save diagnostic information about the trigger conditions.
+ */
+void EquationSystem::SaveTriggerConditionDiagnostics(
+	SFile *sf, const std::string &name
+) {
+	bool struct_created = false;
+	for (auto eqn : unknown_equations) {
+		if (eqn->HasAlternativeEquation()) {
+			if (!struct_created) {
+				sf->CreateStruct(name + "/triggers");
+				struct_created = true;
+			}
+			eqn->SaveTriggerConditionDiagnostics(sf, name);
+		}
+	}
 }
 
 /**

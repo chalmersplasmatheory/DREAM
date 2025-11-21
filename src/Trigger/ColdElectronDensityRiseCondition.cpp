@@ -13,8 +13,9 @@ using namespace DREAM;
  */
 ColdElectronDensityRiseCondition::ColdElectronDensityRiseCondition(
 	FVM::Grid *g, FVM::UnknownQuantityHandler *u,
-	const len_t nMultiples, const real_t sensitivity
-) : EquationTriggerCondition(g, u, nMultiples), sensitivity(sensitivity) {
+	const len_t nMultiples, const real_t sensitivity,
+	bool saveTriggerState
+) : EquationTriggerCondition(g, u, nMultiples, saveTriggerState), sensitivity(sensitivity) {
 
 	this->id_n_cold = u->GetUnknownID(OptionConstants::UQTY_N_COLD);
 	this->id_n_hot = u->GetUnknownID(OptionConstants::UQTY_N_HOT);
@@ -30,11 +31,11 @@ ColdElectronDensityRiseCondition::~ColdElectronDensityRiseCondition() {
 /**
  * Check whether the trigger condition is enabled.
  */
-void ColdElectronDensityRiseCondition::CheckCondition(
+void ColdElectronDensityRiseCondition::_CheckCondition(
 	const real_t, FVM::UnknownQuantityHandler *unknowns
 ) {
-	const real_t *n_cold = unknowns->GetUnknownData(this->id_n_cold);
-	const real_t *n_hot = unknowns->GetUnknownData(this->id_n_hot);
+	const real_t *n_cold = unknowns->GetUnknownDataPrevious(this->id_n_cold);
+	const real_t *n_hot = unknowns->GetUnknownDataPrevious(this->id_n_hot);
 
 	const len_t nr = this->grid->GetNr();
 	const len_t Np = this->grid->GetNp1(0) * this->grid->GetNp2(0);

@@ -189,6 +189,16 @@ FVM::PredeterminedParameter *UnknownQuantityEquation::GetPredetermined() {
 }
 
 /**
+ * Check if the trigger condition is enabled (if any).
+ */
+void UnknownQuantityEquation::CheckTriggerCondition(
+	const real_t t, FVM::UnknownQuantityHandler *u
+) {
+	if (this->condition != nullptr)
+		this->condition->CheckCondition(t, u);
+}
+
+/**
  * Returns 'true' if this unknown quantity is
  * "evaluable", i.e. can be evaluated without solving
  * an equation.
@@ -229,9 +239,6 @@ bool UnknownQuantityEquation::IsPredetermined() {
 void UnknownQuantityEquation::RebuildEquations(
     const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqty
 ) {
-	if (this->condition != nullptr)
-		this->condition->CheckCondition(t, uqty);
-
 	for (auto it = this->equations.begin(); it != this->equations.end(); it++)
 		it->second->RebuildTerms(t, dt, uqty);
 	
@@ -290,4 +297,32 @@ void UnknownQuantityEquation::SetTriggerCondition(
 		this->nElements = N;
 	}
 }
+
+
+/**
+ * Save diagnostic information about the trigger condition
+ * of this unknown quantity equation.
+ */
+void UnknownQuantityEquation::SaveTriggerConditionDiagnostics(
+	SFile *sf, const std::string &name
+) {
+	std::string path = name + "/" + uqty->GetName();
+
+	// Convert bool to int32_t
+	std::vector<bool*> *trig = this->condition->GetSavedTriggerState();
+	len_t Nt = trig->size();
+	if (Nt == 0)
+		return;
+
+	len_t Ncells = this->condition->GetNCells();
+	len_t N = Nt*Ncells;
+	int32_t *t = new int32_t[N];
+	for (len_t it = 0, i = 0; it < Nt; it++)
+		for (len_t in = 0; in < Ncells; in++, i++)
+			t[i] = (*trig)[it][in] ? 1 : 0;
+
+	sfilesize_t dims[2] = {Nt, Ncells};
+	sf->WriteMultiInt32Array(name + "/triggers/" + uqty->GetName(), t, 2, dims);
+}
+
 
