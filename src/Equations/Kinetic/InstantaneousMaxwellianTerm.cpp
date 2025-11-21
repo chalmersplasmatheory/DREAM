@@ -92,24 +92,20 @@ bool InstantaneousMaxwellianTerm::SetJacobianBlock(
 	const len_t, const len_t derivId,
 	FVM::Matrix *jac, const real_t*
 ) {
-	if (derivId == this->id_n) {
+	const real_t *dd = nullptr;
+	if (derivId == this->id_n)
+		dd = this->dFdn;
+	else if (derivId == this->id_T)
+		dd = this->dFdT;
+	
+	if (dd != nullptr) {
 		const len_t nr = this->grid->GetNr();
 		const len_t np = this->grid->GetNp1(0);
 		const len_t nxi = this->grid->GetNp2(0);
 
 		for (len_t ir = 0, i = 0; ir < nr; ir++)
 			for (len_t j = 0; j < nxi*np; j++, i++)
-				jac->SetElement(i, ir, this->dFdT[i]);
-
-		return true;
-	} else if (derivId == this->id_T) {
-		const len_t nr = this->grid->GetNr();
-		const len_t np = this->grid->GetNp1(0);
-		const len_t nxi = this->grid->GetNp2(0);
-
-		for (len_t ir = 0, i = 0; ir < nr; ir++)
-			for (len_t j = 0; j < nxi*np; j++, i++)
-				jac->SetElement(i, ir, this->dFdn[i]);
+				jac->SetElement(i, ir, dd[i]);
 
 		return true;
 	} else

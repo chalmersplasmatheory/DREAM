@@ -45,12 +45,13 @@ namespace DREAM {
         void Evaluate(const len_t, real_t*, FVM::UnknownQuantityHandler*);
 
 		const bool *GetAlternativeEquationMask() { return this->condition->GetTriggerMask(); }
-        const std::string& GetDescription() const { return this->description; }
+        std::string GetDescription() const { return this->description; }
         const std::string& GetDescriptionAlt() const { return this->description_alt; }
         const std::map<len_t, FVM::Operator*>& GetOperators(bool alt=false) const {
 			if (alt) return this->equations_alt;
 			else return this->equations;
 		}
+		std::string GetOperatorNames() const;
         const FVM::Operator *GetOperator(const len_t i) const { return this->equations.at(i); }
 		const FVM::Operator *GetOperatorAlt(const len_t i) const { return this->equations_alt.at(i); }
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }
@@ -61,6 +62,7 @@ namespace DREAM {
 		void CheckTriggerCondition(const real_t, FVM::UnknownQuantityHandler*);
 		bool HasAlternativeEquation() const { return (this->condition != nullptr); }
 		bool HasTransientTerm() const;
+		void SaveTriggerState();
 
         len_t NumberOfElements() const { return this->uqty->NumberOfElements(); }
         len_t NumberOfNonZeros();

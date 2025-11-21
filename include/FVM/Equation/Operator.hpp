@@ -60,6 +60,7 @@ namespace DREAM::FVM {
 
 		bool HasTransientTerm() const { return this->hasTransientTerm; }
 
+		std::string GetNames() const;
         EquationTerm *GetTermByID(const int_t id) { return this->identifiableTerms[id]; }
 
         const real_t *const* GetAdvectionCoeffR() const { return this->adterm->GetAdvectionCoeffR(); }

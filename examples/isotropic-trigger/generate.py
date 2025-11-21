@@ -164,7 +164,9 @@ def setup(tMax=1e-5, nt=10000):
     #ds.solver.setVerbose(True)
 
     ds.solver.tolerance.set(reltol=1e-5)
-    #ds.solver.setDebug(savejacobian=True, saveresidual=True, timestep=1, iteration=1)
+    #ds.solver.setDebug(savejacobian=True, savenumericaljacobian=True, timestep=1, iteration=2)
+    ds.solver.setDebug(savejacobian=True, timestep=1, iteration=2)
+    #ds.solver.setDebug(savesystem=True, timestep=1, iteration=0)
 
     ds.other.include('fluid', 'scalar')
 

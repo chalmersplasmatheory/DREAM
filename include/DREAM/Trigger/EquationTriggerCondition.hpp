@@ -16,13 +16,11 @@ namespace DREAM {
 
 		void SetTriggered(const len_t i, bool v) { this->triggered[i] = v; }
 
-		virtual void _CheckCondition(const real_t, FVM::UnknownQuantityHandler*) = 0;
-
 	public:
 		EquationTriggerCondition(FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t nMultiples, bool saveTriggerState=true);
 		virtual ~EquationTriggerCondition();
 
-		void CheckCondition(const real_t, FVM::UnknownQuantityHandler*);
+		virtual void CheckCondition(const real_t, FVM::UnknownQuantityHandler*) = 0;
 		const bool *GetTriggerMask() { return this->triggered; }
 		const len_t GetNCells() { return this->nMultiples * this->grid->GetNCells(); }
 

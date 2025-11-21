@@ -30,22 +30,12 @@ EquationTriggerCondition::~EquationTriggerCondition() {
 
 
 /**
- * Check the trigger condition.
- */
-void EquationTriggerCondition::CheckCondition(
-	const real_t t, FVM::UnknownQuantityHandler *uqty
-) {
-	this->_CheckCondition(t, uqty);
-	
-	if (this->saveTriggerState)
-		this->SaveTriggerState();
-}
-
-
-/**
  * Save the trigger state.
  */
 void EquationTriggerCondition::SaveTriggerState() {
+	if (!this->saveTriggerState)
+		return;
+
 	this->trigger_states.push_back(this->triggered);
 	this->triggered = new bool[this->GetNCells()];
 }

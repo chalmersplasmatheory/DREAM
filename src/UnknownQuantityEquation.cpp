@@ -115,6 +115,23 @@ void UnknownQuantityEquation::Evaluate(
 
 
 /**
+ * Get a string which contains the name of all operators included
+ * in this equation.
+ */
+std::string UnknownQuantityEquation::GetOperatorNames() const {
+	std::string names;
+	for (auto eqn : this->equations) {
+		if (!names.empty())
+			names += ", ";
+
+		names += eqn.second->GetNames();
+	}
+
+	return names;
+}
+
+
+/**
  * Returns true if this equation contains a transient term.
  */
 bool UnknownQuantityEquation::HasTransientTerm() const {
@@ -196,6 +213,14 @@ void UnknownQuantityEquation::CheckTriggerCondition(
 ) {
 	if (this->condition != nullptr)
 		this->condition->CheckCondition(t, u);
+}
+
+/**
+ * Save the current state of the equation trigger.
+ */
+void UnknownQuantityEquation::SaveTriggerState() {
+	if (this->condition != nullptr)
+		this->condition->SaveTriggerState();
 }
 
 /**

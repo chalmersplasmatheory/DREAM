@@ -343,6 +343,8 @@ void EquationSystem::Solve() {
         } catch (FVM::FVMException& ex) {
             timestepper->HandleException(ex);
         }
+
+		this->SaveTriggerState();
     }
 
     cout << endl;
@@ -367,6 +369,13 @@ void EquationSystem::CheckTriggerConditions(const real_t t) {
 	for (auto eqn : unknown_equations) {
 		if (eqn->HasAlternativeEquation())
 			eqn->CheckTriggerCondition(t, &this->unknowns);
+	}
+}
+
+void EquationSystem::SaveTriggerState() {
+	for (auto eqn : unknown_equations) {
+		if (eqn->HasAlternativeEquation())
+			eqn->SaveTriggerState();
 	}
 }
 

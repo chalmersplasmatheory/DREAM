@@ -27,7 +27,7 @@ TimeTrigger::~TimeTrigger() {}
 /**
  * Check if the condition is triggered.
  */
-void TimeTrigger::_CheckCondition(const real_t t, FVM::UnknownQuantityHandler*) {
+void TimeTrigger::CheckCondition(const real_t t, FVM::UnknownQuantityHandler*) {
 	const len_t N = this->GetNCells();
 	bool v = (t >= this->trigger_time);
 	for (len_t i = 0; i < N; i++)

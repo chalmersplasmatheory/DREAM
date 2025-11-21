@@ -217,6 +217,38 @@ bool Operator::IsEvaluable() const {
 }
 
 /**
+ * Returns a string which contains the name of every term
+ * included in this operator.
+ */
+std::string Operator::GetNames() const {
+	std::string names;
+
+    if (predetermined != nullptr)
+		names = predetermined->GetName() + ", ";
+
+    // Evaluatable equation terms
+    for (auto it : eval_terms)
+        names += it->GetName() + ", ";
+
+    // Other equation terms
+    for (auto it : terms)
+        names += it->GetName() + ", ";
+
+    // Advection-diffusion term
+    if (adterm != nullptr)
+        names += adterm->GetNames() + ", ";
+
+    // Boundary conditions
+    for (auto it : boundaryConditions)
+        names += it->GetName() + ", ";
+	
+	if (names.empty())
+		return names;
+	else
+		return names.substr(0, names.length()-2);
+}
+
+/**
  * Returns the number of non-zero elements inserted into
  * a linear operator matrix by this operator object.
  */

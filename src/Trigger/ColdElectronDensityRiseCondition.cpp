@@ -31,7 +31,7 @@ ColdElectronDensityRiseCondition::~ColdElectronDensityRiseCondition() {
 /**
  * Check whether the trigger condition is enabled.
  */
-void ColdElectronDensityRiseCondition::_CheckCondition(
+void ColdElectronDensityRiseCondition::CheckCondition(
 	const real_t, FVM::UnknownQuantityHandler *unknowns
 ) {
 	const real_t *n_cold = unknowns->GetUnknownDataPrevious(this->id_n_cold);
