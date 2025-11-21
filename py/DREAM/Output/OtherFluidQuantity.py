@@ -11,12 +11,12 @@ from . FluidQuantity import FluidQuantity
 class OtherFluidQuantity(FluidQuantity):
     
 
-    def __init__(self, name, data, description, grid, output):
+    def __init__(self, name, data, description, grid, output, triggerinfo=None):
         """
         Constructor.
         """
         attr = {'description': description}
-        super(OtherFluidQuantity, self).__init__(name=name, data=data, grid=grid, attr=attr, output=output)
+        super(OtherFluidQuantity, self).__init__(name=name, data=data, grid=grid, attr=attr, output=output, triggerinfo=triggerinfo)
 
         self.time = grid.t[1:]
 

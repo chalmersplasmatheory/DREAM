@@ -11,7 +11,7 @@ from . UnknownQuantity import UnknownQuantity
 class ScalarQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
 
@@ -21,7 +21,7 @@ class ScalarQuantity(UnknownQuantity):
         :param grid:               Grid on which the quantity is defined.
         :param DREAMOutput output: Parent output object.
         """
-        super(ScalarQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super(ScalarQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
         self.time = grid.t
 
 

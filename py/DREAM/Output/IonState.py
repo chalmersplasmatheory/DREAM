@@ -8,11 +8,11 @@ from .FluidQuantity import FluidQuantity
 class IonState(FluidQuantity):
     
 
-    def __init__(self, name, Z, Z0, data, grid, output, attr=list()):
+    def __init__(self, name, Z, Z0, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=("{}-{}".format(name, Z0)), data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=("{}-{}".format(name, Z0)), data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
         self.Z  = Z
         self.Z0 = Z0

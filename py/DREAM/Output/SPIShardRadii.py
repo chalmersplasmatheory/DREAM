@@ -16,11 +16,11 @@ anim_contours = None
 class SPIShardRadii(ScalarQuantity):
 
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
         self.nshard=data.shape[1]
         
 

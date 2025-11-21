@@ -11,11 +11,11 @@ from .UnknownQuantity import UnknownQuantity
 class IonHandler(UnknownQuantity):
 
     
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super(IonHandler, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super(IonHandler, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
         self.data = data
         self.meta = output.ionmeta

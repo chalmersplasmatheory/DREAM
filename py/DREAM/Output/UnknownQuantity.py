@@ -4,12 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from . OutputException import OutputException
+from . TriggerInformation import TriggerInformation
 
 
 class UnknownQuantity:
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
 
@@ -28,6 +29,9 @@ class UnknownQuantity:
             self.description = attr['description']
         if 'equation' in attr:
             self.description_eqn = attr['equation']
+
+        if triggerinfo is not None:
+            self.trigger = TriggerInformation(self, triggerinfo, output)
 
 
     def __getitem__(self, key):

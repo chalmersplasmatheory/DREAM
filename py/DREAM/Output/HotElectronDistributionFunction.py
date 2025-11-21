@@ -9,11 +9,11 @@ from . DistributionFunction import DistributionFunction
 class HotElectronDistributionFunction(DistributionFunction):
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=grid.hottail)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=grid.hottail, triggerinfo=triggerinfo)
 
 
     def getTeXName(self):

@@ -11,12 +11,12 @@ from . KineticQuantity import KineticQuantity
 class OtherKineticQuantity(KineticQuantity):
     
 
-    def __init__(self, name, data, description, grid, output, momentumgrid=None):
+    def __init__(self, name, data, description, grid, output, momentumgrid=None, triggerinfo=None):
         """
         Constructor.
         """
         attr = {'description': description}
-        super(OtherKineticQuantity, self).__init__(name=name, data=data, grid=grid, attr=attr, output=output, momentumgrid=momentumgrid)
+        super(OtherKineticQuantity, self).__init__(name=name, data=data, grid=grid, attr=attr, output=output, momentumgrid=momentumgrid, triggerinfo=triggerinfo)
 
         self.time = grid.t[1:]
 

@@ -17,11 +17,11 @@ anim_contours = None
 class FluidQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super(FluidQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
         # Cell or flux grid?
         if data.shape[1] == self.grid.r.size:
