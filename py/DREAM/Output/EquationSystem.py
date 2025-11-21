@@ -138,7 +138,7 @@ class EquationSystem:
             if uqn+'@@' in unknowns:
                 attr = unknowns[uqn+'@@']
 
-            if uqn in unknowns['triggers']:
+            if ('triggers' in unknowns) and (uqn in unknowns['triggers']):
                 triggerinfo = unknowns['triggers'][uqn]
             else:
                 triggerinfo = None
