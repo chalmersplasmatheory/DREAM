@@ -456,8 +456,9 @@ class DistributionFunction(UnknownQuantity):
                 else:
                     data['f_prescribed']['ppar'] = self.prescribed_ppar
                     data['f_prescribed']['pperp'] = self.prescribed_pperp
-
-        if self.mode == DISTRIBUTION_MODE_ANALYTICAL:
+            elif self.mode == DISTRIBUTION_MODE_MAXWELLIAN:
+                data['maxwellian_population'] = self.maxwellian_population
+        elif self.mode == DISTRIBUTION_MODE_ANALYTICAL:
             data['n0'] = { 'r': self.rn0, 'x': self.n0 }
             data['T0'] = { 'r': self.rT0, 'x': self.T0 }
 

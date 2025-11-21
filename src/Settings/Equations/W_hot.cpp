@@ -126,7 +126,7 @@ void SimulationGenerator::ConstructEquation_T_hot_inner(
 		eqsys->SetOperator(id_T_hot, id_T_hot, Op2);
 
 		// Set initial value for 'T_hot'
-		real_t *T0 = LoadDataR("eqsys/f_hot", fluidGrid->GetRadialGrid(), s, "T0");
+		real_t *T0 = _get_f_hot_data_r(s, "T0", fluidGrid->GetRadialGrid());
 		eqsys->SetInitialValue(id_T_hot, T0);
 		delete [] T0;
 	}
@@ -229,13 +229,13 @@ void SimulationGenerator::ConstructEquation_W_hot_moment(
 
     std::string desc = "Energy moment of f_hot";
 
-    FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+    FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)_get_f_hot_int(s, "pThresholdMode");
     real_t pThreshold = 0.0;
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
     if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         // With collfreq_mode FULL, n_hot is defined as density above some threshold.
-        pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+        pThreshold = _get_f_hot_real(s, "pThreshold");
         
         std::ostringstream str;
         str <<std::fixed << std::setprecision(3) << pThreshold;

@@ -125,11 +125,12 @@ def setup(tMax=1e-5, nt=10000):
     if WITH_TRIGGER:
         ds.eqsys.n_i.addIon('Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e6)
         
+        dt = tMax/nt
         neon_start = 0.1*tMax
         neon_stop = 0.2*tMax
-        neon_time = np.array([neon_start, neon_stop, neon_stop+tMax/nt, tMax])
+        neon_time = np.array([0.0, neon_start-dt, neon_start, neon_stop, neon_stop+dt, tMax])
         neon_rate = 2e18 / (neon_stop - neon_start)
-        neon_rate_array = np.array([neon_rate, neon_rate, 0.0, 0.0])
+        neon_rate_array = np.array([0.0, 0.0, neon_rate, neon_rate, 0.0, 0.0])
 
         ds.eqsys.n_i.addIonSource(
             'Ne', dNdt=neon_rate_array, t=neon_time, Z0=0,
@@ -150,8 +151,8 @@ def setup(tMax=1e-5, nt=10000):
 
     # Enable trigger
     if WITH_TRIGGER:
-        #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
-        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=TRIGGER_TIME)
+        ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_COLD_ELECTRON_RISE)
+        #ds.eqsys.f_hot.enableIsotropicTrigger(Trigger.TYPE_TIME, trigger_time=TRIGGER_TIME)
     else:
         ds.eqsys.T_cold.setType(Tcold.TYPE_SELFCONSISTENT)
         ds.eqsys.T_cold.setInitialProfile(1)
@@ -163,7 +164,7 @@ def setup(tMax=1e-5, nt=10000):
     #ds.solver.setVerbose(True)
 
     ds.solver.tolerance.set(reltol=1e-5)
-    ds.solver.setDebug(savejacobian=True, saveresidual=True, timestep=1, iteration=1)
+    #ds.solver.setDebug(savejacobian=True, saveresidual=True, timestep=1, iteration=1)
 
     ds.other.include('fluid', 'scalar')
 
@@ -188,12 +189,14 @@ def main():
             runiface(ds, 'output_notrigger.h5')
     except: pass
 
+    """
     if WITH_TRIGGER:
         os.rename('petsc_jac', 'petsc_jac_trigger')
         os.rename('residual.mat', 'residual_trigger.mat')
     else:
         os.rename('petsc_jac', 'petsc_jac_notrigger')
         os.rename('residual.mat', 'residual_notrigger.mat')
+    """
 
     return 0
 

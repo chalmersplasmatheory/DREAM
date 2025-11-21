@@ -175,6 +175,7 @@ namespace DREAM {
 		static void ConstructEquation_D_I(EquationSystem*, Settings*, const std::string&);
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
+        static void ConstructEquation_n_hot_inner(const std::string&, EquationSystem*, Settings*, bool);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot_inner(const std::string&, EquationSystem*, Settings*);
         static void ConstructEquation_j_hot_ohmic(EquationSystem*, Settings*);
@@ -301,6 +302,7 @@ namespace DREAM {
 		static bool _get_f_hot_bool(Settings*, const std::string&);
 		static int_t _get_f_hot_int(Settings*, const std::string&);
 		static real_t _get_f_hot_real(Settings*, const std::string&);
+		static real_t *_get_f_hot_data_r(Settings*, const std::string&, FVM::RadialGrid*);
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);

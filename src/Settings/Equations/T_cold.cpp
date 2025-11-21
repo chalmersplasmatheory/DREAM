@@ -388,12 +388,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
         FVM::MomentQuantity::pThresholdMode pMode =
-            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+            (FVM::MomentQuantity::pThresholdMode)_get_f_hot_int(s, "pThresholdMode");
         real_t pThreshold = 0.0;
         if(collfreqModeFull){
             // With collfreq_mode FULL, only add contribution from hot electrons
             // defined as those with momentum above the defined threshold.
-            pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+            pThreshold = _get_f_hot_real(s, "pThreshold");
         }
         oqty_terms->fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),

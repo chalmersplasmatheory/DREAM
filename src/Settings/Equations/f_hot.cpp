@@ -573,6 +573,46 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     eqsys->SetOperator(id_Sp, id_Sp, Op_Sp, desc);
 }
 
+/***********************************************************************
+ * HELPER ROUTINES FOR F_HOT SETTINGS.                                 *
+ * These routines are used to fetch settings for the kinetic equation, *
+ * regardless of whether it is set as the 'main' or 'alternative'      *
+ * equation.                                                           *
+ ***********************************************************************/
+/**
+ * Returns the full path to the appropriate quantity 'name' to use.
+ * This quantity will either be located under '/eqsys/f_hot' or
+ * '/eqsys/f_hot/switch/equation', depending on whether it is set for the
+ * main or alternative equations.
+ */
+std::string SimulationGenerator::_get_f_hot_subgroup(Settings *s, const std::string& name) {
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger("eqsys/f_hot/switch/condition");
+	
+	// Main equation?
+	if (switchtype == OptionConstants::EQN_TRIGGER_TYPE_NONE)
+		return "eqsys/f_hot/" + name;
+	else
+		return "eqsys/f_hot/switch/equation/" + name;
+}
+bool SimulationGenerator::_get_f_hot_bool(Settings *s, const std::string& name) {
+	const std::string &path = _get_f_hot_subgroup(s, name);
+	return s->GetBool(path);
+}
+int_t SimulationGenerator::_get_f_hot_int(Settings *s, const std::string& name) {
+	const std::string &path = _get_f_hot_subgroup(s, name);
+	return s->GetInteger(path);
+}
+real_t SimulationGenerator::_get_f_hot_real(Settings *s, const std::string& name) {
+	const std::string &path = _get_f_hot_subgroup(s, name);
+	return s->GetReal(path);
+}
+real_t *SimulationGenerator::_get_f_hot_data_r(Settings *s, const std::string& name, FVM::RadialGrid *rgrid) {
+	std::string path = _get_f_hot_subgroup(s, "");
+	// Remove trailing '/'
+	path.pop_back();
+	return LoadDataR(path, rgrid, s, name);
+}
 
 
 

@@ -321,10 +321,10 @@ void SimulationGenerator::ConstructEquation_Ions(
                         if(Op_kiniz == nullptr)
                             Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
                         FVM::MomentQuantity::pThresholdMode pMode =
-                            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+                            (FVM::MomentQuantity::pThresholdMode)_get_f_hot_int(s, "pThresholdMode");
                         real_t pThreshold = 0.0;
                         if(collfreqModeIsFull)
-                            pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+                            pThreshold = (real_t)_get_f_hot_real(s, "pThreshold");
 						IonKineticIonizationTerm *ikit =
 							new IonKineticIonizationTerm(
 								fluidGrid, eqsys->GetHotTailGrid(), id_ni,

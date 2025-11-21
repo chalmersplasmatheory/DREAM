@@ -122,7 +122,7 @@ class HotElectronDistribution(DistributionFunction):
         self.settings.eqsys.T_hot.trigger.setCondition(condition, *args, **kwargs)
 
         # f_hot before/after
-        self.asMaxwellian()
+        self.asMaxwellian(MAXWELLIAN_POPULATION_HOT)
 
         # Copy initial profiles (if already set)
         if self.n0 is not None:
