@@ -18,6 +18,8 @@ class Temperature(FluidQuantity):
             self.prefix = 'Tcold'
         elif name == 'T_hot':
             self.prefix = 'Thot'
+        elif name == 'W_cold':
+            self.prefix = 'Tcold'
         else:
             print(f"WARNING in Python interface: Unrecognized name of temperature: '{name}'. Will not be able to identify other quantities.")
 
