@@ -380,24 +380,6 @@ void EquationSystem::SaveTriggerState() {
 }
 
 /**
- * Save diagnostic information about the trigger conditions.
- */
-void EquationSystem::SaveTriggerConditionDiagnostics(
-	SFile *sf, const std::string &name
-) {
-	bool struct_created = false;
-	for (auto eqn : unknown_equations) {
-		if (eqn->HasAlternativeEquation()) {
-			if (!struct_created) {
-				sf->CreateStruct(name + "/triggers");
-				struct_created = true;
-			}
-			eqn->SaveTriggerConditionDiagnostics(sf, name);
-		}
-	}
-}
-
-/**
  * Call all functions in 'callbacks_timestepFinished'.
  */
 void EquationSystem::TimestepFinished() {

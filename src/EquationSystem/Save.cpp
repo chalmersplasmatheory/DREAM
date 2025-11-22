@@ -13,6 +13,18 @@ using namespace std;
 
 
 /**
+ * Save the names of all operators included in an equation.
+ */
+void EquationSystem::SaveOperatorNames(SFile *sf, const string& name) {
+	for (auto eqn : unknown_equations) {
+		FVM::UnknownQuantity *u = eqn->GetUnknown();
+
+		sf->WriteAttribute_string(name + "/" + u->GetName(), "operators", eqn->GetOperatorNames());
+		sf->WriteAttribute_string(name + "/" + u->GetName(), "operators_alt", eqn->GetAltOperatorNames());
+	}
+}
+
+/**
  * Save timinig information from the simulation.
  *
  * sf:   SFile object to saving timing information to.
@@ -61,5 +73,23 @@ void EquationSystem::SaveSolverData(SFile *sf, const string& name) {
 		warnings += s + ";";
 
 	sf->WriteString(name + "/warnings", warnings);
+}
+
+/**
+ * Save diagnostic information about the trigger conditions.
+ */
+void EquationSystem::SaveTriggerConditionDiagnostics(
+	SFile *sf, const std::string &name
+) {
+	bool struct_created = false;
+	for (auto eqn : unknown_equations) {
+		if (eqn->HasAlternativeEquation()) {
+			if (!struct_created) {
+				sf->CreateStruct(name + "/triggers");
+				struct_created = true;
+			}
+			eqn->SaveTriggerConditionDiagnostics(sf, name);
+		}
+	}
 }
 

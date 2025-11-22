@@ -118,9 +118,12 @@ void UnknownQuantityEquation::Evaluate(
  * Get a string which contains the name of all operators included
  * in this equation.
  */
-std::string UnknownQuantityEquation::GetOperatorNames() const {
+std::string UnknownQuantityEquation::GetOperatorNames(const std::map<len_t, FVM::Operator*> *eqns) const {
+	if (eqns == nullptr)
+		eqns = &this->equations;
+
 	std::string names;
-	for (auto eqn : this->equations) {
+	for (auto eqn : *eqns) {
 		if (!names.empty())
 			names += ", ";
 
@@ -130,6 +133,9 @@ std::string UnknownQuantityEquation::GetOperatorNames() const {
 	return names;
 }
 
+std::string UnknownQuantityEquation::GetAltOperatorNames() const {
+	return GetOperatorNames(&this->equations_alt);
+}
 
 /**
  * Returns true if this equation contains a transient term.

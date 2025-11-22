@@ -29,6 +29,12 @@ class UnknownQuantity:
             self.description = attr['description']
         if 'equation' in attr:
             self.description_eqn = attr['equation']
+        if 'equation_alt' in attr:
+            self.description_eqn_alt = attr['equation_alt']
+        if 'operators' in attr:
+            self.operators = attr['operators']
+        if 'operators_alt' in attr:
+            self.operators_alt = attr['operators_alt']
 
         if triggerinfo is not None:
             self.trigger = TriggerInformation(self, triggerinfo, output)
@@ -170,5 +176,47 @@ class UnknownQuantity:
 
     def getTeXIntegralName(self):
         return 'Integrated '+self.getTeXName()
+
+
+    def info(self, printinfo=True):
+        """
+        Print information about the equation solved.
+        """
+        s = f"NAME: {self.name}\n"
+
+        if hasattr(self, 'description'):
+            s += f"{self.description}\n"
+
+        s += "\n"
+
+        if hasattr(self, 'description_eqn_alt'):
+            s += "MAIN "
+        if hasattr(self, 'description_eqn'):
+            s += "EQUATION\n"
+            s += f"  {self.description_eqn}\n"
+
+        if hasattr(self, 'description_eqn_alt'):
+            s += "ALTERNATIVE EQUATION\n"
+            s += f"  {self.description_eqn_alt}\n"
+
+        s += "\n"
+
+        if hasattr(self, 'operators_alt'):
+            s += "MAIN "
+        if hasattr(self, 'operators'):
+            s += "OPERATORS\n"
+            s += f"  {self.operators}\n"
+
+        if hasattr(self, 'operators_alt'):
+            s += "ALTERNATIVE OPERATORS\n"
+            s += f"  {self.operators_alt}\n"
+
+        if s[-2:] != '\n\n':
+            s += "\n"
+
+        if printinfo:
+            print(s)
+        else:
+            return s
 
 

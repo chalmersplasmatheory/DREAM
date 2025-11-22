@@ -46,10 +46,11 @@ class TriggerInformation:
         if t is None:
             t = slice(None)
 
+        tbase = self.grid.t[1:]
         data = self.data[t,r]
         nr = self.data.shape[-1]
         rarr = np.linspace(0, nr-1, nr)[r]
-        tarr = self.grid.t[t]
+        tarr = tbase[t]
 
         ax.pcolormesh(rarr, tarr, data, cmap='RdYlGn', shading='nearest', vmin=0, vmax=1)
         ax.set_xlabel('Index')

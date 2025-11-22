@@ -40,7 +40,9 @@ class FluidQuantity(UnknownQuantity):
         """
         s = self.__str__() + "\n"
         if hasattr(self, 'description') and hasattr(self, 'description_eqn'):
-            s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
+            s += f":: {self.description}\n:: Evolved using: {self.description_eqn}\n"
+            if hasattr(self, 'description_eqn_alt'):
+                s += f":: or using:     {self.description_eqn_alt}\n"
         s += self.dumps()
         return s
 

@@ -51,7 +51,8 @@ namespace DREAM {
 			if (alt) return this->equations_alt;
 			else return this->equations;
 		}
-		std::string GetOperatorNames() const;
+		std::string GetOperatorNames(const std::map<len_t, FVM::Operator*> *eqns=nullptr) const;
+		std::string GetAltOperatorNames() const;
         const FVM::Operator *GetOperator(const len_t i) const { return this->equations.at(i); }
 		const FVM::Operator *GetOperatorAlt(const len_t i) const { return this->equations_alt.at(i); }
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }

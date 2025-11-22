@@ -231,7 +231,8 @@ namespace DREAM {
         void SetSimulation(Simulation *sim) { this->simulation = sim; }
 		void AddRunawaySourceTermHandler(RunawaySourceTermHandler *rsth) { this->rsths.push_back(rsth); }
 
-        void SaveSolverData(SFile *sf, const std::string& n);
+		void SaveOperatorNames(SFile*, const std::string&);
+        void SaveSolverData(SFile*, const std::string&);
         void SaveTimings(SFile*, const std::string&);
 		void SaveTriggerConditionDiagnostics(SFile*, const std::string&);
 
