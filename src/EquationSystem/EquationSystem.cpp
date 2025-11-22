@@ -333,6 +333,8 @@ void EquationSystem::Solve() {
                 this->times.push_back(tNext);
 
                 otherQuantityHandler->StoreAll(tNext);
+
+				this->SaveTriggerState();
             } else
                 unknowns.SaveStep(tNext, false);
             
@@ -343,8 +345,6 @@ void EquationSystem::Solve() {
         } catch (FVM::FVMException& ex) {
             timestepper->HandleException(ex);
         }
-
-		this->SaveTriggerState();
     }
 
     cout << endl;
