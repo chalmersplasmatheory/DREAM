@@ -125,7 +125,7 @@ void InstantaneousMaxwellianTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        rhs[i] = -this->F[i];
+        rhs[i] += -this->F[i];
 }
 
 
@@ -140,6 +140,6 @@ void InstantaneousMaxwellianTerm::SetVectorElements(real_t *vec, const real_t*) 
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        vec[i] = this->F[i];
+        vec[i] += this->F[i];
 }
 
