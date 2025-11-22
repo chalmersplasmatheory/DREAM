@@ -48,7 +48,7 @@ class EquationSystem:
         'S_particle':   FluidQuantity,
         'tau_coll':     FluidQuantity,
         'T_cold':       Temperature,
-        'T_hot':        FluidQuantity,
+        'T_hot':        Temperature,
         'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
