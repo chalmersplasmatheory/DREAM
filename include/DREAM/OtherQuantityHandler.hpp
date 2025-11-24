@@ -27,6 +27,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
+#include "DREAM/Equations/FrozenCurrent/FrozenCurrentNreCoefficient.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
@@ -101,8 +102,8 @@ namespace DREAM {
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
             // List of approximated RE impact ionization rates for each ion species
             std::vector<IonFluidRunawayIonizationTerm*> n_re_kin_rates;
-
-            
+			// Frozen current coefficient
+			DREAM::FrozenCurrentNreCoefficient *n_re_frozen_current=nullptr;
         };
 
     protected:

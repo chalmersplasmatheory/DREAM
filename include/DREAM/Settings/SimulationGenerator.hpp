@@ -6,6 +6,7 @@
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/FrozenCurrent/FrozenCurrentNreCoefficient.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTermHandler.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
@@ -164,6 +165,7 @@ namespace DREAM {
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_selfconsistent(EquationSystem*, Settings*);
 		static void ConstructEquation_D_I(EquationSystem*, Settings*, const std::string&);
+		static FrozenCurrentNreCoefficient *ConstructEquation_D_I_n_re(EquationSystem*, Settings*, const std::string&, struct OtherQuantityHandler::eqn_terms*);
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);

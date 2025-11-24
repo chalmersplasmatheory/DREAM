@@ -14,6 +14,7 @@ namespace DREAM::FVM {
 
     protected:
         std::string name = "<NOT SET>";
+		std::unordered_map<len_t, bool> derivIsScalar;
 
         len_t nr, *n1=nullptr, *n2=nullptr;
         Grid *grid;
@@ -25,6 +26,7 @@ namespace DREAM::FVM {
         void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
             derivIdsJacobian.push_back(derivId);
             derivNMultiplesJacobian.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
+			derivIsScalar[derivId] = (u->GetUnknown(derivId)->NumberOfElements() == 1);
         }
         void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, const char *UQTY){
             AddUnknownForJacobian(u, u->GetUnknownID(UQTY));
@@ -58,6 +60,7 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const {
             return GetNumberOfNonZerosPerRow() + GetNumberOfMultiplesJacobian();
         }
+		bool IsDerivativeScalar(const len_t derivId) { return this->derivIsScalar[derivId]; }
 
         bool HasJacobianContribution(len_t derivId, len_t *nMultiples=nullptr);
 

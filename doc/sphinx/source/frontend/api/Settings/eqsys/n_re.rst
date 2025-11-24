@@ -896,24 +896,111 @@ Frozen current mode
 ^^^^^^^^^^^^^^^^^^^
 In the frozen current mode, a target plasma current :math:`I_{\rm p}` is
 prescribed by the user and an associated diffusive radial transport with
-coefficient :math:`D_0` is introduced. In each time step, DREAM will then adjust
-:math:`D_0` such that :math:`I_{\rm p}` exactly matches its prescribed value.
-This is particularly useful for simulations of experiments, where the plasma
-current is often accurately known, while the radial transport is generally
-poorly constrained by experimental measurements. This feature is inspired by a
-similar feature in the kinetic solver LUKE.
+coefficient :math:`D_I` is introduced. In each time step, DREAM will then adjust
+:math:`D_I` such that :math:`I_{\rm p}` matches its prescribed value. This is
+particularly useful for simulations of experiments, where the plasma current is
+often accurately known, while the radial transport is generally poorly
+constrained by experimental measurements. This feature is inspired by a similar
+feature in the kinetic solver LUKE.
 
-Frozen current mode can be enabled on any transportable (particle) quantity by
+There are two primary techniques available in DREAM for constraining the plasma
+current:
+
+Exactly matching the current
+****************************
+The first technique, which is most similar to the implementation found in LUKE,
+uses the *external iterator* functionality of DREAM to determine the diffusion
+coefficient :math:`D_I` so that :math:`I_{\rm p}` is exactly matched in every
+time step. This mode can be enabled on any transportable (particle) quantity by
 calling ``setFrozenCurrentMode()``. The call takes two mandatory parameters:
 (i) the type of transport to model, and (ii) the plasma current target.
 Additionally, two optional parameters may be specified: (iii) the time vector
 corresponding to the prescribed plasma current, if the latter is to vary in
-time, and (iv) the maximum permitted value of :math:`D_0` (default: 1000 m/s^2).
+time, and (iv) the maximum permitted value of :math:`D_I` (default: 1000 m/s^2).
 
 If the prescribed plasma current is higher than what can be achieved with a
 diffusive transport (i.e. if :math:`I_{\rm p}` is below its prescribed value in
 the absence of radial transport), the diffusion coefficient is set to zero and
 the target plasma current is ignored.
+
+This mode will ensure the simulated plasma current is exactly matched, however
+this may not always be desirable as it tends to introduce significant
+oscillations in the diffusion coefficient :math:`D_I`, especially when used in
+conjunction with experimental data. The next approach provides tools for
+smoothing the evolution of :math:`D_I` and generally provides more stable
+results.
+
+Predictive control of runaway density
+*************************************
+.. _ds-eqsys-nre-frozen-nre:
+
+This mode can only be applied to the runaway density, :math:`n_{\rm re}`, but
+is on the other hand more robust against spurious oscillations in the diffusion
+coefficient :math:`D_I`. It builds on the idea that we can calculate the value
+:math:`D_I`, given what the runaway generation and loss rates are. We assume
+that the runaway electron density evolves according to
+
+.. math::
+
+    \frac{\partial n_{\rm re}}{\partial t} =
+        \gamma_{\rm primary} + \Gamma_{\rm ava} n_{\rm re} -
+        \frac{1}{V'}\frac{\partial}{\partial r}\left(
+            V'D_I\frac{\partial n_{\rm re}}{\partial r}
+        \right) =
+        S_{\rm re,gen} - D_IS_{\rm re,loss},
+
+where in the last step we assumed that :math:`D_I` is constant in space. We also
+assume that the time-rate-of-change of the plasma current is
+
+.. math::
+
+    \frac{\partial I_{\rm p}}{\partial t} &=
+        \frac{\partial I_\Omega}{\partial t} +
+        \frac{ec}{2\pi}\int_0^{2\pi} V'\frac{G}{B_{\rm min}}
+        \left\langle \frac{1}{R^2} \right\rangle
+        \frac{\partial n_{\rm re}}{\partial t}
+        \,\mathrm{d}r =\\
+        &= \frac{\partial I_\Omega}{\partial t} + S_{\rm gen} - D_IS_{\rm loss}.
+
+From this equation we can calculate :math:`D_I` when the plasma current is
+fixed, :math:`\partial I_{\rm p}/\partial t=0`:
+
+.. math::
+
+    D_I^{(0)} = \frac{S_{\rm gen} + \partial I_\Omega/\partial t}{S_{\rm loss}}.
+
+This is the value of the diffusion coefficient to apply for the plasma current
+to remain constant. If we instead would like the plasma current to change at a
+certain rate, we can add a correction term :math:`\delta D` so that
+:math:`D_I = D_I^{(0)} + \delta D`. The value of this term could be calculated
+exactly as well, however it will be inherently limited by physical constraints.
+For example, :math:`\delta D\leq D_I^{(0)}` so that the full diffusion
+coefficient is non-negative. We can also not achieve an arbitrarily fast change
+in the plasma current, due to Faraday's law. We therefore assume that reasonable
+values for :math:`\delta D` are in the range :math:`[-D_I^{(0)}, D_I^{(0)}]`.
+One possible choice of :math:`\delta D` can thus be obtained from a
+linearization of :math:`\partial I_{\rm p}/\partial t`
+
+.. math::
+
+    \frac{\Delta I_{\rm p}}{\Delta t_{\rm adj}} = -\bar{\delta D} S_{\rm loss},
+
+where :math:`\Delta I_{\rm p}` is the deviation of the plasma current from the
+target value, and :math:`\Delta t_{\rm adj}` is some "adjustment time scale"
+which we impose. While physically well-motivated, this estimate is not as well
+adapted for numerical implementation, due that it is not a smooth function
+(since :math:`\delta D` must be cut to take values on
+:math:`[-D_I^{(0)},D_I^{(0)}]`). Another approach, more suitable for numerical
+implementation (and which is used in DREAM), is to take
+
+.. math::
+
+    \delta D &= D_I^{(0)}\tanh{\frac{\Delta I_{\rm p}/\Delta t_{\rm adj} S_{\rm loss}}{D_I^{(0)}}} =\\
+    &= D_I^{(0)}\tanh{\frac{\Delta I_{\rm p}/\Delta t_{\rm adj}}{S_{\rm gen}+\partial I_\Omega/\partial t}}.
+
+This will yield a non-zero diffusion coefficient regardless of the value of the
+plasma current, although when :math:`I_{\rm p}` is far from the prescribed
+value, the diffusion coefficient will be practically zero.
 
 List of options
 ***************
@@ -921,7 +1008,7 @@ The radial diffusion coefficient used in the frozen current mode is generally
 written on the form
 
 .. math::
-   D_{rr}(r,p,\xi_0) = D_0h(r,p,\xi_0)
+   D_{rr}(r,p,\xi_0) = D_I(r,p,\xi_0)
 
 where the function :math:`h(r,p,\xi_0)` can take different forms. The following
 forms for :math:`h(r,p,\xi_0)` are currently supported in DREAM:
@@ -935,6 +1022,22 @@ forms for :math:`h(r,p,\xi_0)` are currently supported in DREAM:
 +----------------------------------+-----------------------------------------+
 | ``FROZEN_CURRENT_MODE_BETAPAR``  | :math:`\beta_\parallel = v_\parallel/c` |
 +----------------------------------+-----------------------------------------+
+
+Alternatively, to use the techniques described in
+:ref:`Predictive control of runaway density <ds-eqsys-nre-frozen-nre>`, use
+
++----------------------------------+-----------------------------------------+
+| Name                             | :math:`h(r,p,\xi_0)`                    |
++==================================+=========================================+
+| ``FROZEN_CURRENT_MODE_N_RE``     | :math:`1`                               |
++----------------------------------+-----------------------------------------+
+
+
+.. note::
+
+    In fluid simulations, we generally recommend using the newer
+    ``FROZEN_CURRENT_MODE_N_RE`` over the other modes listed above, due to its
+    superior numerical properties.
 
 Example
 *******
@@ -987,6 +1090,25 @@ unstable simulations, one may want to adjust the maximum diffusion coefficient:
        Transport.FROZEN_CURRENT_MODE_BETAPAR,
        Ip_presc=Ip, D_I_max=200
    )
+
+To use the alternative frozen current mode, described in 
+:ref:`Predictive control of runaway density <ds-eqsys-nre-frozen-nre>`, do the
+following:
+
+.. code:: python
+
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   Ip = 800e3
+   ds.eqsys.n_re.transport.setFrozenCurrentMode(
+       Transport.FROZEN_CURRENT_MODE_N_RE,
+       Ip_presc=Ip, t_adjust=1e-4
+   )
+
+The parameter ``t_adjust`` is optional and has a default value of 1 ms.
 
 Adaptive MHD-like transport
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1067,7 +1189,6 @@ The adaptive MHD-like transport can either be set using the unified interface:
        suppression_level=suppression_level,
        localized=localized
    )
-
 
 Alternatively, the transport can be set separately for each quantity:
 
