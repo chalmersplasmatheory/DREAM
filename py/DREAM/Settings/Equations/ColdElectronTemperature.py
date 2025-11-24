@@ -51,7 +51,8 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                     settings, ttype=ttype, temperature=temperature,
                     radius=radius, times=times, recombination=recombination,
                     halo_region_losses=halo_region_losses, makeTrigger=False
-                )
+                ),
+                self
             )
         else:
             self.trigger = None

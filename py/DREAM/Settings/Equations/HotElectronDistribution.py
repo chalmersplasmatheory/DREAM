@@ -101,7 +101,8 @@ class HotElectronDistribution(DistributionFunction):
                     particleSource=particleSource,
                     particleSourceShape=particleSourceShape,
                     makeTrigger=False
-                )
+                ),
+                self
             )
         else:
             self.trigger = None

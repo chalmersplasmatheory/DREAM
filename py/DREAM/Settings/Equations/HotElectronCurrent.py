@@ -23,7 +23,8 @@ class HotElectronCurrent(UnknownQuantity):
         if makeTrigger:
             self.trigger = EquationTrigger(
                 settings,
-                HotElectronCurrent(settings, makeTrigger=False)
+                HotElectronCurrent(settings, makeTrigger=False),
+                self
             )
         else:
             self.trigger = None

@@ -16,12 +16,13 @@ ALL_TRIGGER_TYPES = [
 class EquationTrigger:
     
 
-    def __init__(self, settings, eqnsettings):
+    def __init__(self, settings, eqnsettings,mainEquation):
         """
         Constructor.
         """
         self.settings = settings
         self.equation = eqnsettings
+        self.mainEquation = mainEquation
 
         self.sensitivity = 0.01
 
@@ -29,7 +30,10 @@ class EquationTrigger:
         self.trigger_time = 1
 
         self.condition = TYPE_NONE
-
+    
+    def copyFromMain(self):
+        self.equation.fromdict(self.mainEquation.todict())
+        
 
     def enabled(self):
         """
