@@ -132,6 +132,8 @@ class HotElectronDistribution(DistributionFunction):
             )
 
         # T_cold before/after
+        self.settings.eqsys.T_cold.trigger.copyFromMain()
+        self.settings.eqsys.T_cold.setType(T_cold.TYPE_PRESCRIBED)
         self.settings.eqsys.T_cold.setPrescribedData(Tcold)
         self.settings.eqsys.T_cold.trigger.equation.setType(T_cold.TYPE_SELFCONSISTENT)
 

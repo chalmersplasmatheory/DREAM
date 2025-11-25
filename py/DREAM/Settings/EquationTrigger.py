@@ -31,8 +31,13 @@ class EquationTrigger:
 
         self.condition = TYPE_NONE
     
+
     def copyFromMain(self):
-        self.equation.fromdict(self.mainEquation.todict())
+        d = self.mainEquation.todict()
+        if 'switch' in d:
+            del d['switch']
+
+        self.equation.fromdict(d)
         
 
     def enabled(self):
