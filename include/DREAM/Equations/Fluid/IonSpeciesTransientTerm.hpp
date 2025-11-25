@@ -21,7 +21,9 @@ namespace DREAM{
         real_t *xPrev;
     public:
         IonSpeciesTransientTerm(FVM::Grid *g, len_t iz, const len_t id, real_t scaleFactor=1.0)
-            : FVM::EquationTerm(g), unknownId(id), iz(iz), scaleFactor(scaleFactor){}
+            : FVM::EquationTerm(g), unknownId(id), iz(iz), scaleFactor(scaleFactor){
+			SetName("IonSpeciesTransientTerm");
+		}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
         virtual void Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler *u) override {

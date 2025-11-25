@@ -109,6 +109,8 @@ void SimulationGenerator::ConstructEquation_T_hot_inner(
 
 	if (type == OptionConstants::UQTY_T_HOT_MOMENT) {
 		// W_hot as moment of f_hot  =>  fix T_hot value, set dT_hot/dt = 0
+		// (in this case, T_hot will not have any useful meaning and should
+		// be ignored)
 		FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
 		Op1->AddTerm(new FVM::TransientTerm(fluidGrid, id_T_hot));
 		eqsys->SetOperator(id_T_hot, id_T_hot, Op1, "dT_hot/dt = 0");

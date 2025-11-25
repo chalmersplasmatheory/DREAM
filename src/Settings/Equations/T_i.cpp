@@ -20,18 +20,49 @@ using namespace std;
 
 
 #define MODULENAME "eqsys/n_i"
+#define MODULENAME_T_COLD "eqsys/T_cold"
+#define MODULENAME_T_HOT "eqsys/T_hot"
 
 
-void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s){
+void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s) {
+/*
+	const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+
+	// Construct main equation
+	ConstructEquation_T_i_inner(MODULENAME_T_COLD, eqsys, s);
+
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME_T_COLD "/switch/condition");
+	
+	// Set alternative equation?
+	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_Wi, true);
+
+		ConstructEquation_T_i_inner("/switch/equation", eqsys, s);
+		EquationTriggerCondition *trig = LoadTrigger
+
+		eqsys->SetAssignToAlternativeEquation(id_Wi, false);
+	}
+}
+
+void SimulationGenerator::ConstructEquation_T_i_inner(
+	const string &switchstr, EquationSystem *eqsys, Settings *s
+){
+*/
     /**
      * if the electron heat W_cold is evolved self-consistently,
      * also evolve the ion heat W_i. Otherwise set it to constant.
      */
-    enum OptionConstants::uqty_T_cold_eqn TcoldType = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
-    if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED)
-        ConstructEquation_T_i_trivial(eqsys, s);
-    else if (TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
+    //enum OptionConstants::uqty_T_cold_eqn TcoldType = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME_T_COLD + switchstr + "/type");
+    enum OptionConstants::uqty_T_cold_eqn TcoldType = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME_T_COLD "/type");
+	bool hasThot = eqsys->HasUnknown(OptionConstants::UQTY_T_HOT);
+
+	// If 'T_hot' is available, we always evolve T_i self-consistently, as
+	// 'T_hot' will always be evolved self-consistently (in some sense).
+    if (hasThot || TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
         ConstructEquation_T_i_selfconsistent(eqsys, s);
+    else if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED)
+        ConstructEquation_T_i_trivial(eqsys, s);
     else 
         throw SettingsException(
             "T_i: Unrecognized equation type for '%s': %d.",
@@ -146,18 +177,19 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
 		}
     }
 
-    bool includeNBI = false;
-    if (s->HasSetting(MODULENAME "/NBI/enabled")) {
-        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
-    }
+    bool includeNBI = s->GetBool(MODULENAME_T_COLD "/NBI/enabled");
+	string desc = "dW_i/dt = sum_j Q_ij + Q_ie";
+
     if (includeNBI){
         for(len_t iz=0; iz<nZ; iz++){
            auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
            Op_Wij->AddTerm(nbi_i);
        }
+
+	   desc += " + NBI";
     }
 
-    eqsys->SetOperator(id_Wi, id_Wi, Op_Wij, "dW_i/dt = sum_j Q_ij + Q_ie");
+    eqsys->SetOperator(id_Wi, id_Wi, Op_Wij, desc);
     eqsys->SetOperator(id_Wi, id_Wcold, Op_Wie);
 	if (hasThot)
 		eqsys->SetOperator(id_Wi, id_Whot, Op_WieHot);
