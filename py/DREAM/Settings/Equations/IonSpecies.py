@@ -1259,7 +1259,11 @@ class IonSpecies:
         The coefficient is set to 'co' for t <= t_start.
         """
         if t is None:
-            t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
+            tben = [0, t_start-.1*t_exp]
+            tcon = np.linspace(t_start, 10*t_exp)
+            t = np.zeros((len(tben)+tcon.size, 1))
+            t[:len(tben),0] = tben
+            t[len(tben):,0] = tcon
         if r is None:
             r = np.array([0])
         if np.isscalar(c0):
@@ -1274,9 +1278,12 @@ class IonSpecies:
 
         # Copy the coefficients for the last time step to avoid an unintended linear extrapolation with an unphysical sign change
         c_single_charge_state = co + np.vstack((c_single_charge_state, c_single_charge_state[-1,:])) 
-        t = np.vstack((t, t[-1]+1))
 
-        return c_single_charge_state, r.flatten(), t.flatten()
+        _t = np.zeros((t.shape[0]+1,))
+        _t[:-1] = t[:,0]
+        _t[-1] = _t[-2]+1
+
+        return c_single_charge_state, r.flatten(), _t
 
 
     def calcTransportCoefficientExpdecayAllChargedStates(self, t_exp, c0, cf = 0, co = 0, t_start = 0, r = None, t = None):
