@@ -160,7 +160,7 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(
 
     real_t theta_guess;
     if((sgn==1 && theta_lim_lower < M_PI) || (sgn==-1 && theta_lim_upper > M_PI)) {
-        // if B has an local minimum in theta=theta_lower, return theta_lower
+        // if B has a local minimum in theta=theta_lower, return theta_lower
         theta_guess = theta_lim_lower + 10*EPSABS;
         if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
             return theta_lim_lower;
@@ -174,6 +174,14 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(
                 return theta_lim_upper;
         }
     }
+
+	if (this->CanGuessThetaOptimum()) {
+		if (sgn == 1)
+			theta_guess = this->GetThetaBminGuess(ir, fluxGridType);
+		else
+			theta_guess = this->GetThetaBmaxGuess(ir, fluxGridType);
+	}
+
     // otherwise, find extremum with fmin algorithm
     gsl_min_fminimizer_set(
         gsl_fmin, &gsl_func, theta_guess, theta_lim_lower, theta_lim_upper
