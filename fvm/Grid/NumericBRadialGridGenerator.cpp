@@ -307,14 +307,6 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 
                 // Has a maximum already been found?
                 if (maxFound) {
-                    /*throw FVMException(
-                        "The numeric magnetic field has more than one maximum "
-                        "along at least one magnetic field line."
-						"ipsi = " LEN_T_PRINTF_FMT
-						", itheta(1) = " LEN_T_PRINTF_FMT
-						", itheta(2) = " LEN_T_PRINTF_FMT,
-						i, (k-i)/npsi, (maxk-i)/npsi
-                    );*/
 					this->BHasMultipleOptima = true;
 					if (this->dataB[k] > this->dataB[maxk]) {
 						this->guess_theta_global_Bmax[i] = this->theta[j];
@@ -331,14 +323,6 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                 
                 // Has a minimum already been found?
                 if (minFound) {
-                    /*throw FVMException(
-                        "The numeric magnetic field has more than one minimum "
-                        "along at least one magnetic field line. "
-						"ipsi = " LEN_T_PRINTF_FMT
-						", itheta(1) = " LEN_T_PRINTF_FMT
-						", itheta(2) = " LEN_T_PRINTF_FMT,
-						i, (k-i)/npsi, (mink-i)/npsi
-                    );*/
 					this->BHasMultipleOptima = true;
 					if (this->dataB[k] < this->dataB[mink]) {
 						this->guess_theta_global_Bmin[i] = this->theta[j];
