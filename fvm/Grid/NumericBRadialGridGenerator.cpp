@@ -288,8 +288,11 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
             len_t km = k-npsi, kp = k+npsi;
 
             // Wrap-around at the upper endpoint
+			// (since the first and last theta points are enforced
+			// to be identical, we compare to theta[1] instead of
+			// theta[0])
             if (j == this->ntheta-1)
-                kp = 0*npsi + i;
+                kp = 1*npsi + i;
 
             real_t dB =
                 std::max(
@@ -349,6 +352,13 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
             }
         }
     }
+
+	// Since ir=0 is at r=0 we get no guess for Bmin/Bmax, and so
+	// we just copy guesses for ir=1 there.
+	if (this->npsi > 1) {
+		this->guess_theta_global_Bmin[0] = this->guess_theta_global_Bmin[1];
+		this->guess_theta_global_Bmax[0] = this->guess_theta_global_Bmax[1];
+	}
 
     delete d;
 }
@@ -981,10 +991,22 @@ real_t NumericBRadialGridGenerator::GetThetaOptimumGuess(
 		r = rvec[ir],
 		r0 = this->input_r[input_ir],
 		r1 = this->input_r[input_ir+1];
+	
+	real_t
+		theta0 = theta_guess[input_ir],
+		theta1 = theta_guess[input_ir+1];
 
-	real_t theta =
-		theta_guess[input_ir] + (r-r0)/(r1-r0) *
-		(theta_guess[input_ir+1] - theta_guess[input_ir]);
+	// We want the guess to be located on [0,2pi], and
+	// so if theta0 and theta1 are at opposite ends of the
+	// interval, we must proceed with some care
+	if (std::abs(theta0-theta1) > M_PI) {
+		if (theta0 > M_PI)
+			theta0 -= 2*M_PI;
+		else
+			theta1 -= 2*M_PI;
+	}
+
+	real_t theta = theta0 + (r-r0)/(r1-r0) * (theta1-theta0);
 	
 	return theta;
 }
