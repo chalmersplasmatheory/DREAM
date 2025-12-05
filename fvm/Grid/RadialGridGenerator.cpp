@@ -181,10 +181,18 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(
 		else
 			theta_guess = this->GetThetaBmaxGuess(ir, fluxGridType);
 
+		// Adjust guess to lie within correct intervall
 		if (theta_guess < theta_lim_lower)
 			theta_guess += 2*M_PI;
 		else if(theta_guess > theta_lim_upper)
 			theta_guess -= 2*M_PI;
+
+		// If the guess coincides with an interval limit, an
+		// error will be thrown by GSL...
+		if (theta_guess == theta_lim_lower)
+			theta_guess = theta_lim_lower + 10*EPSABS;
+		else if (theta_guess == theta_lim_upper)
+			theta_guess = theta_lim_upper - 10*EPSABS;
 	}
 
     // otherwise, find extremum with fmin algorithm
