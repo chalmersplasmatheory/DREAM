@@ -168,7 +168,7 @@ nearly neutral plasmas dominated by hydrogen collisions.
 .. note::
 
    If you are using kinetic avalanche generation and the electric field changes
-   sign during the simulation, read :ref:`negative electric fields` below and
+   sign during the simulation, read :ref:`ds-eqsys-n_re-negativeE` below and
    call `ds.eqsys.n_re.setNegativeRunaways()` on the settings object to
    properly account for the direction of motion of the runaways.
 
@@ -484,6 +484,8 @@ The hottail generation can be activated if and only if ``f_hot`` is in ``analyti
 
 
 
+.. _ds-eqsys-n_re-Eceff:
+
 Effective critical electric field
 -----------------------------------
 DREAM allows the effective critical electric field to be calculated following
@@ -631,6 +633,12 @@ The model used for :math:`E_c^\mathrm{eff}` is controlled with the following set
 | ``COLLQTY_ECEFF_MODE_FULL``        | Full model outlined above                                                                                                                         |
 +------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
 
+.. warning::
+
+   The ``FULL`` involves the computation of bounce averages which means that
+   this model is not available in magnetic fields with multiple minima/maxima.
+   For details regarding why, please see :ref:`radgrid-restrictions`.
+
 .. note::
    In typical scenarios with toroidal geometry, we observe discrepencies 
    of up to 2% between modes ``FULL`` and ``SIMPLE``, less than 10% 
@@ -638,9 +646,11 @@ The model used for :math:`E_c^\mathrm{eff}` is controlled with the following set
 
 .. note::
    ``SIMPLE`` takes essentially the same computation time as ``FULL``,
-   and is therefore not recommended except for benchmarking. Compared 
-   with the simpler models ``EC_TOT`` and ``CYLINDRICAL``, ``FULL`` can
-   make especially fluid simulations substantially slower.
+   and is therefore not recommended except for benchmarking or in magnetic
+   fields where bounce averages cannot be performed (i.e. with multiple
+   minima/maxima along one or more magnetic field lines). Compared with the
+   simpler models ``EC_TOT`` and ``CYLINDRICAL``, ``FULL`` can make especially
+   fluid simulations substantially slower.
 
 Example
 ^^^^^^^
@@ -655,6 +665,8 @@ An example of how the mode for the critical effective field can be set to ``CYLI
 
    ds.eqsys.n_re.setEceff(RunawayElectrons.COLLQTY_ECEFF_MODE_CYLINDRICAL)
 
+
+.. _ds-eqsys-n_re-negativeE:
 
 Negative electric fields
 ------------------------

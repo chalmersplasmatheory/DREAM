@@ -30,7 +30,7 @@ Equilibrium tools
 -----------------
 DREAM provides some Python classes and graphical tools for working with magnetic
 equilibria in various formats. As described on the page about the
-:ref:`_radialgrid-numerical`, DREAM uses a LUKE format for equilibrium data.
+:ref:`radialgrid-numerical`, DREAM uses a LUKE format for equilibrium data.
 We however also provide a number of classes for converting data from other
 formats to the LUKE format.
 
