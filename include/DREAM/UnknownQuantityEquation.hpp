@@ -24,7 +24,7 @@ namespace DREAM {
 		std::map<len_t, FVM::Operator*> equations_alt;
 
 		// Trigger condition
-		EquationTriggerCondition *condition;
+		EquationTriggerCondition *condition = nullptr;
 		real_t *eqn_cache = nullptr;
 		len_t nElements = 0;
 

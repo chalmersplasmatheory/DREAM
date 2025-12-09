@@ -15,6 +15,8 @@ RunawayTransportRRAdaptiveMHDLike::RunawayTransportRRAdaptiveMHDLike(
 	const real_t dBB0, const real_t suppression_level, bool localized
 ) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, suppression_level, localized),
 	RunawayTransportRechesterRosenbluth(grid, nullptr), dBOverB(dBB0) {
+
+	SetName("RunawayTransportRRAdaptiveMHDLike");
 		
 	this->dB = new real_t[grid->GetNr()];
 }

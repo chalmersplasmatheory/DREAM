@@ -35,6 +35,8 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     unknowns(unknowns), REFluid(REFluid),
     timeInterpMethod(inputData4dStruct->time_interp)
 {
+	this->T::SetName("SvenssonTransport");
+
     // Checks that pStar is valid.
     if (pStar <= 0)
         throw DREAMException(
