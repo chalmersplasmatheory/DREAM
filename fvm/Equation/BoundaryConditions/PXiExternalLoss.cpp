@@ -28,9 +28,10 @@ using namespace DREAM::FVM::BC;
  */
 PXiExternalLoss::PXiExternalLoss(
     Grid *g, const Operator *eqn, const len_t fId,
-    Grid *distGrid, 
+    Grid *distGrid, const bool *trigger_mask, bool isAlternativeEquation,
     enum boundary_type boundary, enum bc_type bc
 ) : PXiAdvectionDiffusionBoundaryCondition(g, eqn), fId(fId),
+	trigger_mask(trigger_mask), isAlternativeEquation(isAlternativeEquation),
     boundaryCondition(bc), boundary(boundary) {
 
     SetName("PXiExternalLoss");
@@ -193,6 +194,13 @@ void PXiExternalLoss::__SetElements(
             // Select correct indices/volume elements, depending on
             // whether we're building
             len_t idx1, idx2 = offset + j*np + (np-1);
+
+			// If this equation is not triggered, just ignore
+			/*if (!(isAlternativeEquation && trigger->IsTriggered(idx2)) &&
+				!(!isAlternativeEquation && !trigger->IsTriggered(idx2))*/
+			if (trigger_mask != nullptr && (isAlternativeEquation != trigger_mask[idx2]))
+				continue;
+
             real_t iVd;
             if (this->boundary == BOUNDARY_FLUID) {
                 idx1 = ir;

@@ -122,12 +122,18 @@ std::string UnknownQuantityEquation::GetOperatorNames(const std::map<len_t, FVM:
 	if (eqns == nullptr)
 		eqns = &this->equations;
 
-	std::string names;
+	std::vector<std::string> namelist;
 	for (auto eqn : *eqns) {
-		if (!names.empty())
-			names += ", ";
-
-		names += eqn.second->GetNames();
+		std::string n = eqn.second->GetNames();
+		if (!n.empty())
+			namelist.push_back(n);
+	}
+	
+	std::string names;
+	if (namelist.size() > 0) {
+		names = namelist[0];
+		for (len_t i = 1; i < namelist.size(); i++)
+			names += ", " + namelist[i];
 	}
 
 	return names;

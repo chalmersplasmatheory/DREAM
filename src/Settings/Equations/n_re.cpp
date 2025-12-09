@@ -125,11 +125,14 @@ void SimulationGenerator::ConstructEquation_n_re(
 		// AdvectionDiffusionTerm which is set. If we don't find the
 		// advection-diffusion terms in the main equation, we should check
 		// the alternative equation too.
+		bool isAlternativeEquation = false;
 		if (Op->GetAdvectionDiffusion() == nullptr) {
 			Op = eqsys->GetEquation(id_f_hot)->GetOperatorAlt(id_f_hot);
 			
 			if (Op->GetAdvectionDiffusion() == nullptr)
 				throw DREAMException("n_re: f_hot is present in the equation system, but no advection-diffusion terms in the equation. Cannot create runaway generation term.");
+
+			isAlternativeEquation = true;
 		}
 
 		if (eqsys->HasRunawayGrid()) {
@@ -149,6 +152,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
 			FVM::BC::PXiExternalLoss *xloss = new FVM::BC::PXiExternalLoss(
 				fluidGrid, Op, id_f_hot, hottailGrid,
+				eqsys->GetEquation(id_f_hot)->GetAlternativeEquationMask(), isAlternativeEquation,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			);
 			oqty_terms->n_re_f_hot_flux = xloss;

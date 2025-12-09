@@ -36,8 +36,12 @@ void EquationTriggerCondition::SaveTriggerState() {
 	if (!this->saveTriggerState)
 		return;
 
-	this->trigger_states.push_back(this->triggered);
-	this->triggered = new bool[this->GetNCells()];
+	const len_t N = this->GetNCells();
+	bool *s = new bool[N];
+	for (len_t i = 0; i < N; i++)
+		s[i] = this->triggered[i];
+
+	this->trigger_states.push_back(s);
 }
 
 
