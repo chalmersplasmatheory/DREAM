@@ -196,7 +196,7 @@ class UnknownQuantity:
             s += f"  {self.description_eqn}\n"
 
         if hasattr(self, 'description_eqn_alt'):
-            s += "ALTERNATIVE EQUATION\n"
+            s += "\nALTERNATIVE EQUATION\n"
             s += f"  {self.description_eqn_alt}\n"
 
         s += "\n"
@@ -211,7 +211,7 @@ class UnknownQuantity:
             s += "ALTERNATIVE OPERATORS\n"
             s += f"  {self.operators_alt}\n"
 
-        if s[-2:] != '\n\n':
+        if s[-1] != '\n':
             s += "\n"
 
         if printinfo:

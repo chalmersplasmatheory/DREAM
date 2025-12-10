@@ -20,7 +20,9 @@ void EquationSystem::SaveOperatorNames(SFile *sf, const string& name) {
 		FVM::UnknownQuantity *u = eqn->GetUnknown();
 
 		sf->WriteAttribute_string(name + "/" + u->GetName(), "operators", eqn->GetOperatorNames());
-		sf->WriteAttribute_string(name + "/" + u->GetName(), "operators_alt", eqn->GetAltOperatorNames());
+		std::string altop = eqn->GetAltOperatorNames();
+		if (!altop.empty())
+			sf->WriteAttribute_string(name + "/" + u->GetName(), "operators_alt", eqn->GetAltOperatorNames());
 	}
 }
 
