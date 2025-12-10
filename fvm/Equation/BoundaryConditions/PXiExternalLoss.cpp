@@ -83,7 +83,10 @@ len_t PXiExternalLoss::GetNumberOfNonZerosPerRow_jac() const {
  * Rebuild coefficients for this term.
  * (not used)
  */
-bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler*) { return false; }
+bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler *uqh) {
+	this->f_data = uqh->GetUnknownData(this->fId);
+	return false;
+}
 
 /**
  * Add flux to jacobian block.
@@ -222,8 +225,10 @@ void PXiExternalLoss::__SetElements(
 
                 // the interpolation on the outermost cell interface is set to 
                 // UPWIND: zero flux if negative advection, but free flow if positive. 
+				// (we also enforce that 'f' is positive, to avoid spurious numerical
+				// oscillations from causing negative fluxes)
                 if (Ap != nullptr) {
-                    real_t delta1 = (Ap[j*(np+1) + np]>0); 
+                    real_t delta1 = (Ap[j*(np+1) + np]>0 && f_data[j*np+(np-1)]>0); 
                     // Phi_{N_p+1/2}  -- f_{N_p+1} = 0
                     f(idx1, idx2, delta1*Ap[j*(np+1) + np] * Vd);
                 }
