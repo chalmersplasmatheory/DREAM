@@ -87,6 +87,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPITransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonTransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KiramovBoundaryHeatTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIIonTerm.cpp"
