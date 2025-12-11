@@ -18,6 +18,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
+    "${PROJECT_SOURCE_DIR}/src/NBIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/NIST.cpp"
     "${PROJECT_SOURCE_DIR}/src/OutputGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/src/OutputGeneratorSFile.cpp"
@@ -88,6 +89,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KiramovBoundaryHeatTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIIonTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRechesterRosenbluth.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.cpp"
@@ -200,9 +203,12 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
 )
 
+
+
 add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
+
 
 set_target_properties(dream PROPERTIES
     # Require C++17

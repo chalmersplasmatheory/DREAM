@@ -336,6 +336,11 @@ void OtherQuantityHandler::DefineQuantities() {
                 v[ir] = gLCFS[ir] * nRE[ir];
             }
         );
+
+        DEF_SC("scalar/r_LCFS", "Radius of LCFS [m]",
+            real_t v = tracked_terms->lcfsLossRate_fluid->GetRadiusOfLCFS();
+            qd->Store(&v);
+        );
     }
 
 	if (tracked_terms->n_re_f_hot_flux != nullptr) {
@@ -514,6 +519,15 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
+        
+    if (tracked_terms->T_cold_NBI != nullptr)
+    DEF_FL("fluid/Tcold_NBI", "Collisional heating power density by NBI [J s^-1 m^-3]",
+        real_t *vec = qd->StoreEmpty();
+        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+            vec[ir] = 0;
+
+        this->tracked_terms->T_cold_NBI->SetVectorElements(vec, nullptr);
+    );
 
     if (tracked_terms->T_cold_transport) {
         if (tracked_terms->T_cold_transport->GetAdvectionTerms().size() > 0) {
@@ -529,6 +543,7 @@ void OtherQuantityHandler::DefineQuantities() {
             );
         }
     }
+    
 
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
@@ -623,19 +638,21 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
-    DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
-        real_t *v = qd->StoreEmpty();
+	DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
+		if (this->unknown_equations->at(this->id_f_hot)->HasOperatorAt(this->id_n_re)) {
+			real_t *v = qd->StoreEmpty();
 
-        FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
-        const real_t *nre = unknowns->GetUnknownData(id_n_re);
-        avaPos->SetVectorElements(v, nre);
+			FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
+			const real_t *nre = unknowns->GetUnknownData(id_n_re);
+			avaPos->SetVectorElements(v, nre);
 
-        if (this->id_n_re_neg) {
-            FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re_neg);
-            const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
-            avaNeg->SetVectorElements(v, nre_neg);
-        }
-    );
+			if (this->id_n_re_neg) {
+				FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re_neg);
+				const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
+				avaNeg->SetVectorElements(v, nre_neg);
+			}
+		}
+	);
     
 	if (tracked_terms->comptonSource_hottail != nullptr) {
 		DEF_HT("hottail/S_compton", "Compton scattering source term [s^-1 m^-3]",
@@ -1082,7 +1099,7 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
 	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
-		DEF_HT_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+		DEF_RE_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
 			real_t *v = qd->StoreEmpty();
 			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
 			for (auto t : this->tracked_terms->f_re_kin_rates)
