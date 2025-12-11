@@ -245,12 +245,12 @@ void RunawayFluid::CalculateDerivedQuantities(){
                 break;
             case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS: 
                 electricConductivity[ir] = evaluateSauterElectricConductivity(ir, true);
-				if (hasThot)
+				if (hasThot && nhot[ir] > 0)
 					electricHotConductivity[ir] = evaluateSauterElectricConductivity_hot(ir, true);
                 break;
             case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONAL: 
                 electricConductivity[ir] = evaluateSauterElectricConductivity(ir, false);
-				if (hasThot)
+				if (hasThot && nhot[ir] > 0)
 					electricHotConductivity[ir] = evaluateSauterElectricConductivity_hot(ir, false);
                 break;
             default:
@@ -890,6 +890,9 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
 real_t RunawayFluid::evaluatePartialContributionSauterConductivity_hot(
 	len_t ir, len_t derivId, len_t nidx, bool collisionless
 ) {
+	if (nhot[ir] <= 0)
+		return 0;
+
 	return evaluatePartialContributionSauterConductivity_inner(
 		ir, derivId, nidx, collisionless, id_Thot, id_nhot, Thot, nhot
 	);
@@ -938,6 +941,9 @@ real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len
 	);
 }
 real_t RunawayFluid::evaluatePartialContributionBraamsConductivity_hot(len_t ir, len_t derivId, len_t nidx) {
+	if (nhot[ir] <= 0)
+		return 0;
+
 	return evaluatePartialContributionBraamsConductivity_inner(
 		ir, derivId, nidx, id_Thot, Thot
 	);
