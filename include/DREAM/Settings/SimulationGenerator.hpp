@@ -104,6 +104,7 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_T_cold(Settings*);
+        static void DefineOptions_T_cold_NBI(Settings*);
         static void DefineOptions_T_abl(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
@@ -158,7 +159,6 @@ namespace DREAM {
         static void ConstructEquation_T_i(EquationSystem*, Settings*);
         static void ConstructEquation_T_i_trivial(EquationSystem*, Settings*);
         static void ConstructEquation_T_i_selfconsistent(EquationSystem*, Settings*);
-
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_abl(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);

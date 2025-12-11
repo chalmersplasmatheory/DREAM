@@ -751,8 +751,12 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 	for (len_t j = 0, i = 0; j < ntheta; j++) {
 		real_t theta = 2*M_PI*j / ntheta;
 
-		for (len_t ir = 0; ir < nr; ir++, i++)
-			R[i] = ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
+		for (len_t ir = 0; ir < nr; ir++, i++) {
+			if (std::isinf(this->R0))
+				R[i] = r[i] * cos(theta);
+			else
+				R[i] = ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
+		}
 	}
 
 	return R;
@@ -772,11 +776,33 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 		real_t theta = 2*M_PI*j / ntheta;
 
 		for (len_t ir = 0; ir < nr+1; ir++, i++)
-			R[i] = ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+			if (std::isinf(this->R0))
+				R[i] = r_f[i] * cos(theta);
+			else
+				R[i] = ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
 	}
 
 	return R;
 }
+/**
+ * Returns the flux surface R coordinates on the simulation grid edges,
+ * not shifted by R0.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta){
+	if (std::isinf(this->R0))
+		return r_f[ir] * cos(theta);
+	else
+		return ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+}
+ 
+
+/**
+ * Returns the flux surface Z coordinates on the simulation grid edges.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta){
+    return this->r_f[ir] * this->kappa_f[ir] * sin(theta);
+}
+
 
 
 /**
