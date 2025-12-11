@@ -954,7 +954,7 @@ real_t NumericBRadialGridGenerator::GetThetaOptimumGuess(
 ) {
 	// Identify the index in the input data corresponding to the
 	// computational radial grid index 'ir'
-	len_t input_ir;
+	len_t input_ir = 0;
 	real_t *rvec = (fgt==FLUXGRIDTYPE_DISTRIBUTION ? this->r : this->r_f);
 
 	if (rvec[ir] <= this->input_r[0])
