@@ -142,14 +142,12 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             if 'halo_region_losses' in data:
                 self.halo_region_losses = int(data['halo_region_losses'])
             
-            if 'include_NBI' in data:
-                self.include_NBI = bool(data['include_NBI'])
-                if 'NBI' in data:
-                    if hasattr(self.nbi, 'fromdict'):
-                        self.nbi.fromdict(data['NBI'])
-                    else:
-                        for k, v in data['NBI'].items():
-                            setattr(self.nbi, k, v)
+            if 'NBI' in data:
+                if hasattr(self.nbi, 'fromdict'):
+                    self.nbi.fromdict(data['NBI'])
+                else:
+                    for k, v in data['NBI'].items():
+                        setattr(self.nbi, k, v)
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
         
@@ -183,11 +181,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
             
             data['transport'] = self.transport.todict()
         
-            if self.include_NBI:
-                data['include_NBI'] = True
+            if self.nbi is not None and self.nbi.enabled:
                 data['NBI'] = self.nbi.todict()
 
-        
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -232,6 +228,5 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         if not isinstance(settings, NBISettings):
             raise ValueError("Expected an NBISettings instance")
 
-        self.include_NBI = bool(getattr(settings, 'enabled', True))
         self.nbi = settings
 
