@@ -47,18 +47,26 @@ class SolverNonLinear(Solver):
         Convert this object into a string.
         """
         s = "Non-linear solver statistics\n\n"
+        hasany = False
 
-        s += "Max. iterations: {}\n".format(max(self.iterations))
-        s += "Avg. iterations: {}\n".format(sum(self.iterations)/len(self.iterations))
-        s += "Min. iterations: {}\n\n".format(min(self.iterations))
+        if hasattr(self, 'iterations'):
+            s += "Max. iterations: {}\n".format(max(self.iterations))
+            s += "Avg. iterations: {}\n".format(sum(self.iterations)/len(self.iterations))
+            s += "Min. iterations: {}\n\n".format(min(self.iterations))
+            hasany = True
         
-        bi = sum(self.backupinverter)
-        if bi == 0:
-            s += "Backup inverter not used\n"
-        elif bi == 1:
-            s += "Backup inverter used: 1 time\n"
-        else:
-            s += "Backup inverter used: {} times\n".format(bi)
+        if hasattr(self, 'backupinverter'):
+            bi = sum(self.backupinverter)
+            if bi == 0:
+                s += "Backup inverter not used\n"
+            elif bi == 1:
+                s += "Backup inverter used: 1 time\n"
+            else:
+                s += "Backup inverter used: {} times\n".format(bi)
+            hasany = True
+
+        if not hasany:
+            s += ">> No solver statistics saved. <<\n"
 
         return s
 
