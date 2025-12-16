@@ -22,7 +22,7 @@ using namespace std;
 #define MODULENAME "eqsys/n_i"
 
 
-void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s){
+void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     /**
      * if the electron heat W_cold is evolved self-consistently,
      * also evolve the ion heat W_i. Otherwise set it to constant.
@@ -31,7 +31,7 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
     if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED)
         ConstructEquation_T_i_trivial(eqsys, s);
     else if (TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
-        ConstructEquation_T_i_selfconsistent(eqsys, s);
+        ConstructEquation_T_i_selfconsistent(eqsys, s, oqty_terms);
     else 
         throw SettingsException(
             "T_i: Unrecognized equation type for '%s': %d.",
@@ -75,7 +75,7 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
 /** 
  * Implements the self-consistent evolution of ion heat W_i for each species
  */
-void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s){
+void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s,  struct OtherQuantityHandler::eqn_terms *oqty_terms){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     const len_t id_Wcold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
 
@@ -90,38 +90,50 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
 
     CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
     NBIHandler *handler = eqsys->NBI_handler;
+
+    oqty_terms->T_i_NBI.resize(nZ, nullptr);
+    oqty_terms->T_i_Qij.resize(nZ);
+    for(len_t iz=0; iz<nZ; iz++)
+        oqty_terms->T_i_Qij[iz].resize(nZ, nullptr);
+    oqty_terms->T_i_Qie.resize(nZ, nullptr);
+
+
     for(len_t iz=0; iz<nZ; iz++){
-        Op_Wij->AddTerm( 
+        Op_Wij->AddTerm(
             new IonSpeciesTransientTerm(fluidGrid, iz, id_Wi, -1.0)
         );
         for(len_t jz=0; jz<nZ; jz++){
             if(jz==iz) // the term is trivial =0 for self collisions and can be skipped
                 continue;
-            Op_Wij->AddTerm(
-                new MaxwellianCollisionalEnergyTransferTerm(
+            auto *Qij = new MaxwellianCollisionalEnergyTransferTerm(
                     fluidGrid,
                     iz, true,
                     jz, true,
-                    unknowns, lnLambda, ionHandler)
-            );
+                    unknowns, lnLambda, ionHandler 
+                );
+            Op_Wij->AddTerm(Qij);
+            oqty_terms->T_i_Qij[iz][jz] = Qij;
         }
-        Op_Wie->AddTerm(
-            new MaxwellianCollisionalEnergyTransferTerm(
+        auto *Qie = new MaxwellianCollisionalEnergyTransferTerm(
                     fluidGrid,
                     iz, true,
                     0, false,
-                    unknowns, lnLambda, ionHandler)
-        );
+                    unknowns, lnLambda, ionHandler
+                );
+        Op_Wie->AddTerm(Qie);
+        oqty_terms->T_i_Qie[iz] = Qie;
     }
 
     bool includeNBI = false;
-    if (s->HasSetting(MODULENAME "/NBI/enabled")) {
-        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
+    if (s->HasSetting("eqsys/T_cold" "/NBI/enabled")) {
+        printf("NBI enabled: %d\n", s->GetBool("eqsys/T_cold" "/NBI/enabled"));
+        includeNBI = s->GetBool("eqsys/T_cold" "/NBI/enabled");
     }
     if (includeNBI){
         for(len_t iz=0; iz<nZ; iz++){
            auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
            Op_Wij->AddTerm(nbi_i);
+           oqty_terms->T_i_NBI[iz] = nbi_i;           
        }
     }
 
