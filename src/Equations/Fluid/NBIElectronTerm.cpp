@@ -3,6 +3,7 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Constants.hpp"
 
 
 using namespace DREAM;
@@ -179,14 +180,16 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
                 real_t deriv_sum = 0.0;
+                real_t tot_density = 0.0;
                 for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
                     len_t idx = handler->idx(ir, iIon, Zp);
+                    tot_density += ions->GetIonDensity(ir, iIon, Zp);
                     deriv_sum += energy_fractions[0] * d_Qe1_d_T_ij[idx] +
                         energy_fractions[1] * d_Qe2_d_T_ij[idx] +
                         energy_fractions[2] * d_Qe3_d_T_ij[idx];
                 }
                 len_t col = iIon * nr + ir;
-                jac->SetElement(ir, col, deriv_sum);
+                jac->SetElement(ir, col, deriv_sum/(Constants::ec * tot_density*1.5) );
             }
         }
     }

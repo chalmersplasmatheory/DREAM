@@ -182,7 +182,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
                          + energy_fractions[1] * d_Qe2_d_ne[ir]
                          + energy_fractions[2] * d_Qe3_d_ne[ir];
             real_t w= ComputeWeightFactor(ir, iIon);
-           jac->SetElement(row, col, w*deriv); 
+            jac->SetElement(row, col, w*deriv); 
         }
     }
     
@@ -194,11 +194,11 @@ bool NBIIonTerm::SetCSJacobianBlock(
                          + energy_fractions[1] * d_Qe2_d_Te[ir]
                          + energy_fractions[2] * d_Qe3_d_Te[ir];
             real_t w= ComputeWeightFactor(ir, iIon);
-           jac->SetElement(row, col, w*deriv); 
+            jac->SetElement(row, col, w*deriv); 
         }
     }
     
-    else if (derivId == id_ni && Z0 == 0) {
+    else if (derivId == id_ni) {
         for (len_t ir = 0; ir < nr; ++ir) {
             len_t row = iIon * nr + ir;
             len_t col = ions->GetIndex(iIon, Z0) * nr + ir;
@@ -229,9 +229,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
             const real_t eq = Constants::ec;
 
             real_t dP = 0.0;
-            if (ni_species > 1e10) { 
-                dP = dQi_dTi_total / (1.5 * ni_species * eq);
-            }
+            dP = dQi_dTi_total / (1.5 * ni_species * eq);
             len_t col = iIon*nr+ir;
             len_t row = iIon*nr+ir;
             real_t w= ComputeWeightFactor(ir, iIon);
@@ -257,25 +255,30 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
     std::vector<real_t> Mi(NZ, 0.0);  
     
     real_t denom = 0;
-    for (len_t iz_denom = 0; iz_denom < ions->GetNZ(); iz_denom++){
-            len_t Zmax = ions->GetZ(iz_denom);
-            Zi[iz_denom] = Zmax;
-            Mi[iz_denom] = ions->GetIonSpeciesMass(iz_denom);
-
-            real_t sum_ni = 0.0;
-            for (len_t Z0_inner = 0; Z0_inner <= Zmax; Z0_inner++){
-                real_t niZ = ions->GetIonDensity(ir, iz_denom, Z0_inner);
-                sum_ni += niZ; 
-            }
-            ni_species[iz_denom] = sum_ni;  
-            denom += ni_species[iz_denom] * Zi[iz_denom] / Mi[iz_denom];
+     for (len_t iz_denom = 0; iz_denom < NZ; iz_denom++){
+        len_t Zmax = ions->GetZ(iz_denom);
+        real_t Mi = ions->GetIonSpeciesMass(iz_denom);
+        
+        real_t sum_ni = 0.0;
+        real_t sum_Z_weighted = 0.0;  // Sum of (n_iZ * Z)
+        
+        for (len_t Z0_inner = 0; Z0_inner <= Zmax; Z0_inner++){
+            real_t niZ = ions->GetIonDensity(ir, iz_denom, Z0_inner);
+            sum_ni += niZ;
+            sum_Z_weighted += niZ * Z0_inner;  // Weight by actual charge
+        }
+        // Use actual average charge
+        if (sum_ni > 1e-20) {
+            real_t Z_avg = sum_Z_weighted / sum_ni;
+            denom += sum_ni * Z_avg / Mi;
+        }
     }
 
     real_t MiIon = ions->GetIonSpeciesMass(iIon);
     real_t zIon = ions->GetZ(iIon);
     const real_t denom_min = 1e5;
     if (denom < denom_min){
-        DREAM::IO::PrintWarning(
+       DREAM::IO::PrintWarning(
 				DREAM::IO::WARNING_ION_DENSITY_TOO_SMALL,
 				"Warning: NBIIonTerm weight factor denom too small."
 			);
