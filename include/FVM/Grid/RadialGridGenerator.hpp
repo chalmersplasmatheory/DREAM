@@ -46,6 +46,10 @@ namespace DREAM::FVM {
         // which is why we use this rather small value here. It does however not seem to slow down the
         // simulations significantly
         const real_t CartesianCoordinateTol = 1e-6;
+
+		// Boolean indicating whether multiple minima/maxima
+		// are present in the magnetic field strength
+		bool BHasMultipleOptima = false;
         
         // True if the flux surfaces are up-down symmetric, i.e. if B(theta) = B(-theta)
         // where (if true) theta=0 must correspond to outermost low-field side, B(0) = B_min. 
@@ -84,9 +88,14 @@ namespace DREAM::FVM {
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
         virtual void RebuildJacobians(RadialGrid*);
         bool IsFieldSymmetric(){return isUpDownSymmetric;}
+		bool HasFieldMultipleOptima() { return this->BHasMultipleOptima; }
 
         virtual real_t BAtTheta(const len_t ir, const real_t theta);
         virtual real_t BAtTheta_f(const len_t ir, const real_t theta);
+
+		virtual bool CanGuessThetaOptimum() { return false; }
+		virtual real_t GetThetaBminGuess(const len_t, enum fluxGridType) { return 0; }
+		virtual real_t GetThetaBmaxGuess(const len_t, enum fluxGridType) { return M_PI; }
         
         // The following functions set the geometry and are implemented in derived classes
         virtual real_t JacobianAtTheta(const len_t ir, const real_t theta) = 0;
