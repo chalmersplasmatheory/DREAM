@@ -225,7 +225,12 @@ energy components.
    ds.eqsys.T_cold.nbi.setEnergyFractions(f_full = 0.5, f_half = 0.4, f_third = 0.1)
 
 
+The discretization of the beam in the radial, poloidal, and beam direction can be set using the method ``nbi.setDiscretization()``, which allows setting the number of points used in each direction. The default values are 25 radial points, 25 poloidal points, and 50 points along the beam direction.
+.. code-block:: python
 
+   ...
+   # Set beam discretization parameters
+   ds.eqsys.T_cold.nbi.setDiscretization(n_beam_radius = 30, n_beam_theta = 30, n_beam_s = 60)
 
 
 

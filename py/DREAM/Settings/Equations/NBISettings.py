@@ -33,6 +33,9 @@ class NBISettings:
         self.P_NBI_x = None # Beam power profile values [W]
         self.P_NBI_tinterp =0 # Interpolation method for power profile
         self.energy_fractions = [1,0,0]# Fractions of beam energy for multi-energy components
+        self.n_beam_radius = 25  # Number of discretized points for beam in radial direction
+        self.n_beam_theta = 25   # Number of discretized points for beam in poloidal direction
+        self.n_beam_s = 50       # Number of discretized points for beam in nhat direction
 
     def setEnabled(self, enabled=True):
         """Enable/disable NBI."""
@@ -59,7 +62,14 @@ class NBISettings:
     def setDirection(self, n):
         """Set beam direction vector."""
         self.n = n
-        
+    def setDiscretization(self, n_beam_radius=None, n_beam_theta=None, n_beam_s=None):
+        """Set discretization parameters for beam representation."""
+        if n_beam_radius is not None:
+            self.n_beam_radius = n_beam_radius
+        if n_beam_theta is not None:
+            self.n_beam_theta = n_beam_theta
+        if n_beam_s is not None:
+            self.n_beam_s = n_beam_s
     def setEnergyFractions(self, f_full=None, f_half=None, f_third=None):
         """Set energy fractions for multi-energy beam components. NBI beams contain a mix of atomic (full energy) and molecular species that
         dissociate into half and third energy components. """
@@ -201,6 +211,9 @@ class NBISettings:
             'r_beam'     : self.r_beam,
             'P0'         : self.P0,
             'n'          : self.n,
+            'n_beam_radius' : self.n_beam_radius,
+            'n_beam_theta' : self.n_beam_theta,
+            'n_beam_s' : self.n_beam_s,
             'energy_fractions' : self.energy_fractions,
             'Ti_beam'    : self.Ti_beam,
             'm_i_beam'   : self.m_i_beam,
