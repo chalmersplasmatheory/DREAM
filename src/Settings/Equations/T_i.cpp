@@ -91,7 +91,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
     CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
     NBIHandler *handler = eqsys->NBI_handler;
 
-    oqty_terms->T_i_NBI.resize(nZ, nullptr);
+    
     oqty_terms->T_i_Qij.resize(nZ);
     for(len_t iz=0; iz<nZ; iz++)
         oqty_terms->T_i_Qij[iz].resize(nZ, nullptr);
@@ -130,6 +130,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         includeNBI = s->GetBool("eqsys/T_cold" "/NBI/enabled");
     }
     if (includeNBI){
+        oqty_terms->T_i_NBI.resize(nZ, nullptr);
         for(len_t iz=0; iz<nZ; iz++){
            auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
            Op_Wij->AddTerm(nbi_i);
