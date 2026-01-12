@@ -13,6 +13,7 @@
 # ###################################################################
 
 import numpy as np
+import math
 import sys
 
 sys.path.append('../../py/')
@@ -26,6 +27,8 @@ import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.TransportSettings as Transport
+import DREAM.Settings.RadialGrid as RGrid#NEWLY ADDED
+
 
 ds = DREAMSettings()
 
@@ -44,11 +47,29 @@ Nt   = 30   # number of time steps
 Nr   = 4    # number of radial grid points
 
 minor_radius = 0.22     # m
+major_radius = 1.65     # m
 dBOverB = 1e-3  # Magnetic perturbation strength
 
+####TOKAMAK GEOMETRY####
+a   = minor_radius
+mu0 = 4e-7 * math.pi
+IpRef = 200e3   #ARBITRARY CURRENT DENSITY
+
+rpsi = np.linspace(0, a, 5)
+psi  = -mu0 * IpRef * (1 - (rpsi/a)**2) * a
+
+ds.radialgrid.setShaping(
+    psi=psi, rpsi=rpsi,
+    GOverR0=5#TOROIDAL MAGNETIC FIELD
+)
+
+ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
+
+########################################
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(minor_radius)
+ds.radialgrid.setMajorRadius(major_radius)#NEWLY ADDED
 ds.radialgrid.setWallRadius(1.1*minor_radius)
 ds.radialgrid.setNr(Nr)
 
