@@ -629,15 +629,19 @@ D_j(p,\,p_1,\,\xi_{0,1},\,\theta) &= \frac{1}{\pi}\int_{y_{j1}}^{y_{j2}}\frac{\r
 &= F(y_{j2}) - F(y_{j1}), \\
 F(y) &= \frac{1}{\pi}\arcsin \frac{y-\xi_1\xi^\star}{\sqrt{(1-\xi_1^2)(1-\xi^{\star 2})}}.
 \end{align}
+
 The integration limits here are quite tedious to derive, but are given by
 \begin{align}
 y_{j1} &= \max\left[t_1,~\xi^\star \xi_1 - \sqrt{1-\xi^{\star 2}}\sqrt{1-\xi_1^2}\right] ,\nonumber \\
 y_{j2} &= \min\left[t_2,~\xi^\star \xi_1 + \sqrt{1-\xi^{\star 2}}\sqrt{1-\xi_1^2}\right], \nonumber \\
-t_1 &=  \begin{cases}
-\xi(\xi_{0, j-1/2},\,\theta), & |\xi_{0, j-1/2}| > \sqrt{1-\frac{B\sub{min}}{B(\theta)}} \\
-0,& \mathrm{otherwise}
+t_1 &= \begin{cases}
+0, & 0 \leq \xi_{j-1/2} \leq \sqrt{1-\frac{B\sub{min}}{B(\theta)}}, \\
+\xi(\xi_{0, j-1/2},\,\theta),& \mathrm{otherwise}
 \end{cases} \nonumber \\
-t_2 &= \xi(\xi_{0, j+1/2},\,\theta).
+t_2 &= \begin{cases}
+0, & -\sqrt{1-\frac{B\sub{min}}{B(\theta)}} \leq \xi_{j+1/2} \leq 0, \\
+\xi(\xi_{0, j+1/2},\,\theta),& \mathrm{otherwise}.
+\end{cases} \nonumber
 \end{align}
 Inserting these definitions, we can simplify
 \begin{align}
@@ -647,7 +651,7 @@ F(t_2), & \mathrm{otherwise},
 \end{cases} \nonumber\\
 F(y_{j1}) &= \begin{cases}
 -\frac{1}{2}, & t_1 \leq \xi^\star \xi_1 - \sqrt{1-\xi^{\star 2}}\sqrt{1-\xi_1^2}, \\
-F(t_2), & \mathrm{otherwise},
+F(t_1), & \mathrm{otherwise},
 \end{cases} \nonumber
 \end{align}
 and $D\equiv 1$ when $\xi_1=1$. We also have
@@ -667,14 +671,36 @@ t_2 \xi^\star + \sqrt{1-t_2^2} \sqrt{1-\xi^{\star 2}}, & t_2 < \xi^\star \\
 t_1 \xi^\star + \sqrt{1-t_1^2} \sqrt{1-\xi^{\star 2}}, & \xi^\star < t_1 .
 \end{cases} 
 \end{align}
-Furthermore, the $\oint \rd \theta$ integral is taken over those $\theta \in [\theta_{b1}(\xi_{j+1/2}), \, \theta_{b2}(\xi_{j+1/2}]$  for which $u_1(\theta) < \xi_{01} < u_2(\theta)$, e.g.
+Furthermore, the $\oint \rd \theta$ integral is taken over those $\theta \in [\theta_1, \, \theta_2]$  for which $u_1(\theta) < \xi_{01} < u_2(\theta)$ and $|\xi_{01}| \geq \sqrt{1 - B\sub{min}/B}$, e.g.
 \begin{align}
-\oint \rd \theta \,A = \int_{\theta_{b1}(\xi_{j+1/2})}^{\theta_{b2}(\xi_{j+1/2})}\rd \theta  \times\begin{cases}
-A, & u_1(\theta) < \xi_{01} < u_2(\theta) \\
-0, & \mathrm{otherwise}.
+\oint \rd \theta \,A &= \int_{\theta_1}^{\theta_2}\rd \theta  \times\begin{cases}
+A, & u_1(\theta) < \xi_{01} < u_2(\theta), \\
+0, & \mathrm{otherwise}, 
+\end{cases}\nonumber \\
+\theta_1 &= \max\left[\theta_{b1}(\xi_{01}),\,\theta_{b1}(\xi_{j-1/2}),\,\theta_{b1}(\xi_{j+1/2})\right],
+\nonumber \\
+\theta_2 &= \min\left[\theta_{b2}(\xi_{01}),\, \theta_{b2}(\xi_{j-1/2}),\,\theta_{b2}(\xi_{j+1/2})\right], \nonumber
+\end{align}
+
+\paragraph{Trapping corrections:}
+In these expressions, we have not yet accounted for the fact that the particle phase space in \textsc{dream} does not extend to the negative trapped region; instead such contributions should be added to the mirrored (positive) pitch. Therefore, the true $\delta_j$ to use in \textsc{dream} is
+\begin{align}
+\begin{cases}
+\delta_j(\xi^\star,\,\xi_{01}), & \text{$\xi_0$ and $\xi_{01}$ both passing} \\
+\delta_j(\xi^\star,\,\xi_{01}) + \delta_j(\xi^\star,\,-\xi_{01})& \text{$\xi_0$ passing, $\xi_{01}$ trapped}\\
+\delta_j(\xi^\star,\,\xi_{01}) + \delta_j(-\xi^\star,\,\xi_{01})& \text{$\xi_0$ trapped, $\xi_{01}$ passing}\\
+\delta_j(\xi^\star,\,\xi_{01}) + \delta_j(\xi^\star,\,-\xi_{01})+ \delta_j(-\xi^\star,\,\xi_{01})+ \delta_j(-\xi^\star,\,-\xi_{01})& \text{$\xi_0$ and $\xi_{01}$ both trapped}
 \end{cases}
 \end{align}
-Note, in these expressions, we have not described how to add the ``$-\xi$'' branch of the negative-trapped region to the overall source term. These are obtained by flipping the sign of the non-square-root terms in $z_1$, $z_2$, $y_1$ and $y_2$. 
+Now, thanks to the symmetry property $\delta(-x,\,-y) = \delta(x,\,y)$ it follows that this is equivalent to
+\begin{align}
+\begin{cases}
+\delta_j(\xi^\star,\,\xi_{01}), & \text{$\xi_0$ and $\xi_{01}$ both passing} \\
+\delta_j(\xi^\star,\,\xi_{01}) + \delta_j(\xi^\star,\,-\xi_{01})& \text{one of $\xi_0$ or $\xi_{01}$ trapped}\\
+2\left[\delta_j(\xi^\star,\,\xi_{01}) + \delta_j(\xi^\star,\,-\xi_{01})\right]&\text{$\xi_0$ and $\xi_{01}$ both trapped}\\
+\end{cases}
+\end{align}
+
 
 \subsubsection{Chiu-Harvey and Rosenbluth-Putvinski approximations}
 The approximate knock-on terms are obtained by using idealized distribution functions. By noting that the runaway-electron density is 
@@ -711,12 +737,14 @@ F(p) = \langle n\sub{RE} \rangle \delta(p-\infty) = \frac{n\sub{RE}}{B}\langle B
 \end{align}
 in which case we get to use
 \begin{align}
-S(p,\,p_1=\infty) &= -\frac{1}{\gamma-1}.
+S(p,\,p_1=\infty) &= -\frac{2\pi r_0^2 c}{\gamma-1}.
 \end{align}
 This gives a relatively simple form for the Rosenbluth-Putvinski term
 \begin{align}
-C_{ij}^\mathrm{(RP)} = n\sub{tot}\frac{n\sub{RE}}{B}\langle B \rangle \frac{V'}{\mathcal{V}'_{ij} }\frac{2\pi r_0^2 c}{\Delta p_i\Delta \xi_j}\left(\frac{1}{\gamma(\rho_1)-1} - \frac{1}{\gamma(\rho_2)-1}\right) \frac{\int_{\theta_1}^{\theta_2}\rd \theta \,\mathcal{J}B}{\int_{-\pi}^{\pi}\rd \theta \,\mathcal{J}B}
+C_{ij}^\mathrm{(RP)} = n\sub{tot}\frac{n\sub{RE}}{B}\langle B \rangle \frac{V'}{\mathcal{V}'_{ij} }\frac{2\pi r_0^2 c}{\Delta p_i\Delta \xi_j}\left(\frac{1}{\gamma(\rho_1)-1} - \frac{1}{\gamma(\rho_2)-1}\right) \frac{\int_{\theta_1}^{\theta_2}\rd \theta \,\mathcal{J}B}{\int_{-\pi}^{\pi}\rd \theta \,\mathcal{J}B}.
 \end{align}
+
+In these expressions the trapping corrections from the general case do not need to be carried out; $\xi_{01}=1$ is always passing, and since $\xi^\star>0$ the knock-ons always have positive pitch.
 
 \subsubsection{Total production rate}
 An analytic integration shows that 
