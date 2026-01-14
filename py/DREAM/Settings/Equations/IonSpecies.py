@@ -1258,12 +1258,14 @@ class IonSpecies:
 
         The coefficient is set to 'co' for t <= t_start.
         """
+        print('t=', t)
         if t is None:
             tben = [0, t_start-.1*t_exp]
-            tcon = np.linspace(t_start, 10*t_exp)
+            tcon = np.linspace(t_start,t_start+ 10*t_exp)
             t = np.zeros((len(tben)+tcon.size, 1))
             t[:len(tben),0] = tben
             t[len(tben):,0] = tcon
+            print(t)
         if r is None:
             r = np.array([0])
         if np.isscalar(c0):
