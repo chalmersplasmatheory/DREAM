@@ -1,5 +1,6 @@
 
 import numpy as np
+from ... helpers import scal
 from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
@@ -212,9 +213,9 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 if not np.isscalar(self.inverse_wall_time):
                     self.inverse_wall_time = float(self.inverse_wall_time[0])
                 if 'R0' in data['bc']:
-                    self.R0 = float(data['bc']['R0'])
+                    self.R0 = float(scal(data['bc']['R0']))
                 if 'I_wall_0' in data['bc']:
-                    self.I_wall_0 = float(data['bc']['I_wall_0'])
+                    self.I_wall_0 = float(scal(data['bc']['I_wall_0']))
             elif self.bctype == BC_TYPE_TRANSFORMER:
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
                 if not np.isscalar(self.inverse_wall_time):
@@ -222,7 +223,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 if 'R0' in data['bc']:
                     self.R0 = float(data['bc']['R0'])
                 if 'I_wall_0' in data['bc']:
-                    self.I_wall_0 = float(data['bc']['I_wall_0'])
+                    self.I_wall_0 = float(scal(data['bc']['I_wall_0']))
 
                 self.V_loop_wall_R0 = data['bc']['V_loop_wall']['x']
                 self.V_loop_wall_t  = data['bc']['V_loop_wall']['t']

@@ -4,6 +4,7 @@
 
 import numpy as np
 from .. DREAMException import DREAMException
+from .. helpers import scal
 from . ToleranceSettings import ToleranceSettings
 from . Preconditioner import Preconditioner
 
@@ -175,21 +176,17 @@ class Solver:
         """
         Load settings from the given dictionary.
         """
-        def scal(v):
-            if type(v) == np.ndarray: return v[0]
-            else: return v
-
         self.type = int(scal(data['type']))
-        self.linsolv = int(data['linsolv'])
+        self.linsolv = int(scal(data['linsolv']))
         
         if 'maxiter' in data:
-            self.maxiter = int(data['maxiter'])
+            self.maxiter = int(scal(data['maxiter']))
 
         if 'verbose' in data:
-            self.verbose = bool(data['verbose'])
+            self.verbose = bool(scal(data['verbose']))
 
         if 'checkresidual' in data:
-            self.checkresidual = bool(data['checkresidual'])
+            self.checkresidual = bool(scal(data['checkresidual']))
 
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
@@ -198,22 +195,22 @@ class Solver:
             self.preconditioner.fromdict(data['preconditioner'])
 
         if 'backupsolver' in data:
-            self.backupsolver = int(data['backupsolver'])
+            self.backupsolver = int(scal(data['backupsolver']))
 
         if 'saveconvergenceinfo' in data:
-            self.saveconvergenceinfo = bool(data['saveconvergenceinfo'])
+            self.saveconvergenceinfo = bool(scal(data['saveconvergenceinfo']))
 
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
 
             for f in flags:
                 if f in data['debug']:
-                    setattr(self, 'debug_{}'.format(f), bool(data['debug'][f]))
+                    setattr(self, 'debug_{}'.format(f), bool(scal(data['debug'][f])))
 
             if 'timestep' in data['debug']:
-                self.debug_timestep = int(data['debug']['timestep'])
+                self.debug_timestep = int(scal(data['debug']['timestep']))
             if 'iteration' in data['debug']:
-                self.debug_iteration = int(data['debug']['iteration'])
+                self.debug_iteration = int(scal(data['debug']['iteration']))
 
         self.verifySettings()
 

@@ -7,6 +7,7 @@ from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED, ION_SOURCE_PRESCRIBED_VOLUMETRIC
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
+from ... helpers import scal
 
 # Model to use for ion heat
 IONS_T_I_NEGLECT = 1
@@ -609,7 +610,7 @@ class Ions(UnknownQuantity):
         neutral_prescribed_advection = None
         self.typeTi = IONS_T_I_NEGLECT
         if 'typeTi' in data:
-            self.typeTi = int(data['typeTi'])
+            self.typeTi = int(scal(data['typeTi']))
         if 'initial' in data:
             initial = data['initial']
         if 'prescribed' in data:
@@ -746,10 +747,10 @@ class Ions(UnknownQuantity):
                 self.addIonSource(names[i], dNdt=dNdt_data, t=ion_source_t, r=ion_source_r, source_type=ION_SOURCE_PRESCRIBED_VOLUMETRIC)
 
         if 'ionization' in data:
-            self.ionization = int(data['ionization'])
+            self.ionization = int(scal(data['ionization']))
 
         if 'reioniz_scale' in data:
-            self.reioniz_scale = float(data['reioniz_scale'])
+            self.reioniz_scale = float(scal(data['reioniz_scale']))
 
         self.verifySettings()
 

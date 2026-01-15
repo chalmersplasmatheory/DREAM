@@ -1,5 +1,7 @@
 # Various helpful routines
 
+import numpy as np
+
 
 def merge_dicts(old, new):
     """
@@ -29,3 +31,15 @@ def safeTeXstring(s):
         s = s.replace(key, val)
     
     return s
+
+
+def scal(v):
+    """
+    Ensure that 'v' is a scalar.
+    """
+    if type(v) == np.ndarray:
+        return v[0]
+    else:
+        return v
+
+
