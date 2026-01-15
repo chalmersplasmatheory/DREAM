@@ -54,18 +54,7 @@ real_t hIntegrand(real_t theta, void *par){
     if(Bmin)
         BOverBmin = B/Bmin;
 
-    real_t Vp = params->Vp;
-    real_t dxi = params->dxi;
-    int_t RESign = params->RESign;
-
-    real_t g = params->gamma;
-    real_t xi = RESign*sqrt((g-1)/(g+1));
-    real_t xi0 = xi0Star(BOverBmin,g,RESign);
-    real_t xiOverXi0 = xi/xi0;    
-    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
-
-    // 2*pi for the trivial phi integral
-    return 2*M_PI * xiOverXi0 * Jacobian * sqrtgOverP2 / (dxi * Vp);
+    return 2 * M_PI * BOverBmin * Jacobian;
 }
 
 
@@ -159,25 +148,26 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
     // check if xi0Star > xi_l is satisfied for all theta
     bool lowerForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_l) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_l) > 0);
 
+    real_t dxi = xi_u - xi_l;
+
     // if all poloidal angles contribute fully to the integral, return the known exact value.
-    if(upperForAllTheta && lowerForAllTheta)
-        return 2*M_PI*VpVol/(Vp*(xi_u-xi_l));
+    if(upperForAllTheta && lowerForAllTheta){
+        return 2 * M_PI * VpVol / (Vp * dxi);
+    }
 
-    real_t FSA_B = rGrid->GetFSA_B(ir);
-
-    hParams h_params = {gamma,ir,Bmin,Vp,xi_u-xi_l, this, RESign};
+    hParams h_params = {gamma,ir,Bmin,Vp,dxi, this, RESign};
     gsl_function h_gsl_func;
     h_gsl_func.function = &(hIntegrand);
     h_gsl_func.params = &h_params;
     
     // settings for integral
     real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
-    real_t deltaHat;
 
     gsl_function gsl_func;
     gsl_func.function = &(xi0StarRootFunc);
     real_t theta_u1, theta_u2, theta_l1, theta_l2;
 
+    real_t integral;
     // if below is satisfied, integrate between theta_l1 and theta_l2 via 
     // the poloidal angles where the inequalities (in gsl_func) are satisfied
     if(upperForAllTheta){
@@ -189,12 +179,9 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
         if(RESign==-1)
             orderIntegrationIndicesLFS(&theta_l1,&theta_l2);
         
-        gsl_integration_qag(&h_gsl_func,theta_l1,theta_l2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat, &error);
-        return deltaHat / FSA_B;
-    }
-
-    // like previous block for theta_u1 and theta_u2
-    if(lowerForAllTheta){
+        gsl_integration_qag(&h_gsl_func,theta_l1,theta_l2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&integral, &error);
+    } else if(lowerForAllTheta){
+        // like previous block for theta_u1 and theta_u2
         gsl_func.params = &xi_params_u;
         FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
         if(RESign==1)
@@ -202,21 +189,23 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
         if(RESign==-1)
             orderIntegrationIndicesHFS(&theta_u1,&theta_u2);
 
-        gsl_integration_qag(&h_gsl_func,theta_u1,theta_u2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat, &error);
-        return deltaHat / FSA_B;        
+        gsl_integration_qag(&h_gsl_func,theta_u1,theta_u2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&integral, &error);
+    } else {
+        // otherwise, integrate between theta_u1 and theta_l1 and between theta_u2 and theta_l2.
+        // These should be ordered such that the intervals do not cross theta_Bmax or theta_Bmin
+        gsl_func.params = &xi_params_u;
+        FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
+        
+        gsl_func.params = &xi_params_l;
+        FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
+
+        real_t deltaHat1, deltaHat2;
+        gsl_integration_qag(&h_gsl_func,min(theta_l1,theta_u1),max(theta_l1,theta_u1),epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat1, &error);
+        gsl_integration_qag(&h_gsl_func,min(theta_l2,theta_u2),max(theta_l2,theta_u2),epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat2, &error);
+        integral = deltaHat1 + deltaHat2;
+        
     }
+    real_t FSA_B = rGrid->GetFSA_B(ir);
 
-    // otherwise, integrate between theta_u1 and theta_l1 and between theta_u2 and theta_l2.
-    // These should be ordered such that the intervals do not cross theta_Bmax or theta_Bmin
-    gsl_func.params = &xi_params_u;
-    FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
-    
-    gsl_func.params = &xi_params_l;
-    FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
-
-    real_t deltaHat1, deltaHat2;
-    gsl_integration_qag(&h_gsl_func,min(theta_l1,theta_u1),max(theta_l1,theta_u1),epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat1, &error);
-    gsl_integration_qag(&h_gsl_func,min(theta_l2,theta_u2),max(theta_l2,theta_u2),epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat2, &error);
-
-    return (deltaHat1+deltaHat2)/FSA_B;
+    return 2 * M_PI * integral/(dxi * Vp * FSA_B);
 }
