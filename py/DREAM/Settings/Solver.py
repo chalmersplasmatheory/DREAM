@@ -23,7 +23,11 @@ LINEAR_SOLVER_GMRES   = 5
 class Solver:
     
 
-    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False, checkresidual=True):
+    def __init__(
+        self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU,
+        maxiter=100, verbose=False, checkresidual=True,
+        savestatistics=True
+    ):
         """
         Constructor.
         """
@@ -45,7 +49,7 @@ class Solver:
         self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
-        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False)
+        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False, savestatistics=savestatistics)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
@@ -138,9 +142,18 @@ class Solver:
         self.setOption(saveconvergenceinfo=saveconvergenceinfo)
 
 
+    def setSaveStatistics(self, savestatistics):
+        """
+        If 'True', saves information about the number of iterations per
+        time step and whether or not the backup inverter was activated.
+        """
+        self.setOption(savestatistics=savestatistics)
+
+
     def setOption(
         self, linsolv=None, maxiter=None, verbose=None,
-        checkresidual=None, saveconvergenceinfo=None
+        checkresidual=None, saveconvergenceinfo=None,
+        savestatistics=None
     ):
         """
         Sets a solver option.
@@ -155,6 +168,8 @@ class Solver:
             self.checkresidual = checkresidual
         if saveconvergenceinfo is not None:
             self.saveconvergenceinfo = saveconvergenceinfo
+        if savestatistics is not None:
+            self.savestatistics = savestatistics
 
         self.verifySettings()
 
@@ -199,6 +214,9 @@ class Solver:
 
         if 'saveconvergenceinfo' in data:
             self.saveconvergenceinfo = bool(scal(data['saveconvergenceinfo']))
+
+        if 'savestatistics' in data:
+            self.savestatistics = bool(data['savestatistics'])
 
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
@@ -253,11 +271,13 @@ class Solver:
                 'savesystem': self.debug_savesystem,
                 'rescaled': self.debug_rescaled,
                 'timestep': self.debug_timestep,
-                'iteration': self.debug_iteration
+                'iteration': self.debug_iteration,
             }
 
             if self.backupsolver is not None:
                 data['backupsolver'] = self.backupsolver
+
+            data['savestatistics'] = self.savestatistics
 
         return data
 
