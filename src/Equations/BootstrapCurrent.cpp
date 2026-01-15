@@ -51,7 +51,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
         const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
         const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
-        const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
+        const real_t psiPrimeRef = abs(rGrid->GetPsiPrimeRef(ir));  // d(psi_ref)/dr / R0
 
         constantPrefactor[ir] = -BtorGOverR0 / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
         if (ir == 0)
