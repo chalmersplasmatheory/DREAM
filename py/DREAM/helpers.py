@@ -38,7 +38,7 @@ def scal(v):
     Ensure that 'v' is a scalar.
     """
     if type(v) == np.ndarray:
-        return v[0]
+        return v[(0,)*v.ndim]
     else:
         return v
 
