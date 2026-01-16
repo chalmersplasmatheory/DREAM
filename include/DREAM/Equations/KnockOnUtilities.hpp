@@ -9,7 +9,7 @@
  * target particle is stationary.
  */
 #ifndef _DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP
-#define DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP
+#define _DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP
 
 #include "DREAM/Constants.hpp"
 #include "FVM/Grid/Grid.hpp"
