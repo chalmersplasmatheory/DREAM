@@ -1,4 +1,5 @@
 import numpy as np
+from ... helpers import scal
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
@@ -133,7 +134,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
             self.jpres_times = data['data']['t']
 
             if 'j_type' in data:
-                self.jpres_type = int(data['j_type'])
+                self.jpres_type = int(scal(data['j_type']))
 
             if 'Ip0' in data:
                 self.jpres_Ip0 = data['Ip0']
@@ -142,7 +143,7 @@ class OhmicCurrent(PrescribedParameter,PrescribedInitialParameter,UnknownQuantit
             self.jpres0_radius = data['init']['r']
 
             if 'j_type' in data:
-                self.jpres0_type = int(data['j_type'])
+                self.jpres0_type = int(scal(data['j_type']))
 
             if 'Ip0' in data:
                 self.jpres0_Ip0 = data['Ip0']

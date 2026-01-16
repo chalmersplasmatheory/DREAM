@@ -7,6 +7,7 @@ from . PrescribedInitialParameter import PrescribedInitialParameter
 from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
 from . NBISettings import NBISettings
+from ... helpers import scal
 
 
 
@@ -140,7 +141,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 self.transport.fromdict(data['transport'])
             
             if 'halo_region_losses' in data:
-                self.halo_region_losses = int(data['halo_region_losses'])
+                self.halo_region_losses = int(scal(data['halo_region_losses']))
             
             if 'NBI' in data:
                 if hasattr(self.nbi, 'fromdict'):
