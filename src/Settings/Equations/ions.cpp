@@ -16,6 +16,7 @@
 #include "DREAM/Equations/Fluid/IonSourceBoundaryCondition.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
+#include "DREAM/Equations/Fluid/IonSourceTerm.hpp"
 
 #include <iostream>
 
@@ -67,7 +68,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     DefineDataIonRT(MODULENAME, s, "neutral_prescribed_diffusion");
     DefineDataIonRT(MODULENAME, s, "charged_prescribed_advection");
     DefineDataIonRT(MODULENAME, s, "neutral_prescribed_advection");
-	DefineDataIonT(MODULENAME, s, "ion_source");
+	DefineDataIonRT(MODULENAME, s, "ion_source");
 }
 
 /**
@@ -501,6 +502,24 @@ void SimulationGenerator::ConstructEquation_Ions(
 			));
 		}
 	}
+
+    //Adds ion source (for 1 ion species) term to all grid, 
+    for (len_t iZ = 0; iZ < nZ; iZ++) {
+        if (source_types[iZ] == OptionConstants::ION_SOURCE_PRESCRIBED_VOLUMETRIC) {
+
+            // Load prescribed source term data
+			MultiInterpolator1D *source_data = LoadDataIonRT(
+				MODULENAME,fluidGrid->GetRadialGrid(), s, nZ0_dynamic+nZ0_prescribed, "ion_source"
+			);
+            
+            len_t *all_ion_indices = new len_t[nZ];
+            for (len_t i = 0; i < nZ; i++)
+                all_ion_indices[i] = i;
+
+            //One species source iZ added to all grid
+            eqn->AddTerm(new IonSourceTerm(fluidGrid, ih, nZ, all_ion_indices, source_data));
+        }
+    }
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();

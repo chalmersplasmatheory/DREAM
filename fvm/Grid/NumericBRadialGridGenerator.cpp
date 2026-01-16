@@ -407,6 +407,9 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
             dr[i] = (rMax-rMin) / GetNr();
         for (len_t i = 0; i < GetNr()+1; i++)
             r_f[i] = rMin + i*dr[0];
+        
+        // Prevent rounding errors
+        r_f[GetNr()] = rMax;
     } else {
         if (rf_provided[0] < 0)
             throw FVMException("NumericBRadialGrid: First point on custom radial grid is less than zero.");
@@ -822,6 +825,22 @@ const real_t *NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 
 	return R;
 }
+
+/**
+ * Returns the flux surface R coordinates on the simulation grid edges,
+ * not shifted by R0.
+ */
+real_t NumericBRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta){
+    return ROverR0AtTheta_f(ir, theta) * this->Rp - this->Rp;
+}
+
+/**
+ * Returns the flux surface Z coordinates on the simulation grid edges.
+ */
+real_t NumericBRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta){
+    return gsl_spline2d_eval(this->spline_Z, this->r_f[ir], theta, this->acc_r, this->acc_theta) - this->Zp;
+}
+
 
 
 /**

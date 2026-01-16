@@ -63,7 +63,8 @@ enum ion_neutral_advection_mode {
 
 enum ion_source_type {
 	ION_SOURCE_NONE=1,
-	ION_SOURCE_PRESCRIBED=2
+	ION_SOURCE_PRESCRIBED=2,
+	ION_SOURCE_PRESCRIBED_VOLUMETRIC=3
 };
 
 // Interpolation method for ADAS rate coefficients
@@ -461,4 +462,10 @@ enum eqterm_tritium_mode {                        // Tritium generation is...
 enum svensson_interp1d_param {
     SVENSSON_INTERP1D_TIME=1,
     SVENSSON_INTERP1D_IP=2
+};
+
+enum eqterm_NBI_gaussian_profile {
+    EQTERM_NBI_GAUSSIAN_PROFILE_TCV=1,
+    EQTERM_NBI_GAUSSIAN_PROFILE_ITER=2,
+    EQTERM_NBI_GAUSSIAN_PROFILE_CUSTOM=3
 };

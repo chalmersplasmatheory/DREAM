@@ -33,6 +33,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 	s->DefineSetting(MODULENAME "/checkresidual", "If true, prints a warning if the residual is not close to zero at the end of non-linear iteration", (bool)true);
+	s->DefineSetting(MODULENAME "/savestatistics", "Save statistics about number of iterations per time step and whether or not the backup inverter was used", (bool)true);
 	s->DefineSetting(MODULENAME "/saveconvergenceinfo", "If true, saves information about non-linear convergence to the output file", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
@@ -156,6 +157,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     real_t reltol     = s->GetReal(MODULENAME "/reltol");
     bool verbose      = s->GetBool(MODULENAME "/verbose");
 	bool checkRes     = s->GetBool(MODULENAME "/checkresidual");
+	bool savestats    = s->GetBool(MODULENAME "/savestatistics");
     bool savejacobian = s->GetBool(MODULENAME "/debug/savejacobian");
     bool savesolution = s->GetBool(MODULENAME "/debug/savesolution");
     bool savenumjac   = s->GetBool(MODULENAME "/debug/savenumericaljacobian");
@@ -166,7 +168,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
     bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose, checkRes);
+    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, backups, maxiter, reltol, verbose, checkRes, savestats);
     snl->SetDebugMode(printdebug, savesolution, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem, rescaled);
 
     return snl;
