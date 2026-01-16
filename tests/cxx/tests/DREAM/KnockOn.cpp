@@ -68,6 +68,7 @@ bool KnockOn::CheckDeltaMirrorProperties() {
 
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
+    DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
 
     bool success = true;
     real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
@@ -90,19 +91,19 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                         continue;
                     real_t Vp1 = grid->GetVpOverP2AtZero(ir)[l];
                     real_t theta1, theta2;
-                    DREAM::KnockOnUtilities::estimateBoundingTheta(ir, j, l, theta1, theta2, grid);
+                    DREAM::KnockOnUtilities::EstimateBoundingTheta(ir, j, l, theta1, theta2, grid);
 
-                    real_t delta1 = DREAM::KnockOnUtilities::EvaluateDeltaContribution(
-                        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 30, grid
+                    real_t delta1 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
+                        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 30, rg
                     );
-                    real_t delta2 = DREAM::KnockOnUtilities::EvaluateDeltaContribution(
-                        ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 30, grid
+                    real_t delta2 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
+                        ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 30, rg
                     );
                     if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold)
                         success = false;
 
-                    real_t delta3 = DREAM::KnockOnUtilities::EvaluateDeltaContribution(
-                        ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, theta1, theta2, 30, grid
+                    real_t delta3 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
+                        ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, theta1, theta2, 30, rg
                     );
                     if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold)
                         success = false;
@@ -185,15 +186,15 @@ bool KnockOn::CheckDeltaConservationProperty() {
 
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
+    DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
 
     DREAM::KnockOnOperator *boltz = new DREAM::KnockOnOperator(grid, 0.1);
-
     bool success = true;
     real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
     auto start = std::chrono::high_resolution_clock::now();
 
     for (len_t ir = 0; ir < nr; ir++) {
-        real_t xi0T = grid->GetRadialGrid()->GetXi0TrappedBoundary(ir);
+        real_t xi0T = rg->GetXi0TrappedBoundary(ir);
         DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         len_t Nxi = mg->GetNp2();
         for (len_t n = 0; n < 4; n++) {
@@ -249,6 +250,7 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
 
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
+    DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
 
     len_t idx_p = 1;
     real_t xi01 = 1;
@@ -257,30 +259,30 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
         DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         real_t p = mg->GetP1(idx_p);
         real_t p1 = std::numeric_limits<real_t>::infinity();
-        real_t xi_star = DREAM::KnockOnUtilities::evaluateXiStar(p, p1);
+        real_t xi_star = DREAM::KnockOnUtilities::EvaluateXiStar(p, p1);
         real_t Vp1 = 2 * M_PI * grid->GetVpVol(ir) *
-                     grid->GetRadialGrid()->GetFSA_B(ir); // normalized to p1^2
+                     rg->GetFSA_B(ir); // normalized to p1^2
         for (len_t j = 0; j < Nxi; j++) {
             real_t xi0_f1 = mg->GetP2_f(j);
             real_t xi0_f2 = mg->GetP2_f(j + 1);
             real_t theta1, theta2;
-            DREAM::KnockOnUtilities::estimateBoundingTheta(ir, j, Nxi - 1, theta1, theta2, grid);
+            DREAM::KnockOnUtilities::EstimateBoundingTheta(ir, j, Nxi - 1, theta1, theta2, grid);
             real_t Vp = grid->GetVp(ir, idx_p, j);
             real_t VpVol = grid->GetVpVol(ir);
-            real_t FSA_B = grid->GetRadialGrid()->GetFSA_B(ir);
+            real_t FSA_B = rg->GetFSA_B(ir);
             real_t old_delta =
                 FSA_B * Vp / Vp1 *
-                grid->GetRadialGrid()->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(
+                rg->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(
                     ir, p, xi0_f1, xi0_f2, Vp, VpVol
                 );
-            real_t new_delta = DREAM::KnockOnUtilities::EvaluateDeltaContribution(
-                ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 10000, grid
+            real_t new_delta = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
+                ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 10000, rg
             );
             if (fabs(new_delta - old_delta) > old_delta * successRelErrorThreshold) {
                 printf("FSA_B * Vp / Vp1: %.4g\n", FSA_B * Vp / Vp1);
                 printf(
                     "Trapped boundary xi0T: %.4g\n",
-                    grid->GetRadialGrid()->GetXi0TrappedBoundary(ir)
+                    rg->GetXi0TrappedBoundary(ir)
                 );
                 printf("non-zero contribution at xi in [%.3g, %.3g]\n", xi0_f1, xi0_f2);
                 printf("old delta: %.4g\n", old_delta);

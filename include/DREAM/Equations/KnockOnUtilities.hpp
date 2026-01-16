@@ -12,51 +12,23 @@
 #define DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP
 
 #include "DREAM/Constants.hpp"
-#include "DREAM/DREAMException.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include <cmath>
 
 namespace DREAM::KnockOnUtilities {
 
-// Helper functions for the delta integrand
-real_t evaluateF(real_t y, real_t xi1, real_t xi_star);
-real_t evaluateD(real_t t1, real_t t2, real_t xi1, real_t xi_star);
-void evaluateT1T2(
+// Low-level analytic helper functions
+real_t EvaluateDeltaAntiderivative(real_t y, real_t xi1, real_t xi_star);
+real_t EvaluateDeltaIntervalContribution(real_t t1, real_t t2, real_t xi1, real_t xi_star);
+void ComputeXiIntegrationBounds(
     real_t &t1, real_t &t2, real_t xi0_j1, real_t xi0_j2, real_t BOverBmin, real_t xi0Cutoff
 );
-void evaluateZ1Z2(real_t &z1, real_t &z2, real_t t1, real_t t2, real_t xi_star);
+void ComputeXi1Bounds(real_t &z1, real_t &z2, real_t t1, real_t t2, real_t xi_star);
 
-// the integrand that is integrated over theta inside EvaluateDeltaContribution.
-real_t deltaIntegrand(
-    real_t theta, len_t ir, real_t xi0_j1, real_t xi0_j2, real_t xi01, real_t xi_star,
-    const FVM::Grid *grid
-);
+// Orbit-averaged delta utilities
+enum orbit_integration_method { MIDPOINT_RULE, ADAPTIVE_TRAPEZOID };
 
-enum orbitIntegrationQuadrature {
-    QUADRATURE_MIDPOINT,
-    QUADRATURE_ADAPTIVE
-};
-
-
-/**
- * Gyro-, bounce and FVM averaged kinematic delta function, defined as
- * the function \delta_j in the docs/notes/theory notes.
- * Important: multiplicity effects in the trapped regions are not accounted for,
- * e.g. it needs to be summed for co- and counter moving trapped particles
- * for both xi0 and xi01 when used in practice.
- */
-
-real_t EvaluateDeltaContribution(
-    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
-    real_t theta2, len_t n_points_integral, const FVM::Grid *grid, orbitIntegrationQuadrature quad=QUADRATURE_MIDPOINT
-);
-
-real_t EvaluateDelta(
-    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
-    real_t theta2, len_t n_points_integral, const FVM::Grid *grid
-);
-
-inline void estimateBoundingTheta(
+inline void EstimateBoundingTheta(
     len_t ir, len_t j, len_t l, real_t &theta1, real_t &theta2, const FVM::Grid *grid
 ) {
     real_t xi0_f2 = grid->GetMomentumGrid(ir)->GetP2_f(j + 1);
@@ -71,6 +43,31 @@ inline void estimateBoundingTheta(
     theta2 = std::min(theta2, grid->GetThetaBounce2(ir, 0, l));
 }
 
+real_t OrbitDeltaIntegrand(
+    real_t theta, len_t ir, real_t xi0_j1, real_t xi0_j2, real_t xi01, real_t xi_star,
+    const FVM::RadialGrid *rg
+);
+
+/**
+ * Gyro-, bounce and FVM averaged kinematic delta function, defined as
+ * the function \delta_j in the docs/notes/theory notes.
+ * Important: multiplicity effects in the trapped regions are not accounted for,
+ * e.g. it needs to be summed for co- and counter moving trapped particles
+ * for both xi0 and xi01 when used in practice.
+ */
+real_t EvaluateOrbitAveragedDelta(
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
+    real_t theta2, len_t n_points_integral, const FVM::RadialGrid *rg,
+    orbit_integration_method quad = MIDPOINT_RULE
+);
+
+real_t EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
+    real_t theta2, len_t n_points_integral, const FVM::RadialGrid *rg
+);
+
+// Møller scattering utilities below
+
 /**
  * Cosine of the angle between incident electron and knock-on,
  * as function of their respective momenta.
@@ -78,7 +75,7 @@ inline void estimateBoundingTheta(
  *       collide with stationary electron).
  *   p: knock-on momentum magnitude.
  */
-inline real_t evaluateXiStar(real_t p, real_t p1) {
+inline real_t EvaluateXiStar(real_t p, real_t p1) {
     // handle the well-behaved (and common) limit of infinitely energetic incident electron
     real_t g = sqrt(1 + p * p);
     if (std::isinf(p1)) {
@@ -89,11 +86,11 @@ inline real_t evaluateXiStar(real_t p, real_t p1) {
 }
 
 /**
- * Moller differential cross section, between collisions (p1, 0) -> (p, p')
+ * Møller differential cross section, between collisions (p1, 0) -> (p, p')
  * where p1 is the momentum of the incident particle (on a stationary one),
  * and p is interpreted as the knock-on momentum (when gamma1 > 2*gamma - 1)
  */
-inline real_t evaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
+inline real_t EvaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
     real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
     real_t g = sqrt(1 + p * p);
     real_t g1 = sqrt(1 + p1 * p1);
@@ -112,7 +109,7 @@ inline real_t evaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
  * over a FVM momentum grid cell (in the knock-on momenum p).
  */
 
-inline real_t evaluateMollerFlux(real_t p, real_t p1) {
+inline real_t EvaluateMollerFlux(real_t p, real_t p1) {
     real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
 
     real_t g = sqrt(1 + p * p);
