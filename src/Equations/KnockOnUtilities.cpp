@@ -86,7 +86,7 @@ auto KnockOnUtilities::EvaluateDeltaIntervalContribution(
 void KnockOnUtilities::ComputeXiIntegrationBounds(
     real_t &t1, real_t &t2, real_t xi0_f1, real_t xi0_f2, real_t BOverBmin, real_t xi0Cutoff
 ) {
-    if (xi0_f2 < 0) {
+    if (xi0_f2 < RELAXED_EPS) {
         // negative xi0 intervals:
         t1 = FVM::MomentumGrid::XiFromXi0(xi0_f1, BOverBmin);
         if (xi0_f2 < -xi0Cutoff) {

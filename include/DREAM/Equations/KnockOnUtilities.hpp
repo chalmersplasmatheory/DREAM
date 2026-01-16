@@ -36,6 +36,12 @@ enum orbit_integration_method { MIDPOINT_RULE, ADAPTIVE_TRAPEZOID };
 inline void EstimateBoundingTheta(
     len_t ir, len_t j, len_t l, real_t &theta1, real_t &theta2, const FVM::Grid *grid
 ) {
+    if (!grid->HasTrapped()) {
+        // cylindrical case, in which case thetabounce have not been initialized
+        theta1 = 0;
+        theta2 = 2 * M_PI;
+        return;
+    }
     real_t xi0_f2 = grid->GetMomentumGrid(ir)->GetP2_f(j + 1);
     if (xi0_f2 < 0) {
         theta1 = grid->GetThetaBounce1_f2(ir, 0, j);
@@ -72,9 +78,8 @@ real_t EvaluateOrbitAveragedDeltaWithTrappingCorrection(
 );
 
 real_t EvaluateDeltaMatrixElementOnGrid(
-    len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid, len_t n_points_integral=80
+    len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid, len_t n_points_integral = 80
 );
-
 
 // Møller scattering utilities below
 
