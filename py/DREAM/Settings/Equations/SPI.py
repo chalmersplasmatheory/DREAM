@@ -7,6 +7,7 @@ from scipy.constants import N_A
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 import DREAM.Settings.Equations.IonSpecies as Ions
+from ... helpers import scal
 
 
 
@@ -624,23 +625,23 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         Set all options from a dictionary.
         """
         if 'velocity' in data:
-            self.velocity       = int(data['velocity'])
+            self.velocity       = int(scal(data['velocity']))
         if 'ablation' in data:
-            self.ablation       = int(data['ablation'])
+            self.ablation       = int(scal(data['ablation']))
         if 'deposition' in data:
-            self.deposition     = int(data['deposition'])
+            self.deposition     = int(scal(data['deposition']))
         if 'shift' in data:
-            self.shift          = int(data['shift'])
+            self.shift          = int(scal(data['shift']))
         if 'TDrift' in data:
             self.TDrift              = [float(x) for x in data['TDrift']]
         if 'heatReDepositionFactorDrift' in data:
             self.heatReDepositionFactorDrift = [float(x) for x in data['heatReDepositionFactorDrift']]
         if 'T0Drift' in data:
-            self.T0Drift             = float(data['T0Drift'])
+            self.T0Drift             = float(scal(data['T0Drift']))
         if 'DeltaYDrift' in data:
-            self.DeltaYDrift        = float(data['DeltaYDrift'])
+            self.DeltaYDrift        = float(scal(data['DeltaYDrift']))
         if 'RmDrift' in data:
-            self.RmDrift             = float(data['RmDrift'])
+            self.RmDrift             = float(scal(data['RmDrift']))
         if 'ZavgDriftArray' in data:
             self.ZavgDriftArray      = [float(x) for x in data['ZavgDriftArray']]
         if 'ZsDrift' in data:        
@@ -648,13 +649,13 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if 'isotopesDrift' in data:        
             self.isotopesDrift             = [float(x) for x in data['isotopesDrift']]
         if 'heatAbsorbtion' in data:
-            self.heatAbsorbtion = int(data['heatAbsorbtion'])
+            self.heatAbsorbtion = int(scal(data['heatAbsorbtion']))
         if 'cloudRadiusMode' in data:
-            self.cloudRadiusMode = int(data['cloudRadiusMode'])
+            self.cloudRadiusMode = int(scal(data['cloudRadiusMode']))
         if 'magneticFieldDependenceMode' in data:
-            self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
+            self.magneticFieldDependenceMode = int(scal(data['magneticFieldDependenceMode']))
         if 'abl_ioniz' in data:
-            self.abl_ioniz = int(data['abl_ioniz'])
+            self.abl_ioniz = int(scal(data['abl_ioniz']))
             
 
         if 'VpVolNormFactor' in data:
