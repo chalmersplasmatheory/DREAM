@@ -34,6 +34,8 @@ constexpr real_t QUAD_ADAPTIVE_ATOL = 5e-3;
  *
  * QUAD_ADAPTIVE_ATOL:
  * Tolerance for terminating the adaptive integration algorithm.
+ * The value was chosen empirically to balance computational speed and accuracy,
+ * and is shown in unit testing to be sufficient to meet tolerances.
  */
 
 } // anonymous namespace
@@ -177,8 +179,8 @@ real_t KnockOnUtilities::OrbitDeltaIntegrand(
     // which define the Chiu-Harvey and Rosenbluth-Putvinski
     // approximations, we seek these bounding values, and therefore
     // employ an exacter constraint by inserting values explicitly.
-    real_t Xi1OverXi01;
-    real_t D;
+    real_t xi1_over_xi01;  // to be set and passed to metric calculation
+    real_t D;  // function that we're orbit averaging
     if (fabs(fabs(xi01) - 1) < RELAXED_EPS) {
         // exact solution of z2==1 (since z = xi1 = 1)
         if (xi01 > 0 && !(t1 < xi_star && xi_star < t2)) {
@@ -188,14 +190,14 @@ real_t KnockOnUtilities::OrbitDeltaIntegrand(
         if (xi01 < 0 && !(t1 < -xi_star && -xi_star < t2)) {
             return 0;
         }
-        Xi1OverXi01 = 1;
+        xi1_over_xi01 = 1;
         D = 1;
     } else {
         real_t z1;
         real_t z2;
         ComputeXi1Bounds(z1, z2, t1, t2, xi_star);
         real_t xi1 = FVM::MomentumGrid::XiFromXi0(xi01, BOverBmin);
-        Xi1OverXi01 = xi1 / xi01;
+        xi1_over_xi01 = xi1 / xi01;
         if (!(z1 + RELAXED_EPS < xi1 && xi1 < z2 - RELAXED_EPS)) {
             return 0.0;
         }
@@ -204,7 +206,7 @@ real_t KnockOnUtilities::OrbitDeltaIntegrand(
     }
     // from the integration limits on xi1 before we (analytically) exchanged
     // integration order with theta (which cannot be inverted analytically).
-    real_t sqrtG = Jacobian * FVM::MomentumGrid::evaluatePXiMetricOverP2(Xi1OverXi01, BOverBmin);
+    real_t sqrtG = Jacobian * FVM::MomentumGrid::evaluatePXiMetricOverP2(xi1_over_xi01, BOverBmin);
 
     return sqrtG * D;
 }
@@ -291,8 +293,8 @@ real_t integrate_adaptive(
 
         real_t f2 = integrand(x2, par);
 
-        bool at_lower_endpoint = fabs(x1 - xmin) < 1e-8;
-        bool at_upper_endpoint = fabs(x2 - xmax) < 1e-8;
+        bool at_lower_endpoint = fabs(x1 - xmin) < RELAXED_EPS;
+        bool at_upper_endpoint = fabs(x2 - xmax) < RELAXED_EPS;
         integral += bisect_and_integrate(
             x1, x2, f1, f2, integrand, par, at_lower_endpoint, at_upper_endpoint, xtol
         );

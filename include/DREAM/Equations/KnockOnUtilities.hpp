@@ -21,13 +21,18 @@ namespace DREAM::KnockOnUtilities {
 real_t EvaluateDeltaAntiderivative(real_t y, real_t xi1, real_t xi_star);
 real_t EvaluateDeltaIntervalContribution(real_t t1, real_t t2, real_t xi1, real_t xi_star);
 void ComputeXiIntegrationBounds(
-    real_t &t1, real_t &t2, real_t xi0_j1, real_t xi0_j2, real_t BOverBmin, real_t xi0Cutoff
+    real_t &t1, real_t &t2, real_t xi0_f1, real_t xi0_f2, real_t BOverBmin, real_t xi0Cutoff
 );
 void ComputeXi1Bounds(real_t &z1, real_t &z2, real_t t1, real_t t2, real_t xi_star);
 
 // Orbit-averaged delta utilities
 enum orbit_integration_method { MIDPOINT_RULE, ADAPTIVE_TRAPEZOID };
 
+/**
+ * Estimates a conservative poloidal angle interval [theta1, theta2]
+ * outside which the orbit-averaged delta integrand is guaranteed to vanish
+ * for the given momentum-space cell indices (j, l).
+ */
 inline void EstimateBoundingTheta(
     len_t ir, len_t j, len_t l, real_t &theta1, real_t &theta2, const FVM::Grid *grid
 ) {
@@ -44,7 +49,7 @@ inline void EstimateBoundingTheta(
 }
 
 real_t OrbitDeltaIntegrand(
-    real_t theta, len_t ir, real_t xi0_j1, real_t xi0_j2, real_t xi01, real_t xi_star,
+    real_t theta, len_t ir, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t xi_star,
     const FVM::RadialGrid *rg
 );
 
