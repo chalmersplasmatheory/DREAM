@@ -341,7 +341,7 @@ namespace DREAM::FVM {
         const real_t  *GetFSA_NablaR2OverR2_f() const { return this->FSA_nablaR2OverR2_f; }
         const real_t   GetFSA_NablaR2OverR2_f(const len_t ir) const { return this->FSA_nablaR2OverR2_f[ir]; }
 
-        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
+        FluxSurfaceAverager *GetFluxSurfaceAverager() const {return fluxSurfaceAverager;}
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
