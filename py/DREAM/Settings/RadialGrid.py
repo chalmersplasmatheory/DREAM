@@ -157,8 +157,6 @@ class RadialGrid(PrescribedScalarParameter):
         if R0 <= 0:
             raise DREAMException("RadialGrid: Invalid value assigned to major radius 'R0': {}".format(R0))
 
-        print(R0)
-        print(scal(R0))
         self.R0 = float(scal(R0))
 
 

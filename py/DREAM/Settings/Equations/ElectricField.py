@@ -211,7 +211,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
                 if not np.isscalar(self.inverse_wall_time):
-                    self.inverse_wall_time = float(self.inverse_wall_time[0])
+                    self.inverse_wall_time = float(scal(self.inverse_wall_time[0]))
                 if 'R0' in data['bc']:
                     self.R0 = float(scal(data['bc']['R0']))
                 if 'I_wall_0' in data['bc']:
@@ -219,9 +219,9 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             elif self.bctype == BC_TYPE_TRANSFORMER:
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
                 if not np.isscalar(self.inverse_wall_time):
-                    self.inverse_wall_time = float(self.inverse_wall_time[0])
+                    self.inverse_wall_time = float(scal(self.inverse_wall_time[0]))
                 if 'R0' in data['bc']:
-                    self.R0 = float(data['bc']['R0'])
+                    self.R0 = float(scal(data['bc']['R0']))
                 if 'I_wall_0' in data['bc']:
                     self.I_wall_0 = float(scal(data['bc']['I_wall_0']))
 
