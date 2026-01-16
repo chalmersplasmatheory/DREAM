@@ -382,7 +382,7 @@ def plotScatter(ax,GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ):
     z2 = min( x2,y2 )
     ax.plot([z1,z2],[z1,z2],'k--')
 
-    t0 = ax.text(0.05,0.8, "DREAM RMS error: {:.2f}\% \n NF 2019 RMS error: {:.2f}\%".format(rms_An1*100,rms_An2*100),transform=ax.transAxes)
+    t0 = ax.text(0.05,0.8, r"DREAM RMS error: {:.2f}\% \n NF 2019 RMS error: {:.2f}\%".format(rms_An1*100,rms_An2*100),transform=ax.transAxes)
     t0.set_verticalalignment('top')
     t0.set_horizontalalignment('left')
 
