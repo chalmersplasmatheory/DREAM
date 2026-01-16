@@ -179,8 +179,8 @@ real_t KnockOnUtilities::OrbitDeltaIntegrand(
     // which define the Chiu-Harvey and Rosenbluth-Putvinski
     // approximations, we seek these bounding values, and therefore
     // employ an exacter constraint by inserting values explicitly.
-    real_t xi1_over_xi01;  // to be set and passed to metric calculation
-    real_t D;  // function that we're orbit averaging
+    real_t xi1_over_xi01; // to be set and passed to metric calculation
+    real_t D;             // function that we're orbit averaging
     if (fabs(fabs(xi01) - 1) < RELAXED_EPS) {
         // exact solution of z2==1 (since z = xi1 = 1)
         if (xi01 > 0 && !(t1 < xi_star && xi_star < t2)) {
@@ -204,8 +204,6 @@ real_t KnockOnUtilities::OrbitDeltaIntegrand(
 
         D = EvaluateDeltaIntervalContribution(t1, t2, xi1, xi_star);
     }
-    // from the integration limits on xi1 before we (analytically) exchanged
-    // integration order with theta (which cannot be inverted analytically).
     real_t sqrtG = Jacobian * FVM::MomentumGrid::evaluatePXiMetricOverP2(xi1_over_xi01, BOverBmin);
 
     return sqrtG * D;
@@ -366,19 +364,19 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDelta(
     } else {
         integral = integrate_midpoint(theta1, theta2, n_points_integral, &(delta_integrand), &par);
     }
+
     // Note, here only one factor of (2*pi) instead of (2*pi)^2 as in the notes,
     // because here the metric sqrtG (and therefore also Vp) contains an extra
     // factor of 2*pi.
     real_t dxi = xi0_f2 - xi0_f1;
-
     return 2 * M_PI * integral / (Vp1 * dxi);
 }
 
 /**
- * Compiles the true delta with trapping corrections.
+ * Compiles the true Delta with trapping corrections.
  *
- * Here we will use
- * the fortunate symmetry property of the Delta calculation, that under
+ * Here we will use the fortunate symmetry property of the Delta calculation,
+ * that under
  *     xi_star -> -xi_star; and xi01 -> -xi0,
  * the value is unchanged.
  * Now, when [xi0_f1, xi0_f2] is in the trapped region, we should add the
@@ -390,6 +388,8 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDelta(
  * Finally, when both xi01 and xi0 are in the trapped region, we should add the
  * double-flipped xi -> -xi; xi1 -> -xi1, which is the same as the original
  * calculation.
+ *
+ * Corresponds to \Delta_j from the theory notes.
  */
 real_t KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
     len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
@@ -438,7 +438,8 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
     }
 
     // Now, we know that [xi0_f1, xi0_f2] is either purely passing or purely in
-    // the positive trapped region
+    // the positive trapped region. Here we can add the unit contributions from
+    // a single bounce average integral.
 
     real_t delta = KnockOnUtilities::EvaluateOrbitAveragedDelta(
         ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, n_points_integral, rg
@@ -453,5 +454,43 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
     if (isTrapped && is1Trapped) {
         delta *= 2;
     }
+    return delta;
+}
+
+/**
+ * Evaluates the orbit-averaged Delta including trapping corrections on
+ * the provided grid.
+ *
+ * Uses xi01 on grid centers at index l and xi0_{j-1/2}, xi0_{j+1/2} at index j.
+ * This function is a grid-aware convenience wrapper around
+ * EvaluateOrbitAveragedDeltaWithTrappingCorrection().
+ *
+ * Corresponds to the matrix element Delta_{j l} in the theory notes.
+ */
+real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+    len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid, len_t n_points_integral
+) {
+
+    FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
+    real_t xi01 = mg->GetXi0(0, l);
+    real_t xi0_f1 = mg->GetXi0_f2(0, j);
+    real_t xi0_f2 = mg->GetXi0_f2(0, j + 1);
+    real_t Vp1 = grid->GetVpOverP2AtZero(ir)[l];
+
+    // no contribution for unphysical parts of the xi01 phase space,
+    // i.e. the negative trapped region.
+    if (nearly_zero(Vp1)) {
+        return 0;
+    }
+
+    // Set the outer theta interval as the smallest of the orbits reached by xi_{01} and
+    // [xi_{0,j-1/2}, xi_{0, j+1/2}]
+    real_t theta1, theta2;
+    KnockOnUtilities::EstimateBoundingTheta(ir, j, l, theta1, theta2, grid);
+
+    real_t delta = KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, n_points_integral,
+        grid->GetRadialGrid()
+    );
     return delta;
 }

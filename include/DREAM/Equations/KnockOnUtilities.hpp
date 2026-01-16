@@ -71,6 +71,11 @@ real_t EvaluateOrbitAveragedDeltaWithTrappingCorrection(
     real_t theta2, len_t n_points_integral, const FVM::RadialGrid *rg
 );
 
+real_t EvaluateDeltaMatrixElementOnGrid(
+    len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid, len_t n_points_integral=80
+);
+
+
 // Møller scattering utilities below
 
 /**

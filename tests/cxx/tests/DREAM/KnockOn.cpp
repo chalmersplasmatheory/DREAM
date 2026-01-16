@@ -1,5 +1,4 @@
 #include "KnockOn.hpp"
-#include "DREAM/Equations/KnockOnOperator.hpp"
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include <chrono>
@@ -131,9 +130,6 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
 
-    DREAM::KnockOnOperator *boltz_default = new DREAM::KnockOnOperator(grid, 0.1);
-    DREAM::KnockOnOperator *boltz_hires = new DREAM::KnockOnOperator(grid, 0.1, 50, 300);
-
     bool success = true;
     real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
     // len_t xi0_indices[6] = {0, 5, 16, 20, 25, 29};
@@ -148,8 +144,12 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                 // len_t j = xi0_indices[idx_j];
                 for (len_t idx_l = 0; idx_l < 6; idx_l++) {
                     len_t l = xi01_indices[idx_l];
-                    real_t delta_default = boltz_default->EvaluateDelta(ir, xi_star, j, l);
-                    real_t delta_hires = boltz_hires->EvaluateDelta(ir, xi_star, j, l);
+                    real_t delta_default = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+                        ir, xi_star, j, l, grid
+                    );
+                    real_t delta_hires = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+                        ir, xi_star, j, l, grid, 300
+                    );
                     if (fabs(delta_default - delta_hires) >
                         successRelErrorThreshold * (1 + fabs(delta_default))) {
                         printf("failed (j=%ld, l=%ld)\n", j, l);
@@ -162,10 +162,6 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
             }
         }
     }
-
-    // delete [] boltz_default;
-    // delete [] boltz_hires;
-    // delete [] grid;
 
     return success;
 }
@@ -188,7 +184,6 @@ bool KnockOn::CheckDeltaConservationProperty() {
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
     DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
 
-    DREAM::KnockOnOperator *boltz = new DREAM::KnockOnOperator(grid, 0.1);
     bool success = true;
     real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
     auto start = std::chrono::high_resolution_clock::now();
@@ -202,7 +197,9 @@ bool KnockOn::CheckDeltaConservationProperty() {
             for (len_t l = 0; l < Nxi; l++) {
                 real_t deltaXiIntegral = 0;
                 for (len_t j = 0; j < Nxi; j++) {
-                    real_t delta = boltz->EvaluateDelta(ir, xi_star, j, l);
+                    real_t delta = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+                        ir, xi_star, j, l, grid
+                    );
                     real_t dxi = mg->GetDp2(j);
                     deltaXiIntegral += dxi * delta;
                 }
