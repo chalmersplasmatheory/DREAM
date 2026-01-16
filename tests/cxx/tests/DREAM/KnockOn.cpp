@@ -1,8 +1,17 @@
+/**
+ * Implements unit tests of the KnockOnUtilities module.
+ *
+ * Where numerical accuracy is tested, we intentionally allow relatively loose
+ * tolerances. This is partly to limit computational cost, but mainly because
+ * this level of accuracy is sufficient for production use.
+ *
+ * In typical simulations, relatively low numerical precision is acceptable
+ * since exact particle-number conservation is enforced by construction in
+ * the knock-on operator.
+ */
 #include "KnockOn.hpp"
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include <chrono>
-#include <cstdio>
 
 using namespace DREAMTESTS::_DREAM;
 
@@ -47,11 +56,24 @@ bool KnockOn::Run(bool) {
                          "agree with the old one.");
     }
 
+    if (CheckCylindricalDeltaCalculation())
+        this->PrintOK("The delta matrix elements agree exactly with the analytic result.");
+    else {
+        success = false;
+        this->PrintError("Knock-on test failed: the delta matrix elements do not "
+                         "agree exactly with theory in the cylindrical limit.");
+    }
+
     return success;
 }
 
 namespace {}
 
+// The orbit-averaged delta function analytically satisfies the
+// exact relation delta(xi_star, xi01, ...) = delta(-xi_star, -xi01),
+// representing the mirror symmetry of the collisions as well as the
+// particle orbits in the magnetic field. This test verifies that this
+// physical invariance is preserved numerically.
 bool KnockOn::CheckDeltaMirrorProperties() {
     real_t successRelErrorThreshold = 1e-5;
 
@@ -98,22 +120,34 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                     real_t delta2 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
                         ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 30, rg
                     );
-                    if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold)
+                    if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold) {
+                        printf(
+                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g\n", ir, j,
+                            l, xi_star
+                        );
                         success = false;
-
+                    }
                     real_t delta3 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
                         ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, theta1, theta2, 30, rg
                     );
-                    if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold)
+                    if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold) {
+                        printf(
+                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g\n", ir, j,
+                            l, xi_star
+                        );
                         success = false;
+                    }
                 }
             }
         }
     }
-    // delete [] grid;
+    delete grid;
     return success;
 }
 
+// Tests that the orbit-averaged delta calculation converges with increasing
+// number of quadrature points. This is a numerical consistency test rather
+// than a test of a physical invariant.
 bool KnockOn::CheckDeltaQuadratureConvergence() {
     real_t successRelErrorThreshold = 0.1;
 
@@ -144,9 +178,10 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                 // len_t j = xi0_indices[idx_j];
                 for (len_t idx_l = 0; idx_l < 6; idx_l++) {
                     len_t l = xi01_indices[idx_l];
-                    real_t delta_default = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid
-                    );
+                    real_t delta_default =
+                        DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+                            ir, xi_star, j, l, grid
+                        );
                     real_t delta_hires = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
                         ir, xi_star, j, l, grid, 300
                     );
@@ -162,10 +197,15 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
             }
         }
     }
-
+    delete grid;
     return success;
 }
 
+// The Delta function in our formulation of the knock-on operator satisfies
+// an exact analytic normalization property:
+//     \int dxi0 delta(xi0, xi01) = 1.
+// This test verifies that this property is reproduced numerically within
+// the accuracy expected from the chosen quadrature resolution.
 bool KnockOn::CheckDeltaConservationProperty() {
     // Note: with higher nxi, relative error decreases
     real_t successRelErrorThreshold = 0.25;
@@ -186,7 +226,6 @@ bool KnockOn::CheckDeltaConservationProperty() {
 
     bool success = true;
     real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
-    auto start = std::chrono::high_resolution_clock::now();
 
     for (len_t ir = 0; ir < nr; ir++) {
         real_t xi0T = rg->GetXi0TrappedBoundary(ir);
@@ -223,14 +262,78 @@ bool KnockOn::CheckDeltaConservationProperty() {
             }
         }
     }
-
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<real_t> elapsed = end - start;
-
-    printf("Time spent: %.6f seconds\n", elapsed.count());
+    delete grid;
     return success;
 }
 
+// In cylindrical geometry (constant B), the orbit-averaged delta function
+// reduces to the analytically integrated gyro-averaged delta divided by
+// the FVM xi-cell width. This test verifies that the general implementation
+// reproduces this limit.
+bool KnockOn::CheckCylindricalDeltaCalculation() {
+    real_t successRelErrorThreshold = 1e-10;
+
+    len_t nr = 5;
+    len_t np = 4;
+    len_t nxi = 60;
+
+    real_t B0 = 1;
+
+    real_t pMin = 0;
+    real_t pMax = 2;
+
+    DREAM::FVM::Grid *grid = InitializeGridRCylPXi(nr, np, nxi, B0, pMin, pMax);
+
+    constexpr real_t eps = 5 * std::numeric_limits<real_t>::epsilon();
+    bool success = true;
+    real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
+        len_t Nxi = mg->GetNp2();
+        for (len_t n = 0; n < 4; n++) {
+            real_t xi_star = xi_stars[n];
+            for (len_t l = 0; l < Nxi; l++) {
+                real_t xi01 = mg->GetP2(l);
+                for (len_t j = 0; j < Nxi; j++) {
+                    real_t xi0_f1 = mg->GetP2_f(j);
+                    real_t xi0_f2 = mg->GetP2_f(j + 1);
+                    real_t z1;
+                    real_t z2;
+                    DREAM::KnockOnUtilities::ComputeXi1Bounds(z1, z2, xi0_f1, xi0_f2, xi_star);
+
+                    real_t dxi = mg->GetDp2(j);
+                    real_t delta_expected = 0;
+                    if (z1 < xi01 + eps && xi01 < z2 - eps) {
+                        delta_expected = DREAM::KnockOnUtilities::EvaluateDeltaIntervalContribution(
+                                             xi0_f1, xi0_f2, xi01, xi_star
+                                         ) /
+                                         dxi;
+                    }
+                    real_t delta = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+                        ir, xi_star, j, l, grid
+                    );
+                    if (fabs(delta - delta_expected) > successRelErrorThreshold) {
+                        printf("failed at ir=%ld, j=%ld, l=%ld:\n", ir, j, l);
+                        printf("  delta: %.4g\n", delta);
+                        printf("  delta_expected: %.4g\n", delta_expected);
+                        printf("  xi_star: %.4g\n", xi_star);
+                        printf("  xi0 in [%.4g, %.4g]\n", xi0_f1, xi0_f2);
+                        printf("  xi01: %.4g\n", xi01);
+                        success = false;
+                    }
+                }
+            }
+        }
+    }
+    delete grid;
+    return success;
+}
+
+// Compares the new implementation of the collision kernel with the previous
+// implementation tailored to the Rosenbluth-Putvinski limit. This regression
+// test ensures sufficient agreement between the two approaches in the regime
+// where both are applicable.
 bool KnockOn::CheckAgreementWithOldRPTerm() {
     real_t successRelErrorThreshold = 0.1;
     bool success = true;
@@ -248,6 +351,7 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
     DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
+    DREAM::FVM::FluxSurfaceAverager *fsa = rg->GetFluxSurfaceAverager();
 
     len_t idx_p = 1;
     real_t xi01 = 1;
@@ -257,8 +361,7 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
         real_t p = mg->GetP1(idx_p);
         real_t p1 = std::numeric_limits<real_t>::infinity();
         real_t xi_star = DREAM::KnockOnUtilities::EvaluateXiStar(p, p1);
-        real_t Vp1 = 2 * M_PI * grid->GetVpVol(ir) *
-                     rg->GetFSA_B(ir); // normalized to p1^2
+        real_t Vp1 = 2 * M_PI * grid->GetVpVol(ir) * rg->GetFSA_B(ir); // normalized to p1^2
         for (len_t j = 0; j < Nxi; j++) {
             real_t xi0_f1 = mg->GetP2_f(j);
             real_t xi0_f2 = mg->GetP2_f(j + 1);
@@ -268,19 +371,13 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
             real_t VpVol = grid->GetVpVol(ir);
             real_t FSA_B = rg->GetFSA_B(ir);
             real_t old_delta =
-                FSA_B * Vp / Vp1 *
-                rg->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(
-                    ir, p, xi0_f1, xi0_f2, Vp, VpVol
-                );
+                FSA_B * Vp / Vp1 * fsa->EvaluateAvalancheDeltaHat(ir, p, xi0_f1, xi0_f2, Vp, VpVol);
             real_t new_delta = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
                 ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 10000, rg
             );
             if (fabs(new_delta - old_delta) > old_delta * successRelErrorThreshold) {
                 printf("FSA_B * Vp / Vp1: %.4g\n", FSA_B * Vp / Vp1);
-                printf(
-                    "Trapped boundary xi0T: %.4g\n",
-                    rg->GetXi0TrappedBoundary(ir)
-                );
+                printf("Trapped boundary xi0T: %.4g\n", rg->GetXi0TrappedBoundary(ir));
                 printf("non-zero contribution at xi in [%.3g, %.3g]\n", xi0_f1, xi0_f2);
                 printf("old delta: %.4g\n", old_delta);
                 printf("new delta: %.4g\n", new_delta);
@@ -290,5 +387,6 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
             }
         }
     }
+    delete grid;
     return success;
 }

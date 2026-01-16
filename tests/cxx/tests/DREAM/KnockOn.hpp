@@ -13,6 +13,7 @@ class KnockOn : public UnitTest {
     bool CheckDeltaQuadratureConvergence();
     bool CheckDeltaConservationProperty();
     bool CheckAgreementWithOldRPTerm();
+    bool CheckCylindricalDeltaCalculation();
 
     virtual bool Run(bool) override;
 };
