@@ -603,7 +603,7 @@ void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
 
     Jacobian = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
     ROverR0  = R/this->Rp;
-    NablaR2  = r==0 ? 0 : (R*R/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt));
+    NablaR2  = r==0 ? 0 : (R*R/(Rp*Rp*Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt));
 
     B = gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
 }
