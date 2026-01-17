@@ -4,6 +4,7 @@
 #include <string>
 #include "tests/cxx/config.h"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 
 namespace DREAMTESTS {
 	class UnitTest {
@@ -28,7 +29,10 @@ namespace DREAMTESTS {
 
             struct gridcontainer *GetNextGrid(const len_t);
 			//virtual DREAM::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
-            virtual DREAM::FVM::Grid *InitializeGridRCylPXi(
+			DREAM::FVM::AnalyticBRadialGridGenerator *InitializeAnalyticBRadialGridGenerator(
+				const len_t nr, const len_t nrProfiles, const len_t ntheta_interp
+			);
+			virtual DREAM::FVM::Grid *InitializeGridRCylPXi(
 				len_t nr=10, len_t np=50, len_t nxi=30, 
 				real_t B0 = 2, real_t pMin=0, real_t pMax=10
 			);
