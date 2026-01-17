@@ -134,7 +134,7 @@ void NBIIonTerm::SetCSVectorElements(
     for (len_t ir=0; ir<nr; ++ir){
         real_t w = ComputeWeightFactor(ir, iIon);
         len_t idx = iIon * nr + ir;
-        vec[idx] -= w * (energy_fractions[0] * this->Qe_1[ir] + energy_fractions[1] * this->Qe_2[ir] + energy_fractions[2] * this->Qe_3[ir]); 
+        vec[idx] += w * (energy_fractions[0] * this->Qe_1[ir] + energy_fractions[1] * this->Qe_2[ir] + energy_fractions[2] * this->Qe_3[ir]); 
     }
 }
     
@@ -159,7 +159,7 @@ void NBIIonTerm::SetCSMatrixElements(
     for (len_t ir=0; ir<nr; ++ir){
         real_t w = ComputeWeightFactor(ir, iIon);
         len_t idx = iIon * nr + ir;
-        rhs[idx] -= w * (energy_fractions[0] * this->Qe_1[ir] + energy_fractions[1] * this->Qe_2[ir] + energy_fractions[2] * this->Qe_3[ir]);
+        rhs[idx] += w * (energy_fractions[0] * this->Qe_1[ir] + energy_fractions[1] * this->Qe_2[ir] + energy_fractions[2] * this->Qe_3[ir]);
     }
     
 }
@@ -182,7 +182,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
                          + energy_fractions[1] * d_Qe2_d_ne[ir]
                          + energy_fractions[2] * d_Qe3_d_ne[ir];
             real_t w= ComputeWeightFactor(ir, iIon);
-           jac->SetElement(row, col, w*deriv); 
+            jac->SetElement(row, col, w*deriv); 
         }
     }
     
@@ -194,7 +194,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
                          + energy_fractions[1] * d_Qe2_d_Te[ir]
                          + energy_fractions[2] * d_Qe3_d_Te[ir];
             real_t w= ComputeWeightFactor(ir, iIon);
-           jac->SetElement(row, col, w*deriv); 
+            jac->SetElement(row, col, w*deriv); 
         }
     }
     
@@ -207,7 +207,8 @@ bool NBIIonTerm::SetCSJacobianBlock(
                          + energy_fractions[1] * d_Qe2_d_n_ij[idx]
                          + energy_fractions[2] * d_Qe3_d_n_ij[idx];
             real_t w= ComputeWeightFactor(ir, iIon);
-            jac->SetElement(row, col, w*deriv);
+            real_t dw_dni = ComputeWeightFactorDerivative(ir, iIon);
+            jac->SetElement(row, col, w*deriv + dw_dni*(energy_fractions[0] * (Qe_1[ir]) + energy_fractions[1] * (Qe_2[ir]) + energy_fractions[2] * (Qe_3[ir])));
         }
     }
     
@@ -229,9 +230,7 @@ bool NBIIonTerm::SetCSJacobianBlock(
             const real_t eq = Constants::ec;
 
             real_t dP = 0.0;
-            if (ni_species > 1e10) { 
-                dP = dQi_dTi_total / (1.5 * ni_species * eq);
-            }
+            dP = dQi_dTi_total / (1.5 * ni_species * eq);
             len_t col = iIon*nr+ir;
             len_t row = iIon*nr+ir;
             real_t w= ComputeWeightFactor(ir, iIon);
@@ -257,6 +256,44 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
     std::vector<real_t> Mi(NZ, 0.0);  
     
     real_t denom = 0;
+    for (len_t iz_denom = 0; iz_denom < NZ; iz_denom++){
+            len_t Zmax = ions->GetZ(iz_denom);
+            Zi[iz_denom] = Zmax;
+            Mi[iz_denom] = ions->GetIonSpeciesMass(iz_denom);
+
+            real_t sum_ni = 0.0;
+            for (len_t Z0_inner = 0; Z0_inner <= Zmax; Z0_inner++){
+                real_t niZ = ions->GetIonDensity(ir, iz_denom, Z0_inner);
+                sum_ni += niZ; 
+            }
+            ni_species[iz_denom] = sum_ni;  
+            denom += ni_species[iz_denom] * Zi[iz_denom]  / Mi[iz_denom];
+    }
+
+    real_t MiIon = ions->GetIonSpeciesMass(iIon);
+    real_t zIon = ions->GetZ(iIon);
+    const real_t denom_min = 1e5;
+    if (denom < denom_min){
+       DREAM::IO::PrintWarning(
+				DREAM::IO::WARNING_ION_DENSITY_TOO_SMALL,
+				"Warning: NBIIonTerm weight factor denom too small."
+			);
+        denom = denom_min;
+    }
+    real_t w = ni_species[iIon] * zIon / MiIon / denom;
+    return w;
+}
+
+real_t NBIIonTerm::ComputeWeightFactorDerivative(len_t ir, len_t iIon) {
+    len_t NZ = ions->GetNZ();
+    if (NZ == 0) {
+        throw DREAMException("No ion species found in NBIIonTerm");
+    }
+    std::vector<real_t> ni_species(NZ, 0.0);   
+    std::vector<real_t> Zi(NZ, 0.0);           
+    std::vector<real_t> Mi(NZ, 0.0);  
+    
+    real_t denom = 0;
     for (len_t iz_denom = 0; iz_denom < ions->GetNZ(); iz_denom++){
             len_t Zmax = ions->GetZ(iz_denom);
             Zi[iz_denom] = Zmax;
@@ -268,7 +305,7 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
                 sum_ni += niZ; 
             }
             ni_species[iz_denom] = sum_ni;  
-            denom += ni_species[iz_denom] * Zi[iz_denom] / Mi[iz_denom];
+            denom += ni_species[iz_denom] * Zi[iz_denom]  / Mi[iz_denom];
     }
 
     real_t MiIon = ions->GetIonSpeciesMass(iIon);
@@ -281,6 +318,6 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
 			);
         denom = denom_min;
     }
-    real_t w = ni_species[iIon] * zIon / MiIon / denom;
-    return w;
+    real_t dwdni = zIon/(MiIon * denom) - (ni_species[iIon] * zIon / MiIon) * (zIon / MiIon) / (denom * denom);
+    return dwdni;
 }
