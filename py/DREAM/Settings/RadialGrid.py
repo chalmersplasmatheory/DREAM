@@ -10,6 +10,7 @@ from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
 from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
+from .. helpers import scal
 
 
 TYPE_CYLINDRICAL = 1
@@ -145,7 +146,7 @@ class RadialGrid(PrescribedScalarParameter):
             self.r_f = None
             self.custom_grid = False
 
-        self.a = float(a)
+        self.a = float(scal(a))
 
 
     def setMajorRadius(self, R0):
@@ -156,14 +157,16 @@ class RadialGrid(PrescribedScalarParameter):
         if R0 <= 0:
             raise DREAMException("RadialGrid: Invalid value assigned to major radius 'R0': {}".format(R0))
 
-        self.R0 = float(R0)
+        self.R0 = float(scal(R0))
+
 
     def setWallRadius(self, wall_radius):
         """
         (Cylindrical, Analytic toroidal)
         Set the minor radius of the wall
         """
-        self.b = float(wall_radius)
+        self.b = float(scal(wall_radius))
+
 
     def setNr(self, nr):
         """
