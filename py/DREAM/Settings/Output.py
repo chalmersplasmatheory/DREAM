@@ -5,6 +5,7 @@
 import numpy as np
 
 from .. DREAMException import DREAMException
+from .. helpers import scal
 
 
 class Output:
