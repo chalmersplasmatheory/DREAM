@@ -113,6 +113,20 @@ def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
     else:
         axs[2].set_aspect('equal', 'box')
 
+    plt.figure()
+    plt.plot(R[0, :], Br[0, :], label="Br")
+    plt.plot(R[0, :], Bz[0, :], label="Bz")
+    plt.plot(R[0, :], Bphi[0, :], label="Bphi")
+    plt.xlabel("R [m]")
+    plt.ylabel("B [T]")
+    plt.legend()
+
+    plt.figure()
+    for i in range(R.shape[1]//5):
+        plt.plot(R[:, 5*i], Z[:, 5*i], 'k')
+    plt.axis("equal")
+    plt.xlabel("R [m]")
+    plt.ylabel("Z [m]")
     plt.show()
 
 
