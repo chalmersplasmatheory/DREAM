@@ -106,7 +106,7 @@ bool RadialGridGenerator::CheckNumericBGeometryCalculations() {
     real_t atol = 5 * std::numeric_limits<real_t>::epsilon();
     real_t rtol = 5 * std::numeric_limits<real_t>::epsilon();
     len_t nr = 4;
-    real_t ntheta_interp = 50;
+    len_t ntheta_interp = 50;
     auto *nbrgg = this->InitializeNumericBRadialGridGenerator(nr, ntheta_interp);
     auto *rg = new DREAM::FVM::RadialGrid(nbrgg, 0);
     rg->Rebuild(0);
@@ -164,7 +164,7 @@ bool RadialGridGenerator::CheckNumericBAgreesWithAnalyticB() {
     real_t rtol = 5e-4;
 
     len_t nr = 6;
-    real_t ntheta_interp = 200;
+    len_t ntheta_interp = 200;
 
     // the DeltaPrime value of the example grid
     real_t DeltaPrime = 0.3;
