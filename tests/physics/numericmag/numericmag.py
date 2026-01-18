@@ -138,7 +138,7 @@ def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=150, ntheta=151,
     Construct the numeric magnetic field.
     """
     raMax = 1.05
-    r = np.linspace(0, a*1.05, nR+1)[1:]
+    r = np.linspace(0, a+1e-15, nR+1)[1:]
     theta = np.linspace(0, 2*np.pi, ntheta+1)[:-1]
 
     mgR, mgT = np.meshgrid(r, theta)
@@ -170,35 +170,19 @@ def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=150, ntheta=151,
     ideltap = idelta.derivative()
     ikappap = ikappa.derivative()
     
-    dRdr = lambda r, theta : iDeltap(r) + np.cos(theta + idelta(r)*np.sin(theta)) - r*ideltap(r)*np.sin(theta + idelta(r)*np.sin(theta))
+    dRdr = lambda r, theta : iDeltap(r) + np.cos(theta + idelta(r)*np.sin(theta)) - r*ideltap(r)*np.sin(theta)*np.sin(theta + idelta(r)*np.sin(theta))
     dZdr = lambda r, theta : ikappa(r) * (1 + r*ikappap(r)/ikappa(r)) * np.sin(theta)
 
     dRdt = lambda r, theta : -r*(1+idelta(r)*np.cos(theta)) * np.sin(theta + idelta(r)*np.sin(theta))
     dZdt = lambda r, theta : r*ikappa(r)*np.cos(theta)
 
-    # Magnitude squared of the minor radius gradient
-    def gradr2(r, theta):
-        ct = np.cos(theta)
-        st = np.sin(theta)
-        sdt = np.sin(theta + idelta(r)*st)
-        cdt = 1+idelta(r)*ct
-
-        Jt1  = ikappa(r)*np.cos(idelta(r)*st)
-        Jt2  = ikappa(r)*iDeltap(r)*ct 
-        Jt3  = st*np.sin(theta+idelta(r)*st)
-        Jt4  = r*ikappap(r) + ct*(idelta(r)*ikappa(r) + r*idelta(r)*ikappap(r) - r*ikappa(r)*ideltap(r))
-        JOverRr = Jt1 + Jt2 + Jt3 * Jt4
-
-        try:
-            print('J/rR = {:.12f}'.format(JOverRr))
-        except: pass
-        return (ikappa(r)**2 * ct**2 + cdt**2 * sdt**2) / (JOverRr**2)
+    def jacobian(r, theta):
+        return R(r, theta)*abs(dRdr(r, theta) * dZdt(r, theta) - dRdt(r, theta) * dZdr(r, theta))
 
     Bphi = lambda r, theta : iG_R0(r) * Rp / R(r,theta)
-    Br   = lambda r, theta : -psiPrime(r)*np.sqrt(gradr2(r,theta)) / (2*np.pi*R(r,theta)) * dZdr(r,theta) / np.sqrt(dRdr(r,theta)**2 + dZdr(r,theta)**2)
-    Bz   = lambda r, theta : psiPrime(r)*np.sqrt(gradr2(r,theta)) / (2*np.pi*R(r,theta)) * dRdr(r,theta) / np.sqrt(dRdr(r,theta)**2 + dZdr(r,theta)**2)
+    Br   = lambda r, theta : -psiPrime(r) * dZdt(r, theta) / (2*np.pi*jacobian(r, theta))
+    Bz   = lambda r, theta : psiPrime(r)* dRdt(r, theta) / (2*np.pi*jacobian(r, theta))
 
-    #B    = lambda r, theta : np.sqrt(Bphi(r,theta)**2 + Br(r,theta)**2 + Bz(r,theta)**2)
 
     if retdict:
         return {'Rp': Rp, 'Zp': Zp, 'psi': ipsi(r), 'theta': theta, 'R': R(mgR,mgT), 'Z': Z(mgR,mgT), 'Br': Br(mgR,mgT), 'Bz': Bz(mgR,mgT), 'Bphi': Bphi(mgR, mgT)}
