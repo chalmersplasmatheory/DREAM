@@ -63,11 +63,11 @@ class Output:
         :param dict data: Dictionary to load settings from.
         """
         self.filename = data['filename']
-        self.timingstdout = bool(data['timingstdout'])
-        self.timingfile = bool(data['timingfile'])
+        self.timingstdout = bool(scal(data['timingstdout']))
+        self.timingfile = bool(scal(data['timingfile']))
 
         if 'savesettings' in data:
-            self.savesettings = bool(data['savesettings'])
+            self.savesettings = bool(scal(data['savesettings']))
 
         self.verifySettings()
 
