@@ -26,12 +26,18 @@ set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/PXiExternalKineticKinetic.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/RadialGridGenerator.cpp"
 )
 
 add_executable(dreamtests ${dreamtests_core} ${dreamtests_dream} ${dreamtests_fvm})
 target_include_directories(dreamtests PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/tests/cxx/include")
 target_link_libraries(dreamtests PUBLIC fvm)
 target_link_libraries(dreamtests PUBLIC dream)
+
+# Path to test data directory
+target_compile_definitions(dreamtests PRIVATE
+    DREAMTESTS_NUMERIC_MAG_DATA_H5="${PROJECT_SOURCE_DIR}/tests/data/analytic_b_luke_equilbrium.h5"
+)
 
 # Require C++17
 set_target_properties(dreamtests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
