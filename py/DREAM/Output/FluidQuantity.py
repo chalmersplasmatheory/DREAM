@@ -195,7 +195,7 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            data = self.data[:]
+            data = np.copy(self.data[:])
             if VpVol:
                 data *= self.grid.VpVol[:]
             if weight is not None:
@@ -410,7 +410,7 @@ class FluidQuantity(UnknownQuantity):
         lbls = []
         vpv = self.grid.VpVol[:]
         for it in t:
-            data = self.data[it,:]
+            data = np.copy(self.data[it,:])
             wlbl = ''
             if VpVol:
                 data *= vpv
@@ -468,7 +468,7 @@ class FluidQuantity(UnknownQuantity):
 
         lbls = []
         for ir in r:
-            data = self.data[:,ir]
+            data = np.copy(self.data[:,ir])
             wlbl = ''
             if VpVol:
                 data *= self.grid.VpVol[ir]

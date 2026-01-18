@@ -14,7 +14,7 @@ import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 import DREAM.Settings.Solver as Solver
 from DREAM.Settings.Equations import IonSpecies
 import DREAM.Settings.Equations.IonSpecies as Ions
-from DREAM.Settings.Equations.NBISettings import NBISettings 
+import DREAM.Settings.Equations.NBISettings as NBISettings 
 
 
 #############################
@@ -23,11 +23,11 @@ from DREAM.Settings.Equations.NBISettings import NBISettings
 
 # Plasma parameters
 T_initial = 800     # Initial electron temperature [eV]
-Ip_initial = 120e5  # Initial plasma current [A]
+Ip_initial = 120e3  # Initial plasma current [A]
 TMAX = 1e-6         # Simulation time [s]
 
 #Tokamak parameters - ROME
-NR = 10              # Number of radial points
+NR = 20              # Number of radial points
 B0 = 5              # Magnetic field [T]
 a = 0.23             # Plasma minor radius [m]
 b = 0.23           # Wall radius [m]
@@ -39,8 +39,9 @@ r= np.linspace(0,a,NR+1)  # Radial grid points
 n_i_profile = 3e19 * (1 - (r/a)**2)
 #nbi_entry_point = [0.9,-1.028,0.0] 
 nbi_entry_point = [0.685,-1.028,0.0] 
-nbi_radius = 0.02 #775  
+nbi_radius = 0.0775  
 nbi_direction_vector = [0.0,1.0,0.0] 
+energy_fractions = [0.56, 0.32, 0.12]
 
 
 #############################
@@ -57,7 +58,7 @@ ds.radialgrid.setMajorRadius(R0)
 
 
 # Set up time step
-ds.timestep.setNt(1)
+ds.timestep.setNt(2)
 ds.timestep.setTmax(TMAX)
 
 
@@ -90,16 +91,18 @@ ds.eqsys.E_field.setBoundaryCondition(EField.BC_TYPE_PRESCRIBED, V_loop_wall_R0=
 
 
 ds.eqsys.T_cold.nbi.setEnabled(True)
-
+j_B_t = np.linspace(0, 0.0775, 50) # Beam current profile time points [s] (Matching ROME radius)
+j_B_x = 250e3 * np.ones(len(j_B_t)) # Beam current profile values [A/m^2]
 ##ROME
-#nbi.setTCVGaussian(True)  # Use TCV Gaussian beam profile for TCV
+ds.eqsys.T_cold.nbi.setCurrentProfile(NBISettings.NBI_PROFILE_CUSTOM, j_B_t= j_B_t, j_B_x = j_B_x)
 ds.eqsys.T_cold.nbi.setOrigin(nbi_entry_point)
 ds.eqsys.T_cold.nbi.setDirection(nbi_direction_vector)
 
+ds.eqsys.T_cold.nbi.setEnergyFractions(f_full=energy_fractions[0], f_half=energy_fractions[1], f_third=energy_fractions[2])
+
 ds.eqsys.T_cold.nbi.setBeamParameters(r_beam=nbi_radius, Ti_beam=25*1.6021e-16, m_i_beam=3.344e-27)
-ds.eqsys.T_cold.nbi.setIons(Z0=0, Zion=1)  
-ds.eqsys.T_cold.nbi.setPower(beam_power=1) #57e3
-ds.eqsys.T_cold.nbi.setR0_NBI(R0)
+ds.eqsys.T_cold.nbi.setPowerProfile(P_NBI_x = 1.0e6) 
+ds.eqsys.T_cold.nbi.setRadius(R0=R0)
 
 ds.eqsys.T_cold.nbi.visualize_flux_surfaces_top_view(r)
 
@@ -140,13 +143,19 @@ ds.hottailgrid.setEnabled(False)
 ds.runawaygrid.setEnabled(False)
 
 # Solver settings
-ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setType(Solver.NONLINEAR)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT)
+#ds.solver.setDebug(printjacobianinfo=True, savejacobian=True,
+#                   savenumericaljacobian=True, saveresidual=True,
+#                   savesystem=True, rescaled=False, timestep=1, iteration=2)
+
+
 ds.solver.setVerbose(True)
 # Include fluid
 ds.other.include('fluid')
 
 print("Running DREAM simulation...")
 ds.save('settings_nbi.h5')
-runiface(ds, 'output_nbi.h5')
+runiface(ds, 'output_nbi_new.h5')
 
 

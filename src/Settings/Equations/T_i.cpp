@@ -3,6 +3,8 @@
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
+#include "DREAM/Equations/Fluid/NBIIonTerm.hpp"
+#include "DREAM/NBIHandler.hpp"
 
 /**
  * Implementation of equations governing the evolution of the
@@ -73,7 +75,7 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
 /** 
  * Implements the self-consistent evolution of ion heat W_i for each species
  */
-void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* /*s*/){
+void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     const len_t id_Wcold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
 
@@ -87,6 +89,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
     FVM::Operator *Op_Wie = new FVM::Operator(fluidGrid);
 
     CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
+    NBIHandler *handler = eqsys->NBI_handler;
     for(len_t iz=0; iz<nZ; iz++){
         Op_Wij->AddTerm( 
             new IonSpeciesTransientTerm(fluidGrid, iz, id_Wi, -1.0)
@@ -110,6 +113,18 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
                     unknowns, lnLambda, ionHandler)
         );
     }
+
+    bool includeNBI = false;
+    if (s->HasSetting(MODULENAME "/NBI/enabled")) {
+        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
+    }
+    if (includeNBI){
+        for(len_t iz=0; iz<nZ; iz++){
+           auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
+           Op_Wij->AddTerm(nbi_i);
+       }
+    }
+
     eqsys->SetOperator(id_Wi, id_Wi, Op_Wij, "dW_i/dt = sum_j Q_ij + Q_ie");
     eqsys->SetOperator(id_Wi, id_Wcold, Op_Wie);
 }
