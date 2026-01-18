@@ -11,6 +11,7 @@
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
+#include "FVM/Grid/NumericBRadialGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "UnitTest.hpp"
@@ -94,16 +95,36 @@ DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0)
     return grid;
 }
 
+namespace {
+    constexpr real_t analyticB_minor_radius = 2;
+    constexpr real_t analyticB_shafranov_shift_max = 0.6;
+    // shape parameters that the numericB and analyticB grids share
+}
+
+/**
+ * Load a numeric magnetic field geometry designed to equal that
+ * created in InitializeAnalyticBRadialGridGenerator.
+ */
+DREAM::FVM::NumericBRadialGridGenerator *UnitTest::InitializeNumericBRadialGridGenerator(
+    const len_t nr, const len_t ntheta_interp
+) {
+    real_t a = analyticB_minor_radius + analyticB_shafranov_shift_max;
+    auto *nbrgg = new DREAM::FVM::NumericBRadialGridGenerator(
+        nr, 0, a, DREAMTESTS_NUMERIC_MAG_DATA_H5,
+        DREAM::FVM::NumericBRadialGridGenerator::FILE_FORMAT_LUKE, ntheta_interp
+    );
+    return nbrgg;
+}
 /**
  * Create a parametric magnetic field geometry with linear profiles in all shape parameters.
  */
 DREAM::FVM::AnalyticBRadialGridGenerator *UnitTest::InitializeAnalyticBRadialGridGenerator(
     const len_t nr, const len_t nrProfiles, const len_t ntheta_interp
 ) {
-    real_t a = 2;  // minor radius
+    real_t a = analyticB_minor_radius;  // minor radius
     real_t R0 = 4;  // major radius
 
-    real_t DeltaMax = 0.6;
+    real_t DeltaMax = analyticB_shafranov_shift_max;
     real_t deltaMax = 0.2;
     real_t GMin = 4;
     real_t GMax = 4.5;
@@ -131,10 +152,10 @@ DREAM::FVM::AnalyticBRadialGridGenerator *UnitTest::InitializeAnalyticBRadialGri
         rProfiles,  kappas,     rProfiles,  deltas,     rProfiles,  Deltas, rProfiles
     };
 
-    auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
+    auto *abrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
         nr, 0, a, R0, ntheta_interp, shapes
     );
-    return ABrgg;
+    return abrgg;
 }
 
 
