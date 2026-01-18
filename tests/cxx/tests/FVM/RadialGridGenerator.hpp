@@ -12,6 +12,8 @@ namespace DREAMTESTS::FVM {
         RadialGridGenerator(const std::string& name) : UnitTest(name) {}
 
         bool CheckAnalyticBGeometryCalculations();
+        bool CheckNumericBGeometryCalculations();
+        bool CheckNumericBAgreesWithAnalyticB();
 
         virtual bool Run(bool) override;
     };
