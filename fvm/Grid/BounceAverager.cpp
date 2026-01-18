@@ -508,8 +508,12 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
                             ir,Bmin, theta_Bmin, theta_Bmax, fluxSurfaceAverager, xi0, fluxGridType,
                             &theta_b1[ir][pind],&theta_b2[ir][pind], gsl_fsolver, geometryIsSymmetric
                         );
-                } else 
-                    isTrapped[ir][n1*j+i] = false;
+                } else {
+                    isTrapped[ir][pind] = false;
+                    theta_b1[ir][pind] = theta_Bmax - 2*M_PI;
+                    theta_b2[ir][pind] = theta_Bmax;
+                }
+
             }
     }
     return hasTrapped;
