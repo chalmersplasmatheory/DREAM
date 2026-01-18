@@ -407,6 +407,9 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
             dr[i] = (rMax-rMin) / GetNr();
         for (len_t i = 0; i < GetNr()+1; i++)
             r_f[i] = rMin + i*dr[0];
+        
+        // Prevent rounding errors
+        r_f[GetNr()] = rMax;
     } else {
         if (rf_provided[0] < 0)
             throw FVMException("NumericBRadialGrid: First point on custom radial grid is less than zero.");

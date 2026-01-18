@@ -4,9 +4,10 @@ import numpy as np
 import scipy.interpolate
 from numpy.matlib import repmat
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED, ION_SOURCE_PRESCRIBED_VOLUMETRIC
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
+from ... helpers import scal
 
 # Model to use for ion heat
 IONS_T_I_NEGLECT = 1
@@ -50,6 +51,7 @@ class Ions(UnknownQuantity):
         self.tChargedPrescribedAdvection = None
         self.tNeutralPrescribedAdvection = None
         self.tSourceTerm                 = None
+        self.rSourceTerm                 = None
 
         self.ionization = ionization
         self.typeTi = IONS_T_I_NEGLECT
@@ -140,27 +142,39 @@ class Ions(UnknownQuantity):
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
 
 
-    def addIonSource(self, species, dNdt=None, t=None, Z0=0):
+    def addIonSource(self, species, dNdt=None, t=None, Z0=0, source_type=ION_SOURCE_PRESCRIBED, r =None):
         """
         Add a source term for the specified ion species.
 
         :param species: Name of the ion species to add this source term to.
-        :param dNdt:    Number of particles to add per unit time.
+        :param dNdt:    Number of particles to add per unit time. Can be:
+                - Scalar: constant in space and time for charge state Z0
+                - 1D array with t: time-dependent for charge state Z0
+                - 1D array with r: radially-dependent for charge state Z0
+                - 2D array (Z+1, nt) with t: time-dependent for ALL charge states (boundary source)
+                - 3D array (Z+1, nt, nr) with t and r: time- and radially-dependent for ALL charge states (volumetric source)
         :param t:       Time grid associated with ``dNdt`` (if any).
+        :param r:       Radial grid associated with ``dNdt`` (if any).
         :param Z0:      For scalar or 1D ``dNdt``, the charge state for which to add the source term.
+        :param source_type: Type of source term to add (e.g., prescribed, constant).
         """
         if t is None:
             t = self.tSourceTerm
         elif self.tSourceTerm is not None and not np.all(t == self.tSourceTerm):
             raise EquationException(f"The time grid used for ion sources must be the same for all ion species.")
+        
+        if r is None:
+            r = self.rSourceTerm
 
         found = False
         for ion in self.ions:
             if ion.name == species:
-                ion.initialize_source(n=dNdt, t=t, Z0=Z0)
+                ion.initialize_source(n=dNdt, t=t, Z0=Z0, source_type=source_type, r=r)
                 found = True
 
                 self.tSourceTerm = ion.getSourceTime()
+                if ion.getSourceRadialGrid() is not None:
+                    self.rSourceTerm = ion.getSourceRadialGrid()
 
         if not found:
             raise EquationException(f"No ion species with name '{species}' has been added to the simulation. Unable to add source term.")
@@ -596,7 +610,7 @@ class Ions(UnknownQuantity):
         neutral_prescribed_advection = None
         self.typeTi = IONS_T_I_NEGLECT
         if 'typeTi' in data:
-            self.typeTi = int(data['typeTi'])
+            self.typeTi = int(scal(data['typeTi']))
         if 'initial' in data:
             initial = data['initial']
         if 'prescribed' in data:
@@ -631,7 +645,7 @@ class Ions(UnknownQuantity):
             ion_source_t = data['ion_source']['t']
             ion_source_x = data['ion_source']['x']
 
-        iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx = 0, 0, 0, 0, 0, 0, 0
+        iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx, srcidx = 0, 0, 0, 0, 0, 0, 0, 0
         for i in range(len(Z)):
             if types[i] == IONS_PRESCRIBED:
                 n = prescribed['x'][pidx:(pidx+Z[i]+1)]
@@ -718,13 +732,25 @@ class Ions(UnknownQuantity):
 
             # Load ion source
             if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
-                self.addIonSource(names[i], dNdt=ion_source_x[i,:], t=ion_source_t)
+                self.addIonSource(names[i], dNdt=ion_source_x[srcidx,:], t=ion_source_t, source_type=ION_SOURCE_PRESCRIBED)
+                srcidx += Z[i] + 1  # Move to next ion's position
+            elif ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
+                ion_source_r = data['ion_source'].get('r', None)
+                
+                # Extract the full 3D source data for this ion species
+                if len(ion_source_x.shape) == 3:
+                    dNdt_data = ion_source_x[srcidx:srcidx+(Z[i]+1), :, :]
+                    srcidx += Z[i] + 1  # Move to next ion's position
+                else:
+                    raise EquationException(f"Unexpected ion_source shape for volumetric source: {ion_source_x.shape}")
+                
+                self.addIonSource(names[i], dNdt=dNdt_data, t=ion_source_t, r=ion_source_r, source_type=ION_SOURCE_PRESCRIBED_VOLUMETRIC)
 
         if 'ionization' in data:
-            self.ionization = int(data['ionization'])
+            self.ionization = int(scal(data['ionization']))
 
         if 'reioniz_scale' in data:
-            self.reioniz_scale = float(data['reioniz_scale'])
+            self.reioniz_scale = float(scal(data['reioniz_scale']))
 
         self.verifySettings()
 
@@ -794,13 +820,32 @@ class Ions(UnknownQuantity):
                 n1 = sourceterm
                 n2 = ion.getSourceDensity()
 
+                # Ensure both arrays have same number of dimensions
+                if len(n1.shape) == 2 and len(n2.shape) == 3:
+                    # Expand n1 from (Z+1, nt) to (Z+1, nt, 1)
+                    n1 = n1[:, :, np.newaxis]
+                elif len(n1.shape) == 3 and len(n2.shape) == 2:
+                    # Expand n2 from (Z+1, nt) to (Z+1, nt, 1)
+                    n2 = n2[:, :, np.newaxis]
+
+                # Now match time dimensions
                 if n1.shape[1] != n2.shape[1]:
                     if n1.shape[1] == 1:
-                        n1 = repmat(n1[:,0].reshape((n1.shape[0],1)), 1, n2.shape[1])
+                        n1 = np.repeat(n1, n2.shape[1], axis=1)
                     elif n2.shape[1] == 1:
-                        n2 = repmat(n2[:,0].reshape((n2.shape[0],1)), 1, n1.shape[1])
+                        n2 = np.repeat(n2, n1.shape[1], axis=1)
                     else:
                         raise EquationException("All ion sources must be defined in the same time points.")
+                
+                # Match radial dimensions (only if both are 3D)
+                if len(n1.shape) == 3 and len(n2.shape) == 3:
+                    if n1.shape[2] != n2.shape[2]:
+                        if n1.shape[2] == 1:
+                            n1 = np.repeat(n1, n2.shape[2], axis=2)
+                        elif n2.shape[2] == 1:
+                            n2 = np.repeat(n2, n1.shape[2], axis=2)
+                        else:
+                            raise EquationException("All ion sources must be defined on the same radial grid.")
 
                 sourceterm = np.concatenate((n1, n2))
 
@@ -910,6 +955,8 @@ class Ions(UnknownQuantity):
                 't': self.tSourceTerm,
                 'x': sourceterm
             }
+            if self.rSourceTerm is not None and len(sourceterm.shape) == 3:
+                    data['ion_source']['r'] = self.rSourceTerm
 
         # Flux limiter settings
         data['adv_interp_charged'] = self.advectionInterpolationCharged.todict()
