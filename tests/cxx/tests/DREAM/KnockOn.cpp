@@ -121,7 +121,7 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                         ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 30, rg
                     );
                     if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold) {
-                        printf(
+                        this->PrintError(
                             "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g\n", ir, j,
                             l, xi_star
                         );
@@ -131,7 +131,7 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                         ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, theta1, theta2, 30, rg
                     );
                     if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold) {
-                        printf(
+                        this->PrintError(
                             "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g\n", ir, j,
                             l, xi_star
                         );
@@ -187,9 +187,9 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                     );
                     if (fabs(delta_default - delta_hires) >
                         successRelErrorThreshold * (1 + fabs(delta_default))) {
-                        printf("failed (j=%ld, l=%ld)\n", j, l);
-                        printf("delta_default = %.4g\n", delta_default);
-                        printf("delta_hires = %.4g\n", delta_hires);
+                        this->PrintError("failed (j=%ld, l=%ld)\n", j, l);
+                        this->PrintError("delta_default = %.4g\n", delta_default);
+                        this->PrintError("delta_hires = %.4g\n", delta_hires);
 
                         success = false;
                     }
@@ -253,10 +253,10 @@ bool KnockOn::CheckDeltaConservationProperty() {
                     (fabs(deltaXiIntegral - 1) > successRelErrorThreshold) &&
                     awayFromTPBoundaries) {
                     real_t xi01 = mg->GetP2(l);
-                    printf("failed:\n");
-                    printf("  trapped boundary: %.4g\n", xi0T);
-                    printf("  xi01: %.4g (%.4g, %.4g)\n", xi01, xi01_f1, xi01_f2);
-                    printf("  deltaXiIntegral: %.4g\n", deltaXiIntegral);
+                    this->PrintError("failed:\n");
+                    this->PrintError("  trapped boundary: %.4g\n", xi0T);
+                    this->PrintError("  xi01: %.4g (%.4g, %.4g)\n", xi01, xi01_f1, xi01_f2);
+                    this->PrintError("  deltaXiIntegral: %.4g\n", deltaXiIntegral);
                     success = false;
                 }
             }
@@ -314,12 +314,12 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
                         ir, xi_star, j, l, grid
                     );
                     if (fabs(delta - delta_expected) > successRelErrorThreshold) {
-                        printf("failed at ir=%ld, j=%ld, l=%ld:\n", ir, j, l);
-                        printf("  delta: %.4g\n", delta);
-                        printf("  delta_expected: %.4g\n", delta_expected);
-                        printf("  xi_star: %.4g\n", xi_star);
-                        printf("  xi0 in [%.4g, %.4g]\n", xi0_f1, xi0_f2);
-                        printf("  xi01: %.4g\n", xi01);
+                        this->PrintError("failed at ir=%ld, j=%ld, l=%ld:\n", ir, j, l);
+                        this->PrintError("  delta: %.4g\n", delta);
+                        this->PrintError("  delta_expected: %.4g\n", delta_expected);
+                        this->PrintError("  xi_star: %.4g\n", xi_star);
+                        this->PrintError("  xi0 in [%.4g, %.4g]\n", xi0_f1, xi0_f2);
+                        this->PrintError("  xi01: %.4g\n", xi01);
                         success = false;
                     }
                 }
@@ -376,13 +376,14 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
                 ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, 10000, rg
             );
             if (fabs(new_delta - old_delta) > old_delta * successRelErrorThreshold) {
-                printf("FSA_B * Vp / Vp1: %.4g\n", FSA_B * Vp / Vp1);
-                printf("Trapped boundary xi0T: %.4g\n", rg->GetXi0TrappedBoundary(ir));
-                printf("non-zero contribution at xi in [%.3g, %.3g]\n", xi0_f1, xi0_f2);
-                printf("old delta: %.4g\n", old_delta);
-                printf("new delta: %.4g\n", new_delta);
-                if (new_delta != 0)
-                    printf("ratio: %.4g\n", old_delta / new_delta);
+                this->PrintError("FSA_B * Vp / Vp1: %.4g\n", FSA_B * Vp / Vp1);
+                this->PrintError("Trapped boundary xi0T: %.4g\n", rg->GetXi0TrappedBoundary(ir));
+                this->PrintError("non-zero contribution at xi in [%.3g, %.3g]\n", xi0_f1, xi0_f2);
+                this->PrintError("old delta: %.4g\n", old_delta);
+                this->PrintError("new delta: %.4g\n", new_delta);
+                if (new_delta != 0){
+                    this->PrintError("ratio: %.4g\n", old_delta / new_delta);
+                }
                 success = false;
             }
         }
