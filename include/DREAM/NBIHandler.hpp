@@ -52,11 +52,11 @@ namespace DREAM {
         len_t nr;             // Number of radial points
         len_t ntheta;         // Number of poloidal points
         real_t dtheta;        // Poloidal angle step
-        int_t n_beam_radius;  // Number of radial points for beam
+        len_t n_beam_radius;  // Number of radial points for beam
         real_t d_beam_radius; // Radial step size for beam
-        int_t n_beam_theta;   // Number of poloidal points for beam
+        len_t n_beam_theta;   // Number of poloidal points for beam
         real_t d_beam_theta;  // Poloidal step size for beam
-        int_t n_beam_s;       // Number of s points for beam
+        len_t n_beam_s;       // Number of s points for beam
         real_t d_beam_s;      // s step size for beam
 
         // Cached calculations
@@ -117,7 +117,7 @@ namespace DREAM {
             real_t Ti_beam, real_t m_i_beam,
             FVM::Interpolator1D *j_B_profile,
             real_t R0,  int gaussian_profile,
-            FVM::Interpolator1D *Power_Profile, int_t n_beam_radius, int_t n_beam_theta, int_t n_beam_s
+            FVM::Interpolator1D *Power_Profile, len_t n_beam_radius, len_t n_beam_theta, len_t n_beam_s
         );
 
         ~NBIHandler();

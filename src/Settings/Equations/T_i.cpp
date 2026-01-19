@@ -125,8 +125,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
     }
 
     bool includeNBI = false;
-    if (s->HasSetting("eqsys/T_cold" "/NBI/enabled")) {
-        printf("NBI enabled: %d\n", s->GetBool("eqsys/T_cold" "/NBI/enabled"));
+    if (s->HasSetting("eqsys/T_cold/NBI/enabled")) {
         includeNBI = s->GetBool("eqsys/T_cold" "/NBI/enabled");
     }
     if (includeNBI){

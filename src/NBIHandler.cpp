@@ -57,7 +57,7 @@ void NBIHandler::ConfigureFromSettings(
     Settings* , FVM::UnknownQuantityHandler* unknowns, real_t s_max, real_t r_beam,
     const real_t P0[3], const real_t n[3], const real_t energy_fractions[3],
     real_t Ti_beam, real_t m_i_beam, FVM::Interpolator1D* j_B_profile,
-    real_t R0,  int gaussian_profile, FVM::Interpolator1D* Power_Profile, int_t n_beam_radius, int_t n_beam_theta, int_t n_beam_s
+    real_t R0,  int gaussian_profile, FVM::Interpolator1D* Power_Profile, len_t n_beam_radius, len_t n_beam_theta, len_t n_beam_s
 ) {
 
     this->unknowns = unknowns;
@@ -242,9 +242,9 @@ void NBIHandler::PrecomputeBeamMapLUT() {
     ir_lut.resize(static_cast<size_t>(n_beam_theta) * n_beam_radius * n_beam_s,
                   static_cast<len_t>(-1));
 
-    for (int_t it = 0; it < n_beam_theta; ++it) {
-        for (int_t irad = 0; irad < n_beam_radius; ++irad) {
-            for (int_t is = 0; is < n_beam_s; ++is) {
+    for (len_t it = 0; it < n_beam_theta; ++it) {
+        for (len_t irad = 0; irad < n_beam_radius; ++irad) {
+            for (len_t is = 0; is < n_beam_s; ++is) {
                 real_t beam_theta = it * d_beam_theta;
                 real_t beam_radius = (irad) *d_beam_radius;
                 real_t beam_s = s_start + is * d_beam_s;
