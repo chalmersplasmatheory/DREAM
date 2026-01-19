@@ -230,3 +230,8 @@ class NBISettings:
                 'tinterp' : self.P_NBI_tinterp,
             },
         }
+    
+    def fromdict(self, data):
+        """Load NBISettings from a dictionary."""
+        for k, v in data.items():
+            setattr(self, k, v)
