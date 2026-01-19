@@ -20,6 +20,7 @@ using namespace std;
 
 
 #define MODULENAME "eqsys/n_i"
+#define MODULENAME_NBI "eqsys/T_cold/NBI/enabled"
 
 
 void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
@@ -125,8 +126,8 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
     }
 
     bool includeNBI = false;
-    if (s->HasSetting("eqsys/T_cold/NBI/enabled")) {
-        includeNBI = s->GetBool("eqsys/T_cold" "/NBI/enabled");
+    if (s->HasSetting(MODULENAME_NBI)) {
+        includeNBI = s->GetBool(MODULENAME_NBI);
     }
     if (includeNBI){
         oqty_terms->T_i_NBI.resize(nZ, nullptr);
