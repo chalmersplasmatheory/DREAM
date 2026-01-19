@@ -3,6 +3,7 @@
 import numpy as np
 from DREAM.DREAMException import DREAMException
 from DREAM.Settings.Equations.EquationException import EquationException
+from .. helpers import scal
 
 
 TYPE_UNIFORM = 1
@@ -148,21 +149,21 @@ class XiGrid:
             if 'nxisep' in data:
                 self.nxisep = int(data['nxisep'])
             elif 'nxisep_frac' in data:
-                self.nxisep_frac = float(data['nxisep_frac'])
+                self.nxisep_frac = float(scal(data['nxisep_frac']))
         
         elif self.type == TYPE_BIUNIFORM_THETA:
             self.thetasep  = data['xisep']
             if 'nxisep' in data:
                 self.nthetasep = int(data['nxisep'])
             elif 'nxisep_frac' in data:
-                self.nthetasep_frac = float(data['nxisep_frac'])
+                self.nthetasep_frac = float(scal(data['nxisep_frac']))
         elif self.type == TYPE_CUSTOM:
             self.xi_f = data['xi_f']
         elif self.type == TYPE_TRAPPED:
-            self.trapped_dxiMax = float(data['dximax'])
-            self.trapped_NxiPass = int(data['nxipass'])
-            self.trapped_NxiTrap = int(data['nxitrap'])
-            self.trapped_blWidth = float(data['boundarylayerwidth'])
+            self.trapped_dxiMax = float(scal(data['dximax']))
+            self.trapped_NxiPass = int(scal(data['nxipass']))
+            self.trapped_NxiTrap = int(scal(data['nxitrap']))
+            self.trapped_blWidth = float(scal(data['boundarylayerwidth']))
             
         self.verifySettings()
 

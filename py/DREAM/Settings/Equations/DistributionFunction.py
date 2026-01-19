@@ -362,15 +362,13 @@ class DistributionFunction(UnknownQuantity):
             self.timevaryingbmode = int(scal(data['timevaryingbmode']))
 
         if 'synchrotronmode' in data:
-            self.synchrotronmode = data['synchrotronmode']
-            if type(self.synchrotronmode) != int:
-                self.synchrotronmode = int(self.synchrotronmode[0])
+            self.synchrotronmode = int(scal(data['synchrotronmode']))
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
 
         if 'fullIonJacobian' in data:
-            self.fullIonJacobian = bool(data['fullIonJacobian'])
+            self.fullIonJacobian = bool(scal(data['fullIonJacobian']))
 
         if 'f_prescribed' in data:
             self.prescribed_t = data['f_prescribed']['t']
