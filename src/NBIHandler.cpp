@@ -57,7 +57,7 @@ void NBIHandler::ConfigureFromSettings(
     Settings* , FVM::UnknownQuantityHandler* unknowns, real_t s_max, real_t r_beam,
     const real_t P0[3], const real_t n[3], const real_t energy_fractions[3],
     real_t Ti_beam, real_t m_i_beam, FVM::Interpolator1D* j_B_profile,
-    real_t R0,  int gaussian_profile, FVM::Interpolator1D* Power_Profile
+    real_t R0,  int gaussian_profile, FVM::Interpolator1D* Power_Profile, len_t n_beam_radius, len_t n_beam_theta, len_t n_beam_s
 ) {
 
     this->unknowns = unknowns;
@@ -110,11 +110,11 @@ void NBIHandler::ConfigureFromSettings(
     if (Power_Profile->GetNx() == 0) 
         throw DREAMException("NBI: Power profile is empty.");
 
-    this->n_beam_radius = 25;
+    this->n_beam_radius = n_beam_radius;
     this->d_beam_radius = r_beam / n_beam_radius;
-    this->n_beam_theta = 25;
+    this->n_beam_theta = n_beam_theta;
     this->d_beam_theta = 2.0 * M_PI / n_beam_theta;
-    this->n_beam_s = 50;
+    this->n_beam_s = n_beam_s;
     this->d_beam_s = (s_stop - s_start) / n_beam_s;
 
     //Precompute the ir-flux surface mapping
@@ -355,7 +355,7 @@ void NBIHandler::Build(const real_t t, const real_t,
                     d_NBIHeatTerm_e_d_T_ij[idx(ir, iz, Z0)] = K * (fe * H_r_dT_ij[idx(ir, iz, Z0)] + dfe_dT_ij[iz] * Deposition_profile_times_Vprime[ir]);
                 }
             }
-        }
+        } 
 
     } else {
         // If power is 0, set everything to zero
@@ -393,13 +393,13 @@ void NBIHandler::ComputeMeanFreePath(
     std::vector<real_t>& dI_ij_dT_ij, real_t& dI_e_dTe,
     real_t Ti_beam_input
 ) {
-    real_t Z0 = 0; // Neutral beam, so Z0 = 0
-    real_t Zion = 1; // Deterium beam
-    ADASRateInterpolator* scd = adas->GetSCD(Zion);
-    dI_e_dTe = scd->Eval_deriv_T(Z0, ncold, Tcold);
+    real_t Z0_b = 0; // Neutral beam, so Z0 = 0
+    real_t Zion_b = 1; // Deterium beam
+    ADASRateInterpolator* scd = adas->GetSCD(Zion_b);
+    dI_e_dTe = scd->Eval_deriv_T(Z0_b, ncold, Tcold);
 
-    real_t dI_e_dne = scd->Eval_deriv_n(Z0, ncold, Tcold);
-    real_t I_e = scd->Eval(Z0, ncold, Tcold);
+    real_t dI_e_dne = scd->Eval_deriv_n(Z0_b, ncold, Tcold);
+    real_t I_e = scd->Eval(Z0_b, ncold, Tcold);
     real_t v_NBI = std::sqrt(2.0 * Ti_beam_input / m_i_beam);
     real_t total_CX = 0.0;
 
@@ -411,7 +411,10 @@ void NBIHandler::ComputeMeanFreePath(
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             niZ_tot += ions->GetIonDensity(ir, iz, Z0);
         }
-        // Calculate temperature for individual species
+        // Skip species with negligible density
+        if (niZ_tot < 1e5)
+            continue;
+        // Calculate temperature for individual species, assumed same for charge states
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /(1.5 * niZ_tot * Constants::ec);
 
         // Calculate total CX rate
@@ -434,7 +437,9 @@ void NBIHandler::ComputeMeanFreePath(
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             niZ_tot += ions->GetIonDensity(ir, iz, Z0);
         }
-
+        // Skip species with negligible density
+        if (niZ_tot < 1e5)
+            continue;
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /
             (1.5 * niZ_tot * Constants::ec);
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
@@ -711,6 +716,7 @@ void NBIHandler::IonElectronFractions(
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             real_t niZ = ions->GetIonDensity(ir, iz, Z0);
             sum_ni += niZ;
+
         }
         ni_species[iz] = sum_ni;
     }
@@ -719,6 +725,7 @@ void NBIHandler::IonElectronFractions(
         if (Mi[iz] > 0.0)
             Z1_sum += ni_species[iz] * (Zi[iz] * Zi[iz]) / Mi[iz];
     }
+    
     real_t Z1 = (Mb / ne) * Z1_sum;
     real_t factor = (3 * std::sqrt(M_PI) * Me * Z1 / (4 * Mb));
     real_t vc = std::pow(std::max((real_t) 0, factor), (real_t) (1.0 / 3.0)) * ve;
