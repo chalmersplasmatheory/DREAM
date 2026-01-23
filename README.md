@@ -149,5 +149,5 @@ The archive of DREAM newsletters, where changes to DREAM are recorded, can be
 found at [https://ft.nephy.chalmers.se/dreamnews/](https://ft.nephy.chalmers.se/dreamnews/).
 
 The original idea for DREAM was proposed by
-[Ola Embreus](https://github.com/Embreus) who, together with Mathias Hoppe,
+[Ola Embreus](https://github.com/OEmbreus) who, together with Mathias Hoppe,
 developed the first version.
