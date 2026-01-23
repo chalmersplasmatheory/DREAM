@@ -33,6 +33,7 @@ The sections below provide practical guidance intended to make contributing smoo
 
 ---
 
+
 ## Coding style and guidelines
 
 
@@ -165,3 +166,12 @@ Contributors are encouraged to use the testing approach that best matches the ch
 For user-facing changes, additions to the **Sphinx documentation**, docstrings, or examples are encouraged so that new functionality is discoverable and usable by others.
 
 If you are unsure what level of testing or documentation is appropriate, feel free to ask in an issue or pull request - reviewers are happy to help clarify expectations.
+
+---
+
+## Version control and workflow
+
+DREAM follows a small set of conventions for working with git, including
+branching, committing, and handling large or sensitive files.
+
+Please see [`GIT.md`](GIT.md) for detailed git usage guidelines.
