@@ -122,6 +122,9 @@ for that functionality:
 - Runaway scrape-off: [O. Vallhagen *et al*, JPP **91** E78 (2025)](https://doi.org/10.1017/s0022377825000327)
 
 ## Development
+Contributions to DREAM are very welcome. If you are interested in contributing, the [CONTRIBUTING.md](https://github.com/chalmersplasmatheory/DREAM/blob/master/CONTRIBUTING.md) document provides guidance and context to get you started.
+
+
 DREAM development is overseen by the DREAM Developer Council which consists of
 
 ![The DREAM Developer Council 2025](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/DDC/Council-2025.jpg "The DREAM Developer Council in 2025")
