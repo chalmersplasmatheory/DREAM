@@ -36,3 +36,4 @@ src/Atomics/adasdata.cpp
 tools/cache
 *.CDF
 *.cdf
+*.synctex.gz
