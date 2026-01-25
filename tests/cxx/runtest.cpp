@@ -17,11 +17,12 @@
 #include "UnitTest.hpp"
 
 // Tests
+#include "tests/DREAM/AvalancheSourceRP.hpp"
 #include "tests/DREAM/BoundaryFlux.hpp"
 #include "tests/DREAM/IonRateEquation.hpp"
-#include "tests/DREAM/RunawayFluid.hpp"
-#include "tests/DREAM/AvalancheSourceRP.hpp"
+#include "tests/DREAM/KnockOn.hpp"
 #include "tests/DREAM/MeanExcitationEnergy.hpp"
+#include "tests/DREAM/RunawayFluid.hpp"
 
 #include "tests/FVM/AdvectionTerm.hpp"
 #include "tests/FVM/AdvectionDiffusionTerm.hpp"
@@ -44,6 +45,7 @@ void init() {
     add_test(new DREAMTESTS::_DREAM::AvalancheSourceRP("dream/avalanche"));
     add_test(new DREAMTESTS::_DREAM::BoundaryFlux("dream/boundaryflux"));
     add_test(new DREAMTESTS::_DREAM::IonRateEquation("dream/ionrateequation"));
+    add_test(new DREAMTESTS::_DREAM::KnockOn("dream/knockon"));
     add_test(new DREAMTESTS::_DREAM::MeanExcitationEnergy("dream/meanexcitationenergy"));
     add_test(new DREAMTESTS::_DREAM::RunawayFluid("dream/runawayfluid"));
 
