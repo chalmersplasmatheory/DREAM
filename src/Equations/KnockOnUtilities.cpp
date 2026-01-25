@@ -426,3 +426,248 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDelta(
     // factor of 2*pi.
     return 2 * M_PI * integral / Vp1;
 }
+
+/**
+ * Compiles the true delta with trapping corrections.
+ *
+ * Here we will use the fortunate symmetry property of the Delta calculation,
+ * that under
+ *     xi_star -> -xi_star; and xi01 -> -xi0,
+ * the value is unchanged.
+ * Now, when [xi0_f1, xi0_f2] is in the trapped region, we should add the
+ * knock on integral from the mirrored xi -> -xi contributions.
+ * This happens to correspond to the case xi_star -> -xi_star.
+ * Similarly, when xi01 is in the trapped region, we should add
+ * xi1 -> -xi1. Because of the symmetry property, this is identical
+ * to the other case.
+ * Finally, when both xi01 and xi0 are in the trapped region, we should add the
+ * double-flipped xi -> -xi; xi1 -> -xi1, which is the same as the original
+ * calculation.
+ *
+ * Corresponds to \delta_j from the theory notes.
+ */
+real_t KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
+    real_t theta2, const FVM::RadialGrid *rg, len_t n_points_integral, orbit_integration_method quad
+) {
+    // no contribution for unphysical parts of the xi01 phase space,
+    // i.e. the negative trapped region.
+    if (nearly_zero(Vp1)) {
+        return 0.0;
+    }
+
+    real_t xi0T = rg->GetXi0TrappedBoundary(ir);
+
+    // First, split contributions when cells cross trapped-passing boundary or
+    // 0. We want to evaluate with cell faces on special points to do mirroring
+    // properly
+
+    // split out negative passing contribution
+    if (xi0_f1 < -xi0T - RELAXED_EPS && xi0_f2 > -xi0T + RELAXED_EPS) {
+        return (
+            EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+                ir, xi_star, xi01, xi0_f1, -xi0T, Vp1, theta1, theta2, rg, n_points_integral, quad
+            ) +
+            EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+                ir, xi_star, xi01, -xi0T, xi0_f2, Vp1, theta1, theta2, rg, n_points_integral, quad
+            )
+        );
+    }
+
+    // handle when 0 is inside the cell, discard negative-trapped region
+    if (xi0_f1 < -RELAXED_EPS && xi0_f2 > RELAXED_EPS) {
+        return EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+            ir, xi_star, xi01, 0, xi0_f2, Vp1, theta1, theta2, rg, n_points_integral, quad
+        );
+    }
+
+    // escape pure negative-trapped calculation
+    if (xi0_f1 > -xi0T - RELAXED_EPS && xi0_f2 < RELAXED_EPS) {
+        return 0;
+    }
+
+    // split out positive passing region
+    if (xi0_f1 < xi0T - RELAXED_EPS && xi0_f2 > xi0T + RELAXED_EPS) {
+        return (
+            EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+                ir, xi_star, xi01, xi0_f1, xi0T, Vp1, theta1, theta2, rg, n_points_integral, quad
+            ) +
+            EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+                ir, xi_star, xi01, xi0T, xi0_f2, Vp1, theta1, theta2, rg, n_points_integral, quad
+            )
+        );
+    }
+
+    // Now, we know that [xi0_f1, xi0_f2] is either purely passing or purely in
+    // the positive trapped region. Here we can add the unit contributions from
+    // a single bounce average integral.
+
+    real_t delta = EvaluateOrbitAveragedDelta(
+        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, n_points_integral, quad
+    );
+    bool isTrapped = (xi0_f1 > -RELAXED_EPS) && (xi0_f2 < xi0T + RELAXED_EPS);
+    bool is1Trapped = xi01 > -RELAXED_EPS && xi01 < xi0T;
+    if (isTrapped || is1Trapped) {
+        delta += EvaluateOrbitAveragedDelta(
+            ir, -xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, n_points_integral, quad
+        );
+    }
+    if (isTrapped && is1Trapped) {
+        delta *= 2;
+    }
+    return delta;
+}
+
+/**
+ * Estimates a conservative poloidal angle interval [theta1, theta2]
+ * outside which the orbit-averaged delta integrand is guaranteed to vanish
+ * for the given momentum-space cell indices (j, l).
+ */
+void KnockOnUtilities::EstimateBoundingTheta(
+    len_t ir, len_t j, len_t l, real_t &theta1, real_t &theta2, const FVM::Grid *grid_knockon,
+    const FVM::Grid *grid_primary
+) {
+    if (!grid_knockon->HasTrapped()) {
+        // cylindrical case, in which case thetabounce have not been initialized
+        theta1 = 0;
+        theta2 = 2 * M_PI;
+        return;
+    }
+    real_t xi0_f2 = grid_knockon->GetMomentumGrid(ir)->GetP2_f(j + 1);
+    if (xi0_f2 <= RELAXED_EPS) {
+        theta1 = grid_knockon->GetThetaBounce1_f2(ir, 0, j);
+        theta2 = grid_knockon->GetThetaBounce2_f2(ir, 0, j);
+    } else {
+        theta1 = grid_knockon->GetThetaBounce1_f2(ir, 0, j + 1);
+        theta2 = grid_knockon->GetThetaBounce2_f2(ir, 0, j + 1);
+    }
+    theta1 = std::max(theta1, grid_primary->GetThetaBounce1(ir, 0, l));
+    theta2 = std::min(theta2, grid_primary->GetThetaBounce2(ir, 0, l));
+    // we nudge the endpoints into the interval to ensure that we won't
+    // be culled due to roundoff
+    real_t theta_range = theta2 - theta1;
+    constexpr real_t roundoff_safety_factor = 1e-8;
+    theta1 = theta1 + roundoff_safety_factor * theta_range;
+    theta2 = theta2 - roundoff_safety_factor * theta_range;
+}
+
+/**
+ * Evaluates the orbit-averaged Delta including trapping corrections on
+ * the provided grid.
+ *
+ * Uses xi01 on grid centers at index l and xi0_{j-1/2}, xi0_{j+1/2} at index j.
+ * This function is a grid-aware convenience wrapper around
+ * EvaluateOrbitAveragedDeltaWithTrappingCorrection().
+ *
+ * Corresponds to the matrix element Delta_{j l} in the theory notes.
+ */
+real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
+    len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
+    const FVM::Grid *grid_primary, len_t n_points_integral, orbit_integration_method quad
+) {
+    real_t xi01 = grid_primary->GetMomentumGrid(ir)->GetXi0(0, l);
+    FVM::MomentumGrid *mg = grid_knockon->GetMomentumGrid(ir);
+    real_t xi0_f1 = mg->GetXi0_f2(0, j);
+    real_t xi0_f2 = mg->GetXi0_f2(0, j + 1);
+    real_t Vp1 = grid_primary->GetVpOverP2AtZero(ir)[l];
+
+    FVM::RadialGrid *rGrid = grid_primary->GetRadialGrid();
+
+
+    // Handle the case in which xi01 is near the trapped-passing boundary.
+    // In the case that xi01 is exactly on the boundary, the bounce average diverges.
+    // For Vp this is solved by averaging the bounce integral over the entire cell--
+    // that seems unnecessarily expensive here. Let's just evaluate on the passing side
+    // of the TP boundary. This will cause the delta not to be conservative at this xi01,
+    // but this error can be normalized away.
+    real_t xi01_f1 = grid_primary->GetMomentumGrid(ir)->GetXi0_f2(0, l);
+    real_t xi01_f2 = grid_primary->GetMomentumGrid(ir)->GetXi0_f2(0, l + 1);
+    if (rGrid->GetFluxSurfaceAverager()->shouldCellAverageBounceIntegral(
+            ir, xi01_f1, xi01_f2, DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION
+        )) {
+            if (xi01_f2 > rGrid->GetXi0TrappedBoundary(ir)){
+                xi01 = xi01_f2;
+            } else {
+                xi01 = xi01_f1;
+            }
+    }
+
+    // Set the outer theta interval as the smallest of the orbits reached by xi_{01} and
+    // [xi_{0,j-1/2}, xi_{0, j+1/2}]
+    real_t theta1, theta2;
+    EstimateBoundingTheta(ir, j, l, theta1, theta2, grid_knockon, grid_primary);
+    real_t delta = EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rGrid, n_points_integral, quad
+    );
+    return delta;
+}
+
+/**
+ * Evaluates and normalizes a column of the orbit-averaged knock-on delta
+ * function on the given FVM grids.
+ *
+ * For a fixed primary pitch index l (xi01) and xi_star, this routine
+ * computes Delta_{j l} for all secondary pitch cells j using
+ * EvaluateDeltaMatrixElementOnGrid(), and enforces the exact analytic
+ * normalization property
+ *
+ *     sum_j Delta_{j l} * dxi0_j = 1,
+ *
+ * whenever a non-zero contribution is physically expected.
+ *
+ * If the initial quadrature resolution fails to capture any non-zero
+ * contribution (e.g. due to very narrow contributing poloidal-angle
+ * intervals), the number of poloidal integration points is increased
+ * adaptively until either a non-zero contribution is found or a
+ * hard upper limit is reached.
+ *
+ * This function encodes physics-domain knowledge about the definition
+ * and normalization of the orbit-averaged knock-on delta function, and
+ * is intended to be used by collision operators when assembling the
+ * knock-on kernel.
+ *
+ * Returns the unnormalized column integral sum_j Delta_{j l} * dxi0_j.
+ */
+real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
+    len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
+    real_t *deltaCol, len_t n_points_integral, orbit_integration_method quad
+) {
+    FVM::MomentumGrid *mg = grid_knockon->GetMomentumGrid(ir);
+    len_t Nxi = mg->GetNp2();
+
+    real_t norm = 0;
+    for (len_t j = 0; j < Nxi; j++) {
+        real_t dxi0j = mg->GetDp2(j);
+        deltaCol[j] = EvaluateDeltaMatrixElementOnGrid(
+            ir, xi_star, j, l, grid_knockon, grid_primary, n_points_integral, quad
+        );
+        norm += dxi0j * deltaCol[j];
+    }
+
+    // If no non-zero elements were discovered, but we expected them to,
+    // it may mean that only very small poloidal-angle intervals contributed
+    // to the orbit integrals, and were not sampled at the current resolution.
+    // This should be exceedingly rare.
+    // We expect non-zeroes when Vp(xi01) != 0. When == 0, this represents
+    // negative-trapped orbits that should not be counted.
+    bool nonzero_expected = !nearly_zero(grid_primary->GetVpOverP2AtZero(ir)[l]);
+    if (norm < RELAXED_EPS && nonzero_expected) {
+        // increase number of poloidal samples and try again, but terminate if 1000 is reached.
+        constexpr len_t n_points_max = 1000;
+        if (n_points_integral >= n_points_max) {
+            throw DREAMException(
+                "Knock-on operator expected non-zero elements at ir=%ld, l=%ld, xi_star=%.8g but "
+                "none were found",
+                ir, l, xi_star
+            );
+        }
+        // try again with increased resolution in theta quadrature
+        return SetDeltaMatrixColumnOnGrid(
+            ir, xi_star, l, grid_knockon, grid_primary, deltaCol, n_points_integral * 4, quad
+        );
+    }
+    for (len_t j = 0; j < Nxi; j++) {
+        deltaCol[j] = deltaCol[j] / norm;
+    }
+    return norm;
+}
