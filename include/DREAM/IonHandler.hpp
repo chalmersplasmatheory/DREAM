@@ -92,6 +92,7 @@ namespace DREAM {
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
 		const real_t GetTotalIonMassDensity(len_t ir) const;
         const real_t GetTritiumDensity(len_t ir) const;
+		const len_t GetMainSpeciesIndex() const;
 
         // DERIVED QUANTITY GETTERS
         const real_t* GetFreePlusBoundElectronDensity() const 
