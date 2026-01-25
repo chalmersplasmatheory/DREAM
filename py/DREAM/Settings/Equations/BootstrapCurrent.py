@@ -5,7 +5,7 @@ from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
 
 BOOTSTRAP_MODE_DISABLED = 1
-BOOTSTRAP_MODE_ENABLED = 2
+BOOTSTRAP_MODE_REDL = 2
 
 BOOTSTRAP_INIT_MODE_TOTAL = 1 
 BOOTSTRAP_INIT_MODE_OHMIC = 2
@@ -32,10 +32,10 @@ class BootstrapCurrent(UnknownQuantity):
         model, which is based on A. Redl et al (DOI: https://doi.org/10.1063/5.0012664).
         """
         if mode is True:
-            self.mode = BOOTSTRAP_ENABLED
+            self.mode = BOOTSTRAP_REDL
         elif mode is False:
             self.mode = BOOTSTRAP_DISABLED
-        elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_ENABLED]:
+        elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_REDL]:
             self.mode = int(mode)
         else:
             print(type(mode), mode)
