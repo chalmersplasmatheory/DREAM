@@ -110,5 +110,38 @@ real_t EvaluateLocalContribution(
 );
 }  // namespace AnalyticDelta
 
+// ============================================================================
+// Orbit-averaging routines based on a RadialGrid for local-geometry evaluation
+// ============================================================================
+enum orbit_integration_method { MIDPOINT_RULE, ADAPTIVE_TRAPEZOID, ADAPTIVE_GSL };
+constexpr len_t N_POINTS_INTEGRAL_DEFAULT = 80;
+
+/**
+ * Evaluate local geometric quantities and return true if this poloidal location
+ * theta can be reached both by some xi0 in [xi0_f1, xi0_f2] and by xi01.
+ */
+bool CheckIfReachableAndSetGeometricQuantities(
+    len_t ir, real_t theta, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t &BOverBmin,
+    real_t &Jacobian, real_t &xi0Cutoff, FVM::FluxSurfaceAverager *fsa
+);
+
+// Evaluate the theta-local integrand of the orbit-averaged \delta_j function.
+real_t OrbitDeltaIntegrand(
+    real_t theta, len_t ir, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t xi_star,
+    const FVM::RadialGrid *rg
+);
+
+/**
+ * Fundamental gyro-, bounce-, and FVM-averaged kinematic delta function.
+ *
+ * Corresponds to the quantity \delta_j in the theory notes.
+ * Note: trapping multiplicity effects are NOT included; callers must
+ * explicitly account for co- and counter-moving trapped contributions.
+ */
+real_t EvaluateOrbitAveragedDelta(
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
+    real_t theta2, const FVM::RadialGrid *rg, len_t n_points_integral, orbit_integration_method quad
+);
+
 }  // namespace DREAM::KnockOnUtilities
 #endif /*_DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP*/
