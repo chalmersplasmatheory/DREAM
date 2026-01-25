@@ -72,12 +72,7 @@ void BootstrapEquationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuan
  * Sets the Jacobian matrix for the specified block in the given matrix.
  */
 bool BootstrapEquationTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*) {
-    // move?
-    if (!isInitialized) {
-        bs->Rebuild();
-        isInitialized = true;
-    }
-    if (!HasJacobianContribution(derivId))
+	if (!HasJacobianContribution(derivId))
         return false;
     for (len_t ir = 0; ir < nr; ir++) {
         if (derivId == id_ions)
@@ -139,11 +134,11 @@ void BootstrapEquationTerm::setMatrixElement(FVM::Matrix *mat, len_t ir, real_t 
  * Set function vector for this term. For the nonlinear solver.
  */
 void BootstrapEquationTerm::SetVectorElements(real_t *vec, const real_t* /* dt */) {
-    // move?
-    if (!isInitialized) {
-        bs->Rebuild();
-        isInitialized = true;
-    }
-    for (len_t ir = 0; ir < nr; ir++)
+	if (!isInitialized) {
+    	bs->Rebuild();
+		isInitialized = true;
+	}
+
+	for (len_t ir = 0; ir < nr; ir++)
         vec[ir] += scaleFactor * GetCoefficient(ir) * deltaX[ir];
 }

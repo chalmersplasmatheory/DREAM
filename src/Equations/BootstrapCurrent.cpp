@@ -5,7 +5,6 @@
 #include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Constants.hpp"
-#include <iostream>
 using namespace DREAM;
 
 /**
@@ -45,14 +44,12 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     AllocateQuantities();
 
     // equilibrium constants
-    const real_t R0 = rGrid->GetR0();
     for (len_t ir = 0; ir < nr; ir++) {
         // calculate the geometric prefactor
-        const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
-        const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
-        const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
+        const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        		// G / R0
+        const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            		// <B^2> / Bmin^2
+        const real_t Bmin = rGrid->GetBmin(ir);                		// Bmin
         const real_t psiPrimeRef = abs(rGrid->GetPsiPrimeRef(ir));  // d(psi_ref)/dr / R0
-
         constantPrefactor[ir] = -BtorGOverR0 / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
         if (ir == 0)
             constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
@@ -66,24 +63,15 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
 
         // calculate fraction of trapped particles
         ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
-        // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
-        // this high-aspect ratio approximation for qR0 seems to match better with Redl-Sauter
-        // than calculating it via the total current (also simpler for initialization)
-        qR0[ir] = rGrid->GetR(ir) * sqrt(1 + 4*M_PI*M_PI * BtorGOverR0 * BtorGOverR0 / (psiPrimeRef * psiPrimeRef));
-   }
+		// calculate safety factor (fix reference geometry)
+		const real_t VpVol = rGrid->GetVpVol(ir);					// V' / R0
+		const real_t FSA_1OverR2 = rGrid->GetFSA_1OverR2(ir);		// <R0^2 / R^2>
+		qR0[ir] = VpVol * abs(BtorGOverR0) * FSA_1OverR2 / (2*M_PI * psiPrimeRef);
+	}
 
     // locate the main ion index
-    bool isFound = false;
-    // IE: is this (below) the best practice?
-    for (len_t iZ = 0; iZ < ions->GetNZ(); iZ++)
-        if (ions->GetZ(iZ) == 1) {
-            iZMain = iZ;
-            isFound = true;
-            break;
-        }
-    if (!isFound)
-        throw DREAMException("No hydrogenic ion was found to set as the main ion for calculating the bootstrap current!");
+	iZMain = ions->GetMainSpeciesIndex();	
 }
 
 /**
@@ -139,12 +127,6 @@ void BootstrapCurrent::Rebuild() {
     if (includeIonTemperatures)
         Wi = unknowns->GetUnknownData(id_Wi);
 
-    // check for when jtot is initialised, then use it to obtain the safety factor
-    // if (!qFromCurrent)
-    //     for (len_t ir = 0; ir < nr; ir++)
-    //         if (jtot[ir] != 0)
-    //             qFromCurrent = true;
-
     for (len_t ir = 0; ir < nr; ir++) {
 
         NiMain[ir] = Ni[nr * iZMain + ir];  // main ion density (for alpha)
@@ -163,11 +145,6 @@ void BootstrapCurrent::Rebuild() {
             else
                 p[ir] += Ni[i] * Tcold[ir];
         }
-
-        // if (qFromCurrent) {
-        //     real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
-        //     qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, mu0Ip));
-        // }
 
         // calculate collision frequencies
         real_t nuE = evaluateElectronCollisionFrequency(ir);

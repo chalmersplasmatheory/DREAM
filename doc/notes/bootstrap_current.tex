@@ -106,14 +106,16 @@
 
     \paragraph{Note on the safety factor:}
     The two collisionalities, $\nue$ and $\nui$, are both proportional to the safety factor $q$ in their definitions Eq.~(18b) and (18c) in the original Sauter paper \cite{Sauter1999}.
-    In \DREAM, one may calculate safety factor using the already implemented method \texttt{RadialGrid::SafetyFactorNormalized}, which uses a formula (see doc/notes/theory.tex under the ``Safety factor'' section) that explicitly relates $q$ to be inversily proportional to the total current $I(r)$ enclosed by a flux surface labeled $r$.
-    However, when instead using the approximation (found in page 167 of Wesson's ``Tokamaks 2nd ed.''), namely
-    \begin{align}
-        \label{eq:safety-factor-wesson}
-        q(r)\approx\varepsilon\frac{B}{B_\theta}=\varepsilon\sqrt{1+\frac{4\pi^2G^2}{\psi'^2}},
-    \end{align}
-    where $\varepsilon= r/R$ is the inverse aspect ratio, a much better agreement with the implemented formula is observed when cross-checking with reconstructions of the bootstrap current in AUG discharges (AUGD/IDF which uses the Redl-Sauter model).
-    \textcolor{red}{Whether we want to use one or the other formulas for the safety factor is to be determined, but for the moment, we use Eq.~\eqref{eq:safety-factor-wesson}.}
+    In \DREAM, one may calculate safety factor using the already implemented method \texttt{RadialGrid::SafetyFactorNormalized}, which uses a formula (see doc/notes/theory.tex under the ``Safety factor'' section) that explicitly relates $q$ to be inversily proportional to the total current $I(r)\sim\pdv*{\psi}{r}$ enclosed by a flux surface labeled $r$.
+    In this implementation, we decide to use the reference poloidal flux when calculating the safety factor, such that $q$ is not evolved in time.
+	Following the notes in \texttt{theory.tex} on the safety factor, it (multiplied with $R_0$) is expressed as
+	\begin{equation}
+		\label{eq:safety-factor}
+		q(r)R_0
+		=R_0\frac{\fsa{\grad{\varphi}\vdot\vb{B}}}{\fsa{\grad{\theta}\vdot\vb{B}}}
+		=\frac{1}{2\pi}\frac{V'}{R_0}\frac{G}{R_0}\fsa{\frac{R_0^2}{R^2}}\bigg/\frac{\psi'}{R_0},
+	\end{equation}
+	where in the last equality we express it using quantities available in the DREAM kernel.
 
     \addcontentsline{toc}{section}{References}
     \printbibliography

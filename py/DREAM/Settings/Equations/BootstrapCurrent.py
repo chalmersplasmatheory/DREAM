@@ -7,12 +7,12 @@ from . PrescribedInitialParameter import PrescribedInitialParameter
 BOOTSTRAP_MODE_DISABLED = 1
 BOOTSTRAP_MODE_ENABLED = 2
 
-BOOTSTRAP_INIT_MODE_OHMIC = 1
-BOOTSTRAP_INIT_MODE_TOTAL = 2
+BOOTSTRAP_INIT_MODE_TOTAL = 1 
+BOOTSTRAP_INIT_MODE_OHMIC = 2
 
 class BootstrapCurrent(UnknownQuantity):
 
-    def __init__(self, settings, mode=BOOTSTRAP_MODE_DISABLED, initMode=BOOTSTRAP_INIT_MODE_OHMIC):
+    def __init__(self, settings, mode=BOOTSTRAP_MODE_DISABLED, initMode=BOOTSTRAP_INIT_MODE_TOTAL):
         """
         Constructor.
         """
@@ -31,11 +31,16 @@ class BootstrapCurrent(UnknownQuantity):
         current density. If enabled, this contribution is calculated using the Redl-Sauter
         model, which is based on A. Redl et al (DOI: https://doi.org/10.1063/5.0012664).
         """
-        if mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_ENABLED]:
-            self.mode = mode
+        if mode is True:
+            self.mode = BOOTSTRAP_ENABLED
+        elif mode is False:
+            self.mode = BOOTSTRAP_DISABLED
+        elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_ENABLED]:
+            self.mode = int(mode)
         else:
+            print(type(mode), mode)
             raise EquationException(f"j_bs: Unrecognized bootstrap current mode: {mode}")
-
+        
         if initMode is not None:
             self.setInitMode(initMode)
 
@@ -49,7 +54,7 @@ class BootstrapCurrent(UnknownQuantity):
         field).
         """
         if initMode in [BOOTSTRAP_INIT_MODE_OHMIC, BOOTSTRAP_INIT_MODE_TOTAL]:
-            self.initMode = initMode
+            self.initMode = int(initMode)
         else:
             raise EquationException(f"j_bs: Unrecognized bootstrap current initialization mode: {initMode}")
 
@@ -76,5 +81,5 @@ class BootstrapCurrent(UnknownQuantity):
         """
         Verify that the settings concerning the bootstrap current are correctly set.
         """
-        if self.mode == BOOTSTRAP_MODE_DISABLED and self.initMode == BOOTSTRAP_INIT_MODE_TOTAL:
+        if self.mode == BOOTSTRAP_MODE_DISABLED and self.initMode == BOOTSTRAP_INIT_MODE_OHMIC:
             print("WARNING: Bootstrap current is disabled, but its initialization mode was adjusted!")

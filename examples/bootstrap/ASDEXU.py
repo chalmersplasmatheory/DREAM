@@ -10,9 +10,10 @@ try:
     import DREAM.Settings.RadialGrid as RadialGrid
 except:
     import sys
-    sys.path.append('/run/media/mathias/BlackTools/Fusion/software/DREAM/py')
-    sys.path.append('/home/ola/svn/runaway/ola/DREAM/py')
 
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[2] / 'py'
+    sys.path.append(str(p))
 
     import DREAM.Settings.RadialGrid as RadialGrid
 

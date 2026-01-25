@@ -595,35 +595,18 @@ void OtherQuantityHandler::DefineQuantities() {
     );
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
-    // Bootstrap current coefficients (Redl-Sauter)
-    DEF_FL("fluid/coefficientL31", "Bootstrap current coefficient L31 (Redl-Sauter 2021).",
-        if (this->bootstrap != nullptr)
-            qd->Store(this->bootstrap->getCoefficientL31());
-    );
-    DEF_FL("fluid/coefficientL32", "Bootstrap current coefficient L32 (Redl-Sauter 2021).",
-        if (this->bootstrap != nullptr)
-            qd->Store(this->bootstrap->getCoefficientL32());
-    );
-    DEF_FL("fluid/coefficientAlpha", "Bootstrap current coefficient alpha (Redl-Sauter 2021).",
-        if (this->bootstrap != nullptr)
-            qd->Store(this->bootstrap->getCoefficientAlpha());
-    );
-    // TEMPORARY - FOR DEBUG OF BOOTSTRAP IMPLEMENTATION
-    DEF_FL("fluid/nuI", "Ion collision frequency.",
-        if (this->bootstrap != nullptr) {
-            real_t *vec = qd->StoreEmpty();
-            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
-                vec[ir] = this->bootstrap->evaluateIonCollisionFrequency(ir);
-        }
-    );
-    DEF_FL("fluid/nuE", "Electron collision frequency.",
-        if (this->bootstrap != nullptr) {
-            real_t *vec = qd->StoreEmpty();
-            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
-                vec[ir] = this->bootstrap->evaluateElectronCollisionFrequency(ir);
-        }
-    );
-    /////
+    if (this->bootstrap != nullptr) {
+    	// Bootstrap current coefficients (Redl-Sauter)
+    	DEF_FL("fluid/coefficientL31", "Bootstrap current coefficient L31 (Redl-Sauter 2021).",
+    		qd->Store(this->bootstrap->getCoefficientL31());
+    	);
+    	DEF_FL("fluid/coefficientL32", "Bootstrap current coefficient L32 (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientL32());
+    	);
+    	DEF_FL("fluid/coefficientAlpha", "Bootstrap current coefficient alpha (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientAlpha());
+    	);
+    }
 
     // hottail/...
     DEF_HT_FR("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
@@ -1274,7 +1257,7 @@ void OtherQuantityHandler::DefineQuantities() {
 
     this->groups["bootstrap"] = {
         "fluid/coefficientL31", "fluid/coefficientL32", "fluid/coefficientAlpha",
-        "fluid/nuI", "fluid/nuE"    // temporary
+        "fluid/nuI", "fluid/nuE"
     };
 
     this->groups["ripple"] = {
