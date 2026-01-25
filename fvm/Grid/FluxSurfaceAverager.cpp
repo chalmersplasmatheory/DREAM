@@ -719,6 +719,11 @@ bool FluxSurfaceAverager::shouldCellAverageBounceIntegral(len_t ir, real_t xi_lo
         xiT = rGrid->GetXi0TrappedBoundary_fr(ir);
     else
         xiT = rGrid->GetXi0TrappedBoundary(ir);
+
+    // constant magnetic field - no averaging needed
+    if(xiT < 1e-10){
+        return false;
+    }
     // if the cell contains, or is near, the trapped-passing boundaries, 
     // perform more careful (and computationally expensive) cell average
     real_t d1=fabs(xi_lower)-xiT;
