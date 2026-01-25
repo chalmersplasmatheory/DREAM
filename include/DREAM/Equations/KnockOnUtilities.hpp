@@ -143,5 +143,44 @@ real_t EvaluateOrbitAveragedDelta(
     real_t theta2, const FVM::RadialGrid *rg, len_t n_points_integral, orbit_integration_method quad
 );
 
+/**
+ * Orbit-averaged delta function \delta_j including DREAM trapping conventions.
+ *
+ * This wraps EvaluateOrbitAveragedDelta() and adds mirrored contributions
+ * for trapped regions in xi0 and/or xi01.
+ */
+real_t EvaluateOrbitAveragedDeltaWithTrappingCorrection(
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
+    real_t theta2, const FVM::RadialGrid *rg, len_t n_points, orbit_integration_method quad
+);
+
+// ============================================================================
+// Grid-aware helpers for constructing matrix elements in equation terms
+// ============================================================================
+
+// Sets theta1, theta2 to the tightest conservative bound guaranteed to capture all non-zero
+// contributions to the orbit average.
+void EstimateBoundingTheta(
+    len_t ir, len_t j, len_t l, real_t &theta1, real_t &theta2, const FVM::Grid *grid_knockon,
+    const FVM::Grid *grid_primary
+);
+
+/**
+ * Set a single pitch matrix element \delta_{jl} on a DREAM grid.
+ * This wraps EvaluateOrbitAveragedDeltaWithTrappingCorrection.
+ */
+real_t EvaluateDeltaMatrixElementOnGrid(
+    len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
+    const FVM::Grid *grid_primary, len_t n_points_integral, orbit_integration_method quad
+);
+
+// Set a full column {j} of pitch matrix elements \delta_{jl} on a DREAM grid,
+// applying the exact conservation constraint \sum_j dxi_j delta_{jl} == 1.
+real_t SetDeltaMatrixColumnOnGrid(
+    len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
+    real_t *deltaCol, len_t n_points_integral = N_POINTS_INTEGRAL_DEFAULT,
+    orbit_integration_method quad = MIDPOINT_RULE
+);
+
 }  // namespace DREAM::KnockOnUtilities
 #endif /*_DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP*/
