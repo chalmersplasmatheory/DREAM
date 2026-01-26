@@ -14,6 +14,7 @@
 #include "FVM/Grid/NumericBRadialGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/FVMException.hpp"
 #include "UnitTest.hpp"
 
 
@@ -101,16 +102,40 @@ namespace {
     // shape parameters that the numericB and analyticB grids share
 }
 
+const std::string UnitTest::NumericBIndexToName(const len_t i) {
+	switch (i) {
+		case 0: return DREAMTESTS_NUMERIC_MAG_DATA_H5_0;
+		case 1: return DREAMTESTS_NUMERIC_MAG_DATA_H5_1;
+
+		default:
+			throw DREAM::FVM::FVMException(
+				"Unrecognized numerical B grid index: "
+				LEN_T_PRINTF_FMT ".", i
+			);
+	}
+}
+real_t UnitTest::NumericBIndexToMinorRadius(const len_t i) {
+	switch (i) {
+		case 0: return analyticB_minor_radius + analyticB_shafranov_shift_max;
+		case 1: return 1.05;
+
+		default:
+			throw DREAM::FVM::FVMException(
+				"Unrecognized numerical B grid index: "
+				LEN_T_PRINTF_FMT ".", i
+			);
+	}
+}
+
 /**
  * Load a numeric magnetic field geometry designed to equal that
  * created in InitializeAnalyticBRadialGridGenerator.
  */
 DREAM::FVM::NumericBRadialGridGenerator *UnitTest::InitializeNumericBRadialGridGenerator(
-    const len_t nr, const len_t ntheta_interp
+    const len_t nr, const len_t ntheta_interp, const len_t index
 ) {
-    real_t a = analyticB_minor_radius + analyticB_shafranov_shift_max;
     auto *nbrgg = new DREAM::FVM::NumericBRadialGridGenerator(
-        nr, 0, a, DREAMTESTS_NUMERIC_MAG_DATA_H5,
+        nr, 0, NumericBIndexToMinorRadius(index), NumericBIndexToName(index),
         DREAM::FVM::NumericBRadialGridGenerator::FILE_FORMAT_LUKE, ntheta_interp
     );
     return nbrgg;

@@ -33,8 +33,10 @@ namespace DREAMTESTS {
 			DREAM::FVM::AnalyticBRadialGridGenerator *InitializeAnalyticBRadialGridGenerator(
 				const len_t nr, const len_t nrProfiles, const len_t ntheta_interp
 			);
+			const std::string NumericBIndexToName(const len_t);
+			real_t NumericBIndexToMinorRadius(const len_t);
 			DREAM::FVM::NumericBRadialGridGenerator *InitializeNumericBRadialGridGenerator(
-				const len_t nr, const len_t ntheta_interp
+				const len_t nr, const len_t ntheta_interp, const len_t index=0
 			);
 			virtual DREAM::FVM::Grid *InitializeGridRCylPXi(
 				len_t nr=10, len_t np=50, len_t nxi=30, 

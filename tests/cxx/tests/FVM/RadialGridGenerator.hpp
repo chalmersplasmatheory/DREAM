@@ -14,6 +14,7 @@ class RadialGridGenerator : public UnitTest {
     bool CheckAnalyticBGeometryCalculations();
     bool CheckNumericBGeometryCalculations();
     bool CheckNumericBAgreesWithAnalyticB();
+	bool CheckNumericBMinMaxFinding();
 
     virtual bool Run(bool) override;
 

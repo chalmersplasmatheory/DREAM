@@ -36,7 +36,8 @@ target_link_libraries(dreamtests PUBLIC dream)
 
 # Path to test data directory
 target_compile_definitions(dreamtests PRIVATE
-    DREAMTESTS_NUMERIC_MAG_DATA_H5="${PROJECT_SOURCE_DIR}/tests/data/analytic_b_luke_equilbrium.h5"
+    DREAMTESTS_NUMERIC_MAG_DATA_H5_0="${PROJECT_SOURCE_DIR}/tests/data/analytic_b_luke_equilbrium_0.h5"
+    DREAMTESTS_NUMERIC_MAG_DATA_H5_1="${PROJECT_SOURCE_DIR}/tests/data/analytic_b_luke_equilbrium_1.h5"
 )
 
 # Require C++17

@@ -249,6 +249,78 @@ bool RadialGridGenerator::CheckNumericBAgreesWithAnalyticB() {
     return success;
 }
 
+bool RadialGridGenerator::CheckNumericBMinMaxFinding() {
+	bool success = true;
+	len_t Neq = 2;		// Number of equilibria to test
+
+    len_t nr = 6;
+    len_t ntheta_interp = 200;
+
+	// Iterate over each of the test equilibria
+	for (len_t i = 0; i < Neq; i++) {
+		auto *nbrgg = this->InitializeNumericBRadialGridGenerator(nr, ntheta_interp, i);
+		auto *rg_n = new DREAM::FVM::RadialGrid(nbrgg, 0);
+		rg_n->Rebuild(0);
+		rg_n->RebuildJacobians();
+
+		const len_t nr = rg_n->GetNr();
+
+		// Use built-in routine for determining theta_min and theta_max
+		const real_t *theta_Bmin = rg_n->GetFluxSurfaceAverager()->GetThetaBmin();
+		const real_t *theta_Bmax = rg_n->GetFluxSurfaceAverager()->GetThetaBmax();
+
+		len_t nTheta = 1000;
+		real_t dTheta = 2*M_PI / nTheta;
+		for (len_t ir = 0; ir < nr; ir++) {
+			real_t
+				Bmin = nbrgg->BAtTheta(ir, 0), calc_tBmin = 0,
+				Bmax = nbrgg->BAtTheta(ir, M_PI), calc_tBmax = M_PI;
+
+			// Determine location of Bmin/Bmax using simple search
+			for (len_t it = 0; it < nTheta; it++) {
+				real_t theta = it * dTheta;
+				real_t B = nbrgg->BAtTheta(ir, theta);
+
+				if (B < Bmin) {
+					Bmin = B;
+					calc_tBmin = theta;
+				}
+				if (B > Bmax) {
+					Bmax = B;
+					calc_tBmax = theta;
+				}
+			}
+
+			// Compare results
+			if (std::abs(theta_Bmin[ir] - calc_tBmin) > dTheta) {
+				this->PrintError(
+					"Equilibrium " LEN_T_PRINTF_FMT ": "
+					"Incorrect poloidal angle of Bmin at ir = " LEN_T_PRINTF_FMT ". "
+					"Calculated = %.7e, actual = %.7e.",
+					i, ir, theta_Bmin[ir], calc_tBmin
+				);
+				success = false;
+				break;
+			}
+
+			if (std::abs(theta_Bmax[ir] - calc_tBmax) > dTheta) {
+				this->PrintError(
+					"Equilibrium " LEN_T_PRINTF_FMT ": "
+					"Incorrect poloidal angle of Bmax at ir = " LEN_T_PRINTF_FMT ". "
+					"Calculated = %.7e, actual = %.7e.",
+					i, ir, theta_Bmax[ir], calc_tBmax
+				);
+				success = false;
+				break;
+			}
+		}
+
+		delete rg_n;
+	}
+	
+	return success;
+}
+
 /**
  * Run all RadialGridGenerator tests.
  *
@@ -279,6 +351,16 @@ bool RadialGridGenerator::Run(bool) {
             "NumericB and AnalyticB give different geometric quantities in the same magnetic field."
         );
     }
+	if (CheckNumericBMinMaxFinding())
+		this->PrintOK(
+			"Successfully located the poloidal angles of minimum and maximum B in the numerical B field."
+		);
+	else {
+		success = false;
+		this->PrintError(
+			"Failed to find poloidal angle of minimum/maximum magnetic field."
+		);
+	}
 
     return success;
 }
