@@ -1,7 +1,7 @@
 .. _ds-eqsys-j_bs:
 
 Bootstrap current density
-=====================
+=========================
 The bootstrap current density is tracked with the unknown ``j_bs``, and is disabled 
 by default as it typically vanishes during disruptions as the plasma profiles flattens.
 It is determined mainly by gradients in the the density and temperature profiles,
