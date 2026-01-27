@@ -65,6 +65,9 @@ void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
     s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/NBI/n_beam_radius", "Number of discretized points for beam in radial direction", (int_t)25);
+    s->DefineSetting(MODULENAME "/NBI/n_beam_theta", "Number of discretized points for beam in poloidal direction", (int_t)25);
+    s->DefineSetting(MODULENAME "/NBI/n_beam_s", "Number of discretized points for beam in nhat direction", (int_t)50);
 
     // Beam physics settings
     s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
@@ -210,6 +213,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         real_t Ti_beam = s->GetReal(MODULENAME "/NBI/Ti_beam");
         real_t m_i_beam = s->GetReal(MODULENAME "/NBI/m_i_beam");
         real_t R0 = s->GetReal(MODULENAME "/NBI/R0");
+        int_t n_beam_radius = s->GetInteger(MODULENAME "/NBI/n_beam_radius");
+        int_t n_beam_theta = s->GetInteger(MODULENAME "/NBI/n_beam_theta");
+        int_t n_beam_s = s->GetInteger(MODULENAME "/NBI/n_beam_s");
         len_t dims[1];
         const real_t *P0 = s->GetRealArray(MODULENAME "/NBI/P0", 1, dims);
         const real_t *n = s->GetRealArray(MODULENAME "/NBI/n", 1, dims);
@@ -233,7 +239,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
                 P0, n, energy_fractions,
                 Ti_beam, m_i_beam,
                 j_B_profile, R0,
-                gaussian_profile, Power_Profile
+                gaussian_profile, Power_Profile, n_beam_radius, n_beam_theta, n_beam_s
             );
             
         }
