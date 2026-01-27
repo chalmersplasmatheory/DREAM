@@ -3,6 +3,7 @@
 
 import numpy as np
 from .. DREAMException import DREAMException
+from .. helpers import scal
 
 
 TRANSPORT_NONE = 1
@@ -439,7 +440,7 @@ class TransportSettings:
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
         if 'pstar' in data:
-            self.pstar = float(data['pstar'])
+            self.pstar = float(scal(data['pstar']))
             
         if 'interp1d_param' in data:
             self.interp1d_param = data['interp1d_param']
@@ -474,17 +475,17 @@ class TransportSettings:
             self.dBB_t = data['dBB']['t']
 
         if 'mhdlike_dBB0' in data:
-            self.mhdlike_dBB0 = float(data['mhdlike_dBB0'])
-            self.mhdlike_grad_j_tot_max = float(data['mhdlike_grad_j_tot_max'])
-            self.mhdlike_gradient_normalized = bool(data['mhdlike_gradient_normalized'])
-            self.mhdlike_suppression_level = float(data['mhdlike_suppression_level'])
+            self.mhdlike_dBB0 = float(scal(data['mhdlike_dBB0']))
+            self.mhdlike_grad_j_tot_max = float(scal(data['mhdlike_grad_j_tot_max']))
+            self.mhdlike_gradient_normalized = bool(scal(data['mhdlike_gradient_normalized']))
+            self.mhdlike_suppression_level = float(scal(data['mhdlike_suppression_level']))
 
         if 'frozen_current_mode' in data:
-            self.frozen_current_mode = int(data['frozen_current_mode'])
+            self.frozen_current_mode = int(scal(data['frozen_current_mode']))
         if 'D_I_min' in data:
-            self.frozen_current_D_I_min = float(data['D_I_min'])
+            self.frozen_current_D_I_min = float(scal(data['D_I_min']))
         if 'D_I_max' in data:
-            self.frozen_current_D_I_max = float(data['D_I_max'])
+            self.frozen_current_D_I_max = float(scal(data['D_I_max']))
         if 'I_p_presc' in data:
             self.frozen_current_Ip_presc = data['I_p_presc']['x']
             self.frozen_current_Ip_presc_t = data['I_p_presc']['t']

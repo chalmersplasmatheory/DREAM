@@ -3,6 +3,7 @@ from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from ... helpers import scal
 
 BOOTSTRAP_MODE_DISABLED = 1
 BOOTSTRAP_MODE_REDL = 2
@@ -36,7 +37,7 @@ class BootstrapCurrent(UnknownQuantity):
         elif mode is False:
             self.mode = BOOTSTRAP_DISABLED
         elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_REDL]:
-            self.mode = int(mode)
+            self.mode = int(scal(mode))
         else:
             print(type(mode), mode)
             raise EquationException(f"j_bs: Unrecognized bootstrap current mode: {mode}")
@@ -54,7 +55,7 @@ class BootstrapCurrent(UnknownQuantity):
         field).
         """
         if initMode in [BOOTSTRAP_INIT_MODE_OHMIC, BOOTSTRAP_INIT_MODE_TOTAL]:
-            self.initMode = int(initMode)
+            self.initMode = int(scal(initMode))
         else:
             raise EquationException(f"j_bs: Unrecognized bootstrap current initialization mode: {initMode}")
 
@@ -83,3 +84,5 @@ class BootstrapCurrent(UnknownQuantity):
         """
         if self.mode == BOOTSTRAP_MODE_DISABLED and self.initMode == BOOTSTRAP_INIT_MODE_OHMIC:
             print("WARNING: Bootstrap current is disabled, but its initialization mode was adjusted!")
+
+
