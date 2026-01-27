@@ -450,7 +450,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL_FR("fluid/Lambda_hypres", "Hyper-resistive diffusion coefficient Lambda [H]",
             qd->Store(this->tracked_terms->psi_p_hyperresistive->GetLambda());
         );
-    // Power terms in heat equation
+    // Power terms in heat equation (both ions and electrons)
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
             real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
@@ -543,8 +543,77 @@ void OtherQuantityHandler::DefineQuantities() {
             );
         }
     }
-    
 
+    if (!this->tracked_terms->T_i_Qij.empty()) {
+        const len_t nZ = this->tracked_terms->T_i_Qij.size();
+        DEF_FL_MUL("fluid/Ti_Qij", nZ,
+            "Ion-ion collisional heating power density for each ion species [J s^-1 m^-3]",
+            const len_t nZ = this->tracked_terms->T_i_Qij.size();
+            const len_t nr = this->fluidGrid->GetNr();
+            real_t *vec = qd->StoreEmpty();
+                
+            for (len_t i = 0; i < nZ * nr; i++) {
+                vec[i] = 0;
+            }
+
+            // sum contribution from all collision partners for each species
+            for (len_t iz = 0; iz < nZ; iz++) {
+                for (len_t jz = 0; jz < this->tracked_terms->T_i_Qij[iz].size(); jz++) {
+                    auto *op = this->tracked_terms->T_i_Qij[iz][jz];
+                    if (op == nullptr) continue;
+
+                    op->SetVectorElements(vec, nullptr);
+                }
+            }
+        );
+    }
+     // Ion collisional heating per species
+    if (!this->tracked_terms->T_i_Qie.empty()) {
+        const len_t nZ = this->tracked_terms->ni_rates.size();
+        DEF_FL_MUL("fluid/Ti_Qie", nZ,
+            "Collisional heating power density for each ion species [J s^-1 m^-3]",
+            const len_t nZ = this->tracked_terms->ni_rates.size();
+            const len_t nr = this->fluidGrid->GetNr();
+            real_t *vec = qd->StoreEmpty();
+            
+            for (len_t i = 0; i < nZ*nr; i++)
+                vec[i] = 0;
+
+            // Sum contribution from each species
+            for (len_t iz = 0; iz < nZ; iz++) {
+                auto *op = this->tracked_terms->T_i_Qie[iz];
+                if (op == nullptr) continue;
+
+                op->SetVectorElements(vec, nullptr);   
+            }
+        );
+    }
+
+
+    // Ion NBI heating per species
+    if (!this->tracked_terms->T_i_NBI.empty()) {
+        const len_t nZ = this->tracked_terms->T_i_NBI.size();
+        DEF_FL_MUL("fluid/Ti_NBI", nZ,
+            "NBI heating power density for each ion species [J s^-1 m^-3]",
+            const len_t nZ = this->tracked_terms->T_i_NBI.size();
+            const len_t nr = this->fluidGrid->GetNr();
+
+            real_t *vec = qd->StoreEmpty();
+
+            for (len_t i = 0; i < nZ*nr; i++)
+                vec[i] = 0;
+
+            // Sum contribution from each species
+            for (len_t iz = 0; iz < nZ; iz++) {
+                auto *op = this->tracked_terms->T_i_NBI[iz];
+                if (op == nullptr) continue;
+
+                op->SetVectorElements(vec, nullptr);  
+            }
+        );
+    }
+
+        
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){

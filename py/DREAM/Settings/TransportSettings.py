@@ -135,14 +135,14 @@ class TransportSettings:
         """
         Set the lower momentum bound for the runaway, radial transport, region.
         """
-        self.pstar=float(pstar)
+        self.pstar=float(scal(pstar))
     
 
     def setSvenssonInterp1dParam(self, interp1d_param=SVENSSON_INTERP1D_PARAM_TIME):
         """
         Set the lower momentum bound for the runaway, radial transport, region.
         """
-        self.interp1d_param = int(interp1d_param)
+        self.interp1d_param = int(scal(interp1d_param))
 
 
     def setBoundaryCondition(self, bc=None):

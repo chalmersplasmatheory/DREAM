@@ -218,14 +218,12 @@ void SimulationGenerator::ConstructEquations(
     OptionConstants::uqty_T_i_eqn typeTi = (OptionConstants::uqty_T_i_eqn) s->GetInteger("eqsys/n_i/typeTi");
     if(typeTi == OptionConstants::UQTY_T_I_INCLUDE /* && typeTcold == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT */){
         ConstructEquation_Ion_Ni(eqsys,s);
-        ConstructEquation_T_i(eqsys,s);
+        ConstructEquation_T_i(eqsys, s, oqty_terms);
     } else if (eqsys->GetBootstrap() != nullptr)
         ConstructEquation_Ion_Ni(eqsys,s);
 
-
     if (eqsys->GetBootstrap() != nullptr)
         ConstructEquation_j_bs(eqsys, s);
-
 
     // NOTE: The runaway number may depend explicitly on
     // either f_hot or f_re and must therefore be constructed
