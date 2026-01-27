@@ -294,10 +294,10 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
 /**
  * Determines the 'main ion species' assuming it is the one with minimum charge.
  */
-const len_t IonHandler::GetMainSpeciesIndex() const {
-	len_t minIndex = -1;
+const int_t IonHandler::GetMainSpeciesIndex() const {
+	int_t minIndex = -1;
 	len_t minZ = std::numeric_limits<len_t>::max();
-    for (len_t i = 0; i < this->GetNZ(); i++) {
+    for (int_t i = 0; i < (int_t)this->GetNZ(); i++) {
         len_t currentZ = this->GetZ(i); 
         if (currentZ < minZ) {        
             minZ = currentZ;          

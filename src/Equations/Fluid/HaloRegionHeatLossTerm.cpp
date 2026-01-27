@@ -29,7 +29,7 @@ HaloRegionHeatLossTerm::HaloRegionHeatLossTerm(
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
-	len_t iZ = ions->GetMainSpeciesIndex();
+	int_t iZ = ions->GetMainSpeciesIndex();
 
     // Check if a valid minimum Z was found and set the ion quantities
     if (iZ != -1) {
