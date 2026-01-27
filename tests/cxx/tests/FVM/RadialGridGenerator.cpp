@@ -291,8 +291,28 @@ bool RadialGridGenerator::CheckNumericBMinMaxFinding() {
 				}
 			}
 
+			// Estimate variation of B(theta) using first-order
+			// Taylor expansion and central difference approximation
+			// of dB/dtheta.
+			real_t BvarMin = dTheta *
+				(nbrgg->BAtTheta(ir, calc_tBmin+dTheta) -
+				 nbrgg->BAtTheta(ir, calc_tBmin-dTheta))
+				/ (2*dTheta);
+			real_t BvarMax = dTheta *
+				(nbrgg->BAtTheta(ir, calc_tBmax+dTheta) -
+				 nbrgg->BAtTheta(ir, calc_tBmax-dTheta))
+				/ (2*dTheta);
+
+			// Are the minima/maxima equal?
+			bool minEqual =
+				(std::abs(theta_Bmin[ir] - calc_tBmin) < dTheta) ||
+				(std::abs(nbrgg->BAtTheta(ir, theta_Bmin[ir]) - Bmin) <= 2*std::abs(BvarMin));
+			bool maxEqual =
+				(std::abs(theta_Bmax[ir] - calc_tBmax) < dTheta) ||
+				(std::abs(nbrgg->BAtTheta(ir, theta_Bmax[ir]) - Bmax) <= 2*std::abs(BvarMax));
+
 			// Compare results
-			if (std::abs(theta_Bmin[ir] - calc_tBmin) > dTheta) {
+			if (!minEqual) {
 				this->PrintError(
 					"Equilibrium " LEN_T_PRINTF_FMT ": "
 					"Incorrect poloidal angle of Bmin at ir = " LEN_T_PRINTF_FMT ". "
@@ -303,7 +323,7 @@ bool RadialGridGenerator::CheckNumericBMinMaxFinding() {
 				break;
 			}
 
-			if (std::abs(theta_Bmax[ir] - calc_tBmax) > dTheta) {
+			if (!maxEqual) {
 				this->PrintError(
 					"Equilibrium " LEN_T_PRINTF_FMT ": "
 					"Incorrect poloidal angle of Bmax at ir = " LEN_T_PRINTF_FMT ". "
