@@ -89,7 +89,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->spi_magnetic_field_dependence_mode=spi_magnetic_field_dependence_mode;
     this->spi_shift_mode=spi_shift_mode;
 
-    if (this->spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL && DeltaYDrift == 0)
+    if (this->spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL && DeltaYDrift <= 0)
         throw DREAMException("SPIHandler: DeltaYDrift must be non-zero when using the plasmoid drift model.");
 
     // Set prescribed cloud radius (if any)
