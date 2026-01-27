@@ -42,13 +42,13 @@ SHIFT_MODE_NEGLECT=1
 SHIFT_MODE_PRESCRIBED=2
 SHIFT_MODE_ANALYTICAL=3
 
-ZMolarMassList=[1,1,10]
-isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
-molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
+ZMolarMassList=[1,1,10,18]
+isotopesMolarMassList=[2,0,0,0]# 0 means naturally occuring mix
+molarMassList=[0.0020141,0.001008,0.020183,0.039948]# kg/mol
 
-ZSolidDensityList=[1,1,10]
-isotopesSolidDensityList=[2,0,0]
-solidDensityList=[205.9,86,1444]# kg/m^3
+ZSolidDensityList=[1,1,10,18]
+isotopesSolidDensityList=[2,0,0,0]
+solidDensityList=[205.9,86,1444,1623]# kg/m^3
 
 class SPI(UnknownQuantity):
     
@@ -777,7 +777,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
             if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
-            if any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1:
+            if self.heatReDepositionFactorDrift is not None and (any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1):
                 raise EquationException("spi: Invalid value assigned to 'heatReDepositionFactorDrift'. Expected array of floats between 0 and 1.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
