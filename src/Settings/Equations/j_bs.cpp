@@ -72,13 +72,15 @@ void SimulationGenerator::ConstructEquation_j_bs(EquationSystem *eqsys, Settings
             id_jbs,
             EqsysInitializer::INITRULE_EVAL_EQUATION,
             nullptr,
-            id_ncold, id_Tcold, id_Ni, id_Wi
+            id_ncold, id_Tcold, id_Ni, id_Wi,
+			EqsysInitializer::BOOTSTRAP
         );
     } else
         eqsys->initializer->AddRule(
             id_jbs,
             EqsysInitializer::INITRULE_EVAL_EQUATION,
             nullptr,
-            id_ncold, id_Tcold, id_Ni
+            id_ncold, id_Tcold, id_Ni,
+			EqsysInitializer::BOOTSTRAP
         );
 }
