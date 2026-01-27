@@ -28,8 +28,6 @@ BootstrapEquationTerm::BootstrapEquationTerm(
         id_Wi = u->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
     AllocateDeltaX();
-
-    isInitialized = false;
 }
 
 /**
@@ -134,11 +132,6 @@ void BootstrapEquationTerm::setMatrixElement(FVM::Matrix *mat, len_t ir, real_t 
  * Set function vector for this term. For the nonlinear solver.
  */
 void BootstrapEquationTerm::SetVectorElements(real_t *vec, const real_t* /* dt */) {
-	if (!isInitialized) {
-    	bs->Rebuild();
-		isInitialized = true;
-	}
-
 	for (len_t ir = 0; ir < nr; ir++)
         vec[ir] += scaleFactor * GetCoefficient(ir) * deltaX[ir];
 }

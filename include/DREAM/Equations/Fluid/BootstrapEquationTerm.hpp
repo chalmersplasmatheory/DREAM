@@ -19,8 +19,6 @@ namespace DREAM {
 
         len_t nzs;
 
-        bool isInitialized;
-
         // helpers
         void setJacobianElement(len_t, FVM::Matrix*, len_t, len_t, real_t);
         void setMatrixElement(FVM::Matrix*, len_t, real_t);
