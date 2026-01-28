@@ -53,17 +53,6 @@ const real_t Be_params[nParams*Be_Z] = {
 /* Z0 =  3 */    3.115161618921379,   217.718584590000006, 0.255245613597942
 };
 
-/* B */
-const len_t B_Z = 5;
-const real_t B_params[nParams*B_Z] = {
-/*               C                     I                   betaStar */
-/* Z0 =  0 */    5.362568590711013,     8.298019000000000, 1.000000000000000,
-/* Z0 =  1 */    7.343484480594473,    25.154830000000000, 0.284657804718447,
-/* Z0 =  2 */    4.253080933281257,    37.930590000000002, 0.054453777940561,
-/* Z0 =  3 */    7.775414350790068,   259.371500000000026, 0.003312752030226,
-/* Z0 =  4 */    3.878550631786087,   340.226022499999999, 0.005820245802065
-};
-
 /* C */
 const len_t C_Z = 6;
 const real_t C_params[nParams*C_Z] = {
@@ -243,15 +232,14 @@ const real_t W_params[nParams*W_Z] = {
 };
 
 const len_t IonKineticIonizationTerm::nParamsForFit = nParams;
-const len_t IonKineticIonizationTerm::kinetic_rate_n = 13;
-struct IonKineticIonizationTerm::kinetic_ionization_rate IonKineticIonizationTerm::kinetic_rate_table[13] = {
+const len_t IonKineticIonizationTerm::kinetic_rate_n = 12;
+struct IonKineticIonizationTerm::kinetic_ionization_rate IonKineticIonizationTerm::kinetic_rate_table[12] = {
     {"H",H_Z,H_params},
     {"D",D_Z,D_params},
     {"T",T_Z,T_params},
     {"He",He_Z,He_params},
     {"Li",Li_Z,Li_params},
     {"Be",Be_Z,Be_params},
-    {"B",B_Z,B_params},
     {"C",C_Z,C_params},
     {"O",O_Z,O_params},
     {"Ne",Ne_Z,Ne_params},
