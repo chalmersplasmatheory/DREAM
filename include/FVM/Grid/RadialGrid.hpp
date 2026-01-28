@@ -343,6 +343,7 @@ namespace DREAM::FVM {
 
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 
+		bool HasMagneticFieldMultipleOptima() { return this->generator->HasFieldMultipleOptima(); }
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
 	};
