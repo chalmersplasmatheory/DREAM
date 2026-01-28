@@ -275,6 +275,7 @@ void SPIHandler::AllocateQuantities(){
     rpdot=new real_t[nShard];
     shift_r=new real_t[nShard];
     shift_store=new real_t[nShard];
+    shift_store_major_radius=new real_t[nShard];
     YpdotPrevious=new real_t[nShard];
     ZavgDrift=new real_t[nShard];
     plasmoidAbsorbtionFactor=new real_t[nShard];
@@ -321,6 +322,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] rpdot;
     delete [] shift_r;
     delete [] shift_store;
+    delete [] shift_store_major_radius;
     delete [] YpdotPrevious;
     delete [] ZavgDrift;
     delete [] plasmoidAbsorbtionFactor;
@@ -497,6 +499,7 @@ real_t SPIHandler::DriftRadius(len_t ip){
     real_t factor = (1+ZavgDrift[ip])*2*qe*TDrift[ip]*qBgDrift/(CSTDrift*pelletMolarMass[ip]/N_Avogadro)*tAccDrift;
 
 	real_t DeltaR = (term1 + factor * (first + second + third));
+        shift_store_major_radius[ip] = DeltaR;
 
 	real_t xpDrift = this->xp[ip*3] + DeltaR*cos(this->phiCoordPNext[ip]);
 	real_t ypDrift = this->xp[ip*3+1];

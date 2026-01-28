@@ -1282,9 +1282,15 @@ void OtherQuantityHandler::DefineQuantities() {
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
     if (SPI != nullptr){
-        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",SPI->GetNShard(),
+        DEF_SC_MUL("scalar/ablationDrift", "Total change in the minor radius the deposited material gets shifted",SPI->GetNShard(),
             real_t *v = qd->StoreEmpty();
             real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+        DEF_SC_MUL("scalar/ablationDriftMajorRadius", "Total distance along the major radius the deposited material gets shifted",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDriftMajorRadius();
             for(len_t ip=0;ip<SPI->GetNShard();ip++)
                 v[ip] = t[ip];
         );
