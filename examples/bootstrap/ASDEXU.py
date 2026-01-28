@@ -31,7 +31,7 @@ ne0 = 2.6e19    # central electron density (m^-3)
 Te0 = 5.8e3     # central electron temperature (eV)
 
 
-def setMagneticField(ds, nr=40, visualize=False, rGridNonuniformity=1, toroidal=True):
+def setMagneticField(ds, nr=40, visualize=False, rGridNonuniformity=1):
     """
     Set the radial grid of the given DREAMSettings object to correspond to a
     typical magnetic field in ASDEX Upgrade.
@@ -41,7 +41,6 @@ def setMagneticField(ds, nr=40, visualize=False, rGridNonuniformity=1, toroidal=
     # Radial grid for analytical magnetic field
     r = np.linspace(0, a, nr)
 
-    #if toroidal:
     # Elongation profile
     kappa = np.linspace(1.0, 1.15, nr)
 
@@ -51,12 +50,7 @@ def setMagneticField(ds, nr=40, visualize=False, rGridNonuniformity=1, toroidal=
 
     ds.radialgrid.setType(RadialGrid.TYPE_ANALYTIC_TOROIDAL)
     ds.radialgrid.setWallRadius(b)
-
-    if toroidal:
-        ds.radialgrid.setMajorRadius(R0)
-    else:
-        ds.radialgrid.setMajorRadius(np.inf)
-        psi_p = np.zeros(r.shape)
+    ds.radialgrid.setMajorRadius(R0)
 
     q = rGridNonuniformity
     r_f = np.linspace(0, a**q,nr+1)**(1/q)
@@ -67,15 +61,7 @@ def setMagneticField(ds, nr=40, visualize=False, rGridNonuniformity=1, toroidal=
 
     if visualize:
         ds.radialgrid.visualize(ntheta=200)
-    """
-    else:   # Cylindrical
-        ds.radialgrid.setType(RadialGrid.TYPE_CYLINDRICAL)
-        ds.radialgrid.setB0(B0)
-        ds.radialgrid.setMinorRadius(a)
-        ds.radialgrid.setWallRadius(b)
-        ds.radialgrid.setNr(nr)
-    """
-
+   
 
 def getInitialTemperature(r=None, nr=100):
     """
@@ -90,9 +76,7 @@ def getInitialTemperature(r=None, nr=100):
         r = np.linspace(0, a, nr)
 
     return r, Te0 * (1 - (r/a)**2) ** .3
-    # c1 = 0.4653
-    # return r, Te0 * np.exp(-((r/a)/c1)**2)
-
+  
 
 def getInitialDensity(r=None, nr=100):
     """
@@ -107,7 +91,6 @@ def getInitialDensity(r=None, nr=100):
         r = np.linspace(0, a, nr)
 
     return r, ne0 * (1 - (r/a)**2) ** .3
-    # return r, ne0 * np.polyval([-0.1542, -0.01115, 1.], r/a)
 
 
 def getCurrentDensity(r=None, nr=100):
@@ -124,5 +107,4 @@ def getCurrentDensity(r=None, nr=100):
 
     j0 = 1
 
-    # return r, j0 * (1 - (1-0.001**(1/0.41))*(r/a)**2)**0.41
     return r, j0 * (1 - (r/a)**2)**.41

@@ -220,7 +220,6 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     // Initialization
 	if (HasInitialJtot(eqsys, s)) {
 		FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
-		//real_t *jtot_init = LoadDataR("eqsys/j_ohm", rGrid, s, "init");
 		real_t *johm_init = LoadDataR("eqsys/j_ohm", eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
 
 		enum OptionConstants::current_profile_type prof_type =

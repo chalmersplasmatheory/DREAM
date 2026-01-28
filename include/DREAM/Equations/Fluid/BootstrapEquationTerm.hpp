@@ -54,7 +54,7 @@ namespace DREAM {
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
-        virtual len_t GetNumberOfNonZerosPerRow() const { return 3; }; // is this correct?
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 3; };
 
         // these are required in any subclass of this class
         virtual real_t GetCoefficient(len_t) = 0;

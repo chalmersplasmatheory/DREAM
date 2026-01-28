@@ -71,7 +71,7 @@ real_t BootstrapIonDensityTerm::GetPartialCoefficient(len_t ir, len_t derivId, l
             dCoefficient += l31 * bs->ncold[ir] / bs->n[ir];
         else if (derivId == id_Ni)
             dCoefficient += l31 * ( (1. + alpha ) * bs->Wi[rOffset + ir] / ( 1.5 * bs->Ni[rOffset + ir] * bs-> Ni[rOffset + ir]) - bs->p[ir] / (bs->n[ir] * bs->n[ir]) );
-        else if (derivId == id_Wi) // IE: Added: l31 / (1.5 * bs->n[ir] * Constants::ec) -
+        else if (derivId == id_Wi)
             dCoefficient += l31 / (1.5 * bs->n[ir] * Constants::ec) - l31 * ( 1. + alpha ) / ( 1.5 * bs->Ni[rOffset + ir] * Constants::ec );
     }
     return pre * dCoefficient;

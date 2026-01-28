@@ -49,8 +49,6 @@ namespace DREAM {
         real_t *coefficientL32=nullptr;
         real_t *coefficientAlpha=nullptr;
 
-        // bool qFromCurrent = false;
-
         static real_t evaluateCoefficientL31(real_t, real_t, real_t);
         static real_t evaluateCoefficientL32(real_t, real_t, real_t);
         static real_t evaluateCoefficientAlpha(real_t, real_t, real_t);
