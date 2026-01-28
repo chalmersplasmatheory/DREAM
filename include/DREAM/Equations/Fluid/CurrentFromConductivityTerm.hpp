@@ -20,8 +20,12 @@ namespace DREAM {
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++)
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t dw = REFluid->evaluatePartialContributionConductivity(ir,derivId,n)
-                                / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+					real_t sigma  = REFluid->GetElectricConductivity(ir);
+					real_t dsigma = REFluid->evaluatePartialContributionConductivity(ir,derivId,n);
+					real_t sqrtB2 = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+					real_t Bmin   = grid->GetRadialGrid()->GetBmin(ir);
+
+					real_t dw = -sqrtB2/Bmin * dsigma/(sigma*sigma);
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                             diffWeights[offset + i] = dw;
                     offset += n1[ir]*n2[ir];
@@ -32,8 +36,14 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = REFluid->GetElectricConductivity(ir)
-                            / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+				real_t sigma = REFluid->GetElectricConductivity(ir);
+				real_t sqrtB2 = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+				real_t Bmin = grid->GetRadialGrid()->GetBmin(ir);
+
+				// Bmin comes from the fact that
+				//   j in DREAM = j/(B/Bmin)
+                real_t w = sqrtB2 / (sigma*Bmin);
+
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
