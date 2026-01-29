@@ -33,6 +33,7 @@ namespace DREAMTESTS {
 				real_t B0 = 2, real_t pMin=0, real_t pMax=10
 			);
             virtual DREAM::FVM::Grid *InitializeFluidGrid(len_t nr=10, real_t B0 = 2);
+			virtual DREAM::FVM::Grid *InitializeNumericFluidGrid(const real_t *r_f, const len_t nr, const std::string& mf);
 			virtual DREAM::FVM::Grid *InitializeGridGeneralRPXi(
 				const len_t nr=4, const len_t np=5, const len_t nxi=7,
                 const len_t ntheta_interp = 20, const len_t nrProfiles=20, 

@@ -13,6 +13,7 @@ from .Equations.Ions import Ions
 from .Equations.OhmicCurrent import OhmicCurrent
 from .Equations.RunawayElectrons import RunawayElectrons
 from .Equations.SPI import SPI
+from .Equations.BootstrapCurrent import BootstrapCurrent
 from .Equations.RunawayElectronDistribution import RunawayElectronDistribution
 from .Equations.PoloidalFlux import PoloidalFlux
 from .Equations.EquationException import EquationException
@@ -22,14 +23,14 @@ from .Equations.EquationException import EquationException
 # used across the interface to validate names of unknowns.
 UNKNOWNS = [
     'E_field', 'f_hot', 'f_re', 'n_i', 'I_p', 'I_wall',
-    'j_hot', 'j_ohm', 'j_re', 'j_tot', 'n_cold', 'n_hot',
+    'j_bs', 'j_hot', 'j_ohm', 'j_re', 'j_tot', 'n_cold', 'n_hot',
     'n_re', 'n_tot', 'N_i', 'psi_p', 'psi_wall', 'psi_edge',
     'tau_coll','T_cold', 'V_loop_w', 'W_cold', 'W_i'
 ]
 
 
 class EquationSystem:
-    
+
     def __init__(self, settings):
         """
         Constructor.
@@ -43,6 +44,7 @@ class EquationSystem:
         self.addUnknown('E_field', ElectricField(settings=settings))
         self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
         self.addUnknown('f_re', RunawayElectronDistribution(settings=settings))
+        self.addUnknown('j_bs', BootstrapCurrent(settings=settings))
         self.addUnknown('j_ohm', OhmicCurrent(settings=settings))
         self.addUnknown('n_cold', ColdElectrons(settings=settings))
         self.addUnknown('n_i', Ions(settings=settings))
@@ -117,5 +119,3 @@ class EquationSystem:
         """
         for u in self.unknowns:
             self[u].verifySettings()
-
-

@@ -51,7 +51,8 @@ namespace DREAM {
         static const int_t
             COLLQTYHDL_HOTTAIL,
             COLLQTYHDL_RUNAWAY,
-            RUNAWAY_FLUID;
+            RUNAWAY_FLUID,
+			BOOTSTRAP;
 
     private:
         /**

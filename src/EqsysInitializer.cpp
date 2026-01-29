@@ -16,7 +16,8 @@ using namespace std;
 const int_t
     EqsysInitializer::COLLQTYHDL_HOTTAIL=-1,
     EqsysInitializer::COLLQTYHDL_RUNAWAY=-2,
-    EqsysInitializer::RUNAWAY_FLUID=-3;
+    EqsysInitializer::RUNAWAY_FLUID=-3,
+	EqsysInitializer::BOOTSTRAP=-4;
 
 
 /**
@@ -94,6 +95,14 @@ void EqsysInitializer::Execute(const real_t t0) {
         this->AddRule(COLLQTYHDL_HOTTAIL, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
     if (this->cqhRunaway != nullptr)
         this->AddRule(COLLQTYHDL_RUNAWAY, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
+	if (this->eqsys->GetBootstrap() != nullptr) {
+		int_t id_Ni = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+		if (this->unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER)) {
+			int_t id_Wi = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+			this->AddRule(BOOTSTRAP, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_Ni, id_Wi);
+		} else
+			this->AddRule(BOOTSTRAP, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_Ni);
+	}
 
 	if (this->unknowns->HasInitialValue(id_E_field))
 		this->AddRule(
@@ -157,6 +166,10 @@ void EqsysInitializer::Execute(const real_t t0) {
                 case RUNAWAY_FLUID:
                     this->runawayFluid->Rebuild(t0);
                     break;
+
+				case BOOTSTRAP:
+					this->eqsys->GetBootstrap()->Rebuild();
+					break;
 
                 default:
                     throw EqsysInitializerException(
