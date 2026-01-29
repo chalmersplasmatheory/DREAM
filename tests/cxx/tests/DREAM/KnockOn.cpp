@@ -98,33 +98,46 @@ bool KnockOn::Run(bool) {
     }
 
     if (CheckMollerFluxIntegration())
-        this->PrintOK("The Moller cross section correctly integrates to the Moller flux.");
+        this->PrintOK("The Møller cross section correctly integrates to the Møller flux.");
     else {
         success = false;
-        this->PrintError("The Moller cross section fails to integrate to the Moller flux.");
+        this->PrintError("The Møller cross section fails to integrate to the Møller flux.");
     }
 
     if (CheckMollerDifferentialConvergesToInfiniteLimit())
-        this->PrintOK("The Moller differential cross-section converges to the infinite limit.");
+        this->PrintOK("The Møller differential cross-section converges to the infinite limit.");
     else {
         success = false;
         this->PrintError(
-            "The Moller differential cross-section does not converge to the infinite limit."
+            "The Møller differential cross-section does not converge to the infinite limit."
         );
     }
 
     if (CheckMollerFluxConvergesToInfiniteLimit())
-        this->PrintOK("The Moller integrated flux converges to the infinite limit.");
+        this->PrintOK("The Møller integrated flux converges to the infinite limit.");
     else {
         success = false;
-        this->PrintError("The Moller integrated flux does not converge to the infinite limit.");
+        this->PrintError("The Møller integrated flux does not converge to the infinite limit.");
     }
 
-    if (CheckMollerFluxConvergesToInfiniteLimit())
+    if (CheckXiStarConvergesToInfiniteLimit())
         this->PrintOK("The scattering angle xiStar converges to the infinite limit.");
     else {
         success = false;
         this->PrintError("The scattering angle xiStar does not converge to the infinite limit.");
+    }
+
+    if (CheckMollerSConservationProperty())
+        this->PrintOK(
+            "The Møller momentum S matrix integrated over p reduces to the correct total cross "
+            "section"
+        );
+    else {
+        success = false;
+        this->PrintError(
+            "The Møller momentum S matrix integrated over p does not produce the correct total "
+            "cross section"
+        );
     }
 
     return success;
@@ -687,4 +700,89 @@ bool KnockOn::CheckXiStarConvergesToInfiniteLimit() {
     real_t xiStar_inf = DREAM::KnockOnUtilities::Kinematics::EvaluateXiStar(p, pinf);
 
     return fabs(xiStar_inf - xiStar_large) < rtol * (fabs(xiStar_large) + fabs(xiStar_inf));
+}
+
+// Test the conservation property that if the Møller flux matrix between the two grids
+// is integrated over knock-on momenta, yields the expected total cross section.
+bool KnockOn::_checkMollerSConservationProperty(
+    const DREAM::FVM::Grid *grid_knockon, const DREAM::FVM::Grid *grid_primary
+) {
+    real_t rtol = 100 * std::numeric_limits<real_t>::epsilon();
+    real_t atol = 100 * std::numeric_limits<real_t>::epsilon();
+    bool success = true;
+    for (len_t ir = 0; ir < grid_knockon->GetNr(); ir++) {
+        auto *mgK = grid_knockon->GetMomentumGrid(ir);
+        auto *mgP = grid_primary->GetMomentumGrid(ir);
+
+        real_t pMaxK =
+            DREAM::KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(mgK->GetP1_f(mgK->GetNp1())
+            );
+        // test for various cutoffs that are challenging in different ways
+        std::vector<real_t> pCutoffs;
+        pCutoffs.push_back(mgK->GetP1_f(2));
+        pCutoffs.push_back(mgK->GetP1(2));
+        pCutoffs.push_back(pMaxK);                    // on grid boundary
+        pCutoffs.push_back(pMaxK - 1e-10);            // just inside the grid
+        pCutoffs.push_back(mgK->GetP1_f(2) - 1e-10);  // near cell edges
+        pCutoffs.push_back(mgK->GetP1_f(2) + 1e-10);
+
+        real_t pBottom = mgK->GetP1_f(0);
+        real_t pTop = mgK->GetP1_f(mgK->GetNp1());
+        for (len_t k = 0; k < mgP->GetNp1(); k++) {
+            real_t p1 = mgP->GetP1(k);
+            real_t gamma1 = sqrt(1 + p1 * p1);
+            real_t v1 = p1 / gamma1;
+
+            real_t pMax = DREAM::KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(p1);
+
+            for (real_t pCutoff : pCutoffs) {
+                // expected bounds, intersected with grid extent
+                real_t plo = std::max(pCutoff, pBottom);
+                real_t phi = std::min(pMax, pTop);
+
+                real_t expected = 0;
+                if (phi > plo) {
+                    expected =
+                        v1 * (DREAM::KnockOnUtilities::Kinematics::EvaluateMollerFlux(phi, p1) -
+                              DREAM::KnockOnUtilities::Kinematics::EvaluateMollerFlux(plo, p1));
+                }
+
+                real_t sum = 0;
+                for (len_t i = 0; i < mgK->GetNp1(); i++) {
+                    real_t dp = mgK->GetDp1(i);
+                    sum += dp * DREAM::KnockOnUtilities::EvaluateMollerFluxMatrixElementOnGrid(
+                                    i, k, grid_knockon, grid_primary, pCutoff
+                                );
+                }
+                if (fabs(sum - expected) > atol + rtol * (fabs(sum) + fabs(expected))) {
+                    this->PrintError("Failed at ir=%ld, k=%ld, pCutoff=%.8g\n", ir, k, pCutoff);
+                    this->PrintError("    sum: %.8g\n", sum);
+                    this->PrintError("    expected: %.8g\n", expected);
+                    success = false;
+                }
+            }
+        }
+    }
+    return success;
+}
+
+// Test conservation property of the "Møller S matrix" 
+// when knock-on and runaway grids are the same.
+bool KnockOn::CheckMollerSConservationProperty() {
+    len_t nr = 2;
+    len_t np = 50;
+    len_t nxi = 2;
+
+    len_t ntheta_interp = 50;
+    len_t nrProfiles = 8;
+
+    real_t pMin = 0;
+    real_t pMax = 4;
+
+    DREAM::FVM::Grid *grid =
+        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
+
+    bool success = _checkMollerSConservationProperty(grid, grid);
+    delete grid;
+    return success;
 }

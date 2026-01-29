@@ -21,6 +21,7 @@ class KnockOn : public UnitTest {
     bool CheckMollerDifferentialConvergesToInfiniteLimit();
     bool CheckMollerFluxConvergesToInfiniteLimit();
     bool CheckXiStarConvergesToInfiniteLimit();
+    bool CheckMollerSConservationProperty();
 
     virtual bool Run(bool) override;
 
@@ -30,6 +31,9 @@ class KnockOn : public UnitTest {
     );
     bool _checkDeltaConservationProperty(
         const DREAM::FVM::Grid *grid_knockon, const DREAM::FVM::Grid *grid_primary, real_t tol
+    );
+    bool _checkMollerSConservationProperty(
+        const DREAM::FVM::Grid *grid_knockon, const DREAM::FVM::Grid *grid_primary
     );
 };
 }  // namespace DREAMTESTS::_DREAM

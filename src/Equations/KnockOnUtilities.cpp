@@ -573,7 +573,6 @@ real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
 
     FVM::RadialGrid *rGrid = grid_primary->GetRadialGrid();
 
-
     // Handle the case in which xi01 is near the trapped-passing boundary.
     // In the case that xi01 is exactly on the boundary, the bounce average diverges.
     // For Vp this is solved by averaging the bounce integral over the entire cell--
@@ -585,11 +584,11 @@ real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
     if (rGrid->GetFluxSurfaceAverager()->shouldCellAverageBounceIntegral(
             ir, xi01_f1, xi01_f2, DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION
         )) {
-            if (xi01_f2 > rGrid->GetXi0TrappedBoundary(ir)){
-                xi01 = xi01_f2;
-            } else {
-                xi01 = xi01_f1;
-            }
+        if (xi01_f2 > rGrid->GetXi0TrappedBoundary(ir)) {
+            xi01 = xi01_f2;
+        } else {
+            xi01 = xi01_f1;
+        }
     }
 
     // Set the outer theta interval as the smallest of the orbits reached by xi_{01} and
@@ -632,6 +631,9 @@ real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
     real_t *deltaCol, len_t n_points_integral, orbit_integration_method quad
 ) {
+    if (grid_primary->GetVpOverP2AtZero(ir)[l] == 0) {
+        return 0;
+    }
     FVM::MomentumGrid *mg = grid_knockon->GetMomentumGrid(ir);
     len_t Nxi = mg->GetNp2();
 
@@ -670,4 +672,59 @@ real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
         deltaCol[j] = deltaCol[j] / norm;
     }
     return norm;
+}
+
+/**
+ * Evaluates the momentum-space knock-on kernel S_{ik} on a DREAM grid.
+ *
+ * Assumes a p-xi grid that is identical at all radii.
+ *
+ * Uses p1 on primary grid centers at index k and p_{i-1/2}, p_{i+1/2}
+ * on the knock-on momentum grid at index i.
+ *
+ * This function is a grid-aware convenience wrapper around
+ * Kinematics::EvaluateMollerFlux(), including the primary speed factor v1,
+ * with kinematic clamping to the relativistically allowed knock-on domain.
+ *
+ * Corresponds to the matrix element S_{ik} in the theory notes.
+ */
+real_t KnockOnUtilities::EvaluateMollerFluxMatrixElementOnGrid(
+    len_t i, len_t k, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t pCutoff
+) {
+    if (!(pCutoff > RELAXED_EPS)) {
+        throw DREAMException(
+            "EvaluateMollerFluxMatrixElementOnGrid(): invalid pCutoff=%.16g (must satisfy pCutoff "
+            "> %.3g). "
+            "This is required because the Møller flux antiderivative is singular at p=0.",
+            pCutoff, RELAXED_EPS
+        );
+    }
+
+    real_t p_f1 = grid_knockon->GetMomentumGrid(0)->GetP1_f(i);
+    real_t p_f2 = grid_knockon->GetMomentumGrid(0)->GetP1_f(i + 1);
+
+    if (p_f2 <= pCutoff) {
+        // entire momentum cell below the admissible interval
+        return 0.0;
+    }
+
+    real_t p1 = grid_primary->GetMomentumGrid(0)->GetP1(k);
+    real_t pMax = KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(p1);
+
+    if (p_f1 > pMax) {
+        // entire momentum cell above the admissible interval
+        return 0.0;
+    }
+
+    // Clamp range to [pCutoff, pMax]
+    real_t pLower = std::max(p_f1, pCutoff);
+    real_t pUpper = std::min(p_f2, pMax);
+    if (!(pUpper > pLower + RELAXED_EPS)) {
+        return 0.0;
+    }
+
+    real_t S2 = KnockOnUtilities::Kinematics::EvaluateMollerFlux(pUpper, p1);
+    real_t S1 = KnockOnUtilities::Kinematics::EvaluateMollerFlux(pLower, p1);
+    real_t v1 = p1 / sqrt(1 + p1 * p1);
+    return v1 * (S2 - S1) / (p_f2 - p_f1);
 }
