@@ -146,7 +146,7 @@ namespace DREAM::FVM {
         /**
          * Getters of isTrapped: true if phase-space point represents a trapped orbit
          */
-        bool HasTrapped() {return hasTrapped;}
+        bool HasTrapped() const {return hasTrapped;}
         const bool IsTrapped(const len_t ir, const len_t i, const len_t j) const 
             {return isTrapped[ir][GetNp1(ir)*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
