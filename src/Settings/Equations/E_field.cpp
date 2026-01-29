@@ -211,7 +211,7 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
  */
 void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     EquationSystem *eqsys, Settings* s,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::eqn_terms*
 ) {
 	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 	const len_t id_j_tot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
