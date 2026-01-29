@@ -231,6 +231,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     Vloop->AddTerm(new VloopTerm(fluidGrid));
 
     // Add hyperresistive term
+	/*
 	enum OptionConstants::eqterm_hyperresistivity_mode hypres_mode =
 		(enum OptionConstants::eqterm_hyperresistivity_mode)s->GetInteger(MODULENAME_HYPRES "/mode");
     if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED) {
@@ -273,6 +274,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 		eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hypTerm);
 		eqn += " + hyperresistivity";
 	}
+	*/
 
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, dtTerm, eqn);
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Vloop);

@@ -12,6 +12,8 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
+#include "DREAM/Equations/Fluid/OhmicElectricFieldTerm.hpp"
+#include "DREAM/Equations/Fluid/OhmicFieldFromConductivityTerm.hpp"
 #include "DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
@@ -123,8 +125,8 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         FVM::Operator *Op_E = new FVM::Operator(fluidGrid);
 		FVM::Operator *Op_johm = new FVM::Operator(fluidGrid);
 
-		Op_E->AddTerm(new DREAM::FVM::IdentityTerm(fluidGrid, -1.0));
-        Op_johm->AddTerm(new CurrentFromConductivityTerm(
+		Op_E->AddTerm(new DREAM::OhmicElectricFieldTerm(fluidGrid, -1.0));
+        Op_johm->AddTerm(new OhmicFieldFromConductivityTerm(
             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
         ));
 

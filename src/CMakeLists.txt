@@ -90,6 +90,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIIonTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/OhmicElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRechesterRosenbluth.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.cpp"

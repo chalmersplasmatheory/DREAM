@@ -1,16 +1,14 @@
-#ifndef _DREAM_EQUATION_FLUID_CURRENT_FROM_CONDUCTIVITY_TERM_HPP
-#define _DREAM_EQUATION_FLUID_CURRENT_FROM_CONDUCTIVITY_TERM_HPP
+#ifndef _DREAM_EQUATION_FLUID_OHMIC_FIELD_FROM_CONDUCTIVITY_TERM_HPP
+#define _DREAM_EQUATION_FLUID_OHMIC_FIELD_FROM_CONDUCTIVITY_TERM_HPP
 
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonHandler.hpp"
 /**
- * Implementation of a class which represents the sigma*E contribution to the ohmic current equation.
- * Uses the Sauter formula for the conductivity which is valid across all collisionality regimes 
- * (i.e. goes beyond the collisionless banana limit which the kinetic DREAM equation considers)
+ * Implementation of a class which represents the j/sigma contribution to Ohm's law.
  */
 namespace DREAM {
-    class CurrentFromConductivityTerm : public FVM::DiagonalComplexTerm {
+    class OhmicFieldFromConductivityTerm : public FVM::DiagonalComplexTerm {
     private:
         RunawayFluid *REFluid;
         IonHandler *ionHandler;
@@ -20,8 +18,12 @@ namespace DREAM {
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++)
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t dw = REFluid->evaluatePartialContributionConductivity(ir,derivId,n)
-                                / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+					real_t sigma  = REFluid->GetElectricConductivity(ir);
+					real_t dsigma = REFluid->evaluatePartialContributionConductivity(ir,derivId,n);
+					real_t avB2 = grid->GetRadialGrid()->GetFSA_B2(ir);
+					real_t Bmin   = grid->GetRadialGrid()->GetBmin(ir);
+
+					real_t dw = -avB2/Bmin * dsigma/(sigma*sigma);
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                             diffWeights[offset + i] = dw;
                     offset += n1[ir]*n2[ir];
@@ -32,15 +34,21 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = REFluid->GetElectricConductivity(ir)
-                            / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+				real_t sigma = REFluid->GetElectricConductivity(ir);
+				real_t avB2 = grid->GetRadialGrid()->GetFSA_B2(ir);
+				real_t Bmin = grid->GetRadialGrid()->GetBmin(ir);
+
+				// Bmin comes from the fact that
+				//   j in DREAM = j/(B/Bmin)
+                real_t w = avB2 / (sigma*Bmin);
+
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
             }
         }
     public:
-        CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
+        OhmicFieldFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih)
         {
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
@@ -51,4 +59,4 @@ namespace DREAM {
     };
 }
 
-#endif /*_DREAM_EQUATION_FLUID_CURRENT_FROM_CONDUCTIVITY_TERM_HPP*/
+#endif /*_DREAM_EQUATION_FLUID_OHMIC_FIELD_FROM_CONDUCTIVITY_TERM_HPP*/
