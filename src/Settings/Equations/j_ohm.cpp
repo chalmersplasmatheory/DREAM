@@ -11,9 +11,11 @@
 
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
+#include "DREAM/Equations/Fluid/EFieldFromConductivityTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicElectricFieldTerm.hpp"
-#include "DREAM/Equations/Fluid/OhmicFieldFromConductivityTerm.hpp"
 #include "DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
@@ -26,6 +28,8 @@ using namespace DREAM;
 
 
 #define MODULENAME "eqsys/j_ohm"
+#define MODULENAME_EFIELD "eqsys/E_field"
+#define MODULENAME_HYPRES "eqsys/psi_p/hyperresistivity"
 
 
 void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
@@ -47,10 +51,12 @@ void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_j_ohm(
-    EquationSystem *eqsys, Settings *s 
+    EquationSystem *eqsys, Settings *s,
+	struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
+    const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
     const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
@@ -126,19 +132,81 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 		FVM::Operator *Op_johm = new FVM::Operator(fluidGrid);
 
 		Op_E->AddTerm(new DREAM::OhmicElectricFieldTerm(fluidGrid, -1.0));
-        Op_johm->AddTerm(new OhmicFieldFromConductivityTerm(
-            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
+        Op_johm->AddTerm(new EFieldFromConductivityTerm(
+            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
+			1.0, true
         ));
 
         eqsys->SetOperator(id_j_ohm, id_E_field, Op_E);
 		eqsys->SetOperator(id_j_ohm, id_j_ohm, Op_johm);
         std::string desc = "E = j_ohm/sigma"; 
 
+		// Add hyperresistive term
+		enum OptionConstants::eqterm_hyperresistivity_mode hypres_mode =
+			(enum OptionConstants::eqterm_hyperresistivity_mode)s->GetInteger(MODULENAME_HYPRES "/mode");
+
+		if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED) {
+			FVM::Interpolator1D *Lambda = LoadDataRT_intp(
+				MODULENAME_HYPRES,
+				eqsys->GetFluidGrid()->GetRadialGrid(),
+				s, "Lambda", true
+			);
+
+			FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
+			HyperresistiveDiffusionTerm *hrdt = new HyperresistiveDiffusionTerm(
+				fluidGrid, Lambda
+			);
+			hypTerm->AddTerm(hrdt);
+			oqty_terms->psi_p_hyperresistive = hrdt;
+
+			eqsys->SetOperator(id_j_ohm, id_j_tot, hypTerm);
+			desc += " + hyperresistivity";
+		} else if (
+			hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE ||
+			hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL
+		) {
+			real_t grad_j_tot_max = s->GetReal(MODULENAME_HYPRES "/grad_j_tot_max");
+			bool gradient_normalized = s->GetBool(MODULENAME_HYPRES "/gradient_normalized");
+			real_t dBB0 = s->GetReal(MODULENAME_HYPRES "/dBB0");
+			real_t suppression_level = s->GetReal(MODULENAME_HYPRES "/suppression_level");
+
+			bool localized = (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL);
+
+			FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
+			AdaptiveHyperresistiveDiffusionTerm *ahrdt = new AdaptiveHyperresistiveDiffusionTerm(
+				fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler(),
+				grad_j_tot_max, gradient_normalized,
+				dBB0, suppression_level, localized
+			);
+
+			hypTerm->AddTerm(ahrdt);
+			oqty_terms->psi_p_hyperresistive = ahrdt;
+
+			eqsys->SetOperator(id_j_ohm, id_j_tot, hypTerm);
+			desc += " + hyperresistivity";
+		}
+
+		RunawayFluid *REFluid = eqsys->GetREFluid();
+		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_JOhm =
+			[id_j_ohm,id_E_field,&fluidGrid,&REFluid](FVM::UnknownQuantityHandler *u, real_t *j_ohm_init) {
+				const real_t *E_field = u->GetUnknownData(id_j_ohm);
+				const len_t nr = fluidGrid->GetNCells();
+				for (len_t ir = 0; ir < nr; ir++) {
+					real_t s = REFluid->GetElectricConductivity(ir);
+					real_t sqrtB2 = std::sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
+
+					// j/B = sigma * E / sqrt(<B^2>)
+					//   <=>
+					// j/(B/Bmin) = sigma * E / sqrt(<B^2>/Bmin^2)
+					j_ohm_init[ir] = s*E_field[ir] / sqrtB2;
+				}
+			};
+
         // Initialization
         eqsys->initializer->AddRule(
                 id_j_ohm,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
+                EqsysInitializer::INITRULE_EVAL_FUNCTION,
+                initfunc_JOhm,
                 // Dependencies
                 id_E_field,
                 EqsysInitializer::RUNAWAY_FLUID

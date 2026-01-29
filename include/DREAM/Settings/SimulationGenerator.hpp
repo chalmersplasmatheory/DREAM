@@ -169,7 +169,7 @@ namespace DREAM {
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot_hottailMode(EquationSystem*, Settings*);
         static void ConstructEquation_j_re(EquationSystem*, Settings*);
-        static void ConstructEquation_j_ohm(EquationSystem*, Settings*);
+        static void ConstructEquation_j_ohm(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
 		static void ConstructEquation_Ip(EquationSystem*);

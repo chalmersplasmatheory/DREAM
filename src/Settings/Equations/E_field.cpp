@@ -22,7 +22,6 @@
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.hpp"
-#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/EFieldFromConductivityTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"

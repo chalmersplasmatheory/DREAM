@@ -13,6 +13,9 @@ namespace DREAM {
     private:
         RunawayFluid *REFluid;
 		real_t scaleFactor = 1.0;
+		// If 'true', normalizes this equation further by multiplying with
+		// sqrt(<B^2>)/Bmin, which is required for Ohm's law.
+		bool ohms_law_normalization = false;
 
     protected:
         // Set weights for the Jacobian block. Uses differentiated conductivity provided by REFluid. 
@@ -46,8 +49,9 @@ namespace DREAM {
     public:
         EFieldFromConductivityTerm(
 			FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref,
-			const real_t scaleFactor=1.0
-		) : FVM::DiagonalComplexTerm(g,u), REFluid(ref), scaleFactor(scaleFactor)
+			const real_t scaleFactor=1.0, bool ohms_law_norm=false
+		) : FVM::DiagonalComplexTerm(g,u), REFluid(ref), scaleFactor(scaleFactor),
+			ohms_law_normalization(ohms_law_norm)
         {
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
