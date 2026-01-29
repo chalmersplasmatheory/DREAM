@@ -84,7 +84,7 @@ void HyperresistiveDiffusionTerm::BuildCoefficient(
 		// We multiply with Bmin to get the correct normalization
 		// for Ohm's law
 		real_t drr =
-			-psit*Bmin*coeff[ir] / (VpVol * psitPrime);
+			-psit*coeff[ir] / (VpVol * psitPrime * Bmin);
 
 		for (len_t j = 0; j < np2; j++)
 			for (len_t i = 0; i < np1; i++)
