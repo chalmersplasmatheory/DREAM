@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+#
+# TOKAMAK:   ASDEX Upgrade
+################################################################
+
+import numpy as np
+import scipy.constants
+
+try:
+    import DREAM.Settings.RadialGrid as RadialGrid
+except:
+    import sys
+
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[2] / 'py'
+    sys.path.append(str(p))
+
+    import DREAM.Settings.RadialGrid as RadialGrid
+
+
+
+# Plasma parameters
+a  = 0.5        # minor radius (m)
+b  = 0.55       # wall radius (m)
+B0 = 2.5        # on-axis magnetic field strength (T)
+R0 = 1.65       # major radius (m)
+Ip = 800e3      # target plasma current (A)
+j0 = 1
+
+ne0 = 2.6e19    # central electron density (m^-3)
+Te0 = 5.8e3     # central electron temperature (eV)
+
+
+def setMagneticField(ds, nr=40, visualize=False, rGridNonuniformity=1):
+    """
+    Set the radial grid of the given DREAMSettings object to correspond to a
+    typical magnetic field in ASDEX Upgrade.
+    """
+    global R0, a, b, B0, Ip
+
+    # Radial grid for analytical magnetic field
+    r = np.linspace(0, a, nr)
+
+    # Elongation profile
+    kappa = np.linspace(1.0, 1.15, nr)
+
+    # Poloidal flux radial grid
+    mu0 = scipy.constants.mu_0
+    psi_p = -mu0 * Ip * (1-(r/a)**2) * a
+
+    ds.radialgrid.setType(RadialGrid.TYPE_ANALYTIC_TOROIDAL)
+    ds.radialgrid.setWallRadius(b)
+    ds.radialgrid.setMajorRadius(R0)
+
+    q = rGridNonuniformity
+    r_f = np.linspace(0, a**q,nr+1)**(1/q)
+    r_f = r_f * a/r_f[-1] # correct for roundoff
+    ds.radialgrid.setCustomGridPoints(r_f)
+
+    ds.radialgrid.setShaping(psi=psi_p, rpsi=r, GOverR0=B0, kappa=kappa, rkappa=r)
+
+    if visualize:
+        ds.radialgrid.visualize(ntheta=200)
+   
+
+def getInitialTemperature(r=None, nr=100):
+    """
+    Returns the initial temperature profile.
+
+    :param r:      Minor radius (m). May be either scalar or numpy.ndarray.
+    :param int nr: Radial grid resolution to use if ``r = None``.
+    """
+    global a, Te0
+
+    if r is None:
+        r = np.linspace(0, a, nr)
+
+    return r, Te0 * (1 - (r/a)**2) ** .3
+  
+
+def getInitialDensity(r=None, nr=100):
+    """
+    Returns the initial density profile.
+
+    :param r:      Minor radius (m). May be either scalar or numpy.ndarray.
+    :param int nr: Radial grid resolution to use if ``r = None``.
+    """
+    global a, ne0
+
+    if r is None:
+        r = np.linspace(0, a, nr)
+
+    return r, ne0 * (1 - (r/a)**2) ** .3
+
+
+def getCurrentDensity(r=None, nr=100):
+    """
+    Returns the initial current density profile.
+
+    :param r:      Minor radius (m). May be either scalar or numpy.ndarray.
+    :param int nr: Radial grid resolution to use if ``r = None``.
+    """
+    global a
+
+    if r is None:
+        r = np.linspace(0, a, nr)
+
+    j0 = 1
+
+    return r, j0 * (1 - (r/a)**2)**.41
