@@ -58,7 +58,7 @@ inline real_t EvaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
     real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
     real_t g = sqrt(1 + p * p);
     if (std::isinf(p1)) {
-        return prefactor / ((g-1)*(g-1));
+        return prefactor / ((g - 1) * (g - 1));
     }
     real_t g1 = sqrt(1 + p1 * p1);
     real_t term1 = (g1 - 1) * (g1 - 1);
@@ -91,6 +91,22 @@ inline real_t EvaluateMollerFlux(real_t p, real_t p1) {
 
     return prefactor / (p1 * p1) * (term1 + term2 + term3);
 }
+
+/**
+ * Returns the maximum momentum considered "knock-on" due to relativistic kinematics.
+ * This is the momentum corresponding to half the kinetic energy of the primary electron.
+ */
+inline real_t MaximumKnockOnMomentum(real_t p1) {
+    if (std::isinf(p1)) {
+        return std::numeric_limits<real_t>::infinity();
+    }
+    real_t gamma1 = sqrt(1 + p1 * p1);
+    real_t gammaMax = (gamma1 + 1) / 2;
+
+    real_t pMax2 = std::max(0.0, gammaMax * gammaMax - 1);
+    return sqrt(pMax2);
+}
+
 }  // namespace Kinematics
 
 namespace AnalyticDelta {
@@ -180,6 +196,11 @@ real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
     real_t *deltaCol, len_t n_points_integral = N_POINTS_INTEGRAL_DEFAULT,
     orbit_integration_method quad = MIDPOINT_RULE
+);
+
+// Set a single momentum matrix element S_{ik} on a DREAM grid.
+real_t EvaluateMollerFluxMatrixElementOnGrid(
+    len_t i, len_t k, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t pCutoff
 );
 
 }  // namespace DREAM::KnockOnUtilities
