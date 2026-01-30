@@ -101,6 +101,11 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
 	if (this->dataBphi != nullptr)
 		delete [] this->dataBphi;
 
+	if (this->guess_theta_global_Bmin != nullptr)
+		delete [] this->guess_theta_global_Bmin;
+	if (this->guess_theta_global_Bmax != nullptr)
+		delete [] this->guess_theta_global_Bmax;
+
     if (this->spline_R != nullptr) {
         gsl_spline_free(this->spline_psi);
         gsl_spline2d_free(this->spline_R);
@@ -269,6 +274,9 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     // Verify that the magnetic field contains exactly one maximum and
     // one minimum
 
+	this->guess_theta_global_Bmin = new real_t[this->npsi];
+	this->guess_theta_global_Bmax = new real_t[this->npsi];
+
     // Tolelance for an extremum to be announced...
     const real_t TOLERANCE = sqrt(std::numeric_limits<real_t>::epsilon());
     for (len_t i = 0; i < this->npsi; i++) {
@@ -280,8 +288,11 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
             len_t km = k-npsi, kp = k+npsi;
 
             // Wrap-around at the upper endpoint
+			// (since the first and last theta points are enforced
+			// to be identical, we compare to theta[1] instead of
+			// theta[0])
             if (j == this->ntheta-1)
-                kp = 0*npsi + i;
+                kp = 1*npsi + i;
 
             real_t dB =
                 std::max(
@@ -295,40 +306,43 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
                 dB > TOLERANCE) {
 
                 // Has a maximum already been found?
-                if (maxFound)
-                    throw FVMException(
-                        "The numeric magnetic field has more than one maximum "
-                        "along at least one magnetic field line."
-						"ipsi = " LEN_T_PRINTF_FMT
-						", itheta(1) = " LEN_T_PRINTF_FMT
-						", itheta(2) = " LEN_T_PRINTF_FMT,
-						i, (k-i)/npsi, (maxk-i)/npsi
-                    );
-                else {
+                if (maxFound) {
+					this->BHasMultipleOptima = true;
+					if (this->dataB[k] > this->dataB[maxk]) {
+						this->guess_theta_global_Bmax[i] = this->theta[j];
+						maxk = k;
+					}
+                } else {
                     maxFound = true;
 					maxk = k;
+					this->guess_theta_global_Bmax[i] = this->theta[j];
 				}
             } else if (this->dataB[km] > this->dataB[k] &&
                        this->dataB[kp] > this->dataB[k] &&
                        dB > TOLERANCE) {
                 
                 // Has a minimum already been found?
-                if (minFound)
-                    throw FVMException(
-                        "The numeric magnetic field has more than one minimum "
-                        "along at least one magnetic field line. "
-						"ipsi = " LEN_T_PRINTF_FMT
-						", itheta(1) = " LEN_T_PRINTF_FMT
-						", itheta(2) = " LEN_T_PRINTF_FMT,
-						i, (k-i)/npsi, (mink-i)/npsi
-                    );
-                else {
+                if (minFound) {
+					this->BHasMultipleOptima = true;
+					if (this->dataB[k] < this->dataB[mink]) {
+						this->guess_theta_global_Bmin[i] = this->theta[j];
+						mink = k;
+					}
+                } else {
                     minFound = true;
 					mink = k;
+					this->guess_theta_global_Bmin[i] = this->theta[j];
 				}
             }
         }
     }
+
+	// Since ir=0 is at r=0 we get no guess for Bmin/Bmax, and so
+	// we just copy guesses for ir=1 there.
+	if (this->npsi > 1) {
+		this->guess_theta_global_Bmin[0] = this->guess_theta_global_Bmin[1];
+		this->guess_theta_global_Bmax[0] = this->guess_theta_global_Bmax[1];
+	}
 
     delete d;
 }
@@ -894,6 +908,89 @@ const real_t *NumericBRadialGridGenerator::GetPoloidalAngle() {
 	real_t *theta = new real_t[ntheta];
 	for (len_t i = 0; i < ntheta; i++)
 		theta[i] = this->theta[i];
+	
+	return theta;
+}
+
+
+/**
+ * Evaluate a guess for where the magnetic field minimum is located along
+ * the specified flux surface.
+ *
+ * ir:  Radial index of the flux surface to guess poloidal angle for.
+ * fgt: Whether to use distribution or flux grid.
+ */
+real_t NumericBRadialGridGenerator::GetThetaBminGuess(
+	const len_t ir, enum fluxGridType fgt
+) {
+	return GetThetaOptimumGuess(ir, fgt, this->guess_theta_global_Bmin);
+}
+
+
+/**
+ * Evaluate a guess for where the magnetic field maximum is located along
+ * the specified flux surface.
+ *
+ * ir:  Radial index of the flux surface to guess poloidal angle for.
+ * fgt: Whether to use distribution or flux grid.
+ */
+real_t NumericBRadialGridGenerator::GetThetaBmaxGuess(
+	const len_t ir, enum fluxGridType fgt
+) {
+	return GetThetaOptimumGuess(ir, fgt, this->guess_theta_global_Bmax);
+}
+
+
+/**
+ * Evaluate a guess for where the magnetic field optimum is located along
+ * the specified flux surface, with data from the given array of cahced
+ * magnetic field optimum poloidal angles.
+ * 
+ * ir:  Radial index of the flux surface to guess poloidal angle for.
+ * fgt: Whether to use distribution or flux grid.
+ */
+real_t NumericBRadialGridGenerator::GetThetaOptimumGuess(
+	const len_t ir, enum fluxGridType fgt, const real_t *theta_guess
+) {
+	// Identify the index in the input data corresponding to the
+	// computational radial grid index 'ir'
+	len_t input_ir = 0;
+	real_t *rvec = (fgt==FLUXGRIDTYPE_DISTRIBUTION ? this->r : this->r_f);
+
+	if (rvec[ir] <= this->input_r[0])
+		return theta_guess[0];
+	else if (rvec[ir] >= this->input_r[this->npsi-1])
+		return theta_guess[this->npsi-1];
+
+	for (len_t i = 0; i < this->npsi-1; i++) {
+		if (this->input_r[i] < rvec[ir] && this->input_r[i+1] >= rvec[ir]) {
+			input_ir = i;
+			break;
+		}
+	}
+	
+	// Linearly interpolate theta
+	//theta = theta_k0 + (r-r0)/(r1-r0)*(theta_k1-theta_k0)
+	real_t
+		r = rvec[ir],
+		r0 = this->input_r[input_ir],
+		r1 = this->input_r[input_ir+1];
+	
+	real_t
+		theta0 = theta_guess[input_ir],
+		theta1 = theta_guess[input_ir+1];
+
+	// We want the guess to be located on [0,2pi], and
+	// so if theta0 and theta1 are at opposite ends of the
+	// interval, we must proceed with some care
+	if (std::abs(theta0-theta1) > M_PI) {
+		if (theta0 > M_PI)
+			theta0 -= 2*M_PI;
+		else
+			theta1 -= 2*M_PI;
+	}
+
+	real_t theta = theta0 + (r-r0)/(r1-r0) * (theta1-theta0);
 	
 	return theta;
 }
