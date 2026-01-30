@@ -29,6 +29,8 @@ class PlasmaCurrent(ScalarQuantity):
         Ire  = self.output.eqsys.j_re.current()
         Ihot = self.output.eqsys.j_hot.current()
         Iohm = self.output.eqsys.j_ohm.current()
+        if hasattr(self.output.eqsys, "j_bs"):
+            Ibs  = self.output.eqsys.j_bs.current()
 
         genax = ax is None
 
@@ -45,6 +47,8 @@ class PlasmaCurrent(ScalarQuantity):
         ax.plot(self.time[t], Ire[t], 'r--', label=r'$I_{\rm re}$')
         ax.plot(self.time[t], Iohm[t], 'b--', label=r'$I_{\Omega}$')
         ax.plot(self.time[t], Ihot[t], 'y--', label=r'$I_{\rm hot}$')
+        if hasattr(self.output.eqsys, "j_bs"):
+            ax.plot(self.time[t], Ibs[t], 'm--', label=r'$I_{\rm bs}$')
 
         ax.set_xlabel(r'Time $t$ (s)')
         ax.set_ylabel(r'Plasma current')

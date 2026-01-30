@@ -6,7 +6,6 @@ from .. DREAMException import DREAMException
 
 
 class OtherQuantities:
-    
 
     # Here, we keep a list of the possible settings found in DREAM.
     # This allows to check the input the user gives, and emit warnings
@@ -40,6 +39,11 @@ class OtherQuantities:
         'fluid/tIoniz',
         'fluid/W_hot',
         'fluid/W_re',
+        'fluid/j_bs_n_cold',
+        'fluid/j_bs_T_cold',
+        'fluid/j_bs_N_i',
+        'fluid/j_bs_W_i',
+        'bootstrap',
         'fluid/reioniz_rate', 'fluid/reioniz_vsigma',
         'fluid/Zeff',
         'energy',
