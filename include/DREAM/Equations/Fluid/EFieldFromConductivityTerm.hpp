@@ -23,10 +23,13 @@ namespace DREAM {
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++)
                 for (len_t ir = 0; ir < nr; ir++){
+					real_t B2 = grid->GetRadialGrid()->GetFSA_B2(ir);
+					if (!ohms_law_normalization)
+						B2 = sqrt(B2);
+
 					real_t s = REFluid->GetElectricConductivity(ir);
                     real_t dw = REFluid->evaluatePartialContributionConductivity(ir,derivId,n)
-								* sqrt(grid->GetRadialGrid()->GetFSA_B2(ir))
-                                / (s*s);
+								* B2 / (s*s);
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                             diffWeights[offset + i] = -scaleFactor * dw;
                     offset += n1[ir]*n2[ir];
@@ -37,8 +40,13 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir))
-					/ REFluid->GetElectricConductivity(ir);
+				real_t w;
+				if (ohms_law_normalization)
+					w = grid->GetRadialGrid()->GetFSA_B2(ir)
+						/ REFluid->GetElectricConductivity(ir);
+				else
+					w = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir))
+						/ REFluid->GetElectricConductivity(ir);
 
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = scaleFactor * w;
