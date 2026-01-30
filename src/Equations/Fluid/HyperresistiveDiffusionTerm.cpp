@@ -3,6 +3,7 @@
  * Based on the section on hyperresistivity in DREAM/doc/notes/theory
  */
 
+#include <cmath>
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 
 
@@ -50,6 +51,7 @@ void HyperresistiveDiffusionTerm::BuildCoefficient(
 
     // (skip ir=0 since psi_t=0 there, and to avoid 1/psitPrime = 1/0)
     for (len_t ir = 1; ir < nr+1; ir++) {
+		/*
         real_t Bmin = rGrid->GetBmin_f(ir);
         real_t BdotPhi = rGrid->GetBTorG_f(ir)*rGrid->GetFSA_1OverR2_f(ir);
         real_t VpVol = rGrid->GetVpVol_f(ir); 
@@ -70,6 +72,22 @@ void HyperresistiveDiffusionTerm::BuildCoefficient(
 
         for (len_t j = 0; j < np2; j++) 
             for (len_t i = 0; i < np1; i++) 
+				diffusion_coeff[ir][j*np1 + i] += drr;
+		*/
+        real_t Bmin = rGrid->GetBmin_f(ir);
+        real_t BdotPhi = rGrid->GetBTorG_f(ir)*rGrid->GetFSA_1OverR2_f(ir);
+        real_t VpVol = rGrid->GetVpVol_f(ir); 
+
+		real_t psit = rGrid->GetToroidalFlux_f(ir);
+        real_t psitPrime = VpVol*BdotPhi / (2*M_PI);
+
+		// We multiply with Bmin to get the correct normalization
+		// for Ohm's law
+		real_t drr =
+			-psit*coeff[ir] / (VpVol * psitPrime * Bmin);
+
+		for (len_t j = 0; j < np2; j++)
+			for (len_t i = 0; i < np1; i++)
 				diffusion_coeff[ir][j*np1 + i] += drr;
     }
 }
