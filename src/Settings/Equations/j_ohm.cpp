@@ -188,8 +188,8 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 
 		RunawayFluid *REFluid = eqsys->GetREFluid();
 		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_JOhm =
-			[id_j_ohm,id_E_field,fluidGrid,REFluid](FVM::UnknownQuantityHandler *u, real_t *j_ohm_init) {
-				const real_t *E_field = u->GetUnknownData(id_j_ohm);
+			[id_E_field,fluidGrid,REFluid](FVM::UnknownQuantityHandler *u, real_t *j_ohm_init) {
+				const real_t *E_field = u->GetUnknownData(id_E_field);
 				const len_t nr = fluidGrid->GetNCells();
 				for (len_t ir = 0; ir < nr; ir++) {
 					real_t s = REFluid->GetElectricConductivity(ir);
