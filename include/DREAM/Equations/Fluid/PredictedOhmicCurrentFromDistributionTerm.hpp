@@ -21,7 +21,7 @@ namespace DREAM {
                 for (len_t ir = 0; ir < nr; ir++){
                     real_t Zeff = ionHandler->GetZeff(ir);
                     real_t fracCond = FractionOfBraamsConductivity(Zeff);
-                    real_t w0 = scaleFactor * fracCond / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                    real_t w0 = scaleFactor* fracCond ; 
                     real_t dSigmaBraams = REFluid->evaluatePartialContributionSauterConductivity(ir, derivId, n, useCollisionlessLimit);
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                             diffWeights[offset + i] = w0*dSigmaBraams;
@@ -44,7 +44,7 @@ namespace DREAM {
                             FractionOfBraamsConductivity(Zeff,&dFracCond);
                             dFracCond *= Z0/nfree * (Z0 - nZ0Z0/nfree); // add dZeff/dni
                         }
-                        real_t dw0 = scaleFactor * dFracCond / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                        real_t dw0 = scaleFactor * dFracCond; 
                         real_t sigmaBraams = REFluid->evaluateSauterElectricConductivity(ir,useCollisionlessLimit);
                         for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                                 diffWeights[offset + i] += dw0*sigmaBraams;
@@ -62,7 +62,7 @@ namespace DREAM {
                 real_t Zeff = ionHandler->GetZeff(ir);
                 real_t fracCond = FractionOfBraamsConductivity(Zeff);
                 real_t sigma = REFluid->evaluateSauterElectricConductivity(ir, useCollisionlessLimit);
-                real_t w = scaleFactor * fracCond / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                real_t w = scaleFactor * fracCond ;
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                         weights[offset + i] = w * sigma;
                 offset += n1[ir]*n2[ir];

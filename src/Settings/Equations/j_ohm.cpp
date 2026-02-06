@@ -130,16 +130,16 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     } else { 
         FVM::Operator *Op_E = new FVM::Operator(fluidGrid);
 		FVM::Operator *Op_johm = new FVM::Operator(fluidGrid);
+        Op_johm->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-		Op_E->AddTerm(new DREAM::OhmicElectricFieldTerm(fluidGrid, -1.0));
-        Op_johm->AddTerm(new EFieldFromConductivityTerm(
-            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-			1.0, true
-        ));
+		Op_E->AddTerm(new CurrentFromConductivityTerm(
+			fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
+		));
+
 
         eqsys->SetOperator(id_j_ohm, id_E_field, Op_E);
 		eqsys->SetOperator(id_j_ohm, id_j_ohm, Op_johm);
-        std::string desc = "E = j_ohm/sigma"; 
+        std::string desc = "j_ohm = sigma*E"; 
 
 		// Add hyperresistive term
 		enum OptionConstants::eqterm_hyperresistivity_mode hypres_mode =
@@ -198,7 +198,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 					// j/B = sigma * E / sqrt(<B^2>)
 					//   <=>
 					// j/(B/Bmin) = sigma * E / sqrt(<B^2>/Bmin^2)
-					j_ohm_init[ir] = s*E_field[ir] / sqrtB2;
+					j_ohm_init[ir] = s*E_field[ir];
 				}
 			};
 
