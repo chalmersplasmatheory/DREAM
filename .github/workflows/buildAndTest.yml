@@ -58,7 +58,7 @@ jobs:
         run: |
           pip3 install setuptools==75.5.0
           pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy packaging
-          pip3 --no-build-isolation petsc
+          pip3 install --no-build-isolation petsc
           pip3 show petsc
           echo "PETSC_DIR=$(pip3 show petsc | grep Location | cut -d' ' -f2)/petsc" >> $GITHUB_ENV
         
