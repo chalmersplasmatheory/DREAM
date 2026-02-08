@@ -204,12 +204,12 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 
         // Initialization
         eqsys->initializer->AddRule(
-                id_j_ohm,
-                EqsysInitializer::INITRULE_EVAL_FUNCTION,
-                initfunc_JOhm,
-                // Dependencies
-                id_E_field,
-                EqsysInitializer::RUNAWAY_FLUID
+			id_j_ohm,
+			EqsysInitializer::INITRULE_EVAL_FUNCTION,
+			initfunc_JOhm,
+			// Dependencies
+			id_E_field,
+			EqsysInitializer::RUNAWAY_FLUID
         );
     }
 }
