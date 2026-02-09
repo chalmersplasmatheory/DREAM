@@ -81,10 +81,8 @@ void HyperresistiveDiffusionTerm::BuildCoefficient(
 		real_t psit = rGrid->GetToroidalFlux_f(ir);
         real_t psitPrime = VpVol*BdotPhi / (2*M_PI);
 
-		// We multiply with Bmin to get the correct normalization
-		// for Ohm's law
 		real_t drr =
-			psit*coeff[ir] / (VpVol * psitPrime * Bmin);
+			psit*coeff[ir] / (VpVol * psitPrime * Bmin*Bmin);
 
 		for (len_t j = 0; j < np2; j++)
 			for (len_t i = 0; i < np1; i++)
