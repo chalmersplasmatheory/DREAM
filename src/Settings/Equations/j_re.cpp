@@ -27,18 +27,28 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
     protected:
         len_t id_Efield;
         FVM::UnknownQuantityHandler *unknowns;
+		enum OptionConstants::negative_re_mode negative_re = OptionConstants::NEGATIVE_RE_MODE_NONE;
+
         virtual bool TermDependsOnUnknowns() override {return true;}
         virtual void SetWeights() override{
             const real_t *Efield = unknowns->GetUnknownData(id_Efield);
             const real_t *FSA_B = this->grid->GetRadialGrid()->GetFSA_B();
             for(len_t ir=0; ir<nr; ir++){
-                real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
-                weights[ir] = sgn * Constants::ec * Constants::c / FSA_B[ir];
+				if (negative_re == OptionConstants::NEGATIVE_RE_MODE_POSITIVE)
+					weights[ir] = Constants::ec * Constants::c / FSA_B[ir];
+				else if (negative_re == OptionConstants::NEGATIVE_RE_MODE_NEGATIVE)
+					weights[ir] =-Constants::ec * Constants::c / FSA_B[ir];
+				else if (negative_re == OptionConstants::NEGATIVE_RE_MODE_NONE) {
+					real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
+					weights[ir] = sgn * Constants::ec * Constants::c / FSA_B[ir];
+				}
             }
         }
     public:
-     RunawayFluidCurrentTerm(FVM::Grid* g,FVM::UnknownQuantityHandler *u)
-    : FVM::DiagonalLinearTerm(g), unknowns(u) {
+     RunawayFluidCurrentTerm(
+	 	FVM::Grid* g,FVM::UnknownQuantityHandler *u,
+		enum OptionConstants::negative_re_mode negative_re=OptionConstants::NEGATIVE_RE_MODE_NONE
+	) : FVM::DiagonalLinearTerm(g), unknowns(u), negative_re(negative_re) {
         id_Efield = u->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     }
 };
@@ -54,13 +64,12 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_j_re(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     len_t id_j_re = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
     len_t id_n_re = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
-
 
     // Identity part
     FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
@@ -90,9 +99,33 @@ void SimulationGenerator::ConstructEquation_j_re(
 
     // Otherwise, we set it to zero...
     } else {
-        //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
-        eqn->AddTerm(new RunawayFluidCurrentTerm(fluidGrid, eqsys->GetUnknownHandler()));
-        eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*c*n_re");
+		bool hasNegativeRe = s->GetBool("eqsys/n_re/negative_re");
+		len_t id_n_re_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
+
+		if (hasNegativeRe) {
+			FVM::Operator *eqn_neg = new FVM::Operator(fluidGrid);
+
+			eqn->AddTerm(
+				new RunawayFluidCurrentTerm(
+					fluidGrid, eqsys->GetUnknownHandler(),
+					OptionConstants::NEGATIVE_RE_MODE_POSITIVE
+				)
+			);
+			eqn_neg->AddTerm(
+				new RunawayFluidCurrentTerm(
+					fluidGrid, eqsys->GetUnknownHandler(),
+					OptionConstants::NEGATIVE_RE_MODE_NEGATIVE
+				)
+			);
+
+			eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = e*c*n_re - e*c*n_re_neg");
+			eqsys->SetOperator(id_j_re, id_n_re_neg, eqn_neg);
+		} else {
+			//eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
+			eqn->AddTerm(new RunawayFluidCurrentTerm(fluidGrid, eqsys->GetUnknownHandler()));
+			eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*c*n_re");
+		}
+
         // Set initialization method
         eqsys->initializer->AddRule(
             id_j_re,
