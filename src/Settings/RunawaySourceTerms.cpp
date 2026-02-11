@@ -19,14 +19,13 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     FVM::Grid *grid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid, FVM::Grid *fluidGrid,
     FVM::UnknownQuantityHandler *unknowns, RunawayFluid *REFluid,
     IonHandler *ions, AnalyticDistributionHottail *distHT, 
-    struct OtherQuantityHandler::eqn_terms *oqty_terms, Settings *s, bool signPositive
+    struct OtherQuantityHandler::eqn_terms *oqty_terms, Settings *s,
+	bool signPositive, enum negative_re_mode negative_re
 ) {
     const std::string &mod = "eqsys/n_re";
 
     std::string eqnSign = signPositive ? " + " : " - ";
     
-    
-
     RunawaySourceTermHandler *rsth = new RunawaySourceTermHandler();
 
     // Add avalanche growth rate: 
@@ -35,8 +34,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(mod + "/avalanche");
     // Add avalanche growth rate
     if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
-        rsth->AddSourceTerm(eqnSign + "n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
-
+        rsth->AddSourceTerm(eqnSign + "n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0, negative_re) );
     else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         if (hottailGrid || runawayGrid != nullptr) {
             // XXX: assume same momentum grid at all radii
@@ -67,21 +65,24 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
         case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR:
             rsth->AddSourceTerm(eqnSign + "dreicer (CH)", new DreicerRateTerm(
                 grid, unknowns, REFluid,
-                ions, DreicerRateTerm::CONNOR_HASTIE_NOCORR, -1.0
+                ions, DreicerRateTerm::CONNOR_HASTIE_NOCORR, -1.0,
+				(OptionConstants::negative_re_mode)negative_re
             ));
             break;
 
         case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE:
             rsth->AddSourceTerm(eqnSign + "dreicer (CH)", new DreicerRateTerm(
                 grid, unknowns, REFluid,
-                ions, DreicerRateTerm::CONNOR_HASTIE, -1.0
+                ions, DreicerRateTerm::CONNOR_HASTIE, -1.0,
+				(OptionConstants::negative_re_mode)negative_re
             ));
             break;
 
         case OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK:
             rsth->AddSourceTerm(eqnSign + "dreicer (NN)", new DreicerRateTerm(
                 grid, unknowns, REFluid,
-                ions, DreicerRateTerm::NEURAL_NETWORK, -1.0
+                ions, DreicerRateTerm::NEURAL_NETWORK, -1.0,
+				(OptionConstants::negative_re_mode)negative_re
             ));
             break;
 

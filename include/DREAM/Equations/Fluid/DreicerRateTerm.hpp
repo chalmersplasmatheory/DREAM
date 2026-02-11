@@ -3,6 +3,7 @@
 
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
@@ -23,6 +24,7 @@ namespace DREAM {
         IonHandler *ions;
         enum dreicer_type type = CONNOR_HASTIE;
         real_t scaleFactor=1.0;
+		enum OptionConstants::negative_re_mode negative_re = OptionConstants::NEGATIVE_RE_MODE_NONE;
 
         len_t id_E_field, id_n_cold, id_n_tot, id_T_cold;
 
@@ -38,7 +40,8 @@ namespace DREAM {
         DreicerRateTerm(
             FVM::Grid*, FVM::UnknownQuantityHandler*,
             RunawayFluid*, IonHandler*, enum dreicer_type,
-            real_t scaleFactor=1.0
+            real_t scaleFactor=1.0,
+			enum OptionConstants::negative_re_mode neg_re=OptionConstants::NEGATIVE_RE_MODE_NONE
         );
         ~DreicerRateTerm();
 

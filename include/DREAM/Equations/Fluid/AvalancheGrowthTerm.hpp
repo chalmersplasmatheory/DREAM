@@ -4,7 +4,9 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IonHandler.hpp"
+#include "DREAM/Settings/OptionConstants.enum.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
+
 /**
  * Implementation of a class which represents the Gamma_ava*n_re contribution to the n_re equation.
  * Employs the analytical growth rate calculated by RunawayFluid.
@@ -13,7 +15,7 @@ namespace DREAM {
     class AvalancheGrowthTerm : public FVM::DiagonalComplexTerm, public RunawaySourceTerm {
     private:
         RunawayFluid *REFluid;
-        len_t id_n_re;
+        len_t id_n_re, id_E_field;
         real_t scaleFactor;
         real_t *dGamma = nullptr;
         len_t nr_tmp=0;
@@ -29,15 +31,26 @@ namespace DREAM {
         }
 
     protected:
+		enum negative_re_mode neg_re_mode = NEGATIVE_RE_MODE_NONE;
+
         // Set weights for the Jacobian block. Uses differentiated growth rate provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
             AllocateDGamma();
             REFluid->evaluatePartialContributionAvalancheGrowthRate(dGamma, derivId);
+			const real_t *E_field = unknowns->GetUnknownData(this->id_E_field);
+
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++){
                 for (len_t ir = 0; ir < nr; ir++){
                     const len_t xiIndex = this->GetXiIndexForEDirection(ir);
                     const real_t V = this->GetVolumeScaleFactor(ir);
+
+					// Set to 0 if E<0 and applied to n_re
+					// (or if E>0 and applied to n_re_neg)
+					if (neg_re_mode*E_field[ir] < 0) {
+						diffWeights[offset + n1[ir]*xiIndex] = 0;
+						continue;
+					}
 
                     diffWeights[offset + n1[ir]*xiIndex] = scaleFactor*dGamma[ir] * V;
                     offset += n1[ir]*n2[ir];
@@ -47,11 +60,20 @@ namespace DREAM {
 
         // Set weights as the avalanche growth rate
         virtual void SetWeights() override {
+			const real_t *GammaAva = REFluid->GetAvalancheGrowthRate();
+			const real_t *E_field = unknowns->GetUnknownData(this->id_E_field);
+
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                const real_t *GammaAva = REFluid->GetAvalancheGrowthRate();
                 const len_t xiIndex = this->GetXiIndexForEDirection(ir);
                 const real_t V = this->GetVolumeScaleFactor(ir);
+
+				// Set to 0 if E<0 and applied to n_re
+				// (or if E>0 and applied to n_re_neg)
+				if (neg_re_mode*E_field[ir] < 0) {
+					weights[offset + n1[ir]*xiIndex] = 0;
+					continue;
+				}
 
                 weights[offset + n1[ir]*xiIndex] = scaleFactor*GammaAva[ir] * V;
                 offset += n1[ir]*n2[ir];
@@ -60,11 +82,15 @@ namespace DREAM {
     public:
         AvalancheGrowthTerm(
             FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
-            RunawayFluid *ref, FVM::Grid *operandGrid, real_t scaleFactor = 1.0
+            RunawayFluid *ref, FVM::Grid *operandGrid, real_t scaleFactor = 1.0,
+			enum negative_re_mode neg_re_mode=NEGATIVE_RE_MODE_NONE
         ) : FVM::DiagonalComplexTerm(g, u, operandGrid), RunawaySourceTerm(g,u),
-            REFluid(ref), scaleFactor(scaleFactor) {
+            REFluid(ref), scaleFactor(scaleFactor), neg_re_mode(neg_re_mode) {
             SetName("AvalancheGrowthTerm");
+
             id_n_re = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+			id_E_field = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
         }

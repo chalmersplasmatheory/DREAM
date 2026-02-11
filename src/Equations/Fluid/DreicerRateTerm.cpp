@@ -14,9 +14,10 @@ using namespace DREAM;
  */
 DreicerRateTerm::DreicerRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn,
-    RunawayFluid *rf, IonHandler *ions, enum dreicer_type type, real_t scaleFactor
+    RunawayFluid *rf, IonHandler *ions, enum dreicer_type type,
+	real_t scaleFactor, enum OptionConstants::negative_re_mode neg_re
 ) : EquationTerm(g), RunawaySourceTerm(g, uqn), unknowns(uqn), REFluid(rf), ions(ions), type(type),
-    scaleFactor(scaleFactor) {
+    scaleFactor(scaleFactor), negative_re(neg_re) {
 
     SetName("DreicerRateTerm");
 
@@ -66,19 +67,32 @@ bool DreicerRateTerm::GridRebuilt() {
  */
 void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *uqn) {
     const len_t nr = this->grid->GetNr();
+	const real_t *E  = uqn->GetUnknownData(id_E_field);
 
-    for (len_t ir = 0; ir < nr; ir++)
+    for (len_t ir = 0; ir < nr; ir++) {
+		if (E[ir]*negative_re < 0) {
+			this->gamma[ir] = 0;
+			continue;
+		}
+
         this->gamma[ir] = REFluid->GetDreicerRunawayRate(ir);
+	}
 
     if (this->type == CONNOR_HASTIE || this->type == CONNOR_HASTIE_NOCORR) {
         ConnorHastie *ch = REFluid->GetConnorHastieRunawayRate();
 
-        const real_t *E  = uqn->GetUnknownData(id_E_field);
         const real_t *n  = uqn->GetUnknownData(id_n_cold);
 
         for (len_t ir = 0; ir < nr; ir++) {
             real_t EED  = E[ir] / REFluid->GetDreicerElectricField(ir);
             real_t Zeff = this->ions->GetZeff(ir);
+
+			// If E < 0 and this term is applied to n_re, set to 0
+			// (if E > 0 and this term is applied to n_re_neg, set to 0)
+			if (E[ir]*negative_re < 0) {
+				this->EED_dgamma_dEED[ir] = 0;
+				continue;
+			}
 
             this->EED_dgamma_dEED[ir] = EED * ch->Diff_EED(ir, E[ir], n[ir], Zeff);
         }
@@ -118,6 +132,10 @@ bool DreicerRateTerm::SetJacobianBlock(
 
             for (len_t ir = 0; ir < nr; ir++) {
                 DreicerNeuralNetwork *dnn = this->REFluid->GetDreicerNeuralNetwork();
+
+				// Skip if E has wrong sign (and we care about the sign)
+				if (data_E_field[ir]*negative_re < 0)
+					continue;
 
                 real_t g0 = this->gamma[ir], g1, v;
                 if (derivId == id_E_field) {

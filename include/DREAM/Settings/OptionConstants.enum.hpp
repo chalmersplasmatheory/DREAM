@@ -234,6 +234,12 @@ enum uqty_f_hot_dist_mode {                     // Model used for analytic hotta
     UQTY_F_HOT_DIST_MODE_NONREL = 1             // Smith & Verwichte (2008) equation (9-10)
 };
 
+enum negative_re_mode {
+	NEGATIVE_RE_MODE_NEGATIVE = -1,
+	NEGATIVE_RE_MODE_NONE = 0,
+	NEGATIVE_RE_MODE_POSITIVE = 1
+};
+
 
 /////////////////////////////////////
 ///

@@ -81,15 +81,42 @@ void SimulationGenerator::ConstructEquation_n_re(
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
     FVM::Operator *transport_fre
 ) {
-    // Introduce negative runaway density?
-    if (s->GetBool(MODULENAME "/negative_re"))
-        ConstructEquation_n_re_neg(eqsys, s);
+    len_t id_n_re = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
 
+    // Introduce negative runaway density?
+    if (s->GetBool(MODULENAME "/negative_re")) {
+		len_t id_nre_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
+
+        //ConstructEquation_n_re_neg(eqsys, s);
+		ConstructEquation_n_re_inner(
+			eqsys, s, id_nre_neg, true,
+			oqty_terms, transport_fre
+		);
+	} else {
+		ConstructEquation_n_re_inner(
+			eqsys, s, id_n_re, false,
+			oqty_terms, transport_fre
+		);
+	}
+}
+
+void SimulationGenerator::ConstructEquation_n_re_inner(
+    EquationSystem *eqsys, Settings *s,
+	len_t id_n_re, bool isNegativeNre,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    FVM::Operator *transport_fre
+) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
 
-    len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+	// If runaway grid is enabled, construct n_re_neg as a
+	// moment of the distribution function.
+	if (isNegativeNre && runawayGrid) {
+		ConstructEquation_n_re_neg_regrid(eqsys, s);
+		return;
+	}
+
     len_t id_n_tot = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
     len_t id_n_i   = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
@@ -148,8 +175,11 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     // Add source terms
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
-        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
+        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(),
+		fluidGrid, eqsys->GetUnknownHandler(),
+        eqsys->GetREFluid(), eqsys->GetIonHandler(),
+		eqsys->GetAnalyticHottailDistribution(), oqty_terms, s,
+		isNegativeNre
     );
 	eqsys->AddRunawaySourceTermHandler(rsth);
 
@@ -268,7 +298,7 @@ void SimulationGenerator::ConstructEquation_n_re(
     delete [] n_re_init;
 }
 
-void SimulationGenerator::ConstructEquation_n_re_neg(
+void SimulationGenerator::ConstructEquation_n_re_neg_regrid(
     EquationSystem *eqsys, Settings*
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();

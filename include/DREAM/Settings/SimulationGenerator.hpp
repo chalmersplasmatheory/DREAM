@@ -57,7 +57,8 @@ namespace DREAM {
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
             RunawayFluid*, IonHandler*, AnalyticDistributionHottail*,
-            struct OtherQuantityHandler::eqn_terms*, Settings *s, bool signPositive = true
+            struct OtherQuantityHandler::eqn_terms*, Settings *s, 
+			bool signPositive = true, enum negative_re_mode neg_re=NEGATIVE_RE_MODE_NONE
         );
 
 
@@ -192,7 +193,8 @@ namespace DREAM {
 		);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);
-        static void ConstructEquation_n_re_neg(EquationSystem*, Settings*);
+        static void ConstructEquation_n_re_inner(EquationSystem*, Settings*, const len_t, bool, struct OtherQuantityHandler::eqn_terms*, FVM::Operator*);
+        static void ConstructEquation_n_re_neg_regrid(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
