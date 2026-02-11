@@ -100,9 +100,9 @@ void SimulationGenerator::ConstructEquation_j_re(
     // Otherwise, we set it to zero...
     } else {
 		bool hasNegativeRe = s->GetBool("eqsys/n_re/negative_re");
-		len_t id_n_re_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
 
 		if (hasNegativeRe) {
+			len_t id_n_re_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
 			FVM::Operator *eqn_neg = new FVM::Operator(fluidGrid);
 
 			eqn->AddTerm(
