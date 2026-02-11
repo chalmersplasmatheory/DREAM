@@ -21,6 +21,7 @@ DEF_UQTY(ION_SPECIES,     "n_i",          "Ion density [m^-3]");
 DEF_UQTY(ION_SPECIES_ABL, "n_i_abl",      "Flux surface averaged density of ablated but not yet equilibrated ions [m^-3]");
 DEF_UQTY(I_P,             "I_p",          "Total toroidal plasma current [A]");
 DEF_UQTY(I_WALL,          "I_wall",       "Wall current [A]");
+DEF_UQTY(J_BS,            "j_bs",         "Bootstrap current density j_||*Bmin/B [A/m^2]");
 DEF_UQTY(J_HOT,           "j_hot",        "Hot electron parallel current density j_||*Bmin/B [A/m^2]");
 DEF_UQTY(J_OHM,           "j_ohm",        "Ohmic current density j_||*Bmin/B [A/m^2]");
 DEF_UQTY(J_RE,            "j_re",         "Runaway electron current density j_||*Bmin/B [A/m^2]");
@@ -50,4 +51,3 @@ DEF_UQTY(W_HOT,           "W_hot",        "Hot electron energy density [J/m^3]")
 DEF_UQTY(WI_ENER,         "W_i",          "Total ion energy density (3N_iT_i/2) of each species [J/m^3]");
 DEF_UQTY(X_P,             "x_p",          "Pellet shard coordinates (Cartesian) [m]");
 DEF_UQTY(Y_P,             "Y_p",          "Pellet shard radii to the power of 5/3 [m^(5/3)]");
-

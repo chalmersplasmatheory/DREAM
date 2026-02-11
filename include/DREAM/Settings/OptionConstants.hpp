@@ -19,6 +19,7 @@ namespace DREAM {
             *UQTY_ION_SPECIES_ABL, *UQTY_ION_SPECIES_ABL_DESC,
             *UQTY_I_WALL,          *UQTY_I_WALL_DESC,
             *UQTY_I_P,             *UQTY_I_P_DESC,
+            *UQTY_J_BS,            *UQTY_J_BS_DESC,
             *UQTY_J_HOT,           *UQTY_J_HOT_DESC,
             *UQTY_J_OHM,           *UQTY_J_OHM_DESC,
             *UQTY_J_RE,            *UQTY_J_RE_DESC,

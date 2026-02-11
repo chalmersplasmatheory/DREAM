@@ -45,13 +45,13 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI, BootstrapCurrent* bootstrap,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI), bootstrap(bootstrap) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -336,6 +336,11 @@ void OtherQuantityHandler::DefineQuantities() {
                 v[ir] = gLCFS[ir] * nRE[ir];
             }
         );
+
+        DEF_SC("scalar/r_LCFS", "Radius of LCFS [m]",
+            real_t v = tracked_terms->lcfsLossRate_fluid->GetRadiusOfLCFS();
+            qd->Store(&v);
+        );
     }
 
 	if (tracked_terms->n_re_f_hot_flux != nullptr) {
@@ -445,7 +450,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL_FR("fluid/Lambda_hypres", "Hyper-resistive diffusion coefficient Lambda [H]",
             qd->Store(this->tracked_terms->psi_p_hyperresistive->GetLambda());
         );
-    // Power terms in heat equation
+    // Power terms in heat equation (both ions and electrons)
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
             real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
@@ -514,6 +519,15 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
+        
+    if (tracked_terms->T_cold_NBI != nullptr)
+    DEF_FL("fluid/Tcold_NBI", "Collisional heating power density by NBI [J s^-1 m^-3]",
+        real_t *vec = qd->StoreEmpty();
+        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+            vec[ir] = 0;
+
+        this->tracked_terms->T_cold_NBI->SetVectorElements(vec, nullptr);
+    );
 
     if (tracked_terms->T_cold_transport) {
         if (tracked_terms->T_cold_transport->GetAdvectionTerms().size() > 0) {
@@ -530,6 +544,76 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     }
 
+    if (!this->tracked_terms->T_i_Qij.empty()) {
+        const len_t nZ = this->tracked_terms->T_i_Qij.size();
+        DEF_FL_MUL("fluid/Ti_Qij", nZ,
+            "Ion-ion collisional heating power density for each ion species [J s^-1 m^-3]",
+            const len_t nZ = this->tracked_terms->T_i_Qij.size();
+            const len_t nr = this->fluidGrid->GetNr();
+            real_t *vec = qd->StoreEmpty();
+                
+            for (len_t i = 0; i < nZ * nr; i++) {
+                vec[i] = 0;
+            }
+
+            // sum contribution from all collision partners for each species
+            for (len_t iz = 0; iz < nZ; iz++) {
+                for (len_t jz = 0; jz < this->tracked_terms->T_i_Qij[iz].size(); jz++) {
+                    auto *op = this->tracked_terms->T_i_Qij[iz][jz];
+                    if (op == nullptr) continue;
+
+                    op->SetVectorElements(vec, nullptr);
+                }
+            }
+        );
+    }
+     // Ion collisional heating per species
+    if (!this->tracked_terms->T_i_Qie.empty()) {
+        const len_t nZ = this->tracked_terms->ni_rates.size();
+        DEF_FL_MUL("fluid/Ti_Qie", nZ,
+            "Collisional heating power density for each ion species [J s^-1 m^-3]",
+            const len_t nZ = this->tracked_terms->ni_rates.size();
+            const len_t nr = this->fluidGrid->GetNr();
+            real_t *vec = qd->StoreEmpty();
+            
+            for (len_t i = 0; i < nZ*nr; i++)
+                vec[i] = 0;
+
+            // Sum contribution from each species
+            for (len_t iz = 0; iz < nZ; iz++) {
+                auto *op = this->tracked_terms->T_i_Qie[iz];
+                if (op == nullptr) continue;
+
+                op->SetVectorElements(vec, nullptr);   
+            }
+        );
+    }
+
+
+    // Ion NBI heating per species
+    if (!this->tracked_terms->T_i_NBI.empty()) {
+        const len_t nZ = this->tracked_terms->T_i_NBI.size();
+        DEF_FL_MUL("fluid/Ti_NBI", nZ,
+            "NBI heating power density for each ion species [J s^-1 m^-3]",
+            const len_t nZ = this->tracked_terms->T_i_NBI.size();
+            const len_t nr = this->fluidGrid->GetNr();
+
+            real_t *vec = qd->StoreEmpty();
+
+            for (len_t i = 0; i < nZ*nr; i++)
+                vec[i] = 0;
+
+            // Sum contribution from each species
+            for (len_t iz = 0; iz < nZ; iz++) {
+                auto *op = this->tracked_terms->T_i_NBI[iz];
+                if (op == nullptr) continue;
+
+                op->SetVectorElements(vec, nullptr);  
+            }
+        );
+    }
+
+        
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){
@@ -580,6 +664,19 @@ void OtherQuantityHandler::DefineQuantities() {
     );
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
+    if (this->bootstrap != nullptr) {
+    	// Bootstrap current coefficients (Redl-Sauter)
+    	DEF_FL("fluid/coefficientL31", "Bootstrap current coefficient L31 (Redl-Sauter 2021).",
+    		qd->Store(this->bootstrap->getCoefficientL31());
+    	);
+    	DEF_FL("fluid/coefficientL32", "Bootstrap current coefficient L32 (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientL32());
+    	);
+    	DEF_FL("fluid/coefficientAlpha", "Bootstrap current coefficient alpha (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientAlpha());
+    	);
+    }
+
     // hottail/...
     DEF_HT_FR("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeffR();
@@ -623,19 +720,21 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
-    DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
-        real_t *v = qd->StoreEmpty();
+	DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
+		if (this->unknown_equations->at(this->id_f_hot)->HasOperatorAt(this->id_n_re)) {
+			real_t *v = qd->StoreEmpty();
 
-        FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
-        const real_t *nre = unknowns->GetUnknownData(id_n_re);
-        avaPos->SetVectorElements(v, nre);
+			FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
+			const real_t *nre = unknowns->GetUnknownData(id_n_re);
+			avaPos->SetVectorElements(v, nre);
 
-        if (this->id_n_re_neg) {
-            FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re_neg);
-            const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
-            avaNeg->SetVectorElements(v, nre_neg);
-        }
-    );
+			if (this->id_n_re_neg) {
+				FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re_neg);
+				const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
+				avaNeg->SetVectorElements(v, nre_neg);
+			}
+		}
+	);
     
 	if (tracked_terms->comptonSource_hottail != nullptr) {
 		DEF_HT("hottail/S_compton", "Compton scattering source term [s^-1 m^-3]",
@@ -1076,7 +1175,7 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
 	if (this->tracked_terms->f_re_kin_rates.size() > 0) {
-		DEF_HT_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
+		DEF_RE_MUL("runaway/kinioniz_rate", nChargeStates, "Kinetic ionization rate [m^-3 s^-1]",
 			real_t *v = qd->StoreEmpty();
 			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
 			for (auto t : this->tracked_terms->f_re_kin_rates)
@@ -1196,9 +1295,15 @@ void OtherQuantityHandler::DefineQuantities() {
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
     if (SPI != nullptr){
-        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",SPI->GetNShard(),
+        DEF_SC_MUL("scalar/ablationDrift", "Total change in the minor radius the deposited material gets shifted",SPI->GetNShard(),
             real_t *v = qd->StoreEmpty();
             real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+        DEF_SC_MUL("scalar/ablationDriftMajorRadius", "Total distance along the major radius the deposited material gets shifted",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDriftMajorRadius();
             for(len_t ip=0;ip<SPI->GetNShard();ip++)
                 v[ip] = t[ip];
         );
@@ -1224,7 +1329,11 @@ void OtherQuantityHandler::DefineQuantities() {
         else if (qty->GetName().substr(0, 6) == "scalar")
             this->groups["scalar"].push_back(qty->GetName());
     }
-    
+
+    this->groups["bootstrap"] = {
+        "fluid/coefficientL31", "fluid/coefficientL32", "fluid/coefficientAlpha",
+        "fluid/nuI", "fluid/nuE"
+    };
     this->groups["ripple"] = {
         "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"
     };

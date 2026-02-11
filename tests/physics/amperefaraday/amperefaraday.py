@@ -197,7 +197,7 @@ def run(args):
             legs.append(s)
             legh.append(h)
 
-        legs.append('$\mathrm{DREAM}$')
+        legs.append(r'$\mathrm{DREAM}$')
         legh.append(hN)
 
         plt.xlabel(r'$Z$')

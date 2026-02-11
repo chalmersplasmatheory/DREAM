@@ -7,6 +7,7 @@ from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from .. import AdvectionInterpolation
 from .. TransportSettings import TransportSettings
+from ... helpers import scal
 from . DistributionFunction import DISTRIBUTION_MODE_NUMERICAL
 
 
@@ -335,22 +336,22 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Set all options from a dictionary.
         """
-        self.avalanche = int(data['avalanche'])
+        self.avalanche = int(scal(data['avalanche']))
 
         if 'pCutAvalanche' in data:
             self.pCutAvalanche = data['pCutAvalanche']
 
-        self.dreicer   = int(data['dreicer'])
-        self.Eceff     = int(data['Eceff'])
-        self.compton   = int(data['compton']['mode'])
+        self.dreicer   = int(scal(data['dreicer']))
+        self.Eceff     = int(scal(data['Eceff']))
+        self.compton   = int(scal(data['compton']['mode']))
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
         # Loss term
         if 'lcfs_loss' in data:
-            self.lcfs_loss     = int(data['lcfs_loss'])
+            self.lcfs_loss     = int(scal(data['lcfs_loss']))
 
             if self.lcfs_loss != LCFS_LOSS_MODE_DISABLED:
-                self.lcfs_user_input_psi     = bool(data['lcfs_user_input_psi'])
+                self.lcfs_user_input_psi     = bool(scal(data['lcfs_user_input_psi']))
                 self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
                 self.lcfs_t_loss   = data['lcfs_t_loss']['x']
                 self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
@@ -364,25 +365,25 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 self.comptonPhotonFlux_t = np.array([0.0])
 
         if 'C1' in data['compton']:
-            self.C1_Compton = float(data['compton']['C1'])
-            self.C2_Compton = float(data['compton']['C2'])
-            self.C3_Compton = float(data['compton']['C3'])
+            self.C1_Compton = float(scal(data['compton']['C1']))
+            self.C2_Compton = float(scal(data['compton']['C2']))
+            self.C3_Compton = float(scal(data['compton']['C3']))
             self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(self.C1_Compton, self.C2_Compton, self.C3_Compton))[0]
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
 
         if 'hottail' in data:
-            self.hottail = int(data['hottail'])
+            self.hottail = int(scal(data['hottail']))
 
         if 'tritium' in data:
-            self.tritium = int(data['tritium'])
+            self.tritium = int(scal(data['tritium']))
 
         if 'negative_re' in data:
-            self.negative_re = bool(data['negative_re'])
+            self.negative_re = bool(scal(data['negative_re']))
         
         if 'extrapolateDreicer' in data:
-            self.ExtrapolateDreicer = bool(data['extrapolateDreicer'])
+            self.ExtrapolateDreicer = bool(scal(data['extrapolateDreicer']))
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])

@@ -118,18 +118,19 @@ for that functionality:
 
 - Shattered Pellet Injection: [O. Vallhagen, MSc thesis, Chalmers University of Technology (2021)](https://hdl.handle.net/20.500.12380/302296)
 - Plasmoid drift of SPI shards: [O. Vallhagen *et al*, JPP **89** 905890306 (2023)](https://doi.org/10.1017/S0022377823000466)
-- Fluid runaway ionization: [M. Hoppe *et al*, accepted for publication in PPCF (2025)](https://arxiv.org/abs/2412.14721)
-- Runaway scrape-off: [O. Vallhagen *et al*, accepted for publication in JPP (2025)](https://arxiv.org/abs/2410.03512)
+- Fluid runaway ionization: [M. Hoppe *et al*, PPCF **67** 045015 (2025)](https://doi.org/10.1088/1361-6587/adbcd5)
+- Runaway scrape-off: [O. Vallhagen *et al*, JPP **91** E78 (2025)](https://doi.org/10.1017/s0022377825000327)
 
 ## Development
 DREAM development is overseen by the DREAM Developer Council which consists of
 
-![The DREAM Developer Council 2024](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/DDC/Council-2024.jpg "The DREAM Developer Council in 2024")
-*The DREAM Developer Council in 2024. From left: Oskar Vallhagen, Mathias Hoppe, Lorenzo Votta, Peter Halldestam, Ida Ekmark.*
+![The DREAM Developer Council 2025](https://raw.githubusercontent.com/chalmersplasmatheory/DREAM/refs/heads/master/media/DDC/Council-2025.jpg "The DREAM Developer Council in 2025")
+*The DREAM Developer Council in 2025. From left: Linn Ekman, Ida Ekmark, Mathias Hoppe, Oskar Vallhagen, Lorenzo Votta, Peter Halldestam.*
 
 - [Mathias Hoppe](https://www.kth.se/profile/mhop?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
 - [Ida Ekmark](https://ft.nephy.chalmers.se/?p=people&id=61), Chalmers University of Technology, Gothenburg, Sweden
 - [Lorenzo Votta](https://www.kth.se/profile/votta?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
+- [Linn Ekman](https://www.kth.se/profile/linnekm?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
 - [Oskar Vallhagen](https://ft.nephy.chalmers.se/?p=people&id=16), Chalmers University of Technology, Gothenburg, Sweden
 - [Peter Halldestam](https://www.ipp.mpg.de/person/140267/5497846), Max Planck Institute for Plasma Physics, Garching-bei-München, Germany
 

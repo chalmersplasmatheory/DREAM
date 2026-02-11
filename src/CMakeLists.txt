@@ -18,6 +18,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
+    "${PROJECT_SOURCE_DIR}/src/NBIHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/NIST.cpp"
     "${PROJECT_SOURCE_DIR}/src/OutputGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/src/OutputGeneratorSFile.cpp"
@@ -46,6 +47,11 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapElectronDensityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapElectronTemperatureTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapEquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapIonDensityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BootstrapIonThermalEnergyTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ComptonRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CurrentDensityFromDistributionFunction.cpp"
@@ -87,6 +93,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonTransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIIonTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRechesterRosenbluth.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.cpp"
@@ -112,6 +120,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/BootstrapCurrent.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TritiumSource.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
@@ -151,6 +160,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/ions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/ions_abl.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_bs.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_ohm.cpp"
@@ -200,9 +210,12 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
 )
 
+
+
 add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
+
 
 set_target_properties(dream PROPERTIES
     # Require C++17

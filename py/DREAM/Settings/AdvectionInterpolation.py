@@ -1,5 +1,7 @@
 # Routines for setting advection interpolation methods.
 
+from .. helpers import scal
+
 
 AD_INTERP_CENTRED  = 1
 AD_INTERP_UPWIND   = 2
@@ -88,12 +90,12 @@ class AdvectionInterpolation:
         self.adv_jac_r = data['r_jac']
 
         if self.kinetic:
-            self.adv_interp_p1 = int(data['p1'])
-            self.adv_interp_p2 = int(data['p2'])
-            self.adv_jac_p1 = int(data['p1_jac'])
-            self.adv_jac_p2 = int(data['p2_jac'])
+            self.adv_interp_p1 = int(scal(data['p1']))
+            self.adv_interp_p2 = int(scal(data['p2']))
+            self.adv_jac_p1 = int(scal(data['p1_jac']))
+            self.adv_jac_p2 = int(scal(data['p2_jac']))
 
-        self.fluxlimiterdamping = float(data['fluxlimiterdamping'])
+        self.fluxlimiterdamping = float(scal(data['fluxlimiterdamping']))
 
 
     def todict(self):
