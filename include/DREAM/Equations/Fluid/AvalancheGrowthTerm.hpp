@@ -4,7 +4,7 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/Settings/OptionConstants.enum.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 
 /**
@@ -31,7 +31,7 @@ namespace DREAM {
         }
 
     protected:
-		enum negative_re_mode neg_re_mode = NEGATIVE_RE_MODE_NONE;
+		enum OptionConstants::negative_re_mode neg_re_mode = OptionConstants::NEGATIVE_RE_MODE_NONE;
 
         // Set weights for the Jacobian block. Uses differentiated growth rate provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
@@ -83,7 +83,7 @@ namespace DREAM {
         AvalancheGrowthTerm(
             FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
             RunawayFluid *ref, FVM::Grid *operandGrid, real_t scaleFactor = 1.0,
-			enum negative_re_mode neg_re_mode=NEGATIVE_RE_MODE_NONE
+			enum OptionConstants::negative_re_mode neg_re_mode=OptionConstants::NEGATIVE_RE_MODE_NONE
         ) : FVM::DiagonalComplexTerm(g, u, operandGrid), RunawaySourceTerm(g,u),
             REFluid(ref), scaleFactor(scaleFactor), neg_re_mode(neg_re_mode) {
             SetName("AvalancheGrowthTerm");

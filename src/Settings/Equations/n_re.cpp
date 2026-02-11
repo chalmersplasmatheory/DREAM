@@ -87,14 +87,21 @@ void SimulationGenerator::ConstructEquation_n_re(
     if (s->GetBool(MODULENAME "/negative_re")) {
 		len_t id_nre_neg = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE_NEG);
 
+		// Construct equation for usual n_re
+		ConstructEquation_n_re_inner(
+			eqsys, s, id_n_re, OptionConstants::NEGATIVE_RE_MODE_POSITIVE,
+			oqty_terms, transport_fre
+		);
+
         //ConstructEquation_n_re_neg(eqsys, s);
 		ConstructEquation_n_re_inner(
-			eqsys, s, id_nre_neg, true,
+			eqsys, s, id_nre_neg, OptionConstants::NEGATIVE_RE_MODE_NEGATIVE,
 			oqty_terms, transport_fre
 		);
 	} else {
+		// Construct equation for usual n_re
 		ConstructEquation_n_re_inner(
-			eqsys, s, id_n_re, false,
+			eqsys, s, id_n_re, OptionConstants::NEGATIVE_RE_MODE_NONE,
 			oqty_terms, transport_fre
 		);
 	}
@@ -102,7 +109,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 
 void SimulationGenerator::ConstructEquation_n_re_inner(
     EquationSystem *eqsys, Settings *s,
-	len_t id_n_re, bool isNegativeNre,
+	len_t id_n_re, enum OptionConstants::negative_re_mode neg_re,
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
     FVM::Operator *transport_fre
 ) {
@@ -112,7 +119,7 @@ void SimulationGenerator::ConstructEquation_n_re_inner(
 
 	// If runaway grid is enabled, construct n_re_neg as a
 	// moment of the distribution function.
-	if (isNegativeNre && runawayGrid) {
+	if (neg_re == OptionConstants::NEGATIVE_RE_MODE_NEGATIVE && runawayGrid) {
 		ConstructEquation_n_re_neg_regrid(eqsys, s);
 		return;
 	}
@@ -179,7 +186,7 @@ void SimulationGenerator::ConstructEquation_n_re_inner(
 		fluidGrid, eqsys->GetUnknownHandler(),
         eqsys->GetREFluid(), eqsys->GetIonHandler(),
 		eqsys->GetAnalyticHottailDistribution(), oqty_terms, s,
-		isNegativeNre
+		true, neg_re
     );
 	eqsys->AddRunawaySourceTermHandler(rsth);
 
@@ -245,57 +252,60 @@ void SimulationGenerator::ConstructEquation_n_re_inner(
      * If the input profile is not explicitly set, then 'SetInitialValue()' is
      * called with a null-pointer which results in n_re=0 at t=0
      */
-    real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
-    
-    enum OptionConstants::uqty_f_re_inittype inittype =
-        (enum OptionConstants::uqty_f_re_inittype)s->GetInteger("eqsys/f_re/inittype");
-    
-    if (inittype == OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
-        for (len_t ir = 0; ir < fluidGrid->GetRadialGrid()->GetNr(); ir++) 
-            if (n_re_init[ir] > 0.) {
-                DREAM::IO::PrintWarning(
-                    DREAM::IO::WARNING_INCONSISTENT_RE_TRANSPORT,
-                    "Inconsistent initialization of the RE population. You can not "
-                    "prescribe the initial profiles of both 'n_re' and 'f_re'. "
-                    "When the initial profile of 'f_re' is prescribed, the runaway "
-                    "density is set automatically."
-                );
-                break;
-            }
-        len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
-        RunawayFluid *REFluid = eqsys->GetREFluid();
-        eqsys->initializer->AddRule(
-            id_n_re,
-            EqsysInitializer::INITRULE_EVAL_FUNCTION,
-            [id_f_re,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *ninit){
-                const real_t *f_re = unknowns->GetUnknownData(OptionConstants::UQTY_F_RE);
-                FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
-                const len_t nr = runawayGrid->GetNr();
-                for (len_t ir = 0, offset = 0; ir < nr; ir++) {
-                    FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
-                    const len_t np1 = mg->GetNp1();
-                    const len_t np2 = mg->GetNp2();
-                    real_t dp, dxi;
-                    real_t VpVol = runawayGrid->GetVpVol(ir);
-                    ninit[ir] = 0;
-                    for (len_t j = 0; j < np2; j++) {
-                        for (len_t i = 0; i < np1; i++) {
-                            dp = mg->GetDp1(i);
-                            dxi = mg->GetDp2(j);
-                            real_t Vp = runawayGrid->GetVp(ir, i, j);
-                            ninit[ir] += f_re[offset + j*np1 + i] * Vp/VpVol * dp * dxi;
-                        }
-                    }
-                    offset += np1*np2;
-                }
-            },
-            // Dependencies
-            id_f_re
-        );
-    } else {
-        eqsys->SetInitialValue(id_n_re, n_re_init);
-    }
-    delete [] n_re_init;
+	if (neg_re != OptionConstants::NEGATIVE_RE_MODE_NEGATIVE) {
+		real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+		
+		enum OptionConstants::uqty_f_re_inittype inittype =
+			(enum OptionConstants::uqty_f_re_inittype)s->GetInteger("eqsys/f_re/inittype");
+		
+		if (inittype == OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
+			for (len_t ir = 0; ir < fluidGrid->GetRadialGrid()->GetNr(); ir++) 
+				if (n_re_init[ir] > 0.) {
+					DREAM::IO::PrintWarning(
+						DREAM::IO::WARNING_INCONSISTENT_RE_TRANSPORT,
+						"Inconsistent initialization of the RE population. You can not "
+						"prescribe the initial profiles of both 'n_re' and 'f_re'. "
+						"When the initial profile of 'f_re' is prescribed, the runaway "
+						"density is set automatically."
+					);
+					break;
+				}
+			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+			RunawayFluid *REFluid = eqsys->GetREFluid();
+			eqsys->initializer->AddRule(
+				id_n_re,
+				EqsysInitializer::INITRULE_EVAL_FUNCTION,
+				[id_f_re,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *ninit){
+					const real_t *f_re = unknowns->GetUnknownData(OptionConstants::UQTY_F_RE);
+					FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
+					const len_t nr = runawayGrid->GetNr();
+					for (len_t ir = 0, offset = 0; ir < nr; ir++) {
+						FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
+						const len_t np1 = mg->GetNp1();
+						const len_t np2 = mg->GetNp2();
+						real_t dp, dxi;
+						real_t VpVol = runawayGrid->GetVpVol(ir);
+						ninit[ir] = 0;
+						for (len_t j = 0; j < np2; j++) {
+							for (len_t i = 0; i < np1; i++) {
+								dp = mg->GetDp1(i);
+								dxi = mg->GetDp2(j);
+								real_t Vp = runawayGrid->GetVp(ir, i, j);
+								ninit[ir] += f_re[offset + j*np1 + i] * Vp/VpVol * dp * dxi;
+							}
+						}
+						offset += np1*np2;
+					}
+				},
+				// Dependencies
+				id_f_re
+			);
+		} else {
+			eqsys->SetInitialValue(id_n_re, n_re_init);
+		}
+		delete [] n_re_init;
+	} else
+		eqsys->SetInitialValue(id_n_re, nullptr);
 }
 
 void SimulationGenerator::ConstructEquation_n_re_neg_regrid(

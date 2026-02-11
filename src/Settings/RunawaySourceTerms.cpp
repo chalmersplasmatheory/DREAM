@@ -20,7 +20,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     FVM::UnknownQuantityHandler *unknowns, RunawayFluid *REFluid,
     IonHandler *ions, AnalyticDistributionHottail *distHT, 
     struct OtherQuantityHandler::eqn_terms *oqty_terms, Settings *s,
-	bool signPositive, enum negative_re_mode negative_re
+	bool signPositive, enum OptionConstants::negative_re_mode negative_re
 ) {
     const std::string &mod = "eqsys/n_re";
 
