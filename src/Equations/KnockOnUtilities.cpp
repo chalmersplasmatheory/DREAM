@@ -728,3 +728,47 @@ real_t KnockOnUtilities::EvaluateMollerFluxMatrixElementOnGrid(
     real_t v1 = p1 / sqrt(1 + p1 * p1);
     return v1 * (S2 - S1) / (p_f2 - p_f1);
 }
+
+/**
+ * Evaluate the total Møller flux on the entire knock-on grid
+ * This is an O(1) shortcut to evaluate the commonly appearing
+ *   sum_i dp_i * EvaluateMollerFluxMatrixElementOnGrid(i,k,...)
+ * that appears when the total production rate of knock-ons due
+ * to a primary distribution is evaluated.
+ */
+real_t KnockOnUtilities::EvaluateMollerFluxIntegratedOverKnockonGrid(
+    len_t k, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t pCutoff
+) {
+    if (!(pCutoff > RELAXED_EPS)) {
+        throw DREAMException(
+            "EvaluateMollerFluxIntegratedOverKnockonGrid(): invalid pCutoff=%.16g (must satisfy "
+            "pCutoff > %.3g).",
+            pCutoff, RELAXED_EPS
+        );
+    }
+
+    const auto *mgK = grid_knockon->GetMomentumGrid(0);
+    const auto *mgP = grid_primary->GetMomentumGrid(0);
+
+    const real_t p1 = mgP->GetP1(k);
+    const real_t v1 = p1 / sqrt(1 + p1 * p1);
+
+    const real_t pMax = KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(p1);
+
+    // Knock-on grid extent
+    const real_t pBottom = mgK->GetP1_f(0);
+    const real_t pTop = mgK->GetP1_f(mgK->GetNp1());
+
+    const real_t plo = std::max(pCutoff, pBottom);
+    const real_t phi = std::min(pMax, pTop);
+
+    if (!(phi > plo + RELAXED_EPS)) {
+        return 0.0;
+    }
+
+    const real_t Fhi = KnockOnUtilities::Kinematics::EvaluateMollerFlux(phi, p1);
+    const real_t Flo = KnockOnUtilities::Kinematics::EvaluateMollerFlux(plo, p1);
+
+    // This equals sum_i dp_i * EvaluateMollerFluxMatrixElementOnGrid(i,k,...)
+    return v1 * (Fhi - Flo);
+}
