@@ -14,6 +14,7 @@ class KnockOn : public UnitTest {
     bool CheckDeltaQuadratureConvergence();
     bool CheckLocalContributionConservationProperty();
     bool CheckDeltaConservationProperty();
+    bool CheckDeltaConservationPropertyConstantB();
     bool CheckDeltaConservationPropertyDifferentGrids();
     bool CheckAgreementWithOldRPTerm();
     bool CheckCylindricalDeltaCalculation();

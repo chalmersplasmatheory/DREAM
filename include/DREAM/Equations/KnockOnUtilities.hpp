@@ -70,7 +70,7 @@ inline real_t EvaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
 
 /**
  * Returns the function 'S' obtained by writing the
- * Mœller differential cross section Sigma on the form
+ * Møller differential cross section Sigma on the form
  *   Sigma = gamma/p * dS/dp = dS/dgamma.
  * Is obtained when exactly integrating the knock-on source
  * over a FVM momentum grid cell (in the knock-on momentum p).
@@ -130,7 +130,6 @@ real_t EvaluateLocalContribution(
 // Orbit-averaging routines based on a RadialGrid for local-geometry evaluation
 // ============================================================================
 enum orbit_integration_method { MIDPOINT_RULE, ADAPTIVE_TRAPEZOID, ADAPTIVE_GSL };
-constexpr len_t N_POINTS_INTEGRAL_DEFAULT = 80;
 
 /**
  * Evaluate local geometric quantities and return true if this poloidal location
@@ -194,8 +193,7 @@ real_t EvaluateDeltaMatrixElementOnGrid(
 // applying the exact conservation constraint \sum_j dxi_j delta_{jl} == 1.
 real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
-    real_t *deltaCol, len_t n_points_integral = N_POINTS_INTEGRAL_DEFAULT,
-    orbit_integration_method quad = MIDPOINT_RULE
+    real_t *deltaCol, len_t n_points_integral, orbit_integration_method quad = MIDPOINT_RULE
 );
 
 // Set a single momentum matrix element S_{ik} on a DREAM grid.
