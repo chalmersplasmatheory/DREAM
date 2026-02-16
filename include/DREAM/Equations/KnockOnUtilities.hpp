@@ -203,5 +203,11 @@ real_t EvaluateMollerFluxMatrixElementOnGrid(
     len_t i, len_t k, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t pCutoff
 );
 
+// Evaluate the total Møller flux on the entire knock-on grid,
+// identical to sum_i dp_i * EvaluateMollerFluxMatrixElementOnGrid(i,k,...).
+real_t EvaluateMollerFluxIntegratedOverKnockonGrid(
+    len_t k, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t pCutoff
+);
+
 }  // namespace DREAM::KnockOnUtilities
 #endif /*_DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP*/
