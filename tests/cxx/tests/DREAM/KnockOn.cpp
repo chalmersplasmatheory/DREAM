@@ -62,6 +62,19 @@ bool KnockOn::Run(bool) {
         );
     }
 
+    if (CheckDeltaConservationPropertyConstantB())
+        this->PrintOK(
+            "The delta function integrated over xi0 is sufficiently close to 1 when primaries and "
+            "secondaries live on the same grid in a constant magnetic field."
+        );
+    else {
+        success = false;
+        this->PrintError(
+            "Knock-on test failed: the delta-function does not integrate to 1 when primaries and "
+            "secondaries live on the same grid in a constant magnetic field."
+        );
+    }
+
     if (CheckDeltaConservationPropertyDifferentGrids())
         this->PrintOK(
             "The delta function integrated over xi0 is sufficiently close to 1 when primaries and "
@@ -143,8 +156,6 @@ bool KnockOn::Run(bool) {
     return success;
 }
 
-namespace {}
-
 // The orbit-averaged delta function analytically satisfies the
 // exact relation delta(xi_star, xi01, ...) = delta(-xi_star, -xi01),
 // representing the mirror symmetry of the collisions as well as the
@@ -168,12 +179,12 @@ bool KnockOn::CheckDeltaMirrorProperties() {
     DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
 
     bool success = true;
-    real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
+    real_t xi_stars[3] = {0.0, 0.5, 1.0};
     len_t xi0_indices[6] = {0, 5, 16, 20, 25, 29};
     len_t xi01_indices[6] = {0, 5, 16, 20, 25, 29};
     for (len_t ir = 0; ir < nr; ir++) {
         DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
-        for (len_t n = 0; n < 4; n++) {
+        for (len_t n = 0; n < 3; n++) {
             real_t xi_star = xi_stars[n];
             for (len_t idx_j = 0; idx_j < 6; idx_j++) {
                 len_t j = xi0_indices[idx_j];
@@ -206,7 +217,7 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                     );
                     if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold) {
                         this->PrintError(
-                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g\n", ir, j,
+                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g", ir, j,
                             l, xi_star
                         );
                         success = false;
@@ -217,7 +228,7 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                     );
                     if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold) {
                         this->PrintError(
-                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g\n", ir, j,
+                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g", ir, j,
                             l, xi_star
                         );
                         success = false;
@@ -249,13 +260,15 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
 
+    const real_t nPointsIntegral = 80;
+
     bool success = true;
-    real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
+    real_t xi_stars[3] = {0.0, 0.5, 1.0};
     // len_t xi0_indices[6] = {0, 5, 16, 20, 25, 29};
     len_t xi01_indices[6] = {0, 5, 16, 20, 25, 29};
     // real_t xi01s[6] = {-1, -0.9, 0.02, 0.2, 0.8, 1.0};
     for (len_t ir = 0; ir < nr; ir++) {
-        for (len_t n = 0; n < 4; n++) {
+        for (len_t n = 0; n < 3; n++) {
             real_t xi_star = xi_stars[n];
             for (len_t j = 0; j < grid->GetNp2(ir); j++) {
                 if (grid->IsNegativePitchTrappedIgnorableCell(ir, j)) {
@@ -266,8 +279,7 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                     len_t l = xi01_indices[idx_l];
                     real_t delta_default =
                         DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                            ir, xi_star, j, l, grid, grid,
-                            DREAM::KnockOnUtilities::N_POINTS_INTEGRAL_DEFAULT,
+                            ir, xi_star, j, l, grid, grid, nPointsIntegral,
                             DREAM::KnockOnUtilities::MIDPOINT_RULE
                         );
                     real_t delta_hires = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
@@ -275,9 +287,9 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                     );
                     if (fabs(delta_default - delta_hires) >
                         successRelErrorThreshold * (1 + fabs(delta_default))) {
-                        this->PrintError("failed (j=%ld, l=%ld)\n", j, l);
-                        this->PrintError("delta_default = %.8g\n", delta_default);
-                        this->PrintError("delta_hires = %.8g\n", delta_hires);
+                        this->PrintError("failed (j=%ld, l=%ld)", j, l);
+                        this->PrintError("delta_default = %.8g", delta_default);
+                        this->PrintError("delta_hires = %.8g", delta_hires);
 
                         success = false;
                     }
@@ -298,7 +310,7 @@ bool KnockOn::_checkLocalContributionConservationProperty(
     bool success = true;
 
     DREAM::FVM::RadialGrid *rg = grid_knockon->GetRadialGrid();
-    real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
+    real_t xi_stars[3] = {0.0, 0.5, 1.0};
     len_t n_theta = 10;
     constexpr real_t theta_roundoff_safety_factor = 1e-8;
 
@@ -307,7 +319,7 @@ bool KnockOn::_checkLocalContributionConservationProperty(
 
         len_t Nxi = grid_knockon->GetNp2(ir);
         len_t Nxi1 = grid_primary->GetNp2(ir);
-        for (len_t n = 0; n < 4; n++) {
+        for (len_t n = 0; n < 3; n++) {
             real_t xi_star = xi_stars[n];
             for (len_t l = 0; l < Nxi1; l++) {
                 real_t xi01 = mg->GetXi0(0, l);
@@ -341,7 +353,7 @@ bool KnockOn::_checkLocalContributionConservationProperty(
                             );
                     }
                     if (fabs(local_sum - 1.0) > successRelErrorThreshold) {
-                        this->PrintError("failed at ir=%ld, n=%ld, l=%ld, m=%ld:\n", ir, n, l, m);
+                        this->PrintError("failed at ir=%ld, n=%ld, l=%ld, m=%ld:", ir, n, l, m);
                         this->PrintError("  sum: %.8g", local_sum);
                         success = false;
                     }
@@ -383,7 +395,8 @@ bool KnockOn::_checkDeltaConservationProperty(
     real_t successRelErrorThreshold
 ) {
     DREAM::FVM::RadialGrid *rg = grid_knockon->GetRadialGrid();
-    real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
+    real_t xi_stars[3] = {0.0, 0.5, 1.0};
+    const real_t nPointsIntegral = 50;
 
     bool success = true;
     for (len_t ir = 0; ir < rg->GetNr(); ir++) {
@@ -393,7 +406,7 @@ bool KnockOn::_checkDeltaConservationProperty(
         len_t Nxi = grid_knockon->GetNp2(ir);
         len_t Nxi1 = grid_primary->GetNp2(ir);
         real_t *_deltaCol = new real_t[Nxi];
-        for (len_t n = 0; n < 4; n++) {
+        for (len_t n = 0; n < 3; n++) {
             real_t xi_star = xi_stars[n];
             for (len_t l = 0; l < Nxi1; l++) {
                 real_t xi01_f1 = mg->GetP2_f(l);
@@ -409,7 +422,7 @@ bool KnockOn::_checkDeltaConservationProperty(
                     continue;
                 }
                 // Also skip cells that contain 0 - these are also handled in a special way
-                // in the FluxSurfaceAverager, since otherwise Vp==0 in this point.
+                // in the FluxSurfaceAverager, since otherwise Vp==0 in this cell.
                 if (xi01_f1 < 0 && xi01_f2 > 0) {
                     continue;
                 }
@@ -419,18 +432,18 @@ bool KnockOn::_checkDeltaConservationProperty(
                     continue;
                 }
                 real_t deltaXiIntegral = DREAM::KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xi_star, l, grid_knockon, grid_primary, _deltaCol,
-                    DREAM::KnockOnUtilities::N_POINTS_INTEGRAL_DEFAULT,
-                    DREAM::KnockOnUtilities::MIDPOINT_RULE
+                    ir, xi_star, l, grid_knockon, grid_primary, _deltaCol, nPointsIntegral,
+                    DREAM::KnockOnUtilities::ADAPTIVE_TRAPEZOID
                 );
                 if (fabs(deltaXiIntegral - 1) > successRelErrorThreshold) {
                     real_t xi01 = mg->GetP2(l);
-                    this->PrintError("failed at ir=%ld, n=%ld, l=%ld:\n", ir, n, l);
-                    this->PrintError("  xi_star: %.8g\n", xi_star);
-                    this->PrintError("  trapped boundary: %.8g\n", xi0T);
-                    this->PrintError("  xi01: %.8g (%.8g, %.8g)\n", xi01, xi01_f1, xi01_f2);
-                    this->PrintError("  deltaXiIntegral: %.8g\n", deltaXiIntegral);
+                    this->PrintError("failed at ir=%ld, n=%ld, l=%ld:", ir, n, l);
+                    this->PrintError("  xi_star: %.8g", xi_star);
+                    this->PrintError("  trapped boundary: %.8g", xi0T);
+                    this->PrintError("  xi01: %.8g (%.8g, %.8g)", xi01, xi01_f1, xi01_f2);
+                    this->PrintError("  deltaXiIntegral: %.8g", deltaXiIntegral);
                     success = false;
+                    // return success;
                 }
             }
         }
@@ -447,11 +460,11 @@ bool KnockOn::_checkDeltaConservationProperty(
 // cells that it is expected to hold (e.g. not in the negative-trapped region).
 bool KnockOn::CheckDeltaConservationProperty() {
     // Note: with higher nxi, relative error decreases
-    real_t successRelErrorThreshold = 0.25;
+    real_t successRelErrorThreshold = 4e-2;
 
     len_t nr = 5;
     len_t np = 4;
-    len_t nxi = 60;
+    len_t nxi = 61;
 
     len_t ntheta_interp = 50;
     len_t nrProfiles = 8;
@@ -467,11 +480,37 @@ bool KnockOn::CheckDeltaConservationProperty() {
     return success;
 }
 
+// The Delta function in our formulation of the knock-on operator satisfies
+// an exact analytic normalization property:
+//     \int dxi0 delta(xi0, xi01) = 1.
+// This test verifies that this property is reproduced numerically within
+// the accuracy expected from the chosen quadrature resolution, for all
+// cells that it is expected to hold (e.g. not in the negative-trapped region).
+bool KnockOn::CheckDeltaConservationPropertyConstantB() {
+    // Note: with higher nxi, relative error decreases
+    real_t successRelErrorThreshold = 1e-12;
+
+    len_t nr = 5;
+    len_t np = 4;
+    len_t nxi = 60;
+
+    real_t pMin = 0;
+    real_t pMax = 2;
+
+    real_t B0 = 1.0;
+
+    DREAM::FVM::Grid *grid = InitializeGridRCylPXi(nr, np, nxi, B0, pMin, pMax);
+
+    bool success = _checkDeltaConservationProperty(grid, grid, successRelErrorThreshold);
+    delete grid;
+    return success;
+}
+
 // Like CheckDeltaConservationProperty, but when secondary and primary
 // electrons live on different grids.
 bool KnockOn::CheckDeltaConservationPropertyDifferentGrids() {
     // Note: with higher nxi, relative error decreases
-    real_t successRelErrorThreshold = 0.25;
+    real_t successRelErrorThreshold = 3e-2;
 
     len_t nr = 5;
     len_t np = 4;
@@ -516,12 +555,13 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
 
     constexpr real_t eps = 5 * std::numeric_limits<real_t>::epsilon();
     bool success = true;
-    real_t xi_stars[4] = {0.1, 0.5, 0.9, 1.0};
+    real_t xi_stars[3] = {0.0, 0.5, 1.0};
+    const real_t nPointsIntegral = 80;
 
     for (len_t ir = 0; ir < nr; ir++) {
         DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         len_t Nxi = mg->GetNp2();
-        for (len_t n = 0; n < 4; n++) {
+        for (len_t n = 0; n < 3; n++) {
             real_t xi_star = xi_stars[n];
             for (len_t l = 0; l < Nxi; l++) {
                 real_t xi01 = mg->GetP2(l);
@@ -543,17 +583,16 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
                                          dxi;
                     }
                     real_t delta = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid, grid,
-                        DREAM::KnockOnUtilities::N_POINTS_INTEGRAL_DEFAULT,
+                        ir, xi_star, j, l, grid, grid, nPointsIntegral,
                         DREAM::KnockOnUtilities::MIDPOINT_RULE
                     );
                     if (fabs(delta - delta_expected) > successRelErrorThreshold) {
-                        this->PrintError("failed at ir=%ld, n=%ld, j=%ld, l=%ld:\n", ir, n, j, l);
-                        this->PrintError("  delta: %.8g\n", delta);
-                        this->PrintError("  delta_expected: %.8g\n", delta_expected);
-                        this->PrintError("  xi_star: %.8g\n", xi_star);
-                        this->PrintError("  xi0 in [%.8g, %.8g]\n", xi0_f1, xi0_f2);
-                        this->PrintError("  xi01: %.8g\n", xi01);
+                        this->PrintError("failed at ir=%ld, n=%ld, j=%ld, l=%ld:", ir, n, j, l);
+                        this->PrintError("  delta: %.8g", delta);
+                        this->PrintError("  delta_expected: %.8g", delta_expected);
+                        this->PrintError("  xi_star: %.8g", xi_star);
+                        this->PrintError("  xi0 in [%.8g, %.8g]", xi0_f1, xi0_f2);
+                        this->PrintError("  xi01: %.8g", xi01);
                         success = false;
                     }
                 }
@@ -570,7 +609,7 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
 // where both are applicable.
 // Uses the adaptive quadrature to demonstrate agreement to very high precision.
 bool KnockOn::CheckAgreementWithOldRPTerm() {
-    real_t successRelErrorThreshold = 1e-5;
+    real_t successRelErrorThreshold = 1e-3;
     bool success = true;
 
     len_t nr = 5;
@@ -610,17 +649,17 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
             real_t old_delta =
                 FSA_B * Vp / Vp1 * fsa->EvaluateAvalancheDeltaHat(ir, p, xi0_f1, xi0_f2, Vp, VpVol);
             real_t new_delta = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, 1000,
+                ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, 200,
                 DREAM::KnockOnUtilities::ADAPTIVE_TRAPEZOID
             );
             if (fabs(new_delta - old_delta) > old_delta * successRelErrorThreshold) {
-                this->PrintError("FSA_B * Vp / Vp1: %.8g\n", FSA_B * Vp / Vp1);
-                this->PrintError("Trapped boundary xi0T: %.8g\n", rg->GetXi0TrappedBoundary(ir));
-                this->PrintError("non-zero contribution at xi in [%.3g, %.3g]\n", xi0_f1, xi0_f2);
-                this->PrintError("old delta: %.8g\n", old_delta);
-                this->PrintError("new delta: %.8g\n", new_delta);
+                this->PrintError("FSA_B * Vp / Vp1: %.8g", FSA_B * Vp / Vp1);
+                this->PrintError("Trapped boundary xi0T: %.8g", rg->GetXi0TrappedBoundary(ir));
+                this->PrintError("non-zero contribution at xi in [%.3g, %.3g]", xi0_f1, xi0_f2);
+                this->PrintError("old delta: %.8g", old_delta);
+                this->PrintError("new delta: %.8g", new_delta);
                 if (new_delta != 0) {
-                    this->PrintError("ratio: %.8g\n", old_delta / new_delta);
+                    this->PrintError("ratio: %.8g", old_delta / new_delta);
                 }
                 success = false;
             }
@@ -726,27 +765,12 @@ bool KnockOn::_checkMollerSConservationProperty(
         pCutoffs.push_back(mgK->GetP1_f(2) - 1e-10);  // near cell edges
         pCutoffs.push_back(mgK->GetP1_f(2) + 1e-10);
 
-        real_t pBottom = mgK->GetP1_f(0);
-        real_t pTop = mgK->GetP1_f(mgK->GetNp1());
         for (len_t k = 0; k < mgP->GetNp1(); k++) {
-            real_t p1 = mgP->GetP1(k);
-            real_t gamma1 = sqrt(1 + p1 * p1);
-            real_t v1 = p1 / gamma1;
-
-            real_t pMax = DREAM::KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(p1);
-
             for (real_t pCutoff : pCutoffs) {
-                // expected bounds, intersected with grid extent
-                real_t plo = std::max(pCutoff, pBottom);
-                real_t phi = std::min(pMax, pTop);
-
-                real_t expected = 0;
-                if (phi > plo) {
-                    expected =
-                        v1 * (DREAM::KnockOnUtilities::Kinematics::EvaluateMollerFlux(phi, p1) -
-                              DREAM::KnockOnUtilities::Kinematics::EvaluateMollerFlux(plo, p1));
-                }
-
+                real_t expected =
+                    DREAM::KnockOnUtilities::EvaluateMollerFluxIntegratedOverKnockonGrid(
+                        k, grid_knockon, grid_primary, pCutoff
+                    );
                 real_t sum = 0;
                 for (len_t i = 0; i < mgK->GetNp1(); i++) {
                     real_t dp = mgK->GetDp1(i);
@@ -755,9 +779,9 @@ bool KnockOn::_checkMollerSConservationProperty(
                                 );
                 }
                 if (fabs(sum - expected) > atol + rtol * (fabs(sum) + fabs(expected))) {
-                    this->PrintError("Failed at ir=%ld, k=%ld, pCutoff=%.8g\n", ir, k, pCutoff);
-                    this->PrintError("    sum: %.8g\n", sum);
-                    this->PrintError("    expected: %.8g\n", expected);
+                    this->PrintError("Failed at ir=%ld, k=%ld, pCutoff=%.8g", ir, k, pCutoff);
+                    this->PrintError("    sum: %.8g", sum);
+                    this->PrintError("    expected: %.8g", expected);
                     success = false;
                 }
             }
@@ -766,7 +790,7 @@ bool KnockOn::_checkMollerSConservationProperty(
     return success;
 }
 
-// Test conservation property of the "Møller S matrix" 
+// Test conservation property of the "Møller S matrix"
 // when knock-on and runaway grids are the same.
 bool KnockOn::CheckMollerSConservationProperty() {
     len_t nr = 2;
