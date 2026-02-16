@@ -408,12 +408,12 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     real_t Bmin = GetBmin(ir,fluxGridType, &theta_Bmin);
     real_t Bmax = GetBmax(ir,fluxGridType, &theta_Bmax);
     real_t BminOverBmax;
-    if(Bmin==Bmax) // handles Bmax=0 case
+    if(!rGrid->HasTrapped()) // handles Bmax=0 case
         BminOverBmax = 1; 
     else
         BminOverBmax = Bmin/Bmax;        
 
-    bool isTrapped = ( (1-xi0*xi0) > BminOverBmax);
+    bool isTrapped = IsTrapped(xi0, 1.0 / BminOverBmax);
     real_t theta_b1, theta_b2;
 
     int_t Flist_copy[5];
@@ -714,16 +714,16 @@ const real_t NEAR_TRAPPED_BOUNDARY_THRESHOLD = 0.01; // distance in xi from trap
  * (most notably on the trapped-passing boundary where Vp has a logarithmic singularity).  
  */
 bool FluxSurfaceAverager::shouldCellAverageBounceIntegral(len_t ir, real_t xi_lower, real_t xi_upper, fluxGridType fluxGridType){
+    // constant magnetic field - no averaging needed
+    if (!rGrid->HasTrapped()) {
+        return false;
+    }
     real_t xiT;
     if(fluxGridType==FLUXGRIDTYPE_RADIAL)
         xiT = rGrid->GetXi0TrappedBoundary_fr(ir);
     else
         xiT = rGrid->GetXi0TrappedBoundary(ir);
 
-    // constant magnetic field - no averaging needed
-    if(xiT < 1e-10){
-        return false;
-    }
     // if the cell contains, or is near, the trapped-passing boundaries, 
     // perform more careful (and computationally expensive) cell average
     real_t d1=fabs(xi_lower)-xiT;

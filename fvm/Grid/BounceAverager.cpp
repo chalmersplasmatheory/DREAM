@@ -366,7 +366,7 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
             j += 1;
             isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
             xi0 = GetXi0(ir,i,j,fluxGridType);
-            SingularPointCorrection = xi0/2;
+            SingularPointCorrection = 0.5;
         }
     }
     
@@ -473,7 +473,7 @@ bool BounceAverager::InitializeBounceIntegralQuantities(){
     hasTrapped += SetIsTrapped(isTrapped_f1, theta_b1_f1, theta_b2_f1, FLUXGRIDTYPE_P1);
     hasTrapped += SetIsTrapped(isTrapped_f2, theta_b1_f2, theta_b2_f2, FLUXGRIDTYPE_P2);
 
-    grid->SetBounceParameters(hasTrapped,
+    grid->SetBounceParameters(
         isTrapped, isTrapped_fr, isTrapped_f1, isTrapped_f2,
         theta_b1,  theta_b1_fr,  theta_b1_f1,  theta_b1_f2, 
         theta_b2,  theta_b2_fr,  theta_b2_f1,  theta_b2_f2);
@@ -499,7 +499,7 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
         Bmax = fluxSurfaceAverager->GetBmax(ir,fluxGridType, &theta_Bmax);
 
         // in cylindrical grid or at r=0, isTrapped is false and we skip to next radius 
-        if(Bmin==Bmax){
+        if(!grid->HasTrapped()){
             for(len_t i = 0; i<n1*n2; i++)
                 isTrapped[ir][i] = false;
             continue;
@@ -509,7 +509,7 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
             for(len_t i = 0; i<n1; i++){
                 len_t pind = j*n1+i;
                 real_t xi0 = GetXi0(ir,i,j,fluxGridType);
-                if((1-xi0*xi0) > Bmin/Bmax){
+                if(FluxSurfaceAverager::IsTrapped(xi0, Bmax/Bmin)){
                     isTrapped[ir][pind] = true;
                     hasTrapped = true;
                     if(std::abs(xi0)<100*realeps){ // xi0=0 case: infinitely deeply trapped

@@ -126,7 +126,40 @@ real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridTy
     return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,F, par, Flist);
 }
 
-
+namespace {
+// Helper to check if the magnetic field is inhomogeneous,
+// thus supporting trapped orbits. Returns true if this is the case.
+bool checkIfInhomogeneousB(
+    const real_t *Bmin, const real_t *Bmin_f, const real_t *Bmax, const real_t *Bmax_f, len_t nr
+) {
+    real_t global_Bmin = std::numeric_limits<real_t>::infinity();
+    real_t global_Bmax = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        if (Bmax[ir] > global_Bmax) {
+            global_Bmax = Bmax[ir];
+        }
+        if (Bmax_f[ir] > global_Bmax) {
+            global_Bmax = Bmax_f[ir];
+        }
+        if (Bmin[ir] < global_Bmin) {
+            global_Bmin = Bmin[ir];
+        }
+        if (Bmin_f[ir] < global_Bmin) {
+            global_Bmin = Bmin_f[ir];
+        }
+    }
+    if (Bmax_f[nr] > global_Bmax) {
+        global_Bmax = Bmax_f[nr];
+    }
+    if (Bmin_f[nr] < global_Bmin) {
+        global_Bmin = Bmin_f[nr];
+    }
+    real_t eps_roundoff = 100 * std::numeric_limits<real_t>::epsilon();
+    real_t tol = eps_roundoff * (1 + global_Bmax);
+    bool hasTrapped = global_Bmax - global_Bmin > tol;
+    return hasTrapped;
+}
+}  // namespace
 
 /**
  * Sets magnetic field quantities that have been
@@ -148,7 +181,8 @@ void RadialGrid::SetMagneticExtremumData(
     this->Bmax_f         = Bmax_f;
     this->xi0TrappedBoundary = xi0TrappedBoundary;
     this->xi0TrappedBoundary_f = xi0TrappedBoundary_f;
-    
+    this->hasTrapped = checkIfInhomogeneousB(Bmin, Bmin_f, Bmax, Bmax_f, this->nr);
+
     fluxSurfaceAverager->SetReferenceMagneticFieldData(
         theta_Bmin, theta_Bmin_f,
         theta_Bmax, theta_Bmax_f
@@ -265,7 +299,7 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
         real_t Bmin = GetBmin(ir);
         real_t Bmax = GetBmax(ir);
         real_t BminOverBmax;
-        if(Bmin==Bmax) // handles B(theta) = 0 case
+        if(!HasTrapped()) // handles B(theta) = 0 case
             BminOverBmax = 1; 
         else
             BminOverBmax = Bmin/Bmax;
