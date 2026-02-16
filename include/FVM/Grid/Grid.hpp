@@ -44,7 +44,6 @@ namespace DREAM::FVM {
         // True if phase-space coordinate represents trapped orbit.
         // Size Nr+ x (Np1+ x Np2+).
         bool 
-            hasTrapped = false,
             **isTrapped = nullptr, 
             **isTrapped_fr = nullptr, 
             **isTrapped_f1 = nullptr,
@@ -146,7 +145,7 @@ namespace DREAM::FVM {
         /**
          * Getters of isTrapped: true if phase-space point represents a trapped orbit
          */
-        bool HasTrapped() const {return hasTrapped;}
+        const bool HasTrapped() const {return rgrid->HasTrapped();}
         const bool IsTrapped(const len_t ir, const len_t i, const len_t j) const 
             {return isTrapped[ir][GetNp1(ir)*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
@@ -224,7 +223,7 @@ namespace DREAM::FVM {
         real_t *const* GetBA_xi2B2_f2() const { return this->BA_xi2B2_f2; }
         const real_t  *GetBA_xi2B2_f2(const len_t ir) const { return this->BA_xi2B2_f2[ir]; }
         
-        const real_t GetAvalancheDeltaHat(const len_t ir, const len_t i, const len_t j, int_t RESign=1)
+        const real_t GetAvalancheDeltaHat(const len_t ir, const len_t i, const len_t j, int_t RESign=1) const
         {
             len_t pind = GetNp1(ir)*j+i;
             if(RESign>=0)
@@ -238,7 +237,7 @@ namespace DREAM::FVM {
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
 
 
-        void SetBounceParameters(bool hasTrapped,bool **isTrapped, bool **isTrapped_fr, 
+        void SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
             bool **isTrapped_f1, bool **isTrapped_f2, 
             real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
             real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 );

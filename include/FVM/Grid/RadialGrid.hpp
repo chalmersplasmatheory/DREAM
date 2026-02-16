@@ -116,6 +116,8 @@ namespace DREAM::FVM {
             *psiToroidal_f = nullptr,
             R0;
 
+        bool hasTrapped;
+
         // Orbit-phase-space Jacobian factors
         real_t
              *VpVol = nullptr,    // Size NR
@@ -242,6 +244,7 @@ namespace DREAM::FVM {
 		const real_t *GetPsiPrimeRef_f() const {return this->psiPrimeRef_f;}
 		const real_t  GetPsiPrimeRef_f(const len_t ir) const {return this->psiPrimeRef_f[ir];}
 
+        const bool HasTrapped() const {return hasTrapped;}
         // Returns the xi0 value corresponding to the positive
         // trapped-passing boundary at radial index ir
         const real_t GetXi0TrappedBoundary(const len_t ir) const
