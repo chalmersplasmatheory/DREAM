@@ -117,7 +117,7 @@ DREAM::FVM::Grid *UnitTest::InitializeNumericFluidGrid(const real_t *r_f, const 
  *
  * nr: (optional) Number of radial grid points.
  */
-DREAM::FVM::Grid *UnitTest::InitializeNumericStellaratorFluidGrid(const real_t *r_f, const len_t nr, SFile_HDF5 *s) {
+/*DREAM::FVM::Grid *UnitTest::InitializeNumericStellaratorFluidGrid(const real_t *r_f, const len_t nr, SFile_HDF5 *s) {
     sfilesize_t dims[2];
 
     real_t R0 = s->GetDoubles1D("R0", dims);
@@ -159,7 +159,7 @@ DREAM::FVM::Grid *UnitTest::InitializeNumericStellaratorFluidGrid(const real_t *
     grid->Rebuild(0);
 
     return grid;
-}
+}*/
 
 
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
