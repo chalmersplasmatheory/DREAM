@@ -41,9 +41,13 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.lambda_p = None
 
         from desc.grid import LinearGrid
-        import desc.io
+        if self.filename[-3] == ".nc":
+            import desc.vmec
+        else:
+            import desc.io
 
-        self.eq = desc.io.load(self.filename)
+        #self.eq = desc.io.load(self.filename)
+        self.eq = desc.vmec.VMECIO.load(self.filename)
 
         if datafilename is None:
             self.grid = LinearGrid(L=int(self.nr-1), M=int((self.ntheta - 1) / 2), N=int((self.nphi - 1) / 2), endpoint=True, NFP=self.eq.NFP)
