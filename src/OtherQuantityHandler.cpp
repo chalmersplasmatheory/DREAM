@@ -45,13 +45,13 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI, BootstrapCurrent* bootstrap,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI), bootstrap(bootstrap) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -663,6 +663,19 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     );
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
+
+    if (this->bootstrap != nullptr) {
+    	// Bootstrap current coefficients (Redl-Sauter)
+    	DEF_FL("fluid/coefficientL31", "Bootstrap current coefficient L31 (Redl-Sauter 2021).",
+    		qd->Store(this->bootstrap->getCoefficientL31());
+    	);
+    	DEF_FL("fluid/coefficientL32", "Bootstrap current coefficient L32 (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientL32());
+    	);
+    	DEF_FL("fluid/coefficientAlpha", "Bootstrap current coefficient alpha (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientAlpha());
+    	);
+    }
 
     // hottail/...
     DEF_HT_FR("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
@@ -1316,6 +1329,11 @@ void OtherQuantityHandler::DefineQuantities() {
         else if (qty->GetName().substr(0, 6) == "scalar")
             this->groups["scalar"].push_back(qty->GetName());
     }
+
+    this->groups["bootstrap"] = {
+        "fluid/coefficientL31", "fluid/coefficientL32", "fluid/coefficientAlpha",
+        "fluid/nuI", "fluid/nuE"
+    };
 
     this->groups["ripple"] = {
         "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"
