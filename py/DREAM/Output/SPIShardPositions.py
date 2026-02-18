@@ -130,9 +130,32 @@ class SPIShardPositions(ScalarQuantity):
         return rhop, thetap
 
 
-    def plotAtTime(self, t=-1, shards=None, ax=None, show=None):
+    def plotAtTime(self, t=-1, shards=None, ax=None, show=None, backgroundQuantity = None, displayGrid = True, displayDrift = False, shardColor = 'k', driftColor = 'k', depColor = 'k', scaleShardsWithSize = False, sizeFactor=5e3, **kwargs):
         """
         Plot the pellet shards over the poloidal cross-section at a given time.
+        
+        :param int t: Time index to plot.
+        :param slice shards: Shards which should be plotted.
+        :param matplotlib.pyplot.axis ax: Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to
+            'matplotlib.pyplot.show()' with 'block=False'. If 'None', this is 
+            interpreted as 'True' if 'ax' is also 'None'.
+        :param DREAM.Output.FluidQuantity.FluidQuantity backgroundQuantity: 
+            FluidQuantity object for which the poloidal contours should be 
+            included in the background.
+        :param bool displayGrid: Specify wether or not to display the grid cells 
+            in the plot.
+        :param bool displayGrid: Specify wether or not to display lines illustrating
+            the plasmoid drifts in the plot.
+        :param shardColor: Color of the plotted shards.
+        :param driftColor: Color of the lines illustrating the plasmoid drifts.
+        :param depColor: Color of the points marking the deposition position.
+        :param bool scaleShardsWithSize: Specify wether or not to scale the marker 
+            size of the shards with their size in the simulation.
+        :param float sizeFactor: factor used to scale up the shard radii (in meters) 
+            to make them visible in the plot
+            
+        :return: Axis object containing the plot
         """
         black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
@@ -143,6 +166,13 @@ class SPIShardPositions(ScalarQuantity):
             if show is None:
                 show = True
 
+        # Plot color scale showing the chosen background quantity, if any
+        if backgroundQuantity is not None:
+            # We set zorder = 0 to make sure the background color scale is actually plotted in the background and does not cover the shards
+            contours, cb = backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t, shifted = True, zorder = 0, **kwargs)
+        else:
+            contours = None
+            
         if shards is None:
             shards = slice(None)
 
@@ -151,17 +181,100 @@ class SPIShardPositions(ScalarQuantity):
 
         eq = self.grid.eq
 
+        # Retrieve shard position data in cartesian SPI coordinates
         xp = self.data[:,0::3,0]
         yp = self.data[:,1::3,0]
+        zp = self.data[:,2::3,0]
+        
+        # Calculate cylindrical RZ coordinates for the shards
+        Rp = np.sqrt((xp+eq.R0)**2+zp**2)
+        Zp = yp + eq.Z0
 
-        eq.visualize(ax=ax, shifted=True, maxis=False)
+        # If the drift should be displayed, calculate the major radius coordinates of the shifted deposition locations
+        if displayDrift:
+            Rp_dep = Rp[1:,:] + self.output.other.scalar.ablationDriftMajorRadius.data[:,:,0]
 
-        if (xp[0,0] != xp[0,1]) or (yp[0,0] != yp[0,1]):
+            # The drift is not calculated in the zeroth time steps, so we duplicate the first time step 
+            # to make the size of Rp_dep the same as Rp and Zp
+            Rp_dep = np.vstack((Rp_dep[0,:].reshape(1,-1),Rp_dep))
+
+        # Display grid if requested
+        if displayGrid:
+            eq.visualize(ax=ax, shifted=True, maxis=False)
+        else:
+            # Even if the grid is not displayed, we stil display the outermost flux surface
+            ax.plot(eq.RMinusR0_f[:,-1], eq.ZMinusZ0_f[:,-1], color=black, linewidth=2, zorder = 0)
+            ax.plot(eq.RMinusR0_f[(0,-1),-1], eq.ZMinusZ0_f[(0,-1),-1], color=black, linewidth=2, zorder = 0) # Close flux surface contour
+
+        # Plot common shard origin, if any
+        if (Rp[0,0] != Rp[0,1]) or (Zp[0,0] != Zp[0,1]):
             print('WARNING: Pellet shards do not start from the same position. Skipping plot of origin.')
         else:
-            ax.plot(xp[0,0], yp[0,0], 'o', color=red)
+            ax.plot(Rp[0,0]-eq.R0, Zp[0,0], 'o', color=red)
 
-        ax.plot(xp[t,shards], yp[t,shards], 'k.')
+        if scaleShardsWithSize:
+            # Calculate marker sizes proportional to the shard radii
+            rp=self.output.eqsys.Y_p.calcRadii(t=t)
+            sizes=rp*sizeFactor
+
+            # Calculate the opacity of the drifts and deposition positions, if requested,
+            # such that it increases with the ablation rate
+            if displayDrift:
+
+                # Calculate the time derivative Vpdot of the shard volumes, which is proportional to the ablation rate
+                if t==0:
+                    # If t==0 we plot the first time step, which is the first one where the ablation is calculated
+                    Vpdot = 12/5*np.pi*(self.output.eqsys.Y_p.data[t,shards,0]*(self.output.eqsys.Y_p.data[t,shards,0]>=0))*(4/5)*self.output.other.scalar.Ypdot.data[0,shards,0]
+                else:
+                    # If t>0, we use row t-1 in Ypdot, since Ypdot is shifted compared to Y_p
+                    # because Ypdot is not calculated in the zeroth time step
+                    Vpdot = 12/5*np.pi*(self.output.eqsys.Y_p.data[t,shards,0]*(self.output.eqsys.Y_p.data[t,shards,0]>=0))*(4/5)*self.output.other.scalar.Ypdot.data[t-1,shards,0]
+
+                # Calculate opacity of the drift and deposition positions
+                # This scaling is quite arbitrary chosen, and may not be optimal to quantitatively compare ablation rates,
+                # but looks quite good aestetically at least and makes the drift quite clearly visible for most ablating shards
+                if np.max(-Vpdot)>0:
+                    #alpha = (-Vpdot/np.max(-Vpdot))**0.25
+                    alpha = (np.tanh(np.log(-Vpdot/np.max(-Vpdot)*10+1e-30)) + 1)/2
+                else:
+                    alpha = np.zeros(Vpdot.shape)
+
+        else:
+            sizes = 4*np.ones(len(Rp[t,shards]))
+
+            # If the shard marker sizes are not scaled with their actual size, 
+            # we also do not vary the opacity of the drifts and deposition locations with the ablation rate
+            if displayDrift:
+                alpha = np.ones(len(Rp[t,shards]))
+
+
+        # Plot shards
+        ax.scatter(Rp[t,shards]-eq.R0,Zp[t,shards],s=sizes[shards],color=shardColor, edgecolors = 'k', zorder=2)
+
+        # Plot drifts and deposition positions, if requested
+        if displayDrift:
+            # Cap the drift somewhat outside the plasma
+            Rp_dep_max = (eq.RMinusR0_f[0,-1]*1.2+eq.R0)
+            Rp_dep[Rp_dep>Rp_dep_max] = Rp_dep_max
+
+            # To make the drifting clouds look more "cloudy", we plot several lines on top of each other
+            # with increasing line width, to make the edges less sharp
+            for i in range(len(alpha)):
+                lw_core = 1.5 # Line width with full opacity
+                lw_edge = 3 # Largest line width
+
+                # Number of steps of decreasing opacity (the opacity is the same for all lines individually,
+                # but the total opacity increases where several lines are plotted on top of each other)
+                nlw = 5
+
+                # Plot lines illustrating the drift.
+                # We set zorder = 1 here to plot the drifts behind the shards and deposition locations, to keep them more clearly visible
+                for ilw in range(nlw):
+                    ax.plot(np.array([Rp[t,shards][i], Rp_dep[t,shards][i]])-eq.R0, np.array([Zp[t,shards][i], Zp[t,shards][i]]), linewidth = lw_core+ilw*(lw_edge-lw_core)/nlw, color = driftColor, alpha = alpha[i]*0.8/nlw, zorder=1, solid_capstyle = 'round')
+
+            # Plot deposition positions. We put these on top of everything else.
+            ax.scatter(Rp_dep[t,shards]-eq.R0,Zp[t,shards],s=sizes[shards],color=depColor, alpha = alpha, zorder = 3)
+
 
         ax.set_xlabel('Radius $R-R_0$ (m)')
         ax.set_ylabel('Height $Z-Z_0$ (m)')

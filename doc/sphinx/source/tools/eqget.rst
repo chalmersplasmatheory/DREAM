@@ -4,7 +4,7 @@ Equilibrium tools
 =================
 DREAM provides some Python classes and graphical tools for working with magnetic
 equilibria in various formats. As described on the page about the
-:ref:`_radialgrid-numerical`, DREAM uses a LUKE format for equilibrium data.
+:ref:`radialgrid-numerical`, DREAM uses a LUKE format for equilibrium data.
 We however also provide a number of classes for converting data from other
 formats to the LUKE format. Currently, data can be exported from ASDEX Upgrade
 shotfiles and EQDSK files.
@@ -19,7 +19,7 @@ The ``eqget`` GUI can be launched by running the Python script
 ``tools/eqget/eqget.py``. It allows you to load and visualize magnetic
 equilibrium data in a number of supported formats (listed above).
 
-.. figure:: _static/figs/eqget-GUI.png
+.. figure:: ../_static/figs/eqget-GUI.png
    :width: 60%
    :align: center
    :alt: Screenshot of the DREAM equilibrium visualization tool
@@ -34,7 +34,7 @@ DREAM. At the time of writing, the following scripts are available:
 - ``EqFile.py`` -- loading data from LUKE files (standard format used in DREAM)
 
 Examples
-*******
+********
 **ASDEX Upgrade shotfiles**
 
 .. code-block:: python
