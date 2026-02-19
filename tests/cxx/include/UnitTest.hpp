@@ -2,6 +2,7 @@
 #define _UNITTEST_H
 
 #include <string>
+#include <softlib/SFile_HDF5.h>
 #include "tests/cxx/config.h"
 #include "FVM/Grid/Grid.hpp"
 
@@ -34,6 +35,7 @@ namespace DREAMTESTS {
 			);
             virtual DREAM::FVM::Grid *InitializeFluidGrid(len_t nr=10, real_t B0 = 2);
 			virtual DREAM::FVM::Grid *InitializeNumericFluidGrid(const real_t *r_f, const len_t nr, const std::string& mf);
+			//virtual DREAM::FVM::Grid *InitializeNumericStellaratorFluidGrid(const real_t *r_f, const len_t nr, SFile_HDF5 *s);
 			virtual DREAM::FVM::Grid *InitializeGridGeneralRPXi(
 				const len_t nr=4, const len_t np=5, const len_t nxi=7,
                 const len_t ntheta_interp = 20, const len_t nrProfiles=20, 

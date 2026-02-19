@@ -41,11 +41,12 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.lambda_p = None
 
         from desc.grid import LinearGrid
-        import desc.io
-        import desc.vmec
-
-        #self.eq = desc.io.load(self.filename)
-        self.eq = desc.vmec.VMECIO.load(self.filename)
+        if self.filename[-3] == ".nc":
+            import desc.vmec
+            self.eq = desc.vmec.VMECIO.load(self.filename)
+        else:
+            import desc.io
+            self.eq = desc.io.load(self.filename)
 
         if datafilename is None:
             self.grid = LinearGrid(L=int(self.nr-1), M=int((self.ntheta - 1) / 2), N=int((self.nphi - 1) / 2), endpoint=True, NFP=self.eq.NFP)
@@ -141,11 +142,6 @@ class StellaratorMagneticField(NumericalMagneticField):
             with h5py.File(f"{savefilename}.h5", 'w') as hf:
                 for key, value in dic.items():
                     hf[key] = value
-
-
-        #with h5py.File(f"data/numericalLUKE.h5", 'w') as hf:
-        #    for key, value in dictemp.items():
-        #        hf[key] = value
 
         # TODO: Save this as quantities instead of R and Z, for ouput and for SPI in the future
         #R_mn = self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota * \

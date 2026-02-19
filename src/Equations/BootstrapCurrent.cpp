@@ -54,16 +54,15 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
             // IE: Should psiPrimeRef be held constant for a stellarator?
-            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
+            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
 
-            constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
+            constantPrefactor[ir] = -BtorGOverR0 / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
             if (ir == 0)
                 constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
             else if (ir == nr - 1)
                 constantPrefactor[ir] /= rGrid->GetDr_f(ir-1);
             else
                 constantPrefactor[ir] /= ( rGrid->GetDr_f(ir-1) + rGrid->GetDr_f(ir) );
-
             // convert eV to J by multiplying with the electron charge
             constantPrefactor[ir] *= Constants::ec;
 
@@ -86,9 +85,11 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t FSA_1OverB = rGrid->GetFSA_1OverB(ir);    // <1 / B> * Bmin
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
-            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // R0 d(psi_ref)/dr
+            const real_t Bmax = rGrid->GetBmax(ir);                // Bmax
+            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
 
-            constantPrefactor[ir] = -BtorGOverR0 * R0 * R0 / ( FSA_B2 * Bmin * psiPrimeRef);
+            // For stellarators, density and temperature gradients dX/dr->(dX/dr)/iota in the Redl formula
+            constantPrefactor[ir] = -BtorGOverR0 / rGrid->GetIota(ir) / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
             if (ir == 0)
                 constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
             else if (ir == nr - 1)
@@ -99,9 +100,6 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             // convert eV to J by multiplying with the electron charge
             constantPrefactor[ir] *= Constants::ec;
 
-            // For stellarators, density and temperature gradients dX/dr->(dX/dr)/iota in the Redl formula
-            constantPrefactor[ir] *= rGrid->GetIota(ir);
-
             // calculate fraction of trapped particles
             ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
             // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
@@ -109,13 +107,11 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             // TODO: Change this?
             qR0[ir] = (BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin;
 
-            eps[ir] = (rGrid->GetBmax(ir) - rGrid->GetBmin(ir)) / (rGrid->GetBmax(ir) + rGrid->GetBmin(ir));
+            eps[ir] = (Bmax - Bmin) / (Bmax + Bmin);
         }
     } /*else {
         Possibly do a warning here?
     }*/
-    // IE: Do we want something else for a stellarator?
-
     // locate the main ion index
     bool isFound = false;
     // IE: is this (below) the best practice?

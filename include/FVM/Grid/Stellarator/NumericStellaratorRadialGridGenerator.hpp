@@ -46,7 +46,7 @@ namespace DREAM::FVM {
 
 		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t, len_t);
 
-        real_t _angleBounded(const real_t) const;
+        real_t _angleBounded(const real_t, const real_t) const;
 
     public:
         NumericStellaratorRadialGridGenerator(
