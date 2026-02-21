@@ -323,8 +323,7 @@ class KineticQuantity(UnknownQuantity):
         
         return q
 
-
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, **kwargs):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, phaseSpaceWeight=False, **kwargs):
         """
         Visualize this kinetic quantity at one time and radius using a filled
         contour plot.
@@ -333,9 +332,11 @@ class KineticQuantity(UnknownQuantity):
         :param r:           Radial index to visualize quantity at.
         :param ax:          Matplotlib Axes object to draw plot on.
         :param show:        If ``True``, calls ``matplotlib.pyplot.show()`` with ``block=False`` after plotting the quantity.
-        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity.
-        :param coordinates: Determines which momentum coordinate system to use.
-        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.contourf()`` method.
+        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity. Default: False.
+        :param coordinates: Determines which momentum coordinate system to use. Supported options: "spherical" or "cylindrical". If None (default), chooses the coordinate system used inside DREAM.
+        :param interpolateCylindrical: If True and coordinates=="cylindrical", will extend data to pperp=0 to avoid the gaps that form since there's otherwise no cell center there.
+        :param phaseSpaceWeight: If ``True``, adds the phase space weight so that the "area in the plot" represents the electron density. Default: False.
+        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.contourf()``.
         """
         if self.momentumgrid is None:
             raise OutputException("Unable to plot kinetic quantity as its momentum grid has not been specified.")
@@ -348,16 +349,20 @@ class KineticQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        data = None
+        data = self.data[t, r, :]
+        if phaseSpaceWeight:
+            if coordinates == 'cylindrical'[:len(coordinates)]:
+                data = data * self.momentumgrid.VprimeCylindrical[r]
+            else:
+                data = data * self.momentumgrid.VprimeSpherical[r]
+
         sign = ''
         if logarithmic:
-            if np.all(self.data[t,r,:] <=0):
+            if np.all(data <=0):
                 sign = '$-$'
-                data = np.log10(-self.data[t,r,:])
+                data = np.log10(-data)
             else:
-                data = np.log10(self.data[t,r,:])
-        else:
-            data = self.data[t,r,:]
+                data = np.log10(data)
 
         if data.ndim != 2:
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
@@ -376,14 +381,14 @@ class KineticQuantity(UnknownQuantity):
                 data = (data[:,1:] + data[:,:-1]) / 2
             if data.shape[0] == self.momentumgrid.PPAR.shape[0] + 1:
                 data = (data[1:,:] + data[:-1, :]) / 2
-            
+
             if interpolateCylindrical:
-                pperp = np.concatenate((self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
+                pperp = np.concatenate((np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1)), self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
+                ppar_trailing = (self.momentumgrid.PPAR[-1,:] + (self.momentumgrid.PPAR[-1,:] - self.momentumgrid.PPAR[-2,:])/2).reshape((1,-1))
+                ppar_leading = (self.momentumgrid.PPAR[0,:] + (self.momentumgrid.PPAR[0,:] - self.momentumgrid.PPAR[1,:])/2).reshape((1,-1))
+                ppar = np.concatenate((ppar_leading, self.momentumgrid.PPAR, ppar_trailing), axis=0)
                 
-                ppar_new = (self.momentumgrid.PPAR[-1,:] + (self.momentumgrid.PPAR[-1,:] - self.momentumgrid.PPAR[-2,:])/2).reshape((1,-1))
-                ppar = np.concatenate((self.momentumgrid.PPAR, ppar_new), axis=0)
-                
-                data_int = np.concatenate((data, data[-1,:].reshape((1,-1))), axis=0)
+                data_int = np.concatenate((data[0,:].reshape((1,-1)), data, data[-1,:].reshape((1,-1))), axis=0)
                 
                 cp = ax.contourf(ppar, pperp, data_int, cmap='GeriMap', **kwargs)
             else:
