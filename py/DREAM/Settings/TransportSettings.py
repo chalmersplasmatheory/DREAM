@@ -336,13 +336,6 @@ class TransportSettings:
         self.frozen_current_D_I_max = D_I_max
 
 
-    def setBoundaryCondition(self, bc):
-        """
-        Set the boundary condition to use for the transport.
-        """
-        self.boundarycondition = bc
-
-
     def fromdict(self, data):
         """
         Set all options from a dictionary.
