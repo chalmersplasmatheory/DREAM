@@ -12,6 +12,7 @@ from . UnknownQuantity import UnknownQuantity
 from .. import GeriMap
 from .. Settings.MomentumGrid import TYPE_PXI
 
+from .. import helpers
 
 class KineticQuantity(UnknownQuantity):
 
@@ -627,4 +628,82 @@ class KineticQuantity(UnknownQuantity):
         """
         return 1
 
-        
+    def resolutionSensors(self, axis, y_floor=0.0, quantityWeighted=False):
+        """
+        Returns two KineticQuantities representing resolution sensors S_grad and S_curv.
+
+            S_grad: dx * |dy/dx| / (|y| + y_floor)
+            S_curv: dx^2 * |d^2y/dx^2| / (|y| + y_floor)
+
+        where y is this quantity's data, and x is the coordinate along `axis`.
+        y_floor has the effect of suppressing the sensors where |y| << y_floor.
+
+        S_grad represents the relative amount that data changes between adjacent cells in the `axis` direction.
+        S_curv is a similar measure in the second derivative (roughly the relative non-linear change between cells).
+
+        If quantityWeighted is True, returns instead |y| * S_grad, |y| * S_curv,
+        representing roughly the absolute change between adjacent cells.
+        """
+        if self.data.ndim != 4:
+            raise OutputException(
+                "Resolution sensor assumes 4D data. Found {} for quantity {}".format(
+                    self.data.ndim, self.name
+                )
+            )
+        mg = self.momentumgrid
+        if axis == 0:
+            raise OutputException(
+                "Cannot evaluate resolution sensitivity w.r.t. time for quantity {}.".format(
+                    self.name
+                )
+            )
+        elif axis == 1:
+            x = mg.r
+            dx = mg.dr
+            xname = "r"
+        elif axis == 2:
+            xname = mg.p2name
+            x = mg.p2
+            dx = mg.dp2
+        elif axis == 3:
+            xname = mg.p1name
+            x = mg.p1
+            dx = mg.dp1
+        else:
+            raise ValueError(f"Unrecognized 'axis': {axis}")
+
+        S_grad, S_curv = helpers.compute_S_grad_S_curv(
+            self.data, x, dx, axis=axis, y_floor=y_floor
+        )
+
+        rel_label = "Relative "
+        if quantityWeighted:
+            rel_label = ""
+            S_grad = S_grad * np.abs(self.data)
+            S_curv = S_curv * np.abs(self.data)
+
+        S_grad_qty = KineticQuantity(
+            "$S_\\mathrm{{grad}}^{{{}}}$({})".format(xname, self.name),
+            data=S_grad,
+            grid=self.grid,
+            output=self.output,
+            momentumgrid=self.momentumgrid,
+            attr={
+                "description": "{}{}-direction cell gradient uncertainty measure of {}".format(
+                    rel_label, xname, self.name
+                )
+            },
+        )
+        S_curv_qty = KineticQuantity(
+            "$S_\\mathrm{{curv}}^{{{}}}$({})".format(xname, self.name),
+            data=S_curv,
+            grid=self.grid,
+            output=self.output,
+            momentumgrid=self.momentumgrid,
+            attr={
+                "description": "{}{}-direction cell hessian uncertainty measure of {}".format(
+                    rel_label, xname, self.name
+                )
+            },
+        )
+        return S_grad_qty, S_curv_qty
