@@ -80,6 +80,26 @@ class KineticQuantity(UnknownQuantity):
         """
         return self.data[index]
 
+    def new_like(self, name=None, data=None, grid=None, output=None, attr=None):
+        """
+        Creates a new object of the same type where the provided quantities replace
+        those of self.
+        """
+        if name is None:
+            name = self.name
+        if data is None:
+            data = self.data
+        if grid is None:
+            grid = self.grid
+        if output is None:
+            output = self.output
+        if attr is None:
+            attr = {}
+            if hasattr(self, "description"):
+                attr["description"] = self.description
+            if hasattr(self, "description_eqn"):
+                attr["equation"] = self.description_eqn
+        return type(self)(name=name, data=data, grid=grid, output=output, momentumgrid=self.momentumgrid, attr=attr)
 
     def angleAveraged(self, t=None, r=None, moment='distribution'):
         r"""

@@ -7,7 +7,6 @@ from . OutputException import OutputException
 
 
 class UnknownQuantity:
-    
 
     def __init__(self, name, data, grid, output, attr=list()):
         """
@@ -139,6 +138,8 @@ class UnknownQuantity:
         # Construct new object
         if qty is None:
             return UnknownQuantity(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
+        elif hasattr(qty, "new_like"):
+            return qty.new_like(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
         else:
             return qty(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
 
