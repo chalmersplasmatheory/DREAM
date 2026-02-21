@@ -1,10 +1,6 @@
 # Base class for "other" kinetic (radius + momentum + time) quantities
 #
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-from . OutputException import OutputException
 from . FluidQuantity import FluidQuantity
 
 

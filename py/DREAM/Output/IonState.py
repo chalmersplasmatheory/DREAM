@@ -1,7 +1,5 @@
 # Object representing a single ion charge state
 
-
-import numpy as np
 from .FluidQuantity import FluidQuantity
 
 

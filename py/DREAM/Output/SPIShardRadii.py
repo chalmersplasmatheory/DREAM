@@ -7,7 +7,6 @@ from matplotlib import animation
 
 from . ScalarQuantity import ScalarQuantity
 from .FluidQuantity import FluidQuantity
-from . OutputException import OutputException
 
 
 anim_contours = None
