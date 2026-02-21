@@ -20,7 +20,6 @@
 #               is the number of radial locations.
 #
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numbers import Number
 from DREAM.Settings.Equations.EquationException import EquationException

@@ -2,7 +2,6 @@
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 
-from . PrescribedInitialParameter import PrescribedInitialParameter
 from ... helpers import scal
 
 BOOTSTRAP_MODE_DISABLED = 1
