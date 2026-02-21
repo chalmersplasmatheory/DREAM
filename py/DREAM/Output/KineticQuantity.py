@@ -323,6 +323,85 @@ class KineticQuantity(UnknownQuantity):
         
         return q
 
+    def plotMesh(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, phaseSpaceWeight=False, **kwargs):
+        """
+        Visualize this kinetic quantity at one time and radius using a pcolormesh plot,
+        representing the cell values as used inside the DREAM solver.
+
+        :param t:           Time index to visualize quantity at.
+        :param r:           Radial index to visualize quantity at.
+        :param ax:          Matplotlib Axes object to draw plot on.
+        :param show:        If ``True``, calls ``matplotlib.pyplot.show()`` with ``block=False`` after plotting the quantity.
+        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity. Default: False.
+        :param coordinates: Determines which momentum coordinate system to use. Supported options: "spherical" or "cylindrical". If None (default), chooses the coordinate system used inside DREAM.
+        :param phaseSpaceWeight: If ``True``, adds the phase space weight so that the "area in the plot" represents the density. Default: False.
+        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.pcolormesh()``.
+        """
+        mg = self.momentumgrid
+
+        if self.momentumgrid is None:
+            raise OutputException(
+                "Unable to plot kinetic quantity as its momentum grid has not been specified."
+            )
+
+        genax = ax is None
+        if genax:
+            ax = plt.axes()
+            if show is None:
+                show = True
+
+        data = self.data[t, r, :]
+        if data.ndim > 2:
+            raise OutputException(
+                "Data dimensionality is too high. Unable to visualize kinetic quantity."
+            )
+        elif data.ndim < 2:
+            raise OutputException(
+                "Data dimensionality is too low. Unable to visualize kinetic quantity."
+            )
+
+        if coordinates is None:
+            P1, P2 = np.meshgrid(mg.p1_f, mg.p2_f)
+            xlabel = mg.p1TeXname
+            ylabel = mg.p2TeXname
+            if phaseSpaceWeight:
+                data = data * mg.Vprime_VpVol[r]
+        elif coordinates.lower() == "cylindrical"[: len(coordinates)]:
+            P1, P2 = mg.PPAR_f, mg.PPERP_f
+            xlabel = PparPperpGrid.P1_TEX_NAME
+            ylabel = PparPperpGrid.P2_TEX_NAME
+            if phaseSpaceWeight:
+                data = data * mg.VprimeCylindrical[r]
+        elif coordinates.lower() == "spherical"[: len(coordinates)]:
+            P1, P2 = mg.P_f, mg.XI_f
+            xlabel = PXiGrid.P1_TEX_NAME
+            ylabel = PXiGrid.P2_TEX_NAME
+            if phaseSpaceWeight:
+                data = data * mg.VprimeSpherical[r]
+        else:
+            raise ValueError(f"Unrecognized coordinates: {coordinates}")
+
+        sign = ""
+        if logarithmic:
+            if np.all(data <= 0):
+                sign = "$-$"
+                data = np.log10(-data)
+            else:
+                data = np.log10(data)
+
+        pcm = ax.pcolormesh(P1, P2, data, cmap="GeriMap", **kwargs)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(f"{sign}{self.getTeXName()}")
+
+        if genax:
+            plt.colorbar(mappable=pcm, ax=ax)
+
+        if show:
+            plt.show(block=False)
+
+        return ax, pcm
+
     def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, phaseSpaceWeight=False, **kwargs):
         """
         Visualize this kinetic quantity at one time and radius using a filled
