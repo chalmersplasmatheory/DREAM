@@ -7,7 +7,9 @@ from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, IONIZATION_MODE_FLUID_RE, ION_OPACITY_MODE_TRANSPARENT, ION_CHARGED_DIFFUSION_MODE_NONE, ION_CHARGED_DIFFUSION_MODE_PRESCRIBED, ION_NEUTRAL_DIFFUSION_MODE_NONE, ION_NEUTRAL_DIFFUSION_MODE_PRESCRIBED, ION_CHARGED_ADVECTION_MODE_NONE, ION_CHARGED_ADVECTION_MODE_PRESCRIBED, ION_NEUTRAL_ADVECTION_MODE_NONE, ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED, ION_SOURCE_NONE, ION_SOURCE_PRESCRIBED, ION_SOURCE_PRESCRIBED_VOLUMETRIC
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
+from ... DREAMException import DREAMException
 from ... helpers import scal
+
 
 # Model to use for ion heat
 IONS_T_I_NEGLECT = 1
@@ -161,7 +163,7 @@ class Ions(UnknownQuantity):
         if t is None:
             t = self.tSourceTerm
         elif self.tSourceTerm is not None and not np.all(t == self.tSourceTerm):
-            raise EquationException(f"The time grid used for ion sources must be the same for all ion species.")
+            raise EquationException("The time grid used for ion sources must be the same for all ion species.")
         
         if r is None:
             r = self.rSourceTerm

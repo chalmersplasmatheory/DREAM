@@ -33,9 +33,9 @@ class BootstrapCurrent(UnknownQuantity):
         model, which is based on A. Redl et al (DOI: https://doi.org/10.1063/5.0012664).
         """
         if mode is True:
-            self.mode = BOOTSTRAP_REDL
+            self.mode = BOOTSTRAP_MODE_REDL
         elif mode is False:
-            self.mode = BOOTSTRAP_DISABLED
+            self.mode = BOOTSTRAP_MODE_DISABLED
         elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_REDL]:
             self.mode = int(scal(mode))
         else:

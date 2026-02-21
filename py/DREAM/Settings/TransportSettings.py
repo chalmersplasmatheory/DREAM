@@ -237,11 +237,11 @@ class TransportSettings:
         if r.ndim != 1: r = np.reshape(r, (r.size,))
         if t.ndim != 1: t = np.reshape(t, (t.size,))
 
-        if (self.kinetic == False and not override_kinetic) and len(coeff.shape) == 2:
+        if (not self.kinetic and not override_kinetic) and len(coeff.shape) == 2:
             setattr(self, name, coeff)
             setattr(self, name+'_r', r)
             setattr(self, name+'_t', t)
-        elif (self.kinetic == True or override_kinetic) and len(coeff.shape) == 4:
+        elif (self.kinetic or override_kinetic) and len(coeff.shape) == 4:
             # Verify that the momentum grid is given
             if p is not None and xi is not None:
                 ppar, pperp = None, None
