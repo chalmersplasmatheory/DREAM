@@ -2,9 +2,11 @@
 
 
 import numpy as np
+
 from .. DREAMException import DREAMException
 from .. helpers import scal
 
+from Equations.EquationException import EquationException
 
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
