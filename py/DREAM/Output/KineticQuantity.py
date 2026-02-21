@@ -1,5 +1,6 @@
 # Base class for kinetic (radius + momentum + time) quantities
 #
+import warnings
 
 from matplotlib import animation
 import matplotlib.pyplot as plt
@@ -24,20 +25,27 @@ class KineticQuantity(UnknownQuantity):
 
         self.momentumgrid = momentumgrid
 
-        # Cell or flux grid?
-        if momentumgrid.p1.size == data.shape[3]:
-            self.p1 = momentumgrid.p1
-        elif momentumgrid.p1_f.size == data.shape[3]:
-            self.p1 = momentumgrid.p1_f
+        if momentumgrid is None:
+            warnings.warn(
+                "KineticQuantity generated without momentumgrid "
+                "(e.g. by operating on two kinetic quantities). "
+                "This object will have limited functionality."
+            )
         else:
-            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+            # Cell or flux grid?
+            if momentumgrid.p1.size == data.shape[3]:
+                self.p1 = momentumgrid.p1
+            elif momentumgrid.p1_f.size == data.shape[3]:
+                self.p1 = momentumgrid.p1_f
+            else:
+                raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
 
-        if momentumgrid.p2.size == data.shape[2]:
-            self.p2 = momentumgrid.p2
-        elif momentumgrid.p2_f.size == data.shape[2]:
-            self.p2 = momentumgrid.p2_f
-        else:
-            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+            if momentumgrid.p2.size == data.shape[2]:
+                self.p2 = momentumgrid.p2
+            elif momentumgrid.p2_f.size == data.shape[2]:
+                self.p2 = momentumgrid.p2_f
+            else:
+                raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
 
         if grid.r.size == data.shape[1]:
             self.radius = grid.r
