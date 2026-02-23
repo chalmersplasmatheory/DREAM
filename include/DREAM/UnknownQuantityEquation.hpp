@@ -44,7 +44,12 @@ namespace DREAM {
 
         void Evaluate(const len_t, real_t*, FVM::UnknownQuantityHandler*);
 
-		const bool *GetAlternativeEquationMask() { return this->condition->GetTriggerMask(); }
+		const bool *GetAlternativeEquationMask() {
+			if (this->condition != nullptr)
+				return this->condition->GetTriggerMask();
+			else
+				return nullptr;
+		}
         std::string GetDescription() const { return this->description; }
         const std::string& GetDescriptionAlt() const { return this->description_alt; }
         const std::map<len_t, FVM::Operator*>& GetOperators(bool alt=false) const {
