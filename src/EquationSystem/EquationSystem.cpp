@@ -85,7 +85,10 @@ EquationSystem::~EquationSystem() {
     if (this->SPI != nullptr)
 		delete this->SPI;
 
-	for (auto eqn : this->unknown_equations)
+    if (this->mollerKH != nullptr)
+        delete this->mollerKH;
+
+    for (auto eqn : this->unknown_equations)
 		delete eqn;
     
 	FVM::RadialGrid *rgrid=nullptr;
@@ -312,6 +315,8 @@ void EquationSystem::Solve() {
     if (this->timingStdout) {
         this->solver->PrintTimings();
         this->REFluid->PrintTimings();
+        if (this->mollerKH != nullptr)
+            this->mollerKH->PrintTimings();
     }
 
 	DREAM::IO::Deinit();

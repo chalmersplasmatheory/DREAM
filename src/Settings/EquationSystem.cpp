@@ -179,6 +179,18 @@ void SimulationGenerator::ConstructEquations(
     PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns, pThreshold, pMode);
     eqsys->SetPostProcessor(postProcessor);
 
+    OptionConstants::eqterm_avalanche_mode ava_mode = (OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) {
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        constexpr len_t nXiStars = 80;
+        constexpr len_t nIntPts = 50;
+        KnockOnUtilities::orbit_integration_method integrationMethod = KnockOnUtilities::ADAPTIVE_TRAPEZOID;
+        MollerKernelHandler *MKH = new MollerKernelHandler(
+            hottailGrid, runawayGrid, pCutoff, nXiStars, nIntPts, integrationMethod
+        );
+        eqsys->SetMollerKernelHandler(MKH);
+    }
+
     // Hot-tail quantities
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s, oqty_terms);
