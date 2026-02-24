@@ -1,5 +1,6 @@
 # Base class for kinetic (radius + momentum + time) quantities
 #
+import warnings
 
 from matplotlib import animation
 import matplotlib.pyplot as plt
@@ -11,7 +12,10 @@ from . UnknownQuantity import UnknownQuantity
 
 from .. import GeriMap
 from .. Settings.MomentumGrid import TYPE_PXI
+from . PXiGrid import PXiGrid
+from . PparPperpGrid import PparPperpGrid
 
+from .. import helpers
 
 class KineticQuantity(UnknownQuantity):
 
@@ -23,20 +27,27 @@ class KineticQuantity(UnknownQuantity):
 
         self.momentumgrid = momentumgrid
 
-        # Cell or flux grid?
-        if momentumgrid.p1.size == data.shape[3]:
-            self.p1 = momentumgrid.p1
-        elif momentumgrid.p1_f.size == data.shape[3]:
-            self.p1 = momentumgrid.p1_f
+        if momentumgrid is None:
+            warnings.warn(
+                "KineticQuantity generated without momentumgrid "
+                "(e.g. by operating on two kinetic quantities). "
+                "This object will have limited functionality."
+            )
         else:
-            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+            # Cell or flux grid?
+            if momentumgrid.p1.size == data.shape[3]:
+                self.p1 = momentumgrid.p1
+            elif momentumgrid.p1_f.size == data.shape[3]:
+                self.p1 = momentumgrid.p1_f
+            else:
+                raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
 
-        if momentumgrid.p2.size == data.shape[2]:
-            self.p2 = momentumgrid.p2
-        elif momentumgrid.p2_f.size == data.shape[2]:
-            self.p2 = momentumgrid.p2_f
-        else:
-            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+            if momentumgrid.p2.size == data.shape[2]:
+                self.p2 = momentumgrid.p2
+            elif momentumgrid.p2_f.size == data.shape[2]:
+                self.p2 = momentumgrid.p2_f
+            else:
+                raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
 
         if grid.r.size == data.shape[1]:
             self.radius = grid.r
@@ -77,6 +88,29 @@ class KineticQuantity(UnknownQuantity):
         """
         return self.data[index]
 
+    def new_like(self, name=None, data=None, grid=None, output=None, attr=None, momentumgrid=None):
+        """
+        Creates a new object of the same type where the provided quantities replace
+        those of self.
+        """
+        if name is None:
+            name = self.name
+        if data is None:
+            data = self.data
+        if grid is None:
+            grid = self.grid
+        if output is None:
+            output = self.output
+        if attr is None:
+            attr = {}
+            if hasattr(self, "description"):
+                attr["description"] = self.description
+            if hasattr(self, "description_eqn"):
+                attr["equation"] = self.description_eqn
+        if momentumgrid is None:
+            momentumgrid = self.momentumgrid
+
+        return type(self)(name=name, data=data, grid=grid, output=output, momentumgrid=momentumgrid, attr=attr)
 
     def angleAveraged(self, t=None, r=None, moment='distribution'):
         r"""
@@ -300,8 +334,89 @@ class KineticQuantity(UnknownQuantity):
         
         return q
 
+    def plotMesh(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, phaseSpaceWeight=False, **kwargs):
+        """
+        Visualize this kinetic quantity at one time and radius using a pcolormesh plot,
+        representing the cell values as used inside the DREAM solver.
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, **kwargs):
+        :param t:           Time index to visualize quantity at.
+        :param r:           Radial index to visualize quantity at.
+        :param ax:          Matplotlib Axes object to draw plot on.
+        :param show:        If ``True``, calls ``matplotlib.pyplot.show()`` with ``block=False`` after plotting the quantity.
+        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity. Default: False.
+        :param coordinates: Determines which momentum coordinate system to use. Supported options: "spherical" or "cylindrical". If None (default), chooses the coordinate system used inside DREAM.
+        :param phaseSpaceWeight: If ``True``, adds the phase space weight so that the "area in the plot" represents the density. Default: False.
+        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.pcolormesh()``.
+        """
+        mg = self.momentumgrid
+
+        if self.momentumgrid is None:
+            raise OutputException(
+                "Unable to plot kinetic quantity as its momentum grid has not been specified."
+            )
+
+        genax = ax is None
+        if genax:
+            ax = plt.axes()
+            if show is None:
+                show = True
+
+        data = self.data[t, r, :]
+        if data.ndim > 2:
+            raise OutputException(
+                "Data dimensionality is too high. Unable to visualize kinetic quantity."
+            )
+        elif data.ndim < 2:
+            raise OutputException(
+                "Data dimensionality is too low. Unable to visualize kinetic quantity."
+            )
+        weight_label = ""
+        if phaseSpaceWeight:
+            weight_label = "(Vp/Vpvol)*"
+
+        if coordinates is None:
+            P1, P2 = np.meshgrid(mg.p1_f, mg.p2_f)
+            xlabel = mg.p1TeXname
+            ylabel = mg.p2TeXname
+            if phaseSpaceWeight:
+                data = data * mg.Vprime_VpVol[r]
+        elif coordinates.lower() == "cylindrical"[: len(coordinates)]:
+            P1, P2 = mg.PPAR_f, mg.PPERP_f
+            xlabel = PparPperpGrid.P1_TEX_NAME
+            ylabel = PparPperpGrid.P2_TEX_NAME
+            if phaseSpaceWeight:
+                data = data * mg.VprimeCylindrical[r]
+        elif coordinates.lower() == "spherical"[: len(coordinates)]:
+            P1, P2 = mg.P_f, mg.XI_f
+            xlabel = PXiGrid.P1_TEX_NAME
+            ylabel = PXiGrid.P2_TEX_NAME
+            if phaseSpaceWeight:
+                data = data * mg.VprimeSpherical[r]
+        else:
+            raise ValueError(f"Unrecognized coordinates: {coordinates}")
+
+        sign = ""
+        if logarithmic:
+            if np.all(data <= 0):
+                sign = "$-$"
+                data = np.log10(-data)
+            else:
+                data = np.log10(data)
+
+        pcm = ax.pcolormesh(P1, P2, data, cmap="GeriMap", **kwargs)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(f"{sign}{weight_label}{self.getTeXName()}")
+
+        if genax:
+            plt.colorbar(mappable=pcm, ax=ax)
+
+        if show:
+            plt.show(block=False)
+
+        return ax, pcm
+
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, phaseSpaceWeight=False, **kwargs):
         """
         Visualize this kinetic quantity at one time and radius using a filled
         contour plot.
@@ -310,9 +425,11 @@ class KineticQuantity(UnknownQuantity):
         :param r:           Radial index to visualize quantity at.
         :param ax:          Matplotlib Axes object to draw plot on.
         :param show:        If ``True``, calls ``matplotlib.pyplot.show()`` with ``block=False`` after plotting the quantity.
-        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity.
-        :param coordinates: Determines which momentum coordinate system to use.
-        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.contourf()`` method.
+        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity. Default: False.
+        :param coordinates: Determines which momentum coordinate system to use. Supported options: "spherical" or "cylindrical". If None (default), chooses the coordinate system used inside DREAM.
+        :param interpolateCylindrical: If True and coordinates=="cylindrical", will extend data to pperp=0 to avoid the gaps that form since there's otherwise no cell center there.
+        :param phaseSpaceWeight: If ``True``, adds the phase space weight so that the "area in the plot" represents the electron density. Default: False.
+        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.contourf()``.
         """
         if self.momentumgrid is None:
             raise OutputException("Unable to plot kinetic quantity as its momentum grid has not been specified.")
@@ -325,16 +442,22 @@ class KineticQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        data = None
+        weight_label = ""
+        data = self.data[t, r, :]
+        if phaseSpaceWeight:
+            weight_label = "(Vp/Vpvol)*"
+            if coordinates == 'cylindrical'[:len(coordinates)]:
+                data = data * self.momentumgrid.VprimeCylindrical[r]
+            else:
+                data = data * self.momentumgrid.VprimeSpherical[r]
+
         sign = ''
         if logarithmic:
-            if np.all(self.data[t,r,:] <=0):
+            if np.all(data <=0):
                 sign = '$-$'
-                data = np.log10(-self.data[t,r,:])
+                data = np.log10(-data)
             else:
-                data = np.log10(self.data[t,r,:])
-        else:
-            data = self.data[t,r,:]
+                data = np.log10(data)
 
         if data.ndim != 2:
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
@@ -353,14 +476,14 @@ class KineticQuantity(UnknownQuantity):
                 data = (data[:,1:] + data[:,:-1]) / 2
             if data.shape[0] == self.momentumgrid.PPAR.shape[0] + 1:
                 data = (data[1:,:] + data[:-1, :]) / 2
-            
+
             if interpolateCylindrical:
-                pperp = np.concatenate((self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
+                pperp = np.concatenate((np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1)), self.momentumgrid.PPERP, np.zeros(self.momentumgrid.PPERP.shape[1]).reshape((1,-1))), axis=0)
+                ppar_trailing = (self.momentumgrid.PPAR[-1,:] + (self.momentumgrid.PPAR[-1,:] - self.momentumgrid.PPAR[-2,:])/2).reshape((1,-1))
+                ppar_leading = (self.momentumgrid.PPAR[0,:] + (self.momentumgrid.PPAR[0,:] - self.momentumgrid.PPAR[1,:])/2).reshape((1,-1))
+                ppar = np.concatenate((ppar_leading, self.momentumgrid.PPAR, ppar_trailing), axis=0)
                 
-                ppar_new = (self.momentumgrid.PPAR[-1,:] + (self.momentumgrid.PPAR[-1,:] - self.momentumgrid.PPAR[-2,:])/2).reshape((1,-1))
-                ppar = np.concatenate((self.momentumgrid.PPAR, ppar_new), axis=0)
-                
-                data_int = np.concatenate((data, data[-1,:].reshape((1,-1))), axis=0)
+                data_int = np.concatenate((data[0,:].reshape((1,-1)), data, data[-1,:].reshape((1,-1))), axis=0)
                 
                 cp = ax.contourf(ppar, pperp, data_int, cmap='GeriMap', **kwargs)
             else:
@@ -370,7 +493,7 @@ class KineticQuantity(UnknownQuantity):
         else:
             raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
 
-        ax.set_title(f'{sign}{self.getTeXName()}')
+        ax.set_title(f'{sign}{weight_label}{self.getTeXName()}')
 
         if genax:
             plt.colorbar(mappable=cp, ax=ax)
@@ -520,4 +643,82 @@ class KineticQuantity(UnknownQuantity):
         """
         return 1
 
-        
+    def resolutionSensors(self, axis, y_floor=0.0, quantityWeighted=False):
+        """
+        Returns two KineticQuantities representing resolution sensors S_grad and S_curv.
+
+            S_grad: dx * |dy/dx| / (|y| + y_floor)
+            S_curv: dx^2 * |d^2y/dx^2| / (|y| + y_floor)
+
+        where y is this quantity's data, and x is the coordinate along `axis`.
+        y_floor has the effect of suppressing the sensors where |y| << y_floor.
+
+        S_grad represents the relative amount that data changes between adjacent cells in the `axis` direction.
+        S_curv is a similar measure in the second derivative (roughly the relative non-linear change between cells).
+
+        If quantityWeighted is True, returns instead |y| * S_grad, |y| * S_curv,
+        representing roughly the absolute change between adjacent cells.
+        """
+        if self.data.ndim != 4:
+            raise OutputException(
+                "Resolution sensor assumes 4D data. Found {} for quantity {}".format(
+                    self.data.ndim, self.name
+                )
+            )
+        mg = self.momentumgrid
+        if axis == 0:
+            raise OutputException(
+                "Cannot evaluate resolution sensitivity w.r.t. time for quantity {}.".format(
+                    self.name
+                )
+            )
+        elif axis == 1:
+            x = mg.r
+            dx = mg.dr
+            xname = "r"
+        elif axis == 2:
+            xname = mg.p2name
+            x = mg.p2
+            dx = mg.dp2
+        elif axis == 3:
+            xname = mg.p1name
+            x = mg.p1
+            dx = mg.dp1
+        else:
+            raise ValueError(f"Unrecognized 'axis': {axis}")
+
+        S_grad, S_curv = helpers.compute_S_grad_S_curv(
+            self.data, x, dx, axis=axis, y_floor=y_floor
+        )
+
+        rel_label = "Relative "
+        if quantityWeighted:
+            rel_label = ""
+            S_grad = S_grad * np.abs(self.data)
+            S_curv = S_curv * np.abs(self.data)
+
+        S_grad_qty = KineticQuantity(
+            "$S_\\mathrm{{grad}}^{{{}}}$({})".format(xname, self.name),
+            data=S_grad,
+            grid=self.grid,
+            output=self.output,
+            momentumgrid=self.momentumgrid,
+            attr={
+                "description": "{}{}-direction cell gradient uncertainty measure of {}".format(
+                    rel_label, xname, self.name
+                )
+            },
+        )
+        S_curv_qty = KineticQuantity(
+            "$S_\\mathrm{{curv}}^{{{}}}$({})".format(xname, self.name),
+            data=S_curv,
+            grid=self.grid,
+            output=self.output,
+            momentumgrid=self.momentumgrid,
+            attr={
+                "description": "{}{}-direction cell hessian uncertainty measure of {}".format(
+                    rel_label, xname, self.name
+                )
+            },
+        )
+        return S_grad_qty, S_curv_qty

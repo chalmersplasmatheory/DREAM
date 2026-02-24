@@ -132,11 +132,11 @@ class DataObject:
             raise Exception("The '_getstring()' method is only intended for HDF5 strings.")
 
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         """
         Convert to numpy array.
         """
-        return np.asarray(self[:], dtype=dtype)
+        return np.asarray(self[:], dtype=dtype, copy=copy)
 
 
     """
