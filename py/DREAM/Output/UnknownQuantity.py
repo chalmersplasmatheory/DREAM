@@ -137,16 +137,23 @@ class UnknownQuantity:
         # Construct new object
         if qty is None:
             return UnknownQuantity(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
-        elif hasattr(qty, "new_like"):
-            return qty.new_like(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
+        elif hasattr(self, "new_like"):
+            # use copy constructor of operands if available
+            return self.new_like(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
+        elif hasattr(other, "new_like"):
+            # use copy constructor of operands if available
+            return other.new_like(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
         else:
+            # otherwise assume constructor signature of base UnknownQuantity
             return qty(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
 
 
-    def getName(self): return self.name
+    def getName(self):
+        return self.name
 
 
-    def getData(self): return self.data[:]
+    def getData(self):
+        return self.data[:]
 
 
     def getMultiples(self):
