@@ -723,7 +723,9 @@ void OtherQuantityHandler::DefineQuantities() {
 	DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
 		if (this->unknown_equations->at(this->id_f_hot)->HasOperatorAt(this->id_n_re)) {
 			real_t *v = qd->StoreEmpty();
-
+            for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
+                v[idx] = 0;
+            }
 			FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
 			const real_t *nre = unknowns->GetUnknownData(id_n_re);
 			avaPos->SetVectorElements(v, nre);
@@ -733,9 +735,29 @@ void OtherQuantityHandler::DefineQuantities() {
 				const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
 				avaNeg->SetVectorElements(v, nre_neg);
 			}
+            for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
+                v[idx] = -v[idx];
+            }
 		}
 	);
     
+    if (tracked_terms->knock_on_general_hot_hot != nullptr) {
+		DEF_HT("hottail/C_boltz", "Boltzmann knock-on collision integral [s^-1 m^-3]",
+			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *C_boltz = qd->StoreEmpty();
+            for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
+                C_boltz[idx] = 0;
+            }
+            tracked_terms->knock_on_general_hot_hot->SetVectorElements(C_boltz, ntot);
+            if (tracked_terms->knock_on_general_hot_re != nullptr){
+                tracked_terms->knock_on_general_hot_re->SetVectorElements(C_boltz, ntot);
+            }
+            // flip sign since the knock-on term appears in the residual with a minus sign
+            for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
+                C_boltz[idx] = -C_boltz[idx];
+            }
+		);
+    }
 	if (tracked_terms->comptonSource_hottail != nullptr) {
 		DEF_HT("hottail/S_compton", "Compton scattering source term [s^-1 m^-3]",
 			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
@@ -894,18 +916,40 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
     DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
-        real_t *v = qd->StoreEmpty();
+		if (this->unknown_equations->at(this->id_f_re)->HasOperatorAt(this->id_n_re)) {
+            real_t *v = qd->StoreEmpty();
 
-        FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
-        const real_t *nre = unknowns->GetUnknownData(id_n_re);
-        avaPos->SetVectorElements(v, nre);
+            FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
+            const real_t *nre = unknowns->GetUnknownData(id_n_re);
+            avaPos->SetVectorElements(v, nre);
 
-        if (this->id_n_re_neg) {
-            FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re_neg);
-            const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
-            avaNeg->SetVectorElements(v, nre_neg);
+            if (this->id_n_re_neg) {
+                FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re_neg);
+                const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
+                avaNeg->SetVectorElements(v, nre_neg);
+            }
+            for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++){
+                v[idx] = -v[idx];
+            }
         }
     );
+
+    
+    if (tracked_terms->knock_on_general_re_re != nullptr) {
+		DEF_RE("runaway/C_boltz", "Boltzmann knock-on collision integral [s^-1 m^-3]",
+			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
+			real_t *C_boltz = qd->StoreEmpty();
+            for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++){
+                C_boltz[idx] = 0;
+            }
+			tracked_terms->knock_on_general_re_re->SetVectorElements(C_boltz, ntot);
+            // flip sign since the knock-on term appears in the residual with a minus sign
+            for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++){
+                C_boltz[idx] = -C_boltz[idx];
+            }
+		);
+    }
+
     if (tracked_terms->comptonSource_runaway != nullptr) {
 		DEF_RE("runaway/S_compton", "Compton scattering source term [s^-1 m^-3]",
 			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
