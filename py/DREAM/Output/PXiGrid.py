@@ -31,7 +31,9 @@ class PXiGrid(MomentumGrid):
         def ppar(p, xi):
             return p * xi
         def pperp(p, xi):
-            return p * np.sqrt(1-xi**2)
+            sinSq = 1-xi**2
+            sinSq[sinSq<0] = 0
+            return p * np.sqrt(sinSq)
 
         self._P, self._XI = np.meshgrid(self.p[:], self.xi[:])
         self._PPAR = ppar(self._P, self._XI)
