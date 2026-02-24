@@ -7,7 +7,10 @@ from .MomentumGrid import MomentumGrid
 
 
 class PparPperpGrid(MomentumGrid):
-    
+    P1_NAME = 'ppar'
+    P2_NAME = 'pperp'
+    P1_TEX_NAME = r'$p_\parallel$'
+    P2_TEX_NAME = r'$p_\perp$'
 
     def __init__(self, name, rgrid, data):
         """
@@ -19,24 +22,24 @@ class PparPperpGrid(MomentumGrid):
         """
         super(PparPperpGrid, self).__init__(name=name, rgrid=rgrid, data=data)
 
-        self.ppar   = data['p1']
-        self.pperp  = data['p2']
-        self.dppar  = data['dp1']
-        self.dpperp = data['dp2']
+        self.ppar = self.p1
+        self.pperp = self.p2
+        self.ppar_f = self.p1_f
+        self.pperp_f = self.p2_f
+        self.dppar = self.dp1
+        self.dpperp = self.dp2
 
-        self.PPAR, self.PPERP = np.meshgrid(self.ppar[:], self.pperp[:])
-        self.P = np.sqrt(self.PPAR**2 + self.PPERP**2)
-        self.XI = self.PPAR / self.P
-        self.GAMMA = np.sqrt(self.P**2 + 1)
+        self._PPAR, self._PPERP = np.meshgrid(self.ppar[:], self.pperp[:])
+        self._P = np.sqrt(self._PPAR**2 + self._PPERP**2)
+        self._XI = self._PPAR / self._P
+        self._GAMMA = np.sqrt(self._P**2 + 1)
 
+        self._PPAR_f, self._PPERP_f = np.meshgrid(self.ppar_f[:], self.pperp_f[:])
+        self._P_f = np.sqrt(self._PPAR_f**2 + self._PPERP_f**2)
+        self._XI_f = self._PPAR_f / self._P_f
 
-    def getGamma(self):
-        """
-        Returns a meshgrid representing the relativistic factor on this
-        2D momentum grid.
-        """
-        return self.GAMMA
-
+        self._VprimeCylindrical = np.copy(self.Vprime_VpVol)
+        self._VprimeSpherical = self.Vprime_VpVol * self._P**2 / self._PPERP
 
     def getVpar(self):
         """
