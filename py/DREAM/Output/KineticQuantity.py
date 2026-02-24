@@ -12,6 +12,8 @@ from . UnknownQuantity import UnknownQuantity
 
 from .. import GeriMap
 from .. Settings.MomentumGrid import TYPE_PXI
+from . PXiGrid import PXiGrid
+from . PparPperpGrid import PparPperpGrid
 
 from .. import helpers
 
@@ -368,6 +370,9 @@ class KineticQuantity(UnknownQuantity):
             raise OutputException(
                 "Data dimensionality is too low. Unable to visualize kinetic quantity."
             )
+        weight_label = ""
+        if phaseSpaceWeight:
+            weight_label = "(Vp/Vpvol)*"
 
         if coordinates is None:
             P1, P2 = np.meshgrid(mg.p1_f, mg.p2_f)
@@ -401,7 +406,7 @@ class KineticQuantity(UnknownQuantity):
         pcm = ax.pcolormesh(P1, P2, data, cmap="GeriMap", **kwargs)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
-        ax.set_title(f"{sign}{self.getTeXName()}")
+        ax.set_title(f"{sign}{weight_label}{self.getTeXName()}")
 
         if genax:
             plt.colorbar(mappable=pcm, ax=ax)
@@ -437,8 +442,10 @@ class KineticQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
+        weight_label = ""
         data = self.data[t, r, :]
         if phaseSpaceWeight:
+            weight_label = "(Vp/Vpvol)*"
             if coordinates == 'cylindrical'[:len(coordinates)]:
                 data = data * self.momentumgrid.VprimeCylindrical[r]
             else:
@@ -486,7 +493,7 @@ class KineticQuantity(UnknownQuantity):
         else:
             raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
 
-        ax.set_title(f'{sign}{self.getTeXName()}')
+        ax.set_title(f'{sign}{weight_label}{self.getTeXName()}')
 
         if genax:
             plt.colorbar(mappable=cp, ax=ax)
