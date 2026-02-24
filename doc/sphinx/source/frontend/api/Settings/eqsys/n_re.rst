@@ -113,15 +113,16 @@ pure fluid as well as combined fluid-kinetic simulations.
 Avalanche
 ^^^^^^^^^
 Runaway electrons can produce new runaway electrons by colliding with thermal
-electrons and transferring a sufficent amount of energy to these for them to
+electrons and transferring a sufficient amount of energy to these for them to
 become runaway electrons, while the original runaway electron remains in the
 runaway region. This runaway mechanism is commonly known as the *avalanche
 mechanism* and will lead to an exponential growth in the number of runaway
 electrons.
 
-DREAM contains three different models for avalanche generation. The first two
-are fluid models, while the third is the kinetic source term originally derived
-by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03>`_.
+DREAM contains four different models for avalanche generation. The first two
+are fluid models, and the last two the kinetic source term based on a Boltzmann
+collision operator between the runaway population and stationary cold target
+electrons.
 
 .. note::
 
@@ -133,22 +134,60 @@ by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03
    Similarly, the kinetic source term can be used in fluid simulations and is
    then integrated to yield the number of fluid runaways produced.
 
-+----------------------------------+---------------------------------------------------------------------------------------+
-| Option                           | Description                                                                           |
-+==================================+=======================================================================================+
-| ``AVALANCHE_MODE_NEGLECT``       | Do **not** include avalanche generation in the simulation.                            |
-+----------------------------------+---------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_FLUID``         | Modified ``HESSLOW`` model                                                            |
-+----------------------------------+---------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_FLUID_HESSLOW`` | Implements Eq (14) in `Hesslow NF (2019) <https://doi.org/10.1088/1741-4326/ab26c2>`_ |
-+----------------------------------+---------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_KINETIC``       | Kinetic source term derived by Rosenbluth and Putvinski (1997).                       |
-+----------------------------------+---------------------------------------------------------------------------------------+
++---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| Option                                | Description                                                                                                     |
++=======================================+=================================================================================================================+
+| ``AVALANCHE_MODE_NEGLECT``            | Do **not** include avalanche generation in the simulation.                                                      |
++---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID``              | Modified ``HESSLOW`` model                                                                                      |
++---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID_HESSLOW``      | Implements Eq (14) in `Hesslow NF (2019) <https://doi.org/10.1088/1741-4326/ab26c2>`_                           |
++---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_KINETIC``            | Kinetic source term derived by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03>`_ |
++---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_BOLTZMANN_KNOCK_ON`` | Kinetic source term described in `Embreus JPP (2018) <https://doi.org/10.1017/S002237781700099X>`_              |
++---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+
 
 The ``FLUID`` model modifies the ``FLUID_HESSLOW`` model by replacing the denominator 
 :math:`\sqrt{4+\bar\nu_s\bar\nu_D}` appearing in (14) of the Hesslow paper by 
 :math:`\sqrt{4\bar\nu_s+\bar\nu_s\bar\nu_D}`, which increases the accuracy for 
 nearly neutral plasmas dominated by hydrogen collisions.
+
+The kinetic models ``KINETIC`` and ``BOLTZMANN_KNOCK_ON`` require the ``pCutAvalanche`` 
+setting to be specified, which introduces a model cutoff below which no knock-ons will 
+be created. 
+This is required since the knock-on gain rate diverges in the limit :math:`p \to 0`. 
+To capture the avalanche generation well, it is crucial that this cutoff is smaller
+than the minimum effective threshold momentum for runaway generation during the simulation.
+This can be validated *a posteriori* by comparing ``pCutAvalanche`` with the ``fluid.pCrit``
+OtherQuantity after a simulation.
+
+In the table below, we summarize the behavior of the kinetic runaway source depending
+on settings. 
+
++------------------------+-------------------------------------------------------------------------+----------------------------------------------------------------------------+
+|                        | Only hot-tail grid                                                      | Hot-tail + runaway grid                                                    |
++========================+=========================================================================+============================================================================+
+| ``KINETIC``            | :math:`S_\mathrm{RP}(n_\mathrm{RE})`                                    | :math:`S_\mathrm{RP}(n_\mathrm{RE})`                                       |
++------------------------+-------------------------------------------------------------------------+----------------------------------------------------------------------------+
+| ``BOLTZMANN_KNOCK_ON`` | :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + S_\mathrm{RP}(n_\mathrm{RE})` | :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + C_\mathrm{boltz}(f_\mathrm{re})` |
++------------------------+-------------------------------------------------------------------------+----------------------------------------------------------------------------+
+
+Here :math:`S_\mathrm{RP}(n_\mathrm{re})` denotes the RP-based contribution from the
+fluid external runaway density :math:`n_\mathrm{re}` (used when runaways are not
+kinetically resolved).
+
+The recommendation way of kinetic avalanche modelling is:
+
+   With ``KINETIC``: use hottail grid with :math:`p_\mathrm{max}` near the critical momentum
+   to maximize the runaway population inside :math:`n_\mathrm{re}`.
+
+   With ``BOLTZMANN_KNOCK_ON``: either use no runaway grid, with :math:`p_\mathrm{max}` on the
+   hot-tail grid sufficiently large that the RP approximation is valid for 
+   the :math:`n_\mathrm{re}` population; or: a runaway grid with :math:`p_\mathrm{max}` large
+   enough that :math:`n_\mathrm{re}` is negligible.
+
 
 .. warning::
 
@@ -158,6 +197,13 @@ nearly neutral plasmas dominated by hydrogen collisions.
    contain all, or a significant fraction of, the runaway electrons. If the
    runaways should be resolved kinetically, the runaway grid should also be
    enabled.
+
+.. warning::
+   
+   The Boltzmann avalanche source, ``AVALANCHE_MODE_BOLTZMANN_KNOCK_ON``, only
+   accounts for knock-ons produced by kinetically resolved electrons on the hot-tail
+   and runaway grids. When kinetically resolving runaways, the external runaways, 
+   (present in :math:`n_{\rm re}` but not :math:`f_{\rm re}`) will not contribute.
 
 .. note::
 
@@ -172,9 +218,6 @@ nearly neutral plasmas dominated by hydrogen collisions.
    call `ds.eqsys.n_re.setNegativeRunaways()` on the settings object to
    properly account for the direction of motion of the runaways.
 
-.. todo::
-
-   Describe the use of the ``pCutAvalanche`` parameter in kinetic mode.
 
 
 Example
@@ -187,8 +230,79 @@ The following example illustrates how to enable the kinetic runaway source term:
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC)
+   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.05)
 
+Kinetic knock-on theory
+***********************
+The local knock-on gain in particle momentum space can be formulated as
+
+.. math::
+   C = n_\mathrm{target}\int \mathrm{d}\boldsymbol{p}_1\, v_1\frac{\partial \sigma}{\partial \boldsymbol{p}}(\boldsymbol{p};\,\boldsymbol{p}_1)f(\boldsymbol{p}_1)
+
+where :math:`n_\mathrm{target}` is the effective density of target electrons, 
+:math:`f` the distribution of incident fast electrons,
+:math:`\boldsymbol{p}` the momentum of the (target) knock-on electron after
+the collision, and
+:math:`\boldsymbol{p}_1` the momentum of the incident electron.
+Here, :math:`\partial\sigma/\partial\boldsymbol{p}` represents the differential
+cross section for the collision process; in the relativistic electron-electron 
+case the Møller cross section.
+
+Since, by conservation of 4-momentum, the outgoing electron is constrained to
+scattering angles :math:`\theta^\star(p,\,p_1)`, the cross section factorizes to
+
+.. math::
+   \frac{\partial \sigma}{\partial \boldsymbol{p}}(\boldsymbol{p};\,\boldsymbol{p}_1)
+   = \frac{1}{2\pi p^2} \frac{\partial \sigma}{\partial p} \delta(\xi_s - \xi^\star(p,\,p_1))
+
+where :math:`\xi_s = \boldsymbol{p}_1 \cdot \boldsymbol{p} / p_1 p`, and 
+
+.. math::
+   
+   \xi^\star=\sqrt{\frac{\gamma_1+1}{\gamma_1-1}\frac{\gamma-1}{\gamma+1}}
+
+In the discretized DREAM kinetic equation, we seek the finite-volume representation
+of the bounce averaged collision term. This is formally given by
+
+.. math::
+   C_{i_r, i, j} = \frac{1}{\mathcal{V}'_{i_r,i,j}\Delta r_{i_r}\Delta p_i \Delta \xi_j}\int_{r_{i_r-1/2}}^{r_{i_r+1/2}}\mathrm{d}r \int_{p_{i-1/2}}^{p_{i+1/2}}\mathrm{d}p \int_{\xi_{j-1/2}}^{\xi_{j+1/2}}\mathrm{d}\xi_0 \, \mathcal{V}'(r,\,p,\,\xi_0) \{C\}
+   
+Only the :math:`\delta` function depends on knock-on angle in these expressions,
+so the bounce average of the full operator depends only on the bounce-averaged :math:`\delta`.
+Furthermore, we make the following three approximations:
+
+* The integral is constant with respect to radius, so that :math:`\int_{r_{i_r-1/2}}^{r_{i_r+1/2}}\mathrm{d}r = \Delta r_{i_r}`.
+  This is clearly not strictly valid since the trapped-passing boundary moves with radius.
+  However, we often consider kinetic equations where radius only appears as a parameter, in which
+  case this approximation allows us to view solutions as local to radius :math:`r_{i_r}`.
+* We assume that :math:`\delta` is constant w.r.t. :math:`p` within each cell; in practice
+  it varies via :math:`\xi^\star`, but this typically-weak dependence is neglected.
+* The target-electron density :math:`n_\mathrm{target}` is taken as constant along each fast-electron orbit.
+
+In this case, the operator factorizes to
+
+.. math::
+   C_{i, j} = \frac{n_\mathrm{target}}{\mathcal{V}'_{i,j}}\oint \mathrm{d}p_1 \, S_i(p_1)\oint \mathrm{d}\xi_{01} \,\mathcal{V}'(p_1,\,\xi_{01})f(p_1,\,\xi_{01})\delta_j(\xi^\star(p_i,\,p_1),\,\xi_{01}),
+
+where
+
+.. math::
+   S_i(p_1) \approx \frac{1}{\Delta p_i}\int_{p_{i-1/2}}^{p_{i+1/2}}\mathrm{d}p\,\frac{v_1}{p^2}\frac{\partial \sigma}{\partial p}
+
+is the cell-averaged production rate weighted by :math:`v_1`, but where the 
+integration intervals are clamped to ``pCutAvalanche`` and the upper 
+kinematic boundary of half the incident primary's energy. Finally, :math:`\delta_j`
+is the bounce- and cell averaged kinematic delta function. 
+We dare the curious reader to venture into the theory documentation ``docs/notes``
+to find the answers that you seek.
+
+The Rosenbluth-Putvinski approximation of mode ``KINETIC`` is obtained by setting
+:math:`\delta_j = \delta_j(\xi^\star_i(\infty),\,1)` and :math:`S_i = S_i(\infty)`,
+effectively assuming that the incident electrons are infinitely energetic and have
+zero pitch angle, in which case the operator takes the form 
+
+.. math::
+   C_{i, j} = n_\mathrm{target} \langle n_\mathrm{RE}\rangle \frac{V'}{\mathcal{V}'_{i,j}}\delta_j(\xi^\star_i(\infty),\,1) S_i(\infty).
 
 Dreicer
 ^^^^^^^
