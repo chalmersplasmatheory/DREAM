@@ -6,9 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-from . PXiGrid import PXiGrid
-from . PparPperpGrid import PparPperpGrid
-
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
