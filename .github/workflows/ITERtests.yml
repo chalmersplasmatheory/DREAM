@@ -1,0 +1,23 @@
+# Run full ITER simulations on the DREAM tests server
+
+name: ITERtests
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create SSH key
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/id_ed25519
+          echo "${{ secrets.DREAMTESTS_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.DREAMTESTS_IP }}" > ~/.ssh/known_hosts
+
+      - name: Connect and run tests
+        run: ssh -t "dream@${{ secrets.DREAMTESTS_IP }}" "./test.sh ${{ env.GITHUB_SHA }}"
+
+
