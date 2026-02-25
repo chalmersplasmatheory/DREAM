@@ -6,7 +6,7 @@ namespace DREAM::FVM { class RadialGrid; }
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "FVM/Grid/FluxSurfaceAverager.hpp"
-#include <functional> 
+#include <functional>
 
 namespace DREAM::FVM {
 	class RadialGrid {
@@ -24,27 +24,27 @@ namespace DREAM::FVM {
             {return NablaR2/(ROverR0*ROverR0);}
 
         struct EPF_params {real_t x; real_t BminOverBmax; len_t ir; RadialGrid *rGrid; fluxGridType fgType;};
-        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, real_t, real_t, void *par){ 
+        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, real_t, real_t, void *par){
             struct EPF_params *params = (struct EPF_params *) par;
             real_t BminOverBmax = params->BminOverBmax;
             real_t x = params->x;
             return sqrt(1 - x * BminOverBmax * BOverBmin );
         }
 
-        static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){ 
+        static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){
             real_t xi0 = *(real_t*)xiPtr;
             if(BOverBmin < 1 + 100*realeps)
                 return xi0;
             real_t xi = sqrt(1 - (1-xi0*xi0)*BOverBmin);
             if(xi0>=0)
                 return xi;
-            else 
+            else
                 return -xi;
         }
-        
+
 
         // Alternative parametric representation of FSA functions
-        static constexpr int_t 
+        static constexpr int_t
             FSA_PARAM_UNITY[4] = {0,0,0,1},
             FSA_PARAM_ONE_OVER_R_SQUARED[4] = {0,-2,0,1},
             FSA_PARAM_B[4] = {1,0,0,1},
@@ -66,7 +66,7 @@ namespace DREAM::FVM {
 
         // Alternative representation of functions to be bounce averaged:
         // lists containing exponents of the various contributing factors
-        static constexpr int_t 
+        static constexpr int_t
             BA_PARAM_UNITY[5] = {0,0,0,0,1},
             BA_PARAM_XI[5] = {1,0,0,0,1},
             BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1},
@@ -76,7 +76,7 @@ namespace DREAM::FVM {
 
 	private:
         // Flux-surface averaged quantities.
-        real_t 
+        real_t
             *effectivePassingFraction   = nullptr, // Per's Eq (11.24)
             *effectivePassingFraction_f = nullptr, // Per's Eq (11.24)
             *FSA_B                      = nullptr, // <B> / Bmin
@@ -101,7 +101,7 @@ namespace DREAM::FVM {
         real_t *dr=nullptr, *dr_f=nullptr;
 
         // Magnetic field quantities
-        real_t 
+        real_t
             *Bmin       = nullptr,
             *Bmin_f     = nullptr,
             *Bmax       = nullptr,
@@ -115,7 +115,7 @@ namespace DREAM::FVM {
             *psiToroidal   = nullptr,
             *psiToroidal_f = nullptr,
             R0;
-        
+
         // Orbit-phase-space Jacobian factors
         real_t
              *VpVol = nullptr,    // Size NR
@@ -148,19 +148,19 @@ namespace DREAM::FVM {
 
         void DeallocateFSAvg();
         void InitializeFSAvg(
-            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
+            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f,
             real_t *B2avg, real_t *B2avg_f,
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
 
-        static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();    
+        static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();
 
 	protected:
         FluxSurfaceAverager *fluxSurfaceAverager;
         RadialGridGenerator *generator;
 
     public:
-        RadialGrid(RadialGridGenerator*, const real_t t0=0, 
+        RadialGrid(RadialGridGenerator*, const real_t t0=0,
             FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_STEFFEN,
             FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
         );
@@ -202,7 +202,7 @@ namespace DREAM::FVM {
         bool Rebuild(const real_t);
 
         virtual void RebuildJacobians();
-        
+
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
@@ -211,7 +211,7 @@ namespace DREAM::FVM {
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;
                 delete [] this->VpVol_f;
-            }        
+            }
             this->VpVol = VpVol;
             this->VpVol_f = VpVol_f;
         }
@@ -237,17 +237,21 @@ namespace DREAM::FVM {
         const real_t  GetBTorG(const len_t ir) const {return this->BtorGOverR0[ir];}
         const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
-        
-        // Returns the xi0 value corresponding to the positive 
+		const real_t *GetPsiPrimeRef() const {return this->psiPrimeRef;}
+		const real_t  GetPsiPrimeRef(const len_t ir) const {return this->psiPrimeRef[ir];}
+		const real_t *GetPsiPrimeRef_f() const {return this->psiPrimeRef_f;}
+		const real_t  GetPsiPrimeRef_f(const len_t ir) const {return this->psiPrimeRef_f[ir];}
+
+        // Returns the xi0 value corresponding to the positive
         // trapped-passing boundary at radial index ir
-        const real_t GetXi0TrappedBoundary(const len_t ir) const 
+        const real_t GetXi0TrappedBoundary(const len_t ir) const
             {return xi0TrappedBoundary[ir];}
-        const real_t* GetXi0TrappedBoundary() const 
+        const real_t* GetXi0TrappedBoundary() const
             {return xi0TrappedBoundary;}
         // Returns trapped-passing boundary on radial flux grid
-        const real_t GetXi0TrappedBoundary_fr(const len_t ir) const 
+        const real_t GetXi0TrappedBoundary_fr(const len_t ir) const
             {return xi0TrappedBoundary_f[ir];}
-        const real_t* GetXi0TrappedBoundary_fr() const 
+        const real_t* GetXi0TrappedBoundary_fr() const
             {return xi0TrappedBoundary_f;}
 
         /**
@@ -266,7 +270,7 @@ namespace DREAM::FVM {
         const real_t  GetDr(const len_t i) const { return this->dr[i]; }
         const real_t *GetDr_f() const { return this->dr_f; }
         const real_t  GetDr_f(const len_t i) const { return this->dr_f[i]; }
-        
+
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
 
 		// Routines used for saving equilibrium to output file
@@ -284,33 +288,33 @@ namespace DREAM::FVM {
 
         
         /**
-         * Returns q*R0 on the distribution grid where q 
+         * Returns q*R0 on the distribution grid where q
          * is the safety factor and R0 the major radius.
          * The safety factor is signed, so that negative
          * currents yield negative safety factor, which keeps
-         * track of the handed-ness of the field line twist 
+         * track of the handed-ness of the field line twist
          *  ir: radial grid index
-         *  mu0Ip: product of vacuum permeability and toroidal plasma 
-         *         current enclosed by the flux surface ir. 
+         *  mu0Ip: product of vacuum permeability and toroidal plasma
+         *         current enclosed by the flux surface ir.
          */
         const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
             if(mu0Ip==0)
                 return std::numeric_limits<real_t>::infinity();
             real_t twoPi = 2*M_PI;
             real_t twoPiCubed = twoPi*twoPi*twoPi;
-            return VpVol[ir]*VpVol[ir]/(twoPiCubed*mu0Ip) * GetBTorG(ir)  
+            return VpVol[ir]*VpVol[ir]/(twoPiCubed*mu0Ip) * GetBTorG(ir)
                     * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
         }
 
-        const real_t *GetToroidalFlux() const 
+        const real_t *GetToroidalFlux() const
             { return psiToroidal; }
-        const real_t GetToroidalFlux(len_t ir) const 
+        const real_t GetToroidalFlux(len_t ir) const
             { return psiToroidal[ir]; }
         const real_t *GetToroidalFlux_f() const
             { return psiToroidal_f; }
         const real_t GetToroidalFlux_f(len_t ir) const
             { return psiToroidal_f[ir]; }
-        
+
         /**
          * Getters of flux-surface averaged Jacobian
          */
@@ -318,7 +322,7 @@ namespace DREAM::FVM {
         const real_t  GetVpVol(const len_t ir) const {return this->VpVol[ir]; }
         const real_t *GetVpVol_f() const {return this->VpVol_f; }
         const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
-        
+
         /**
          * Getters of flux surface averaged quantities
          */

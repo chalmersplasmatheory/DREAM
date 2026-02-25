@@ -144,11 +144,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 self.halo_region_losses = int(scal(data['halo_region_losses']))
             
             if 'NBI' in data:
-                if hasattr(self.nbi, 'fromdict'):
-                    self.nbi.fromdict(data['NBI'])
-                else:
-                    for k, v in data['NBI'].items():
-                        setattr(self.nbi, k, v)
+                self.nbi.fromdict(data['NBI'])
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
         

@@ -18,6 +18,7 @@ namespace DREAM { class EquationSystem; class Simulation; }
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "DREAM/Equations/RunawaySourceTermHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -65,6 +66,7 @@ namespace DREAM {
         PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
         SPIHandler *SPI = nullptr;
+        BootstrapCurrent *bootstrap = nullptr;
         Settings *settings = nullptr;
 		std::vector<RunawaySourceTermHandler*> rsths;
 
@@ -117,6 +119,7 @@ namespace DREAM {
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
         SPIHandler *GetSPIHandler() { return this->SPI; }
+        BootstrapCurrent *GetBootstrap() { return this->bootstrap; }
         Settings *GetSettings() { return this->settings; }
 
         DREAM::NBIHandler *NBI_handler=nullptr;
@@ -183,6 +186,11 @@ namespace DREAM {
         void SetSPIHandler(SPIHandler *SPI) {
             this->SPI = SPI;
         }
+
+        void SetBootstrap(BootstrapCurrent *bootstrap) {
+            this->bootstrap = bootstrap;
+        }
+
         void SetAnalyticDists(AnalyticDistributionRE *RE, AnalyticDistributionHottail *HT){
             this->distRE = RE;
             this->distHT = HT;
@@ -211,8 +219,8 @@ namespace DREAM {
 				backup_solver, verbose
 			);
 		}
-        void SetIonHandler(IonHandler *ih) { 
-            this->ionHandler = ih; 
+        void SetIonHandler(IonHandler *ih) {
+            this->ionHandler = ih;
             this->initializer->SetIonHandler(ih);
         }
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }

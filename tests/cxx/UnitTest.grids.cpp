@@ -21,35 +21,6 @@
 using namespace std;
 using namespace DREAMTESTS;
 
-/**
- * Initialize a default grid.
- *
- * nr:  (optional) Number of radial grid points.
- * np:  (optional) Number of momentum grid points (successively increased by 1 at each radius).
- * nxi: (optional) Number of pitch grid points (sucessively increased by 1 at each radius).
- */
-/*DREAM::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const len_t np, const len_t nxi) {
-    const real_t B0 = 2;
-    const real_t pMin = 0, pMax = 10;
-
-    auto *crgg = new DREAM::FVM::CylindricalRadialGridGenerator(nr, B0);
-    auto *rg = new DREAM::FVM::RadialGrid(crgg);
-
-    // Build momentum grid
-    for (len_t i = 0; i < nr; i++) {
-        auto *pgg = new DREAM::FVM::PXiGrid::PUniformGridGenerator(np+i, pMin, pMax);
-        auto *xgg = new DREAM::FVM::PXiGrid::XiUniformGridGenerator(nxi+i);
-
-        auto *mgg = new DREAM::FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
-        auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, i, rg);
-
-        rg->SetMomentumGrid(i, mg);
-    }
-
-    rg->Rebuild(0);
-
-    return rg;
-}*/
 
 /**
  * Initialize a r/p/xi grid with the same momentum grid
@@ -184,6 +155,23 @@ DREAM::FVM::AnalyticBRadialGridGenerator *UnitTest::InitializeAnalyticBRadialGri
 }
 
 
+/**
+ * Initialize a fluid grid (only radial grid).
+ *
+ * nr: (optional) Number of radial grid points.
+ */
+DREAM::FVM::Grid *UnitTest::InitializeNumericFluidGrid(const real_t *r_f, const len_t nr, const std::string& mf) {
+
+    auto *NBrgg = new DREAM::FVM::NumericBRadialGridGenerator(r_f, nr, mf);
+
+    auto *rg   = new DREAM::FVM::RadialGrid(NBrgg);
+
+    auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyMomentumGrid(rg));
+    grid->Rebuild(0);
+
+    return grid;
+}
+
 
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     const len_t nr, const len_t np, const len_t nxi,
@@ -238,7 +226,6 @@ struct UnitTest::gridcontainer *UnitTest::GetNextGrid(const len_t igrid) {
 
     switch (igrid) {
         case 0:
-            //rg = InitializeGeneralGridPXi();
             rg = InitializeGridRCylPXi();
             name = "Cylindrical r, single p/xi grid";
             break;

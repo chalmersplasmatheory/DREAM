@@ -216,7 +216,7 @@ class Solver:
             self.saveconvergenceinfo = bool(scal(data['saveconvergenceinfo']))
 
         if 'savestatistics' in data:
-            self.savestatistics = bool(data['savestatistics'])
+            self.savestatistics = bool(scal(data['savestatistics']))
 
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']

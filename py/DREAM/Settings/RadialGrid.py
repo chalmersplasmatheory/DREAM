@@ -462,11 +462,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.type = data['type']
 
         if 'wall_radius' in data:
-            self.b = data['wall_radius']
-            if type(self.b) == np.ndarray:
-                self.b = float(self.b[0])
-            else:
-                self.b = float(self.b)
+            self.b = float(scal(data['wall_radius']))
 
         if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
             self.a = data['a']
@@ -475,7 +471,7 @@ class RadialGrid(PrescribedScalarParameter):
             if 'r_f' in data:
                 self.r_f = data['r_f']
             if 'custom_grid' in data:
-                self.custom_grid = bool(data['custom_grid'])
+                self.custom_grid = bool(scal(data['custom_grid']))
 
         if self.type == TYPE_CYLINDRICAL:
             self.B0 = data['B0']
