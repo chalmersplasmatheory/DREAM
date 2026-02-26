@@ -2,9 +2,11 @@
 
 
 import numpy as np
+
 from .. DREAMException import DREAMException
 from .. helpers import scal
 
+from . Equations.EquationException import EquationException
 
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
@@ -235,11 +237,11 @@ class TransportSettings:
         if r.ndim != 1: r = np.reshape(r, (r.size,))
         if t.ndim != 1: t = np.reshape(t, (t.size,))
 
-        if (self.kinetic == False and not override_kinetic) and len(coeff.shape) == 2:
+        if (not self.kinetic and not override_kinetic) and len(coeff.shape) == 2:
             setattr(self, name, coeff)
             setattr(self, name+'_r', r)
             setattr(self, name+'_t', t)
-        elif (self.kinetic == True or override_kinetic) and len(coeff.shape) == 4:
+        elif (self.kinetic or override_kinetic) and len(coeff.shape) == 4:
             # Verify that the momentum grid is given
             if p is not None and xi is not None:
                 ppar, pperp = None, None
@@ -334,13 +336,6 @@ class TransportSettings:
         self.frozen_current_Ip_presc_t = Ip_presc_t
         self.frozen_current_D_I_min = D_I_min
         self.frozen_current_D_I_max = D_I_max
-
-
-    def setBoundaryCondition(self, bc):
-        """
-        Set the boundary condition to use for the transport.
-        """
-        self.boundarycondition = bc
 
 
     def fromdict(self, data):

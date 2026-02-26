@@ -20,7 +20,6 @@
 #               is the number of radial locations.
 #
 
-import matplotlib.pyplot as plt
 import numpy as np
 from numbers import Number
 from DREAM.Settings.Equations.EquationException import EquationException
@@ -138,9 +137,9 @@ class IonSpecies:
 
         # Emit warning if 'T' is used as name but 'tritium = False',
         # as this may indicate a user error
-        if name == 'T' and tritium == False:
+        if name == 'T' and tritium is False:
             print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
-        if name == 'H' and hydrogen == False:
+        if name == 'H' and hydrogen is False:
             print("WARNING: Ion species with name 'H' added, but 'hydrogen = False'.")
 
         self.source_n = np.zeros((self.Z+1, 1))
@@ -1029,7 +1028,7 @@ class IonSpecies:
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
-                raise DREAMException(f"No diffusion coefficient given, and no exponential decay time given.")
+                raise DREAMException("No diffusion coefficient given, and no exponential decay time given.")
                 
             self.initialize_charged_prescribed_diffusion(
                 charged_prescribed_diffusion=Drr, rChargedPrescribedDiffusion=r,
@@ -1121,7 +1120,7 @@ class IonSpecies:
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
-                raise DREAMException(f"No advection coefficient given, and no exponential decay time given.")
+                raise DREAMException("No advection coefficient given, and no exponential decay time given.")
                 
             self.initialize_charged_prescribed_advection(
                 charged_prescribed_advection=Ar, rChargedPrescribedAdvection=r,
@@ -1168,7 +1167,7 @@ class IonSpecies:
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
-                raise DREAMException(f"No advection coefficient given, and no exponential decay time given.")
+                raise DREAMException("No advection coefficient given, and no exponential decay time given.")
                 
             self.initialize_neutral_prescribed_advection(
                 neutral_prescribed_advection=Ar, rNeutralPrescribedAdvection=r,

@@ -170,7 +170,7 @@ class DataObject:
     def __and__(self, other): return self._lop(other, lambda o1, o2 : o1 and o2)
 
 
-    def __or__(self, other): return self._lop(other, lambda o1, o2 : o1 or p2)
+    def __or__(self, other): return self._lop(other, lambda o1, o2 : o1 or o2)
 
 
     def __neg__(self): return -self.data[:]

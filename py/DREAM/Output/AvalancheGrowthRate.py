@@ -1,8 +1,4 @@
-
-import matplotlib.pyplot as plt
 from .OtherFluidQuantity import OtherFluidQuantity
-from .OutputException import OutputException
-
 
 class AvalancheGrowthRate(OtherFluidQuantity):
     

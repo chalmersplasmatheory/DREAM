@@ -1,8 +1,6 @@
 #!/usr/bin/python3 -i
 
 import argparse
-import matplotlib.pyplot as plt
-import numpy as np
 import pathlib
 import sys
 
