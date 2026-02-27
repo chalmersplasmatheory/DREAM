@@ -29,6 +29,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperAdaptive.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperConstant.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperIonization.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
