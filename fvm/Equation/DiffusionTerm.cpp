@@ -271,31 +271,22 @@ void DiffusionTerm::ResetCoefficients() {
         const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
         const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++)
-                this->drr[ir][j*np1 + i]  = 0;
+        for (len_t idx = 0; idx < np1*np2; idx++)
+            this->drr[ir][idx]  = 0;
     }
 
     for (len_t ir = 0; ir < nr; ir++) {
         const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
         const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1+1; i++) {
-                this->d11[ir][j*(np1+1) + i]  = 0;
-                this->d12[ir][j*(np1+1) + i]  = 0;
-            }
-    }
-
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-
-        for (len_t j = 0; j < np2+1; j++)
-            for (len_t i = 0; i < np1; i++) {
-                this->d22[ir][j*np1 + i]  = 0;
-                this->d21[ir][j*np1 + i]  = 0;
-            }
+        for (len_t idx = 0; idx < (np1+1)*np2; idx++){
+            this->d11[ir][idx]  = 0;
+            this->d12[ir][idx]  = 0;
+        }
+        for (len_t idx = 0; idx < np1*(np2+1); idx++){
+            this->d22[ir][idx]  = 0;
+            this->d21[ir][idx]  = 0;
+        }
     }
 }
 
@@ -314,26 +305,26 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
             const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
             const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
-            for (len_t j = 0; j < np2; j++)
-                for (len_t i = 0; i < np1; i++)
-                    this->ddrr[ir+n*(nr+1)][j*np1 + i] = 0;
+            len_t irn = ir+n*(nr+1);
+            len_t N = np1*np2;
+            for (len_t idx = 0; idx < N; idx++)
+                this->ddrr[irn][idx] = 0;
         }
         
         for (len_t ir = 0; ir < nr; ir++) {
             const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
             const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-
-            for (len_t j = 0; j < np2; j++)
-                for (len_t i = 0; i < np1+1; i++) {
-                    this->dd11[ir+n*nr][j*(np1+1) + i] = 0;
-                    this->dd12[ir+n*nr][j*(np1+1) + i] = 0;
-                }
-        
-            for (len_t j = 0; j < np2+1; j++)
-                for (len_t i = 0; i < np1; i++) {
-                    this->dd22[ir+n*nr][j*np1 + i] = 0;
-                    this->dd21[ir+n*nr][j*np1 + i] = 0;
-                }
+            len_t irn = ir+n*nr;
+            len_t N = (np1+1)*np2;
+            for (len_t idx = 0; idx < N; idx++){
+                this->dd11[irn][idx] = 0;
+                this->dd12[irn][idx] = 0;
+            }
+            N = np1*(np2+1);
+            for (len_t idx = 0; idx < N; idx++){
+                this->dd22[irn][idx] = 0;
+                this->dd21[irn][idx] = 0;
+            }
         }
     }
 }
@@ -415,14 +406,9 @@ void DiffusionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobia
  * Sets the jacobian helper vector to zero
  */
 void DiffusionTerm::ResetJacobianColumn(){
-    len_t offset = 0; 
-    for(len_t ir=0; ir<nr; ir++){
-        for (len_t j = 0; j < n2[ir]; j++) 
-            for (len_t i = 0; i < n1[ir]; i++) 
-                JacobianColumn[offset + n1[ir]*j + i] = 0;
-
-        offset += n1[ir]*n2[ir];
-    }
+    len_t N = grid->GetNCells();
+    for(len_t idx=0; idx<N; idx++)
+        JacobianColumn[idx] = 0;
 }
 
 

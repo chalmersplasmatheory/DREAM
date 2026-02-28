@@ -106,12 +106,12 @@ void FluidSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
 void FluidSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<n1[ir]; i++)
-            for(len_t j=0; j<n2[ir]; j++){
-                len_t ind = offset + n1[ir]*j + i;
-                vec[ind] += sourceVec[ind]*x[ir];
-            }
-        offset += n1[ir]*n2[ir];
+        const len_t N = n1[ir] * n2[ir];
+        const len_t nmin = offset;
+        const len_t nmax = offset + N;
+        for(len_t ind=nmin; ind<nmax; ind++)
+            vec[ind] += sourceVec[ind]*x[ir];
+        offset += N;
     }
 }
 
