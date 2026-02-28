@@ -478,15 +478,21 @@ void AdvectionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobia
         ResetJacobianColumn();
         SetVectorElements(JacobianColumn, x, dfr+n*(nr+1),
                             df1+n*nr, df2+n*nr, df1pSqAtZero+n*nr, set_mode);
-        len_t offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
-                continue;
-            for (len_t j = 0; j < n2[ir]; j++)
-                for (len_t i = 0; i < n1[ir]; i++)
-                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+diagonalOffset, JacobianColumn[offset + n1[ir]*j + i]);
-            offset += n1[ir]*n2[ir];
+
+    len_t offset = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t m = n1[ir]*n2[ir];
+        if ((ir == 0 && diagonalOffset == -1) || ir + diagonalOffset >= nr) {
+            offset += m;
+            continue;
         }
+        const len_t col = n*nr + ir + diagonalOffset;
+        jac->SetColumn(
+            offset, col, m, JacobianColumn + offset
+        );
+
+        offset += m;
+    }
 }
 
 
@@ -512,9 +518,11 @@ void AdvectionTerm::ResetJacobianColumn(){
  */
 void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
     jacobian_interp_mode set = NO_JACOBIAN;
+    mat->BeginBufferedSet(ADD_VALUES, (PetscInt)this->GetNumberOfNonZerosPerRow());
     #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
     #   include "AdvectionTerm.set.cpp"
     #undef f
+    mat->EndBufferedSet();
 }
 
 
