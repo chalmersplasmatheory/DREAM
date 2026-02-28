@@ -40,6 +40,8 @@
                     S_i, // advection coefficient on left-hand face of the cell
                     S_o; // advection coefficient on right-hand face of the cell
                 real_t *delta;
+                const len_t ij = j*np1 + i;
+                const real_t vp_ij = Vp[ij];
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
@@ -59,9 +61,11 @@
 
                 // Trapping BC: even if the cell is not ignorable, it may still 
                 // be such that the radial flux should be mirrored 
-                if( !isNegativeTrappedRadial && ( Fr(ir,   i, j, fr) || Fr(ir+1, i, j, fr) ) ) {
-                    S_i = Fr(ir,   i, j, fr) *  Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
-                    S_o = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                const real_t fr_i = Fr(ir, i, j, fr);
+                const real_t fr_o = Fr(ir+1, i, j, fr);
+                if( !isNegativeTrappedRadial && ( fr_i || fr_o ) ) {
+                    S_i = fr_i *  Vp_fr[ij] / (vp_ij * dr[ir]);
+                    S_o = fr_o * Vp_fr1[ij] / (vp_ij * dr[ir]);
 
                     if(set==JACOBIAN_SET_LOWER){
                         S_i *= 1 - deltaRadialFlux[ir];
@@ -75,13 +79,18 @@
                     }
 
                     delta = deltar->GetCoefficient(ir,i,j,interp_mode);
+                    len_t n;
+                    len_t kmin = deltar->GetKmin(ir, &n);
+                    len_t kmax = deltar->GetKmax(ir,nr);
                     // Phi^(r)_{ir-1/2,i,j}: Flow into the cell from the "left" r face
-                    for(len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir,nr); k++, n++)
+                    for(len_t k = kmin; k <= kmax; k++, n++)
                         X(k, -S_i * delta[n]);
 
                     delta = deltar->GetCoefficient(ir+1,i,j,interp_mode);
+                    kmin = deltar->GetKmin(ir+1, &n);   
+                    kmax = deltar->GetKmax(ir+1, nr);
                     // Phi^(r)_{ir+1/2,i,j}: Flow out from the cell to the "right" r face
-                    for(len_t n, k = deltar->GetKmin(ir+1, &n); k <= deltar->GetKmax(ir+1,nr); k++, n++)
+                    for(len_t k = kmin; k <= kmax; k++, n++)
                         X(k,  S_o * delta[n]);
                 }
                 #undef X
@@ -94,45 +103,60 @@
                 /////////////////////////
                 #define X(I,J,V) f(ir,(I),(J),(V))
 
+                const real_t f1_i = F1(ir, i, j, f1);
+                const real_t f1_o = F1(ir, i + 1, j, f1);
+                const real_t f1_zero = F1PSqAtZero(ir,j,f1pSqAtZero);
                 if(
-                    (mg->GetP1_f(i)==0 && F1PSqAtZero(ir,j,f1pSqAtZero)) ||
-                    F1(ir, i, j, f1) || F1(ir, i+1, j, f1)
+                    (mg->GetP1_f(i)==0 && f1_zero) || f1_i || f1_o
                 ) {
-                    real_t VpDp1 = Vp[j*np1+i]*dp1[i];
+                    real_t VpDp1 = vp_ij*dp1[i];
                     if(mg->GetP1_f(i)==0){
                         // treats singular p=0 point separately
                         const real_t *VpOverP2AtZero = grid->GetVpOverP2AtZero(ir);
-                        S_i = F1PSqAtZero(ir,j,f1pSqAtZero) * VpOverP2AtZero[j] / VpDp1;
+                        S_i = f1_zero * VpOverP2AtZero[j] / VpDp1;
                     } else 
-                        S_i = F1(ir, i, j, f1) * Vp_f1[j*(np1+1) + i] / VpDp1;
-                    S_o = F1(ir, i+1, j, f1) * Vp_f1[j*(np1+1) + i+1] / VpDp1;
+                        S_i = f1_i * Vp_f1[ij + j] / VpDp1;
+                    S_o = f1_o * Vp_f1[ij + j + 1] / VpDp1;
 
                     delta = delta1->GetCoefficient(ir,i,j,interp_mode);
+                    len_t n;
+                    len_t kmin = delta1->GetKmin(i, &n);
+                    len_t kmax = delta1->GetKmax(i, np1);
                     // Phi^(1)_{ir,i-1/2,j}: Flow into the cell from the "left" p1 face
-                    for(len_t n, k = delta1->GetKmin(i,&n); k <= delta1->GetKmax(i,np1); k++, n++)
+                    for(len_t k = kmin; k <= kmax; k++, n++)
                         X(k, j, -S_i * delta[n]);
-                    // Phi^(1)_{ir,i+1/2,j}: Flow out from the cell to the "right" p1 face
+
                     delta = delta1->GetCoefficient(ir,i+1,j,interp_mode);
-                    for(len_t n, k = delta1->GetKmin(i+1,&n); k <= delta1->GetKmax(i+1,np1); k++, n++)
+                    kmin = delta1->GetKmin(i+1, &n);
+                    kmax = delta1->GetKmax(i+1, np1);
+                    // Phi^(1)_{ir,i+1/2,j}: Flow out from the cell to the "right" p1 face
+                    for(len_t k = kmin; k <= kmax; k++, n++)
                         X(k, j,  S_o * delta[n]);
                 }
                 /////////////////////////
                 // MOMENTUM 2
                 /////////////////////////
 
-                if(F2(ir, i, j,   f2) || F2(ir, i, j+1,   f2)){
-                    real_t VpDp2 = Vp[j*np1+i]*dp2[j];
-                    S_i = F2(ir, i, j,   f2) * Vp_f2[j*np1+i]     / VpDp2;
-                    S_o = F2(ir, i, j+1, f2) * Vp_f2[(j+1)*np1+i] / VpDp2;
+                const real_t f2_i = F2(ir, i, j, f2);
+                const real_t f2_o = F2(ir, i, j + 1, f2);
+                if(f2_i || f2_o){
+                    real_t VpDp2 = vp_ij*dp2[j];
+                    S_i = f2_i * Vp_f2[ij] / VpDp2;
+                    S_o = f2_o * Vp_f2[ij + np1] / VpDp2;
 
                     delta = delta2->GetCoefficient(ir,i,j,interp_mode);
+                    len_t n;
+                    len_t kmin = delta2->GetKmin(j, &n);
+                    len_t kmax = delta2->GetKmax(j, np2);
                     // Phi^(2)_{ir,i,j-1/2}: Flow into the cell from the "left" p2 face
-                    for(len_t n, k = delta2->GetKmin(j,&n); k <= delta2->GetKmax(j,np2); k++, n++)
+                    for(len_t k = kmin; k <= kmax; k++, n++)
                         X(i, k, -S_i * delta[n]);
 
                     delta = delta2->GetCoefficient(ir,i,j+1,interp_mode);
+                    kmin = delta2->GetKmin(j+1, &n);
+                    kmax = delta2->GetKmax(j+1, np2);
                     // Phi^(2)_{ir,i,j+1/2}: Flow out from the cell to the "right" p2 face
-                    for(len_t n, k = delta2->GetKmin(j+1,&n); k <= delta2->GetKmax(j+1,np2); k++, n++)
+                    for(len_t k = kmin; k <= kmax; k++, n++)
                         X(i, k,  S_o * delta[n]);
                 }
                 #undef X
