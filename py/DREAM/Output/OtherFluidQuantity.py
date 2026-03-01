@@ -45,22 +45,52 @@ class OtherFluidQuantity(FluidQuantity):
 
     def _renormalizeTimeIndexForUnknown(self, t):
         """
-        Tries to re-normalize the given time index so that it correctly indexes
-        a regular unknown quantity (which has a different time base).
+        Unknowns have one extra initial time point, so map this quantity's time
+        indices to unknown time indices by shifting non-negative indices by +1.
+
+        Supports: None, int, slice, list/tuple/ndarray of ints.
         """
         if t is None:
-            t = slice(None)
+            return slice(1, None, None)
 
-        start, stop, step = t.start, t.stop, t.step
-        if start is None or start == 0:
-            start = 1
-        if stop is not None:
-            stop += 1
+        # scalar integer
+        if isinstance(t, (int, np.integer)):
+            return t+1 if t >= 0 else t
 
-        t = slice(start, stop, step)
+        # slice
+        if isinstance(t, slice):
+            start, stop, step = t.start, t.stop, t.step
 
+            # treat "from start" as starting at 1 for unknowns (forward slices)
+            if start is None or start == 0:
+                start2 = 1
+            elif start > 0:
+                start2 = start + 1
+            else:
+                start2 = start  # negative stays negative
+
+            if stop is None:
+                stop2 = None
+            elif stop > 0:
+                stop2 = stop + 1
+            else:
+                stop2 = stop  # negative/zero stays as-is
+
+            return slice(start2, stop2, step)
+
+        # sequence / fancy indexing: return a *python list* of shifted ints
+        if isinstance(t, (list, tuple, np.ndarray)):
+            # if someone passes a numpy array, convert to python scalars
+            tt = list(t)
+
+            # (optional) allow boolean masks by converting to integer indices
+            if tt and isinstance(tt[0], (bool, np.bool_)):
+                return [i+1 for i, b in enumerate(tt) if b]
+
+            return [(int(i)+1) if int(i) >= 0 else int(i) for i in tt]
+
+        # fall back: leave untouched (or raise TypeError if you prefer strictness)
         return t
-
 
     def getMultiples(self):
         """
