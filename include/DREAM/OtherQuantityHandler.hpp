@@ -12,6 +12,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -37,7 +38,10 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
 #include "DREAM/Equations/Fluid/NBIElectronTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIIonTerm.hpp"
 #include "DREAM/NBIHandler.hpp"
+#include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
+
 
 
 namespace DREAM {
@@ -62,6 +66,10 @@ namespace DREAM {
             // Terms in the heat equation:
             struct T_terms T_cold;
 			struct T_terms T_hot;
+            // Terms in the ion heat equation:
+            std::vector<NBIIonTerm*> T_i_NBI;
+            std::vector<std::vector<MaxwellianCollisionalEnergyTransferTerm*>> T_i_Qij;
+            std::vector<MaxwellianCollisionalEnergyTransferTerm*> T_i_Qie;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -147,12 +155,13 @@ namespace DREAM {
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
         SPIHandler *SPI;
+        BootstrapCurrent *bootstrap;
 
     public:
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
-            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*,
+            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*, BootstrapCurrent*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );

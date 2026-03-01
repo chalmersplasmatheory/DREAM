@@ -26,10 +26,6 @@ namespace DREAM {
         bool signFixed = false;
         real_t sign = -1;
 
-        int_t minIndex = -1;
-        int minZ = std::numeric_limits<int>::max(); // Initialize minZ to the maximum possible integer
-
-
         real_t kappa = 8.;
         real_t gamma = 5./3.;
 

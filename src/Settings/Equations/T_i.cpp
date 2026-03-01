@@ -24,31 +24,7 @@ using namespace std;
 #define MODULENAME_T_HOT "eqsys/T_hot"
 
 
-void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s) {
-/*
-	const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-
-	// Construct main equation
-	ConstructEquation_T_i_inner(MODULENAME_T_COLD, eqsys, s);
-
-	enum OptionConstants::eqn_trigger_type switchtype =
-		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME_T_COLD "/switch/condition");
-	
-	// Set alternative equation?
-	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
-		eqsys->SetAssignToAlternativeEquation(id_Wi, true);
-
-		ConstructEquation_T_i_inner("/switch/equation", eqsys, s);
-		EquationTriggerCondition *trig = LoadTrigger
-
-		eqsys->SetAssignToAlternativeEquation(id_Wi, false);
-	}
-}
-
-void SimulationGenerator::ConstructEquation_T_i_inner(
-	const string &switchstr, EquationSystem *eqsys, Settings *s
-){
-*/
+void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     /**
      * if the electron heat W_cold is evolved self-consistently,
      * also evolve the ion heat W_i. Otherwise set it to constant.
@@ -60,7 +36,7 @@ void SimulationGenerator::ConstructEquation_T_i_inner(
 	// If 'T_hot' is available, we always evolve T_i self-consistently, as
 	// 'T_hot' will always be evolved self-consistently (in some sense).
     if (hasThot || TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
-        ConstructEquation_T_i_selfconsistent(eqsys, s);
+        ConstructEquation_T_i_selfconsistent(eqsys, s, oqty_terms);
     else if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED)
         ConstructEquation_T_i_trivial(eqsys, s);
     else 
@@ -106,7 +82,7 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
 /** 
  * Implements the self-consistent evolution of ion heat W_i for each species
  */
-void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s){
+void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* s,  struct OtherQuantityHandler::eqn_terms *oqty_terms){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     const len_t id_Wcold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
 	const len_t id_Tcold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
@@ -135,33 +111,40 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
 	CoulombLogarithm *lnLambdaHot = eqsys->GetREFluid()->GetLnLambdaHot();
     NBIHandler *handler = eqsys->NBI_handler;
 
+    oqty_terms->T_i_Qij.resize(nZ);
+    for(len_t iz=0; iz<nZ; iz++)
+        oqty_terms->T_i_Qij[iz].resize(nZ, nullptr);
+    oqty_terms->T_i_Qie.resize(nZ, nullptr);
+
     for(len_t iz=0; iz<nZ; iz++){
-        Op_Wij->AddTerm( 
+        Op_Wij->AddTerm(
             new IonSpeciesTransientTerm(fluidGrid, iz, id_Wi, -1.0)
         );
         for(len_t jz=0; jz<nZ; jz++){
             if(jz==iz) // the term is trivial =0 for self collisions and can be skipped
                 continue;
-            Op_Wij->AddTerm(
-                new MaxwellianCollisionalEnergyTransferTerm(
-                    fluidGrid,
-                    iz, true,
-                    jz, true,
-					id_Tcold, id_Wcold, id_ncold,
-                    unknowns, lnLambda, ionHandler)
+            auto *Qij = new MaxwellianCollisionalEnergyTransferTerm(
+				fluidGrid,
+				iz, true,
+				jz, true,
+				id_Tcold, id_Wcold, id_ncold,
+				unknowns, lnLambda, ionHandler
             );
+
+            Op_Wij->AddTerm(Qij);
+            oqty_terms->T_i_Qij[iz][jz] = Qij;
         }
 
 		// i-e collisions
-        Op_Wie->AddTerm(
-            new MaxwellianCollisionalEnergyTransferTerm(
-				fluidGrid,
-				iz, true,
-				0, false,
-				id_Tcold, id_Wcold, id_ncold,
-				unknowns, lnLambda, ionHandler
-			)
-        );
+        auto *Qie = new MaxwellianCollisionalEnergyTransferTerm(
+			fluidGrid,
+			iz, true,
+			0, false,
+			id_Tcold, id_Wcold, id_ncold,
+			unknowns, lnLambda, ionHandler
+		);
+        Op_Wie->AddTerm(Qie);
+        oqty_terms->T_i_Qie[iz] = Qie;
 
 		// i-e (hot) collisions
 		if (hasThot) {
@@ -181,9 +164,11 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
 	string desc = "dW_i/dt = sum_j Q_ij + Q_ie";
 
     if (includeNBI){
+        oqty_terms->T_i_NBI.resize(nZ, nullptr);
         for(len_t iz=0; iz<nZ; iz++){
            auto *nbi_i = new NBIIonTerm(handler, fluidGrid, ionHandler, unknowns, iz);
            Op_Wij->AddTerm(nbi_i);
+           oqty_terms->T_i_NBI[iz] = nbi_i;           
        }
 
 	   desc += " + NBI";

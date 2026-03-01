@@ -331,6 +331,9 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     }
     solver_timeKeeper->StopTimer(timerSPIHandler);
 
+    if (this->bootstrap != nullptr)
+        this->bootstrap->Rebuild();
+
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqnId = nontrivial_unknowns[i];
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
@@ -559,4 +562,3 @@ void Solver::SwitchToMainInverter() {
  * This method should be overridden where needed.
  */
 void Solver::WriteDataSFile(SFile*, const std::string&) {}
-

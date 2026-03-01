@@ -10,6 +10,7 @@ from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
 from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
+from .. helpers import scal
 
 
 TYPE_CYLINDRICAL = 1
@@ -145,7 +146,7 @@ class RadialGrid(PrescribedScalarParameter):
             self.r_f = None
             self.custom_grid = False
 
-        self.a = float(a)
+        self.a = float(scal(a))
 
 
     def setMajorRadius(self, R0):
@@ -156,14 +157,16 @@ class RadialGrid(PrescribedScalarParameter):
         if R0 <= 0:
             raise DREAMException("RadialGrid: Invalid value assigned to major radius 'R0': {}".format(R0))
 
-        self.R0 = float(R0)
+        self.R0 = float(scal(R0))
+
 
     def setWallRadius(self, wall_radius):
         """
         (Cylindrical, Analytic toroidal)
         Set the minor radius of the wall
         """
-        self.b = float(wall_radius)
+        self.b = float(scal(wall_radius))
+
 
     def setNr(self, nr):
         """
@@ -459,11 +462,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.type = data['type']
 
         if 'wall_radius' in data:
-            self.b = data['wall_radius']
-            if type(self.b) == np.ndarray:
-                self.b = float(self.b[0])
-            else:
-                self.b = float(self.b)
+            self.b = float(scal(data['wall_radius']))
 
         if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
             self.a = data['a']
@@ -472,7 +471,7 @@ class RadialGrid(PrescribedScalarParameter):
             if 'r_f' in data:
                 self.r_f = data['r_f']
             if 'custom_grid' in data:
-                self.custom_grid = bool(data['custom_grid'])
+                self.custom_grid = bool(scal(data['custom_grid']))
 
         if self.type == TYPE_CYLINDRICAL:
             self.B0 = data['B0']

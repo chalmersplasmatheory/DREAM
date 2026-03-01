@@ -30,6 +30,7 @@ class EquationSystem:
         'f_re':         RunawayElectronDistributionFunction,
         'I_p':          PlasmaCurrent,
         'I_wall':       ScalarQuantity,
+        'j_bs':         CurrentDensity,
         'j_hot':        CurrentDensity,
         'j_ohm':        CurrentDensity,
         'j_re':         CurrentDensity,
@@ -57,7 +58,7 @@ class EquationSystem:
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
     }
-    
+
 
     def __init__(self, unknowns=None, grid=None, output=None):
         """
@@ -122,7 +123,7 @@ class EquationSystem:
 
         setattr(self, name, o)
         self.unknowns[name] = o
-        
+
 
     def setUnknowns(self, unknowns):
         """
@@ -162,5 +163,3 @@ class EquationSystem:
             attr['equation'] = u.description_eqn
 
         self.setUnknown(name=unknown, data=u.data, attr=attr, datatype=datatype)
-
-

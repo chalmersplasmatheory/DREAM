@@ -62,7 +62,7 @@ class LUKEMagneticField(NumericalMagneticField):
         """
         Returns tokamak major radius.
         """
-        return float(self.Rp)
+        return float(helpers.scal(self.Rp))
 
 
     def visualize(self, npsi=20, ax=None, show=None):
