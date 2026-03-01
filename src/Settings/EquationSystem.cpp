@@ -192,7 +192,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_E_field(eqsys, s, oqty_terms);
     ConstructEquation_j_hot(eqsys, s);
     ConstructEquation_j_tot(eqsys, s);
-    ConstructEquation_j_ohm(eqsys, s);
+    ConstructEquation_j_ohm(eqsys, s, oqty_terms);
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);

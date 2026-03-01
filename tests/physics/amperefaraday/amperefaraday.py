@@ -70,6 +70,7 @@ def gensettings(T, Z=1, n=5e19):
     ds.timestep.setTmax(10*t0)
     ds.timestep.setDt(dt)
 
+    ds.solver.preconditioner.setEnabled(False)
     ds.other.include('fluid/conductivity')
 
     return ds, lmbd
