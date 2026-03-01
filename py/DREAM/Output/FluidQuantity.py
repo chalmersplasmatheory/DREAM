@@ -488,8 +488,24 @@ class FluidQuantity(UnknownQuantity):
             if VpVol:
                 data *= self.grid.VpVol[ir]
                 wlbl += "*V'"
+
             if weight is not None:
-                data *= weight
+                w = weight
+                if np.isscalar(w) or np.ndim(w) == 0:
+                    pass  # scalar weight
+                else:
+                    w = np.asarray(w)
+
+                    if w.ndim == 1:
+                        # (Nt,) -> same for all curves
+                        pass
+                    elif w.ndim == 2:
+                        # (Nt, Nr)
+                        w = w[:, ir]
+                    else:
+                        raise ValueError(f"Unsupported weight shape {w.shape} for radial profile plot.")
+
+                data *= w
                 wlbl += '*w'
 
             if log:
