@@ -3,6 +3,7 @@ import numpy as np
 from .EquationException import EquationException
 from .UnknownQuantity import UnknownQuantity
 from .. EquationTrigger import EquationTrigger
+from ... helpers import scal
 
 
 TYPE_MOMENT = 1
@@ -44,7 +45,7 @@ class HotElectronCurrent(UnknownQuantity):
         """
         Set all options from a dictionary.
         """
-        self.eqn_type = int(data['type'])
+        self.eqn_type = int(scal(data['type']))
 
         if 'switch' in data and self.trigger is not None:
             self.trigger.fromdict(data['switch'])
