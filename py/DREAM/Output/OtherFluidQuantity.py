@@ -53,11 +53,9 @@ class OtherFluidQuantity(FluidQuantity):
         if t is None:
             return slice(1, None, None)
 
-        # scalar integer
         if isinstance(t, (int, np.integer)):
             return t+1 if t >= 0 else t
 
-        # slice
         if isinstance(t, slice):
             start, stop, step = t.start, t.stop, t.step
 
@@ -78,18 +76,10 @@ class OtherFluidQuantity(FluidQuantity):
 
             return slice(start2, stop2, step)
 
-        # sequence / fancy indexing: return a *python list* of shifted ints
+        # sequence / fancy indexing: return a list of shifted integers
         if isinstance(t, (list, tuple, np.ndarray)):
-            # if someone passes a numpy array, convert to python scalars
-            tt = list(t)
+            return [(int(i)+1) if int(i) >= 0 else int(i) for i in t]
 
-            # (optional) allow boolean masks by converting to integer indices
-            if tt and isinstance(tt[0], (bool, np.bool_)):
-                return [i+1 for i, b in enumerate(tt) if b]
-
-            return [(int(i)+1) if int(i) >= 0 else int(i) for i in tt]
-
-        # fall back: leave untouched (or raise TypeError if you prefer strictness)
         return t
 
     def getMultiples(self):
