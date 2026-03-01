@@ -138,6 +138,11 @@ namespace DREAM::FVM {
         const real_t GetThetaMax() const    
             {return theta_max;}
 
+		const real_t *GetThetaBmin() const { return this->theta_Bmin; }
+		const real_t *GetThetaBmax() const { return this->theta_Bmax; }
+		const real_t *GetThetaBmin_f() const { return this->theta_Bmin_f; }
+		const real_t *GetThetaBmax_f() const { return this->theta_Bmax_f; }
+
         void SetReferenceMagneticFieldData(
             real_t *theta_Bmin, real_t *theta_Bmin_f, // poloidal angle of B=Bmin
             real_t *theta_Bmax, real_t *theta_Bmax_f  // poloidal angle of B=Bmax
