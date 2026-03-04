@@ -165,7 +165,7 @@ class FluidQuantity(UnknownQuantity):
         return 1
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, unit='s', **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, weight_label=None, unit='s', **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
@@ -219,9 +219,9 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, weight_label=weight_label, log=log, **kwargs)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, weight_label=weight_label, log=log, **kwargs)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
@@ -385,7 +385,39 @@ class FluidQuantity(UnknownQuantity):
 		            
         plt.show()
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
+
+    def _get_weight_factor(self, weight=None, weight_label=None):
+        """Returns a weight factor and appropriate label.
+        
+        :param weight:       if provided, is converted to ndarray and validated, otherwise returns weight 1.
+        :param weight_label: if str provided, becomes the label, otherwise inferred from weight.
+        """
+        if (weight_label is not None) and (weight is None):
+            raise ValueError("Weight label provided, but weight is None.")
+        if weight_label is not None and not isinstance(weight_label, str):
+            raise ValueError(f"weight_label must be str, received {type(weight_label)}: {weight_label}")
+    
+        w = np.asarray(1.0)
+        wlbl = ""
+
+        if weight is None:
+            return w, wlbl
+
+        w = w * np.asarray(weight)
+        # label for user-provided weight
+        if weight_label is not None:
+            wlbl += f"*{weight_label}"
+        elif np.isscalar(weight) or np.ndim(weight) == 0:
+            wlbl += f"*{float(weight):.8g}"
+        else:
+            wlbl += "*w"
+
+        if w.ndim>2:
+            raise ValueError(f"Invalid weight ndim '{w.ndim}', must be <=2.")
+
+        return w, wlbl
+
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, weight_label=None, log=False, **kwargs):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
@@ -393,7 +425,9 @@ class FluidQuantity(UnknownQuantity):
         :param ax:     Matplotlib axes object to use for plotting.
         :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
         :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
-        :param weight: Optional quantity to weight this quantity with when plotting.
+
+        :param weight: Optional quantity to weight this quantity with when plotting. If 1D, assumes weight to be radius dependent.
+        :param weight_label: Optional weight label to attach to plot ylabel if weight is also provided.
         :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
@@ -408,32 +442,30 @@ class FluidQuantity(UnknownQuantity):
             t = [t]
 
         lbls = []
-        wlbl = ''
-        vpv = self.grid.VpVol[:]
-        for it in t:
+        
+        # weights (1 if not provided)
+        w, wlbl = self._get_weight_factor(weight, weight_label)
+        if VpVol:
+            wlbl += "*V'"
+        len_t = len(t)
+        if (w.ndim == 2):
+            if w.shape[0] == self.data.shape[0]:
+                # 2D weights on a full-time grid; slice the requested times
+                w = w[t, :]
+            elif (w.shape[0] != len_t):
+                # otherwise 2D weights must match the number of time slices 
+                raise ValueError(f"2D weight expected shape ({len_t}, ...), received: {w.shape}")
+        elif w.ndim == 1 and w.shape[0] != self.data.shape[1]:
+            raise ValueError(f"1D weight in plotRadialProfile must have length Nr={self.data.shape[1]}, got: {w.size}.")
+
+        for j, it in enumerate(t):
             data = np.copy(self.data[it,:])
-            wlbl = ''
-            if VpVol:
-                data *= vpv
-                wlbl += "*V'"
-
-            if weight is not None:
-                w = weight
-                if np.isscalar(w) or np.ndim(w) == 0:
-                    pass  # scalar weight
-                else:
-                    w = np.asarray(w)
-
-                    if w.ndim == 1:
-                        # (Nr,) -> same for all curves
-                        pass
-                    elif w.ndim == 2:
-                        w = w[it, :]
-                    else:
-                        raise ValueError(f"Unsupported weight shape {w.shape} for radial profile plot.")
-
+            if w.ndim == 2:
+                data *= w[j, :]
+            else:
                 data *= w
-                wlbl += '*w'
+            if VpVol:
+                data *= self.grid.VpVol[:]
 
             if log:
                 if np.any(data>0):
@@ -459,7 +491,7 @@ class FluidQuantity(UnknownQuantity):
         return ax   	
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, weight_label=None, log=False, **kwargs):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
@@ -467,7 +499,8 @@ class FluidQuantity(UnknownQuantity):
         :param ax:     Matplotlib axes object to use for plotting.
         :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
         :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
-        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param weight: Optional quantity to weight this quantity with when plotting. If 1D, assumes weight to be time dependent.
+        :param weight_label: Optional weight label to attach to plot ylabel if weight is also provided.
         :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
@@ -482,31 +515,30 @@ class FluidQuantity(UnknownQuantity):
             r = [r]
 
         lbls = []
-        for ir in r:
+
+        # weights (1 if not provided)
+        w, wlbl = self._get_weight_factor(weight, weight_label)
+        if VpVol:
+            wlbl += "*V'"
+        len_r = len(r)
+        if (w.ndim == 2):
+            if w.shape[1] == self.data.shape[1]:
+                # 2D weights is a full-radial grid; slice the requested radii
+                w = w[:, r]
+            elif (w.shape[1] != len_r):
+                # otherwise 2D weights must match the number of radial slices 
+                raise ValueError(f"2D weight expected shape (..., {len_r}), received: {w.shape}")
+        elif w.ndim == 1 and w.shape[0] != self.data.shape[0]:
+            raise ValueError(f"1D weight in plotTimeProfile must have length Nt={self.data.shape[0]}, got: {w.size}.")
+
+        for j, ir in enumerate(r):
             data = np.copy(self.data[:,ir])
-            wlbl = ''
+            if w.ndim == 2:
+                data *= w[:,j]
+            else:
+                data *= w
             if VpVol:
                 data *= self.grid.VpVol[ir]
-                wlbl += "*V'"
-
-            if weight is not None:
-                w = weight
-                if np.isscalar(w) or np.ndim(w) == 0:
-                    pass  # scalar weight
-                else:
-                    w = np.asarray(w)
-
-                    if w.ndim == 1:
-                        # (Nt,) -> same for all curves
-                        pass
-                    elif w.ndim == 2:
-                        # (Nt, Nr)
-                        w = w[:, ir]
-                    else:
-                        raise ValueError(f"Unsupported weight shape {w.shape} for radial profile plot.")
-
-                data *= w
-                wlbl += '*w'
 
             if log:
                 if np.any(data>0):
