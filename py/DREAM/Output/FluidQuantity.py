@@ -425,7 +425,6 @@ class FluidQuantity(UnknownQuantity):
         :param ax:     Matplotlib axes object to use for plotting.
         :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
         :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
-
         :param weight: Optional quantity to weight this quantity with when plotting. If 1D, assumes weight to be radius dependent.
         :param weight_label: Optional weight label to attach to plot ylabel if weight is also provided.
         :param log:    If ``True``, plot on a logarithmic scale.
