@@ -27,7 +27,7 @@ the physics manuals available in the DREAM GitHub repository.
 The DREAM code is developed and maintained by European fusion scientists from
 several labs, lead by the fast electron group at KTH Royal Institute of
 Technology, Stockholm and the
-`Technology <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
+`Plasma Theory Group <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
 Technology, Gothenburg, Sweden.
 
 .. note::
