@@ -922,17 +922,17 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
     if (!tracked_terms->tritiumSource_runaway.empty()) {
-        DEF_HT("runaway/S_tritium", "Tritium decay source term [s^-1 m^-3]",
+        DEF_RE("runaway/S_tritium", "Tritium decay source term [s^-1 m^-3]",
             real_t *S_T = qd->StoreEmpty();
 
-            for (len_t ir = 0; ir < nr_ht; ir++) {
-                for (len_t j = 0; j < n2_ht; j++) {
-     	            for (len_t i = 0; i < n1_ht; i++) {
+            for (len_t ir = 0; ir < nr_re; ir++) {
+                for (len_t j = 0; j < n2_re; j++) {
+     	            for (len_t i = 0; i < n1_re; i++) {
                         len_t nT = this->ions->GetNTritiumIndices();
-			const len_t *ti = this->ions->GetTritiumIndices();
-                        S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
+			            const len_t *ti = this->ions->GetTritiumIndices();
+                        S_T[(ir*(n2_re) + j)*n1_re + i] = 0;
                         for(len_t iT=0; iT<nT; iT++){
-                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += -this->tracked_terms->tritiumSource_runaway[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTotalIonDensity(ir, ti[iT]);
+                            S_T[(ir*(n2_re) + j)*n1_re + i] += -this->tracked_terms->tritiumSource_runaway[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTotalIonDensity(ir, ti[iT]);
                         }
                     }
                 }
