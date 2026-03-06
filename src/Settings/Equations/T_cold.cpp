@@ -72,14 +72,14 @@ void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s, const string& mo
 
     s->DefineSetting(modulename + "/NBI/enabled", "Enable/disable NBI heating", (bool)false);
     // Beam geometry settings
-    s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
-    s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
-    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/n_beam_radius", "Number of discretized points for beam in radial direction", (int_t)25);
-    s->DefineSetting(MODULENAME "/NBI/n_beam_theta", "Number of discretized points for beam in poloidal direction", (int_t)25);
-    s->DefineSetting(MODULENAME "/NBI/n_beam_s", "Number of discretized points for beam in nhat direction", (int_t)50);
+    s->DefineSetting(modulename + "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
+    s->DefineSetting(modulename + "/NBI/r_beam", "Beam radius", (real_t)0.1);
+    s->DefineSetting(modulename + "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/n_beam_radius", "Number of discretized points for beam in radial direction", (int_t)25);
+    s->DefineSetting(modulename + "/NBI/n_beam_theta", "Number of discretized points for beam in poloidal direction", (int_t)25);
+    s->DefineSetting(modulename + "/NBI/n_beam_s", "Number of discretized points for beam in nhat direction", (int_t)50);
 
     // Beam physics settings
     s->DefineSetting(modulename + "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
