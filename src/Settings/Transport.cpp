@@ -394,21 +394,49 @@ bool SimulationGenerator::ConstructTransportTerm(
             oprtr->AddTerm(rrt);
 
             dt = rrt;
-        } else if (heat) {	// Heat transport
-            HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
-                grid, dBB, eqsys->GetUnknownHandler()
-            );
+        } else if (heat) {  // Heat transport
+
+            // === NEW (generalized RR heat transport) =========================
+            // We pass a pointer to RunawayFluid so that the RR heat operator can access
+            // the thermal collision time tau_th(r) and build the collision frequency
+            //   nu_c(r) = 1 / tau_th(r)
+            // internally (used e.g. in collision/mean-free-path limited channels and in
+            // the collisional suppression factor eta).
+            //
+            // Note: At this stage, L0 and Lcr are provided as "placeholder" inputs.
+            // The operator computes physically relevant quantities (e.g. q*R0, shear,
+            // LK, eta, etc.) inside Rebuild() using the evolving plasma state.
+            // =====================================================
+            RunawayFluid *reFluid = eqsys->GetREFluid();
+
+            // Provide simple dummy values for L0 and Lcr.
+            // - L0: parallel correlation length scale (often ~ qR0); true qR0 is computed
+            //       inside HeatTransportRechesterRosenbluth::Rebuild() from j_tot.
+            // - Lcr: critical perpendicular correlation length scale; if you later want
+            //        a physical model, expose it as a setting instead of hard-coding.
+            real_t R0    = grid->GetRadialGrid()->GetR0();
+            real_t L0    = std::isfinite(R0) ? 1.8*R0 : 1.0;   // dummy, true L0=qR0 is computed inside HeatTransportRR::Rebuild()
+            real_t Lcr = 0.1;   // this value is not physical here
+
+            HeatTransportRechesterRosenbluth *htrr =
+                new HeatTransportRechesterRosenbluth(
+                    grid,
+                    dBB,
+                    eqsys->GetUnknownHandler(),
+                    reFluid,
+                    L0, Lcr
+                );
             oprtr->AddTerm(htrr);
 
             dt = htrr;
-        } else {	// Fluid transport
-			RunawayTransportRechesterRosenbluth *rtrr = new RunawayTransportRechesterRosenbluth(
-				grid, dBB
-			);
-			oprtr->AddTerm(rtrr);
+        } else {    // Fluid transport
+            RunawayTransportRechesterRosenbluth *rtrr = new RunawayTransportRechesterRosenbluth(
+                grid, dBB
+            );
+            oprtr->AddTerm(rtrr);
 
-			dt = rtrr;
-		}
+            dt = rtrr;
+        }
 
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
@@ -441,13 +469,33 @@ bool SimulationGenerator::ConstructTransportTerm(
         if (heat) {
 			hasNonTrivialTransport = true;
 
-			HeatTransportRRAdaptiveMHDLike *hrr = new HeatTransportRRAdaptiveMHDLike(
+                      // === NEW (pass RunawayFluid + placeholder L0/Lcr to adaptive RR heat model) ====
+                      // The adaptive MHD-like RR heat operator also benefits from access to the thermal
+                      // collision time via RunawayFluid (nu_c = 1/tau_th). This enables consistent use
+                      // of collisional effects in the transport coefficient evaluation.
+                      //
+                      // As for the non-adaptive RR operator, L0 and Lcr are currently provided as
+                      // simple placeholders; the operator can compute more physical quantities
+                      // internally during Rebuild() as needed.
+                      // =========================================================
+
+                      RunawayFluid *reFluid = eqsys->GetREFluid();;
+                      
+                      real_t R0    = grid->GetRadialGrid()->GetR0();
+                      real_t L0    = std::isfinite(R0) ? 1.8*R0 : 1.0;    
+                      real_t Lcr = 0.1;    //
+
+                      HeatTransportRRAdaptiveMHDLike *hrr =
+                            new HeatTransportRRAdaptiveMHDLike(
 				grid, eqsys->GetUnknownHandler(),
+                                reFluid,
+                                L0, Lcr,
 				grad_j_tot_max, gradient_normalized,
 				dBB0, suppression_level, localized
 			);
 
 			oprtr->AddTerm(hrr);
+                      // === END NEW ================================================
 
 			// Add boundary condition...
 			TransportDiffusiveBC *dbc =
