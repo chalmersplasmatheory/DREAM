@@ -22,7 +22,6 @@
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.hpp"
-#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Fluid/EFieldFromConductivityTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"
@@ -212,7 +211,7 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
  */
 void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     EquationSystem *eqsys, Settings* s,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::eqn_terms*
 ) {
 	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 	const len_t id_j_tot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
@@ -231,6 +230,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     Vloop->AddTerm(new VloopTerm(fluidGrid));
 
     // Add hyperresistive term
+	/*
 	enum OptionConstants::eqterm_hyperresistivity_mode hypres_mode =
 		(enum OptionConstants::eqterm_hyperresistivity_mode)s->GetInteger(MODULENAME_HYPRES "/mode");
     if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED) {
@@ -273,6 +273,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 		eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hypTerm);
 		eqn += " + hyperresistivity";
 	}
+	*/
 
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, dtTerm, eqn);
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Vloop);
