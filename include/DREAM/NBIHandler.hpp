@@ -117,7 +117,7 @@ namespace DREAM {
             real_t Ti_beam, real_t m_i_beam,
             FVM::Interpolator1D *j_B_profile,
             real_t R0,  int gaussian_profile,
-            FVM::Interpolator1D *Power_Profile
+            FVM::Interpolator1D *Power_Profile, len_t n_beam_radius, len_t n_beam_theta, len_t n_beam_s
         );
 
         ~NBIHandler();

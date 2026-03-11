@@ -4,6 +4,7 @@
 
 import numpy as np
 from .. DREAMException import DREAMException
+from .. helpers import scal
 from . ToleranceSettings import ToleranceSettings
 from . Preconditioner import Preconditioner
 
@@ -22,7 +23,11 @@ LINEAR_SOLVER_GMRES   = 5
 class Solver:
     
 
-    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False, checkresidual=True):
+    def __init__(
+        self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU,
+        maxiter=100, verbose=False, checkresidual=True,
+        savestatistics=True
+    ):
         """
         Constructor.
         """
@@ -44,7 +49,7 @@ class Solver:
         self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
-        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False)
+        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose, checkresidual=checkresidual, saveconvergenceinfo=False, savestatistics=savestatistics)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
@@ -137,9 +142,18 @@ class Solver:
         self.setOption(saveconvergenceinfo=saveconvergenceinfo)
 
 
+    def setSaveStatistics(self, savestatistics):
+        """
+        If 'True', saves information about the number of iterations per
+        time step and whether or not the backup inverter was activated.
+        """
+        self.setOption(savestatistics=savestatistics)
+
+
     def setOption(
         self, linsolv=None, maxiter=None, verbose=None,
-        checkresidual=None, saveconvergenceinfo=None
+        checkresidual=None, saveconvergenceinfo=None,
+        savestatistics=None
     ):
         """
         Sets a solver option.
@@ -154,6 +168,8 @@ class Solver:
             self.checkresidual = checkresidual
         if saveconvergenceinfo is not None:
             self.saveconvergenceinfo = saveconvergenceinfo
+        if savestatistics is not None:
+            self.savestatistics = savestatistics
 
         self.verifySettings()
 
@@ -175,21 +191,17 @@ class Solver:
         """
         Load settings from the given dictionary.
         """
-        def scal(v):
-            if type(v) == np.ndarray: return v[0]
-            else: return v
-
         self.type = int(scal(data['type']))
-        self.linsolv = int(data['linsolv'])
+        self.linsolv = int(scal(data['linsolv']))
         
         if 'maxiter' in data:
-            self.maxiter = int(data['maxiter'])
+            self.maxiter = int(scal(data['maxiter']))
 
         if 'verbose' in data:
-            self.verbose = bool(data['verbose'])
+            self.verbose = bool(scal(data['verbose']))
 
         if 'checkresidual' in data:
-            self.checkresidual = bool(data['checkresidual'])
+            self.checkresidual = bool(scal(data['checkresidual']))
 
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
@@ -198,22 +210,25 @@ class Solver:
             self.preconditioner.fromdict(data['preconditioner'])
 
         if 'backupsolver' in data:
-            self.backupsolver = int(data['backupsolver'])
+            self.backupsolver = int(scal(data['backupsolver']))
 
         if 'saveconvergenceinfo' in data:
-            self.saveconvergenceinfo = bool(data['saveconvergenceinfo'])
+            self.saveconvergenceinfo = bool(scal(data['saveconvergenceinfo']))
+
+        if 'savestatistics' in data:
+            self.savestatistics = bool(scal(data['savestatistics']))
 
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savesolution', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem', 'rescaled']
 
             for f in flags:
                 if f in data['debug']:
-                    setattr(self, 'debug_{}'.format(f), bool(data['debug'][f]))
+                    setattr(self, 'debug_{}'.format(f), bool(scal(data['debug'][f])))
 
             if 'timestep' in data['debug']:
-                self.debug_timestep = int(data['debug']['timestep'])
+                self.debug_timestep = int(scal(data['debug']['timestep']))
             if 'iteration' in data['debug']:
-                self.debug_iteration = int(data['debug']['iteration'])
+                self.debug_iteration = int(scal(data['debug']['iteration']))
 
         self.verifySettings()
 
@@ -256,11 +271,13 @@ class Solver:
                 'savesystem': self.debug_savesystem,
                 'rescaled': self.debug_rescaled,
                 'timestep': self.debug_timestep,
-                'iteration': self.debug_iteration
+                'iteration': self.debug_iteration,
             }
 
             if self.backupsolver is not None:
                 data['backupsolver'] = self.backupsolver
+
+            data['savestatistics'] = self.savestatistics
 
         return data
 

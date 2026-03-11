@@ -37,6 +37,7 @@ namespace DREAM {
             savevector = false, savenumjac = false, savesystem = false, debugrescaled = false;
         len_t savetimestep = 0, saveiteration = 1;
 
+		bool saveStatistics = true;
         std::vector<real_t> solver_time;
         std::vector<len_t> nIterations;
         std::vector<bool> usedBackupInverter;
@@ -55,7 +56,8 @@ namespace DREAM {
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
             enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
 			const int_t maxiter=100, const real_t reltol=1e-6,
-			bool verbose=false, bool checkResidual=true
+			bool verbose=false, bool checkResidual=true,
+			bool saveStatistics=false
 		);
 		virtual ~SolverNonLinear();
 

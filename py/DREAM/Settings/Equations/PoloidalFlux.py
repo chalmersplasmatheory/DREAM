@@ -3,6 +3,7 @@ from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . UnknownQuantity import UnknownQuantity
 from .. TransportSettings import TransportSettings
+from ... helpers import scal
 
 
 HYPERRESISTIVITY_MODE_NEGLECT = 1
@@ -89,17 +90,17 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         if 'hyperresistivity' in data:
             hyp = data['hyperresistivity']
             if 'mode' in hyp:
-                self.hyperresistivity_mode = int(hyp['mode'])
+                self.hyperresistivity_mode = int(scal(hyp['mode']))
 
             if 'Lambda' in hyp:
                 self.hyperresistivity_Lambda_x = hyp['Lambda']['x']
                 self.hyperresistivity_Lambda_r = hyp['Lambda']['r']
                 self.hyperresistivity_Lambda_t = hyp['Lambda']['t']
             elif 'dBB0' in hyp:
-                self.hyperresistivity_dBB0 = float(hyp['dBB0'])
-                self.hyperresistivity_grad_j_tot_max = float(hyp['grad_j_tot_max'])
-                self.hyperresistivity_gradient_normalized = bool(hyp['gradient_normalized'])
-                self.hyperresistivity_suppression_level = float(hyp['suppression_level'])
+                self.hyperresistivity_dBB0 = float(scal(hyp['dBB0']))
+                self.hyperresistivity_grad_j_tot_max = float(scal(hyp['grad_j_tot_max']))
+                self.hyperresistivity_gradient_normalized = bool(scal(hyp['gradient_normalized']))
+                self.hyperresistivity_suppression_level = float(scal(hyp['suppression_level']))
 
 
     def todict(self):

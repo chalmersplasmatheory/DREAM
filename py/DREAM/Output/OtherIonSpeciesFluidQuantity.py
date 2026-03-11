@@ -29,6 +29,17 @@ class OtherIonSpeciesFluidQuantity(IonSpeciesFluidQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        return OtherFluidQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], description=self.description, grid=self.grid, output=self.output)
+        # Handle both 2D (single species) and 3D (multiple species) data
+        if self.data.ndim == 3:
+            species_data = self.data[:,idx,:]
+        elif self.data.ndim == 2:
+            # Single species case - data is (NT, NR)
+            if idx != 0:
+                raise ValueError(f"Species index {idx} out of range for single-species data")
+            species_data = self.data
+        else:
+            raise ValueError(f"Unexpected data dimensions: {self.data.ndim}")
+
+        return OtherFluidQuantity(name='{}_{}'.format(self.name, name), data=species_data, description=self.description, grid=self.grid, output=self.output)
 
     
