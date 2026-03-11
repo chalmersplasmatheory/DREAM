@@ -4,6 +4,7 @@
 
 import h5py
 import numpy as np
+from packaging import version
 
 
 DATA_TYPE_ARRAY    = 1
@@ -136,7 +137,12 @@ class DataObject:
         """
         Convert to numpy array.
         """
-        return np.asarray(self[:], dtype=dtype, copy=copy)
+        # The 'copy' argument was introduced in numpy 2.0.0, and
+        # raises a warning if not present.
+        if version.parse(np.__version__) >= version.parse('2.0.0'):
+            return np.asarray(self[:], dtype=dtype, copy=copy)
+        else:
+            return np.asarray(self[:], dtype=dtype)
 
 
     """
