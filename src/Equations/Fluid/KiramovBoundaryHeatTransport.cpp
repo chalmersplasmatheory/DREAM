@@ -9,7 +9,7 @@ using namespace DREAM;
  * Implementation of the Kiramov boundary condition for the heat transport
  * equation. This boundary condition is given by
  *
- *   q|| = -gamma * n_e * c_s(T_e) * T_e 
+ *   q|| = - 2 * kappa * n_e * c_s(T_e) * T_e
  *
  * where q|| is the parallel heat flux, c_s is the sound speed and gamma is the 
  * heat transmission coefficient
@@ -51,17 +51,17 @@ KiramovBoundaryHeatTransport::KiramovBoundaryHeatTransport(FVM::Grid *g, FVM::Un
 
     }
     const real_t
-        *Vp_fr = this->grid->GetVp_fr(this->grid->GetNr()),
-        *Vp    = this->grid->GetVp(this->grid->GetNr()-1),
+        VpVol_f = this->grid->GetVpVol_f(this->grid->GetNr()),
+        VpVol   = this->grid->GetVpVol(this->grid->GetNr()-1),
         dr    = this->grid->GetRadialGrid()->GetDr(this->grid->GetNr()-1);
-    S_wo_coeff = Vp_fr[0] / (Vp[0] * dr);
+    S_wo_coeff = VpVol_f / (VpVol * dr);
 }
 
 
 /**
  * Build the coefficients of this advection term.
  */
-void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *) {// TODO
+void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *) {
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
     real_t *n_cold = unknowns->GetUnknownData(id_n_cold); 
 
@@ -73,10 +73,10 @@ void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::Unkn
     } else 
         T_i = 0.;
 
-    real_t T_e = T_cold[nr-1] * Constants::ec; // (1-deltaRadialFlux[nr]) * T_cold[nr-1] * Constants::ec;
-    real_t n_e = n_cold[nr-1];                 // (1-deltaRadialFlux[nr]) * n_cold[nr-1];
+    real_t T_e = T_cold[nr-1] * Constants::ec;
+    real_t n_e = n_cold[nr-1];
 
-    real_t c_s = sqrt((T_e + gamma * T_i) / mi); //sqrt(adb_index * Z * T / mi); // Ions sound speed 
+    real_t c_s = sqrt((T_e + gamma * T_i) / mi);
 
     const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
     real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(this->grid->GetNr()-1,this->grid->GetRadialGrid(),jtot);
@@ -97,14 +97,12 @@ void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::Unkn
 
 // Set derivatives of the advection term with respect to different unknowns quantities 
 void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t /*nMultiples*/){ 
-    /* TODO: Deriv for j_tot? And is this ok for T_cold? We apply to T_cold...
-    */
     ResetDifferentiationCoefficients();
     
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
     
-    real_t T_e = T_cold[nr-1] * Constants::ec; // (1-deltaRadialFlux[nr]) * T_cold[nr-1]* Constants::ec;
-    real_t n_e = n_cold[nr-1];                 // (1-deltaRadialFlux[nr]) * n_cold[nr-1];
+    real_t T_e = T_cold[nr-1] * Constants::ec;
+    real_t n_e = n_cold[nr-1];
 
     const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
     real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(this->grid->GetNr()-1,this->grid->GetRadialGrid(),jtot);
@@ -112,33 +110,29 @@ void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t 
     real_t L_par = 2 * M_PI * qR0;
     
     real_t T_i;
-    real_t c_s;
     if (has_Ti) {
         real_t *N_i = unknowns->GetUnknownData(id_N_i); 
         real_t *W_i = unknowns->GetUnknownData(id_W_i); 
         T_i = 2. / 3. * W_i[nr-1] / N_i[nr-1]; 
 
-        c_s = sqrt((T_e + gamma * T_i) / mi);
-        if (derivId == id_W_i) {
-            real_t d_c_s = 1./ 2. * 1. / sqrt((T_e + gamma * T_i) / mi) * gamma / mi * 2. / 3. / N_i[nr-1]; 
-            real_t d_q_par = 2 * kappa * n_e * d_c_s * Constants::ec;
-            dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff; 
-        } else if (derivId == id_N_i) {
-            real_t d_c_s = 1./ 2. * 1. / sqrt((T_e + gamma * T_i) / mi) * gamma / mi * 2. / 3. * (- W_i[nr-1] / (N_i[nr-1] * N_i[nr-1])); 
-            real_t d_q_par = 2 * kappa * n_e * d_c_s * Constants::ec;
-            dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff; 
-        }
-    } else 
+        real_t d_c_s;
+        if (derivId == id_W_i)
+            d_c_s = 1./ 2. * 1. / sqrt((T_e + gamma * T_i) / mi) * gamma / mi * 2. / 3. / N_i[nr-1];
+        else if (derivId == id_N_i)
+            d_c_s = 1./ 2. * 1. / sqrt((T_e + gamma * T_i) / mi) * gamma / mi * 2. / 3. * (- W_i[nr-1] / (N_i[nr-1] * N_i[nr-1]));
+        real_t d_q_par = 2 * kappa * n_e * d_c_s * Constants::ec;
+        dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff;
+    } else
         T_i = 0.;
 
-    c_s = sqrt((T_e + gamma * T_i) / mi); //sqrt(adb_index * Z * T / mi); // Ions sound speed 
 
     if (derivId == id_T_cold) {
         real_t d_c_s = 1./ 2. * 1. / sqrt((T_e + gamma * T_i) / mi) * Constants::ec / mi;
         real_t d_q_par = 2 * kappa * n_e * d_c_s * Constants::ec;
-        dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff; //n * gamma * sqrt(adb_index *Z /mi) * 0.5 * Constants::ec / sqrt(T) ;
+        dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff;
     } else if (derivId == id_n_cold) {
+        real_t c_s = sqrt((T_e + gamma * T_i) / mi);
         real_t d_q_par = 2 * kappa * c_s * Constants::ec;
-        dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff; // gamma * c_s * Constants::ec;
+        dFr(nr,0,0,0) += 2. / 3. * d_q_par / L_par * 1. / S_wo_coeff;
     }
 }

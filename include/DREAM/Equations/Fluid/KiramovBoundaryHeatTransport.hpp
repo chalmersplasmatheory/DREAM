@@ -28,7 +28,6 @@ namespace DREAM {
 
         const real_t kappa = 8.0; // Heat transmission coefficient in the Kiramov model [-]
         const real_t gamma = 5. / 3.;
-        const real_t adb_index = 1.0; // Adiabatic index [-]
         virtual void SetPartialAdvectionTerm(len_t derivId, len_t nMultiples) override;
 
         real_t S_wo_coeff;

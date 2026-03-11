@@ -31,7 +31,6 @@ import DREAM.Settings.Equations.ElectricField as Efield
 from DREAM import DREAMSettings, DREAMOutput, DREAMException, runiface
 
 ds = DREAMSettings()
-#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 
 # Disable kinetic grids: 
@@ -51,10 +50,6 @@ ds.eqsys.E_field.setPrescribedData(0)
 
 
 # Set temperature
-#x = np.linspace(0.20, 0.50, 30)  # Generate 500 points in the range
-#T =100 - x**2 * 10
-
-#ds.eqsys.T_cold.setPrescribedData(temperature=T)
 ds.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds.eqsys.T_cold.setInitialProfile(T)
 
