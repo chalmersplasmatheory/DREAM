@@ -84,7 +84,6 @@ ds.timestep.setTmax(tMax)
 ds.timestep.setNt(Nt)
 
 ds.output.setTiming(stdout=True, file=True)
-ds.output.setFilename('/home/votta/DREAM/examples/kiramovBC/output.h5')
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
