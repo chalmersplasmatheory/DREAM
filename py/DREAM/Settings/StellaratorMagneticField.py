@@ -90,7 +90,6 @@ class StellaratorMagneticField(NumericalMagneticField):
         """
         Load a DESC magnetic equilibrium from the named file.
         """
-
         self.f_passing = np.array(1- self.eq.compute('trapped fraction', grid=self.grid)['trapped fraction'][self.grid.unique_rho_idx], dtype=np.float64)
         self.B_min = np.array(self.eq.compute('min_tz |B|', grid=self.grid)['min_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
         self.B_max = np.array(self.eq.compute('max_tz |B|', grid=self.grid)['max_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
