@@ -1,7 +1,5 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from .OtherFluidQuantity import OtherFluidQuantity
-from .OutputException import OutputException
 from .CurrentDensity import CurrentDensity
 from .ScalarQuantity import ScalarQuantity
 

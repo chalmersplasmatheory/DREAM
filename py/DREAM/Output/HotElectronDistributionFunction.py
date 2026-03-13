@@ -1,8 +1,5 @@
 # Wrapper class for 'f_hot' -- the hot electron distribution function
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 from . DistributionFunction import DistributionFunction
 
 

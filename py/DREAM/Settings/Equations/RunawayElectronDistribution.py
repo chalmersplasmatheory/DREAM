@@ -1,10 +1,9 @@
 
 import numpy as np
-from DREAM.Settings.Equations.EquationException import EquationException
+
 from . import DistributionFunction as DistFunc
 from . DistributionFunction import DistributionFunction
 from . PrescribedInitialParameter import PrescribedInitialParameter
-from .. TransportSettings import TransportSettings
 
 
 INIT_FORWARD = 1

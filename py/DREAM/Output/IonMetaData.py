@@ -1,8 +1,5 @@
 # Object for handling ion meta data (atomic charge and names)
 
-import numpy as np
-
-
 class IonMetaData:
     
 

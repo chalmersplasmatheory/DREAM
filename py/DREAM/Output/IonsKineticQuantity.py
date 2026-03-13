@@ -1,6 +1,5 @@
 # Representation of a kinetic quantity which has an ion index.
 
-import matplotlib.pyplot as plt
 from . IonSpeciesKineticQuantity import IonSpeciesKineticQuantity
 from . KineticQuantity import KineticQuantity
 from . UnknownQuantity import UnknownQuantity

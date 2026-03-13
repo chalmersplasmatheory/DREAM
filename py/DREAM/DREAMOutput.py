@@ -2,13 +2,10 @@
 # This object represents the output of a DREAM simulation.
 # ###########################################################
 
-import copy
 import numpy as np
-import os
 import DREAM.DREAMIO as DREAMIO
 import sys
 import pathlib
-from .helpers import merge_dicts
 
 from .DREAMSettings import DREAMSettings
 from .Output.Code import Code

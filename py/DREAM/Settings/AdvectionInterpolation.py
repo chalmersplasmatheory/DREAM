@@ -2,6 +2,7 @@
 
 from .. helpers import scal
 
+from . Equations.EquationException import EquationException
 
 AD_INTERP_CENTRED  = 1
 AD_INTERP_UPWIND   = 2
