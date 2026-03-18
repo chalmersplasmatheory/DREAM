@@ -46,6 +46,7 @@ class NBIIonTerm : public IonEquationTerm<FVM::EquationTerm> {
         return nnz;
     }
     real_t ComputeWeightFactor(len_t ir, len_t iIon);
+    real_t ComputeWeightFactorDerivative(len_t ir, len_t iIon);
 
 
 public:

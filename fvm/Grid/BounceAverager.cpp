@@ -46,6 +46,18 @@ BounceAverager::BounceAverager(
 
     InitializeQuadrature(q_method_trapped);
 
+	// Ensure that the magnetic field has only one minimum and one maximum
+	// (unless the associated momentum grid has only one point, in which
+	// case we may be running a fluid simulation cases and this does is fine)
+	if (g->GetMomentumGrid(0)->GetNCells() > 1) {
+		if (g->GetRadialGrid()->HasMagneticFieldMultipleOptima())
+			FVMException(
+				"The magnetic field has more than one minimum or maximum "
+				"along at least one magnetic field line. This is "
+				"incompatible with kinetic simulations."
+			);
+	}
+
     // Use the Brent algorithm for root finding when determining the theta bounce points
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     gsl_fsolver = gsl_root_fsolver_alloc (GSL_rootsolver_type);

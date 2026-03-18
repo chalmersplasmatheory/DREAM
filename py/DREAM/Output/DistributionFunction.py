@@ -43,7 +43,7 @@ class DistributionFunction(KineticQuantity):
     #########################################
 
     def volumeIntegratedDistributionFunction(self, t=None, normalized=False):
-        """
+        r"""
         Calculates the volume integrated (real space) integral of the distribution function,
         F(t,p,xi)=\int Vprime/p^2 * f(t,r,p,xi) dr
         """

@@ -7,6 +7,7 @@ from scipy.constants import N_A
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 import DREAM.Settings.Equations.IonSpecies as Ions
+from ... helpers import scal
 
 
 
@@ -41,13 +42,13 @@ SHIFT_MODE_NEGLECT=1
 SHIFT_MODE_PRESCRIBED=2
 SHIFT_MODE_ANALYTICAL=3
 
-ZMolarMassList=[1,1,10]
-isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
-molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
+ZMolarMassList=[1,1,10,18]
+isotopesMolarMassList=[2,0,0,0]# 0 means naturally occuring mix
+molarMassList=[0.0020141,0.001008,0.020183,0.039948]# kg/mol
 
-ZSolidDensityList=[1,1,10]
-isotopesSolidDensityList=[2,0,0]
-solidDensityList=[205.9,86,1444]# kg/m^3
+ZSolidDensityList=[1,1,10,18]
+isotopesSolidDensityList=[2,0,0,0]
+solidDensityList=[205.9,86,1444,1623]# kg/m^3
 
 class SPI(UnknownQuantity):
     
@@ -624,23 +625,23 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         Set all options from a dictionary.
         """
         if 'velocity' in data:
-            self.velocity       = int(data['velocity'])
+            self.velocity       = int(scal(data['velocity']))
         if 'ablation' in data:
-            self.ablation       = int(data['ablation'])
+            self.ablation       = int(scal(data['ablation']))
         if 'deposition' in data:
-            self.deposition     = int(data['deposition'])
+            self.deposition     = int(scal(data['deposition']))
         if 'shift' in data:
-            self.shift          = int(data['shift'])
+            self.shift          = int(scal(data['shift']))
         if 'TDrift' in data:
             self.TDrift              = [float(x) for x in data['TDrift']]
         if 'heatReDepositionFactorDrift' in data:
             self.heatReDepositionFactorDrift = [float(x) for x in data['heatReDepositionFactorDrift']]
         if 'T0Drift' in data:
-            self.T0Drift             = float(data['T0Drift'])
+            self.T0Drift             = float(scal(data['T0Drift']))
         if 'DeltaYDrift' in data:
-            self.DeltaYDrift        = float(data['DeltaYDrift'])
+            self.DeltaYDrift        = float(scal(data['DeltaYDrift']))
         if 'RmDrift' in data:
-            self.RmDrift             = float(data['RmDrift'])
+            self.RmDrift             = float(scal(data['RmDrift']))
         if 'ZavgDriftArray' in data:
             self.ZavgDriftArray      = [float(x) for x in data['ZavgDriftArray']]
         if 'ZsDrift' in data:        
@@ -648,13 +649,13 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if 'isotopesDrift' in data:        
             self.isotopesDrift             = [float(x) for x in data['isotopesDrift']]
         if 'heatAbsorbtion' in data:
-            self.heatAbsorbtion = int(data['heatAbsorbtion'])
+            self.heatAbsorbtion = int(scal(data['heatAbsorbtion']))
         if 'cloudRadiusMode' in data:
-            self.cloudRadiusMode = int(data['cloudRadiusMode'])
+            self.cloudRadiusMode = int(scal(data['cloudRadiusMode']))
         if 'magneticFieldDependenceMode' in data:
-            self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
+            self.magneticFieldDependenceMode = int(scal(data['magneticFieldDependenceMode']))
         if 'abl_ioniz' in data:
-            self.abl_ioniz = int(data['abl_ioniz'])
+            self.abl_ioniz = int(scal(data['abl_ioniz']))
             
 
         if 'VpVolNormFactor' in data:
@@ -776,7 +777,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
             if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
-            if any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1:
+            if self.heatReDepositionFactorDrift is not None and (any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1):
                 raise EquationException("spi: Invalid value assigned to 'heatReDepositionFactorDrift'. Expected array of floats between 0 and 1.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
