@@ -165,7 +165,7 @@ class FluidQuantity(UnknownQuantity):
         return 1
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, unit='s', **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, weight_label=None, unit='s', **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
@@ -219,59 +219,99 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, weight_label=weight_label, log=log, **kwargs)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, weight_label=weight_label, log=log, **kwargs)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, return_contours=False, displayGrid=False, maxis = False, shifted = True, maxMinScale=True, levels = None, logscale=False, **kwargs):
         """
-        Plot the radial profile of this quantity revolved over a 
-        poloidal cross section at the specified time step. 
-        NOTE: Currently assumes a cylindrical flux surface geometry!
-        
+        Plot the radial profile of this quantity revolved over a
+        poloidal cross section at the specified time step.
+
         :param matplotlib.pyplot.Axis ax:   Matplotlib axes object to use for plotting.
         :param bool show: If 'True', shows the plot immediately via a call to 'matplotlib.pyplot.show()' with 'block=False'. If 'None', this is interpreted as 'True' if 'ax' is also 'None'.
         :param int t: Time index to plot.
         :param matplotlib.pyplot.Colorbar colorbar: Specify wether or not to include a colorbar.
-        :param bool displayGrid: Specify wether or not to display a polar grid in the plot.
+        :param bool return_contours: Specify wether or not to return the contours
+        :param bool displayGrid: Specify wether or not to display the flux surfaces separating the grid cells in the plot.
+        :param bool maxis: Specify wether or not to display the magnetic axis
+        :param bool shifted: If 'True', the origin is shifted to the magnetic axis, otherwise the origin is in the center of the torus
         :param bool maxMinScale: If 'True', set tha max and min of the color scale to the maximum and minimum values of the data stored by this object over all time steps.
+        :param numpy.ndarray levels: Levels for the color scale (only used if maxMinScale is False)
+        :param bool logscale: If 'True', plot the contours with a logarithmic color scale
 
         :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
         
+        black = (87/255, 117/255, 144/255)
+        
         genax = ax is None
 
         if genax:
-            ax = plt.subplot(polar=True)
-            ax.set_facecolor('k')
-            ax.set_ylim([self.grid.r[0],self.grid.r[-1]])
+            ax = plt.axes()
             ax.set_title('t = '+str(self.grid.t[t]))
+            if shifted:
+                ax.set_xlabel('Radius $R-R_0$ (m)')
+                ax.set_ylabel('Height $Z-Z_0$ (m)')
+            else:
+                ax.set_xlabel('Radius $R$ (m)')
+                ax.set_ylabel('Height $Z$ (m)')
 
-            if not displayGrid:
-                ax.grid(None)
-                ax.set_yticklabels([])
-                ax.set_xticklabels([])
+            ax.axis('equal')
 
             if show is None:
                 show = True
-                
-        theta=np.linspace(0,2*np.pi)
+
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal contrours when equilibrium data is not stored in output.")
+
+        theta = self.grid.eq.theta
+
+        # Shift origin as requested
+        if shifted:
+            R = self.grid.eq.RMinusR0
+            R_f = self.grid.eq.RMinusR0_f
+            Z = self.grid.eq.ZMinusZ0
+            Z_f = self.grid.eq.ZMinusZ0_f
+        else:
+            R = self.grid.eq.RMinusR0 + self.grid.eq.R0
+            R_f = self.grid.eq.RMinusR0_f + self.grid.eq.R0
+            Z = self.grid.eq.ZMinusZ0 + self.grid.eq.Z0
+            Z_f = self.grid.eq.ZMinusZ0_f + self.grid.eq.Z0
+            
+        # Add the innermost and outermost flux surfaces of the flux grid,
+        # so that the contours fill the entire plasma cross section
+        R = np.hstack((R_f[:,0].reshape(-1,1), R))
+        R = np.hstack((R, R_f[:,-1].reshape(-1,1)))
+        Z = np.hstack((Z_f[:,0].reshape(-1,1), Z))
+        Z = np.hstack((Z, Z_f[:,-1].reshape(-1,1)))
+        
+        # Create matrix with the data in each radial grid cell copied to all values of theta
+        # Take logarithm of data if requested
         if logscale:
         	data_mat=np.log10(self.data[t,:])*np.ones((len(theta),len(self.grid.r)))
         else:
         	data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
         	
+        # Duplicate the data in the innermost and outermost grid cell centers
+        # to be plotted at the edges of the flux grid so that the contours fill the entire plasma cross section
+        data_mat = np.hstack((data_mat[:,0].reshape(-1,1),data_mat))
+        data_mat = np.hstack((data_mat,data_mat[:,-1].reshape(-1,1)))
+        	
+    # Calculate contour levels ranging between the maximum and minimum value of this fluidQuantity, if requested
         if maxMinScale:
             if logscale:
-                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data))), **kwargs)
+                levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data)))
             else:
-                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
-        else:
-            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
+                levels=np.linspace(np.min(self.data),np.max(self.data))
+
+        # Plot contours of this fluidQuantity
+        cp = ax.contourf(R, Z, data_mat, cmap='GeriMap', levels = levels, **kwargs)
 			
+        # Create colorbar, if requested
         cb = None
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
@@ -279,6 +319,14 @@ class FluidQuantity(UnknownQuantity):
                 cb.ax.set_ylabel(r'$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
             else:
                 cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+                
+        # Display grid cells, if requested
+        if displayGrid:
+            self.grid.eq.visualize(ax=ax, maxis=maxis, shifted = shifted)
+        else:
+            # We display the edge of the plasma even when we do not display the whole grid
+            ax.plot(R[:,-1], Z[:,-1], color=black, linewidth=2, **kwargs)
+            ax.plot(R[(0,-1),-1], Z[(0,-1),-1], color=black, linewidth=2, **kwargs) # Close contour
             
         if show:
             plt.show(block=False)
@@ -337,7 +385,39 @@ class FluidQuantity(UnknownQuantity):
 		            
         plt.show()
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
+
+    def _get_weight_factor(self, weight=None, weight_label=None):
+        """Returns a weight factor and appropriate label.
+        
+        :param weight:       if provided, is converted to ndarray and validated, otherwise returns weight 1.
+        :param weight_label: if str provided, becomes the label, otherwise inferred from weight.
+        """
+        if (weight_label is not None) and (weight is None):
+            raise ValueError("Weight label provided, but weight is None.")
+        if weight_label is not None and not isinstance(weight_label, str):
+            raise ValueError(f"weight_label must be str, received {type(weight_label)}: {weight_label}")
+    
+        w = np.asarray(1.0)
+        wlbl = ""
+
+        if weight is None:
+            return w, wlbl
+
+        w = w * np.asarray(weight)
+        # label for user-provided weight
+        if weight_label is not None:
+            wlbl += f"*{weight_label}"
+        elif np.isscalar(weight) or np.ndim(weight) == 0:
+            wlbl += f"*{float(weight):.8g}"
+        else:
+            wlbl += "*w"
+
+        if w.ndim>2:
+            raise ValueError(f"Invalid weight ndim '{w.ndim}', must be <=2.")
+
+        return w, wlbl
+
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, weight_label=None, log=False, **kwargs):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
@@ -345,7 +425,8 @@ class FluidQuantity(UnknownQuantity):
         :param ax:     Matplotlib axes object to use for plotting.
         :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
         :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
-        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param weight: Optional quantity to weight this quantity with when plotting. If 1D, assumes weight to be radius dependent.
+        :param weight_label: Optional weight label to attach to plot ylabel if weight is also provided.
         :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
@@ -360,17 +441,30 @@ class FluidQuantity(UnknownQuantity):
             t = [t]
 
         lbls = []
-        vpv = self.grid.VpVol[:]
-        for it in t:
-            data = np.copy(self.data[it,:])
-            wlbl = ''
-            if VpVol:
-                data *= vpv
-                wlbl += "*V'"
-            if weight is not None:
-                data *= weight
-                wlbl += '*w'
+        
+        # weights (1 if not provided)
+        w, wlbl = self._get_weight_factor(weight, weight_label)
+        if VpVol:
+            wlbl += "*V'"
+        len_t = len(t)
+        if (w.ndim == 2):
+            if w.shape[0] == self.data.shape[0]:
+                # 2D weights on a full-time grid; slice the requested times
+                w = w[t, :]
+            elif (w.shape[0] != len_t):
+                # otherwise 2D weights must match the number of time slices 
+                raise ValueError(f"2D weight expected shape ({len_t}, ...), received: {w.shape}")
+        elif w.ndim == 1 and w.shape[0] != self.data.shape[1]:
+            raise ValueError(f"1D weight in plotRadialProfile must have length Nr={self.data.shape[1]}, got: {w.size}.")
 
+        for j, it in enumerate(t):
+            data = np.copy(self.data[it,:])
+            if w.ndim == 2:
+                data *= w[j, :]
+            else:
+                data *= w
+            if VpVol:
+                data *= self.grid.VpVol[:]
 
             if log:
                 if np.any(data>0):
@@ -396,7 +490,7 @@ class FluidQuantity(UnknownQuantity):
         return ax   	
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, weight_label=None, log=False, **kwargs):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
@@ -404,7 +498,8 @@ class FluidQuantity(UnknownQuantity):
         :param ax:     Matplotlib axes object to use for plotting.
         :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
         :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
-        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param weight: Optional quantity to weight this quantity with when plotting. If 1D, assumes weight to be time dependent.
+        :param weight_label: Optional weight label to attach to plot ylabel if weight is also provided.
         :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
@@ -419,15 +514,30 @@ class FluidQuantity(UnknownQuantity):
             r = [r]
 
         lbls = []
-        for ir in r:
+
+        # weights (1 if not provided)
+        w, wlbl = self._get_weight_factor(weight, weight_label)
+        if VpVol:
+            wlbl += "*V'"
+        len_r = len(r)
+        if (w.ndim == 2):
+            if w.shape[1] == self.data.shape[1]:
+                # 2D weights is a full-radial grid; slice the requested radii
+                w = w[:, r]
+            elif (w.shape[1] != len_r):
+                # otherwise 2D weights must match the number of radial slices 
+                raise ValueError(f"2D weight expected shape (..., {len_r}), received: {w.shape}")
+        elif w.ndim == 1 and w.shape[0] != self.data.shape[0]:
+            raise ValueError(f"1D weight in plotTimeProfile must have length Nt={self.data.shape[0]}, got: {w.size}.")
+
+        for j, ir in enumerate(r):
             data = np.copy(self.data[:,ir])
-            wlbl = ''
+            if w.ndim == 2:
+                data *= w[:,j]
+            else:
+                data *= w
             if VpVol:
                 data *= self.grid.VpVol[ir]
-                wlbl += "*V'"
-            if weight is not None:
-                data *= weight
-                wlbl += '*w'
 
             if log:
                 if np.any(data>0):

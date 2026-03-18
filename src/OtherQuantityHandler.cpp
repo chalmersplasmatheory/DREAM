@@ -45,13 +45,13 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions, SPIHandler *SPI, BootstrapCurrent* bootstrap,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI) {
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms), SPI(SPI), bootstrap(bootstrap) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -664,6 +664,19 @@ void OtherQuantityHandler::DefineQuantities() {
     );
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
+    if (this->bootstrap != nullptr) {
+    	// Bootstrap current coefficients (Redl-Sauter)
+    	DEF_FL("fluid/coefficientL31", "Bootstrap current coefficient L31 (Redl-Sauter 2021).",
+    		qd->Store(this->bootstrap->getCoefficientL31());
+    	);
+    	DEF_FL("fluid/coefficientL32", "Bootstrap current coefficient L32 (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientL32());
+    	);
+    	DEF_FL("fluid/coefficientAlpha", "Bootstrap current coefficient alpha (Redl-Sauter 2021).",
+    	    qd->Store(this->bootstrap->getCoefficientAlpha());
+    	);
+    }
+
     // hottail/...
     DEF_HT_FR("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
         const real_t *const* Ar = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeffR();
@@ -909,17 +922,17 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
     if (!tracked_terms->tritiumSource_runaway.empty()) {
-        DEF_HT("runaway/S_tritium", "Tritium decay source term [s^-1 m^-3]",
+        DEF_RE("runaway/S_tritium", "Tritium decay source term [s^-1 m^-3]",
             real_t *S_T = qd->StoreEmpty();
 
-            for (len_t ir = 0; ir < nr_ht; ir++) {
-                for (len_t j = 0; j < n2_ht; j++) {
-     	            for (len_t i = 0; i < n1_ht; i++) {
+            for (len_t ir = 0; ir < nr_re; ir++) {
+                for (len_t j = 0; j < n2_re; j++) {
+     	            for (len_t i = 0; i < n1_re; i++) {
                         len_t nT = this->ions->GetNTritiumIndices();
-			const len_t *ti = this->ions->GetTritiumIndices();
-                        S_T[(ir*(n2_ht) + j)*n1_ht + i] = 0;
+			            const len_t *ti = this->ions->GetTritiumIndices();
+                        S_T[(ir*(n2_re) + j)*n1_re + i] = 0;
                         for(len_t iT=0; iT<nT; iT++){
-                            S_T[(ir*(n2_ht) + j)*n1_ht + i] += -this->tracked_terms->tritiumSource_runaway[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTotalIonDensity(ir, ti[iT]);
+                            S_T[(ir*(n2_re) + j)*n1_re + i] += -this->tracked_terms->tritiumSource_runaway[iT]->GetSourceFunction(ir,i,j) * this->ions->GetTotalIonDensity(ir, ti[iT]);
                         }
                     }
                 }
@@ -1282,9 +1295,15 @@ void OtherQuantityHandler::DefineQuantities() {
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
     if (SPI != nullptr){
-        DEF_SC_MUL("scalar/ablationDrift", "Total distance the deposited material gets shifted",SPI->GetNShard(),
+        DEF_SC_MUL("scalar/ablationDrift", "Total change in the minor radius the deposited material gets shifted",SPI->GetNShard(),
             real_t *v = qd->StoreEmpty();
             real_t *t = SPI->GetDrift();
+            for(len_t ip=0;ip<SPI->GetNShard();ip++)
+                v[ip] = t[ip];
+        );
+        DEF_SC_MUL("scalar/ablationDriftMajorRadius", "Total distance along the major radius the deposited material gets shifted",SPI->GetNShard(),
+            real_t *v = qd->StoreEmpty();
+            real_t *t = SPI->GetDriftMajorRadius();
             for(len_t ip=0;ip<SPI->GetNShard();ip++)
                 v[ip] = t[ip];
         );
@@ -1310,6 +1329,11 @@ void OtherQuantityHandler::DefineQuantities() {
         else if (qty->GetName().substr(0, 6) == "scalar")
             this->groups["scalar"].push_back(qty->GetName());
     }
+
+    this->groups["bootstrap"] = {
+        "fluid/coefficientL31", "fluid/coefficientL32", "fluid/coefficientAlpha",
+        "fluid/nuI", "fluid/nuE"
+    };
 
     this->groups["ripple"] = {
         "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"

@@ -159,7 +159,10 @@ class EqView(QtWidgets.QMainWindow):
         self.equil = LUKEMagneticField(filename)
         self.equil_type = EQTYPE_LUKE
 
-        self.ui.lblMagneticAxis.setText(f'({float(self.equil.Rp):.3f}, {float(self.equil.Zp):.3f})')
+        Rp = np.asarray(self.equil.Rp).item()
+        Zp = np.asarray(self.equil.Zp).item()
+
+        self.ui.lblMagneticAxis.setText(f'({Rp:.3f}, {Zp:.3f})')
         self.ui.lblMinorRadius.setText(f'{self.equil.getMinorRadius():.3f} m')
         self.ui.lblB0.setText(f'{np.mean(self.equil.ptBPHI[:,0]):.3f} T')
 

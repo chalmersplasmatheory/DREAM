@@ -435,6 +435,16 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
 
+enum eqterm_bootstrap_mode {
+    EQTERM_BOOTSTRAP_MODE_NEGLECT = 1,
+    EQTERM_BOOTSTRAP_MODE_REDL = 2,
+};
+
+enum eqterm_bootstrap_init_mode {
+    EQTERM_BOOTSTRAP_INIT_MODE_OHMIC = 1, 
+    EQTERM_BOOTSTRAP_INIT_MODE_TOTAL = 2
+};
+
 enum eqterm_lcfs_loss_mode {                        // Loss term
     EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
     EQTERM_LCFS_LOSS_MODE_FLUID = 2,

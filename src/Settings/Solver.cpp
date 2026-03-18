@@ -21,7 +21,7 @@ using namespace std;
 
 /**
  * Define options for the time stepper.
- * 
+ *
  * s: Settings object to define settings in.
  */
 void SimulationGenerator::DefineOptions_Solver(Settings *s) {
@@ -90,6 +90,8 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     );
 
     solver->SetSPIHandler(eqsys->GetSPIHandler());
+
+    solver->SetBootstrap(eqsys->GetBootstrap());
 
     solver->SetIonHandler(eqsys->GetIonHandler());
 
@@ -171,4 +173,3 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
 
     return snl;
 }
-
