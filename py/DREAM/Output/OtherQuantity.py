@@ -11,7 +11,7 @@ from . UnknownQuantity import UnknownQuantity
 class OtherQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, description, grid, output, momentumgrid=None):
+    def __init__(self, name, data, description, grid, output):
         """
         Constructor.
         """
@@ -61,6 +61,26 @@ class OtherQuantity(UnknownQuantity):
 
         return t
 
+    def new_like(self, name=None, data=None, grid=None, output=None, attr=None, description=None):
+        """
+        Creates a new object of the same type where the provided quantities replace
+        those of self.
+        """
+        if name is None:
+            name = self.name
+        if data is None:
+            data = self.data
+        if grid is None:
+            grid = self.grid
+        if output is None:
+            output = self.output
+        if description is None:
+            if attr is not None and "description" in attr:
+                description = attr["description"]
+            else:
+                description = self.description
+        
+        return type(self)(name=name, data=data, grid=grid, output=output, description=description)
 
     def getMultiples(self):
         """
