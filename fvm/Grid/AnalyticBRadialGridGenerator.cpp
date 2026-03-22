@@ -396,9 +396,9 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleExtrap(real_t 
         return xProvided[0];
     } else {
         if(r>xProvided_r[nProvided-1])
-            return xProvided_r[nProvided-1];
+            return xProvided[nProvided-1];
         else if(r<xProvided_r[0])
-            return xProvided_r[0];
+            return xProvided[0];
         else
             return gsl_spline_eval(spline_x, r, spline_acc);
     }   
