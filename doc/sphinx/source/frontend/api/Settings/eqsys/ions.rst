@@ -592,8 +592,8 @@ Finally, particles in **several charge states** may be added simultaneously:
 Radial Injection Example
 ^^^^^^^
 A volumetric ion source can be prescribed by providing the source on both a
-time grid and a radial grid, and by setting the source type to
-``ION_SOURCE_PRESCRIBED_VOLUMETRIC``:
+time grid and a radial grid by setting the source type to
+``ION_SOURCE_PRESCRIBED_VOLUMETRIC``, like the following example:
 
 .. code-block:: python
 
@@ -607,7 +607,9 @@ time grid and a radial grid, and by setting the source type to
    ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n, T=T)
 
    #Specify the time evolution of the source
-   neon_time = np.linspace(0, tMax, 1000)
+   neon_time = np.linspace(0, 0.1, 1000) # Time grid for the source
+   neon_stop = 0.05 # Time at which the source is turned off
+   total_neon_density = 1e19 # Total number of neon atoms to be injected
    neon_rate = np.zeros_like(neon_time)
    neon_rate[neon_time <= neon_stop] = total_neon_density / neon_stop
 
@@ -615,6 +617,7 @@ time grid and a radial grid, and by setting the source type to
    radial_profile = np.ones_like(r_grid)
 
    source_3D = np.zeros((11, len(neon_time), len(r_grid)))
+   
    #Only inject neutral neon
    for it in range(len(neon_time)):
        source_3D[0, it, :] = neon_rate[it] * radial_profile 
