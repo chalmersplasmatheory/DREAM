@@ -738,7 +738,7 @@ class FluidQuantity(UnknownQuantity):
             hits = hits[:2]
             return hits[0], hits[1]
 
-        def line_integrated_fluid_quantity(data,grid,t=None,x0=np.array([0.8, 0.0, 0.6]), n=np.array([0.0, 0.0, -1]),normaliseToPathLength=False):
+        def line_integrated_fluid_quantity(data,grid,t=None,x0=np.array([1.0, 0.0, 1.0]), n=np.array([0.0, 0.0, -1.0]), normaliseToPathLength=False):
             '''Main function to compute the line integral of a fluid quantity along a specified line of sight.'''
         
             n = np.asarray(n, dtype=float)
@@ -790,10 +790,8 @@ class FluidQuantity(UnknownQuantity):
 
             # Loop over shells from edge to center
             for ir in range(nr, 0, -1):
-                if ir == 0:  ##TODO
-                    l21, l22 = -1.0, -1.0
-                else:
-                    l21, l22 = find_intersections(ir-1, Rf, Zf, R0, Z0, ntheta, nr, x0, n)
+                
+                l21, l22 = find_intersections(ir-1, Rf, Zf, R0, Z0, ntheta, nr, x0, n)
 
                 if l21 < 0:
                     dl_shell = abs(l11 - l12)
@@ -810,8 +808,8 @@ class FluidQuantity(UnknownQuantity):
             if normaliseToPathLength:
                 with np.errstate(divide='ignore', invalid='ignore'):
                     result = np.where(lengths > 0, result / lengths, 0.0)
-            else:
-                return result
+  
+            return result
         n_line = line_integrated_fluid_quantity(
         data=self.data.data,
         grid=self.output.grid,
