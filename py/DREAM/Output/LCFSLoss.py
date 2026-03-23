@@ -8,7 +8,7 @@ from .ScalarQuantity import ScalarQuantity
 
 class LCFSLoss(OtherFluidQuantity):
 
-    def __init__(self, name, data, description, grid, output, momentumgrid):
+    def __init__(self, name, data, description, grid, output):
         """
         Constructor.
         """

@@ -40,4 +40,28 @@ class IonState(FluidQuantity):
 
         return self.name.split('-')[0]+f'-{roman_num}'
 
-
+    def new_like(self, name=None, data=None, grid=None, output=None, attr=None, Z=None, Z0=None):
+        """
+        Creates a new object of the same type where the provided quantities replace
+        those of self.
+        """
+        if name is None:
+            name = self.name
+        if data is None:
+            data = self.data
+        if grid is None:
+            grid = self.grid
+        if output is None:
+            output = self.output
+        if attr is None:
+            attr = {}
+            if hasattr(self, "description"):
+                attr["description"] = self.description
+            if hasattr(self, "description_eqn"):
+                attr["equation"] = self.description_eqn
+        if Z0 is None:
+            Z0 = self.Z0
+        if Z is None:
+            Z = self.Z
+        
+        return type(self)(name=name, data=data, grid=grid, output=output, attr=attr, Z=Z, Z0=Z0)
