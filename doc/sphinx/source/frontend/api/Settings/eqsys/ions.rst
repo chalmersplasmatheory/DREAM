@@ -531,7 +531,7 @@ time evolution. The user can choose to either inject particles of a specific
 charge state, or to inject particles of multiple charge states simultaneously.
 
 Edge Injection Example
-^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^
 The ion source is enabled via a single line:
 
 .. code-block:: python
