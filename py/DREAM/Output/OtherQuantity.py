@@ -1,10 +1,5 @@
 # Base class for an "other" quantity which is neither kinetic, fluid nor scalar.
-#
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
 

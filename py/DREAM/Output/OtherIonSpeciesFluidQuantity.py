@@ -1,7 +1,4 @@
 
-
-import numpy as np
-
 from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
 from . OtherFluidQuantity import OtherFluidQuantity
 

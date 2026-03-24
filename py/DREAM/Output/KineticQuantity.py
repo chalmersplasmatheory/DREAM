@@ -1,22 +1,19 @@
 # Base class for kinetic (radius + momentum + time) quantities
 #
 
-import matplotlib.animation as animation
+from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-
-from matplotlib import animation
 
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
 from .. import GeriMap
-from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
+from .. Settings.MomentumGrid import TYPE_PXI
 
 
 class KineticQuantity(UnknownQuantity):
-    
 
     def __init__(self, name, data, grid, output, momentumgrid=None, attr=list()):
         """
@@ -398,9 +395,8 @@ class KineticQuantity(UnknownQuantity):
 
         ax.set_title(f'{sign}{self.getTeXName()}')
 
-        cb = None
         if genax:
-            cb = plt.colorbar(mappable=cp, ax=ax)
+            plt.colorbar(mappable=cp, ax=ax)
 
         if show:
             plt.show(block=False)
@@ -520,6 +516,9 @@ class KineticQuantity(UnknownQuantity):
             ax.clear()
             ax=kq.plotPolar(colorbar=False, show=False, t=t,**kwargs)
             
+        if speed is None:
+            speed = 50
+
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=t,
             repeat=repeat, repeat_delay=repeat_delay, interval=speed,
@@ -527,7 +526,7 @@ class KineticQuantity(UnknownQuantity):
             
         if save:
             # Make animation
-            writer = animation.FFMpegFileWriter(fps=fps)
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
             writer.setup(fig, save, dpi=dpi)
             ani.save(save, writer=writer)
             print("Done saving video to '{}'.".format(save))

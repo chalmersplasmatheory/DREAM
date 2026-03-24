@@ -1,15 +1,11 @@
 
-
-import numpy as np
-
 from . IonSpeciesScalarQuantity import IonSpeciesScalarQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
 
 
 class OtherIonSpeciesScalarQuantity(IonSpeciesScalarQuantity):
-    
 
-    def __init__(self, name, data, description, grid, output, momentumgrid=None):
+    def __init__(self, name, data, description, grid, output):
         """
         Constructor.
         """

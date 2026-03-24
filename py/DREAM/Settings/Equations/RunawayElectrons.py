@@ -123,7 +123,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         LCFS loss term.
         """
-        if lcfs_loss == False:
+        if lcfs_loss is False:
             self.lcfs_loss = LCFS_LOSS_MODE_DISABLED
         else:
             self.lcfs_loss = int(lcfs_loss)
@@ -175,7 +175,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Enables/disables avalanche generation.
         """
-        if avalanche == False:
+        if avalanche is False:
             self.avalanche = AVALANCHE_MODE_NEGLECT
         else:
             self.avalanche = int(avalanche)
@@ -187,7 +187,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         Dreicer runaway rate.
         """
-        if dreicer == False:
+        if dreicer is False:
             self.dreicer = DREICER_RATE_DISABLED
         else:
             self.dreicer = int(dreicer)
@@ -198,7 +198,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        if compton == False or compton == COMPTON_MODE_NEGLECT:
+        if compton is False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
             if compton == COMPTON_RATE_ITER_DMS:
@@ -254,9 +254,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifices whether or not to include runaway generation
         through tritium decay as a source term.
         """
-        if tritium == True or tritium == TRITIUM_MODE_FLUID:
+        if tritium is True:
             self.tritium = TRITIUM_MODE_FLUID
-        elif tritium == False or tritium == TRITIUM_MODE_NEGLECT:
+        elif tritium is False:
             self.tritium = TRITIUM_MODE_NEGLECT
         else:
             self.tritium = int(tritium)
@@ -266,7 +266,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Specify which model to use for hottail runaway generation
         """
-        if hottail == False:
+        if hottail is False:
             self.hottail = HOTTAIL_MODE_DISABLED
         else:
             self.hottail = hottail

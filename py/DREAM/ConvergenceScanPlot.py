@@ -150,7 +150,6 @@ class ConvergenceScanPlot:
         outputParameters = list(self.outputParameters.keys())
 
         for i in range(0, nscan):
-            idx = 0
             if combineOutput:
                 (I,J) = np.unravel_index(i, plotShape)
                 ax = axes[I][J]
