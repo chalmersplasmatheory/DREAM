@@ -38,5 +38,3 @@ def scal(v):
     Ensure that 'v' is a scalar.
     """
     return np.asarray(v).item()
-
-

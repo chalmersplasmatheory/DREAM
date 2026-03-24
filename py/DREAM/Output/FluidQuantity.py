@@ -1,11 +1,10 @@
 # Base class for fluid (radius + time) quantities
 #
 
-import matplotlib.animation as animation
+from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 
-from matplotlib import animation
 
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity

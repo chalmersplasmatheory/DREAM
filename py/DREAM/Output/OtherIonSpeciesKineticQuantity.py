@@ -1,6 +1,4 @@
 
-import numpy as np
-
 from. IonsKineticQuantity import IonsKineticQuantity
 from . OtherKineticQuantity import OtherKineticQuantity
 
@@ -22,7 +20,7 @@ class OtherIonSpeciesKineticQuantity(IonsKineticQuantity):
         return self.__str__()
 
 
-    def __getitem(self, name):
+    def __getitem__(self, name):
         """
         Direct access to data.
         """
