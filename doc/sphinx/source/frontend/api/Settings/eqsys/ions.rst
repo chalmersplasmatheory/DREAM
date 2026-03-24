@@ -68,35 +68,35 @@ the values or radial transport) by the total ion density :math:`n_i = \sum_j n_i
 
 The available ion modes are:
 
-+----------------------+-----------------------------------------------------------------------+
-| Name                 | Description                                                           |
-+======================+=======================================================================+
-| ``IONS_PRESCRIBED``  | The ion densities and charge states are prescribed in time and space. |
-+----------------------+-----------------------------------------------------------------------+
-| ``IONS_EQUILIBRIUM`` | Ion charge states are assumed to be in equilibrium.                   |
-+----------------------+-----------------------------------------------------------------------+
-| ``IONS_DYNAMIC``     | Ion charge states are evolved according to an ion rate equation.      |
-+----------------------+-----------------------------------------------------------------------+
++----------------------+---------------------------------------------------------------------------+
+| Name                 | Description                                                               |
++======================+===========================================================================+
+| ``IONS_PRESCRIBED``  | The ion densities and charge states are prescribed in time and space.     |
++----------------------+---------------------------------------------------------------------------+
+| ``IONS_EQUILIBRIUM`` | Ion charge states are assumed to be in equilibrium (not yet implemented). |
++----------------------+---------------------------------------------------------------------------+
+| ``IONS_DYNAMIC``     | Ion charge states are evolved according to an ion rate equation.          |
++----------------------+---------------------------------------------------------------------------+
 
 The above modes are the only three models available for evolving ions in DREAM.
 However, to simplify initialization of ion densities, the following pseudo-modes
 are also available when adding ions to the simulation:
 
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| Name                               | Description                                                                                                                     |
-+====================================+=================================================================================================================================+
-| ``IONS_DYNAMIC_NEUTRAL``           | Ion densities are evolved dynamically, with all ions located in the neutral charge state initially.                             |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_DYNAMIC_FULLY_IONIZED``     | Ion densities are evolved dynamically, with all ions located in the fully ionized charge state initially.                       |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_PRESCRIBED_NEUTRAL``        | Ion densities are prescribed, with all ions located in the neutral charge state.                                                |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_PRESCRIBED_FULL_IONIZED``   | Ion densities are prescribed, with all ions located in the fully ionized charge state.                                          |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_EQUILIBRIUM_NEUTRAL``       | Ion densities are assumed in equilibrium at every time step, with all ions located in the neutral charge state initially.       |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_EQUILIBRIUM_FULLY_IONIZED`` | Ion densities are evolved in equilibrium at every time step, with all ions located in the fully ionized charge state initially. |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Name                               | Description                                                                                                                                           |
++====================================+=======================================================================================================================================================+
+| ``IONS_DYNAMIC_NEUTRAL``           | Ion densities are evolved dynamically, with all ions located in the neutral charge state initially.                                                   |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_DYNAMIC_FULLY_IONIZED``     | Ion densities are evolved dynamically, with all ions located in the fully ionized charge state initially.                                             |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_PRESCRIBED_NEUTRAL``        | Ion densities are prescribed, with all ions located in the neutral charge state.                                                                      |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_PRESCRIBED_FULL_IONIZED``   | Ion densities are prescribed, with all ions located in the fully ionized charge state.                                                                |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_EQUILIBRIUM_NEUTRAL``       | Ion densities are assumed in equilibrium at every time step, with all ions located in the neutral charge state initially (not yet implemented).       |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_EQUILIBRIUM_FULLY_IONIZED`` | Ion densities are evolved in equilibrium at every time step, with all ions located in the fully ionized charge state initially (not yet implemented). |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 
 Adding ions
