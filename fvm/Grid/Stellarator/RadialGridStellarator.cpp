@@ -280,7 +280,7 @@ real_t RadialGridStellarator::effectivePassingFractionIntegrand(real_t x, void *
     RadialGridStellarator *rGrid = params->rGrid;
     len_t ir = params->ir;
     fluxGridType fluxGridType = params->fgType;
-    return x/ rGrid->CalculateFluxSurfaceAverage(ir, fluxGridType, FSA_FUNC_EFF_PASS_FRAC, params);
+    return x / rGrid->CalculateFluxSurfaceAverage(ir, fluxGridType, FSA_FUNC_EFF_PASS_FRAC, params);
 }
 
 /** 
