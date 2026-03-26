@@ -106,9 +106,14 @@ namespace DREAM {
 
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
             for (len_t ir = 0; ir < nr; ir++) {
-                real_t c_l = grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir);
-                real_t c_u = grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir+1) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir+1);
-                term[ir] = (c_u - c_l) / grid->GetRadialGrid()->GetDr(ir);
+                real_t c_l, dr = grid->GetRadialGrid()->GetDr(ir);
+                if (ir == 0){ // TODO: Ok? Avoid gtp=0 at ir=0...
+                    c_l = grid->GetRadialGrid()->GetVpVol(ir) * grid->GetRadialGrid()->GetFSA_gtpOverJ2(ir) * grid->GetRadialGrid()->GetPsiPrimeRef(ir);
+                    dr /= 2.;
+                } else
+                    c_l = grid->GetRadialGrid()->GetVpVol_f(ir) * grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir);
+                real_t c_u = grid->GetRadialGrid()->GetVpVol_f(ir+1) * grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir+1) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir+1);
+                term[ir] = 1 / grid->GetRadialGrid()->GetVpVol(ir) * (c_u - c_l) / dr;
             }
         }
         
