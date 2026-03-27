@@ -27,6 +27,7 @@ from code_runaway import code_runaway
 from code_synchrotron import code_synchrotron
 from DREAM_avalanche import DREAM_avalanche
 from numericmag import numericmag
+from stellarator_geometry import stellarator_geometry
 from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
 from runiface_parallel import runiface_parallel
@@ -39,6 +40,7 @@ TESTS = [
     'code_synchrotron',
     'DREAM_avalanche',
     'numericmag',
+    'stellarator_geometry',
     'trapping_conductivity',
     'ts_adaptive',
     'runiface_parallel'
@@ -130,5 +132,4 @@ def main(argv):
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
-
 

@@ -6,10 +6,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pathlib
 import scipy.interpolate
+import warnings
 from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
-from .StellaratorMagneticField import StellaratorMagneticField
+from .StellaratorMagneticField import (
+    PROVIDER_DESC,
+    PROVIDER_PACKAGE,
+    PROVIDER_VMEC_JAX,
+    StellaratorMagneticField,
+)
 from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
 
 
@@ -21,6 +27,8 @@ TYPE_STELLARATOR = 4
 # Numerical magnetic field file formats
 FILE_FORMAT_LUKE = 1
 FILE_FORMAT_DESC = 2
+
+STELLARATOR_PROVIDERS = [PROVIDER_DESC, PROVIDER_VMEC_JAX, PROVIDER_PACKAGE]
 
 
 class RadialGrid(PrescribedScalarParameter):
@@ -76,6 +84,8 @@ class RadialGrid(PrescribedScalarParameter):
 
         # Stellarator magnetic field parameters
         self.num_stellarator = None
+        self.stellarator_provider = None
+        self.stellarator_cache_filename = None
         self.nfp = None
         self.nr_equil = int(0)
         self.ntheta_equil = 129
@@ -379,32 +389,9 @@ class RadialGrid(PrescribedScalarParameter):
         self.a = self.num_magneticfield.a
 
 
-    def setStellarator(self, filename, format=FILE_FORMAT_DESC, nr_equil=None, ntheta_equil=None, nphi_equil=None, datafilename=None):
-        """
-        Sets the numerical magnetic field to use for the simulation.
-
-        :param str filename: Name of file containing magnetic field data.
-        :param int format:   Format of the magnetic field data in the given file.
-        """
-        self.type = TYPE_STELLARATOR
-        self.num_filename = filename
-
-        if format == FILE_FORMAT_DESC:
-            self.num_fileformat = format
-
-            if nr_equil is None:
-                self.nr_equil = self.nr
-            else:
-                self.nr_equil = nr_equil
-            if ntheta_equil is not None:
-                self.ntheta_equil = ntheta_equil
-            if nphi_equil is not None:
-                self.nphi_equil = nphi_equil
-            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, datafilename)
-            if datafilename is None:
-                self.num_stellarator.load()
-        else:
-            DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
+    def _hydrate_stellarator(self):
+        if self.num_stellarator is None:
+            return
 
         self.a = self.num_stellarator.a
         if self.b == 0.:
@@ -430,6 +417,71 @@ class RadialGrid(PrescribedScalarParameter):
         self.g_tp = self.num_stellarator.g_tp
         self.lambda_t = self.num_stellarator.lambda_t
         self.lambda_p = self.num_stellarator.lambda_p
+
+    def setStellarator(
+        self,
+        source,
+        format=FILE_FORMAT_DESC,
+        nr_equil=None,
+        ntheta_equil=None,
+        nphi_equil=None,
+        datafilename=None,
+        provider=None,
+        cache_filename=None,
+        write_cache=False,
+        with_boozer=False,
+    ):
+        """
+        Sets the numerical magnetic field to use for the simulation.
+
+        :param str source: Name of file containing magnetic field data or a geometry package.
+        :param int format: Legacy compatibility selector. ``FILE_FORMAT_DESC`` maps to ``provider='desc'``.
+        """
+        self.type = TYPE_STELLARATOR
+        self.num_filename = source
+
+        if datafilename is not None:
+            warnings.warn(
+                "RadialGrid.setStellarator(): 'datafilename' is deprecated. Use 'cache_filename' instead.",
+                DeprecationWarning,
+            )
+            if cache_filename is None:
+                cache_filename = datafilename
+
+        if format is not None:
+            self.num_fileformat = format
+            if provider is None and format == FILE_FORMAT_DESC:
+                provider = PROVIDER_DESC
+        if provider is None:
+            provider = PROVIDER_PACKAGE if str(source).endswith(".h5") else PROVIDER_DESC
+
+        if provider not in STELLARATOR_PROVIDERS:
+            raise DREAMException(
+                f"RadialGrid: Unrecognized stellarator geometry provider '{provider}'. "
+                f"Expected one of {STELLARATOR_PROVIDERS}."
+            )
+
+        self.stellarator_provider = provider
+        self.stellarator_cache_filename = cache_filename
+
+        self.nr_equil = self.nr if nr_equil is None else nr_equil
+        if ntheta_equil is not None:
+            self.ntheta_equil = ntheta_equil
+        if nphi_equil is not None:
+            self.nphi_equil = nphi_equil
+
+        self.num_stellarator = StellaratorMagneticField(
+            source,
+            self.nr_equil,
+            self.ntheta_equil,
+            self.nphi_equil,
+            cache_filename=cache_filename,
+            provider=provider,
+            write_cache=write_cache,
+            with_boozer=with_boozer,
+        )
+        self.num_stellarator.load()
+        self._hydrate_stellarator()
 
     def setType(self, ttype):
         """
@@ -459,7 +511,10 @@ class RadialGrid(PrescribedScalarParameter):
         elif self.type == TYPE_NUMERICAL:
             self.num_magneticfield.visualize(*args, ax=ax, show=show, **kwargs)
         elif self.type == TYPE_STELLARATOR:
-            self.num_stellarator.visualize(*args, ax=ax, show=show, **kwargs)
+            if self.num_stellarator is not None:
+                self.num_stellarator.visualize(*args, ax=ax, show=show, **kwargs)
+            else:
+                raise DREAMException("RadialGrid: Stellarator geometry has not been loaded, so it cannot be visualized.")
         else:
             raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
     
@@ -472,9 +527,18 @@ class RadialGrid(PrescribedScalarParameter):
         elif self.type==TYPE_NUMERICAL:
             return self.num_magneticfield.Rp
         elif self.type==TYPE_STELLARATOR:
-            return self.num_stellarator.R0
+            if self.num_stellarator is not None:
+                return self.num_stellarator.R0
+            return self.R0
         else: 
             raise Exception('Unrecognized radial grid type')
+
+    def getStellaratorFluxTubeEvaluator(self):
+        if self.type != TYPE_STELLARATOR:
+            raise DREAMException("RadialGrid: Flux-tube evaluation is only available in stellarator mode.")
+        if self.num_stellarator is None:
+            raise DREAMException("RadialGrid: No stellarator geometry is loaded.")
+        return self.num_stellarator.getFluxTubeEvaluator()
         
 
     def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None, **kwargs):
@@ -621,14 +685,16 @@ class RadialGrid(PrescribedScalarParameter):
             self.nr_equil = data['nr_equil']
             self.ntheta_equil = data['ntheta_equil']
             self.nphi_equil = data['nphi_equil']
+            self.stellarator_provider = data.get('provider', self.stellarator_provider)
+            self.stellarator_cache_filename = data.get('cache_filename', self.stellarator_cache_filename)
             self.rho = data['rho']
             self.theta = data['theta']
             self.phi = data['phi']
             self.R = data['R']
             self.Z = data['Z']
-            #self.f_passing = data['f_passing']
-            #self.B_min = data['B_min']
-            #self.B_max = data['B_max']
+            self.f_passing = data['f_passing']
+            self.B_min = data['B_min']
+            self.B_max = data['B_max']
             self.G = data['G']
             self.I = data['I']
             self.iota = data['iota']
@@ -640,7 +706,6 @@ class RadialGrid(PrescribedScalarParameter):
             self.g_tp = data['g_tp']
             self.lambda_t = data['lambda_t']
             self.lambda_p = data['lambda_p']
-            #self.num_stellarator = StellaratorMagneticField(self.num_filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
 
             if 'fileformat' in data:
                 self.num_fileformat = data['fileformat']
@@ -704,12 +769,15 @@ class RadialGrid(PrescribedScalarParameter):
         elif self.type == TYPE_STELLARATOR:
             data['R0'] = self.R0
             data['filename'] = self.num_filename
+            data['provider'] = self.stellarator_provider
             data['nfp'] = self.nfp
             data['ntheta'] = self.ntheta
             data['nphi'] = self.nphi
             data['nr_equil'] = self.nr_equil
             data['ntheta_equil'] = self.ntheta_equil
             data['nphi_equil'] = self.nphi_equil
+            if self.stellarator_cache_filename is not None:
+                data['cache_filename'] = self.stellarator_cache_filename
             data['rho'] = self.rho
             data['theta'] = self.theta
             data['phi'] = self.phi
@@ -815,20 +883,25 @@ class RadialGrid(PrescribedScalarParameter):
                 raise DREAMException("RadialGrid: Unrecognized file format specified for numerical magnetic field: {}.".format(self.num_fileformat))
 
         elif self.type == TYPE_STELLARATOR:
-            if type(self.num_filename) != str:
-                raise DREAMException("RadialGrid: No numerical magnetic field file specified.")
-            elif not pathlib.Path(self.num_filename).is_file():
-                raise DREAMException("RadialGrid: The specified numerical magnetic field file does not exist.")
-
             formats = [FILE_FORMAT_DESC]
             if (self.num_fileformat is not None) and (self.num_fileformat not in formats):
                 raise DREAMException("RadialGrid: Unrecognized file format specified for numerical magnetic field: {}.".format(self.num_fileformat))
 
-            if self.a > self.num_stellarator.a:
-                raise EquationException(
-                    "RadialGrid: Last grid point can't be larger than minor radius from desc file.")
-            elif self.a < self.num_stellarator.a:
-                print("*WARNING* RadialGrid: Using a smaller minor radius than in the equilibrium file.")
+            has_geometry = all(getattr(self, key) is not None for key in ['rho', 'theta', 'phi', 'R', 'Z', 'B', 'G', 'I', 'iota', 'psi_T'])
+            has_source = type(self.num_filename) == str and pathlib.Path(self.num_filename).is_file()
+            if not has_geometry and not has_source:
+                raise DREAMException(
+                    "RadialGrid: No stellarator geometry source was found and no embedded stellarator arrays are available."
+                )
+
+            reference_a = self.num_stellarator.a if self.num_stellarator is not None else self.a
+            if reference_a is not None:
+                if self.a > reference_a:
+                    raise EquationException(
+                        "RadialGrid: Last grid point can't be larger than the minor radius available in the stellarator equilibrium."
+                    )
+                elif self.a < reference_a:
+                    print("*WARNING* RadialGrid: Using a smaller minor radius than in the equilibrium file.")
             '''
             verifySettingsStellaratorParameter('rho')
             verifySettingsStellaratorParameter('theta')
@@ -894,4 +967,3 @@ class RadialGrid(PrescribedScalarParameter):
 
         if v is None or type(v) != np.ndarray:
             raise DREAMException("RadialGrid: Invalid type of shape parameter '{}': {}.".format(shapeparam, type(v)))
-
