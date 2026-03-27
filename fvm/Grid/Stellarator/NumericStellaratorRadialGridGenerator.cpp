@@ -174,7 +174,10 @@ bool NumericStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStel
             dr[i] = (rMax-rMin) / GetNr();
         for (len_t i = 0; i < GetNr(); i++)
             r_f[i] = rMin + i*dr[0];
+
+        // Prevent rounding errors
         r_f[GetNr()] = rMax;
+        dr[GetNr()-1] = r_f[GetNr()] - r_f[GetNr()-1];
     } else {
         if (rf_provided[0] < 0)
             throw FVMException("StellaratorRadialGrid: First point on custom radial grid is less than zero.");
