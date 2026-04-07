@@ -8,6 +8,7 @@
 #include "DREAM/Equations/Fluid/RunawayTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
+#include "DREAM/Equations/Kinetic/TrappingLimitedRRTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
@@ -393,13 +394,41 @@ bool SimulationGenerator::ConstructTransportTerm(
 
         FVM::DiffusionTerm *dt;
         if (kinetic) { // Particle transport
-            RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
-                grid, momtype, dBB
-            );
-            oprtr->AddTerm(rrt);
+            if (type == OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING) {
+                CollisionQuantityHandler *cqh = nullptr;
 
-            dt = rrt;
+                if (grid == eqsys->GetHotTailGrid())
+                    cqh = eqsys->GetHotTailCollisionHandler();
+                else if (grid == eqsys->GetRunawayGrid())
+                    cqh = eqsys->GetRunawayCollisionHandler();
+
+                if (cqh == nullptr)
+                    throw SettingsException(
+                        "%s: Failed to locate a collision handler for trapping-limited Rechester-Rosenbluth transport.",
+                        path.c_str()
+                    );
+
+                TrappingLimitedRRTransport *rrt = new TrappingLimitedRRTransport(
+                    grid, momtype, dBB, cqh, eqsys->GetUnknownHandler()
+                );
+                oprtr->AddTerm(rrt);
+
+                dt = rrt;
+            } else {
+                RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
+                    grid, momtype, dBB
+                );
+                oprtr->AddTerm(rrt);
+
+                dt = rrt;
+            }
         } else if (heat) {	// Heat transport
+            if (type == OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING)
+                throw SettingsException(
+                    "%s: The trapping-limited Rechester-Rosenbluth model is only implemented for kinetic isotropic transport.",
+                    path.c_str()
+                );
+
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
                 grid, dBB, eqsys->GetUnknownHandler(), id_T, id_n
             );
@@ -407,6 +436,12 @@ bool SimulationGenerator::ConstructTransportTerm(
 
             dt = htrr;
         } else {	// Fluid transport
+            if (type == OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING)
+                throw SettingsException(
+                    "%s: The trapping-limited Rechester-Rosenbluth model is only implemented for kinetic isotropic transport.",
+                    path.c_str()
+                );
+
 			RunawayTransportRechesterRosenbluth *rtrr = new RunawayTransportRechesterRosenbluth(
 				grid, dBB
 			);
@@ -641,4 +676,3 @@ T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
 
     return t;
 }
-

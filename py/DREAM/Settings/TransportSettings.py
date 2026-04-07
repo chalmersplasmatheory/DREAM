@@ -13,6 +13,7 @@ TRANSPORT_SVENSSON = 4
 TRANSPORT_FROZEN_CURRENT = 5
 TRANSPORT_MHD_LIKE = 6
 TRANSPORT_MHD_LIKE_LOCAL = 7
+TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING = 8
 
 INTERP3D_NEAREST     = 0
 INTERP3D_LINEAR      = 1
@@ -271,6 +272,33 @@ class TransportSettings:
         :param r:   Radial grid on which the perturbation is defined.
         """
         self.type = TRANSPORT_RECHESTER_ROSENBLUTH
+
+        if np.isscalar(dBB):
+            dBB = dBB * np.ones((1,1))
+            r = np.array([0])
+            t = np.array([0])
+
+        r = np.asarray(r)
+        t = np.asarray(t)
+
+        if r.ndim != 1: r = np.reshape(r, (r.size,))
+        if t.ndim != 1: t = np.reshape(t, (t.size,))
+
+        self.dBB_r = r
+        self.dBB_t = t
+        self.dBB   = dBB
+
+
+    def setDetrappingRechesterRosenbluth(self, dBB, t=None, r=None):
+        """
+        Prescribes the evolution of the magnetic perturbation level (dB/B)
+        for the trapping-limited isotropic Rechester-Rosenbluth model.
+
+        :param dBB: Magnetic perturbation level.
+        :param t:   Time grid on which the perturbation is defined.
+        :param r:   Radial grid on which the perturbation is defined.
+        """
+        self.type = TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING
 
         if np.isscalar(dBB):
             dBB = dBB * np.ones((1,1))
@@ -578,7 +606,7 @@ class TransportSettings:
                 data['s_drr']['pperp'] = self.s_drr_pperp
 
         
-        if self.type == TRANSPORT_RECHESTER_ROSENBLUTH and self.dBB is not None:
+        if self.type in [TRANSPORT_RECHESTER_ROSENBLUTH, TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING] and self.dBB is not None:
             data['dBB'] = {
                 'x': self.dBB,
                 'r': self.dBB_r,
@@ -623,6 +651,9 @@ class TransportSettings:
             
             self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
+            self.verifySettingsRechesterRosenbluth()
+            self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING:
             self.verifySettingsRechesterRosenbluth()
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_FROZEN_CURRENT:
@@ -718,5 +749,4 @@ class TransportSettings:
 class TransportException(DREAMException):
     def __init__(self, msg):
         super().__init__(msg)
-
 

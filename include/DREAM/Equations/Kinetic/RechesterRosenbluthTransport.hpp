@@ -9,9 +9,13 @@
 
 namespace DREAM {
     class RechesterRosenbluthTransport : public FVM::DiffusionTerm {
-    private:
+    protected:
         enum OptionConstants::momentumgrid_type mgtype;
         FVM::Interpolator1D *deltaBOverB;
+
+        virtual const real_t *EvaluateDeltaBOverB(const real_t t){
+            return this->deltaBOverB->Eval(t);
+        }
 
     public:
         RechesterRosenbluthTransport(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Interpolator1D*);
