@@ -46,7 +46,6 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
 
     // equilibrium constants
     const real_t R0 = rGrid->GetR0();
-    const real_t B0 = rGrid->GetBmin_f(0);
     if (mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL) {
         for (len_t ir = 0; ir < nr; ir++) {
             // calculate the geometric prefactor
@@ -105,7 +104,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
             // TODO: Change this?
-            qR0[ir] = (BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin;
+            qR0[ir] = fabs((BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin);
 
             eps[ir] = (Bmax - Bmin) / (Bmax + Bmin);
         }
