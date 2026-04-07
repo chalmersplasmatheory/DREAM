@@ -3,6 +3,13 @@
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+try:
+    from desc.grid import LinearGrid
+    import desc.vmec
+    import desc.io
+    descImportFailed = False
+except:
+    descImportFailed = True
 #from .. import DREAMIO
 #from .. import helpers
 from . NumericalMagneticField import NumericalMagneticField
@@ -17,6 +24,9 @@ class StellaratorMagneticField(NumericalMagneticField):
         """
         Constructor.
         """
+        if descImportFailed: 
+            raise ImportError("Was not able to import desc module for stellarator equilibrium.")
+
         self.filename = filename
         self.nr = nr
         self.ntheta = ntheta
@@ -40,12 +50,11 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.lambda_t = None
         self.lambda_p = None
 
-        from desc.grid import LinearGrid
+        
         if self.filename[-3:] == ".nc":
-            import desc.vmec
             self.eq = desc.vmec.VMECIO.load(self.filename)
         else:
-            import desc.io
+            
             self.eq = desc.io.load(self.filename)
 
         if datafilename is None:
@@ -90,6 +99,9 @@ class StellaratorMagneticField(NumericalMagneticField):
         """
         Load a DESC magnetic equilibrium from the named file.
         """
+        if descImportFailed: 
+            raise ImportError("Was not able to import desc module for stellarator equilibrium.")
+        
         self.f_passing = np.array(1- self.eq.compute('trapped fraction', grid=self.grid)['trapped fraction'][self.grid.unique_rho_idx], dtype=np.float64)
         self.B_min = np.array(self.eq.compute('min_tz |B|', grid=self.grid)['min_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
         self.B_max = np.array(self.eq.compute('max_tz |B|', grid=self.grid)['max_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
@@ -166,9 +178,8 @@ class StellaratorMagneticField(NumericalMagneticField):
         """
         Visualize this magnetic field.
         """
-
-        from desc.grid import LinearGrid
-        import desc.io
+        if descImportFailed: 
+            raise ImportError("Was not able to import desc module for stellarator equilibrium.")
 
         red = (249 / 255, 65 / 255, 68 / 255)
         black = (87 / 255, 117 / 255, 144 / 255)
