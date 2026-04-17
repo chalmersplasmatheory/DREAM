@@ -59,6 +59,7 @@ class SPIShardPositions(ScalarQuantity):
                 break
         
         arrivalTime = np.nan
+        firstShard = None
         if arrives_before:
             for it in range(it_est-1, -1, -1):
                 inside = False
@@ -67,6 +68,7 @@ class SPIShardPositions(ScalarQuantity):
                         # One pellet has arrived
                         # => break out and go to one time step earlier...
                         inside = True
+                        firstShard = ip
                         break
 
                 if not inside:
@@ -79,10 +81,12 @@ class SPIShardPositions(ScalarQuantity):
                 for ip in range(xp.shape[1]):
                     if p.contains_point((xp[it,ip], yp[it,ip])):
                         inside = True
+                        firstShard = ip
                         break
 
                 if inside:
                     arrivalTime = it
+                    break
 
         # Determine exit time?
         if exit:
@@ -92,13 +96,9 @@ class SPIShardPositions(ScalarQuantity):
             exitTime = np.nan
             for it in range(arrivalTime+1, self.grid.t.size):
                 outside = False
-                for ip in range(xp.shape[1]):
-                    if p.contains_point((xp[it,ip], yp[it,ip])):
-                        outside = True
-                        break
-
-                if outside:
+                if not p.contains_point((xp[it,firstShard], yp[it,firstShard])):
                     exitTime = it
+                    break
 
             return exitTime
         else:
@@ -153,7 +153,7 @@ class SPIShardPositions(ScalarQuantity):
 
         outside = None
         for it in range(inside+1, self.grid.t.size):
-            if p.contains_point((xp[it,shard], yp[it,shard])):
+            if not p.contains_point((xp[it,shard], yp[it,shard])):
                 outside = it
                 break
 
