@@ -10,11 +10,11 @@ from . OutputException import OutputException
 class SPIShardPositions(ScalarQuantity):
 
 
-    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
         
 
     def arrivalTime(self, shard=None, exit=False):
