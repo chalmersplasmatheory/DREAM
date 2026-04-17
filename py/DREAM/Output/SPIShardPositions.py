@@ -10,14 +10,14 @@ from . OutputException import OutputException
 class SPIShardPositions(ScalarQuantity):
 
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
         
 
-    def arrivalTime(self, shard=None):
+    def arrivalTime(self, shard=None, exit=False):
         """
         Estimate the time at which the pellet arrives to the plasma edge.
         """
@@ -58,6 +58,7 @@ class SPIShardPositions(ScalarQuantity):
                 arrives_before = True
                 break
         
+        arrivalTime = np.nan
         if arrives_before:
             for it in range(it_est-1, -1, -1):
                 inside = False
@@ -69,8 +70,10 @@ class SPIShardPositions(ScalarQuantity):
                         break
 
                 if not inside:
-                    return it+1
+                    arrivalTime = it+1
+                    break
         else:
+            arrivalTime = np.nan
             for it in range(it_est+1, self.grid.t.size):
                 inside = False
                 for ip in range(xp.shape[1]):
@@ -79,9 +82,100 @@ class SPIShardPositions(ScalarQuantity):
                         break
 
                 if inside:
-                    return it
+                    arrivalTime = it
 
-        return np.nan
+        # Determine exit time?
+        if exit:
+            if np.isnan(arrivalTime):
+                return np.nan
+
+            exitTime = np.nan
+            for it in range(arrivalTime+1, self.grid.t.size):
+                outside = False
+                for ip in range(xp.shape[1]):
+                    if p.contains_point((xp[it,ip], yp[it,ip])):
+                        outside = True
+                        break
+
+                if outside:
+                    exitTime = it
+
+            return exitTime
+        else:
+            return arrivalTime
+
+
+    def massWeightedDistanceInPlasma(self):
+        """
+        Calculate sum(r0*d)/N, where r0 is the initial shard radius, d is the
+        distance travelled by the shard through the plasma, and N is the number
+        of shards.
+        """
+        rp = self.output.eqsys.Y_p[0,:,0]
+
+        N = self.data[0,0::3,0].size
+        S = 0
+        for ip in range(0, N):
+            S += np.sum(rp[ip] * self.distanceInPlasma(ip))
+
+        return S / N
+
+
+    def distanceInPlasma(self, shard):
+        """
+        Calculate the distance travelled by the given shard within the
+        plasma.
+        """
+        if 'eq' not in self.grid:
+            raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
+
+        RMinusR0 = self.grid.eq.RMinusR0_f
+        Z = self.grid.eq.ZMinusZ0_f
+        ntheta = self.grid.eq.theta.size
+
+        vertices = [(RMinusR0[i,-1], Z[i,-1]) for i in range(ntheta)]
+        p = path.Path(vertices)
+
+        xp = self.data[:,0::3,0]
+        yp = self.data[:,1::3,0]
+
+        # Find first time inside plasma
+        inside = None
+        for it in range(0, self.grid.t.size):
+            if p.contains_point((xp[it,shard], yp[it,shard])):
+                inside = it
+                break
+
+        # If the shard never enters the plasma, the distance
+        # is zero.
+        if inside is None:
+            return 0
+
+        outside = None
+        for it in range(inside+1, self.grid.t.size):
+            if p.contains_point((xp[it,shard], yp[it,shard])):
+                outside = it
+                break
+
+        if outside is None:
+            outside = self.grid.t.size-1
+
+        d = np.sqrt((xp[inside,shard]-xp[outside,shard])**2 + (yp[inside,shard]-yp[outside,shard])**2)
+        return d
+
+
+    def maxDistanceInPlasma(self):
+        """
+        Calculate the maximum distance traversed by any shard in the plasma.
+        """
+        N = self.data[0,0::3,0].size
+        d = 0
+        for ip in range(0, N):
+            dd = self.distanceInPlasma(ip)
+            if dd > d:
+                d = dd
+
+        return d
 
 
     def plotRadialCoordinate(self, shards=None,**kwargs):
@@ -122,6 +216,7 @@ class SPIShardPositions(ScalarQuantity):
         
         xp = self.data[:,0::3,0] 
         yp = self.data[:,1::3,0]
+        zp = self.data[:,2::3,0]
         
         rhop   = np.sqrt(xp[t,shards]**2+yp[t,shards]**2)
         thetap = np.arctan2(yp[t,shards],xp[t,shards])
@@ -168,8 +263,10 @@ class SPIShardPositions(ScalarQuantity):
         # Plot color scale showing the chosen background quantity, if any
         if backgroundQuantity is not None:
             # We set zorder = 0 to make sure the background color scale is actually plotted in the background and does not cover the shards
-            backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t, shifted = True, zorder = 0, **kwargs)
-
+            contours, cb = backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t, shifted = True, zorder = 0, **kwargs)
+        else:
+            contours = None
+            
         if shards is None:
             shards = slice(None)
 
@@ -287,7 +384,7 @@ class SPIShardPositions(ScalarQuantity):
         """
         Plot the trajectory of one or more shards in a poloidal cross-section.
         """
-        # black = (87/255, 117/255, 144/255)
+        black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
         if ax is None:
