@@ -1,11 +1,10 @@
 # Base class for fluid (radius + time) quantities
 #
 
-import matplotlib.animation as animation
+from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 
-from matplotlib import animation
 
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
@@ -603,10 +602,9 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def lineIntegrated(self, t=None, x0=np.array([0,10,0]), n = np.array([0,-1,0]), lmax = 20, nl = 1000, normaliseToPathLength=False):
+    def lineIntegrated_SPI(self, t=None, x0=np.array([0,10,0]), n = np.array([0,-1,0]), lmax = 20, nl = 1000, normaliseToPathLength=False):
         """
-        Evaluate the line integral of this fluid quantity along a specified line.
-        
+        Evaluate the line integral of this fluid quantity along a specified line. Starting point must be in SPI coordinates, and the line integral is evaluated in SPI coordinates. 
         :param t: Time steps to evaluate the line integrated density for. If ``None``, the line integral is calculated for all time steps. May be a slice
         :param x0: Starting point for the line to integrate along, in cartesian coordinates centered at the magnetic axis at pho=0 (same coordinates as used to track the SPI shards). One probably wants to set this point outside the plasma (the integrand is set to zero outside the plasma).
         :param n: Vector specifying the direction to integrate along
@@ -640,6 +638,195 @@ class FluidQuantity(UnknownQuantity):
         
         return lineIntegral
 
+    def lineIntegrated(self, t=None, x0=np.array([0.8,0,0.6]), n = np.array([0,0,-1]), lmax = 10, nl = 1000, normaliseToPathLength=False, plot = False):
+        """
+        Evaluate the line integral of this fluid quantity along a specified line.
+        
+        :param t: Time steps to evaluate the line integrated density for. If ``None``, the line integral is calculated for all time steps. May be a slice
+        :param x0: Starting point for the line to integrate along, in ordinary Cartesian coordinates ``(X,Y,Z)`` where ``X`` is the major-radius direction and ``Z`` is vertical.
+        :param n: Vector specifying the direction to integrate along
+        :param lmax: Length of the line to integrate over.
+        :param normaliseToPathLength: If ``True``, divide the integral by the length of the part of the line residing inside the plasma
+        :param plot: If ``True``, plot the line integral
+        """
+
+        
+        def los_intersection(detX0, nhat, x0, z0, x1, z1):
+            '''Help function using a line-integration algorithm. 
+            Takes in to points (x0,z0) and (x1,z1) defining a line segment, and computes the intersection points of this line segment with the flux surface defined by detX0 and nhat. 
+            Returns the distances along the line segment to the intersection points, or -1 if no intersection occurs within the line segment.'''
+        
+            X0, Y0, Z0 = detX0
+            nx, ny, nz = nhat
+
+            # Avoid divide-by-zero
+            dz = z1 - z0
+            if np.isclose(dz, 0.0):
+                return -1.0, -1.0
+
+            dx = x1 - x0
+
+            a0 = (
+                x0*x0 - X0*X0 - Y0*Y0
+                + 2*x0*(Z0 - z0)*dx/dz
+                + ((Z0 - z0)**2) * dx*dx / (dz*dz)
+            )
+
+            a1 = (
+                2*x0*nz*dx/dz
+                + 2*nz*(Z0 - z0)*dx*dx/(dz*dz)
+                - 2*(X0*nx + Y0*ny)
+            )
+
+            a2 = nz*nz * dx*dx/(dz*dz) - nx*nx - ny*ny
+
+            # Degenerate case
+            if np.isclose(a2, 0.0):
+                return -1.0, -1.0
+
+            sqr = -a0/a2 + a1*a1/(4*a2*a2)
+            if sqr < 0:
+                return -1.0, -1.0
+
+            root = np.sqrt(sqr)
+            _l1 = -a1/(2*a2) + root
+            _l2 = -a1/(2*a2) - root
+
+            t1 = (Z0 - z0 + _l1*nz) / dz
+            t2 = (Z0 - z0 + _l2*nz) / dz
+
+            l1 = _l1 if (0 <= t1 <= 1) else -1.0
+            l2 = _l2 if (0 <= t2 <= 1) else -1.0
+
+            return l1, l2
+
+        def find_intersections(isurf, Rf, Zf, R0, Z0, ntheta, nr, detX0, nhat):
+            '''Help function to find the intersection points of the line of sight with a given flux surface.'''
+            hits = []
+          
+            for i in range(ntheta):
+                #for all the nr and loop thorugh theta
+                x0 = Rf[i, isurf] + R0
+                z0 = Zf[i, isurf] + Z0
+
+                #first and last theta point are the same, so we need to loop back to the first point when we are at the last point
+                if i == ntheta - 1:
+                    x1 = Rf[0, isurf] + R0
+                    z1 = Zf[0, isurf] + Z0
+                else:
+                    x1 = Rf[i+1, isurf] + R0
+                    z1 = Zf[i+1, isurf] + Z0
+                #find the intersection points of the line segment defined by (x0,z0) and (x1,z1)
+                _l1, _l2 = los_intersection(detX0, nhat, x0, z0, x1, z1)
+
+                if 0 <= _l1 <= lmax:
+                    hits.append(_l1)
+                if 0 <= _l2 <= lmax:
+                    hits.append(_l2)
+
+            if len(hits) == 0:
+                return -1.0, -1.0
+
+            hits = np.array(sorted(hits), dtype=float)
+            if hits.size > 1:
+                hits = hits[np.insert(np.diff(hits) > 1e-9, 0, True)]
+
+            if hits.size == 1:
+                return 0.0, hits[0]
+            #Only consider the first two hits
+            hits = hits[:2]
+            return hits[0], hits[1]
+
+        def line_integrated_fluid_quantity(data,grid,t=None,x0=np.array([1.0, 0.0, 1.0]), n=np.array([0.0, 0.0, -1.0]), normaliseToPathLength=False):
+            '''Main function to compute the line integral of a fluid quantity along a specified line of sight.'''
+        
+            n = np.asarray(n, dtype=float)
+            if np.linalg.norm(n) == 0:
+                raise ValueError("The LOS direction vector 'n' must be non-zero.")
+            n = n / np.linalg.norm(n)
+            x0 = np.asarray(x0, dtype=float)
+
+            # Time selection
+            if t is None:
+                tsel = slice(None)
+            else:
+                tsel = t
+
+            arr = np.asarray(data)
+
+            # Accept both (nr,) and (nt,nr)
+            if arr.ndim == 1:
+                arr = arr[np.newaxis, :]
+            elif arr.ndim != 2:
+                raise ValueError(f"Expected data with ndim 1 or 2, got shape {arr.shape}")
+
+            arr = arr[tsel]
+            nt_sel, nr = arr.shape
+
+            # Pull equilibrium geometry.
+            eq = grid.eq
+            Rf = np.asarray(eq.RMinusR0_f)
+            Zf = np.asarray(eq.ZMinusZ0_f)
+            R0 = float(eq.R0[0])
+            Z0 = float(eq.Z0[0])
+            ntheta = int(eq.theta.size)
+
+            if Rf.ndim == 1:
+                Rf = Rf.reshape((ntheta, nr+1))
+            if Zf.ndim == 1:
+                Zf = Zf.reshape((ntheta, nr+1))
+
+            result = np.zeros((nt_sel, 1))
+            lengths = np.zeros((nt_sel, 1))
+
+            # Intersections with outermost surface and see if there is an intersection with the plasma at all
+            l11, l12 = find_intersections(nr, Rf, Zf, R0, Z0, ntheta, nr, x0, n)
+
+            # No plasma intersection
+            if l11 < 0:
+                print("Line of sight does not intersect plasma. Check the starting point and direction.")
+                return result
+
+            # Loop over shells from edge to center
+            for ir in range(nr, 0, -1):
+                
+                l21, l22 = find_intersections(ir-1, Rf, Zf, R0, Z0, ntheta, nr, x0, n)
+
+                if l21 < 0:
+                    dl_shell = abs(l11 - l12)
+                else:
+                    dl_shell = abs(l11 - l21) + abs(l12 - l22)
+
+                shell_index = ir - 1
+                result[:, 0] += arr[:, shell_index] * dl_shell
+                lengths += dl_shell
+
+
+                l11, l12 = l21, l22
+
+            if normaliseToPathLength:
+                with np.errstate(divide='ignore', invalid='ignore'):
+                    result = np.where(lengths > 0, result / lengths, 0.0)
+  
+            return result
+        n_line = line_integrated_fluid_quantity(
+        data=self.data.data,
+        grid=self.output.grid,
+        t=t,
+        x0=x0,
+        n=n,
+        normaliseToPathLength=normaliseToPathLength)
+        if plot:
+            time = self.time[t] if t is not None else self.time
+            plt.plot(time, n_line)
+            plt.xlabel('Time')
+            plt.ylabel(f'Line-integrated {self.getTeXName()}')
+            plt.title('Line-integrated {} along LOS from {} in direction {}'.format(self.getTeXName(), x0, n))
+            plt.grid()
+            plt.show()
+        else:
+            return  n_line
+    
 
     def dumps(self, r=None, t=None):
         return self.get(r=r, t=t).__str__()
@@ -679,4 +866,3 @@ class FluidQuantity(UnknownQuantity):
         else:
             raise ValueError(f"Unrecognized time unit: '{unit}'.")
         
-
