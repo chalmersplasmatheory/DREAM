@@ -95,7 +95,6 @@ class SPIShardPositions(ScalarQuantity):
 
             exitTime = np.nan
             for it in range(arrivalTime+1, self.grid.t.size):
-                outside = False
                 if not p.contains_point((xp[it,firstShard], yp[it,firstShard])):
                     exitTime = it
                     break
@@ -158,9 +157,16 @@ class SPIShardPositions(ScalarQuantity):
                 break
 
         if outside is None:
-            outside = self.grid.t.size-1
+            lastinside = self.grid.t.size-1
+        else:
+            lastinside = outside-1
 
-        d = np.sqrt((xp[inside,shard]-xp[outside,shard])**2 + (yp[inside,shard]-yp[outside,shard])**2)
+        if lastinside <= inside:
+            return 0
+
+        dx = np.diff(xp[inside:lastinside+1, shard])
+        dy = np.diff(yp[inside:lastinside+1, shard])
+        d = np.sum(np.sqrt(dx**2 + dy**2))
         return d
 
 
@@ -263,7 +269,7 @@ class SPIShardPositions(ScalarQuantity):
         # Plot color scale showing the chosen background quantity, if any
         if backgroundQuantity is not None:
             # We set zorder = 0 to make sure the background color scale is actually plotted in the background and does not cover the shards
-            contours, cb = backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t, shifted = True, zorder = 0, **kwargs)
+            _, cb, contours = backgroundQuantity.plotPoloidal(ax=ax, show=False, t=t, shifted=True, zorder=0, return_contours=True, **kwargs)
         else:
             contours = None
             
@@ -384,7 +390,6 @@ class SPIShardPositions(ScalarQuantity):
         """
         Plot the trajectory of one or more shards in a poloidal cross-section.
         """
-        black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
         if ax is None:
