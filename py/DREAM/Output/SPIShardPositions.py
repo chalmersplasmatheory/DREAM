@@ -91,7 +91,9 @@ class SPIShardPositions(ScalarQuantity):
         # Determine exit time?
         if exit:
             if np.isnan(arrivalTime):
-                return np.nan
+                arrivalTime = -1
+                if firstShard is None:
+                    firstShard = 0
 
             exitTime = np.nan
             for it in range(arrivalTime+1, self.grid.t.size):
@@ -110,7 +112,7 @@ class SPIShardPositions(ScalarQuantity):
         distance travelled by the shard through the plasma, and N is the number
         of shards.
         """
-        rp = self.output.eqsys.Y_p[0,:,0]
+        rp = self.output.eqsys.Y_p.calcRadii(t=0)
 
         N = self.data[0,0::3,0].size
         S = 0
@@ -137,6 +139,7 @@ class SPIShardPositions(ScalarQuantity):
 
         xp = self.data[:,0::3,0]
         yp = self.data[:,1::3,0]
+        zp = self.data[:,2::3,0]
 
         # Find first time inside plasma
         inside = None
@@ -166,7 +169,8 @@ class SPIShardPositions(ScalarQuantity):
 
         dx = np.diff(xp[inside:lastinside+1, shard])
         dy = np.diff(yp[inside:lastinside+1, shard])
-        d = np.sum(np.sqrt(dx**2 + dy**2))
+        dz = np.diff(zp[inside:lastinside+1, shard])
+        d = np.sum(np.sqrt(dx**2 + dy**2 + dz**2))
         return d
 
 
@@ -284,7 +288,6 @@ class SPIShardPositions(ScalarQuantity):
         # Retrieve shard position data in cartesian SPI coordinates
         xp = self.data[:,0::3,0]
         yp = self.data[:,1::3,0]
-        zp = self.data[:,2::3,0]
         
         # Calculate cylindrical RZ coordinates for the shards
         Rp = np.sqrt((xp+eq.R0)**2+zp**2)
