@@ -19,7 +19,7 @@ class SPIShardPositions(ScalarQuantity):
 
     def arrivalTime(self, shard=None, exit=False):
         """
-        Estimate the time at which the pellet arrives to the plasma edge.
+        Estimate the time at which the pellet arrives to, or exits at, the plasma edge.
         """
         if 'eq' not in self.grid:
             raise OutputException("Cannot plot poloidal trajectory when equilibrium data is not stored in output.")
@@ -226,7 +226,6 @@ class SPIShardPositions(ScalarQuantity):
         
         xp = self.data[:,0::3,0] 
         yp = self.data[:,1::3,0]
-        zp = self.data[:,2::3,0]
         
         rhop   = np.sqrt(xp[t,shards]**2+yp[t,shards]**2)
         thetap = np.arctan2(yp[t,shards],xp[t,shards])
@@ -273,9 +272,7 @@ class SPIShardPositions(ScalarQuantity):
         # Plot color scale showing the chosen background quantity, if any
         if backgroundQuantity is not None:
             # We set zorder = 0 to make sure the background color scale is actually plotted in the background and does not cover the shards
-            _, cb, contours = backgroundQuantity.plotPoloidal(ax=ax, show=False, t=t, shifted=True, zorder=0, return_contours=True, **kwargs)
-        else:
-            contours = None
+            backgroundQuantity.plotPoloidal(ax=ax, show=False, t=t, shifted=True, zorder=0, return_contours=True, **kwargs)
             
         if shards is None:
             shards = slice(None)
@@ -288,6 +285,7 @@ class SPIShardPositions(ScalarQuantity):
         # Retrieve shard position data in cartesian SPI coordinates
         xp = self.data[:,0::3,0]
         yp = self.data[:,1::3,0]
+        zp = self.data[:,2::3,0]
         
         # Calculate cylindrical RZ coordinates for the shards
         Rp = np.sqrt((xp+eq.R0)**2+zp**2)
