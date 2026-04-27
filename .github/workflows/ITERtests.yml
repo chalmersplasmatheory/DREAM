@@ -18,6 +18,7 @@ jobs:
           ssh-keyscan -H "${{ secrets.DREAMTESTS_IP }}" > ~/.ssh/known_hosts
 
       - name: Connect and run tests
-        run: ssh -t "dream@${{ secrets.DREAMTESTS_IP }}" "./test.sh ${{ env.GITHUB_SHA }}"
+        run: ssh -o ServerAliveInterval=60 -o ServerAliveCountMax=10 -o ConnectTimeout=10 -t "dream@${{ secrets.DREAMTESTS_IP }}" "./test.sh ${{ env.GITHUB_SHA }}"
+        timeout-minutes: 600
 
 
