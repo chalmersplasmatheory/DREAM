@@ -20,7 +20,7 @@ class AvalancheGrowthRate(OtherFluidQuantity):
         E     = self.output.eqsys.E_field.get(r=r, t=ut)
         EE    = E-Enorm
 
-        return self.plot(r=r, t=t, ax=ax, show=show, weight=EE)
+        return self.plot(r=r, t=t, ax=ax, show=show, weight=1 / EE, weight_label=f"1/(E - {norm})")
 
 
     def plotRunawayRate(self, r=None, t=None, ax=None, show=True):
@@ -30,11 +30,12 @@ class AvalancheGrowthRate(OtherFluidQuantity):
         """
         ut = self._renormalizeTimeIndexForUnknown(t)
 
-        n_re = self.output.eqsys.n_re.get(r=r, t=ut)
+        n_re_qty = self.output.eqsys.n_re
+        n_re = n_re_qty.get(r=r, t=ut)
         if t is None and r is None:
             return self.plotIntegral(ax=ax, show=show, w=n_re)
         else:
-            return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re)
+            return self.plot(r=r, t=t, ax=ax, show=show, weight=n_re, weight_label=n_re_qty.name)
 
               
     def getRunawayRate(self, r=None, t=None, ax=None, show=True):

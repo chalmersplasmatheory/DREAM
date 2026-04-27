@@ -167,7 +167,8 @@ class IonSpecies:
             else:
                 self.initialize_dynamic(n=n, r=r, init_equil=init_equil, interpr=interpr)
         elif ttype == IONS_EQUILIBRIUM:
-            self.initialize_equilibrium(n=n, r=r, Z0=Z0)
+            #self.initialize_equilibrium(n=n, r=r, Z0=Z0)
+            raise DREAMException("Evolving ions in equilibrium not implemented yet.")
         elif Z0 is not None:
             print("WARNING: Charge state Z0 given, but ion type is not simply 'prescribed', 'dynamic' or 'equilibrium'. Hence, Z0 is ignored.")
 
