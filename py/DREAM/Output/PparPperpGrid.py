@@ -17,7 +17,7 @@ class PparPperpGrid(MomentumGrid):
         rgrid: Parent 'Grid' object (representing radial grid).
         data:  Momentum grid data.
         """
-        super(PXiGrid, self).__init__(name=name, rgrid=rgrid, data=data)
+        super(PparPperpGrid, self).__init__(name=name, rgrid=rgrid, data=data)
 
         self.ppar   = data['p1']
         self.pperp  = data['p2']

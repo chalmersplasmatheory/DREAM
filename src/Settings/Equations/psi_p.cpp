@@ -368,7 +368,8 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             eqsys->SetOperator(id_I_w,id_I_p,Op_I_w_3);
 
             // Initialize I_w to 0
-            eqsys->SetInitialValue(id_I_w, nullptr);
+			real_t I_wall_0 = s->GetReal(MODULENAME "/I_wall_0");
+            eqsys->SetInitialValue(id_I_w, &I_wall_0);
         }
     } else
         FVM::FVMException("Unrecognized equation type for '%s': %d.",

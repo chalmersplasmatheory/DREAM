@@ -13,6 +13,7 @@ Ida Ekmark (Chalmers)
 Lorenzo Votta (KTH)
 Oskar Vallhagen (Chalmers)
 Peter Halldestam (Max Planck Institute for Plasma Physics)
+Linn Ekman (KTH)
 
 # Contributors
 The following people have contributed to the development of DREAM (in
@@ -21,6 +22,7 @@ alphabetical order):
 Adam Kit
 Alexandre Fil
 Andréas Sundström
+Björn Zaar
 Boel Brandström
 Esmée Berger
 Ferenc Lengyel
@@ -29,6 +31,7 @@ Ida Svenningsson
 Istvan Pusztai
 Jędrzej Walkowiak
 Liam Antonsson
+Linn Ekman
 Linnea Hesslow
 Lise Hanebring
 Lorenzo Votta

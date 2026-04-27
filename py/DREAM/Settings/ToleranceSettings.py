@@ -1,8 +1,8 @@
 # Settings for tolerances of computed quantities
 
-import numpy as np
 from .. DREAMException import DREAMException
 from . import EquationSystem
+from .. helpers import scal
 
 
 class ToleranceSettings:
@@ -54,7 +54,7 @@ class ToleranceSettings:
         if 'reltol' in data:
             r = data['reltol']
             if type(r) == float: self.reltol = r
-            else: self.reltol = float(r[0])
+            else: self.reltol = float(scal(r))
 
         overrides = []
 
@@ -69,7 +69,7 @@ class ToleranceSettings:
                 atol = data['abstols'][i]
                 rtol = data['reltols'][i]
 
-                l = {'name': names[i], 'abstol': float(atol), 'reltol': float(rtol)}
+                l = {'name': names[i], 'abstol': float(scal(atol)), 'reltol': float(scal(rtol))}
                 overrides.append(l)
 
             self.overrides = overrides

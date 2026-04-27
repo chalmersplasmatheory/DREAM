@@ -68,35 +68,35 @@ the values or radial transport) by the total ion density :math:`n_i = \sum_j n_i
 
 The available ion modes are:
 
-+----------------------+-----------------------------------------------------------------------+
-| Name                 | Description                                                           |
-+======================+=======================================================================+
-| ``IONS_PRESCRIBED``  | The ion densities and charge states are prescribed in time and space. |
-+----------------------+-----------------------------------------------------------------------+
-| ``IONS_EQUILIBRIUM`` | Ion charge states are assumed to be in equilibrium.                   |
-+----------------------+-----------------------------------------------------------------------+
-| ``IONS_DYNAMIC``     | Ion charge states are evolved according to an ion rate equation.      |
-+----------------------+-----------------------------------------------------------------------+
++----------------------+---------------------------------------------------------------------------+
+| Name                 | Description                                                               |
++======================+===========================================================================+
+| ``IONS_PRESCRIBED``  | The ion densities and charge states are prescribed in time and space.     |
++----------------------+---------------------------------------------------------------------------+
+| ``IONS_EQUILIBRIUM`` | Ion charge states are assumed to be in equilibrium (not yet implemented). |
++----------------------+---------------------------------------------------------------------------+
+| ``IONS_DYNAMIC``     | Ion charge states are evolved according to an ion rate equation.          |
++----------------------+---------------------------------------------------------------------------+
 
 The above modes are the only three models available for evolving ions in DREAM.
 However, to simplify initialization of ion densities, the following pseudo-modes
 are also available when adding ions to the simulation:
 
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| Name                               | Description                                                                                                                     |
-+====================================+=================================================================================================================================+
-| ``IONS_DYNAMIC_NEUTRAL``           | Ion densities are evolved dynamically, with all ions located in the neutral charge state initially.                             |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_DYNAMIC_FULLY_IONIZED``     | Ion densities are evolved dynamically, with all ions located in the fully ionized charge state initially.                       |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_PRESCRIBED_NEUTRAL``        | Ion densities are prescribed, with all ions located in the neutral charge state.                                                |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_PRESCRIBED_FULL_IONIZED``   | Ion densities are prescribed, with all ions located in the fully ionized charge state.                                          |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_EQUILIBRIUM_NEUTRAL``       | Ion densities are assumed in equilibrium at every time step, with all ions located in the neutral charge state initially.       |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
-| ``IONS_EQUILIBRIUM_FULLY_IONIZED`` | Ion densities are evolved in equilibrium at every time step, with all ions located in the fully ionized charge state initially. |
-+------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Name                               | Description                                                                                                                                           |
++====================================+=======================================================================================================================================================+
+| ``IONS_DYNAMIC_NEUTRAL``           | Ion densities are evolved dynamically, with all ions located in the neutral charge state initially.                                                   |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_DYNAMIC_FULLY_IONIZED``     | Ion densities are evolved dynamically, with all ions located in the fully ionized charge state initially.                                             |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_PRESCRIBED_NEUTRAL``        | Ion densities are prescribed, with all ions located in the neutral charge state.                                                                      |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_PRESCRIBED_FULL_IONIZED``   | Ion densities are prescribed, with all ions located in the fully ionized charge state.                                                                |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_EQUILIBRIUM_NEUTRAL``       | Ion densities are assumed in equilibrium at every time step, with all ions located in the neutral charge state initially (not yet implemented).       |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``IONS_EQUILIBRIUM_FULLY_IONIZED`` | Ion densities are evolved in equilibrium at every time step, with all ions located in the fully ionized charge state initially (not yet implemented). |
++------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 
 Adding ions
@@ -524,14 +524,14 @@ Kinetic ionization can be activated in a DREAM simulation as follows:
 
 Particle injection
 ------------------
-Particles can be injected through the plasma edge at a specified rate. The user
+Particles can be injected either at the plasma edge or distributed across the radial grid at a specified rate. The user
 specifies the *number of particles* per unit time which are to be injected,
 which can either be specified as constant in time or as following a specified
 time evolution. The user can choose to either inject particles of a specific
 charge state, or to inject particles of multiple charge states simultaneously.
 
-Example
-^^^^^^^
+Edge Injection Example
+^^^^^^^^^^^^^^^^^^^^^^
 The ion source is enabled via a single line:
 
 .. code-block:: python
@@ -588,6 +588,60 @@ Finally, particles in **several charge states** may be added simultaneously:
    i.e. the change in the volume integral of the ion density per unit time.
    Thus, the unit of ``dNdt`` is simply :math:`\mathrm{s}^{-1}` (or particles
    per second).
+
+Radial Injection Example
+^^^^^^^
+A volumetric ion source can be prescribed by providing the source on both a
+time grid and a radial grid by setting the source type to
+``ION_SOURCE_PRESCRIBED_VOLUMETRIC``, like the following example:
+
+.. code-block:: python
+
+   import numpy as np
+   from DREAM import DREAMSettings
+   import DREAM.Settings.Equations.IonSpecies as Ions
+
+   ds = DREAMSettings()
+   ...
+
+   ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n, T=T)
+
+   #Specify the time evolution of the source
+   neon_time = np.linspace(0, 0.1, 1000) # Time grid for the source
+   neon_stop = 0.05 # Time at which the source is turned off
+   total_neon_density = 1e19 # Total number of neon atoms to be injected
+   neon_rate = np.zeros_like(neon_time)
+   neon_rate[neon_time <= neon_stop] = total_neon_density / neon_stop
+
+   #Create a radial profile for the source
+   radial_profile = np.ones_like(r_grid)
+
+   source_3D = np.zeros((11, len(neon_time), len(r_grid)))
+   
+   #Only inject neutral neon
+   for it in range(len(neon_time)):
+       source_3D[0, it, :] = neon_rate[it] * radial_profile 
+
+   ds.eqsys.n_i.addIonSource(
+       'Ne',
+       dNdt=source_3D,
+       t=neon_time,
+       r=r_grid,
+       source_type=Ions.ION_SOURCE_PRESCRIBED_VOLUMETRIC
+   )
+
+In this case, ``dNdt`` must be given as a three-dimensional array with shape
+
+.. math::
+
+   (Z+1,\; N_t,\; N_r),
+
+where :math:`Z+1` is the number of charge states, :math:`N_t` is the number of
+time points, and :math:`N_r` is the number of radial grid points. Each element
+specifies the source strength for a given charge state, time, and radius. For a prescribed volumetric source, 
+the quantity ``dNdt`` represents the particle source density distributed over radius and time. Its normalization 
+should be chosen such that the intended total particle content is obtained
+when integrating over the radial grid and over the relevant time interval.
 
 Ion/neutral transport
 ---------------------

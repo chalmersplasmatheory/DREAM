@@ -171,6 +171,25 @@ the following line to your settings:
 By default, this option is disabled.
 
 
+Disabling solver statistics in output
+*************************************
+By default, some basic statistics about the solver is stored and saved to the
+output file. This includes information about the number of iterations per time
+step and whether or not the backup inverter was activated in each time step.
+This statistic data is saved for every time step that is taken, not just the
+time steps which are saved to the output file. Hence, if a very large number of
+time steps are taken in the simulation, the statistics could take up a large
+fraction of the space in the output file.
+
+To disable the solver statistics, use
+
+.. code-block:: python
+
+   ds.solver.setSaveStatistics(False)
+
+By default, this option is enabled.
+
+
 Which solver should I use?
 --------------------------
 The difference between the two solvers is primarily that the linearly implicit

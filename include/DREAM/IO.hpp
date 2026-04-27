@@ -24,6 +24,7 @@ namespace DREAM {
             WARNING_INCONSISTENT_RE_INITIALIZATION,
 			WARNING_RESIDUAL_NOT_CONVERGED,
             WARNING_ABLATION_RATE_NOT_VALID,
+            WARNING_ION_DENSITY_TOO_SMALL,
 
             // [Must always come last]
             MESSAGE_LAST

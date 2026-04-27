@@ -74,6 +74,7 @@ class EqView(QtWidgets.QMainWindow):
         self.ui.actionOpen.triggered.connect(self.open)
         self.ui.actionSaveAs.triggered.connect(self.save)
         self.ui.actionShapingProfiles.triggered.connect(self.exportShaping)
+        self.ui.actionSOFT.triggered.connect(self.exportSOFT)
 
         self.ui.actionPlotG.triggered.connect(self.plotG)
         self.ui.actionPlotJ.triggered.connect(self.plotJ)
@@ -159,12 +160,16 @@ class EqView(QtWidgets.QMainWindow):
         self.equil = LUKEMagneticField(filename)
         self.equil_type = EQTYPE_LUKE
 
-        self.ui.lblMagneticAxis.setText(f'({float(self.equil.Rp):.3f}, {float(self.equil.Zp):.3f})')
+        Rp = np.asarray(self.equil.Rp).item()
+        Zp = np.asarray(self.equil.Zp).item()
+
+        self.ui.lblMagneticAxis.setText(f'({Rp:.3f}, {Zp:.3f})')
         self.ui.lblMinorRadius.setText(f'{self.equil.getMinorRadius():.3f} m')
         self.ui.lblB0.setText(f'{np.mean(self.equil.ptBPHI[:,0]):.3f} T')
 
         self.ui.actionSaveAs.setEnabled(False)
         self.ui.actionShapingProfiles.setEnabled(False)
+        self.ui.actionSOFT.setEnabled(False)
 
 
     def load_EQDSK(self, filename, **params):
@@ -181,6 +186,7 @@ class EqView(QtWidgets.QMainWindow):
 
         self.ui.actionSaveAs.setEnabled(True)
         self.ui.actionShapingProfiles.setEnabled(True)
+        self.ui.actionSOFT.setEnabled(True)
 
 
     def special_load(self, filename, oldparams):
@@ -289,9 +295,12 @@ class EqView(QtWidgets.QMainWindow):
         elif self.equil_type == EQTYPE_EQDSK:
             psi_n = np.linspace(0, 1, 101)[1:]
             r = self.equil.get_r(psi_n)
-            pw.ax.plot(r, self.equil.get_Jtor_at_Bmin(psi_n)/1e6, lw=2, label=r'$J_{\varphi}$')
+            p0 = self.equil.psi_axis
+            pe = self.equil.psi_bdry
+            psi = psi_n * (pe-p0) + p0
+            pw.ax.plot(r, psi, lw=2, label=r'$\psi$')
             pw.ax.set_xlabel(r'Minor radius $r$ (m)')
-            pw.ax.set_ylabel(r'Current density (MA$\,$m$^{-2}$)')
+            pw.ax.set_ylabel(r'Poloidal flux (Wb)')
             pw.ax.legend()
             pw.figure.tight_layout()
 
@@ -337,6 +346,27 @@ class EqView(QtWidgets.QMainWindow):
                 QMessageBox.information(self, "Successfully saved shaping parameters", f"Successfully saved the shaping parameters to '{filename}'.")
             except Exception as ex:
                 QMessageBox.critical(self, "Failed to export shaping parameters", f"An error occurred while saving the equilibrium shaping parameters.\n\n{ex}")
+
+
+    def exportSOFT(self):
+        """
+        Export SOFT equilibrium.
+        """
+        if self.equil_type != EQTYPE_EQDSK:
+            QMessageBox.critical(self, "Cannot export SOFT equilibrium", "SOFT equilibria can only be exported from EQDSK equilibria.")
+            return
+
+        filename, _ = QFileDialog.getSaveFileName(
+            parent=self, caption="Export SOFT equilibrium",
+            filter="HDF5 file (*.h5);;All files (*.*)"
+        )
+
+        if filename:
+            try:
+                self.equil.save_SOFT(filename)
+                QMessageBox.information(self, "Successfully saved SOFT equilibrium", f"Successfully saved SOFT equilibrium to '{filename}'.")
+            except Exception as ex:
+                QMessageBox.critical(self, "Failed to export SOFT equilibrium", f"An error occurred while saving the SOFT equilibrium.\n\n{ex}")
 
 
     def save(self):
