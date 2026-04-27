@@ -171,7 +171,7 @@ class Grid:
         if data['type'] == MomentumGrid.TYPE_PXI:
             return PXiGrid(name=name, rgrid=self, data=data)
         elif data['type'] == MomentumGrid.TYPE_PPARPPERP:
-            return PparPperpGrid(name=name, r=self, data=data)
+            return PparPperpGrid(name=name, rgrid=self, data=data)
         else:
             raise OutputException("grid: Unrecognized grid type: {}.".format(data['type']))
             
