@@ -31,12 +31,12 @@ class PparPperpGrid(MomentumGrid):
 
         self._PPAR, self._PPERP = np.meshgrid(self.ppar[:], self.pperp[:])
         self._P = np.sqrt(self._PPAR**2 + self._PPERP**2)
-        self._XI = self._PPAR / self._P
+        self._XI = np.divide(self._PPAR, self._P, out=np.zeros_like(self._PPAR, dtype=float), where=self._P!=0)
         self._GAMMA = np.sqrt(self._P**2 + 1)
 
         self._PPAR_f, self._PPERP_f = np.meshgrid(self.ppar_f[:], self.pperp_f[:])
         self._P_f = np.sqrt(self._PPAR_f**2 + self._PPERP_f**2)
-        self._XI_f = self._PPAR_f / self._P_f
+        self._XI_f = np.divide(self._PPAR_f, self._P_f, out=np.zeros_like(self._PPAR_f, dtype=float), where=self._P_f!=0)
 
         self._VprimeCylindrical = np.copy(self.Vprime_VpVol)
         self._VprimeSpherical = self.Vprime_VpVol * self._P**2 / self._PPERP

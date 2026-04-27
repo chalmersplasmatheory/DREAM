@@ -446,7 +446,9 @@ class KineticQuantity(UnknownQuantity):
         data = self.data[t, r, :]
         if phaseSpaceWeight:
             weight_label = "(Vp/Vpvol)*"
-            if coordinates == 'cylindrical'[:len(coordinates)]:
+            if coordinates is None:
+                data = data * self.momentumgrid.Vprime_VpVol[r]
+            elif coordinates == 'cylindrical'[:len(coordinates)]:
                 data = data * self.momentumgrid.VprimeCylindrical[r]
             else:
                 data = data * self.momentumgrid.VprimeSpherical[r]
