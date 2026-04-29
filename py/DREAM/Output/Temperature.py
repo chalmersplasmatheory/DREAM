@@ -2,8 +2,6 @@
 
 import matplotlib.pyplot as plt
 from .FluidQuantity import FluidQuantity
-from .OutputException import OutputException
-
 
 class Temperature(FluidQuantity):
     

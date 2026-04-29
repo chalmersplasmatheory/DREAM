@@ -1,22 +1,19 @@
 # Base class for kinetic (radius + momentum + time) quantities
 #
 
-import matplotlib.animation as animation
+from matplotlib import animation
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-
-from matplotlib import animation
 
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
 from .. import GeriMap
-from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
+from .. Settings.MomentumGrid import TYPE_PXI
 
 
 class KineticQuantity(UnknownQuantity):
-    
 
     def __init__(self, name, data, grid, output, momentumgrid=None, attr=list(), triggerinfo=None):
         """
@@ -80,6 +77,29 @@ class KineticQuantity(UnknownQuantity):
         """
         return self.data[index]
 
+    def new_like(self, name=None, data=None, grid=None, output=None, attr=None, momentumgrid=None):
+        """
+        Creates a new object of the same type where the provided quantities replace
+        those of self.
+        """
+        if name is None:
+            name = self.name
+        if data is None:
+            data = self.data
+        if grid is None:
+            grid = self.grid
+        if output is None:
+            output = self.output
+        if attr is None:
+            attr = {}
+            if hasattr(self, "description"):
+                attr["description"] = self.description
+            if hasattr(self, "description_eqn"):
+                attr["equation"] = self.description_eqn
+        if momentumgrid is None:
+            momentumgrid = self.momentumgrid
+
+        return type(self)(name=name, data=data, grid=grid, output=output, momentumgrid=momentumgrid, attr=attr)
 
     def angleAveraged(self, t=None, r=None, moment='distribution'):
         r"""
@@ -375,9 +395,8 @@ class KineticQuantity(UnknownQuantity):
 
         ax.set_title(f'{sign}{self.getTeXName()}')
 
-        cb = None
         if genax:
-            cb = plt.colorbar(mappable=cp, ax=ax)
+            plt.colorbar(mappable=cp, ax=ax)
 
         if show:
             plt.show(block=False)
@@ -497,6 +516,9 @@ class KineticQuantity(UnknownQuantity):
             ax.clear()
             ax=kq.plotPolar(colorbar=False, show=False, t=t,**kwargs)
             
+        if speed is None:
+            speed = 50
+
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=t,
             repeat=repeat, repeat_delay=repeat_delay, interval=speed,
@@ -504,7 +526,7 @@ class KineticQuantity(UnknownQuantity):
             
         if save:
             # Make animation
-            writer = animation.FFMpegFileWriter(fps=fps)
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
             writer.setup(fig, save, dpi=dpi)
             ani.save(save, writer=writer)
             print("Done saving video to '{}'.".format(save))

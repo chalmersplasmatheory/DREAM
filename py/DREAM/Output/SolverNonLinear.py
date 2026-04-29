@@ -3,7 +3,6 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy.matlib
 from .Solver import Solver
 from .SolutionConvergenceInformation import SolutionConvergenceInformation
 

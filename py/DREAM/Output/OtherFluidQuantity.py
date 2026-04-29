@@ -1,10 +1,6 @@
 # Base class for "other" kinetic (radius + momentum + time) quantities
 #
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-from . OutputException import OutputException
 from . FluidQuantity import FluidQuantity
 
 
@@ -45,22 +41,45 @@ class OtherFluidQuantity(FluidQuantity):
 
     def _renormalizeTimeIndexForUnknown(self, t):
         """
-        Tries to re-normalize the given time index so that it correctly indexes
-        a regular unknown quantity (which has a different time base).
+        Unknowns have one extra initial time point, so map this quantity's time
+        indices to unknown time indices by shifting non-negative indices by +1.
+
+        Supports: None, int, list/tuple/ndarray of ints.
         """
         if t is None:
-            t = slice(None)
+            return slice(1, None, None)
 
-        start, stop, step = t.start, t.stop, t.step
-        if start is None or start == 0:
-            start = 1
-        if stop is not None:
-            stop += 1
+        if isinstance(t, (int, np.integer)):
+            return t+1 if t >= 0 else t
 
-        t = slice(start, stop, step)
+        # sequence / fancy indexing: return a list of shifted integers
+        if isinstance(t, (list, tuple, np.ndarray, range)):
+            return [(int(i)+1) if int(i) >= 0 else int(i) for i in t]
 
         return t
 
+      
+    def new_like(self, name=None, data=None, grid=None, output=None, attr=None, description=None):
+        """
+        Creates a new object of the same type where the provided quantities replace
+        those of self.
+        """
+        if name is None:
+            name = self.name
+        if data is None:
+            data = self.data
+        if grid is None:
+            grid = self.grid
+        if output is None:
+            output = self.output
+        if description is None:
+            if attr is not None and "description" in attr:
+                description = attr["description"]
+            else:
+                description = self.description
+        
+        return type(self)(name=name, data=data, grid=grid, output=output, description=description)
+    
 
     def getMultiples(self):
         """
