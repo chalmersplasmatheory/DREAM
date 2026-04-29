@@ -15,7 +15,9 @@ using namespace DREAM;
  */
 RunawayTransportRechesterRosenbluth::RunawayTransportRechesterRosenbluth(
 	FVM::Grid *grid, FVM::Interpolator1D *dBB
-) : FVM::DiffusionTerm(grid), dBB(dBB) { }
+) : FVM::DiffusionTerm(grid), dBB(dBB) {
+	SetName("RunawayTransportRechesterRosenbluth");
+}
 
 
 /**

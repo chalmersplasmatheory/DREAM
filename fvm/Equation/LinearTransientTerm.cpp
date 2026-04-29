@@ -17,7 +17,10 @@ using namespace DREAM::FVM;
  * Constructor.
  */
 LinearTransientTerm::LinearTransientTerm(Grid *grid, const len_t unknownId)
-        : DiagonalTerm(grid), unknownId(unknownId){}
+        : DiagonalTerm(grid), unknownId(unknownId){
+	
+	SetName("LinearTransientTerm");
+}
 
 
 /**

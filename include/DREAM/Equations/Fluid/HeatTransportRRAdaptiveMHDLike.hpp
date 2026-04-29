@@ -18,7 +18,8 @@ namespace DREAM {
 	public:
 		HeatTransportRRAdaptiveMHDLike(
 			FVM::Grid*, FVM::UnknownQuantityHandler*,
-			const real_t, bool, const real_t, const real_t, bool
+			const real_t, bool, const real_t, const real_t, bool,
+			const len_t, const len_t
 		);
 		virtual ~HeatTransportRRAdaptiveMHDLike();
 	};

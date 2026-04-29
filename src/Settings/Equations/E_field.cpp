@@ -289,13 +289,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 		delete [] Efield_init;
 
 	} else if (HasInitialJtot(eqsys, s)) {
-
-        RunawayFluid *REFluid = eqsys->GetREFluid();
+		RunawayFluid *REFluid = eqsys->GetREFluid();
 
         // Remove non-inductive current (assuming no initial runaways?)
         enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");
         if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
-
             const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
 
             std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot_bs =
@@ -324,17 +322,23 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     		);
 
         } else {
-    		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot =
-    			[id_j_tot, REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
-    			const real_t *j_tot = u->GetUnknownData(id_j_tot);
-    			const len_t nr = fluidGrid->GetNCells();
-    			for (len_t ir = 0; ir < nr; ir++) {
-    				real_t s = REFluid->GetElectricConductivity(ir);
-    				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
+			bool hasHotConductivity = eqsys->HasUnknown(OptionConstants::UQTY_T_HOT);
 
-    				Efield_init[ir] = j_tot[ir] * B / s;
-    			}
-    		};
+			std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot =
+				[id_j_tot,REFluid,fluidGrid,hasHotConductivity](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+
+				const real_t *j_tot = u->GetUnknownData(id_j_tot);
+				const len_t nr = fluidGrid->GetNCells();
+				for (len_t ir = 0; ir < nr; ir++) {
+					real_t s = REFluid->GetElectricConductivity(ir), sh = 0;
+					if (hasHotConductivity)
+						sh = REFluid->GetElectricHotConductivity(ir);
+					real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
+
+					Efield_init[ir] = j_tot[ir]*B / (s + sh);
+				}
+			};
+
     		// Initialize electric field to dummy value to allow RunawayFluid
     		// to be initialized first...
     		eqsys->SetInitialValue(id_E_field, nullptr);

@@ -21,10 +21,12 @@ using namespace DREAM;
  * the ion index for ions. 
  */
 MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm(
-            FVM::Grid *g, 
-            const len_t index_i, bool isIon_i,
-            const len_t index_j, bool isIon_j, 
-            FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler, real_t scaleFactor
+	FVM::Grid *g, 
+	const len_t index_i, bool isIon_i,
+	const len_t index_j, bool isIon_j, 
+	const len_t id_T, const len_t id_W, const len_t id_n,
+	FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL,
+	IonHandler *ionHandler, real_t scaleFactor
 ) : FVM::EquationTerm(g), index_i(index_i), index_j(index_j), isIon_i(isIon_i), isIon_j(isIon_j),
     unknowns(u), lnLambda(lnL), ionHandler(ionHandler)
 {
@@ -52,19 +54,19 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
     this->lnLambda_settings->lnL_type = isEI ? 
         OptionConstants::COLLQTY_LNLAMBDA_THERMAL : OptionConstants::COLLQTY_LNLAMBDA_ION_ION;
 
-    this->id_ncold = u->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    this->id_Wcold = u->GetUnknownID(OptionConstants::UQTY_W_COLD);
+    this->id_n     = id_n;
+    this->id_W     = id_W;
+    this->id_T     = id_T;
     this->id_Ni    = u->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_Wi    = u->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_ions  = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    this->id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
-    AddUnknownForJacobian(u, id_ncold);
+    AddUnknownForJacobian(u, id_n);
     AddUnknownForJacobian(u, id_Ni);
     AddUnknownForJacobian(u, id_Wi);
-    AddUnknownForJacobian(u, id_Wcold);
+    AddUnknownForJacobian(u, id_W);
     AddUnknownForJacobian(u, id_ions);
-    AddUnknownForJacobian(u, id_Tcold);    
+    AddUnknownForJacobian(u, id_T);    
 }
 
 
@@ -118,13 +120,13 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
         len_t ii = index_i*nr + ir;
         len_t jj = index_j*nr + ir;
         real_t val1 = 0, val2 = 0;
-        if( (isIon_i &&  derivId==id_Ni) || (!isIon_i && derivId==id_ncold) ) 
+        if ((isIon_i &&  derivId==id_Ni) || (!isIon_i && derivId==id_n))
             val1 += vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
-        if( (isIon_j &&  derivId==id_Ni) || (!isIon_j && derivId==id_ncold) ) 
+        if ((isIon_j &&  derivId==id_Ni) || (!isIon_j && derivId==id_n))
             val2 += vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) );
-        if( (isIon_i&&derivId==id_Wi) || (!isIon_i&&derivId==id_Wcold) )
+        if ((isIon_i&&derivId==id_Wi) || (!isIon_i&&derivId==id_W))
             val1 += vec*nj*(-1.0/up - 1.5*mj/down );
-        if( (isIon_j&&derivId==id_Wi) || (!isIon_j&&derivId==id_Wcold) )
+        if ((isIon_j&&derivId==id_Wi) || (!isIon_j&&derivId==id_W))
             val2 += vec*ni*( 1.0/up - 1.5*mi/down );
         jac->SetElement(ii, ii, val1);
         jac->SetElement(ii, jj, val2);
@@ -137,7 +139,7 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
                 len_t indZ = ionHandler->GetIndex(index_i, Z0);
                 jac->SetElement(ii, indZ*nr + ir, vecOverNZ2 * Z0*Z0);
             }
-        } else if(!isIon_i && derivId == id_ncold)
+        } else if(!isIon_i && derivId == id_n)
             jac->SetElement(ii,ir, vec/nZ2_i);
         if(isIon_j && derivId==id_ions){
             real_t preOverNZ2 = sqrt(ni*nj)*nZ2_i; // rebuild 'vec' without the nZ2_j factor
@@ -146,11 +148,11 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
                 len_t indZ = ionHandler->GetIndex(index_j, Z0);
                 jac->SetElement(ii, indZ*nr + ir, vecOverNZ2 * Z0*Z0);
             }
-        } else if(!isIon_j && derivId == id_ncold)
+        } else if(!isIon_j && derivId == id_n)
             jac->SetElement(ii,ir, vec/nZ2_j);
         
         // Below: lnLambda derivatives
-        if(derivId==id_Tcold || derivId==id_ions){
+        if(derivId==id_T || derivId==id_ions){
             len_t nMultiple = unknowns->GetUnknown(derivId)->NumberOfMultiples();
             for(len_t n=0; n<nMultiple; n++)
                 jac->SetElement(ii,n*nr+ir, vec/lnL[ir]*lnLambda->evaluatePartialAtP(ir,0,derivId,n,lnLambda_settings) );
@@ -173,9 +175,9 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
         W = unknowns->GetUnknownData(id_Wi)[nr*index + ir];
         nZ2=ionHandler->GetNZ0Z0(index, ir);
     } else {
-        n = unknowns->GetUnknownData(id_ncold)[ir];
+        n = unknowns->GetUnknownData(id_n)[ir];
         nZ2 = n;
-        W = unknowns->GetUnknownData(id_Wcold)[ir];
+        W = unknowns->GetUnknownData(id_W)[ir];
     }
 }
 

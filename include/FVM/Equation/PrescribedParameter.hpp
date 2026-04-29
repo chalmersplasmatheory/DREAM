@@ -35,6 +35,7 @@ namespace DREAM::FVM {
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
+		virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
     };
 }
 

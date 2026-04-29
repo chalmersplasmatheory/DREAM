@@ -6,12 +6,12 @@ from . UnknownQuantity import UnknownQuantity
 class OtherQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, description, grid, output):
+    def __init__(self, name, data, description, grid, output, momentumgrid=None, triggerinfo=None):
         """
         Constructor.
         """
         attr = {'description': description}
-        super().__init__(name=name, data=data, grid=grid, attr=attr, output=output)
+        super().__init__(name=name, data=data, grid=grid, attr=attr, output=output, triggerinfo=triggerinfo)
 
         self.time = grid.t[1:]
 

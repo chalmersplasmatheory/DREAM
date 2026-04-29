@@ -13,8 +13,11 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset){
+CollisionQuantity::CollisionQuantity(
+	FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+	enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
+	const len_t id_T, const len_t id_n
+){
     mg = g->GetMomentumGrid(0);
     rGrid = g->GetRadialGrid();
 
@@ -29,9 +32,9 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
     isNonlinear = (collQtySettings->nonlinear_mode == OptionConstants::EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC);
     isBrems = (collQtySettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
     // ID of quantities that contribute to collision frequencies
-    id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    this->id_n = id_n;
+    this->id_T = id_T;
+    id_ni      = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     /**
      * Set buildOnlyF1F2=false if quantities need to be evaluated on the distribution 
@@ -102,7 +105,7 @@ void CollisionQuantity::AssembleQuantity(){
  * Returns true if any unknown quantities that affect collision quantities have changed. 
  */
 bool CollisionQuantity::parametersHaveChanged(){
-    return unknowns->HasChanged(id_ncold) || unknowns->HasChanged(id_Tcold) || unknowns->HasChanged(id_ni);
+    return unknowns->HasChanged(this->id_n) || unknowns->HasChanged(this->id_T) || unknowns->HasChanged(id_ni);
 }
 
 

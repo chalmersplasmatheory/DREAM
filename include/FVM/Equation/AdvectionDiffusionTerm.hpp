@@ -26,6 +26,8 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow() const override;
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
 
+		std::string GetNames() const;
+
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual void ResetCoefficients() override;
 

@@ -49,10 +49,20 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
 
     // Note: these collision quantities will only be used for their evaluateAt(..., inSettings) 
     //       methods inside REFluid, and be called with other settings than 'cq'. 
-    CoulombLogarithm *lnLEE = new CoulombLogarithm(g,unknowns,ih,gridtype,cqsetForPc,CollisionQuantity::LNLAMBDATYPE_EE);
-    CoulombLogarithm *lnLEI = new CoulombLogarithm(g,unknowns,ih,gridtype,cqsetForPc,CollisionQuantity::LNLAMBDATYPE_EI);
-    SlowingDownFrequency *nuS  = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cqsetForPc);
-    PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cqsetForPc);
+	const len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+	const len_t id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+
+    CoulombLogarithm *lnLEE = new CoulombLogarithm(g,unknowns,ih,gridtype,cqsetForPc,CollisionQuantity::LNLAMBDATYPE_EE, id_Tcold, id_ncold);
+    CoulombLogarithm *lnLEEhot = nullptr;
+    CoulombLogarithm *lnLEI = new CoulombLogarithm(g,unknowns,ih,gridtype,cqsetForPc,CollisionQuantity::LNLAMBDATYPE_EI, id_Tcold, id_ncold);
+    SlowingDownFrequency *nuS  = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cqsetForPc,id_Tcold,id_ncold);
+    PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cqsetForPc,id_Tcold,id_ncold);
+
+	if (unknowns->HasUnknown(OptionConstants::UQTY_T_HOT)) {
+		const len_t id_Thot = unknowns->GetUnknownID(OptionConstants::UQTY_T_HOT);
+		const len_t id_nhot = unknowns->GetUnknownID(OptionConstants::UQTY_N_HOT);
+		lnLEEhot = new CoulombLogarithm(g,unknowns,ih,gridtype,cqsetForPc,CollisionQuantity::LNLAMBDATYPE_EE, id_Thot, id_nhot);
+	}
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");
@@ -70,7 +80,7 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     
     bool extrapolateDreicer = s->GetBool("eqsys/n_re/extrapolateDreicer");
     RunawayFluid *REF = new RunawayFluid(
-        g, unknowns, nuS, nuD, lnLEE, extrapolateDreicer, 
+        g, unknowns, nuS, nuD, lnLEE, lnLEEhot, extrapolateDreicer, 
         lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
         cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux, 
         integratedComptonSpectrum, C1_Compton, C2_Compton, C3_Compton

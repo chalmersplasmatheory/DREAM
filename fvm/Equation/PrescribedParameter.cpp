@@ -125,3 +125,25 @@ void PrescribedParameter::SetVectorElements(real_t *vec, const real_t *x) {
         vec[i] = x[i] - interpolatedData[i];
 }
 
+/**
+ * Set the elements in the jacobian matrix.
+ *
+ * uqtyId:  Block row index (ID of the unknown to which this equation belong).
+ * derivId: Block column index (ID of the unknown with respect to which we differentiate).
+ * jac:     Jacobian matrix.
+ * x:       Values of the unknown quantity 'uqtyId'.
+ */
+bool PrescribedParameter::SetJacobianBlock(
+	const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t*
+) {
+	const len_t N = grid->GetNCells();
+
+	if (uqtyId == derivId) {
+		for (len_t i = 0; i < N; i++)
+			jac->SetElement(i, i, 1.0);
+		return true;
+	}
+	
+	return false;
+}
+

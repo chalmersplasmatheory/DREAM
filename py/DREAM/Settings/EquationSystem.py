@@ -6,7 +6,9 @@ import copy
 from .Equations.ColdElectrons import ColdElectrons
 from .Equations.ColdElectronTemperature import ColdElectronTemperature
 from .Equations.ElectricField import ElectricField
+from .Equations.HotElectronCurrent import HotElectronCurrent
 from .Equations.HotElectronDistribution import HotElectronDistribution
+from .Equations.HotElectronTemperature import HotElectronTemperature
 from .Equations.Ions import Ions
 from .Equations.OhmicCurrent import OhmicCurrent
 from .Equations.RunawayElectrons import RunawayElectrons
@@ -23,7 +25,7 @@ UNKNOWNS = [
     'E_field', 'f_hot', 'f_re', 'n_i', 'I_p', 'I_wall',
     'j_bs', 'j_hot', 'j_ohm', 'j_re', 'j_tot', 'n_cold', 'n_hot',
     'n_re', 'n_tot', 'N_i', 'psi_p', 'psi_wall', 'psi_edge',
-    'tau_coll','T_cold', 'V_loop_w', 'W_cold', 'W_i'
+    'tau_coll','T_cold', 'T_hot', 'V_loop_w', 'W_cold', 'W_i'
 ]
 
 
@@ -42,6 +44,7 @@ class EquationSystem:
         self.addUnknown('E_field', ElectricField(settings=settings))
         self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
         self.addUnknown('f_re', RunawayElectronDistribution(settings=settings))
+        self.addUnknown('j_hot', HotElectronCurrent(settings=settings))
         self.addUnknown('j_bs', BootstrapCurrent(settings=settings))
         self.addUnknown('j_ohm', OhmicCurrent(settings=settings))
         self.addUnknown('n_cold', ColdElectrons(settings=settings))
@@ -49,6 +52,7 @@ class EquationSystem:
         self.addUnknown('n_re', RunawayElectrons(settings=settings))
         self.addUnknown('psi_p', PoloidalFlux(settings=settings))
         self.addUnknown('T_cold', ColdElectronTemperature(settings=settings))
+        self.addUnknown('T_hot', HotElectronTemperature(settings=settings))
         self.addUnknown('spi', SPI(settings=settings))
 
 

@@ -198,6 +198,9 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
 
+	if (eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
+		ConstructEquation_T_hot(eqsys, s, adas, nist, amjuel, oqty_terms);
+    
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
 		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
 		ConstructEquation_n_abl(eqsys, s);
@@ -207,7 +210,10 @@ void SimulationGenerator::ConstructEquations(
     if(eqsys->GetSPIHandler()!=nullptr){
         ConstructEquation_SPI(eqsys,s);
         if(hottailGrid != nullptr){
-        	ConstructEquation_W_hot(eqsys,s);
+			// T_hot is defined, the equation for W_hot will already be set up
+			if (!eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
+				ConstructEquation_W_hot_moment(eqsys,s);
+
         	ConstructEquation_q_hot(eqsys,s);
         }
     }
@@ -352,6 +358,11 @@ void SimulationGenerator::ConstructUnknowns(
     if (s->GetBool("eqsys/n_re/negative_re"))
         DEFU_FLD(N_RE_NEG);
 
+	if (s->GetBool("eqsys/T_hot/enabled")) {
+		DEFU_FLD(T_HOT);
+		DEFU_FLD(W_HOT);
+	}
+
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         len_t nShard;
@@ -362,7 +373,8 @@ void SimulationGenerator::ConstructUnknowns(
 
         if (hottailGrid != nullptr){
         	DEFU_FLD(Q_HOT);
-        	DEFU_FLD(W_HOT);
+			if (!eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
+				DEFU_FLD(W_HOT);
     	}
     	if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
     		DEFU_FLD_N(ION_SPECIES_ABL, nIonChargeStates);
@@ -376,7 +388,7 @@ void SimulationGenerator::ConstructUnknowns(
     if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT)
         DEFU_FLD(J_BS);
 
-    if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
+    if ((OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE){
         len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WI_ENER, nIonSpecies);
         DEFU_FLD_N(NI_DENS, nIonSpecies);

@@ -20,8 +20,8 @@ namespace DREAM {
         
         enum OptionConstants::ion_opacity_mode *opacity_modes;
 
-        len_t id_ncold;
-        len_t id_Tcold;
+        len_t id_n;
+        len_t id_T;
         len_t id_ni;
         
         real_t 
@@ -46,7 +46,10 @@ namespace DREAM {
 
 
     public:
-        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, AMJUEL*,enum OptionConstants::ion_opacity_mode*, bool);
+        RadiatedPowerTerm(
+			FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*,
+			ADAS*, NIST*, AMJUEL*, const len_t, const len_t,
+			enum OptionConstants::ion_opacity_mode*, bool);
 		~RadiatedPowerTerm();
 
 
