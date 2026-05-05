@@ -151,6 +151,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SPIHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/WaveSpectrum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/distribution.cpp"
