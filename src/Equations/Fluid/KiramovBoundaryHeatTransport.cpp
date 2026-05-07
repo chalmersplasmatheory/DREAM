@@ -25,13 +25,18 @@ KiramovBoundaryHeatTransport::KiramovBoundaryHeatTransport(FVM::Grid *g, FVM::Un
     SetName("KiramovBoundaryHeatTransport");
 
     this->id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    AddUnknownForJacobian(unknowns, this->id_Tcold);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    AddUnknownForJacobian(unknowns, this->id_ncold);
     if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS) && unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER)){
         this->id_N_i = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+        AddUnknownForJacobian(unknowns, this->id_N_i);
         this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+        AddUnknownForJacobian(unknowns, this->id_W_i);
         has_Ti = true;
     }
     this->id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    AddUnknownForJacobian(unknowns, this->id_jtot);
 
 
 
@@ -100,6 +105,7 @@ void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t 
     ResetDifferentiationCoefficients();
     
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
+    real_t *n_cold = unknowns->GetUnknownData(id_n_cold);
     
     real_t T_e = T_cold[nr-1] * Constants::ec;
     real_t n_e = n_cold[nr-1];
@@ -115,7 +121,7 @@ void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t 
         real_t *W_i = unknowns->GetUnknownData(id_W_i); 
         T_i = 2. / 3. * W_i[nr-1] / N_i[nr-1]; 
 
-        real_t d_c_s;
+        real_t d_c_s = 0.;
         if (derivId == id_W_i)
             d_c_s = 1./ 2. * 1. / sqrt((T_e + gamma * T_i) / mi) * gamma / mi * 2. / 3. / N_i[nr-1];
         else if (derivId == id_N_i)

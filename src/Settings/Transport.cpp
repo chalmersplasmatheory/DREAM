@@ -601,7 +601,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 		}
 	}
 
-    if (heat && bc==OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV){
+    if (heat && hasNonTrivialTransport && bc==OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV){
 
         TransportAdvectiveBC * t = new KiramovBoundaryHeatTransportBC(grid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler());
         oprtr->AddBoundaryCondition(t);  
@@ -637,7 +637,10 @@ T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
             break;
             
         case OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV:
-            break;
+            throw SettingsException(
+                "%s: Boundary condition 'KIRAMOV' is not supported for this transport term.",
+                path.c_str()
+            );
 
         default:
             throw SettingsException(

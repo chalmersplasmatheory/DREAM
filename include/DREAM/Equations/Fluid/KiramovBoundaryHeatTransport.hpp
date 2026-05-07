@@ -1,6 +1,7 @@
 #ifndef _DREAM_EQUATIONS_FLUID_KIRAMOV_BOUNDARY_HEAT_TRANSPORT_HPP
 #define _DREAM_EQUATIONS_FLUID_KIRAMOV_BOUNDARY_HEAT_TRANSPORT_HPP
 
+#include <limits>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/config.h"
