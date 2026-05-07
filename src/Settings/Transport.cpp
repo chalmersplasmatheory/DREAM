@@ -408,8 +408,9 @@ bool SimulationGenerator::ConstructTransportTerm(
                         path.c_str()
                     );
 
+                bool withIonJacobian = s->GetBool(mod + "/fullIonJacobian");
                 TrappingLimitedRRTransport *rrt = new TrappingLimitedRRTransport(
-                    grid, momtype, dBB, cqh, eqsys->GetUnknownHandler()
+                    grid, momtype, dBB, cqh, eqsys->GetUnknownHandler(), withIonJacobian
                 );
                 oprtr->AddTerm(rrt);
 

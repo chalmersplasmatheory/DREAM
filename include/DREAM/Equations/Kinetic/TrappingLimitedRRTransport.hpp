@@ -8,15 +8,13 @@ namespace DREAM {
 class TrappingLimitedRRTransport :
 public RechesterRosenbluthTransport {
 protected:
-FVM::UnknownQuantityHandler *unknowns;
 PitchScatterFrequency *nuD;
-CollisionQuantity::collqty_settings *collSettings;
-real_t currentTime = 0;
 
 len_t id_ncold, id_Tcold, id_ni;
+real_t *jacobianPrefactor = nullptr;
+len_t np1_cache = 0;
 
-real_t EvaluateNuDOnRadialFluxGrid(len_t, real_t) const;
-real_t EvaluatePartialNuDOnRadialFluxGrid(len_t, real_t, len_t, len_t) const;
+void AllocateCache();
 
 virtual void SetPartialDiffusionTerm(len_t, len_t) override;
 
@@ -24,10 +22,11 @@ public:
 TrappingLimitedRRTransport(
 FVM::Grid*, enum OptionConstants::momentumgrid_type,
 FVM::Interpolator1D*, CollisionQuantityHandler*,
-FVM::UnknownQuantityHandler*
+FVM::UnknownQuantityHandler*, bool withIonJacobian=true
 );
 virtual ~TrappingLimitedRRTransport();
 
+virtual bool GridRebuilt() override;
 virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 };
 }
