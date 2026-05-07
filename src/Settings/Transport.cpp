@@ -16,6 +16,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
+#include "DREAM/Equations/Fluid/KiramovBoundaryHeatTransport.hpp"
 
 
 using namespace DREAM;
@@ -599,6 +600,15 @@ bool SimulationGenerator::ConstructTransportTerm(
 			);
 		}
 	}
+
+    if (heat && hasNonTrivialTransport && bc==OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV){
+
+        TransportAdvectiveBC * t = new KiramovBoundaryHeatTransportBC(grid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler());
+        oprtr->AddBoundaryCondition(t);  
+
+        if (advective_bc != nullptr)
+            *advective_bc = t;  
+    }
             
     return hasNonTrivialTransport;
 }
@@ -625,6 +635,12 @@ T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
             t = new T1(grid, transpTerm, T1::TRANSPORT_BC_DF_CONST);
             oprtr->AddBoundaryCondition(t);
             break;
+            
+        case OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV:
+            throw SettingsException(
+                "%s: Boundary condition 'KIRAMOV' is not supported for this transport term.",
+                path.c_str()
+            );
 
         default:
             throw SettingsException(
