@@ -609,6 +609,9 @@ class Ions(UnknownQuantity):
         neutral_prescribed_diffusion = None
         charged_prescribed_advection = None
         neutral_prescribed_advection = None
+        ion_source_t = None
+        ion_source_x = None
+        ion_source_r = None
         self.typeTi = IONS_T_I_NEGLECT
         if 'typeTi' in data:
             self.typeTi = int(scal(data['typeTi']))
@@ -645,6 +648,12 @@ class Ions(UnknownQuantity):
         if 'ion_source' in data:
             ion_source_t = data['ion_source']['t']
             ion_source_x = data['ion_source']['x']
+
+        if 'ion_source_volumetric' in data:
+            ion_source_t = data['ion_source_volumetric']['t']
+            ion_source_x = data['ion_source_volumetric']['x']
+            ion_source_r = data['ion_source_volumetric'].get('r', None)
+
 
         iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx, srcidx = 0, 0, 0, 0, 0, 0, 0, 0
         for i in range(len(Z)):
@@ -736,7 +745,7 @@ class Ions(UnknownQuantity):
                 self.addIonSource(names[i], dNdt=ion_source_x[srcidx,:], t=ion_source_t, source_type=ION_SOURCE_PRESCRIBED)
                 srcidx += Z[i] + 1  # Move to next ion's position
             elif ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
-                ion_source_r = data['ion_source'].get('r', None)
+                #ion_source_r = data['ion_source'].get('r', None)
                 
                 # Extract the full 3D source data for this ion species
                 if len(ion_source_x.shape) == 3:
@@ -952,12 +961,21 @@ class Ions(UnknownQuantity):
 
         if self.tSourceTerm is not None:
             data['ion_source_types'] = sourceterm_types
-            data['ion_source'] = {
-                't': self.tSourceTerm,
-                'x': sourceterm
-            }
-            if self.rSourceTerm is not None and len(sourceterm.shape) == 3:
-                    data['ion_source']['r'] = self.rSourceTerm
+
+            if len(sourceterm.shape) == 2:
+                data['ion_source'] = {
+                    't': self.tSourceTerm,
+                    'x': sourceterm
+                }
+            elif len(sourceterm.shape) == 3:
+                data['ion_source_volumetric'] = {
+                    't': self.tSourceTerm,
+                    'r': self.rSourceTerm,
+                    'x': sourceterm
+                }
+            else:
+                raise EquationException(f"Unexpected ion source shape: {sourceterm.shape}.")
+
 
         # Flux limiter settings
         data['adv_interp_charged'] = self.advectionInterpolationCharged.todict()
