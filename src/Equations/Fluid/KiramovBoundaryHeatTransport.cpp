@@ -25,9 +25,9 @@ KiramovBoundaryHeatTransport::KiramovBoundaryHeatTransport(FVM::Grid *g, FVM::Un
     SetName("KiramovBoundaryHeatTransport");
 
     this->id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    AddUnknownForJacobian(unknowns, this->id_Tcold);
+    AddUnknownForJacobian(unknowns, this->id_T_cold);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    AddUnknownForJacobian(unknowns, this->id_ncold);
+    AddUnknownForJacobian(unknowns, this->id_n_cold);
     if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS) && unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER)){
         this->id_N_i = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
         AddUnknownForJacobian(unknowns, this->id_N_i);
