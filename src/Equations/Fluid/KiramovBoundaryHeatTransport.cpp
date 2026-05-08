@@ -68,6 +68,7 @@ KiramovBoundaryHeatTransport::KiramovBoundaryHeatTransport(FVM::Grid *g, FVM::Un
  */
 void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *) {
     ResetCoefficients();
+    
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
     real_t *n_cold = unknowns->GetUnknownData(id_n_cold); 
 
