@@ -328,7 +328,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportAdvectiveBC *abc=nullptr;
             ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-                bc, tt, oprtr, path, grid
+                bc, tt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -364,7 +364,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
             ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-                bc, dt, oprtr, path, grid
+                bc, dt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -414,7 +414,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
             ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-                bc, dt, oprtr, path, grid
+                bc, dt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -453,7 +453,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 			// Add boundary condition...
 			TransportDiffusiveBC *dbc =
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-					bc, hrr, oprtr, path, grid
+					bc, hrr, oprtr, path, grid, heat
 				);
 
 			// Store B.C. for OtherQuantityHandler
@@ -471,7 +471,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 
 			TransportDiffusiveBC *dbc =
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-					bc, rrr, oprtr, path, grid
+					bc, rrr, oprtr, path, grid, heat
 				);
 
 			// Store B.C. for OtherQuantityHandler
@@ -500,7 +500,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
 		TransportAdvectiveBC *abc =
 			ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-				bc, tt, oprtr, path, grid
+				bc, tt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -528,7 +528,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
 			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-				bc, tt_drr, oprtr, path, grid
+				bc, tt_drr, oprtr, path, grid, heat
 			);
 
         // Store B.C. for OtherQuantityHandler
@@ -539,7 +539,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             // Add boundary condition...
 			TransportAdvectiveBC *abc =
 				ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-					bc, tt_ar, oprtr, path, grid
+					bc, tt_ar, oprtr, path, grid, heat
                 );
 
 			// Store B.C. for OtherQuantityHandler
@@ -587,7 +587,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 			// Add boundary condition
 			TransportDiffusiveBC *dbc =
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-					bc, fct, oprtr, path, grid
+					bc, fct, oprtr, path, grid, heat
 				);
 
 			// Store B.C. for OtherQuantityHandler
@@ -618,7 +618,7 @@ template<class T1, class T2>
 T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
     enum OptionConstants::eqterm_transport_bc bc,
     T2 *transpTerm, FVM::Operator *oprtr, const string &path,
-    FVM::Grid *grid
+    FVM::Grid *grid, bool heat
 ) {
     T1 *t = nullptr;
     switch (bc) {
@@ -637,10 +637,14 @@ T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
             break;
             
         case OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV:
-            throw SettingsException(
-                "%s: Boundary condition 'KIRAMOV' is not supported for this transport term.",
-                path.c_str()
-            );
+            if (!heat)
+                throw SettingsException(
+                    "%s: Boundary condition 'KIRAMOV' is not supported for this transport term.",
+                    path.c_str()
+                );
+            else
+                // BC is added later...
+                break;
 
         default:
             throw SettingsException(
