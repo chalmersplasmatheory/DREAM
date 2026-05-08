@@ -24,7 +24,6 @@ AdvectionTerm::AdvectionTerm(Grid *g, bool allocCoeffs)
     if (allocCoeffs) {
         this->AllocateCoefficients();
         this->AllocateInterpolationCoefficients();
-        this->AllocateDifferentiationCoefficients();
     }
 
 }
