@@ -66,6 +66,10 @@ bool DREAM::TransportBC<T>::AddToJacobianBlock(
     if (!transportOperator->HasJacobianContribution(derivId, &nMultiples))
         return contributes;
 
+    // TODO: allocate differentiation coefficients in a more logical location
+    if(dfr == nullptr) // TODO: OK?
+        AllocateDifferentiationCoefficients();
+
     SetPartialTerm(derivId, nMultiples);
 
     for (len_t n = 0; n < nMultiples; n++) {
