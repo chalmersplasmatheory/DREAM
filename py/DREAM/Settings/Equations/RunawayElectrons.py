@@ -266,15 +266,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Specify which model to use for hottail runaway generation
         """
-        if hottail is False:
+        if hottail is False or hottail == HOTTAIL_MODE_DISABLED:
             self.hottail = HOTTAIL_MODE_DISABLED
             self.settings.eqsys.f_hot.enableAnalyticalDistribution(False)
         else:
-            self.hottail = hottail
-            if hottail != HOTTAIL_MODE_DISABLED:
-                self.settings.eqsys.f_hot.enableAnalyticalDistribution()
-            else:
-                self.settings.eqsys.f_hot.enableAnalyticalDistribution(False)
+            self.hottail = int(hottail)
+            self.settings.eqsys.f_hot.enableAnalyticalDistribution()
 
 
     def setNegativeRunaways(self, negative_re=True):
