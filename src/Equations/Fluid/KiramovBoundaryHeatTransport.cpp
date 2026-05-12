@@ -104,6 +104,7 @@ void KiramovBoundaryHeatTransport::Rebuild(const real_t, const real_t, FVM::Unkn
 
 // Set derivatives of the advection term with respect to different unknowns quantities 
 void KiramovBoundaryHeatTransport::SetPartialAdvectionTerm(len_t derivId, len_t /*nMultiples*/){ 
+    AllocateDifferentiationCoefficients();
     ResetDifferentiationCoefficients();
     
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold); 
