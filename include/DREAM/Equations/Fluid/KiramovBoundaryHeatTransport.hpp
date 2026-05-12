@@ -51,6 +51,10 @@ namespace DREAM {
                 return true; 
             }
 
+            ~KiramovBoundaryHeatTransportBC(){
+                delete [] this->transportOperator;
+            }
+
     };
 
 }
