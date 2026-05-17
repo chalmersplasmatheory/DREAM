@@ -244,8 +244,10 @@ enum collqty_lnLambda_type {             // The Coulomb logarithm is...
     COLLQTY_LNLAMBDA_CONSTANT=1,         // the relativistic lnLambda, lnL = lnLc
     COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2, // energy dependent, separate for collisions with electrons and ions
     COLLQTY_LNLAMBDA_THERMAL=3,          // the thermal lnLambda, lnL = lnLT
-    COLLQTY_LNLAMBDA_ION_ION=4           // the ion-ion lnLambda, lnL = lnLii
-    COLLQTY_LNLAMBDA_CONSTANT_COLLECTIVE=5, // the relativistic lnLambda with collective friction, lnL = lnLc + ln mc^2/Te
+    COLLQTY_LNLAMBDA_ION_ION=4,          // the ion-ion lnLambda, lnL = lnLii
+    // Discussion is needed before merge request, -> separate setting is better or not.
+    COLLQTY_LNLAMBDA_CONSTANT_COLLECTIVE=5          // COLLQTY_LNLAMBDA_CONSANT=1 with collective Coulomb friction, lnL = lnLc + ln mc^2/Te
+    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE=6  // COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2 with collective Coulomb friction
 };
 
 enum collqty_collfreq_mode {
