@@ -20,13 +20,13 @@ namespace DREAM {
         real_t *dD=nullptr;
 
         // IDs of unknown quantities used by the operator...
-        len_t id_n_cold;
+        len_t id_n;
 
         void AllocateDiffCoeff();
         virtual void SetPartialDiffusionTerm(len_t, len_t) override;
 
     public:
-        HeatTransportDiffusion(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Interpolator1D*, FVM::UnknownQuantityHandler*);
+        HeatTransportDiffusion(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Interpolator1D*, FVM::UnknownQuantityHandler*, const len_t);
         ~HeatTransportDiffusion();
 
         virtual bool GridRebuilt() override;

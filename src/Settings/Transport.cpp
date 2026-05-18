@@ -295,7 +295,7 @@ bool SimulationGenerator::ConstructTransportTerm(
     TransportAdvectiveBC **advective_bc,
     TransportDiffusiveBC **diffusive_bc,
     struct OtherQuantityHandler::eqn_terms *oqty_terms,       // List of other quantity terms to save (only for SvenssonTransport)
-    const string& subname
+    const string& subname, len_t id_T, len_t id_n
 ) {
     string path = mod + "/" + subname;
 
@@ -309,6 +309,11 @@ bool SimulationGenerator::ConstructTransportTerm(
 
         return (c!=nullptr);
     };
+
+	if (id_T == 0 && id_T == id_n) {
+		id_T = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_T_COLD);
+		id_n = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_COLD);
+	}
 
 	enum OptionConstants::eqterm_transport_type type =
 		(enum OptionConstants::eqterm_transport_type)s->GetInteger(path + "/type");
@@ -353,7 +358,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             );
             
             HeatTransportDiffusion *tt = new HeatTransportDiffusion(
-                grid, momtype, intp1, eqsys->GetUnknownHandler()
+                grid, momtype, intp1, eqsys->GetUnknownHandler(), id_n
             );
 
             oprtr->AddTerm(tt);
@@ -396,7 +401,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             dt = rrt;
         } else if (heat) {	// Heat transport
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
-                grid, dBB, eqsys->GetUnknownHandler()
+                grid, dBB, eqsys->GetUnknownHandler(), id_T, id_n
             );
             oprtr->AddTerm(htrr);
 
@@ -444,7 +449,8 @@ bool SimulationGenerator::ConstructTransportTerm(
 			HeatTransportRRAdaptiveMHDLike *hrr = new HeatTransportRRAdaptiveMHDLike(
 				grid, eqsys->GetUnknownHandler(),
 				grad_j_tot_max, gradient_normalized,
-				dBB0, suppression_level, localized
+				dBB0, suppression_level, localized,
+				id_T, id_n
 			);
 
 			oprtr->AddTerm(hrr);

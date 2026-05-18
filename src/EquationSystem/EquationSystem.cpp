@@ -142,6 +142,9 @@ void EquationSystem::ProcessSystem(const real_t t0) {
                 totsize += unknowns[i]->NumberOfElements();
             }
         }
+
+		// Initialize 'alternative equation' handler
+		this->assignToAlternative[i] = false;
     }
 
     // Initialize from output...
@@ -173,6 +176,8 @@ void EquationSystem::SetOperator(
 	const len_t blockrow, const len_t blockcol, FVM::Operator *op,
 	const std::string& desc, const bool solvedExternally
 ) {
+	bool alternative = assignToAlternative[blockrow];
+
     // Verify that the list is sufficiently large
     if (unknown_equations.size() < blockrow+1)
         unknown_equations.resize(unknowns.Size(), nullptr);
@@ -182,11 +187,19 @@ void EquationSystem::SetOperator(
     if (unknown_equations[blockrow] == nullptr)
         unknown_equations[blockrow] = new UnknownQuantityEquation(blockrow, GetUnknown(blockrow), desc);
 
-    unknown_equations[blockrow]->SetOperator(blockcol, op);
+	if (alternative)
+		unknown_equations[blockrow]->SetOperatorAlt(blockcol, op);
+	else
+		unknown_equations[blockrow]->SetOperator(blockcol, op);
 
     if (desc != "") {
-        unknown_equations[blockrow]->SetDescription(desc);
-        unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
+		if (alternative) {
+			unknown_equations[blockrow]->SetDescriptionAlt(desc);
+			unknown_equations[blockrow]->GetUnknown()->SetEquationDescriptionAlt(desc);
+		} else {
+			unknown_equations[blockrow]->SetDescription(desc);
+			unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
+		}
     }
 
 	if (solvedExternally)
@@ -194,7 +207,7 @@ void EquationSystem::SetOperator(
 }
 
 /**
- * Same as 'SetEquation(len_t, len_t, Equation*)', but specifies
+ * Same as 'SetOperator(len_t, len_t, Equation*)', but specifies
  * the unknowns by name rather than by index.
  */
 void EquationSystem::SetOperator(len_t blockrow, const std::string& blockcol, FVM::Operator *op, const std::string& desc, const bool solvedExternally) {
@@ -208,6 +221,32 @@ void EquationSystem::SetOperator(const std::string& blockrow, const std::string&
 }
 
 /**
+ * Specify that all further calls to 'SetOperator()' should assign operators
+ * to the "alternative" equation instead of the main equation.
+ *
+ * uqtyId: ID of the unknown quantity whose alternative equation is to be set.
+ * v:      true if alternative equation is to be set, false if main equation is
+ *         to be set
+ */
+void EquationSystem::SetAssignToAlternativeEquation(const len_t uqtyId, bool v) {
+	this->assignToAlternative[uqtyId] = v;
+}
+
+/**
+ * Set the trigger condition for an unknown equation.
+ *
+ * uqtyId:    ID of the unknown quantity for which the trigger condition should
+ *            be set.
+ * condition: Trigger condition to use.
+ */
+void EquationSystem::SetTriggerCondition(
+	const len_t uqtyId, EquationTriggerCondition *condition
+) {
+	this->unknown_equations[uqtyId]->SetTriggerCondition(condition);
+}
+
+
+/**
  * Set the initial value of the specified unknown quantity. If
  * the initial value has previously been specified, it is overwritten.
  *
@@ -219,6 +258,11 @@ void EquationSystem::SetInitialValue(const std::string& name, const real_t *val,
     this->SetInitialValue(this->unknowns.GetUnknownID(name), val, t0);
 }
 void EquationSystem::SetInitialValue(const len_t id, const real_t *val, const real_t t0) {
+	// When assigning to terms to the alternative equation, just
+	// ignore any initial values which are set.
+	if (this->IsAssigningToAlternativeEquation(id))
+		return;
+
     this->unknowns.SetInitialValue(id, val, t0);
 }
 
@@ -269,6 +313,8 @@ void EquationSystem::Solve() {
 
         this->fluidGrid->Rebuild(tNext);
 
+		this->CheckTriggerConditions(tNext);
+
         try {
             istep++;
             solver->Solve(tNext, dt);
@@ -290,6 +336,8 @@ void EquationSystem::Solve() {
                 this->times.push_back(tNext);
 
                 otherQuantityHandler->StoreAll(tNext);
+
+				this->SaveTriggerState();
             } else
                 unknowns.SaveStep(tNext, false);
 
@@ -315,6 +363,23 @@ void EquationSystem::Solve() {
     }
 
 	DREAM::IO::Deinit();
+}
+
+/**
+ * Checks trigger conditions for all equations.
+ */
+void EquationSystem::CheckTriggerConditions(const real_t t) {
+	for (auto eqn : unknown_equations) {
+		if (eqn->HasAlternativeEquation())
+			eqn->CheckTriggerCondition(t, &this->unknowns);
+	}
+}
+
+void EquationSystem::SaveTriggerState() {
+	for (auto eqn : unknown_equations) {
+		if (eqn->HasAlternativeEquation())
+			eqn->SaveTriggerState();
+	}
 }
 
 /**

@@ -40,9 +40,12 @@ namespace DREAM {
         virtual void RebuildConstantTerms() override{return;};
 
     public:
-        CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
-                LnLambdaType lnLambdaType);
+        CoulombLogarithm(
+			FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+			enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
+			LnLambdaType lnLambdaType,
+			const len_t id_T, const len_t id_n
+		);
         ~CoulombLogarithm();
 
         void RebuildRadialTerms();

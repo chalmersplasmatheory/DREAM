@@ -26,6 +26,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 
 #define MODULENAME "eqsys/T_cold"
@@ -37,71 +38,139 @@ using namespace DREAM;
 /**
  * Define options for the electron temperature module.
  */
-void SimulationGenerator::DefineOptions_T_cold(Settings *s){
-    s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
-    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
-    s->DefineSetting(MODULENAME "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
-    DefineOptions_T_cold_NBI(s);
+void SimulationGenerator::DefineOptions_T_cold(Settings *s) {
+	DefineOptions_T_cold_inner(s, MODULENAME);
+
+	// Possibility for switching equation
+	DefineOptions_TriggerCondition(s, MODULENAME "/switch");
+
+	// Also define settings for the 'alternative' equation
+	DefineOptions_T_cold_inner(s, MODULENAME "/switch/equation");
+}
+
+void SimulationGenerator::DefineOptions_T_cold_inner(Settings *s, const string& modulename) {
+    s->DefineSetting(modulename + "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(modulename + "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
+    s->DefineSetting(modulename + "/halo_region_losses", "Whether to include losses through the halo region (true) or not (false)", (bool)false);
+    s->DefineSetting(modulename + "/include_NBI", "Whether to include NBI heating term in T_cold evolution", (bool)false);
+    DefineOptions_T_cold_NBI(s, modulename);
 
     // Prescribed data (in radius+time)
-    DefineDataRT(MODULENAME, s, "data");
+    DefineDataRT(modulename, s, "data");
 
     // Prescribed initial profile (when evolving T self-consistently)
-    DefineDataR(MODULENAME, s, "init");
+    DefineDataR(modulename, s, "init");
 
     // Transport settings
-    DefineOptions_Transport(MODULENAME, s, false);
+    DefineOptions_Transport(modulename, s, false);
 }
 /**
  * Define options for the NBI heating term.
  */
-void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s) {
-    const std::string NBI_PATH = std::string(MODULENAME) + "/NBI";
+void SimulationGenerator::DefineOptions_T_cold_NBI(Settings *s, const string& modulename) {
+    const string NBI_PATH = string(modulename) + "/NBI";
 
-    s->DefineSetting(MODULENAME "/NBI/enabled", "Enable/disable NBI heating", (bool)false);
+    s->DefineSetting(modulename + "/NBI/enabled", "Enable/disable NBI heating", (bool)false);
     // Beam geometry settings
-    s->DefineSetting(MODULENAME "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
-    s->DefineSetting(MODULENAME "/NBI/r_beam", "Beam radius", (real_t)0.1);
-    s->DefineSetting(MODULENAME "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/n_beam_radius", "Number of discretized points for beam in radial direction", (int_t)25);
-    s->DefineSetting(MODULENAME "/NBI/n_beam_theta", "Number of discretized points for beam in poloidal direction", (int_t)25);
-    s->DefineSetting(MODULENAME "/NBI/n_beam_s", "Number of discretized points for beam in nhat direction", (int_t)50);
+    s->DefineSetting(modulename + "/NBI/s_max", "Max beamline length to integrate", (real_t)2);
+    s->DefineSetting(modulename + "/NBI/r_beam", "Beam radius", (real_t)0.1);
+    s->DefineSetting(modulename + "/NBI/P0", "Beam starting point (x,y,z)", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/n",  "Beam direction vector", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/energy_fractions", "Energy fractions for multi-energy components", 3, (real_t*)nullptr);
+    s->DefineSetting(modulename + "/NBI/n_beam_radius", "Number of discretized points for beam in radial direction", (int_t)25);
+    s->DefineSetting(modulename + "/NBI/n_beam_theta", "Number of discretized points for beam in poloidal direction", (int_t)25);
+    s->DefineSetting(modulename + "/NBI/n_beam_s", "Number of discretized points for beam in nhat direction", (int_t)50);
 
     // Beam physics settings
-    s->DefineSetting(MODULENAME "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
-    s->DefineSetting(MODULENAME "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
+    s->DefineSetting(modulename + "/NBI/Ti_beam", "Thermal ion temperature [eV]", (real_t)4.8e-15);
+    s->DefineSetting(modulename + "/NBI/m_i_beam", "Ion mass of beam [kg]", (real_t)Constants::mD);
 
     // Plasma and beam parameters
-    s->DefineSetting(MODULENAME "/NBI/R0", "Major Radius", (real_t)1.0);
-    s->DefineSetting(MODULENAME "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
-    s->DefineSetting(MODULENAME "/NBI/gaussian_profile", "Gaussian profile type for NBI: 0=disabled, 1=TCV, 2=ITER", (int_t)0);
-    s->DefineSetting(MODULENAME "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
-    s->DefineSetting(MODULENAME "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(modulename + "/NBI/R0", "Major Radius", (real_t)1.0);
+    s->DefineSetting(modulename + "/NBI/j_B/t", "Radi grid for beam current density", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/j_B/x", "Beam current density values", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/j_B/tinterp", "Interpolation method for j_B", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(modulename + "/NBI/gaussian_profile", "Gaussian profile type for NBI: 0=disabled, 1=TCV, 2=ITER", (int_t)0);
+    s->DefineSetting(modulename + "/NBI/P_NBI/t", "Time dependant power", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/P_NBI/x", "Power deposition profile", 0, (real_t *)nullptr);
+    s->DefineSetting(modulename + "/NBI/P_NBI/tinterp", "Interpolation method for P_NBI", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
 }
 
 
 /**
- * Construct the equation for the electric field.
+ * Construct the equation for the cold electron temperature.
  */
 void SimulationGenerator::ConstructEquation_T_cold(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
-    enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
+	const len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+	// Construct main equation
+	ConstructEquation_T_cold_inner(MODULENAME, id_T_cold, eqsys, s, adas, nist, amjuel, &oqty_terms->T_cold);
+
+	enum OptionConstants::eqn_trigger_type switchtype =
+		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
+	
+	// Set alternative equation?
+	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		eqsys->SetAssignToAlternativeEquation(id_T_cold, true);
+
+		ConstructEquation_T_cold_inner(MODULENAME "/switch/equation", id_T_cold, eqsys, s, adas, nist, amjuel, &oqty_terms->T_cold);
+
+		EquationTriggerCondition *trig = LoadTriggerCondition(s, MODULENAME "/switch", eqsys->GetFluidGrid(), eqsys->GetUnknownHandler());
+		eqsys->SetTriggerCondition(id_T_cold, trig);
+
+		eqsys->SetAssignToAlternativeEquation(id_T_cold, false);
+	}
+
+	ConstructEquation_W_cold(eqsys, s);
+}
+
+void SimulationGenerator::ConstructEquation_T_cold_inner(
+	const string& modulename, const len_t id_T_cold,
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
+    struct OtherQuantityHandler::T_terms *oqty_terms
+) {
+    enum OptionConstants::uqty_T_cold_eqn type =
+		(enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(modulename + "/type");
+
+	FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    len_t id_W_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
+    len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    len_t id_j_ohm  = unknowns->GetUnknownID(OptionConstants::UQTY_J_OHM);
 
     switch (type) {
         case OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED:
-            ConstructEquation_T_cold_prescribed(eqsys, s);
+            ConstructEquation_T_cold_prescribed(modulename, eqsys, s, id_T_cold);
             break;
 
-        case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, amjuel, oqty_terms);
-            break;
+        case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT: {
+            ConstructEquation_T_cold_selfconsistent(
+				modulename, eqsys, s, adas, nist, amjuel, oqty_terms,
+				id_T_cold, id_T_cold,
+				id_W_cold, id_n_cold, id_j_ohm
+			);
+
+			// Load initial electron temperature profile.
+			real_t *T_init = LoadDataR(
+				modulename,
+				eqsys->GetFluidGrid()->GetRadialGrid(),
+				s, "init"
+			);
+
+			if (!eqsys->IsAssigningToAlternativeEquation(id_T_cold)) {
+				// NOTE: We should still mark the initial value as used,
+				// to prevent complaints by the Python settings interface
+				// when loading back the settings from the output file.
+				if (T_init == nullptr)
+					throw SettingsException("No initial data loaded for T_cold (from '%s/init'). Perhaps it has not been provided correctly?", modulename.c_str());
+				eqsys->SetInitialValue(id_T_cold, T_init);
+			}
+
+			if (T_init != nullptr)
+				delete [] T_init;
+		} break;
 
         default:
             throw SettingsException(
@@ -115,23 +184,19 @@ void SimulationGenerator::ConstructEquation_T_cold(
  * Construct the equation for a prescribed temperature.
  */
 void SimulationGenerator::ConstructEquation_T_cold_prescribed(
-    EquationSystem *eqsys, Settings *s
+    const string& modulename, EquationSystem *eqsys, Settings *s,
+	const len_t id_T
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-    FVM::Interpolator1D *interp = LoadDataRT_intp(MODULENAME,fluidGrid->GetRadialGrid(), s);
+    FVM::Interpolator1D *interp = LoadDataRT_intp(modulename,fluidGrid->GetRadialGrid(), s);
     eqn->AddTerm(new FVM::PrescribedParameter(fluidGrid, interp));
 
-    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
+    eqsys->SetOperator(id_T, id_T, eqn, "Prescribed");
 
     // Initialization
-    eqsys->initializer->AddRule(
-        OptionConstants::UQTY_T_COLD,
-        EqsysInitializer::INITRULE_EVAL_EQUATION
-);
-
-    ConstructEquation_W_cold(eqsys, s);
+	eqsys->SetInitialValue(id_T, interp->Eval(0));
 }
 
 
@@ -139,8 +204,11 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
  * Construct the equation for a self-consistent temperature evolution.
  */
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
+	const string& modulename,
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::T_terms *oqty_terms,
+	const len_t id_eqn, const len_t id_T, const len_t id_W, const len_t id_n,
+	const len_t id_j, bool isForThot
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -148,9 +216,10 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
-    len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    /*len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     len_t id_W_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
-    len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);*/
+
     len_t id_E_field = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
 
@@ -158,24 +227,23 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
-    Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
+    Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W));
 
     // Check if halo region heat losses should be included
     bool lcfs_user_input_psi = (len_t)s->GetInteger(MODULENAME_NRE  "/lcfs_user_input_psi");
     real_t lcfs_psi_edge_t0 = s->GetReal(MODULENAME_NRE "/lcfs_psi_edge_t0");
 
-    bool parallel_losses = s->GetBool(MODULENAME "/halo_region_losses");
+    bool parallel_losses = s->GetBool(modulename + "/halo_region_losses");
     if (parallel_losses) {
-        HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1,lcfs_user_input_psi, lcfs_psi_edge_t0);
-        oqty_terms->T_cold_halo = Par;
+        HaloRegionHeatLossTerm* Par = new HaloRegionHeatLossTerm(fluidGrid,unknowns,ionHandler,-1, id_T, lcfs_user_input_psi, lcfs_psi_edge_t0);
+        oqty_terms->halo = Par;
         Op1->AddTerm(Par); // Add the term for parallel losses
     }
 
+    oqty_terms->ohmic = new OhmicHeatingTerm(fluidGrid, unknowns, id_j);
+    Op2->AddTerm(oqty_terms->ohmic);
 
-    oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
-    Op2->AddTerm(oqty_terms->T_cold_ohmic);
-
-    bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
+    bool withRecombinationRadiation = s->GetBool(modulename + "/recombination");
 
     // Load opacity settings
     len_t nitypes;
@@ -184,29 +252,33 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     for (len_t i = 0; i < nitypes; i++)
         opacity_mode[i] = (enum OptionConstants::ion_opacity_mode)iopacity_modes[i];
 
-    oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
-        fluidGrid,unknowns,ionHandler,adas,nist,amjuel,opacity_mode,withRecombinationRadiation
+    oqty_terms->radiation = new RadiatedPowerTerm(
+        fluidGrid,unknowns,ionHandler,adas,nist,amjuel,
+		id_T, id_n,
+		opacity_mode,withRecombinationRadiation
     );
-    Op3->AddTerm(oqty_terms->T_cold_radiation);
+    Op3->AddTerm(oqty_terms->radiation);
 
 
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(
-        Op4, MODULENAME, fluidGrid,
+        Op4, modulename, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys, s, false, true,
-        &oqty_terms->T_cold_advective_bc,&oqty_terms->T_cold_diffusive_bc
+        &oqty_terms->advective_bc,
+		&oqty_terms->diffusive_bc,
+		nullptr, "transport", id_T, id_n
     );
 
-    eqsys->SetOperator(id_T_cold, id_E_field,Op2);
-    eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
-    std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
+    eqsys->SetOperator(id_eqn, id_E_field,Op2);
+    eqsys->SetOperator(id_eqn, id_n,Op3);
+    string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
     bool includeNBI = false;
-    if (s->HasSetting(MODULENAME "/NBI/enabled")) {
+    if (s->HasSetting(MODULENAME "/NBI/enabled"))
         includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
-    }
+
     if (includeNBI) {
         real_t s_max = s->GetReal(MODULENAME "/NBI/s_max");
         real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
@@ -224,12 +296,13 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
         // Load time-dependent j_B data
         FVM::Interpolator1D *j_B_profile = LoadDataT(
-            MODULENAME "/NBI", s, "j_B"
+            modulename + "/NBI", s, "j_B"
         );
 
         FVM::Interpolator1D *Power_Profile = LoadDataT(
-            MODULENAME "/NBI", s, "P_NBI"
+            modulename + "/NBI", s, "P_NBI"
         );
+
         NBIHandler *handler = eqsys->NBI_handler;
         if (handler == nullptr) {
             handler = new NBIHandler(eqsys->GetFluidGrid(), adas, ionHandler);
@@ -247,10 +320,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
   
         auto *nbi_e = new NBIElectronTerm(handler, eqsys->GetFluidGrid(), unknowns, ionHandler);
         Op4->AddTerm(nbi_e);
-        oqty_terms->T_cold_NBI = nbi_e;
+        oqty_terms->NBI = nbi_e;
         desc += " + NBI";
-        eqsys->SetOperator(id_T_cold, id_T_cold, Op4); 
-        
+        eqsys->SetOperator(id_eqn, id_T, Op4); 
     }
 
     // SPI heat absorbtion
@@ -298,14 +370,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     }
 
     if(hasTransport){
-        oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
+        oqty_terms->transport = Op4->GetAdvectionDiffusion();
         desc += " + transport";
     }
 
     if (spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT ||
         spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT ||
         hasTransport)
-        eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
+        eqsys->SetOperator(id_eqn, id_T,Op4);
 
     /**
      * If hot-tail grid is enabled, add collisional
@@ -315,87 +387,88 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
      *       term for when electrons transfer from the cold to the
      *       hot region. This should be corrected for at some point!
      */
+	// When building the equation for T_hot, we want to disable this term
+	// altogether since the Maxwellian should not heat itself.
     bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
-    if( eqsys->HasHotTailGrid()&& !collfreqModeFull ){
+    if (eqsys->HasHotTailGrid()&& !collfreqModeFull && !isForThot) {
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
         FVM::MomentQuantity::pThresholdMode pMode =
-            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+            (FVM::MomentQuantity::pThresholdMode)_get_f_hot_int(s, "pThresholdMode");
         real_t pThreshold = 0.0;
         if(collfreqModeFull){
             // With collfreq_mode FULL, only add contribution from hot electrons
             // defined as those with momentum above the defined threshold.
-            pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+            pThreshold = _get_f_hot_real(s, "pThreshold");
         }
-        oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
+        oqty_terms->fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),
-            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(),
+            id_eqn, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(),
             eqsys->GetHotTailGridType(), -1.0,
             pThreshold, pMode
         );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
-        eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
+        Op5->AddTerm(oqty_terms->fhot_coll );
+        eqsys->SetOperator(id_eqn, id_f_hot, Op5);
         desc += " + int(W*nu_E*f_hot)";
     }
-    // If runaway grid and not FULL collfreqmode, add collisional
-    // energy transfer from runaways to T_cold.
-    if( eqsys->HasRunawayGrid() ){
-        len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
-        oqty_terms->T_cold_fre_coll = new CollisionalEnergyTransferKineticTerm(
-            fluidGrid,eqsys->GetRunawayGrid(),
-            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler(),
-            eqsys->GetRunawayGridType(), -1.0
-        );
-        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( oqty_terms->T_cold_fre_coll );
-        eqsys->SetOperator(id_T_cold, id_f_re, Op5);
-        desc += " + int(W*nu_E*f_re)";
-    } else {
-        len_t id_n_re = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
-        oqty_terms->T_cold_nre_coll = new CollisionalEnergyTransferREFluidTerm(
-            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()->GetLnLambda(), -1.0
-        );
-        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( oqty_terms->T_cold_nre_coll );
-        eqsys->SetOperator(id_T_cold, id_n_re, Op5);
+	// Neglect RE heating of T_hot
+	if (!isForThot) {
+		// If runaway grid and not FULL collfreqmode, add collisional
+		// energy transfer from runaways to T_cold.
+		if (eqsys->HasRunawayGrid()) {
+			len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
-        desc += " + e*c*Ec*n_re";
-    }
+			oqty_terms->fre_coll = new CollisionalEnergyTransferKineticTerm(
+				fluidGrid,eqsys->GetRunawayGrid(),
+				id_eqn, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler(),
+				eqsys->GetRunawayGridType(), -1.0
+			);
+			FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+			Op5->AddTerm(oqty_terms->fre_coll );
+			eqsys->SetOperator(id_eqn, id_f_re, Op5);
+			desc += " + int(W*nu_E*f_re)";
+		} else {
+			len_t id_n_re = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+			oqty_terms->nre_coll = new CollisionalEnergyTransferREFluidTerm(
+				fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()->GetLnLambda(), -1.0
+			);
+			FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+			Op5->AddTerm(oqty_terms->nre_coll );
+			eqsys->SetOperator(id_eqn, id_n_re, Op5);
+
+			desc += " + e*c*Ec*n_re";
+		}
+	}
 
     // ADD COLLISIONAL ENERGY TRANSFER WITH ION SPECIES
     OptionConstants::uqty_T_i_eqn Ti_type =
         (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi");
     if(Ti_type == OptionConstants::UQTY_T_I_INCLUDE) {
-        CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
+        CoulombLogarithm *lnLambda;
+		if (isForThot)
+			lnLambda = eqsys->GetREFluid()->GetLnLambdaHot();
+		else
+			lnLambda = eqsys->GetREFluid()->GetLnLambda();
+
         const len_t nZ = ionHandler->GetNZ();
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-        oqty_terms->T_cold_ion_coll = new FVM::Operator(fluidGrid);
+        oqty_terms->ion_coll = new FVM::Operator(fluidGrid);
         for(len_t iz=0; iz<nZ; iz++){
-            oqty_terms->T_cold_ion_coll->AddTerm(
+            oqty_terms->ion_coll->AddTerm(
                 new MaxwellianCollisionalEnergyTransferTerm(
                     fluidGrid,
                     0, false,
                     iz, true,
+					id_T, id_W, id_n,
                     unknowns, lnLambda, ionHandler, -1.0)
                 );
         }
-        eqsys->SetOperator(id_T_cold, id_Wi, oqty_terms->T_cold_ion_coll);
+        eqsys->SetOperator(id_eqn, id_Wi, oqty_terms->ion_coll);
         desc += " + sum_i Q_ei";
     }
-    eqsys->SetOperator(id_T_cold, id_W_cold,Op1,desc);
-
-    /**
-     * Load initial electron temperature profile.
-     */
-    real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
-    if (Tcold_init == nullptr)
-        throw SettingsException("No initial data loaded for T_cold (from " MODULENAME "/init). Perhaps it has not been provided correctly?" );
-    eqsys->SetInitialValue(id_T_cold, Tcold_init);
-    delete [] Tcold_init;
-
-    ConstructEquation_W_cold(eqsys, s);
+    eqsys->SetOperator(id_eqn, id_W,Op1,desc);
 }
 
 

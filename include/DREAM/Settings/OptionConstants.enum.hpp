@@ -153,6 +153,17 @@ enum timestepper_type {
 
 /////////////////////////////////////
 ///
+/// EQUATION TRIGGER OPTIONS
+///
+/////////////////////////////////////
+enum eqn_trigger_type {
+	EQN_TRIGGER_TYPE_NONE=1,
+	EQN_TRIGGER_TYPE_TIME=2,
+	EQN_TRIGGER_TYPE_COLD_ELECTRON_DENSITY_RISE=3
+};
+
+/////////////////////////////////////
+///
 /// CONDUCTIVITY OPTIONS
 ///
 /////////////////////////////////////
@@ -198,6 +209,11 @@ enum uqty_f_re_inittype {
     UQTY_F_RE_INIT_PRESCRIBED=6			// Set prescribed distribution through f_re.setInitialValue
 };
 
+enum uqty_f_hot_maxwellian_population {
+	UQTY_F_HOT_MAXWELLIAN_COLD=1,		// Instantaneous Maxwellian with T_cold and n_cold
+	UQTY_F_HOT_MAXWELLIAN_HOT=2			// Instantaneous Maxwellian with T_hot and n_hot
+};
+
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
@@ -209,9 +225,19 @@ enum uqty_n_cold_eqn {
     UQTY_N_COLD_EQN_SELFCONSISTENT=2 // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE
 };
 
+enum uqty_j_hot_eqn {
+	UQTY_J_HOT_EQN_MOMENT=1,		// j_hot is a moment of f_hot (or 0, if no f_hot)
+	UQTY_J_HOT_EQN_OHMIC=2			// j_hot obeys Ohm's law
+};
+
 enum uqty_T_cold_eqn {
     UQTY_T_COLD_EQN_PRESCRIBED=1,   // T_cold prescribed by the user
     UQTY_T_COLD_SELF_CONSISTENT=2   // T_cold calculated self-consistently
+};
+
+enum uqty_T_hot_eqn {
+	UQTY_T_HOT_MOMENT=1,			// T_hot taken as moment of f_hot
+	UQTY_T_HOT_SELF_CONSISTENT=2	// T_hot calculated self-consistently
 };
 
 enum uqty_T_abl_eqn {
@@ -227,7 +253,8 @@ enum uqty_T_i_eqn {
 enum uqty_distribution_mode {
     UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
     UQTY_DISTRIBUTION_MODE_ANALYTICAL=2,   // distribution modelled with analytical distribution function
-	UQTY_DISTRIBUTION_MODE_PRESCRIBED=3    // distribution is prescribed in time from user input
+	UQTY_DISTRIBUTION_MODE_PRESCRIBED=3,   // distribution is prescribed in time from user input
+	UQTY_DISTRIBUTION_MODE_MAXWELLIAN=4	   // distribution is evaluated as a Maxwellian with instantaneous plasma parameters
 };
 
 enum uqty_f_hot_dist_mode {                     // Model used for analytic hottail distribution

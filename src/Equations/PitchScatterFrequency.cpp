@@ -72,10 +72,14 @@ const real_t PitchScatterFrequency::ionSizeAj_data[ionSizeAj_len] =
 /**
  * Constructor
  */
-PitchScatterFrequency::PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                CoulombLogarithm *lnLei, CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
-                : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
+PitchScatterFrequency::PitchScatterFrequency(
+	FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+	CoulombLogarithm *lnLei, CoulombLogarithm *lnLee,
+	enum OptionConstants::momentumgrid_type mgtype,
+	struct collqty_settings *cqset,
+	const len_t id_T, const len_t id_n
+) : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset,id_T,id_n) {
+
     hasIonTerm = true;
 }
 
@@ -153,11 +157,11 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionC
         if(p==0)
             return 0;
         real_t p2 = p*p;
-        real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+        real_t *T = unknowns->GetUnknownData(id_T);
         real_t gamma = sqrt(1+p2);
         real_t p2gamma2 = p2*gamma*gamma;
         real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
-        real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        real_t Theta = T[ir] / Constants::mc2inEV;
         real_t M = ( p2gamma2 + Theta*Theta ) * evaluatePsi0(ir,p);
         M += Theta * ( 2*p2*p2 - 1 ) * evaluatePsi1(ir,p);
         M += gamma*Theta * ( 1 + Theta*(2*p2-1) ) * p * exp( -gammaMinusOne/Theta );
@@ -188,11 +192,11 @@ real_t PitchScatterFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,Opti
     if ((collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)&&p){
         real_t p2 = p*p;
         real_t p4 = p2*p2;
-        real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+        real_t *T = unknowns->GetUnknownData(id_T);
         real_t gamma = sqrt(1+p2);
         real_t gamma2 = gamma*gamma;
         real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
-        real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        real_t Theta = T[ir] / Constants::mc2inEV;
         real_t Theta2 = Theta*Theta;
         real_t DDTheta = 1/Constants::mc2inEV;
         real_t expTerm = exp( -gammaMinusOne/Theta );

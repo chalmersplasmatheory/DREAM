@@ -8,11 +8,11 @@ from . FluidQuantity import FluidQuantity
 class CurrentDensity(FluidQuantity):
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super(CurrentDensity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super(CurrentDensity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
 
     def current(self, t=None):

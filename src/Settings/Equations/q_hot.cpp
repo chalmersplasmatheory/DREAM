@@ -43,7 +43,7 @@ void SimulationGenerator::ConstructEquation_q_hot(
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
     if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         // With collfreq_mode FULL, n_hot is defined as density above some threshold.
-        pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+        pThreshold = (real_t)_get_f_hot_real(s, "pThreshold");
         
         std::ostringstream str;
         str <<std::fixed << std::setprecision(3) << pThreshold;
