@@ -504,7 +504,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 		}
 	}
 
-    //Adds ion source (for 1 ion species) term to all grid, 
+    // One species source iZ added to all grid
     bool hasVolumetricIonSource = false;
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         if (source_types[iZ] == OptionConstants::ION_SOURCE_PRESCRIBED_VOLUMETRIC) {
