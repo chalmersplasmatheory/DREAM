@@ -41,6 +41,20 @@ DISTRIBUTION_MODE_NUMERICAL = 1
 DISTRIBUTION_MODE_ANALYTICAL = 2
 DISTRIBUTION_MODE_PRESCRIBED = 3
 
+# Quasilinear diffusion modes
+QL_DIFFUSION_MODE_NEGLECT = 1
+QL_DIFFUSION_MODE_INCLUDE = 2
+
+# Wave spectrum types
+WAVE_SPECTRUM_UNIFORM = 1
+WAVE_SPECTRUM_GAUSSIAN = 2
+WAVE_SPECTRUM_CUSTOM = 3
+
+# Resonance harmonic modes
+QL_HARMONIC_N_MINUS_1 = 1
+QL_HARMONIC_N_PLUS_1 = 2
+QL_HARMONIC_BOTH = 3
+
 class DistributionFunction(UnknownQuantity):
     
 
@@ -66,6 +80,7 @@ class DistributionFunction(UnknownQuantity):
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.timevaryingbmode = TIME_VARYING_B_MODE_NEGLECT
+        self.quasilinearmode = QL_DIFFUSION_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
         self.fullIonJacobian = True
 
@@ -420,6 +435,28 @@ class DistributionFunction(UnknownQuantity):
             data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
             data['timevaryingbmode'] = self.timevaryingbmode
+            data['quasilinearmode'] = self.quasilinearmode
+            
+            # Add quasilinear diffusion parameters if enabled
+            if self.quasilinearmode == QL_DIFFUSION_MODE_INCLUDE:
+                data['quasilinear'] = {
+                    'use_precomputed_matrix': getattr(self, 'ql_use_precomputed_matrix', 0),
+                    'spectrum_type': getattr(self, 'wave_spectrum_type', WAVE_SPECTRUM_UNIFORM),
+                    'num_k': getattr(self, 'ql_num_k', 100),
+                    'num_ktheta': getattr(self, 'ql_num_ktheta', 20),
+                    'k_min': getattr(self, 'ql_k_min', 35.0),
+                    'k_max': getattr(self, 'ql_k_max', 45.0),
+                    'ktheta_min': getattr(self, 'ql_ktheta_min', 0.1),
+                    'ktheta_max': getattr(self, 'ql_ktheta_max', 0.3),
+                    'amplitude': getattr(self, 'ql_amplitude', 1e-10),
+                    'harmonic_mode': getattr(self, 'ql_harmonic_mode', QL_HARMONIC_N_MINUS_1),
+                    'use_simple_dispersion': getattr(self, 'ql_use_simple_dispersion', 1)
+                }
+                
+                # Only save precomputed_file if actually using pre-computed matrix
+                if getattr(self, 'ql_use_precomputed_matrix', 0) == 1:
+                    data['quasilinear']['precomputed_file'] = getattr(self, 'ql_precomputed_file', '')
+            
             data['transport'] = self.transport.todict()
             data['fullIonJacobian'] = self.fullIonJacobian
 
@@ -550,5 +587,106 @@ class DistributionFunction(UnknownQuantity):
         if (self.T0.ndim != 1) or (self.rT0.ndim != 1) or (self.T0.size != self.rT0.size):
             raise EquationException("{}: Invalid number of elements of temperature profile: {}. Corresponding radial grid has {} elements."
                 .format(self.name, self.T0.size, self.rT0.size))
+
+
+    def setQuasilinearDiffusion(self, enabled=True, 
+                               spectrum_type='uniform',
+                               num_k=100, num_ktheta=20,
+                               k_min=None, k_max=None,
+                               ktheta_min=None, ktheta_max=None,
+                               amplitude=1e-10,
+                               harmonic_mode='n_minus_1',
+                               use_simple_dispersion=False,
+                               # Pre-computed matrix mode
+                               use_precomputed_matrix=False,
+                               precomputed_file='',
+                               # QUADRE-style convenience parameters
+                               quadre_params=None):
+        """
+        Enable/disable quasilinear diffusion from external waves.
+        
+        Parameters:
+            enabled:         If True, enables quasilinear diffusion
+            spectrum_type:   Type of wave spectrum ('uniform', 'gaussian', or 'custom')
+            num_k:           Number of wavenumber grid points
+            num_ktheta:      Number of angle grid points
+            k_min:           Minimum wavenumber (m^-1)
+            k_max:           Maximum wavenumber (m^-1)
+            ktheta_min:      Minimum angle (rad)
+            ktheta_max:      Maximum angle (rad)
+            amplitude:       Wave amplitude (normalized to n_e m_e c^2)
+            harmonic_mode:   Resonance harmonic mode ('n_minus_1', 'n_plus_1', or 'both')
+            use_simple_dispersion: If True, use simplified whistler dispersion relation
+                                   (ω = k|k_∥| * w) instead of full PDRF calculation.
+                                   Much faster but less accurate. Useful for debugging.
+            use_precomputed_matrix: If True, load pre-computed diffusion matrix from HDF5 file
+            precomputed_file: Path to HDF5 file containing pre-computed matrix
+            quadre_params:   Dictionary with QUADRE-style parameters for convenience:
+                             {'k_main': 54.58, 'ktheta_main': 2.42, 
+                              'k_range': [50.61, 58.55], 'ktheta_range': [2.35, 2.49]}
+        
+        Example (using QUADRE parameters):
+            ds.eqsys.f_hot.setQuasilinearDiffusion(
+                enabled=True,
+                quadre_params={
+                    'k_main': 54.58,
+                    'ktheta_main': 2.42,
+                    'k_range': [50.61, 58.55],
+                    'ktheta_range': [2.35, 2.49]
+                },
+                num_k=8,
+                num_ktheta=20,
+                amplitude=1e-10,
+                harmonic_mode='both'
+            )
+        """
+        if not enabled:
+            self.quasilinearmode = QL_DIFFUSION_MODE_NEGLECT
+            return
+        
+        self.quasilinearmode = QL_DIFFUSION_MODE_INCLUDE
+        
+        # Set pre-computed matrix mode
+        self.ql_use_precomputed_matrix = 1 if use_precomputed_matrix else 0
+        self.ql_precomputed_file = precomputed_file
+        
+        # Handle QUADRE-style parameters
+        if quadre_params is not None:
+            if 'k_range' in quadre_params:
+                k_min = quadre_params['k_range'][0]
+                k_max = quadre_params['k_range'][1]
+            if 'ktheta_range' in quadre_params:
+                ktheta_min = quadre_params['ktheta_range'][0]
+                ktheta_max = quadre_params['ktheta_range'][1]
+        
+        # Set spectrum type
+        if spectrum_type == 'uniform':
+            self.wave_spectrum_type = WAVE_SPECTRUM_UNIFORM
+        elif spectrum_type == 'gaussian':
+            self.wave_spectrum_type = WAVE_SPECTRUM_GAUSSIAN
+        elif spectrum_type == 'custom':
+            self.wave_spectrum_type = WAVE_SPECTRUM_CUSTOM
+        else:
+            raise EquationException(f"Unknown spectrum type: {spectrum_type}")
+        
+        # Store parameters
+        self.ql_num_k = num_k
+        self.ql_num_ktheta = num_ktheta
+        self.ql_k_min = k_min if k_min is not None else 35.0
+        self.ql_k_max = k_max if k_max is not None else 45.0
+        self.ql_ktheta_min = ktheta_min if ktheta_min is not None else 0.1
+        self.ql_ktheta_max = ktheta_max if ktheta_max is not None else 0.3
+        self.ql_amplitude = amplitude
+        self.ql_use_simple_dispersion = 1 if use_simple_dispersion else 0  # Convert bool to int for HDF5 serialization
+        
+        # Set harmonic mode
+        if harmonic_mode == 'n_minus_1':
+            self.ql_harmonic_mode = QL_HARMONIC_N_MINUS_1
+        elif harmonic_mode == 'n_plus_1':
+            self.ql_harmonic_mode = QL_HARMONIC_N_PLUS_1
+        elif harmonic_mode == 'both':
+            self.ql_harmonic_mode = QL_HARMONIC_BOTH
+        else:
+            raise EquationException(f"Unknown harmonic mode: {harmonic_mode}")
 
 

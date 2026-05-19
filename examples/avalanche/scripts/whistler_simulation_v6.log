@@ -1,0 +1,107 @@
+nohup: ignoring input
+
+ It's time to...
+
+ * * ________   _____  ______ ___* *  ___  ___       
+  * \\   __   \/ __  \/  ____//   \ //   \/   \      
+    //  / //  / /_// /  /__ // /\  \/  / / /  /   *  
+   //  / //  /      /   __/// /_/  /  / / /  /   * * 
+ _//  /_//  /  /\  \   /__//  __  /  / / /  /     *  
+ \\________/__/ \\__\_____//_///_/__//_//__/     *   
+               * *          * *      *         *     
+      * *       *       * *      * *             *   
+     * * *                                 ...baby...
+
+commit e515d2490e1352f52cc1069371c23781a3ea812c
+WaveSpectrum: Set uniform spectrum with 8 x 20 = 160 modes
+  k range: [50.61, 58.55]
+  theta_k range: [2.35, 2.49]
+WhistlerDispersion initialized (Python C API + PDRF):
+  B0 = 1 T
+  n_e = 1e+19 m^-3
+  ω_ce = 1.75882e+11 rad/s (27.9924 GHz)
+  ω_pe = 1.78398e+11 rad/s (28.393 GHz)
+  ω_ci = 9.57961e+07 rad/s (15.2464 MHz)
+✓ Python PDRF backend initialized successfully
+LIST OF NON-TRIVIAL UNKNOWNS
+ID   NAME          # ELEMENTS   DESCRIPTION
+  0  f_hot               2800   (3D kinetic equation)
+  1  f_re                5600   (3D kinetic equation)
+  2  n_i                    2   (Fully prescribed)
+  3  n_hot                  1   (integral(f_hot, p>7.000*pThermal))
+  4  n_cold                 1   (n_cold = n_free - n_hot - n_re)
+  5  n_re                   1   (dn_re/dt = [flux from f_hot] + external avalanche)
+  6  j_ohm                  1   (j_ohm = integral(v_par*f_hot) - j_hot + E*(sigma-sigma_num) [corrected])
+  7  j_hot                  1   (integral(v_par*f_hot, p>7.000*pThermal))
+  8  j_re                   1   (Moment of f_re)
+  9  j_tot                  1   (j_tot = j_ohm + j_hot + j_re)
+ 11  W_cold                 1   (W_cold = (3/2)*n_cold*T_cold)
+ 13  psi_p                  1   (Poloidal flux Ampere's law)
+ 14  psi_edge               1   (psi_edge = psi_wall)
+ 16  I_p                    1   (Ip = integral(j_tot))
+ 17  n_tot                  1   (n_tot = sum_i Z_i n_i)
+ 18  S_particle             1   (integral(f_hot) = n_cold + n_hot)
+
+LIST OF TRIVIAL UNKNOWNS
+ID   NAME           DESCRIPTION
+ 10  T_cold         (Prescribed)
+ 12  E_field        (Prescribed)
+ 15  psi_wall       (zero)
+
+Beginning time advance...
+[1;32m1[0m... [1;32m2[0m... ======================================================================
+DREAM Quasilinear Diffusion Test - 476 MHz Whistler Wave
+======================================================================
+
+Plasma Parameters:
+  B0 = 1.4 T
+  n_e = 5.00e+18 m^-3
+  T = 2165 eV
+  E = 0.04 V/m (E/Ec = 0.045)
+
+Quasilinear Diffusion Configuration:
+  Wave frequency: 476 MHz
+  k_parallel: -41 m^-1
+  k range: [50.61, 58.55] m^-1
+  θ_k range: [2.35, 2.49] rad
+  ✓ Quasilinear diffusion enabled
+  - Spectrum: uniform grid
+  - Modes: 8 × 20 = 160
+  - Harmonics: n ∈ {-2, -1, 0, +1, +2}
+*WARNING* RadialGrid: Prescibing custom radial grid overrides 'nr', 'a' and 'r0'.
+
+Time Stepping:
+  t_max = 0.1 s
+  Nt = 1000
+  dt = 1.00e-04 s
+
+======================================================================
+✓ Settings saved successfully!
+======================================================================
+
+Settings file: quasilinear_whistler_settings.h5
+Output file: ../outputs/quasilinear_whistler_output.h5
+
+To run manually:
+  /data/zhzhou/DREAM/build/iface/dreami quasilinear_whistler_settings.h5
+======================================================================
+
+Running simulation...
+[PDRF] Attempting to import dream_pdrf...
+[PDRF] ✓ Successfully imported dream_pdrf
+Pre-calculating dispersion relation for 160 wave modes...
+✓ Dispersion relation cached successfully!
+Quasilinear diffusion enabled with 160 wave modes.
+  Harmonic modes: n = -2, -1, 0, 1, 2
+[1;33m[WARNING][0m During initialization: The momentum grid resolution is so low that the initial Maxwellian cannot be accurately represented on the grid. The number of p grid points should be increased (or perhaps pMax could be decreased?).
+
+Traceback (most recent call last):
+  File "/data/zhzhou/DREAM/examples/avalanche/scripts/generate_with_fre_whistler.py", line 214, in <module>
+    print("\nRunning simulation...")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/zhzhou/DREAM/py/DREAM/runiface.py", line 44, in runiface
+    return task.getResult()
+           ^^^^^^^^^^^^^^^^
+  File "/data/zhzhou/DREAM/py/DREAM/DREAMTask.py", line 108, in getResult
+    raise DREAMException("DREAMi exited with a non-zero exit code: {}".format(self.p.returncode))
+DREAM.DREAMException.DREAMException: DREAMi exited with a non-zero exit code: -15

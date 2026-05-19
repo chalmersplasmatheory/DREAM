@@ -7,6 +7,7 @@
 #include "DREAM/Constants.hpp"
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <cmath>
 #include <algorithm>
 

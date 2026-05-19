@@ -1,6 +1,7 @@
 #ifndef _DREAM_SETTINGS_WAVE_SPECTRUM_HPP
 #define _DREAM_SETTINGS_WAVE_SPECTRUM_HPP
 
+#include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include <vector>
 #include <string>

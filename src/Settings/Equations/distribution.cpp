@@ -15,6 +15,12 @@
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
+#include "DREAM/Equations/Kinetic/WhistlerDispersion.hpp"
+#include "DREAM/Equations/Kinetic/ResonanceSolver.hpp"
+#include "DREAM/Equations/Kinetic/WaveParticleCoupling.hpp"
+#include "DREAM/Equations/Kinetic/QuasilinearDiffusionTerm.hpp"
+#include "DREAM/Equations/Kinetic/QuasilinearDiffusionBuilder.hpp"
+#include "DREAM/Settings/WaveSpectrum.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -54,6 +60,21 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 	s->DefineSetting(mod + "/timevaryingbmode", "Enables/disabled the adiabatic compression force caused by a time varying magnetic field strength", (int_t)OptionConstants::EQTERM_TIMEVARYINGB_MODE_NEGLECT);
+
+    // Quasilinear diffusion from external waves
+    s->DefineSetting(mod + "/quasilinearmode", "Enables/disables quasilinear diffusion from external waves", (int_t)OptionConstants::QL_DIFFUSION_MODE_NEGLECT);
+    s->DefineSetting(mod + "/quasilinear/use_precomputed_matrix", "Use pre-computed matrix from HDF5 file (0=no, 1=yes)", (int_t)0);
+    s->DefineSetting(mod + "/quasilinear/precomputed_file", "Path to pre-computed HDF5 matrix file", std::string(""));
+    s->DefineSetting(mod + "/quasilinear/amplitude", "Wave amplitude (normalized to n_e m_e c^2)", (real_t)1e-10);
+    s->DefineSetting(mod + "/quasilinear/spectrum_type", "Type of wave spectrum", (int_t)OptionConstants::WAVE_SPECTRUM_UNIFORM);
+    s->DefineSetting(mod + "/quasilinear/num_k", "Number of wavenumber grid points", (int_t)100);
+    s->DefineSetting(mod + "/quasilinear/num_ktheta", "Number of angle grid points", (int_t)20);
+    s->DefineSetting(mod + "/quasilinear/k_min", "Minimum wavenumber (m^-1)", (real_t)35.0);
+    s->DefineSetting(mod + "/quasilinear/k_max", "Maximum wavenumber (m^-1)", (real_t)45.0);
+    s->DefineSetting(mod + "/quasilinear/ktheta_min", "Minimum angle (rad)", (real_t)0.1);
+    s->DefineSetting(mod + "/quasilinear/ktheta_max", "Maximum angle (rad)", (real_t)0.3);
+    s->DefineSetting(mod + "/quasilinear/harmonic_mode", "Resonance harmonic mode", (int_t)OptionConstants::QL_HARMONIC_N_MINUS_1);
+    s->DefineSetting(mod + "/quasilinear/use_simple_dispersion", "Use simplified whistler dispersion (ω = k|k_∥| * w) instead of full PDRF (0=no, 1=yes)", (int_t)1);
 
     s->DefineSetting(mod + "/mode", "Which model to use for distribution (analytical function or numerical resolved on kinetic grid)", (int_t) OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
 
@@ -97,7 +118,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
-	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
+	TimeVaryingBTerm **timevaryingb, QuasilinearDiffusionTerm **quasilinear, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -173,6 +194,10 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 		*synchrotron = new SynchrotronTerm(grid, gridtype);
         eqn->AddTerm(*synchrotron);
 	}
+
+    // Quasilinear diffusion from external waves
+    if ((*quasilinear = ConstructQuasilinearDiffusionTerm(s, mod, grid)) != nullptr)
+        eqn->AddTerm(*quasilinear);
 
     // Add transport term
     bool hasTransport = ConstructTransportTerm(
