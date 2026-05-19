@@ -648,6 +648,9 @@ class Ions(UnknownQuantity):
         if 'ion_source' in data:
             ion_source_t = data['ion_source']['t']
             ion_source_x = data['ion_source']['x']
+            
+            if len(ion_source_x.shape) == 3:
+                ion_source_r = data['ion_source'].get('r', None)
 
         if 'ion_source_volumetric' in data:
             ion_source_t = data['ion_source_volumetric']['t']
@@ -747,8 +750,6 @@ class Ions(UnknownQuantity):
             elif ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
                 
                 # Extract the full 3D source data for this ion species
-                if ion_source_r is None:
-                    raise EquationException("Volumetric ion source requires a radial grid 'r'.")
                 if len(ion_source_x.shape) == 3:
                     dNdt_data = ion_source_x[srcidx:srcidx+(Z[i]+1), :, :]
                     srcidx += Z[i] + 1  # Move to next ion's position
