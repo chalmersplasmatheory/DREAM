@@ -745,7 +745,6 @@ class Ions(UnknownQuantity):
                 self.addIonSource(names[i], dNdt=ion_source_x[srcidx,:], t=ion_source_t, source_type=ION_SOURCE_PRESCRIBED)
                 srcidx += Z[i] + 1  # Move to next ion's position
             elif ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
-                #ion_source_r = data['ion_source'].get('r', None)
                 
                 # Extract the full 3D source data for this ion species
                 if len(ion_source_x.shape) == 3:
