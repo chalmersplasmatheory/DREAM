@@ -1,12 +1,10 @@
 # Handler for "other" quantities, such as collision frequencies,
 # bounce averages etc.
 
-import numpy as np
 from .. DREAMException import DREAMException
 
 
 class OtherQuantities:
-    
 
     # Here, we keep a list of the possible settings found in DREAM.
     # This allows to check the input the user gives, and emit warnings
@@ -34,15 +32,24 @@ class OtherQuantities:
         'fluid/Tcold_binding_energy',
 #        'fluid/Tcold_radiationFromNuS',
         'fluid/Tcold_ion_coll',
+        'fluid/Ti_NBI',
+        'fluid/Ti_Qij',
+        'fluid/Ti_Qie',
+        'fluid/tIoniz',
         'fluid/W_hot',
         'fluid/W_re',
-        'fluid/reioniz_vsigma',
+        'fluid/j_bs_n_cold',
+        'fluid/j_bs_T_cold',
+        'fluid/j_bs_N_i',
+        'fluid/j_bs_W_i',
+        'bootstrap',
+        'fluid/reioniz_rate', 'fluid/reioniz_vsigma',
         'fluid/Zeff',
         'energy',
         'hottail/Ar', 'hottail/Ap1', 'hottail/Ap2',
         'hottail/Drr', 'hottail/Dpp', 'hottail/Dpx', 'hottail/Dxp', 'hottail/Dxx',
         'hottail/timevaryingb_Ap2',
-        'hottail/kinioniz_vsigma',
+        'hottail/kinioniz_rate', 'hottail/kinioniz_vsigma',
         'hottail/lnLambda_ee_f1', 'hottail/lnLambda_ee_f2',
         'hottail/lnLambda_ei_f1', 'hottail/lnLambda_ei_f2',
         'hottail/nu_D_f1', 'hottail/nu_D_f2',
@@ -56,7 +63,7 @@ class OtherQuantities:
         'runaway/Ar', 'runaway/Ap1', 'runaway/Ap2',
         'runaway/Drr', 'runaway/Dpp', 'runaway/Dpx', 'runaway/Dxp', 'runaway/Dxx',
         'runaway/timevaryingb_Ap2',
-        'runaway/kinioniz_vsigma',
+        'runaway/kinioniz_rate', 'runaway/kinioniz_vsigma',
         'runaway/lnLambda_ee_f1', 'runaway/lnLambda_ee_f2',
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
@@ -76,6 +83,7 @@ class OtherQuantities:
         'scalar/radialloss_f_hot',
         'scalar/energyloss_f_re',
         'scalar/energyloss_f_hot',
+        'scalar/tIoniz',
         'scalar/Ypdot',
         'ripple',
         'transport'

@@ -262,6 +262,17 @@ const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
     return niReturn;
 }
 
+/**
+ * Calculates the total mass density of the ions.
+ */
+const real_t IonHandler::GetTotalIonMassDensity(const len_t ir) const {
+	real_t rho = 0;
+	for (len_t iZ = 0; iZ < this->nZ; iZ++)
+		for (len_t Z0 = 0; Z0 <= this->Zs[iZ]; Z0++)
+			rho += this->GetIonSpeciesMass(iZ) * this->GetIonDensity(ir, iZ, Z0);
+	
+	return rho;
+}
 
 /**
  * Calculates the density of tritium in the plasma.
@@ -280,6 +291,21 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
     return nT; 
 }
 
+/**
+ * Determines the 'main ion species' assuming it is the one with minimum charge.
+ */
+const int_t IonHandler::GetMainSpeciesIndex() const {
+	int_t minIndex = -1;
+	len_t minZ = std::numeric_limits<len_t>::max();
+    for (int_t i = 0; i < (int_t)this->GetNZ(); i++) {
+        len_t currentZ = this->GetZ(i); 
+        if (currentZ < minZ) {        
+            minZ = currentZ;          
+            minIndex = i;             
+        }
+    }
+	return minIndex;
+}
 
 /**
  * Calculates the quantity <n Z0^2>_i for the given ion species,

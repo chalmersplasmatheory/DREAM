@@ -10,6 +10,7 @@
  * 
  * 
  */
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 
 
@@ -22,6 +23,16 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda)
 {
+	// If we need to do bounce averages we should make sure that
+	// the magnetic field has exactly one min/max on each field line.
+    if (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL) {
+		if (rGrid->HasMagneticFieldMultipleOptima())
+			throw DREAMException(
+				"Cannot use the 'FULL' Eceff model in magnetic fields "
+				"with multiple minima/maxima along field lines."
+			);
+	}
+
     nr = rGrid->GetNr();
     this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
 

@@ -12,11 +12,11 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
-
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
@@ -36,6 +36,13 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
+#include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIElectronTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIIonTerm.hpp"
+#include "DREAM/NBIHandler.hpp"
+#include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
+
+
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -50,6 +57,12 @@ namespace DREAM {
             DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
+            DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
+            DREAM::NBIElectronTerm *T_cold_NBI = nullptr;
+            // Terms in the ion heat equation:
+            std::vector<NBIIonTerm*> T_i_NBI;
+            std::vector<std::vector<MaxwellianCollisionalEnergyTransferTerm*>> T_i_Qij;
+            std::vector<MaxwellianCollisionalEnergyTransferTerm*> T_i_Qie;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -94,7 +107,7 @@ namespace DREAM {
 			// List of kinetic ionization rates for each ion species
 			std::vector<IonKineticIonizationTerm*> f_hot_kin_rates;
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
-            // List of approximated RE impact ionization rates for teach ion species
+            // List of approximated RE impact ionization rates for each ion species
             std::vector<IonFluidRunawayIonizationTerm*> n_re_kin_rates;
         };
 
@@ -116,7 +129,7 @@ namespace DREAM {
         len_t
             id_f_hot, id_f_re, id_ncold, id_ntot, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip=0, id_Ip, id_psi_edge=0, id_psi_wall=0,
-            id_n_re_neg=0, id_Yp;
+            id_n_re_neg=0, id_Yp, id_n_i;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids
         real_t *kineticVectorHot = nullptr;
@@ -132,17 +145,18 @@ namespace DREAM {
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
         SPIHandler *SPI;
+        BootstrapCurrent *bootstrap;
 
     public:
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
-            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*,
+            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*, BootstrapCurrent*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );
         virtual ~OtherQuantityHandler();
-
+        
         void DefineQuantities();
         OtherQuantity *GetByName(const std::string&);
         len_t GetNRegistered() const { return this->registered.size(); }

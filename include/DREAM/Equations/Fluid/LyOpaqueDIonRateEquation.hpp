@@ -32,6 +32,11 @@ namespace DREAM {
 					Ion[Z0][i]         = 0;
 					PartialNIon[Z0][i] = 0;
 					PartialTIon[Z0][i] = 0;
+
+					posIonizTerm[Z0][i] = 0;
+					negIonizTerm[Z0][i] = 0;
+					posRecTerm[Z0][i] = 0;
+					negRecTerm[Z0][i] = 0;
 				}
 			}
 			// if not covered by the kinetic ionization model, set fluid ionization rates

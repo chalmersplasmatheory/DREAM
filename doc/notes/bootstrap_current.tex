@@ -1,0 +1,123 @@
+\documentclass{notes}
+\usepackage{physics}
+
+\usepackage[
+    backend=biber,
+    sorting=none,
+    style=numeric-comp,
+    citestyle=numeric-comp
+]{biblatex}
+\addbibresource{ref.bib}
+
+\title{Bootstrap current}
+\author{Peter Halldestam}
+
+\newcommand*\diff{\mathop{}\!\mathrm{d}}
+
+\newcommand{\pe}{p_{\rm e}}
+\newcommand{\pii}{p_{\rm i}}
+\newcommand{\te}{T_{\rm e}}
+\renewcommand{\ne}{n_{\rm e}}
+\newcommand{\tii}{T_{\rm i}}
+\newcommand{\nii}{n_{\rm i}}
+\newcommand{\wii}{w_{\rm i}}
+\newcommand{\isum}{\sum_{\rm ions}}
+
+\newcommand{\johm}{j_\Omega}
+
+\newcommand{\nui}{\nu_{\rm i}^*}
+\newcommand{\nue}{\nu_{\rm e}^*}
+\newcommand{\Zeff}{Z_{\rm eff}}
+\newcommand{\ft}{f_{\rm t}}
+\renewcommand{\L}[1]{\mathcal{L}_{#1}}
+
+\newcommand{\cond}{\sigma_\parallel}
+\newcommand{\jpara}{j_\parallel}
+\newcommand{\Epara}{E_\parallel}
+\newcommand{\jbs}{j_{\rm bs}}
+\newcommand{\fsa}[1]{\left\langle #1 \right\rangle}
+
+\begin{document}
+    \maketitle
+
+    \noindent
+    The set of analytical formulae describing the non-inductive bootstrap current $\jbs$, presented together with a neoclassical correction to the Spitzer conductiviy in the Redl-Sauter paper \cite{Redl2021}, is implemented in DREAM for studying SPI in disrupting H-mode plasmas.
+    Both bootstrap current is given in the following form
+    \begin{align}
+        \label{eq:redl-sauter}
+        \fsa{\jbs B} =
+            -G(\psi)\left[\L{31}p\pdv{\ln{n}}{\psi} + (\L{31}+\L{32})\pe\pdv{\ln{\te}}{\psi} + \L{31}(1+\alpha)\isum\pii\pdv{\ln{\tii}}{\psi}\right],
+    \end{align}
+    where $\fsa{\vdot}$ denotes the flux surface average as function of the poloidal magnetix flux $\psi$, $B$ is the magnetic field strength and $G(\psi)=RB_\phi$.
+    The dynamic quantities that can be evolved in \DREAM\ that appears are the electron and ion density $\ne$ and $\nii$ (summed over all charge states per ion species), their temperatures $\te$ and $\tii$, as well as the total density and pressure, given by
+    \begin{align}
+        \label{eq:total-density-pressure}
+        n=\ne+\isum\nii,\qquad p=\pe+\isum\pii=\ne\te+\frac{2}{3}\isum\wii.
+    \end{align}
+    Note that since the ion temperatures are evolved via their thermal energy density in \DREAM\, we will make use the relation of the ideal gas $\wii=3\pii/2=3\nii\tii/2$.
+    We will therefore set up discretisation schemes for differentiating the four quantities $\ne$, $\te$, $\nii$ and $\wii$.
+    Furthermore, the coefficients $\L{31}$, $\L{32}$ and $\alpha$ in Eq.~\eqref{eq:redl-sauter} are defined in Redl \textit{et al.} and are functions of the fraction of trapped particles $\ft(\psi)$, the effective charge number $\Zeff(\psi)$ and the electron collisionality $\nue(\psi)$ (for $\alpha$ it is rather the ion collisionality $\nui(\psi)$ of the main ion species).
+    % These plasma parameters, save $\ft$, are all dependent on the four evolving quantities, which must be taken into account when
+
+    Similar to the other current densities in \DREAM\, we assume the bootstrap current to scale with the magnetic field strength $\jbs\sim B(\theta)$ such that $\jbs/B$ is constant on flux surfaces.
+    Therefore, we have
+    \begin{align}
+        \fsa{\jbs B} = \fsa{\frac{\jbs}{B}B^2} = \frac{\jbs}{B}\fsa{B^2}.
+    \end{align}
+    With the coordinate transform $\partial/\partial{\psi}=1/\psi'\partial/\partial{r}$, where $\psi'$ is the radial derivative of the (reference) poloidal flux which is held constant in time witin this framework, the formula in Eq.~\eqref{eq:redl-sauter} is turned into
+    \begin{align}
+        \frac{\jbs}{B}
+            &=-\frac{G}{\fsa{B^2}\psi'}\left[\L{31}p\pdv{\ln{n}}{r} + (\L{31}+\L{32})\pe\pdv{\ln{\te}}{r} + \L{31}(1+\alpha)\isum\pii\pdv{\ln{\tii}}{r}\right].
+    \end{align}
+    Seperating into terms proportional to derivatives of the four quantities $\ne$, $\te$, $\nii$ and $\wii$ leads to
+    \begin{align}
+        \label{eq:implemented1}
+        \frac{\jbs}{B} = -\frac{G}{\fsa{B^2}\psi'}\bigg\{
+            \L{31}\frac{p}{n}\pdv{\ne}{r}
+            &+\L{31}\isum\left[\frac{p}{n}-(1+\alpha)\frac{2\wii}{3\nii}\right]\pdv{\nii}{r}\notag\\
+            &+(\L{31}+\L{32})\ne\pdv{\te}{r}
+            +\L{31}(1+\alpha)\frac{2}{3}\isum\pdv{\wii}{r}\bigg\}.
+    \end{align}
+    In simulations where the ion temperature is not accounted for, we assume $\tii=\te$ and Eq.~\eqref{eq:implemented1} is expressed as
+    \begin{align}
+        \label{eq:implemented2}
+        \frac{\jbs}{B} = -\frac{G}{\fsa{B^2}\psi'}\bigg\{
+            &\L{31}\frac{p}{n}\pdv{\ne}{r}
+            +\L{31}\frac{p}{n}\isum\pdv{\nii}{r}\notag\\
+            &+\left[(\L{31}+\L{32})\ne+\L{31}(1+\alpha)\isum\nii\right]\pdv{\te}{r}\bigg\}.
+    \end{align}
+    Both these equations in Eqs.~\eqref{eq:implemented1} and \eqref{eq:implemented2} have their radial derivatives discretised in the same way.
+    For any general quantity $X$, the central difference approximation is used as
+    \begin{align}
+        \label{eq:central-difference}
+        \pdv{X}{r}\bigg|_{r_{k}}
+            \approx\frac{X_{k+1}-X_{k-1}}{r_{k+1}-r_{k-1}}
+            =\frac{X_{k+1}-X_{k-1}}{\Delta r_{k+1/2}+\Delta r_{k-1/2}}
+    \end{align}
+    for any radial grid point indexed $k=1,\dots N_r$ (note that $r_1\neq0$ as this is the \textit{cell grid} and not the \textit{flux grid}).
+    At the inner boundary ($k=1$) we use that $X$ is a flux surface function with the symmetry property $X(r)=X(-r)$, and for the outer boundary we switch from the central difference to a backward Euler scheme.
+    The boundary conditions is thus set to
+    \begin{align}
+        \pdv{X}{r}\bigg|_{r_1}
+            \approx\frac{X_{2}-X_1}{2\Delta r_{3/2}},\qquad
+        \pdv{X}{r}\bigg|_{r_{N_r}}
+            \approx\frac{X_{N_r}-X_{N_r-1}}{\Delta r_{N_r-1}}
+    \end{align}
+
+    \paragraph{Note on the safety factor:}
+    The two collisionalities, $\nue$ and $\nui$, are both proportional to the safety factor $q$ in their definitions Eq.~(18b) and (18c) in the original Sauter paper \cite{Sauter1999}.
+    In \DREAM, one may calculate safety factor using the already implemented method \texttt{RadialGrid::SafetyFactorNormalized}, which uses a formula (see doc/notes/theory.tex under the ``Safety factor'' section) that explicitly relates $q$ to be inversily proportional to the total current $I(r)\sim\pdv*{\psi}{r}$ enclosed by a flux surface labeled $r$.
+    In this implementation, we decide to use the reference poloidal flux when calculating the safety factor, such that $q$ is not evolved in time.
+	Following the notes in \texttt{theory.tex} on the safety factor, it (multiplied with $R_0$) is expressed as
+	\begin{equation}
+		\label{eq:safety-factor}
+		q(r)R_0
+		=R_0\frac{\fsa{\grad{\varphi}\vdot\vb{B}}}{\fsa{\grad{\theta}\vdot\vb{B}}}
+		=\frac{1}{2\pi}\frac{V'}{R_0}\frac{G}{R_0}\fsa{\frac{R_0^2}{R^2}}\bigg/\frac{\psi'}{R_0},
+	\end{equation}
+	where in the last equality we express it using quantities available in the DREAM kernel.
+
+    \addcontentsline{toc}{section}{References}
+    \printbibliography
+
+\end{document}

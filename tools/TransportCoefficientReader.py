@@ -118,7 +118,8 @@ class TransportCoefficientReader:
             ixi = np.argmax(self.xi)
          # 6.2/2 correction factor due to wrong major radius import
          # (see email from O. Vallhagen 2024-02-28)
-        dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        # dBB = np.sqrt(self.Drr[:,:,ixi,ip]*(6.297014103511958/2)/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))  ### <---------
+        dBB = np.sqrt(self.Drr[:,:,ixi,ip]/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))
         print(f'R0 = {dsObj.radialgrid.R0}')
         print(f'dB/B = {np.amax(dBB)}')
         print(f'Drr  = {np.amax(self.Drr[:,:,ixi,ip])}')
@@ -239,8 +240,10 @@ class TransportCoefficientReader:
         else:
             self.t = np.array([0,t_duration])
         self.r = np.array([0,a+1e-6])
-        self.xi = np.array([-1,1])
-        self.p = np.linspace(1e-6,100)
+        #self.xi = np.array([-1,1])
+        self.xi = np.array([1])
+        #self.p = np.linspace(1e-6,100)
+        self.p = np.linspace(1e-6,1000,10000)
         
         # Assume no advection
         self.Ar = np.zeros((len(self.t), len(self.r), len(self.xi), len(self.p)))
@@ -250,14 +253,16 @@ class TransportCoefficientReader:
         vrepr = np.sqrt(2*e*Trepr/m_e) # thermal velocity corresponding to the representative temperature in m/s
         
         # Estimate the diffusion coefficient at the representative temperature
+        # a=1.95821385
         Drr_vrepr = t_duration_over_t_diffusion * a**2/(t_duration * x1**2)
+        
          
         # Set the p-dependent diffusion coefficient
         p_dep = self.p/(1+self.p**2)
         p_dep.reshape(1,1,1,-1)
         self.Drr = Drr_vrepr / vrepr * c * p_dep * np.ones((len(self.t), len(self.r), len(self.xi), len(self.p)))
         
-        # Set islands and time before onset, if any, and append zeros to turn of the transport after the desired duration
+        # Set islands and time before onset, if any, and append zeros to turn off the transport after the desired duration
         self.setRIsland(r_island)
         self.setTBeforeOnset(t_before_onset, t_ramp)
         self.appendRemnantTransport(D0_remnant*p_dep, t_ramp)

@@ -334,12 +334,21 @@ should be present in the file:
    does not currently support time evolving magnetic fields and will not be able
    to read such files at all.
 
-.. _radgrid-assumptions:
+.. _radgrid-restrictions:
 
-Assumptions for toroidal magnetic fields
-----------------------------------------
-- The magnetic field strength has exactly one maximum and one minimum, per flux
-  surface (no negative triangularity)
+Restrictions on the magnetic geometry
+-------------------------------------
+To evaluate bounce averages, DREAM assumes that every magnetic field line
+contains exactly one minimum and one maximum. If the given magnetic geometry
+contains more extrema, DREAM will exit with an error. This means that magnetic
+fields with strong shaping (e.g. strong elongation, triangularity, or negative
+triangularity) cannot be used in kinetic simulations.
+
+Simulations which do not involve kinetic quantities may however be done also for
+magnetic fields with multiple minima/maxima. Note however that the ``FULL``
+model for the :ref:`effective critical electric field<ds-eqsys-n_re-Eceff>` is
+not compatible with magnetic fields with multiple minima/maxima even in fluid
+mode.
 
 Magnetic ripple
 ---------------

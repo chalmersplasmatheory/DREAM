@@ -11,12 +11,18 @@ namespace DREAM {
     class HyperresistiveDiffusionTerm
         : public FVM::DiffusionTerm {
     private:
-        FVM::Interpolator1D *Lambda; 
+        FVM::Interpolator1D *Lambda=nullptr; 
+	
+	protected:
+		virtual const real_t *EvaluateLambda(const real_t t) { return this->Lambda->Eval(t); }
+
+		void BuildCoefficient(const real_t*, real_t**);
 
     public:
         HyperresistiveDiffusionTerm(FVM::Grid*, FVM::Interpolator1D*);
+		virtual ~HyperresistiveDiffusionTerm();
         
-        const real_t *GetLambda() const { return Lambda->GetBuffer(); }
+        virtual const real_t *GetLambda() const { return Lambda->GetBuffer(); }
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }

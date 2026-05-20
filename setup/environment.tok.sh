@@ -6,6 +6,9 @@
 #
 # 2024-03-25
 # - Updated modules. /Peter
+#
+# 2025-07-02
+# - Updated modules again. /Peter
 
 # Set PETSc path (can be overridden by settings these variables explicitly)
 if [ -z "$PETSC_DIR" ]; then
@@ -24,11 +27,11 @@ fi
 module purge
 
 # Load required modules
-module load gcc/13
-module load anaconda/3/2023.03 
-module load hdf5-serial/1.14.1 openmpi/4.1
-module load mkl/2023.1
-module load cmake git gsl/2.4
+module load gcc
+module load python-waterboa
+module load hdf5-serial/1.14.1 openmpi
+module load mkl/2025.1
+module load cmake git gsl
 
 alias dreamviz="python -i $DREAMPATH/py/cli/cli.py"
-
+alias dreami="$DREAMPATH/build/iface/dreami"

@@ -6,6 +6,7 @@ import numpy as np
 
 from .. DREAMException import DREAMException
 from . ToleranceSettings import ToleranceSettings
+from .. helpers import scal
 
 
 TYPE_CONSTANT = 1
@@ -74,11 +75,11 @@ class TimeStepper:
             return
 
         if dt < 0 or (dt == 0 and self.type != TYPE_IONIZATION):
-            raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
+            raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(dt))
         if self.nt is not None and dt > 0:
             raise DREAMException("TimeStepper: 'dt' may not be set alongside 'nt'.")
 
-        self.dt = float(dt)
+        self.dt = float(scal(dt))
 
 
     def setMinSaveTimestep(self, dt):
@@ -95,7 +96,7 @@ class TimeStepper:
             return
 
         if nt <= 0:
-            raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
+            raise DREAMException("TimeStepper: Invalid value assigned to 'nt': {}".format(nt))
         if self.dt is not None and self.dt > 0:
             raise DREAMException("TimeStepper: 'nt' may not be set alongside 'dt'.")
 
@@ -117,7 +118,7 @@ class TimeStepper:
         if reltol <= 0:
             raise DREAMException("TimeStepper: Invalid value assigned to 'reltol': {}".format(reltol))
 
-        self.tolerance.set(reltol=float(reltol))
+        self.tolerance.set(reltol=float(scal(reltol)))
 
 
     def setTerminationFunction(self, func):
@@ -139,7 +140,7 @@ class TimeStepper:
         if tmax <= 0:
             raise DREAMException("TimeStepper: Invalid value assigned to 'tmax': {}".format(tmax))
 
-        self.tmax = float(tmax)
+        self.tmax = float(scal(tmax))
 
 
     def setType(self, ttype, *args, **kwargs):
@@ -182,11 +183,8 @@ class TimeStepper:
             if type(v) == np.ndarray: return v[0]
             else: return v
 
-        self.type = data['type']
-        self.tmax = data['tmax']
-
-        if type(self.type) == np.ndarray: self.type = int(self.type.flatten()[0])
-        if type(self.tmax) == np.ndarray: self.tmax = float(self.tmax.flatten()[0])
+        self.type = int(scal(data['type']))
+        self.tmax = float(scal(data['tmax']))
 
         if 'automaticstep' in data: self.automaticstep = float(scal(data['automaticstep']))
         if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
@@ -200,7 +198,7 @@ class TimeStepper:
         if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
         if 'terminatefunc' in data: self.terminatefunc = data['terminatefunc']
-        if 'alpha' in data: self.alpha = float(data['alpha'])
+        if 'alpha' in data: self.alpha = float(scal(data['alpha']))
 
         self.verifySettings()
 
@@ -222,9 +220,9 @@ class TimeStepper:
 
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
-            data['nsavesteps'] = int(self.nSaveSteps)
+            data['nsavesteps'] = int(scal(self.nSaveSteps))
 
-            if self.terminatefunc != None:
+            if self.terminatefunc is not None:
                 data['terminatefunc'] = self.terminatefunc
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
@@ -238,7 +236,7 @@ class TimeStepper:
             data['minsavedt'] = self.minsavedt
             data['alpha'] = self.alpha
 
-            if self.terminatefunc != None:
+            if self.terminatefunc is not None:
                 data['terminatefunc'] = self.terminatefunc
 
         return data

@@ -63,7 +63,8 @@ enum ion_neutral_advection_mode {
 
 enum ion_source_type {
 	ION_SOURCE_NONE=1,
-	ION_SOURCE_PRESCRIBED=2
+	ION_SOURCE_PRESCRIBED=2,
+	ION_SOURCE_PRESCRIBED_VOLUMETRIC=3
 };
 
 // Interpolation method for ADAS rate coefficients
@@ -334,6 +335,16 @@ enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_KINETIC=3,                  // Kinetic Compton source
 };
 
+enum eqterm_transport_type {
+	EQTERM_TRANSPORT_NONE=1,						// No transport
+	EQTERM_TRANSPORT_PRESCRIBED=2,					// Prescribed advection-diffusion coefficient(s)
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH=3,		// Diffusive transport with a Rechester-Rosenbluth coefficient
+	EQTERM_TRANSPORT_SVENSSON=4,					// Svensson transport model (only n_re)
+	EQTERM_TRANSPORT_FROZEN_CURRENT=5,				// Frozen current transport (only n_re)
+	EQTERM_TRANSPORT_MHD_LIKE=6,					// MHD-like adaptive transport (n_re and T_cold)
+	EQTERM_TRANSPORT_MHD_LIKE_LOCAL=7				// MHD-like adaptive transport, applied locally (n_re and T_cold)
+};
+
 enum eqterm_frozen_current_mode {
 	EQTERM_FROZEN_CURRENT_MODE_DISABLED=1,			// Disable the frozen current mode transport
 	EQTERM_FROZEN_CURRENT_MODE_CONSTANT=2,			// Assume momentum-independent radial transport
@@ -343,7 +354,7 @@ enum eqterm_frozen_current_mode {
 enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
     EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
-    EQTERM_TRANSPORT_BC_DF_CONST=3                  // Assume d^2 f / dr^2 = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_DF_CONST=3,                  // Assume d^2 f / dr^2 = 0 at r > rmax
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
@@ -351,6 +362,13 @@ enum eqterm_ionization_mode {                       // Ionization is modelled wi
     EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
     EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
     EQTERM_IONIZATION_MODE_FLUID_RE=4,              // approximation of the kinetic ionization rate assuming a mono-energetic RE distribution at 20mc, can be used in both fluid and kinetic mode
+};
+
+enum eqterm_hyperresistivity_mode {
+	EQTERM_HYPERRESISTIVITY_MODE_NEGLECT=1,			// No hyper-resistive term
+	EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED=2,		// Hyper-resistive term with prescribed diffusion coefficient Lambda = Lambda(t,r)
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE=3,		// Hyper-resistive term with adaptive diffusion coefficient
+	EQTERM_HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL=4 	// Hyper-resistive term with adaptive diffusion coefficient, applied locally
 };
 
 enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source)
@@ -418,10 +436,21 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
 
+enum eqterm_bootstrap_mode {
+    EQTERM_BOOTSTRAP_MODE_NEGLECT = 1,
+    EQTERM_BOOTSTRAP_MODE_REDL = 2,
+};
+
+enum eqterm_bootstrap_init_mode {
+    EQTERM_BOOTSTRAP_INIT_MODE_OHMIC = 1, 
+    EQTERM_BOOTSTRAP_INIT_MODE_TOTAL = 2
+};
+
 enum eqterm_lcfs_loss_mode {                        // Loss term
     EQTERM_LCFS_LOSS_MODE_DISABLED = 1,
     EQTERM_LCFS_LOSS_MODE_FLUID = 2,
-    EQTERM_LCFS_LOSS_MODE_KINETIC = 3};
+    EQTERM_LCFS_LOSS_MODE_KINETIC = 3
+};
 
 enum eqterm_tritium_mode {                        // Tritium generation is...
     EQTERM_TRITIUM_MODE_NEGLECT = 1,              // neglected
@@ -434,4 +463,10 @@ enum eqterm_tritium_mode {                        // Tritium generation is...
 enum svensson_interp1d_param {
     SVENSSON_INTERP1D_TIME=1,
     SVENSSON_INTERP1D_IP=2
+};
+
+enum eqterm_NBI_gaussian_profile {
+    EQTERM_NBI_GAUSSIAN_PROFILE_TCV=1,
+    EQTERM_NBI_GAUSSIAN_PROFILE_ITER=2,
+    EQTERM_NBI_GAUSSIAN_PROFILE_CUSTOM=3
 };

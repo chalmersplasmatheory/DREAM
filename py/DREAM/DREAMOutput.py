@@ -2,14 +2,13 @@
 # This object represents the output of a DREAM simulation.
 # ###########################################################
 
-import copy
 import numpy as np
-import os
 import DREAM.DREAMIO as DREAMIO
 import sys
-from .helpers import merge_dicts
+import pathlib
 
 from .DREAMSettings import DREAMSettings
+from .Output.Code import Code
 from .Output.EquationSystem import EquationSystem
 from .Output.Grid import Grid
 from .Output.IonMetaData import IonMetaData
@@ -38,6 +37,7 @@ class DREAMOutput:
         """
 
         # Default
+        self.code = None
         self.eqsys = None
         self.grid = None
         self.ionmeta = None
@@ -102,6 +102,9 @@ class DREAMOutput:
         if type(filename) == str:
             self.filename = filename
             od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnhandle=True, returnsize=True, lazy=lazy)
+        elif isinstance(filename, pathlib.PurePath):
+            self.filename = str(filename)
+            od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(str(filename), path=path, returnhandle=True, returnsize=True, lazy=lazy)
         elif type(filename) == dict:
             self.filename = "<dict>"
             od = filename
@@ -132,6 +135,10 @@ class DREAMOutput:
         # and more)
         if 'other' in od:
             self.other = OtherQuantityHandler(od['other'], grid=self.grid, output=self)
+
+        # Code information
+        if 'code' in od:
+            self.code = Code(od['code'], output=self)
 
         # Load settings for the run
         if 'settings' in od and loadsettings:

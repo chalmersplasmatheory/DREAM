@@ -4,6 +4,7 @@
  * i.e. from HDF5, MATLAB MAT or SDT files.
  */
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <softlib/SFile.h>

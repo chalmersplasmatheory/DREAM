@@ -20,6 +20,7 @@ namespace DREAM {
         ~MultiInterpolator1D();
 
         const real_t *Eval(const len_t, const real_t);
+        len_t GetNr() const { return this->nr; }
     };
 }
 

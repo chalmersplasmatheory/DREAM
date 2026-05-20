@@ -21,7 +21,7 @@
 #
 # 2024-03-25
 # - Minor fix, it can now be installed on TOK machines. Does not seem to work with MKL, however... /Peter
-
+#
 source environment.tok.sh
 
 function install_petsc {
@@ -41,9 +41,11 @@ function install_petsc {
 }
 function install_dream {
 	cd "$DREAMPATH" && rm -rf build && mkdir build && cd build &&
-	cmake .. -DPETSC_EXECUTABLE_RUNS=YES -DPETSC_DIR=$PETSC_DIR -DPETSC_ARCH=$PETSC_ARCH &&
+	cmake .. -DDREAM_BUILD_PYFACE=OFF -DPETSC_EXECUTABLE_RUNS=YES -DPETSC_DIR=$PETSC_DIR -DPETSC_ARCH=$PETSC_ARCH
 	make -j8
 }
 
 install_petsc
 install_dream
+
+

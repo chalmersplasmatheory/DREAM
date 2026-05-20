@@ -1,0 +1,93 @@
+\documentclass{notes}
+
+\usepackage[colorlinks=true]{hyperref}
+\usepackage[
+	backend=biber,
+	sorting=none,
+	style=authoryear,
+	citestyle=authoryear
+]{biblatex}
+\addbibresource{ref.bib}
+
+\newcommand{\citep}[1]{(\citename{#1}{author} \citefield{#1}{year})}
+
+\title{Hyperresistivity from magnetic perturbation}
+\author{Mathias Hoppe}
+\date{2024-11-18}
+
+\begin{document}
+	\maketitle
+
+	The thermal quench (TQ) of a disruption is typically associated with a major
+	transport event. In \DREAM, we can apply a number of different types of
+	transport to model such an event. Often we combine heat, ion and runaway
+	transport with a hyperdiffusive current density transport. Whereas the
+	strength of the first three is determined by a parameter $\delta B/B$ in
+	\DREAM, the latter uses a hyperresistivity parameter $\Lambda$. In reality,
+	the two are closely connected and so should preferably be connected in
+	simulations as well. In this document, we use \citep{Boozer2017} to
+	relate $\Lambda$ to the perturbation strength $\delta B/B$.
+
+	\cite{Boozer2017} gives the hyperresistivity parameter $\Lambda$ as
+	\begin{equation}
+		\Lambda =
+			\frac{1}{144}
+			\frac{\mu_0}{4\pi}
+			\frac{V_{\rm A}\Psi_{\rm t}^2}{N_{\rm t}},
+	\end{equation}
+	where $V_{\rm A}=B/\sqrt{\mu_0\rho}$ is the Alfvén velocity,
+	$\Psi_{\rm t}$ is the total enclosed toroidal flux (equal to the toroidal
+	flux at the edge $\psi_{\rm t}(r=a)$), and $N_{\rm t}$ the number of
+	toroidal turns needed for a stochastic field line to travel across the
+	plasma. The parameter $N_{\rm t}$ can be expressed in terms of $\delta B/B$
+	by noting that $N_{\rm t} = L/2\pi R_{\rm m}$, where $L$ is the typical
+	distance travelled by a runaway electron before escaping the plasma. The
+	parameter $L=c\tau_{\rm re}$ can in turn be expressed in terms of the
+	runaway diffusion coefficient $D_{\rm re}$ via the scaling relation
+	$\tau_{\rm re}\sim a^2/D_{\rm re}$, where $a$ denotes the plasma minor
+	radius. With Rechester-Rosenbluth transport, the diffusion coefficient is
+	given by
+	\begin{equation}
+		D_{\rm re} = \pi qR_{\rm m}c\left(\frac{\delta B}{B}\right)^2.
+	\end{equation}
+	Hence,
+	\begin{equation}
+		N_{\rm t} = \frac{c a^2}{2\pi R_{\rm m} D_{\rm re}} =
+			\frac{a^2}{2\pi^2 q R_{\rm m}^2}\left(
+				\frac{B}{\delta B}
+			\right)^2,
+	\end{equation}
+	and the hyperresistivity parameter becomes
+	\begin{equation}\label{eq:Lambda}
+		\Lambda =
+			\frac{1}{144}
+			\frac{\mu_0}{4\pi}
+			V_{\rm A}\psi_{\rm t}^2
+			\frac{2\pi^2 qR_{\rm m}^2}{a^2}\left(
+				\frac{\delta B}{B}
+			\right)^2 =
+			%
+			\frac{\pi \mu_0 qR_{\rm m}^2 V_{\rm A}\psi_{\rm t}^2}{144a^2}
+			\left(
+				\frac{\delta B}{B}
+			\right)^2.
+	\end{equation}
+
+	In \DREAM, we also need to evaluate the jacobian matrix for the equation
+	system, and so we must evaluate the appropriate derivates of
+	equation~\eqref{eq:Lambda}. The only unknown quantity appearing in the
+	expression~\eqref{eq:Lambda} is $n_i=\sum_jn_i^{(j)}$, through $V_{\rm A}$,
+	(when taking $q\equiv 1$). The derivative of $\Lambda$ w.r.t.\ each ion
+	charge state density is
+	\begin{equation}
+		\frac{\partial\Lambda}{\partial n_i^{(j)}} =
+			\frac{\Lambda}{V_{\rm A}}\frac{\partial V_{\rm A}}{\partial n_i^{(j)}}
+		=
+		-\frac{\Lambda}{2V_{\rm A}}\frac{B}{\sqrt{\mu_0}\left(n_i^{(j)}\right)^{3/2}}
+		=
+		-\frac{\Lambda}{2n_i^{(j)}}.
+	\end{equation}
+
+	\addcontentsline{toc}{section}{References}
+	\printbibliography
+\end{document}

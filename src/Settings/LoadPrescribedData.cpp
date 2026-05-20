@@ -524,14 +524,14 @@ real_t *SimulationGenerator::InterpolateR(
                 real_t r0 = r[0], r1 = r[1];
                 real_t v  = x0 - (x1-x0)/(r1-r0)*(r0-xr);
 
-                new_x[ir] = v > 0 ? v : 0;
+                new_x[ir] = (v * x0 > 0) ? v : 0;
             } else if (xr > r[nr_inp-1]) {
                 // Extrapolate linearly!
                 real_t x0 = x[nr_inp-2], x1 = x[nr_inp-1];
                 real_t r0 = r[nr_inp-2], r1 = r[nr_inp-1];
                 real_t v  = x1 + (x1-x0)/(r1-r0)*(xr-r1);
 
-                new_x[ir] = v > 0 ? v : 0;
+                new_x[ir] = (v * x1 > 0) ? v : 0;
             } else
                 new_x[ir] = gsl_interp_eval(interp, r, x, xr, acc);
         }
@@ -740,14 +740,14 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
                     real_t r0 = r[0], r1 = r[1];
                     real_t v  = x0 - (x1-x0)/(r1-r0)*(r0-xr);
 
-                    new_x[it*Nr_targ + ir] = v > 0 ? v : 0;
+                    new_x[it*Nr_targ + ir] = (v * x0 > 0) ? v : 0;
                 } else if (xr > r[nr_inp-1]) {
                     // Extrapolate linearly!
                     real_t x0 = x[it*nr_inp+nr_inp-2], x1 = x[it*nr_inp+nr_inp-1];
                     real_t r0 = r[nr_inp-2], r1 = r[nr_inp-1];
                     real_t v  = x1 + (x1-x0)/(r1-r0)*(xr-r1);
 
-                    new_x[it*Nr_targ + ir] = v > 0 ? v : 0;
+                    new_x[it*Nr_targ + ir] = (v * x1 > 0) ? v : 0;
                 } else
                     new_x[it*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(it*nr_inp), xr, acc);
             }
@@ -862,7 +862,7 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
     }
 
     // Load momentum grid vectors
-    const real_t *_p1, *_p2;
+    const real_t *_p1, *_p2=nullptr;
     FVM::Interpolator3D::momentumgrid_type momtype;
 
     if ((_p1=s->GetRealArray(modname + "/" + name + "/p", 1, &np1, false)) != nullptr &&
@@ -992,7 +992,7 @@ struct dream_4d_data *SimulationGenerator::LoadDataTR2P(
     }
 
     // Load momentum grid vectors
-    const real_t *_p1, *_p2;
+    const real_t *_p1, *_p2=nullptr;
     FVM::Interpolator3D::momentumgrid_type momtype;
 
     if ((_p1=s->GetRealArray(modname + "/" + name + "/p", 1, &np1, false)) != nullptr &&

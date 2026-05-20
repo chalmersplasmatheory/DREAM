@@ -3,7 +3,7 @@
 # Script for building DREAM on the "engaging" cluster (PSFC/MIT)
 #
 
-source environment.engaging.sh
+source environment.engaging.old.sh
 
 
 function install_petsc {

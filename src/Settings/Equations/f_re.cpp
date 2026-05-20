@@ -40,6 +40,8 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
 
     s->DefineSetting(MODULENAME "/inittype", "Specifies how to initialize f_re from n_re.", (int_t)OptionConstants::UQTY_F_RE_INIT_FORWARD);
 	//s->DefineSetting(MODULENAME "/initavag0", "Gamma0 parameter in analytical avalanche distribution when initializing using this distribution.", (real_t)20.0);
+	
+	DefineDataR(MODULENAME, s, "E_init");
 }
 
 /**
@@ -146,14 +148,12 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
             (enum OptionConstants::uqty_f_re_inittype)s->GetInteger(MODULENAME "/inittype");
         
         if (inittype != OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
-            //const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
-            const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-            //const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
             RunawayFluid *REFluid = eqsys->GetREFluid();
+			real_t *E_init = LoadDataR(MODULENAME, runawayGrid->GetRadialGrid(), s, "E_init");
             
             eqsys->initializer->AddRule(
                 id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
-                [id_f_re,inittype,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
+                [id_f_re,inittype,REFluid,E_init](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
                     const real_t *n_re = unknowns->GetUnknownData(OptionConstants::UQTY_N_RE);
                     const real_t *E    = unknowns->GetUnknownData(OptionConstants::UQTY_E_FIELD);
 
@@ -188,7 +188,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
                             // will in general be different from the quantity n_re
                             for (len_t j = 0; j < np2; j++)
                                 for (len_t i = 0; i < np1; i++)
-                                    finit[offset + j*np1 + i] = fRE->evaluateFullDistribution(ir, xi[j], p[i]);
+                                    finit[offset + j*np1 + i] = fRE->evaluateFullDistributionWithE(ir, xi[j], p[i], E_init[ir]);
                         } else {
                             len_t xiIndex = 0;
                             // Select either xi=+1 or xi=-1, depending on the sign of E
@@ -209,7 +209,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
                     }
                 },
                 // Dependencies
-                id_n_re, id_E_field, id_n_i
+                id_n_re, id_n_i
             );
         }
     //}

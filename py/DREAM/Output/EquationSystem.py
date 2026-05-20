@@ -1,6 +1,4 @@
-#
 
-import numpy as np
 from . CurrentDensity import CurrentDensity
 from . ElectricField import ElectricField
 from . FluidQuantity import FluidQuantity
@@ -10,6 +8,7 @@ from . IonHandler import IonHandler
 from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
 from . IonThermalEnergy import IonThermalEnergy
 from . PlasmaCurrent import PlasmaCurrent
+from . PoloidalFlux import PoloidalFlux
 from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
@@ -29,6 +28,7 @@ class EquationSystem:
         'f_re':         RunawayElectronDistributionFunction,
         'I_p':          PlasmaCurrent,
         'I_wall':       ScalarQuantity,
+        'j_bs':         CurrentDensity,
         'j_hot':        CurrentDensity,
         'j_ohm':        CurrentDensity,
         'j_re':         CurrentDensity,
@@ -41,7 +41,7 @@ class EquationSystem:
         'n_re_neg':     RunawayElectronDensity,
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
-        'psi_p':        FluidQuantity,
+        'psi_p':        PoloidalFlux,
         'psi_trans':    ScalarQuantity,
         'psi_wall':     ScalarQuantity,
         'S_particle':   FluidQuantity,
@@ -54,7 +54,7 @@ class EquationSystem:
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
     }
-    
+
 
     def __init__(self, unknowns=None, grid=None, output=None):
         """
@@ -119,7 +119,7 @@ class EquationSystem:
 
         setattr(self, name, o)
         self.unknowns[name] = o
-        
+
 
     def setUnknowns(self, unknowns):
         """
@@ -152,5 +152,3 @@ class EquationSystem:
             attr['equation'] = u.description_eqn
 
         self.setUnknown(name=unknown, data=u.data, attr=attr, datatype=datatype)
-
-

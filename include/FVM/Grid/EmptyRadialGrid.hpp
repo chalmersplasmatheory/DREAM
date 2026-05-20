@@ -27,6 +27,18 @@ namespace DREAM::FVM {
 
 			virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t , real_t , real_t, real_t ) override {}
 			virtual void GetGradRCartesian(real_t*, real_t , real_t, real_t) override {}
+
+			virtual const real_t GetZ0() override { return 0; }
+			virtual const len_t GetNPsi() override { return 0; }
+			virtual const len_t GetNTheta() override { return 0; }
+			virtual const real_t *GetFluxSurfaceRMinusR0() override { return nullptr; }
+			virtual const real_t *GetFluxSurfaceRMinusR0_f() override { return nullptr; }
+			virtual const real_t *GetFluxSurfaceZMinusZ0() override { return nullptr; }
+			virtual const real_t *GetFluxSurfaceZMinusZ0_f() override { return nullptr; }
+			virtual const real_t *GetPoloidalAngle() override { return nullptr; }
+            virtual real_t GetFluxSurfaceRMinusR0_theta(len_t /*ir*/, real_t /*theta*/) override { return 0; }
+            virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t /*ir*/, real_t /*theta*/) override { return 0; }
+            
     };
 
     class EmptyRadialGrid : public RadialGrid {

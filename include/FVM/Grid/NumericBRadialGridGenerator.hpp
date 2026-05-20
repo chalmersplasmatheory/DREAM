@@ -33,6 +33,11 @@ namespace DREAM::FVM {
 
         std::string name;
 
+		// Estimates of where the global minima/maxima of the
+		// magnetic field strength are located in the poloidal plane
+		real_t *guess_theta_global_Bmin = nullptr,
+			   *guess_theta_global_Bmax = nullptr;
+
         // Interpolation objects for interpolating in input data
         gsl_spline *spline_psi;
         gsl_spline2d
@@ -106,6 +111,24 @@ namespace DREAM::FVM {
             const real_t r, const real_t theta, real_t &B,
             real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
         );
+
+		// Output generation helper routines
+		virtual const real_t GetZ0() override { return this->Zp; }
+		virtual const len_t GetNPsi() override { return this->GetNr(); }
+		virtual const len_t GetNTheta() override { return this->ntheta; }
+		virtual const real_t *GetFluxSurfaceRMinusR0() override;
+		virtual const real_t *GetFluxSurfaceRMinusR0_f() override;
+
+		virtual const real_t *GetFluxSurfaceZMinusZ0() override;
+		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
+		virtual const real_t *GetPoloidalAngle() override;
+        virtual real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) override;
+        virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) override;
+
+		virtual bool CanGuessThetaOptimum() override { return true; }
+		virtual real_t GetThetaBminGuess(const len_t, enum fluxGridType) override;
+		virtual real_t GetThetaBmaxGuess(const len_t, enum fluxGridType) override;
+		real_t GetThetaOptimumGuess(const len_t, enum fluxGridType, const real_t*);
 
         // Debugging method
         void __SaveB(const char*);

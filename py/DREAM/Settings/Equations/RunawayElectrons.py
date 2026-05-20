@@ -7,6 +7,7 @@ from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from .. import AdvectionInterpolation
 from .. TransportSettings import TransportSettings
+from ... helpers import scal
 from . DistributionFunction import DISTRIBUTION_MODE_NUMERICAL
 
 
@@ -31,15 +32,12 @@ COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
 COMPTON_RATE_ITER_DMS = -1
-COMPTON_RATE_ITER_DMS_FLUID = -1
 COMPTON_RATE_ITER_DMS_KINETIC = -2
 COMPTON_MACHINE_ITER = 1
 ITER_PHOTON_FLUX_DENSITY = 1e18
-# Compton photon spectrum fitted values corresponding to the
-# photon spectrum in [Martin-Solis et al, NF 57 (2017)]
-C1_COMPTON_MS2017 = 1.2
-C2_COMPTON_MS2017 = 0.8
-C3_COMPTON_MS2017 = 0.
+C1_COMPTON = 1.2
+C2_COMPTON = 0.8
+C3_COMPTON = 0.
 
 TRITIUM_MODE_NEGLECT = 1
 TRITIUM_MODE_FLUID = 2
@@ -80,7 +78,7 @@ def GammafluxProfil(E, C1, C2, C3):
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
   
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON_MS2017, C2_compton=C2_COMPTON_MS2017, C3_Compton=C3_COMPTON_MS2017, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_FULL, pCutAvalanche=0, comptonPhotonFlux=0, C1_Compton=C1_COMPTON, C2_compton=C2_COMPTON, C3_Compton=C3_COMPTON, tritium=TRITIUM_MODE_NEGLECT, hottail=HOTTAIL_MODE_DISABLED, lcfs_loss=LCFS_LOSS_MODE_DISABLED):
         """
         Constructor.
         """
@@ -126,7 +124,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         LCFS loss term.
         """
-        if lcfs_loss == False:
+        if lcfs_loss is False:
             self.lcfs_loss = LCFS_LOSS_MODE_DISABLED
         else:
             self.lcfs_loss = int(lcfs_loss)
@@ -156,12 +154,29 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.lcfs_user_input_psi = bool(user_input_active)
         self.lcfs_psi_edge_t0 = psi_edge_t0
 
+    def setPsiEdgeFromOutput(self, do = None):
+        """Helper function to find the location of the 
+        LCFS through the extrapolation 
+        of the poloidal magnetic flux until the LCFS
+       
+        :param do: DREAM output file 
+        """
+        psi_high_t0 = do.eqsys.psi_p.data[0,-1]
+        psi_low_t0 = do.eqsys.psi_p.data[0,-2]
+        r_high_psi = do.other.fluid.grid.r.data[-1]
+        r_low_psi = do.other.fluid.grid.r.data[-2]
+        r_edge_psi = do.other.fluid.grid.r_f.data[-1]
+        slope_psi = (psi_high_t0 - psi_low_t0) / (r_high_psi - r_low_psi)
+        psi_edge_t0 = psi_high_t0 + slope_psi * (r_edge_psi - r_high_psi)
+
+        return psi_edge_t0
+
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
         """
         Enables/disables avalanche generation.
         """
-        if avalanche == False:
+        if avalanche is False:
             self.avalanche = AVALANCHE_MODE_NEGLECT
         else:
             self.avalanche = int(avalanche)
@@ -173,7 +188,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         Dreicer runaway rate.
         """
-        if dreicer == False:
+        if dreicer is False:
             self.dreicer = DREICER_RATE_DISABLED
         else:
             self.dreicer = int(dreicer)
@@ -184,10 +199,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        if compton == False or compton == COMPTON_MODE_NEGLECT:
+        if compton is False or compton == COMPTON_MODE_NEGLECT:
             self.compton = COMPTON_MODE_NEGLECT
         else:
-            if compton == COMPTON_RATE_ITER_DMS_FLUID:
+            if compton == COMPTON_RATE_ITER_DMS:
                 # set fluid compton source and standard ITER flux of 1e18
                 compton = COMPTON_MODE_FLUID
                 if photonFlux is None:
@@ -212,11 +227,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 C3 = 0.
             else:
                 if C1 is None:
-                    C1 = C1_COMPTON_MS2017
+                    C1 = C1_COMPTON
                 if C2 is None:
-                    C2 = C2_COMPTON_MS2017
+                    C2 = C2_COMPTON
                 if C3 is None:
-                    C3 = C3_COMPTON_MS2017
+                    C3 = C3_COMPTON
 
 
             self.compton = int(compton)
@@ -240,18 +255,19 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifices whether or not to include runaway generation
         through tritium decay as a source term.
         """
-        if tritium == True or tritium == TRITIUM_MODE_FLUID:
+        if tritium is True:
             self.tritium = TRITIUM_MODE_FLUID
-        if tritium == False or tritium == TRITIUM_MODE_NEGLECT:
+        elif tritium is False:
             self.tritium = TRITIUM_MODE_NEGLECT
-        self.tritium = int(tritium)
+        else:
+            self.tritium = int(tritium)
 
 
     def setHottail(self, hottail):
         """
         Specify which model to use for hottail runaway generation
         """
-        if hottail == False:
+        if hottail is False:
             self.hottail = HOTTAIL_MODE_DISABLED
         else:
             self.hottail = hottail
@@ -267,12 +283,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.negative_re = negative_re
         
+
     def setExtrapolateDreicer(self, extrapolateDreicer=False):
         """
         Extrapolates the result from the neural network for small electric fields
         such that the Dreicer generation rate is continuous and has continuous derivative.
         """
         self.extrapolateDreicer = extrapolateDreicer
+
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
@@ -285,28 +303,56 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
+    
+
+    def setAdaptiveMHDLikeTransport(
+        self, dBB0, grad_j_tot_max=None,
+        grad_j_tot_max_norm=None, suppression_level=0.9,
+        localized=False
+    ):
+        """
+        Enable adaptive MHD-like transport on ``n_re``, ``psi_p`` and ``T_cold``
+        simultaneously.
+        """
+        kwargs = {}
+        if grad_j_tot_max:
+            kwargs['grad_j_tot_max'] = grad_j_tot_max
+        elif grad_j_tot_max_norm:
+            kwargs['grad_j_tot_max_norm'] = grad_j_tot_max_norm
+        else:
+            raise EquationException("One of 'grad_j_tot_max' and 'grad_j_tot_max_norm' must be specified.")
+
+        self.transport.setMHDLikeRechesterRosenbluth(
+            dBB0=dBB0, localized=localized, suppression_level=suppression_level, **kwargs
+        )
+        self.settings.eqsys.T_cold.transport.setMHDLikeRechesterRosenbluth(
+            dBB0=dBB0, localized=localized, suppression_level=suppression_level, **kwargs
+        )
+        self.settings.eqsys.psi_p.setHyperresistivityAdaptive(
+            dBB0=dBB0, localized=localized, suppression_level=suppression_level, **kwargs
+        )
 
 
     def fromdict(self, data):
         """
         Set all options from a dictionary.
         """
-        self.avalanche = int(data['avalanche'])
+        self.avalanche = int(scal(data['avalanche']))
 
         if 'pCutAvalanche' in data:
             self.pCutAvalanche = data['pCutAvalanche']
 
-        self.dreicer   = int(data['dreicer'])
-        self.Eceff     = int(data['Eceff'])
-        self.compton   = int(data['compton']['mode'])
+        self.dreicer   = int(scal(data['dreicer']))
+        self.Eceff     = int(scal(data['Eceff']))
+        self.compton   = int(scal(data['compton']['mode']))
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
         # Loss term
         if 'lcfs_loss' in data:
-            self.lcfs_loss     = int(data['lcfs_loss'])
+            self.lcfs_loss     = int(scal(data['lcfs_loss']))
 
             if self.lcfs_loss != LCFS_LOSS_MODE_DISABLED:
-                self.lcfs_user_input_psi     = bool(data['lcfs_user_input_psi'])
+                self.lcfs_user_input_psi     = bool(scal(data['lcfs_user_input_psi']))
                 self.lcfs_psi_edge_t0        = data['lcfs_psi_edge_t0']
                 self.lcfs_t_loss   = data['lcfs_t_loss']['x']
                 self.lcfs_t_loss_r = data['lcfs_t_loss']['r']
@@ -320,25 +366,25 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                 self.comptonPhotonFlux_t = np.array([0.0])
 
         if 'C1' in data['compton']:
-            self.C1_Compton = float(data['compton']['C1'])
-            self.C2_Compton = float(data['compton']['C2'])
-            self.C3_Compton = float(data['compton']['C3'])
+            self.C1_Compton = float(scal(data['compton']['C1']))
+            self.C2_Compton = float(scal(data['compton']['C2']))
+            self.C3_Compton = float(scal(data['compton']['C3']))
             self.integratedComptonSpectrum = quad(GammafluxProfil, 0, np.inf, args=(self.C1_Compton, self.C2_Compton, self.C3_Compton))[0]
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
 
         if 'hottail' in data:
-            self.hottail = int(data['hottail'])
+            self.hottail = int(scal(data['hottail']))
 
         if 'tritium' in data:
-            self.tritium = int(data['tritium'])
+            self.tritium = int(scal(data['tritium']))
 
         if 'negative_re' in data:
-            self.negative_re = bool(data['negative_re'])
+            self.negative_re = bool(scal(data['negative_re']))
         
         if 'extrapolateDreicer' in data:
-            self.ExtrapolateDreicer = bool(data['extrapolateDreicer'])
+            self.ExtrapolateDreicer = bool(scal(data['extrapolateDreicer']))
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])

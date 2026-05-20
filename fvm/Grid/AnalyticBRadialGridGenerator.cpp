@@ -25,8 +25,10 @@ using namespace std;
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const len_t nr,  real_t r0,  real_t ra, real_t R0, len_t ntheta_interp,
-     struct shape_profiles *profiles
-) : RadialGridGenerator(nr), rMin(r0), rMax(ra), providedProfiles(profiles) {
+     struct shape_profiles *profiles, len_t ntheta_out
+) : RadialGridGenerator(nr), rMin(r0), rMax(ra), providedProfiles(profiles),
+	ntheta_out(ntheta_out) {
+
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
@@ -45,8 +47,9 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const real_t *r_f_input, const len_t nr, real_t R0, len_t ntheta_interp,
-     struct shape_profiles *profiles
-) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]), providedProfiles(profiles) {
+     struct shape_profiles *profiles, len_t ntheta_out
+) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]),
+	providedProfiles(profiles), ntheta_out(ntheta_out) {
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
@@ -393,9 +396,9 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleExtrap(real_t 
         return xProvided[0];
     } else {
         if(r>xProvided_r[nProvided-1])
-            return xProvided_r[nProvided-1];
+            return xProvided[nProvided-1];
         else if(r<xProvided_r[0])
-            return xProvided_r[0];
+            return xProvided[0];
         else
             return gsl_spline_eval(spline_x, r, spline_acc);
     }   
@@ -733,6 +736,127 @@ void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, re
     gradr[1] = -dRdtheta*prefactor;
     gradr[2] = sin(phi)*Rhatfactor; 
     
+}
+
+
+/**
+ * Returns a list flux surface R coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *R = new real_t[nr*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr; ir++, i++) {
+			if (std::isinf(this->R0))
+				R[i] = r[i] * cos(theta);
+			else
+				R[i] = ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
+		}
+	}
+
+	return R;
+}
+
+
+/**
+ * Returns a list flux surface R coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *R = new real_t[(nr+1)*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			if (std::isinf(this->R0))
+				R[i] = r_f[i] * cos(theta);
+			else
+				R[i] = ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+	}
+
+	return R;
+}
+/**
+ * Returns the flux surface R coordinates on the simulation grid edges,
+ * not shifted by R0.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta){
+	if (std::isinf(this->R0))
+		return r_f[ir] * cos(theta);
+	else
+		return ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
+}
+ 
+
+/**
+ * Returns the flux surface Z coordinates on the simulation grid edges.
+ */
+real_t AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta){
+    return this->r_f[ir] * this->kappa_f[ir] * sin(theta);
+}
+
+
+
+/**
+ * Returns a list flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *Z = new real_t[nr*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr; ir++, i++)
+			Z[i] = this->r[ir] * kappa[ir] * sin(theta);
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns a list flux surface Z coordinates
+ * on the simulation grid.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceZMinusZ0_f() {
+	const len_t nr = this->GetNPsi();
+	const len_t ntheta = this->GetNTheta();
+	real_t *Z = new real_t[(nr+1)*ntheta];
+
+	for (len_t j = 0, i = 0; j < ntheta; j++) {
+		real_t theta = 2*M_PI*j / ntheta;
+
+		for (len_t ir = 0; ir < nr+1; ir++, i++)
+			Z[i] = this->r_f[ir] * kappa_f[ir] * sin(theta);
+	}
+
+	return Z;
+}
+
+
+/**
+ * Returns the poloidal angle array corresponding
+ * to the 'GetFluxSurface()' methods.
+ */
+const real_t *AnalyticBRadialGridGenerator::GetPoloidalAngle() {
+	const len_t ntheta = this->GetNTheta();
+	real_t *theta = new real_t[ntheta];
+
+	for (len_t i = 0; i < ntheta; i++)
+		theta[i] = 2*M_PI*i / ntheta;
+	
+	return theta;
 }
 
 

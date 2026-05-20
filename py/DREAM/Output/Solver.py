@@ -1,12 +1,5 @@
 # Output handler for solver statistics
 
-import numpy as np
-from ..DREAMException import DREAMException
-from ..DataObject import DataObject
-
-import DREAM.Settings.Solver
-
-
 class Solver:
     
 

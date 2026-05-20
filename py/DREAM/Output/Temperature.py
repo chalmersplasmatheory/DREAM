@@ -2,8 +2,6 @@
 
 import matplotlib.pyplot as plt
 from .FluidQuantity import FluidQuantity
-from .OutputException import OutputException
-
 
 class Temperature(FluidQuantity):
     
@@ -36,6 +34,11 @@ class Temperature(FluidQuantity):
                 ax = q.plot(r=r, t=t, ax=ax, show=False, log=log)
 
             labels.append(o[6:].replace(r'_', r'\_'))
+
+        if integrate and 'energyloss_T_cold' in self.output.other.scalar.keys():
+            o = self.output.other.scalar.energyloss_T_cold
+            ax = o.plot(ax=ax, show=show)
+            labels.append(o.name.replace(r'_', r'\_'))
 
         plt.legend(labels)
 

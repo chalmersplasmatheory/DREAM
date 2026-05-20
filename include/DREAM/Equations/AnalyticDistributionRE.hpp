@@ -55,6 +55,10 @@ namespace DREAM {
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
 
+			real_t evaluateEnergyDistributionWithE(len_t ir, real_t p, real_t E, real_t *dfdp=nullptr, real_t *dfdr=nullptr);
+			real_t evaluatePitchDistributionWithE(len_t ir, real_t xi0, real_t p, real_t E, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr);
+			real_t evaluateFullDistributionWithE(len_t ir, real_t xi0, real_t p, real_t E, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr);
+
             real_t evaluateAnalyticPitchDistributionFromA(
                 len_t ir, real_t xi0, real_t A
             );

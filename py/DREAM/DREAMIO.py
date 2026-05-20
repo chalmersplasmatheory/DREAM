@@ -85,11 +85,12 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
             if 'port' in conf:
                 port = conf['port']
 
-        except: pass
+        except Exception: 
+            pass
 
         try:
             client.connect(host, port=port, username=user)
-        except paramiko.ssh_exception.PasswordRequiredException as ex:
+        except paramiko.ssh_exception.PasswordRequiredException:
             pw = getpass.getpass(prompt=f"{user}@{host}'s password: ")
             client.connect(host, port=port, username=user, password=pw)
 
@@ -228,8 +229,10 @@ def getData(f, key):
     Returns data from an h5py.File object, correctly transforming
     it (in case it is a string for example).
     """
-    if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
-        return f[key][:].tostring().decode('utf-8')
+    if type(f[key]) == str:
+        return f[key]
+    elif (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
+        return f[key][:].tobytes().decode('utf-8')
     elif f[key].dtype == 'object':  # New strings
         if f[key].shape == ():
             if type(f[key][()]) == str:
@@ -241,7 +244,10 @@ def getData(f, key):
         else:
             return f[key][:][0].decode()
     else:
-        return f[key][:]
+        if f[key].shape == ():
+            return f[key][()]
+        else:
+            return f[key][:]
 
 
 def unlazy(s):

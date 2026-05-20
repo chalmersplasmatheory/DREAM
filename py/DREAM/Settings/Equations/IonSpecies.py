@@ -20,8 +20,8 @@
 #               is the number of radial locations.
 #
 
-import matplotlib.pyplot as plt
 import numpy as np
+from numbers import Number
 from DREAM.Settings.Equations.EquationException import EquationException
 from ... DREAMException import DREAMException
 
@@ -65,6 +65,7 @@ ION_NEUTRAL_ADVECTION_MODE_PRESCRIBED = 2
 # Ion source types
 ION_SOURCE_NONE = 1
 ION_SOURCE_PRESCRIBED = 2
+ION_SOURCE_PRESCRIBED_VOLUMETRIC = 3
 
 class IonSpecies:
 
@@ -73,7 +74,8 @@ class IonSpecies:
         neutral_diffusion_mode=ION_NEUTRAL_DIFFUSION_MODE_NONE, neutral_prescribed_diffusion=None, rNeutralPrescribedDiffusion=None, tNeutralPrescribedDiffusion=None,
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
-        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
+        t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,
+        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
         """
         Constructor.
 
@@ -135,14 +137,15 @@ class IonSpecies:
 
         # Emit warning if 'T' is used as name but 'tritium = False',
         # as this may indicate a user error
-        if name == 'T' and tritium == False:
+        if name == 'T' and tritium is False:
             print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
-        if name == 'H' and hydrogen == False:
+        if name == 'H' and hydrogen is False:
             print("WARNING: Ion species with name 'H' added, but 'hydrogen = False'.")
 
         self.source_n = np.zeros((self.Z+1, 1))
         self.source_t = np.array([0])
         self.source_type = ION_SOURCE_NONE
+        self.source_r = None
 
         self.n = None
         self.r = None
@@ -164,7 +167,8 @@ class IonSpecies:
             else:
                 self.initialize_dynamic(n=n, r=r, init_equil=init_equil, interpr=interpr)
         elif ttype == IONS_EQUILIBRIUM:
-            self.initialize_equilibrium(n=n, r=r, Z0=Z0)
+            #self.initialize_equilibrium(n=n, r=r, Z0=Z0)
+            raise DREAMException("Evolving ions in equilibrium not implemented yet.")
         elif Z0 is not None:
             print("WARNING: Charge state Z0 given, but ion type is not simply 'prescribed', 'dynamic' or 'equilibrium'. Hence, Z0 is ignored.")
 
@@ -383,6 +387,11 @@ class IonSpecies:
         """
         return self.source_t
 
+    def getSourceRadialGrid(self):
+        """
+        Returns the radial grid on which the ion source is defined.
+        """
+        return self.source_r
 
     def getTime(self):
         """
@@ -547,7 +556,7 @@ class IonSpecies:
 
         if init_equil:
             # If scalar...
-            if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+            if isinstance(n, Number) or (type(n) == np.ndarray and n.size == 1):
                 r = interpr if interpr is not None else np.array([0])
                 N = np.zeros((r.size,))
                 N[:] = n
@@ -922,48 +931,66 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed neutral advection coefficient: {}.".format(self.name, neutral_prescribed_advection.shape))
 
 
-    def initialize_source(self, n, t=None, Z0=0):
+    def initialize_source(self, n, t=None, Z0=0, source_type=ION_SOURCE_PRESCRIBED, r=None):
         """
         Initialize the ion source term associated with this species.
         """
-        self.source_type = ION_SOURCE_PRESCRIBED
+        self.source_type = source_type
+        if source_type == ION_SOURCE_PRESCRIBED:
 
-        if n is None:
-            raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")
+            if n is None:
+                raise EquationException(f"ion_species: '{self.name}': Input source density must not be 'None'.")
 
-        # Convert lists to NumPy arrays
-        if type(n) == list:
-            n = np.array(n)
+            # Convert lists to NumPy arrays
+            if type(n) == list:
+                n = np.array(n)
 
-        # Scalar (assume density constant in spacetime)
-        #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-        if np.isscalar(n):
-            self.source_t = np.array([0])
-            self.source_n = np.zeros((self.Z+1,1))
-            self.source_n[Z0,:] = n
-            return
+            # Scalar (assume density constant in spacetime)
+            #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+            if np.isscalar(n):
+                self.source_t = np.array([0])
+                self.source_n = np.zeros((self.Z+1,1))
+                self.source_n[Z0,:] = n
+                return
 
-        # Time evolution of neutral atoms
-        if len(n.shape) == 1:
-            if n.size != t.size:
-                raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, by shape(n) != shape(t), {n.shape} != {t.shape}.")
+            # Time evolution of neutral atoms
+            if len(n.shape) == 1:
+                if n.size != t.size:
+                    raise EquationException(f"ion_species: '{self.name}': Time evolving source specified, by shape(n) != shape(t), {n.shape} != {t.shape}.")
 
-            self.source_t = t
-            self.source_n = np.zeros((self.Z+1, t.size))
-            self.source_n[Z0,:] = n
-        # Time evolution of all charge states
-        elif len(n.shape) == 2:
+                self.source_t = t
+                self.source_n = np.zeros((self.Z+1, t.size))
+                self.source_n[Z0,:] = n
+            # Time evolution of all charge states
+            elif len(n.shape) == 2:
+                if t is None:
+                    raise EquationException(f"ion_species: '{self.name}': Full ion charge state density source prescribed, but no time coordinates given.")
+
+                if self.Z+1 != n.shape[0] or t.size != n.shape[1]:
+                    raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
+
+                self.source_t = t
+                self.source_n = n
+            else:
+                raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
+        if source_type == ION_SOURCE_PRESCRIBED_VOLUMETRIC:
+            
+
+            if n is None:
+                raise EquationException(f"ion_species: '{self.name}': Input volumetric source density must not be 'None'.")
+            if len(n.shape) != 3:
+                raise EquationException(f"ion_species: '{self.name}': Volumetric source density must be 3D (charge states x time x radius).")
+            if self.Z+1 != n.shape[0]:
+                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed volumetric source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
             if t is None:
-                raise EquationException(f"ion_species: '{self.name}': Full ion charge state density source prescribed, but no time coordinates given.")
-
-            if self.Z+1 != n.shape[0] or t.size != n.shape[1]:
-                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
-
+                raise EquationException(f"ion_species: '{self.name}': Volumetric source density prescribed, but no time coordinates given.")
+            if t.size != n.shape[1]:
+                raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed volumetric source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")   
             self.source_t = t
             self.source_n = n
-        else:
-            raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
+            self.source_r = r
 
+        
 
     def setChargedDiffusion(
         self, mode, Drr=None, r=None, t=None,
@@ -1002,7 +1029,7 @@ class IonSpecies:
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
-                raise DREAMException(f"No diffusion coefficient given, and no exponential decay time given.")
+                raise DREAMException("No diffusion coefficient given, and no exponential decay time given.")
                 
             self.initialize_charged_prescribed_diffusion(
                 charged_prescribed_diffusion=Drr, rChargedPrescribedDiffusion=r,
@@ -1048,7 +1075,7 @@ class IonSpecies:
                     c0=Drr_0, cf=Drr_f, co=Drr_o,
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
-                
+
             self.initialize_neutral_prescribed_diffusion(
                 neutral_prescribed_diffusion=Drr, rNeutralPrescribedDiffusion=r,
                 tNeutralPrescribedDiffusion=t, interpr=interpr, interpt=interpt
@@ -1094,7 +1121,7 @@ class IonSpecies:
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
-                raise DREAMException(f"No advection coefficient given, and no exponential decay time given.")
+                raise DREAMException("No advection coefficient given, and no exponential decay time given.")
                 
             self.initialize_charged_prescribed_advection(
                 charged_prescribed_advection=Ar, rChargedPrescribedAdvection=r,
@@ -1141,7 +1168,7 @@ class IonSpecies:
                     r=r_expdecay_all_cs, t=t_expdecay_all_cs
                 )
             else:
-                raise DREAMException(f"No advection coefficient given, and no exponential decay time given.")
+                raise DREAMException("No advection coefficient given, and no exponential decay time given.")
                 
             self.initialize_neutral_prescribed_advection(
                 neutral_prescribed_advection=Ar, rNeutralPrescribedAdvection=r,
@@ -1163,10 +1190,7 @@ class IonSpecies:
         if t is None:
             t = np.linspace(0,t_start+10*t_exp).reshape(-1,1)
         if r is None:
-            if self.settings.radialgrid.r_f is not None:
-                r = self.settings.radialgrid.r_f
-            else:
-                r = np.linspace(0,self.settings.radialgrid.a)
+            r = np.array([0])
         if np.isscalar(c0):
             Nr = len(r)
             c0 = c0*np.ones((1,Nr))

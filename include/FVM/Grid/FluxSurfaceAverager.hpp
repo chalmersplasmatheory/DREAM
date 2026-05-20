@@ -202,7 +202,8 @@ namespace DREAM::FVM {
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
         real_t EvaluateAvalancheCHBounceAverage(len_t ir, real_t p_i, real_t p_u, real_t p_max, real_t p_cut, real_t xi_l, real_t xi_u,  fluxGridType fgt);
 
-    
+		void PrintBOfTheta(const len_t ir, const len_t N=1000, enum fluxGridType fgt=FLUXGRIDTYPE_DISTRIBUTION);    
+
     private: 
         gsl_integration_workspace *gsl_ws_CH;
         gsl_integration_cquad_workspace *gsl_ws_CH_cquad;
