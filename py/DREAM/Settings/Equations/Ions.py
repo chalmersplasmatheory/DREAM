@@ -651,11 +651,15 @@ class Ions(UnknownQuantity):
             
             if len(ion_source_x.shape) == 3:
                 ion_source_r = data['ion_source'].get('r', None)
+                if ion_source_r is None:
+                    raise EquationException("The legacy 3D ion source ('ion_source') requires an explicit radial grid 'r'.")
 
         if 'ion_source_volumetric' in data:
             ion_source_t = data['ion_source_volumetric']['t']
             ion_source_x = data['ion_source_volumetric']['x']
             ion_source_r = data['ion_source_volumetric'].get('r', None)
+            if ion_source_r is None:
+                raise EquationException("The volumetric ion source ('ion_source_volumetric') requires an explicit radial grid 'r'.")
 
 
         iidx, pidx, spiidx, cpdidx, npdidx, cpaidx, npaidx, srcidx = 0, 0, 0, 0, 0, 0, 0, 0
