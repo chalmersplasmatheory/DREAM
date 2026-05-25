@@ -301,7 +301,7 @@ bool AdvectionTerm::GridRebuilt() {
     }
 
     // TODO: find condition for when to allocate these
-    AllocateDifferentiationCoefficients();
+    this->AllocateDifferentiationCoefficients();
     
     return rebuilt;
 }
