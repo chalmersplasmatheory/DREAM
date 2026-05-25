@@ -114,7 +114,7 @@ void SimulationGenerator::DefineOptions_Transport(
 	s->DefineSetting(
 		mod + "/" + subname + "/t_adjust",
 		"Current adjustment time scale to use for n_re-adaptive frozen current mode.",
-		(real_t)1e-2
+		(real_t)1e-3
 	);
 	DefineDataT(mod + "/" + subname, s, "I_p_presc");
 }

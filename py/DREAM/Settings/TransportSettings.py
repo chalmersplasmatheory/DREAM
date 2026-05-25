@@ -495,7 +495,6 @@ class TransportSettings:
             self.frozen_current_dDdt_D_max = float(scal(data['dDdt_D_max']))
         if 'D_I_floor' in data:
             self.frozen_current_D_I_floor = float(scal(data['D_I_floor']))
-            self.frozen_current_D_I_max = float(scal(data['D_I_max']))
         if 'I_p_presc' in data:
             self.frozen_current_Ip_presc = data['I_p_presc']['x']
             self.frozen_current_Ip_presc_t = data['I_p_presc']['t']

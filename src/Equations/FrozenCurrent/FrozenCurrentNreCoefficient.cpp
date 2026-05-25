@@ -65,6 +65,7 @@ FrozenCurrentNreCoefficient::~FrozenCurrentNreCoefficient() {
 	delete this->op_n_i;
 	delete this->op_n_tot;
 	delete this->op_n_re;
+	delete this->op_mat;
 
 	delete [] this->gamma_gen;
 	delete [] this->d2ndr2;
@@ -135,6 +136,8 @@ void FrozenCurrentNreCoefficient::Rebuild(
 		if (this->D0 < 0) {
 			this->D0 = 0;
 			this->D_I = 0;
+			this->dD = 0;
+			this->dIp = 0;
 		} else {
 			real_t Ip = unknowns->GetUnknownData(this->id_I_p)[0];
 			this->dIp = Ip - this->I_p_presc->Eval(t)[0];
@@ -143,8 +146,13 @@ void FrozenCurrentNreCoefficient::Rebuild(
 			this->dD = this->D0 * tanh(x);
 			this->D_I = this->D0 + this->dD;
 		}
-	} else
+	} else {
 		this->D_I = 0;
+		this->D0 = 0;
+		this->dD = 0;
+		this->dIp = 0;
+		this->dIohm_dt = 0;
+	}
 }
 
 

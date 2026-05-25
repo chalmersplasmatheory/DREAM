@@ -2,6 +2,7 @@
 #define _DREAM_FVM_EQUATION_TERM_HPP
 
 #include <string>
+#include <unordered_map>
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"

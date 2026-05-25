@@ -20,7 +20,7 @@ namespace DREAM {
 		real_t t_adjust = 0.01;
 
 		real_t
-			S_gen, S_loss,
+			S_gen = 0, S_loss = 0,
 			*gamma_gen = nullptr,
 			*d2ndr2 = nullptr,
 			*dx_vec = nullptr,
@@ -28,18 +28,18 @@ namespace DREAM {
 			*dSloss_dx = nullptr,
 			**unit = nullptr;
 
-		FVM::Matrix *op_mat;
-		len_t nMatrixElements;
+		FVM::Matrix *op_mat = nullptr;
+		len_t nMatrixElements = 0;
 
 		// Current value for D_I
-		real_t D0, dD;
+		real_t D0 = 0, dD = 0;
 		real_t D_I = 0;
-		real_t lastDt, dIp, dIohm_dt, IpTimescale;
+		real_t lastDt = 0, dIp = 0, dIohm_dt = 0, IpTimescale = 0;
 
 		FVM::Operator
-			*op_n_re,
-			*op_n_tot,
-			*op_n_i;
+			*op_n_re=nullptr,
+			*op_n_tot=nullptr,
+			*op_n_i=nullptr;
 
 		FVM::DiffusionTerm *op_transport=nullptr;
 		TransportDiffusiveBC *bc_transport=nullptr;

@@ -134,11 +134,11 @@ def plotcol(m1, m2=None, col=None, log=False, show=True, legend=None, eqsys=None
         raise Exception("Parameter 'col' not specified.")
 
     if log:
-        plt.semilogy(np.abs(m1[:,col].todens()))
-        if m2 is not None: plt.semilogy(np.abs(m2[:,col].todense()))
+        plt.semilogy(np.abs(m1[:,col].toarray()))
+        if m2 is not None: plt.semilogy(np.abs(m2[:,col].toarray()))
     else:
-        plt.plot(m1[:,col].todense())
-        if m2 is not None: plt.plot(m2[:,col].todense())
+        plt.plot(m1[:,col].toarray())
+        if m2 is not None: plt.plot(m2[:,col].toarray())
 
     if HASMPLCURSORS:
         cursor = mplcursors.cursor()
