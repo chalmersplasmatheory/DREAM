@@ -26,13 +26,17 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         self.hyperresistivity_Lambda_r = None
         self.hyperresistivity_Lambda_t = None
 
+        self.hyperresistivity_dBB_x = None
+        self.hyperresistivity_dBB_r = None
+        self.hyperresistivity_dBB_t = None
+
         self.hyperresistivity_grad_j_tot_max = None
         self.hyperresistivity_gradient_normalized = False
         self.hyperresistivity_dBB0 = None
         self.hyperresistivity_suppression_level = 0.9
 
 
-    def setHyperresistivity(self, Lambda, radius=None, times=None):
+    def setHyperresistivity(self, Lambda=None, dBB=None, radius=None, times=None):
         """
         Enable the hyperresistive diffusion term and specify the
         transport coefficient ``Lambda``.
@@ -41,12 +45,20 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         :param radius: Radial grid on which  ``Lambda`` is specified (if any).
         :param times:  Time grid on which ``Lambda`` is specified (if any).
         """
-        d, r, t = self._setPrescribedData(data=Lambda, radius=radius, times=times)
+        if Lambda is not None:
+            d, r, t = self._setPrescribedData(data=Lambda, radius=radius, times=times)
 
-        self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_PRESCRIBED
-        self.hyperresistivity_Lambda_x = d
-        self.hyperresistivity_Lambda_r = r
-        self.hyperresistivity_Lambda_t = t
+            self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_PRESCRIBED
+            self.hyperresistivity_Lambda_x = d
+            self.hyperresistivity_Lambda_r = r
+            self.hyperresistivity_Lambda_t = t
+        elif dBB is not None:
+            d, r, t = self._setPrescribedData(data=dBB, radius=radius, times=times)
+
+            self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_PRESCRIBED
+            self.hyperresistivity_dBB_x = d
+            self.hyperresistivity_dBB_r = r
+            self.hyperresistivity_dBB_t = t
 
 
     def setHyperresistivityAdaptive(
@@ -96,6 +108,10 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
                 self.hyperresistivity_Lambda_x = hyp['Lambda']['x']
                 self.hyperresistivity_Lambda_r = hyp['Lambda']['r']
                 self.hyperresistivity_Lambda_t = hyp['Lambda']['t']
+            elif 'dBB' in hyp:
+                self.hyperresistivity_dBB_x = hyp['dBB']['x']
+                self.hyperresistivity_dBB_r = hyp['dBB']['r']
+                self.hyperresistivity_dBB_t = hyp['dBB']['t']
             elif 'dBB0' in hyp:
                 self.hyperresistivity_dBB0 = float(scal(hyp['dBB0']))
                 self.hyperresistivity_grad_j_tot_max = float(scal(hyp['grad_j_tot_max']))
@@ -111,11 +127,18 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         hypres = { 'mode': self.hyperresistivity_mode }
 
         if self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_PRESCRIBED:
-            hypres['Lambda'] = {
-                'x': self.hyperresistivity_Lambda_x,
-                'r': self.hyperresistivity_Lambda_r,
-                't': self.hyperresistivity_Lambda_t
-            }
+            if self.hyperresistivity_Lambda_x is not None:
+                hypres['Lambda'] = {
+                    'x': self.hyperresistivity_Lambda_x,
+                    'r': self.hyperresistivity_Lambda_r,
+                    't': self.hyperresistivity_Lambda_t
+                }
+            elif self.hyperresistivity_dBB_x is not None:
+                hypres['dBB'] = {
+                    'x': self.hyperresistivity_dBB_x,
+                    'r': self.hyperresistivity_dBB_r,
+                    't': self.hyperresistivity_dBB_t
+                }
         elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE or self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL:
             hypres['dBB0'] = self.hyperresistivity_dBB0
             hypres['grad_j_tot_max'] = self.hyperresistivity_grad_j_tot_max
@@ -132,7 +155,12 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         if self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_NEGLECT:
             pass
         elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_PRESCRIBED:
-            self._verifySettingsPrescribedData('psi_p hyperresistivity', data=self.hyperresistivity_Lambda_x, radius=self.hyperresistivity_Lambda_r, times=self.hyperresistivity_Lambda_t)
+            if self.hyperresistivity_Lambda_x is not None:
+                self._verifySettingsPrescribedData('psi_p hyperresistivity', data=self.hyperresistivity_Lambda_x, radius=self.hyperresistivity_Lambda_r, times=self.hyperresistivity_Lambda_t)
+            elif self.hyperresistivity_dBB_x is not None:
+                self._verifySettingsPrescribedData('psi_p hyperresistivity', data=self.hyperresistivity_dBB_x, radius=self.hyperresistivity_dBB_r, times=self.hyperresistivity_dBB_t)
+            else:
+                raise EquationException(f"Hyperresistivity mode is set to 'prescribed', but no data has been provided for either 'Lambda' or 'dBB'.")
         elif self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE or self.hyperresistivity_mode == HYPERRESISTIVITY_MODE_ADAPTIVE_LOCAL:
             if not np.isscalar(self.hyperresistivity_dBB0):
                 raise EquationException(f"The hyperresistivity parameter 'dBB0' must be a scalar. Current value: {self.hyperresistivity_dBB0}.")

@@ -18,7 +18,7 @@ AdaptiveHyperresistiveDiffusionTerm::AdaptiveHyperresistiveDiffusionTerm(
 	const real_t grad_j_tot_max, bool gradient_normalized,
 	const real_t dBB0, const real_t suppression_level, bool localized
 ) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, suppression_level, localized),
-	HyperresistiveDiffusionTerm(grid, nullptr), ions(ions), dBB0(dBB0) {
+	HyperresistiveDiffusionTerm(grid, ions, nullptr, nullptr), ions(ions), dBB0(dBB0) {
 	
 	this->Lambda0 = new real_t[grid->GetNr()+1];
 	this->Lambda = new real_t[grid->GetNr()+1];
