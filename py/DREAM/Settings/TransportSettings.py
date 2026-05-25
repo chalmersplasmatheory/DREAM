@@ -35,6 +35,7 @@ FROZEN_CURRENT_MODE_N_RE = 4
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
 BC_DF_CONST = 3         # Assume that df/dr is constant on the plasma boundary 
+BC_KIRAMOV = 4          # Assume parallel heat losses according to the Kiramov model
 
 
 class TransportSettings:
@@ -654,7 +655,7 @@ class TransportSettings:
         """
         Verify that the boundary condition has been correctly configured.
         """
-        bcs = [BC_CONSERVATIVE, BC_F_0, BC_DF_CONST]
+        bcs = [BC_CONSERVATIVE, BC_F_0, BC_DF_CONST, BC_KIRAMOV]
         if self.boundarycondition not in bcs:
             raise TransportException("Invalid boundary condition specified for transport: {}".format(self.boundarycondition))
 
