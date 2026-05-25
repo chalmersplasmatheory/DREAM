@@ -490,17 +490,17 @@ class TransportSettings:
         if 'D_I_min' in data:
             self.frozen_current_D_I_min = float(scal(data['D_I_min']))
         if 'D_I_max' in data:
-            self.frozen_current_D_I_max = float(data['D_I_max'])
+            self.frozen_current_D_I_max = float(scal(data['D_I_max']))
         if 'dDdt_D_max' in data:
-            self.frozen_current_dDdt_D_max = float(data['dDdt_D_max'])
+            self.frozen_current_dDdt_D_max = float(scal(data['dDdt_D_max']))
         if 'D_I_floor' in data:
-            self.frozen_current_D_I_floor = float(data['D_I_floor'])
+            self.frozen_current_D_I_floor = float(scal(data['D_I_floor']))
             self.frozen_current_D_I_max = float(scal(data['D_I_max']))
         if 'I_p_presc' in data:
             self.frozen_current_Ip_presc = data['I_p_presc']['x']
             self.frozen_current_Ip_presc_t = data['I_p_presc']['t']
         if 't_adjust' in data:
-            self.frozen_current_t_adjust = float(data['t_adjust'])
+            self.frozen_current_t_adjust = float(scal(data['t_adjust']))
 
 
     def todict(self):
