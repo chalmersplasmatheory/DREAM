@@ -5,6 +5,7 @@
 #include <Python.h>
 
 extern "C" {
+	static PyObject *dreampy_get_grid(PyObject*, PyObject*);
     static PyObject *dreampy_run(PyObject*, PyObject*);
     static PyObject *dreampy_run_simulation(PyObject*, PyObject*);
     static PyObject *dreampy_setup_simulation(PyObject*, PyObject*);

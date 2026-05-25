@@ -1,6 +1,7 @@
 /**
  * Implementation of a class that calculates and stores quantities related to the SPI shards
  */
+#include <gsl/gsl_sf_expint.h>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -18,15 +19,15 @@ using namespace std;
  * This is in turn needed in the NGS formula since the ablation rate (from Parks TSDW 2017) is given in g/s
  * Isotope 0 means naturally occuring mix
  */
-const len_t SPIHandler::nMolarMassList=3;
-const len_t SPIHandler::ZMolarMassList[nMolarMassList]={1,1,10};
-const len_t SPIHandler::isotopesMolarMassList[nMolarMassList]={2,0,0};// 0 means naturally occuring mix
-const real_t SPIHandler::molarMassList[nMolarMassList]={0.0020141,0.001008,0.020183};// kg/mol
+const len_t SPIHandler::nMolarMassList=4;
+const len_t SPIHandler::ZMolarMassList[nMolarMassList]={1,1,10,18};
+const len_t SPIHandler::isotopesMolarMassList[nMolarMassList]={2,0,0,0};// 0 means naturally occuring mix
+const real_t SPIHandler::molarMassList[nMolarMassList]={0.0020141,0.001008,0.020183,0.039948};// kg/mol
 
-const len_t SPIHandler::nSolidDensityList=3;
-const len_t SPIHandler::ZSolidDensityList[nSolidDensityList]={1,1,10};
-const len_t SPIHandler::isotopesSolidDensityList[nSolidDensityList]={2,0,0};
-const real_t SPIHandler::solidDensityList[nSolidDensityList]={205.9,86,1444};// kg/m^3
+const len_t SPIHandler::nSolidDensityList=4;
+const len_t SPIHandler::ZSolidDensityList[nSolidDensityList]={1,1,10,18};
+const len_t SPIHandler::isotopesSolidDensityList[nSolidDensityList]={2,0,0,0};
+const real_t SPIHandler::solidDensityList[nSolidDensityList]={205.9,86,1444,1623};// kg/m^3
 
 // Normalisation constants used in the NGS formula
 const real_t T0=2000.0;// eV
@@ -52,7 +53,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     OptionConstants::eqterm_spi_magnetic_field_dependence_mode spi_magnetic_field_dependence_mode, 
     OptionConstants::eqterm_spi_shift_mode spi_shift_mode, 
     real_t *TDrift, real_t T0Drift, real_t DeltaYDrift, real_t RmDrift, real_t *ZavgDriftArray,
-	len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift,
+	len_t nZavgDrift, len_t *ZsDrift, len_t *isotopesDrift, real_t *heatReDepositionFactorDrift,
     real_t VpVolNormFactor=1, real_t rclPrescribedConstant=0.01, const int_t *nbrShiftGridCell=nullptr){
 
     // Get pointers to relevant objects
@@ -88,6 +89,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->spi_magnetic_field_dependence_mode=spi_magnetic_field_dependence_mode;
     this->spi_shift_mode=spi_shift_mode;
 
+    if (this->spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL && DeltaYDrift <= 0)
+        throw DREAMException("SPIHandler: DeltaYDrift must be non-zero when using the plasmoid drift model.");
+
     // Set prescribed cloud radius (if any)
     if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT){
         this->rclPrescribedConstant=rclPrescribedConstant;
@@ -118,8 +122,10 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     AllocateQuantities();
     
     // Ablation cloud quantities
-    for(len_t ip=0;ip<nShard;ip++)
+    for(len_t ip=0;ip<nShard;ip++){
         this->TDrift[ip]=TDrift[ip];
+        this->heatReDepositionFactorDrift[ip] = heatReDepositionFactorDrift[ip];
+    }
     this->T0Drift=T0Drift;
     this->DeltaYDrift=DeltaYDrift;
     this->RmDrift=RmDrift;
@@ -263,11 +269,13 @@ void SPIHandler::AllocateQuantities(){
     nbrShiftGridCell = new int_t[nShard];
     nbrShiftGridCellPrescribed = new int_t[nShard];
     TDrift = new real_t[nShard];
+    heatReDepositionFactorDrift = new real_t[nShard];
     pelletDeuteriumFraction=new real_t[nShard];
     rp=new real_t[nShard];
     rpdot=new real_t[nShard];
     shift_r=new real_t[nShard];
     shift_store=new real_t[nShard];
+    shift_store_major_radius=new real_t[nShard];
     YpdotPrevious=new real_t[nShard];
     ZavgDrift=new real_t[nShard];
     plasmoidAbsorbtionFactor=new real_t[nShard];
@@ -308,11 +316,13 @@ void SPIHandler::DeallocateQuantities(){
     delete [] nbrShiftGridCell;
     delete [] nbrShiftGridCellPrescribed;
     delete [] TDrift;
+    delete [] heatReDepositionFactorDrift;
     delete [] pelletDeuteriumFraction;
     delete [] rp;
     delete [] rpdot;
     delete [] shift_r;
     delete [] shift_store;
+    delete [] shift_store_major_radius;
     delete [] YpdotPrevious;
     delete [] ZavgDrift;
     delete [] plasmoidAbsorbtionFactor;
@@ -489,6 +499,7 @@ real_t SPIHandler::DriftRadius(len_t ip){
     real_t factor = (1+ZavgDrift[ip])*2*qe*TDrift[ip]*qBgDrift/(CSTDrift*pelletMolarMass[ip]/N_Avogadro)*tAccDrift;
 
 	real_t DeltaR = (term1 + factor * (first + second + third));
+        shift_store_major_radius[ip] = DeltaR;
 
 	real_t xpDrift = this->xp[ip*3] + DeltaR*cos(this->phiCoordPNext[ip]);
 	real_t ypDrift = this->xp[ip*3+1];
@@ -805,10 +816,10 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
                 // NOTE: only strictly valid for delta function kernel (assumes deposition only on one side of r=0)
                 if(nbrShiftGridCell[ip]<0){
                     if(ir<nr+nbrShiftGridCell[ip])
-                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol((int_t)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int_t)ir-nbrShiftGridCell[ip])*nShard+ip];
+                        heatAbsorbtionRate[ir]+=heatReDepositionFactorDrift[ip]*rGrid->GetVpVol((int_t)ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[((int_t)ir-nbrShiftGridCell[ip])*nShard+ip];
                 }else if(nbrShiftGridCell[ip]>=0){
                     if((int_t)ir>=nbrShiftGridCell[ip])
-                        heatAbsorbtionRate[ir]+=rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                        heatAbsorbtionRate[ir]+=heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*heatAbsorbtionPrefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 }     
             }
         }
@@ -1128,9 +1139,9 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                         
                         // Account for shifted re-deposition
                         if(nbrShiftGridCell[ip]<0 && ir<nr+nbrShiftGridCell[ip])
-                            jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                            jacEl+=-heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                         else if(nbrShiftGridCell[ip]>0 && ir>=(len_t)nbrShiftGridCell[ip])
-                            jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                            jacEl+=-heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                     
                         jac->SetElement(ir,ip,jacEl);
                         jacIsSet=true;
@@ -1147,9 +1158,9 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                         
                     // Account for shifted re-deposition
                     if(nbrShiftGridCell[ip]<0 && ir<nr+nbrShiftGridCell[ip])
-                        jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                        jacEl+=-heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                     else if(nbrShiftGridCell[ip]>0 && ir>=(len_t)nbrShiftGridCell[ip])
-                        jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                        jacEl+=-heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 
                     jac->SetElement(ir,irp[ip],jacEl);
                     jacIsSet=true;
@@ -1165,9 +1176,9 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
                         
                     // Account for shifted re-deposition
                     if(nbrShiftGridCell[ip]<0 && ir<nr+nbrShiftGridCell[ip])
-                        jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                        jacEl+=-heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                     else if(nbrShiftGridCell[ip]>0 && ir>=(len_t)nbrShiftGridCell[ip])
-                        jacEl+=-rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
+                        jacEl+=-heatReDepositionFactorDrift[ip]*rGrid->GetVpVol(ir-nbrShiftGridCell[ip])/rGrid->GetVpVol(ir)*prefactor*heatAbsorbtionProfilesAllShards[(ir-nbrShiftGridCell[ip])*nShard+ip];
                 
                     jac->SetElement(ir,irp[ip],jacEl);
                     jacIsSet=true;

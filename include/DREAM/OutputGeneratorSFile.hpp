@@ -31,6 +31,8 @@ namespace DREAM {
 
         SFile *GetSFile() { return this->sf; }
 
+		virtual void SaveGridOnly(const std::string& s, bool b) { this->SaveGrids(s, b); }
+
         virtual void Save(bool current=false) override;
 	};
 }

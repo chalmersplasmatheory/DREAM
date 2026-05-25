@@ -49,6 +49,12 @@ perpendicular :math:`p_\perp` to the magnetic field).
 
 Trapped/passing boundary
 ------------------------
+.. note::
+
+   For kinetic simulations, the magnetic geometry used must be such that every
+   magnetic field line has exactly one minimum and one maximum. For more details
+   about this restriction, please see :ref:`radgrid-restrictions`.
+
 In toroidal geometry, particles with
 :math:`|\xi_0| < \sqrt{1-B_{\rm min}/B_{\rm max}}` will be trapped and bounce
 back and forth in the magnetic field. Here, :math:`B_{\rm max}` is the maximum

@@ -4,6 +4,7 @@
 
 import h5py
 import numpy as np
+from packaging import version
 
 
 DATA_TYPE_ARRAY    = 1
@@ -132,11 +133,16 @@ class DataObject:
             raise Exception("The '_getstring()' method is only intended for HDF5 strings.")
 
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         """
         Convert to numpy array.
         """
-        return np.asarray(self[:], dtype=dtype)
+        # The 'copy' argument was introduced in numpy 2.0.0, and
+        # raises a warning if not present.
+        if version.parse(np.__version__) >= version.parse('2.0.0'):
+            return np.asarray(self[:], dtype=dtype, copy=copy)
+        else:
+            return np.asarray(self[:], dtype=dtype)
 
 
     """
@@ -170,7 +176,7 @@ class DataObject:
     def __and__(self, other): return self._lop(other, lambda o1, o2 : o1 and o2)
 
 
-    def __or__(self, other): return self._lop(other, lambda o1, o2 : o1 or p2)
+    def __or__(self, other): return self._lop(other, lambda o1, o2 : o1 or o2)
 
 
     def __neg__(self): return -self.data[:]

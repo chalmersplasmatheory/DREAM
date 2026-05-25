@@ -141,6 +141,8 @@ class EqBase:
                     plt.plot(vertices[i][:,0], vertices[i][:,1])
                     plotted = True
 
+            plt.plot(*self.opoint, 'r.')
+
             msg = f'No closed flux surface was found for psi_n={psi_n}'
             if plotted:
                 plt.title(msg)

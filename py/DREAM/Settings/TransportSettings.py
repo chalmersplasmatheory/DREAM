@@ -2,8 +2,11 @@
 
 
 import numpy as np
-from .. DREAMException import DREAMException
 
+from .. DREAMException import DREAMException
+from .. helpers import scal
+
+from . Equations.EquationException import EquationException
 
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
@@ -138,14 +141,14 @@ class TransportSettings:
         """
         Set the lower momentum bound for the runaway, radial transport, region.
         """
-        self.pstar=float(pstar)
+        self.pstar=float(scal(pstar))
     
 
     def setSvenssonInterp1dParam(self, interp1d_param=SVENSSON_INTERP1D_PARAM_TIME):
         """
         Set the lower momentum bound for the runaway, radial transport, region.
         """
-        self.interp1d_param = int(interp1d_param)
+        self.interp1d_param = int(scal(interp1d_param))
 
 
     def setBoundaryCondition(self, bc=None):
@@ -238,11 +241,11 @@ class TransportSettings:
         if r.ndim != 1: r = np.reshape(r, (r.size,))
         if t.ndim != 1: t = np.reshape(t, (t.size,))
 
-        if (self.kinetic == False and not override_kinetic) and len(coeff.shape) == 2:
+        if (not self.kinetic and not override_kinetic) and len(coeff.shape) == 2:
             setattr(self, name, coeff)
             setattr(self, name+'_r', r)
             setattr(self, name+'_t', t)
-        elif (self.kinetic == True or override_kinetic) and len(coeff.shape) == 4:
+        elif (self.kinetic or override_kinetic) and len(coeff.shape) == 4:
             # Verify that the momentum grid is given
             if p is not None and xi is not None:
                 ppar, pperp = None, None
@@ -345,13 +348,6 @@ class TransportSettings:
         self.frozen_current_t_adjust = t_adjust
 
 
-    def setBoundaryCondition(self, bc):
-        """
-        Set the boundary condition to use for the transport.
-        """
-        self.boundarycondition = bc
-
-
     def fromdict(self, data):
         """
         Set all options from a dictionary.
@@ -449,7 +445,7 @@ class TransportSettings:
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
         if 'pstar' in data:
-            self.pstar = float(data['pstar'])
+            self.pstar = float(scal(data['pstar']))
             
         if 'interp1d_param' in data:
             self.interp1d_param = data['interp1d_param']
@@ -484,21 +480,22 @@ class TransportSettings:
             self.dBB_t = data['dBB']['t']
 
         if 'mhdlike_dBB0' in data:
-            self.mhdlike_dBB0 = float(data['mhdlike_dBB0'])
-            self.mhdlike_grad_j_tot_max = float(data['mhdlike_grad_j_tot_max'])
-            self.mhdlike_gradient_normalized = bool(data['mhdlike_gradient_normalized'])
-            self.mhdlike_suppression_level = float(data['mhdlike_suppression_level'])
+            self.mhdlike_dBB0 = float(scal(data['mhdlike_dBB0']))
+            self.mhdlike_grad_j_tot_max = float(scal(data['mhdlike_grad_j_tot_max']))
+            self.mhdlike_gradient_normalized = bool(scal(data['mhdlike_gradient_normalized']))
+            self.mhdlike_suppression_level = float(scal(data['mhdlike_suppression_level']))
 
         if 'frozen_current_mode' in data:
-            self.frozen_current_mode = int(data['frozen_current_mode'])
+            self.frozen_current_mode = int(scal(data['frozen_current_mode']))
         if 'D_I_min' in data:
-            self.frozen_current_D_I_min = float(data['D_I_min'])
+            self.frozen_current_D_I_min = float(scal(data['D_I_min']))
         if 'D_I_max' in data:
             self.frozen_current_D_I_max = float(data['D_I_max'])
         if 'dDdt_D_max' in data:
             self.frozen_current_dDdt_D_max = float(data['dDdt_D_max'])
         if 'D_I_floor' in data:
             self.frozen_current_D_I_floor = float(data['D_I_floor'])
+            self.frozen_current_D_I_max = float(scal(data['D_I_max']))
         if 'I_p_presc' in data:
             self.frozen_current_Ip_presc = data['I_p_presc']['x']
             self.frozen_current_Ip_presc_t = data['I_p_presc']['t']

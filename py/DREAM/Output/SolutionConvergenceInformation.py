@@ -95,7 +95,7 @@ class SolutionConvergenceInformation:
         return ax
 
 
-    def plotx(self, t, u=None, ax=None, show=None):
+    def plotx(self, t, u=None, normalized=True, ax=None, show=None):
         """
         Plot the solution convergence progress.
         """

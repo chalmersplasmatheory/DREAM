@@ -104,9 +104,10 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
         for (len_t Z0 = 0; Z0 <= Z[i]; Z0++,ionOffset++) {
             const real_t *n = iondata->Eval(ionOffset, t);
             real_t *cd = currentData[i] + Z0*Nr;
-
-            for (len_t ir = 0; ir < Nr; ir++)
-                cd[ir] = n[ir];
+           
+                for (len_t ir = 0; ir < Nr; ir++){
+                    cd[ir] = n[ir];
+                }
         }
     }
 }

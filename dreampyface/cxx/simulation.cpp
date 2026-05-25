@@ -123,5 +123,33 @@ static PyObject *dreampy_get_time_vector(
 
 }
 
+/**
+ * Returns a DREAM grid dict.
+ *
+ * PYTHON PARAMETERS
+ * sim: PyCapsule object containing a pointer to the DREAM::Simulation
+ *      object to access.
+ */
+static PyObject *dreampy_get_grid(
+	PyObject* /*self*/, PyObject *args
+) {
+	DREAM::Simulation *sim = get_simulation_from_capsule(args);
+
+	if (sim == NULL)
+		return NULL;
+	
+	SFile_Python *sfp = new SFile_Python();
+	DREAM::OutputGeneratorSFile *ogs = new DREAM::OutputGeneratorSFile(
+		sim->GetEquationSystem(), sfp
+	);
+
+	ogs->SaveGridOnly("grid", true);
+
+	PyObject *dict = sfp->GetPythonDict();
+	delete sfp;
+
+	return dict;
+}
+
 }
 

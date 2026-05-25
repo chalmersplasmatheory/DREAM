@@ -27,6 +27,7 @@ void EqsysInitializer::NonLinearSolve(const real_t t0, vector<len_t>& ssQty) {
 	);
 	snl->SetSPIHandler(eqsys->GetSPIHandler());
 	snl->SetIonHandler(eqsys->GetIonHandler());
+	snl->SetBootstrap(eqsys->GetBootstrap());
 
 	// Calculate number of rows in matrix...
 	len_t matrix_size = 0;

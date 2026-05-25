@@ -1,9 +1,5 @@
 # Helper module for evaluating user-provided Python code
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-
 def evaluate(code, output):
     """
     Evaluate the given Python code.

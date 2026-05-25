@@ -1,14 +1,12 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from .OtherFluidQuantity import OtherFluidQuantity
-from .OutputException import OutputException
 from .CurrentDensity import CurrentDensity
 from .ScalarQuantity import ScalarQuantity
 
 
 class LCFSLoss(OtherFluidQuantity):
 
-    def __init__(self, name, data, description, grid, output, momentumgrid):
+    def __init__(self, name, data, description, grid, output):
         """
         Constructor.
         """

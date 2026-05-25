@@ -63,9 +63,12 @@ EquationSystem::~EquationSystem() {
 
     if (this->distHT != nullptr)
         delete this->distHT;
-    
+
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
+
+    if (this->bootstrap != nullptr)
+        delete this->bootstrap;
 
     if (this->initializer != nullptr)
         delete this->initializer;
@@ -142,7 +145,7 @@ void EquationSystem::ProcessSystem(const real_t t0) {
     }
 
     // Initialize from output...
-    if (this->initializerFile != "") 
+    if (this->initializerFile != "")
         this->initializer->InitializeFromOutput(
             this->initializerFile, this->currentTime, this->initializerFileIndex,
             this->ionHandler, this->initializerFileIgnore
@@ -253,7 +256,7 @@ void EquationSystem::Solve() {
     const real_t *guess = unknowns.GetLongVector(this->nontrivial_unknowns);
     solver->SetInitialGuess(guess);
     delete [] guess;
-    
+
     cout << "Beginning time advance..." << endl;
 
     Timer tim;
@@ -289,7 +292,7 @@ void EquationSystem::Solve() {
                 otherQuantityHandler->StoreAll(tNext);
             } else
                 unknowns.SaveStep(tNext, false);
-            
+
             timestepper->PrintProgress();
         } catch (DREAM::QuitException& ex) {
             // Rethrow quit exception

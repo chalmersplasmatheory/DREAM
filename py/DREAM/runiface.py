@@ -2,16 +2,9 @@
 
 import os
 import pathlib
-import subprocess
-import tempfile
 
 from . DREAMException import DREAMException
-from . DREAMOutput import DREAMOutput
-from . DREAMSettings import DREAMSettings
 from . DREAMTask import DREAMTask
-from subprocess import TimeoutExpired
-
-from subprocess import TimeoutExpired
 
 DREAMPATH = None
 
