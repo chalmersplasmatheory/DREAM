@@ -61,6 +61,30 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
     else:
         log_f = np.zeros_like(f_abs)
     
+    # Get a/R value from grid (matching HDF5 structure: grid/a and grid/R0)
+    try:
+        a = do.grid.a[:]
+        R0 = do.grid.R0[:]
+        
+        # Handle array or scalar
+        a_val = float(a[0]) if hasattr(a, '__len__') and len(a) > 0 else float(a)
+        R0_val = float(R0[0]) if hasattr(R0, '__len__') and len(R0) > 0 else float(R0)
+        
+        a_R = a_val / R0_val
+        a_R_text = f'a/R = {a_R:.2f}'
+    except Exception as e:
+        print(f"Warning: Could not read a/R value: {e}")
+        a_R_text = None
+    
+    # Get toroidal electric field E
+    try:
+        E_field = do.eqsys.E_field.get()
+        E_val = E_field[time_index, 0]
+        E_text = f'E = {E_val:.2f} V/m'
+    except Exception as e:
+        print(f"Warning: Could not read E_field: {e}")
+        E_text = None
+    
     # Create figure
     fig, ax = plt.subplots(1, 1, figsize=(10, 8))
     
@@ -82,7 +106,12 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
     
     time_val = do.grid.t[time_index]
     species_name = 'Runaway electrons ($f_\\mathrm{re}$)' if species == 'f_re' else 'Hot electrons ($f_\\mathrm{hot}$)'
-    ax.set_title(f'{species_name}\nTime = {time_val:.6e} s', fontsize=14)
+    title = f'{species_name}\nTime = {time_val:.6e} s'
+    if a_R_text:
+        title += f'\n{a_R_text}'
+    if E_text:
+        title += f', {E_text}'
+    ax.set_title(title, fontsize=14)
     
     ax.grid(True, linestyle='--', alpha=0.3)
     

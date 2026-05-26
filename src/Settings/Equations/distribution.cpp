@@ -66,6 +66,9 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/quasilinear/use_precomputed_matrix", "Use pre-computed matrix from HDF5 file (0=no, 1=yes)", (int_t)0);
     s->DefineSetting(mod + "/quasilinear/precomputed_file", "Path to pre-computed HDF5 matrix file", std::string(""));
     s->DefineSetting(mod + "/quasilinear/amplitude", "Wave amplitude (normalized to n_e m_e c^2)", (real_t)1e-10);
+    // Periodic wave injection parameters (QUADRE-style)
+    s->DefineSetting(mod + "/quasilinear/start_inject_time", "Time to start wave injection (seconds, -1 means immediate)", (real_t)-1.0);
+    s->DefineSetting(mod + "/quasilinear/inject_cycle_duration", "Duration of one injection cycle (seconds, 0 means continuous)", (real_t)0.0);
     s->DefineSetting(mod + "/quasilinear/spectrum_type", "Type of wave spectrum", (int_t)OptionConstants::WAVE_SPECTRUM_UNIFORM);
     s->DefineSetting(mod + "/quasilinear/num_k", "Number of wavenumber grid points", (int_t)100);
     s->DefineSetting(mod + "/quasilinear/num_ktheta", "Number of angle grid points", (int_t)20);

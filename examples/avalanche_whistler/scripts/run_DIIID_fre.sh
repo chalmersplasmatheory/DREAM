@@ -1,12 +1,12 @@
 set -e
 
-cd /data/zhzhou/DREAM/examples/avalanche/scripts
-python generate_with_fre.py
-# python generate_with_fre_whistler.py --amplitude 1e3 --a 0.4 --R 1.67
+cd /data/zhzhou/DREAM/examples/avalanche_whistler/scripts
+# python generate_with_fre.py
+python generate_with_fre_whistler.py --amplitude 1e3 --a 0.4 --R 1.67
 
 # Set output file path
-# DATA_DIR="../outputs/quasilinear_whistler_output.h5"
-DATA_DIR="../outputs/dreicer_with_fre_output.h5"
+DATA_DIR="../outputs/quasilinear_whistler_output.h5"
+# DATA_DIR="../outputs/dreicer_with_fre_output.h5"
 
 PLOT_DIR="../figures"
 

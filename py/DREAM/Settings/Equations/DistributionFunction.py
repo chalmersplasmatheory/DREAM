@@ -450,7 +450,10 @@ class DistributionFunction(UnknownQuantity):
                     'ktheta_max': getattr(self, 'ql_ktheta_max', 0.3),
                     'amplitude': getattr(self, 'ql_amplitude', 1e-10),
                     'harmonic_mode': getattr(self, 'ql_harmonic_mode', QL_HARMONIC_N_MINUS_1),
-                    'use_simple_dispersion': getattr(self, 'ql_use_simple_dispersion', 1)
+                    'use_simple_dispersion': getattr(self, 'ql_use_simple_dispersion', 1),
+                    # Periodic injection parameters (QUADRE-style)
+                    'start_inject_time': getattr(self, 'ql_start_inject_time', -1.0),
+                    'inject_cycle_duration': getattr(self, 'ql_inject_cycle_duration', 0.0)
                 }
                 
                 # Only save precomputed_file if actually using pre-computed matrix
@@ -600,6 +603,9 @@ class DistributionFunction(UnknownQuantity):
                                # Pre-computed matrix mode
                                use_precomputed_matrix=False,
                                precomputed_file='',
+                               # Periodic wave injection (QUADRE-style)
+                               start_inject_time=-1.0,
+                               inject_cycle_duration=0.0,
                                # QUADRE-style convenience parameters
                                quadre_params=None):
         """
@@ -621,6 +627,11 @@ class DistributionFunction(UnknownQuantity):
                                    Much faster but less accurate. Useful for debugging.
             use_precomputed_matrix: If True, load pre-computed diffusion matrix from HDF5 file
             precomputed_file: Path to HDF5 file containing pre-computed matrix
+            start_inject_time: Time to start wave injection in seconds. 
+                               -1.0 means start immediately (default).
+            inject_cycle_duration: Duration of one injection cycle in seconds.
+                                   0.0 means continuous injection (default).
+                                   Non-zero enables 50% duty cycle periodic injection.
             quadre_params:   Dictionary with QUADRE-style parameters for convenience:
                              {'k_main': 54.58, 'ktheta_main': 2.42, 
                               'k_range': [50.61, 58.55], 'ktheta_range': [2.35, 2.49]}
@@ -678,6 +689,10 @@ class DistributionFunction(UnknownQuantity):
         self.ql_ktheta_max = ktheta_max if ktheta_max is not None else 0.3
         self.ql_amplitude = amplitude
         self.ql_use_simple_dispersion = 1 if use_simple_dispersion else 0  # Convert bool to int for HDF5 serialization
+        
+        # Set periodic injection parameters
+        self.ql_start_inject_time = start_inject_time
+        self.ql_inject_cycle_duration = inject_cycle_duration
         
         # Set harmonic mode
         if harmonic_mode == 'n_minus_1':

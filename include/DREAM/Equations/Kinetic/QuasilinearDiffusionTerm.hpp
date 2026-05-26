@@ -60,37 +60,17 @@ namespace DREAM {
         bool first_rebuild_done;  // Flag: true after first Rebuild() call
         bool operator_cached;     // Flag: true if diffusion operator matrices are cached
         
+        // Time-dependent amplitude (for pre-computed matrix scaling)
+        real_t current_amplitude;
+        
         // Track wave amplitudes to detect changes
         real_t *last_amplitudes;  // [numModes] - stores amplitudes from last calculation
         len_t num_modes_tracked;
         
-        // Time-dependent amplitude (for pre-computed matrix scaling)
-        real_t current_amplitude;
-        
-        /**
-         * Quick resonance check: determine if a grid point can possibly resonate
-         * with any wave mode. This is a fast pre-filter before calling the full
-         * resonance solver.
-         * 
-         * Based on QUADRE's approach:
-         *   omega_res = k*v_parallel*cos(theta_k) + n*omega_ce/gamma
-         *   
-         * For a given (p, xi), calculate the range of possible resonant frequencies
-         * as k varies over [k_min, k_max]. If this range doesn't overlap with
-         * the wave spectrum frequency range, skip this point.
-         * 
-         * @param p          Momentum
-         * @param xi         Pitch-angle cosine
-         * @param theta_k    Wave propagation angle
-         * @param n          Harmonic number
-         * @return           true if resonance is possible, false otherwise
-         */
-        bool CanResonate(
-            real_t p,
-            real_t xi,
-            real_t theta_k,
-            int n
-        ) const;
+        // Time-dependent amplitude control (periodic injection)
+        real_t start_inject_time;        // Time to start injection (-1 = immediate)
+        real_t inject_cycle_duration;    // Cycle duration (0 = continuous)
+        real_t base_amplitude;           // Base amplitude when injection is ON
         
     public:
         /**
@@ -102,7 +82,9 @@ namespace DREAM {
             WhistlerDispersion *dispersion,
             ResonanceSolver *resonanceSolver,
             WaveParticleCoupling *coupling,
-            const std::vector<int> &harmonicModes
+            const std::vector<int> &harmonicModes,
+            real_t start_inject_time = -1.0,   // NEW parameter
+            real_t inject_cycle_duration = 0.0  // NEW parameter
         );
         
         /**
@@ -110,11 +92,15 @@ namespace DREAM {
          * @param grid              Momentum grid
          * @param hdf5_file         Path to pre-computed HDF5 file
          * @param initial_amplitude Initial wave amplitude (can be updated at runtime)
+         * @param start_inject_time Time to start injection (-1 = immediate)
+         * @param inject_cycle_duration Cycle duration (0 = continuous)
          */
         QuasilinearDiffusionTerm(
             FVM::Grid *grid,
             const std::string &hdf5_file,
-            real_t initial_amplitude = 1.0
+            real_t initial_amplitude = 1.0,
+            real_t start_inject_time = -1.0,   // NEW parameter
+            real_t inject_cycle_duration = 0.0  // NEW parameter
         );
         
         ~QuasilinearDiffusionTerm();
@@ -143,11 +129,18 @@ namespace DREAM {
         void precalculateDispersion();
         
         /**
-         * Calculate diffusion coefficients for given radial grid point
+         * Calculate diffusion coefficients using REVERSE resonance solving method.
+         * This is the primary method currently in use.
+         * 
+         * Instead of iterating over grid points and checking if they resonate,
+         * this method:
+         * 1. For each wave mode (k, theta_k, n), solves for exact resonant p given xi
+         * 2. Finds which grid cells contain the resonant point
+         * 3. Distributes contribution to surrounding grid points using triangular weights
+         * 
+         * This ensures grid-independent results and captures resonance even when
+         * the exact resonant point falls between grid nodes.
          */
-        void calculateDiffusionCoefficients(len_t ir);
-        
-        // New method using reverse resonance solving
         void calculateDiffusionCoefficientsReverse(len_t ir);
         
         /**
@@ -164,6 +157,14 @@ namespace DREAM {
          * Get cached diffusion coefficient D_ξξ at grid point
          */
         real_t getD_xixi(len_t ir, len_t i, len_t j) const;
+        
+    private:
+        /**
+         * Calculate effective wave amplitude at time t based on periodic injection schedule
+         * @param t  Current simulation time
+         * @return   Effective amplitude (0 or base_amplitude)
+         */
+        real_t calculateEffectiveAmplitude(real_t t) const;
     };
 }
 

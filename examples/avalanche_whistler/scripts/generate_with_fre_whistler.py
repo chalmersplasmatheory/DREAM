@@ -154,7 +154,9 @@ ds.eqsys.f_re.setQuasilinearDiffusion(
     num_ktheta=20,        # Match QUADRE discretization
     amplitude=args.amplitude,      # Wave amplitude (normalized units) - PHYSICAL VALUE from QUADRE (δB/B₀ ~ 10⁻⁵)
     harmonic_mode='both',  # Include n = -2,-1,0,+1,+2
-    use_simple_dispersion=True  # Use simplified dispersion for testing (ω = k|k_∥| * w)
+    use_simple_dispersion=True,  # Use simplified dispersion for testing (ω = k|k_∥| * w)
+    start_inject_time=1.0,       # Start injection at t=0.5s
+    inject_cycle_duration=0.2    # 0.2s cycle (0.1s ON, 0.1s OFF) - QUADRE-style periodic injection
 )
 
 print(f"  ✓ Quasilinear diffusion enabled")
@@ -186,7 +188,7 @@ ds.radialgrid.setCustomGridPoints(r_f)
 # ============================================================================
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.solver.preconditioner.setEnabled(True)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)  # Disable verbose output for cleaner logs
 
 # Include quantities for analysis
 ds.other.include('fluid', 'nu_s', 'nu_D', 'lnLambda')
