@@ -41,3 +41,5 @@ examples/test_dispersion_relation/*.png
 venv
 .venv
 figures*/
+outputs/
+DREAMdoc*/

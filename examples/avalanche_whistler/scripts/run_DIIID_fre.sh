@@ -8,7 +8,8 @@ python generate_with_fre_whistler.py --amplitude 1e3 --a 0.4 --R 1.67
 DATA_DIR="../outputs/quasilinear_whistler_output.h5"
 # DATA_DIR="../outputs/dreicer_with_fre_output.h5"
 
-PLOT_DIR="../figures"
+# PLOT_DIR="../figures"
+PLOT_DIR="../figures_w_0.4_1.67_E0.05_t3"
 
 # Create plot directory if it doesn't exist
 if [ ! -d "$PLOT_DIR" ]; then

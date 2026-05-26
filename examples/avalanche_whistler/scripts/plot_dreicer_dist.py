@@ -55,17 +55,66 @@ if hasattr(do.eqsys, 'f_hot'):
     plt.show()
 
 # Plot electron density evolution
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(6, 6))
 
 t = do.grid.t[:]
 n_cold = do.eqsys.n_cold[:, 0]
 n_hot = do.eqsys.n_hot[:, 0] 
 n_re = do.eqsys.n_re[:, 0]
 
-plt.plot(t, n_cold, label=r'$n_{\rm cold}$')
-plt.plot(t, n_hot, label=r'$n_{\rm hot}$')
-plt.plot(t, n_re, label=r'$n_{\rm re}$')
-plt.plot(t, n_cold + n_hot + n_re, '--', label=r'$n_{\rm total}$')
+# Compute trapped and passing runaway densities from f_re
+if hasattr(do.eqsys, 'f_re'):
+    f_re = do.eqsys.f_re[:]            # [nt, nr, nxi, np]
+    f_re_r0 = f_re[:, 0, :, :]         # [nt, nxi, np], first radial point
+
+    p  = do.grid.runaway.p[:]          # [np]  — momentum grid
+    xi = do.grid.runaway.xi[:]         # [nxi] — pitch grid
+    Vp = do.grid.runaway.Vprime[:]     # [nr, nxi, np]
+
+    # Trapped/passing boundary at first radial grid point
+    xi0 = do.grid.xi0TrappedBoundary[0]
+
+    mask_trapped = np.abs(xi) < xi0    # [nxi]
+    mask_passing = ~mask_trapped
+
+    # V' for the first radial point, broadcast to all times
+    Vp_r0 = Vp[0, :, :]                # [nxi, np]
+    integrand = f_re_r0 * Vp_r0[np.newaxis, :, :]   # [nt, nxi, np]
+
+    # Integrate over p (axis=-1), then over xi (axis=1)
+    n_re_trapped = np.trapz(
+        np.trapz(integrand[:, mask_trapped, :], p, axis=-1),
+        xi[mask_trapped], axis=-1
+    )
+    n_re_passing = np.trapz(
+        np.trapz(integrand[:, mask_passing, :], p, axis=-1),
+        xi[mask_passing], axis=-1
+    )
+
+    # Normalize so that n_re_trapped + n_re_passing agrees with fluid n_re
+    total_from_f = n_re_trapped + n_re_passing
+    scale = np.where(total_from_f > 0, n_re / total_from_f, 1.0)
+    n_re_trapped *= scale
+    n_re_passing *= scale
+else:
+    n_re_trapped = np.full_like(n_re, np.nan)
+    n_re_passing = np.full_like(n_re, np.nan)
+
+# Filter data to t > 0.5s before plotting to avoid auto-scaling to early times
+mask = t > 0.5
+t_filt = t[mask]
+n_cold_filt = n_cold[mask]
+n_hot_filt = n_hot[mask]
+n_re_filt = n_re[mask]
+n_re_trapped_filt = n_re_trapped[mask]
+n_re_passing_filt = n_re_passing[mask]
+
+plt.plot(t_filt, n_cold_filt, label=r'$n_{\rm cold}$')
+plt.plot(t_filt, n_hot_filt, label=r'$n_{\rm hot}$')
+plt.plot(t_filt, n_re_filt, label=r'$n_{\rm re}$')
+plt.plot(t_filt, n_re_trapped_filt, '--', label=r'$n_{\rm re, trapped}$')
+plt.plot(t_filt, n_re_passing_filt, ':', label=r'$n_{\rm re, passing}$')
+plt.plot(t_filt, n_cold_filt + n_hot_filt + n_re_filt, '-.', label=r'$n_{\rm total}$')
 
 plt.xlabel(r'Time (s)')
 plt.ylabel(r'Electron density (m$^{-3}$)')
@@ -105,7 +154,7 @@ if np.any(combined_mask):
     final_time = t_avg[combined_mask][-1]
     
     # Add annotation showing final growth rate
-    plt.annotate(f'Final $\gamma$ = {final_gamma:.3e} s$^{{-1}}$\nat t = {final_time:.3f} s',
+    plt.annotate(f'Final $\\gamma$ = {final_gamma:.3e} s$^{{-1}}$\nat t = {final_time:.3f} s',
                 xy=(final_time, final_gamma),
                 xytext=(0.7*final_time, 0.7*final_gamma),
                 fontsize=11,

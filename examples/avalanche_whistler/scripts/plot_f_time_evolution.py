@@ -28,66 +28,81 @@ os.makedirs(args.plot_dir, exist_ok=True)
 # 加载数据
 do = DREAMOutput(args.data_dir)
 
-# 获取分布函数数据
-f_hot = do.eqsys.f_hot[:, 0, :, :]  # 所有时间步，第一个径向点，所有xi和p
-p = do.grid.hottail.p[:]
-xi = do.grid.hottail.xi[:]
+# 获取分布函数数据 — 优先使用 f_re (动量范围更大，可达 p≫1)
+if hasattr(do.eqsys, 'f_re') and do.eqsys.f_re is not None:
+    f = do.eqsys.f_re[:, 0, :, :]   # [nt, nxi, np]
+    p = do.grid.runaway.p[:]
+    xi = do.grid.runaway.xi[:]
+    print("Using f_re (runaway grid, extended momentum range)")
+else:
+    f = do.eqsys.f_hot[:, 0, :, :]  # [nt, nxi, np]
+    p = do.grid.hottail.p[:]
+    xi = do.grid.hottail.xi[:]
+    print("Using f_hot (hottail grid)")
 
-# 选择特定的pitch角索引（接近平行方向）
-xi_index = -1  # 最后一个xi点，接近xi=1（平行方向）
+def _auto_ylim(values, pad_bottom=3, pad_top=3):
+    """从数据中自动计算合适的 ylim，忽略 -inf。"""
+    valid = np.isfinite(values)
+    if not np.any(valid):
+        return -20, 5
+    vmin = np.min(values[valid])
+    vmax = np.max(values[valid])
+    return vmin - pad_bottom, vmax + pad_top
 
-# 创建一个图形，将所有时间步的线条画在同一张图中
-plt.figure(figsize=(10, 6))
 
-# 选择一些有代表性的时刻来绘制，避免线条过多看不清
-# 这里我们每隔一定间隔选取一个时间步
-num_times = f_hot.shape[0]
-step_interval = max(1, num_times // 8)  # 最多绘制8条线
-selected_times = range(0, num_times, step_interval)
+# ========= 图1: 所有时间步的 xi-积分分布函数叠加 =========
+plt.figure(figsize=(6, 6))
 
-# 为每个选定的时间步绘制分布函数
+# 选取指定时间点对应的索引
+target_times = np.array([0.5, 0.9, 1.1, 3.0])
+selected_times = np.unique([np.argmin(np.abs(do.grid.t[:] - tt)) for tt in target_times])
+
 colors = plt.cm.viridis(np.linspace(0, 1, len(selected_times)))
+all_log = []
 
 for i, t_idx in enumerate(selected_times):
-    f_at_time = f_hot[t_idx, :, :]  # 选定时间步，所有xi和p
-    f_selected_xi = f_at_time[xi_index, :]  # 选定pitch角的分布函数
-    # 避免取log(0)
-    f_abs = np.abs(f_selected_xi)
-    f_nonzero = np.where(f_abs > 0, f_abs, 1e-30)
+    f_at_time = f[t_idx, :, :]
+    f_vs_p = np.trapz(np.abs(f_at_time), xi, axis=0)
+    f_nonzero = np.where(f_vs_p > 0, f_vs_p, 1e-30)
+    log_f = np.log10(f_nonzero)
+    all_log.append(log_f)
     
-    plt.plot(p, np.log10(f_nonzero), color=colors[i], linewidth=2, 
-             label=f't={do.grid.t[t_idx]*1e6:.1f} μs')
+    plt.plot(p, log_f, color=colors[i], linewidth=2, 
+             label=f't={do.grid.t[t_idx]:.3f} s')
 
 plt.xlabel('p ($m_e c$)')
-plt.ylabel(r'$\log_{10}(|f|)$')
-plt.ylim(-20, 5)
-plt.title('Distribution function time evolution at ξ≈1')
+plt.ylabel(r'$\log_{10}( \int |f| \, d\xi )$')
+plt.xlim(0, 50)
+yl1, yh1 = _auto_ylim(np.concatenate(all_log))
+plt.ylim(yl1, yh1)
+plt.title(r'Distribution function evolution ($\xi$-integrated)')
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
 
-# 保存图像到文件夹
 file_path = os.path.join(args.plot_dir, 'f_time_evolution.png')
 plt.savefig(file_path, dpi=300, bbox_inches='tight')
 plt.show()
 
-# 同时也创建一个单独时间步的高分辨率图
+# ========= 图2: 4个时间点的详细分布 =========
 fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 axes = axes.flatten()
 
-# 选择4个时间点进行详细展示
-detail_times = np.linspace(0, num_times-1, 4, dtype=int)
+num_times = f.shape[0]
+detail_times = np.linspace(1, num_times-1, 4, dtype=int)  # t=0 时刻 f=0，跳过
 
 for i, t_idx in enumerate(detail_times):
     ax = axes[i]
-    f_at_time = f_hot[t_idx, :, :]
-    f_selected_xi = f_at_time[xi_index, :]
-    f_abs = np.abs(f_selected_xi)
-    f_nonzero = np.where(f_abs > 0, f_abs, 1e-30)
+    f_at_time = f[t_idx, :, :]
+    f_vs_p = np.trapz(np.abs(f_at_time), xi, axis=0)
+    f_nonzero = np.where(f_vs_p > 0, f_vs_p, 1e-30)
+    log_f = np.log10(f_nonzero)
     
-    ax.plot(p, np.log10(f_nonzero), 'b-', linewidth=2)
+    ax.plot(p, log_f, 'b-', linewidth=2)
     ax.set_xlabel('p ($m_e c$)')
-    ax.set_ylabel(r'$\log_{10}(|f|)$')
-    ax.set_ylim(-20, 5)
+    ax.set_ylabel(r'$\log_{10}(\int |f| \, d\xi)$')
+    ax.set_xlim(0, 50)
+    yl, yh = _auto_ylim(log_f)
+    ax.set_ylim(yl, yh)
     ax.set_title(f't = {do.grid.t[t_idx]*1e6:.1f} μs')
     ax.grid(True, linestyle='--', alpha=0.7)
 
@@ -96,25 +111,30 @@ file_path_detail = os.path.join(args.plot_dir, 'f_time_detail.png')
 plt.savefig(file_path_detail, dpi=300, bbox_inches='tight')
 plt.show()
 
-# 创建一个展示不同pitch角度的对比图
-plt.figure(figsize=(10, 6))
-# 选择几个不同的xi值
-xi_indices = [0, 5, 10, 15, 21]  # 从负到正的不同pitch角
+# ========= 图3: 不同 pitch 角对比 =========
+plt.figure(figsize=(6, 6))
+nxi = xi.size
+xi_indices = np.linspace(0, nxi-1, 5, dtype=int)
 colors = plt.cm.plasma(np.linspace(0, 1, len(xi_indices)))
-time_index = -1  # 最后一个时间点
+time_index = -1
 
+all_log = []
 for i, idx in enumerate(xi_indices):
-    f_at_xi = f_hot[time_index, idx, :]
+    f_at_xi = f[time_index, idx, :]
     f_abs = np.abs(f_at_xi)
     f_nonzero = np.where(f_abs > 0, f_abs, 1e-30)
+    log_f = np.log10(f_nonzero)
+    all_log.append(log_f)
     
-    plt.plot(p, np.log10(f_nonzero), color=colors[i], linewidth=2,
+    plt.plot(p, log_f, color=colors[i], linewidth=2,
              label=f'ξ={xi[idx]:.2f}')
 
 plt.xlabel('p ($m_e c$)')
 plt.ylabel(r'$\log_{10}(|f|)$')
-plt.ylim(-20, 5)
-plt.title(f'Distribution function at different pitch angles (t={do.grid.t[time_index]*1e6:.1f} μs)')
+plt.xlim(0, 50)
+yl, yh = _auto_ylim(np.concatenate(all_log))
+plt.ylim(yl, yh)
+plt.title(f'Distribution function at different pitch angles (t={do.grid.t[time_index]:.3f} s)')
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
 

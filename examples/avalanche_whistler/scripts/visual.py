@@ -18,12 +18,16 @@ def load_simulation_results(data_dir=None):
     加载所有模拟结果
     """
     if data_dir:
-        # If a specific file is provided, just load that one
+        # If a specific file is provided, compute E/Ec and use as key
         results = {}
         try:
             do = DREAMOutput(data_dir)
-            results[data_dir] = do
-            print(f"Loaded data from {data_dir}")
+            # 从数据中提取 E/Ec
+            E_field = do.eqsys.E_field.get()[0, 0]
+            Ec_tot  = do.other.fluid.Ectot[:][0, 0]
+            E_over_Ec = float(E_field / Ec_tot)
+            results[E_over_Ec] = do
+            print(f"Loaded data from {data_dir}, E/Ec = {E_over_Ec:.4f}")
         except Exception as e:
             print(f"Failed to load data from {data_dir}: {e}")
         return results
@@ -47,28 +51,38 @@ def load_simulation_results(data_dir=None):
 
 def calculate_growth_rates(do):
     """
-    从模拟数据中计算增长率
+    从模拟数据中计算增长率（物理量纲 + 导师归一化）
+    
+    导师归一化: gamma_norm = (nr/nrlast - 1)/dt * tauEERel * 2 * lnLambdaC
+    
+    Returns
+    -------
+    t_avg      : 1D array — 时间中点
+    gamma      : 1D array — 物理增长率 (s^-1)
+    gamma_norm : 1D array — 归一化增长率（无量纲，可对比 Rosenbluth）
     """
     t = do.grid.t[:]
-    n_re = do.eqsys.n_re.get()[:, 0]  # 取第一个径向点的数据
+    n_re = do.eqsys.n_re.get()[:, 0]
     
-    # 计算增长率: gamma = (1/n_re) * dn_re/dt
-    # 使用对数导数: gamma = d(ln n_re)/dt
+    # 读取导师归一化所需的量
+    tau = do.other.fluid.tauEERel[:][:, 0]
+    lnL = do.other.fluid.lnLambdaC[:][:, 0]
+    
     dt = np.diff(t)
     dn_re = np.diff(n_re)
-    
-    # 避免除以零或非常小的数
     n_re_avg = 0.5 * (n_re[:-1] + n_re[1:])
+    # tau/lnL 形状 (nt_other,) = (3000,)，已经对应时间中点
+    # gamma 形状也是 (nt-1,) = (3000,)，直接对齐
     
-    # 只有在n_re足够大时才计算增长率
     mask = n_re_avg > 1e5
     
     if np.sum(mask) > 0:
         gamma = np.where(mask, dn_re/dt/n_re_avg, 0)
+        gamma_norm = np.where(mask, gamma * tau * 2.0 * lnL, 0)
         t_avg = 0.5 * (t[:-1] + t[1:])
-        return t_avg[mask], gamma[mask]
+        return t_avg[mask], gamma[mask], gamma_norm[mask]
     else:
-        return np.array([]), np.array([])
+        return np.array([]), np.array([]), np.array([])
 
 def plot_growth_rates_vs_time(results, plot_dir):
     """
@@ -77,7 +91,7 @@ def plot_growth_rates_vs_time(results, plot_dir):
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     
     for E_fac, do in results.items():
-        t, gamma = calculate_growth_rates(do)
+        t, gamma, _ = calculate_growth_rates(do)
         if len(t) > 0:
             ax.plot(t, gamma, label=f'E/Ec = {E_fac}')
     
@@ -89,6 +103,38 @@ def plot_growth_rates_vs_time(results, plot_dir):
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'dreicer_growth_rate_vs_time.png'), dpi=300)
     plt.show()
+
+def plot_normalized_growth_rate_vs_time(results, plot_dir):
+    """
+    绘制归一化增长率随时间的变化 + Rosenbluth 理论线
+    归一化: gamma_norm = gamma_phys * tau * 2 * lnLambda
+    Rosenbluth: gamma_norm_RP = 2 * (E/Ec - 1)
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    
+    for ef, do in results.items():
+        t, _, gamma_norm = calculate_growth_rates(do)
+        if len(t) > 0:
+            # 只绘制 t >= 0.5 的数据，避免早期异常值压扁纵轴
+            mask_t = t >= 0.5
+            ax.plot(t[mask_t], gamma_norm[mask_t], 'b-', linewidth=2, label=f'DREAM (E/Ec={ef:.2f})')
+            
+            # Rosenbluth 理论值: gamma_norm = 2*(E/Ec - 1)
+            gamma_RP = 1.0 * (ef - 1.0)
+            ax.axhline(y=gamma_RP, color='r', linestyle='--', linewidth=2,
+                       label=f'Rosenbluth: $E/E_c-1$ = {gamma_RP:.2f}')
+            print(f'  Rosenbluth prediction: 2*(E/Ec-1) = 2*({ef:.4f}-1) = {gamma_RP:.4f}')
+    
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel(r"Normalized Growth Rate $\gamma \tau \cdot 2\ln\Lambda$")
+    ax.set_title('Normalized Growth Rate vs Time')
+    ax.legend(fontsize=12)
+    ax.grid(True)
+    ax.set_xlim(left=0.5)
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir, 'dreicer_normalized_growth_rate_vs_time.png'), dpi=300)
+    plt.show()
+
 
 def plot_n_re_vs_time(results, plot_dir):
     """
@@ -113,48 +159,66 @@ def plot_n_re_vs_time(results, plot_dir):
 
 def calculate_average_growth_rates(results):
     """
-    计算每个E/Ec值的平均增长率
+    计算每个E/Ec值的平均增长率（物理 + 归一化）
     """
     E_factors = []
     avg_growth_rates = []
+    avg_norm_rates = []
     
     for E_fac, do in results.items():
-        t, gamma = calculate_growth_rates(do)
-        if len(gamma) > 10:  # 确保有足够的数据点
-            # 取最后20个时间步的平均值
+        t, gamma, gamma_norm = calculate_growth_rates(do)
+        if len(gamma) > 10:
             avg_gamma = np.mean(gamma[-20:])
+            avg_norm = np.mean(gamma_norm[-20:])
             E_factors.append(E_fac)
             avg_growth_rates.append(avg_gamma)
-            label_str = str(E_fac)
-            print(f"E/Ec = {label_str}: Average growth rate = {avg_gamma:.4e} s⁻¹")
+            avg_norm_rates.append(avg_norm)
+            print(f"E/Ec = {E_fac}: gamma = {avg_gamma:.4e} s^-1  |  gamma_norm = {avg_norm:.4f}")
     
-    return np.array(E_factors), np.array(avg_growth_rates)
-
-def plot_growth_rate_comparison(E_factors, avg_growth_rates, plot_dir):
+    return np.array(E_factors), np.array(avg_growth_rates), np.array(avg_norm_rates)
+def plot_growth_rate_comparison(E_factors, avg_growth_rates, avg_norm_rates, plot_dir, do=None):
     """
-    绘制平均增长率与E/Ec的关系
+    绘制平均增长率与E/Ec的关系（双图：物理量纲 + 归一化对比Rosenbluth）
     """
+    # ---- 图1: 物理量纲 ----
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
-    
     ax.plot(E_factors, avg_growth_rates, 'bo-', label='DREAM Simulation')
     ax.set_xlabel('E/Ec')
-    ax.set_ylabel('Average Dreicer Growth Rate (s⁻¹)')
+    ax.set_ylabel('Average Growth Rate (s^-1)')
     ax.set_title('Average Dreicer Growth Rate vs Electric Field')
     ax.legend()
     ax.grid(True)
-    
-    # 添加第二个y轴显示归一化增长率
-    ax2 = ax.twinx()
-    if len(avg_growth_rates) > 0:
-        normalized_rates = avg_growth_rates/np.max(np.abs(avg_growth_rates))
-        ax2.plot(E_factors, normalized_rates, 'ro--', label='Normalized')
-        ax2.set_ylabel('Normalized Growth Rate')
-        ax2.legend(loc='lower right')
-    
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, 'dreicer_avg_growth_rates.png'), dpi=300)
     plt.show()
-
+    
+    # ---- 图2: 归一化增长率 vs Rosenbluth ----
+    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    
+    ax.plot(E_factors, avg_norm_rates, 'bo-', markersize=8,
+            label='DREAM (normalized)')
+    
+    # Rosenbluth: gamma_norm = 2 * (E/Ec - 1)
+    E_range = np.linspace(min(E_factors), max(E_factors), 100)
+    rosenbluth = 2.0 * (E_range - 1.0)
+    ax.plot(E_range, rosenbluth, 'r--', linewidth=2,
+            label=r'Rosenbluth: $E/E_c-1$')
+    
+    ax.set_xlabel('E/Ec')
+    ax.set_ylabel(r"Normalized Growth Rate $\gamma \tau \cdot 2\ln\Lambda$")
+    ax.set_title('Normalized Growth Rate vs Rosenbluth Theory')
+    ax.legend(fontsize=12)
+    ax.grid(True)
+    
+    for i, (ef, nr) in enumerate(zip(E_factors, avg_norm_rates)):
+        ax.annotate(f'{nr:.2f}', (ef, nr), textcoords='offset points',
+                    xytext=(0, 10), ha='center', fontsize=9)
+    
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir, 'dreicer_normalized_vs_rosenbluth.png'), dpi=300)
+    print(f"Normalized: last gamma_norm = {avg_norm_rates[-1]:.4f}")
+    print(f"Rosenbluth: E/Ec-1     = {2*(E_factors[-1]-1):.4f}")
+    plt.show()
 def main():
     """
     主函数
@@ -185,10 +249,15 @@ def main():
     print("Plotting growth rates vs time...")
     plot_growth_rates_vs_time(results, args.plot_dir)
     
+    # 绘制归一化增长率 vs 时间（含 Rosenbluth 理论线）
+    print("Plotting normalized growth rate vs time...")
+    plot_normalized_growth_rate_vs_time(results, args.plot_dir)
+    
     # 计算并绘制平均增长率
     print("Calculating and plotting average growth rates...")
-    E_factors, avg_growth_rates = calculate_average_growth_rates(results)
-    plot_growth_rate_comparison(E_factors, avg_growth_rates, args.plot_dir)
+    E_factors, avg_growth_rates, avg_norm_rates = calculate_average_growth_rates(results)
+    first_do = list(results.values())[0] if results else None
+    plot_growth_rate_comparison(E_factors, avg_growth_rates, avg_norm_rates, args.plot_dir, do=first_do)
     
     print("Visualization completed. Plots saved as PNG files.")
 
