@@ -29,10 +29,36 @@ from DREAM import runiface
 parser = argparse.ArgumentParser(description='DREAM Quasilinear Diffusion Test - Whistler Wave')
 parser.add_argument('--amplitude', type=float, default=1e3,
                     help='Wave amplitude (normalized units), default: 1e3')
+parser.add_argument('--E', type=float, default=0.05,
+                    help='Electric field strength in V/m, default: 0.05')
+parser.add_argument('--n', type=float, default=5e18,
+                    help='Electron density in m^-3, default: 5e18')
+parser.add_argument('--T', type=float, default=2165,
+                    help='Temperature in eV, default: 2165')
 parser.add_argument('--a', type=float, default=0.3,
                     help='Minor radius in meters, default: 0.3')
 parser.add_argument('--R', type=float, default=1.67,
                     help='Major radius in meters, default: 1.67')
+parser.add_argument('--B0', type=float, default=1.4,
+                    help='On-axis magnetic field in Tesla, default: 1.4')
+parser.add_argument('--Np-hot', type=int, default=100, dest='Np_hot',
+                    help='Hot-tail momentum grid points, default: 100')
+parser.add_argument('--Np-re', type=int, default=200, dest='Np_re',
+                    help='Runaway momentum grid points, default: 200')
+parser.add_argument('--Nxi', type=int, default=40,
+                    help='Pitch grid points, default: 40')
+parser.add_argument('--tMax', type=float, default=2.5,
+                    help='Simulation time in seconds, default: 2.5')
+parser.add_argument('--Nt', type=int, default=2500,
+                    help='Number of time steps, default: 2500')
+parser.add_argument('--output', type=str, default='../outputs/quasilinear_whistler_output.h5',
+                    help='Output HDF5 file path, default: ../outputs/quasilinear_whistler_output.h5')
+parser.add_argument('--start-inject-time', type=float, default=1.0, dest='start_inject_time',
+                    help='Wave injection start time in seconds, default: 1.0')
+parser.add_argument('--inject-cycle-duration', type=float, default=0.2, dest='inject_cycle_duration',
+                    help='Wave injection cycle duration in seconds (ON+OFF), default: 0.2')
+parser.add_argument('--ramp-time', type=float, default=0.02, dest='ramp_time',
+                    help='Ramp-up time for injection to avoid step-function shock, default: 0.02')
 args = parser.parse_args()
 
 ds = DREAMSettings()
@@ -40,19 +66,19 @@ ds = DREAMSettings()
 # ============================================================================
 # Physical parameters (matching QUADRE simulation)
 # ============================================================================
-E = 0.05 # Electric field strength (V/m)
-n = 5e18           # Electron density (m^-3)
-T = 2165           # Temperature (eV) - 2.165 keV
-B0 = 1.4           # Magnetic field (Tesla)
+E  = args.E   # Electric field strength (V/m)
+n  = args.n   # Electron density (m^-3)
+T  = args.T   # Temperature (eV)
+B0 = args.B0  # Magnetic field (Tesla)
 
 # Grid parameters
 pMax_hot = 1       # Maximum momentum for hot-tail grid
 pMax_re = 50       # Maximum momentum for runaway grid (must be > pMax_hot)
-Np_hot   = 100     # Momentum grid points
-Np_re    = 200     # Runaway momentum grid points
-Nxi      = 40      # Pitch-angle grid points
-tMax     = 3.0     # Simulation time (seconds)
-Nt       = 3000    # Time steps
+Np_hot = args.Np_hot
+Np_re  = args.Np_re
+Nxi    = args.Nxi
+tMax   = args.tMax
+Nt     = args.Nt
 
 print("="*70)
 print("DREAM Quasilinear Diffusion Test - 476 MHz Whistler Wave")
@@ -79,7 +105,9 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_DISABLED)
 
 # Enable avalanche generation (kinetic model)
-ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
+# ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
+#
+ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
 # Disable Compton and tritium generation
 ds.eqsys.n_re.setCompton(Runaways.COMPTON_MODE_NEGLECT)
@@ -135,8 +163,8 @@ print(f"  k_parallel: -41 m^-1")
 quadre_wave_params = {
     'k_main': 54.58,              # Total wavenumber (m^-1)
     'ktheta_main': 2.42,          # Propagation angle (rad) - obtuse angle for backward propagation
-    'k_range': [52.61, 56.55],    # Wavenumber range (m^-1)
-    'ktheta_range': [2.4, 2.45]  # Angle range (rad) - centered around 2.42 rad
+    'k_range': [51.61, 59.55],    # Wavenumber range (m^-1)
+    'ktheta_range': [2.38, 2.47]  # Angle range (rad) - centered around 2.42 rad
 }
 
 print(f"  k range: [{quadre_wave_params['k_range'][0]:.2f}, {quadre_wave_params['k_range'][1]:.2f}] m^-1")
@@ -150,13 +178,14 @@ print(f"  θ_k range: [{quadre_wave_params['ktheta_range'][0]:.2f}, {quadre_wave
 ds.eqsys.f_re.setQuasilinearDiffusion(
     enabled=True,
     quadre_params=quadre_wave_params,
-    num_k=8,              # Match QUADRE discretization
+    num_k=16,              # Match QUADRE discretization
     num_ktheta=20,        # Match QUADRE discretization
     amplitude=args.amplitude,      # Wave amplitude (normalized units) - PHYSICAL VALUE from QUADRE (δB/B₀ ~ 10⁻⁵)
     harmonic_mode='both',  # Include n = -2,-1,0,+1,+2
     use_simple_dispersion=True,  # Use simplified dispersion for testing (ω = k|k_∥| * w)
-    start_inject_time=1.0,       # Start injection at t=0.5s
-    inject_cycle_duration=0.2    # 0.2s cycle (0.1s ON, 0.1s OFF) - QUADRE-style periodic injection
+    start_inject_time=args.start_inject_time,
+    inject_cycle_duration=args.inject_cycle_duration,
+    ramp_time=args.ramp_time
 )
 
 print(f"  ✓ Quasilinear diffusion enabled")
@@ -208,7 +237,7 @@ print(f"  dt = {tMax/Nt:.2e} s")
 # Output settings
 # ============================================================================
 ds.output.setTiming(stdout=True, file=True)
-ds.output.setFilename('../outputs/quasilinear_whistler_output.h5')
+ds.output.setFilename(args.output)
 
 # Save settings
 settings_file = 'quasilinear_whistler_settings.h5'
@@ -218,14 +247,14 @@ print("\n" + "="*70)
 print("✓ Settings saved successfully!")
 print("="*70)
 print(f"\nSettings file: {settings_file}")
-print(f"Output file: ../outputs/quasilinear_whistler_output.h5")
+print(f"Output file: {args.output}")
 print("\nTo run manually:")
 print(f"  /data/zhzhou/DREAM/build/iface/dreami {settings_file}")
 print("="*70)
 
 # Run the simulation
 print("\nRunning simulation...")
-do = runiface(ds, '../outputs/quasilinear_whistler_output.h5', quiet=False)
+do = runiface(ds, args.output, quiet=False)
 
 print("\n" + "="*70)
 print("Quasilinear diffusion simulation completed!")

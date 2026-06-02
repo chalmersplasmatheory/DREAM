@@ -69,6 +69,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     // Periodic wave injection parameters (QUADRE-style)
     s->DefineSetting(mod + "/quasilinear/start_inject_time", "Time to start wave injection (seconds, -1 means immediate)", (real_t)-1.0);
     s->DefineSetting(mod + "/quasilinear/inject_cycle_duration", "Duration of one injection cycle (seconds, 0 means continuous)", (real_t)0.0);
+    s->DefineSetting(mod + "/quasilinear/ramp_time", "Ramp-up time for amplitude at start of each ON cycle (seconds, 0 = immediate)", (real_t)0.0);
     s->DefineSetting(mod + "/quasilinear/spectrum_type", "Type of wave spectrum", (int_t)OptionConstants::WAVE_SPECTRUM_UNIFORM);
     s->DefineSetting(mod + "/quasilinear/num_k", "Number of wavenumber grid points", (int_t)100);
     s->DefineSetting(mod + "/quasilinear/num_ktheta", "Number of angle grid points", (int_t)20);

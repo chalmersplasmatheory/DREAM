@@ -70,6 +70,7 @@ namespace DREAM {
         // Time-dependent amplitude control (periodic injection)
         real_t start_inject_time;        // Time to start injection (-1 = immediate)
         real_t inject_cycle_duration;    // Cycle duration (0 = continuous)
+        real_t ramp_time;               // Ramp-up duration at start of each ON cycle (0 = immediate)
         real_t base_amplitude;           // Base amplitude when injection is ON
         
     public:
@@ -83,8 +84,9 @@ namespace DREAM {
             ResonanceSolver *resonanceSolver,
             WaveParticleCoupling *coupling,
             const std::vector<int> &harmonicModes,
-            real_t start_inject_time = -1.0,   // NEW parameter
-            real_t inject_cycle_duration = 0.0  // NEW parameter
+            real_t start_inject_time = -1.0,
+            real_t inject_cycle_duration = 0.0,
+            real_t ramp_time = 0.0
         );
         
         /**
@@ -99,8 +101,9 @@ namespace DREAM {
             FVM::Grid *grid,
             const std::string &hdf5_file,
             real_t initial_amplitude = 1.0,
-            real_t start_inject_time = -1.0,   // NEW parameter
-            real_t inject_cycle_duration = 0.0  // NEW parameter
+            real_t start_inject_time = -1.0,
+            real_t inject_cycle_duration = 0.0,
+            real_t ramp_time = 0.0
         );
         
         ~QuasilinearDiffusionTerm();

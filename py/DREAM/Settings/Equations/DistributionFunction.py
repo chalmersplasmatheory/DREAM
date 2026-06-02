@@ -453,7 +453,8 @@ class DistributionFunction(UnknownQuantity):
                     'use_simple_dispersion': getattr(self, 'ql_use_simple_dispersion', 1),
                     # Periodic injection parameters (QUADRE-style)
                     'start_inject_time': getattr(self, 'ql_start_inject_time', -1.0),
-                    'inject_cycle_duration': getattr(self, 'ql_inject_cycle_duration', 0.0)
+                    'inject_cycle_duration': getattr(self, 'ql_inject_cycle_duration', 0.0),
+                    'ramp_time': getattr(self, 'ql_ramp_time', 0.0)
                 }
                 
                 # Only save precomputed_file if actually using pre-computed matrix
@@ -606,6 +607,7 @@ class DistributionFunction(UnknownQuantity):
                                # Periodic wave injection (QUADRE-style)
                                start_inject_time=-1.0,
                                inject_cycle_duration=0.0,
+                               ramp_time=0.0,
                                # QUADRE-style convenience parameters
                                quadre_params=None):
         """
@@ -632,6 +634,9 @@ class DistributionFunction(UnknownQuantity):
             inject_cycle_duration: Duration of one injection cycle in seconds.
                                    0.0 means continuous injection (default).
                                    Non-zero enables 50% duty cycle periodic injection.
+            ramp_time:      Ramp-up time in seconds at the start of each ON cycle.
+                            Amplitude increases linearly from 0 to full over this duration.
+                            0.0 means immediate step (default).
             quadre_params:   Dictionary with QUADRE-style parameters for convenience:
                              {'k_main': 54.58, 'ktheta_main': 2.42, 
                               'k_range': [50.61, 58.55], 'ktheta_range': [2.35, 2.49]}
@@ -693,6 +698,7 @@ class DistributionFunction(UnknownQuantity):
         # Set periodic injection parameters
         self.ql_start_inject_time = start_inject_time
         self.ql_inject_cycle_duration = inject_cycle_duration
+        self.ql_ramp_time = ramp_time
         
         # Set harmonic mode
         if harmonic_mode == 'n_minus_1':

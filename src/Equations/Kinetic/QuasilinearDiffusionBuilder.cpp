@@ -72,9 +72,10 @@ QuasilinearDiffusionTerm *DREAM::ConstructQuasilinearDiffusionTerm(
         real_t amplitude = s->GetReal(mod + "/quasilinear/amplitude");
         real_t start_inject_time = s->GetReal(mod + "/quasilinear/start_inject_time");
         real_t inject_cycle_duration = s->GetReal(mod + "/quasilinear/inject_cycle_duration");
+        real_t ramp_time = s->GetReal(mod + "/quasilinear/ramp_time");
         
         QuasilinearDiffusionTerm *qlTerm = new QuasilinearDiffusionTerm(
-            grid, hdf5_file, amplitude, start_inject_time, inject_cycle_duration
+            grid, hdf5_file, amplitude, start_inject_time, inject_cycle_duration, ramp_time
         );
         
         std::cerr << "✓ Quasilinear diffusion enabled with pre-computed matrix: " 
@@ -153,6 +154,7 @@ QuasilinearDiffusionTerm *DREAM::ConstructQuasilinearDiffusionTerm(
         real_t amplitude = s->GetReal(mod + "/quasilinear/amplitude");
         real_t start_inject_time = s->GetReal(mod + "/quasilinear/start_inject_time");
         real_t inject_cycle_duration = s->GetReal(mod + "/quasilinear/inject_cycle_duration");
+        real_t ramp_time = s->GetReal(mod + "/quasilinear/ramp_time");
         std::cerr << "DEBUG: Read amplitude from settings: amplitude=" << amplitude << std::endl;
         len_t num_modes = spectrum->getNumModes();
         for (len_t m = 0; m < num_modes; m++) {
@@ -206,7 +208,7 @@ QuasilinearDiffusionTerm *DREAM::ConstructQuasilinearDiffusionTerm(
         // Create quasilinear diffusion term
         QuasilinearDiffusionTerm *qlTerm = new QuasilinearDiffusionTerm(
             grid, spectrum, dispersion, resonanceSolver, coupling, harmonicModes,
-            start_inject_time, inject_cycle_duration
+            start_inject_time, inject_cycle_duration, ramp_time
         );
         
         std::cerr << "Quasilinear diffusion enabled with " << num_modes << " wave modes." << std::endl;

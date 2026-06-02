@@ -9,8 +9,10 @@
 # Run as
 #
 #   $ ./generate_with_fre.py
+#   $ ./generate_with_fre.py --a 0.3 --R 1.67 --E 0.05 --n 5e18 --T 2165
 #
 
+import argparse
 import numpy as np
 import sys
 
@@ -26,21 +28,49 @@ import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.RadialGrid as RGrid
 from DREAM import runiface
 
+# ── Command-line argument parsing ──────────────────────────────────────────────
+parser = argparse.ArgumentParser(description='DREAM Dreicer + avalanche simulation with f_re grid.')
+parser.add_argument('--E', type=float, default=0.05,
+                    help='Electric field strength in V/m, default: 0.05')
+parser.add_argument('--n', type=float, default=5e18,
+                    help='Electron density in m^-3, default: 5e18')
+parser.add_argument('--T', type=float, default=2165,
+                    help='Temperature in eV, default: 2165')
+parser.add_argument('--a', type=float, default=0.4,
+                    help='Minor radius in meters, default: 0.4')
+parser.add_argument('--R', type=float, default=1.67,
+                    help='Major radius in meters, default: 1.67')
+parser.add_argument('--B0', type=float, default=1.4,
+                    help='On-axis magnetic field in Tesla, default: 1.4')
+parser.add_argument('--Np-hot', type=int, default=100, dest='Np_hot',
+                    help='Hot-tail momentum grid points, default: 100')
+parser.add_argument('--Np-re', type=int, default=200, dest='Np_re',
+                    help='Runaway momentum grid points, default: 200')
+parser.add_argument('--Nxi', type=int, default=40,
+                    help='Pitch grid points, default: 40')
+parser.add_argument('--tMax', type=float, default=3.0,
+                    help='Simulation time in seconds, default: 3.0')
+parser.add_argument('--Nt', type=int, default=3000,
+                    help='Number of time steps, default: 3000')
+parser.add_argument('--output', type=str, default='../outputs/dreicer_with_fre_output.h5',
+                    help='Output HDF5 file path, default: ../outputs/dreicer_with_fre_output.h5')
+args = parser.parse_args()
+
 ds = DREAMSettings()
 
-# Physical parameters (参考2kineticN示例)
-E = 0.05    # Electric field strength (V/m)
-n = 5e18    # Electron density (m^-3)
-T = 2165    # Temperature (eV) - 2.165 keV
+# Physical parameters
+E = args.E       # Electric field strength (V/m)
+n = args.n       # Electron density (m^-3)
+T = args.T       # Temperature (eV)
 
 # Grid parameters
-pMax_hot = 1    # maximum momentum in units of m_e*c for hot-tail grid
-pMax_re = 50   # maximum momentum in units of m_e*c for runaway grid (increased for better visualization)
-Np_hot   = 100  # 动量网格点数（减少以加快计算）
-Np_re   = 200   # 动量网格点数（增加以提高高分辨率）
-Nxi  = 40       # pitch网格点数（减少以加快计算）
-tMax = 3.0   # 模拟时间 
-Nt   = 3000 # 时间步数
+pMax_hot = 1     # maximum momentum in units of m_e*c for hot-tail grid
+pMax_re = 50     # maximum momentum in units of m_e*c for runaway grid
+Np_hot = args.Np_hot
+Np_re  = args.Np_re
+Nxi    = args.Nxi
+tMax   = args.tMax
+Nt     = args.Nt
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -56,7 +86,10 @@ ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_DISABLED)
 
 # Enable avalanche generation (kinetic model - most accurate)
 # pCutAvalanche: momentum cutoff for avalanche generation (in units of m_e*c)
-ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
+# ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
+#
+ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
+
 
 # Disable Compton and tritium generation
 ds.eqsys.n_re.setCompton(Runaways.COMPTON_MODE_NEGLECT)
@@ -96,9 +129,9 @@ ds.eqsys.f_re.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)  # Enable sy
 ds.eqsys.f_re.setAdvectionInterpolationMethod(DistFunc.AD_INTERP_UPWIND)
 
 # Set up radial grid
-a=0.4
-R=1.67
-B0=1.4
+a  = args.a
+R  = args.R
+B0 = args.B0
 ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
 ds.radialgrid.setB0(B0)              # Tesla
 ds.radialgrid.setShaping(psi=0.0001, GOverR0=B0)
@@ -107,7 +140,7 @@ ds.radialgrid.setMajorRadius(R)    # meters (major radius R0)
 ds.radialgrid.setWallRadius(a)     # meters (wall radius = minor radius)
 ds.radialgrid.setNr(1)                # Single radial point
 nr=1
-r_f = np.linspace(a*0.99, a, nr+1)   
+r_f = np.linspace(a*0.99, a, nr+1)
 r_f *= a/r_f[-1]
 ds.radialgrid.setCustomGridPoints(r_f)
 
@@ -125,7 +158,7 @@ ds.timestep.setNt(Nt)
 
 # Output settings
 ds.output.setTiming(stdout=True, file=True)
-ds.output.setFilename('../outputs/dreicer_with_fre_output.h5')
+ds.output.setFilename(args.output)
 
 # Save settings to HDF5 file
 ds.save('dreicer_with_fre_settings.h5')
@@ -133,10 +166,10 @@ ds.save('dreicer_with_fre_settings.h5')
 # Run the simulation
 print("Settings saved to dreicer_with_fre_settings.h5")
 print("Running simulation...")
-print(f"Parameters: E={E} V/m, n={n:.2e} m^-3, T={T} eV")
+print(f"Parameters: E={E} V/m, n={n:.2e} m^-3, T={T} eV, a={a} m, R={R} m, B0={B0} T")
 print(f"Grid: Np_hot={Np_hot}, Np_re={Np_re}, Nxi={Nxi}, tMax={tMax}, Nt={Nt}")
-do = runiface(ds, '../outputs/dreicer_with_fre_output.h5', quiet=False)
+do = runiface(ds, args.output, quiet=False)
 
 print("Dreicer validation simulation with f_re completed.")
-print("Output saved to ../outputs/dreicer_with_fre_output.h5")
+print(f"Output saved to {args.output}")
 print("Settings saved to dreicer_with_fre_settings.h5")

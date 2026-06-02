@@ -26,7 +26,8 @@ QuasilinearDiffusionTerm::QuasilinearDiffusionTerm(
     WaveParticleCoupling *coupling,
     const std::vector<int> &harmonicModes,
     real_t start_inject_time,
-    real_t inject_cycle_duration
+    real_t inject_cycle_duration,
+    real_t ramp_time
 ) : FVM::DiffusionTerm(grid),
     spectrum(spectrum),
     dispersion(dispersion),
@@ -50,6 +51,7 @@ QuasilinearDiffusionTerm::QuasilinearDiffusionTerm(
     num_modes_tracked(0),
     start_inject_time(start_inject_time),
     inject_cycle_duration(inject_cycle_duration),
+    ramp_time(ramp_time),
     base_amplitude(spectrum ? spectrum->getAmplitude(0) : 1.0) {
     
     SetName("QuasilinearDiffusionTerm");
@@ -66,7 +68,8 @@ QuasilinearDiffusionTerm::QuasilinearDiffusionTerm(
     const std::string &hdf5_file,
     real_t initial_amplitude,
     real_t start_inject_time,
-    real_t inject_cycle_duration
+    real_t inject_cycle_duration,
+    real_t ramp_time
 ) : FVM::DiffusionTerm(grid),
     spectrum(nullptr),
     dispersion(nullptr),
@@ -89,6 +92,7 @@ QuasilinearDiffusionTerm::QuasilinearDiffusionTerm(
     num_modes_tracked(0),
     start_inject_time(start_inject_time),
     inject_cycle_duration(inject_cycle_duration),
+    ramp_time(ramp_time),
     base_amplitude(initial_amplitude) {
     
     SetName("QuasilinearDiffusionTerm");
@@ -147,10 +151,10 @@ void QuasilinearDiffusionTerm::setCurrentAmplitude(real_t A_t) {
 /**
  * Calculate effective wave amplitude at time t based on periodic injection schedule.
  * 
- * Implements QUADRE-style periodic injection:
- * - If t < start_inject_time: amplitude = 0 (no injection yet)
- * - If inject_cycle_duration == 0: amplitude = base_amplitude (continuous)
- * - Otherwise: 50% duty cycle (first half ON, second half OFF)
+ * Features:
+ * - After start_inject_time / at each ON cycle start: linear ramp-up over ramp_time
+ * - OFF transitions: immediate step to 0
+ * - 50% duty cycle (first half ON, second half OFF)
  */
 real_t QuasilinearDiffusionTerm::calculateEffectiveAmplitude(real_t t) const {
     // Case 1: Injection hasn't started yet
@@ -158,20 +162,26 @@ real_t QuasilinearDiffusionTerm::calculateEffectiveAmplitude(real_t t) const {
         return 0.0;
     }
     
+    // Time since injection started (or 0 if immediate)
+    real_t t_local = (start_inject_time >= 0) ? (t - start_inject_time) : t;
+    
     // Case 2: Continuous injection (no periodicity)
     if (inject_cycle_duration <= 0) {
+        if (ramp_time > 0 && t_local < ramp_time)
+            return base_amplitude * (t_local / ramp_time);
         return base_amplitude;
     }
     
     // Case 3: Periodic injection with 50% duty cycle
-    real_t time_since_start = t - start_inject_time;
-    real_t time_in_cycle = std::fmod(time_since_start, inject_cycle_duration);
+    real_t time_in_cycle = std::fmod(t_local, inject_cycle_duration);
     
-    // First half of cycle: injection ON
+    // First half of cycle: injection ON (with ramp-up at start)
     if (time_in_cycle < inject_cycle_duration / 2.0) {
+        if (ramp_time > 0 && time_in_cycle < ramp_time)
+            return base_amplitude * (time_in_cycle / ramp_time);
         return base_amplitude;
     }
-    // Second half of cycle: injection OFF
+    // Second half of cycle: injection OFF (immediate drop)
     else {
         return 0.0;
     }

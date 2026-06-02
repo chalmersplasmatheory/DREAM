@@ -54,7 +54,7 @@ def _auto_ylim(values, pad_bottom=3, pad_top=3):
 plt.figure(figsize=(6, 6))
 
 # 选取指定时间点对应的索引
-target_times = np.array([0.5, 0.9, 1.1, 3.0])
+target_times = np.array([0.5, 0.9, 1.1, 1.2, 3.0])
 selected_times = np.unique([np.argmin(np.abs(do.grid.t[:] - tt)) for tt in target_times])
 
 colors = plt.cm.viridis(np.linspace(0, 1, len(selected_times)))
@@ -74,7 +74,7 @@ plt.xlabel('p ($m_e c$)')
 plt.ylabel(r'$\log_{10}( \int |f| \, d\xi )$')
 plt.xlim(0, 50)
 yl1, yh1 = _auto_ylim(np.concatenate(all_log))
-plt.ylim(yl1, yh1)
+plt.ylim(-20, yh1)
 plt.title(r'Distribution function evolution ($\xi$-integrated)')
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)
@@ -141,6 +141,43 @@ plt.grid(True, linestyle='--', alpha=0.7)
 file_path_xi = os.path.join(args.plot_dir, 'f_pitch_comparison.png')
 plt.savefig(file_path_xi, dpi=300, bbox_inches='tight')
 plt.show()
+
+# ========= 图4: 捕获电子数量随能量的分布 =========
+if hasattr(do.grid, 'xi0TrappedBoundary') and do.grid.xi0TrappedBoundary is not None:
+    xi0 = do.grid.xi0TrappedBoundary[0]
+    mask_trapped = np.abs(xi) < xi0
+
+    # 能量 E_kin [MeV] = (sqrt(1+p²) - 1) * 0.511
+    energy = (np.sqrt(1 + p**2) - 1) * 0.511
+
+    plt.figure(figsize=(6, 6))
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(selected_times)))
+    all_log = []
+
+    for i, t_idx in enumerate(selected_times):
+        f_at_time = f[t_idx, :, :]          # [nxi, np]
+        # 只对捕获区域积分
+        f_trapped = np.trapz(np.abs(f_at_time[mask_trapped, :]), xi[mask_trapped], axis=0)
+        f_nonzero = np.where(f_trapped > 0, f_trapped, 1e-30)
+        log_f = np.log10(f_nonzero)
+        all_log.append(log_f)
+
+        plt.plot(energy, log_f, color=colors[i], linewidth=2,
+                 label=f't={do.grid.t[t_idx]:.3f} s')
+
+    plt.xlabel(r'Kinetic energy $E_k$ (MeV)')
+    plt.ylabel(r'$\log_{10}( \int_{\rm trapped} |f| \, d\xi )$')
+    plt.xlim(0, None)
+    yl, yh = _auto_ylim(np.concatenate(all_log))
+    plt.ylim(yl, yh)
+    plt.title(r'Trapped electron distribution ($\xi$-integrated, $|\xi| < \xi_0$)')
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.7)
+
+    file_path_trapped = os.path.join(args.plot_dir, 'f_trapped_energy.png')
+    plt.savefig(file_path_trapped, dpi=300, bbox_inches='tight')
+    plt.show()
 
 print(f"Plots saved to {args.plot_dir} directory")
 

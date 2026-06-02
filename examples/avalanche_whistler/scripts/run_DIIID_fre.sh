@@ -1,15 +1,22 @@
 set -e
 
 cd /data/zhzhou/DREAM/examples/avalanche_whistler/scripts
-# python generate_with_fre.py
-python generate_with_fre_whistler.py --amplitude 1e3 --a 0.4 --R 1.67
 
-# Set output file path
-DATA_DIR="../outputs/quasilinear_whistler_output.h5"
+# ── Run DREAM simulation (choose one) ────────────────────────────────────
+# Dreicer + avalanche kinetic simulation (with f_re grid)
+# python generate_with_fre.py --a 0.01 --R 1.67 --E 0.05 --n 5e18 --T 2165 \
+#   --Np-hot 100 --Np-re 200 --Nxi 40 --tMax 2.5 --Nt 2500 --output ../outputs/dreicer_with_fre_output.h5
+
+# Quasilinear whistler simulation
+python generate_with_fre_whistler.py --amplitude 1e3 --a 0.01 --R 1.67 --output ../outputs/quasilinear_whistler_output.h5  --start-inject-time 0.6 --inject-cycle-duration 5 --ramp-time 0.02
+
+# ── Select output file to analyze ────────────────────────────────────────
 # DATA_DIR="../outputs/dreicer_with_fre_output.h5"
+DATA_DIR="../outputs/quasilinear_whistler_output.h5"
 
-# PLOT_DIR="../figures"
-PLOT_DIR="../figures_w_0.4_1.67_E0.05_t3"
+# ── Plot directory (derived from simulation parameters) ──────────────────
+# PLOT_DIR="../figures_0.01_1.67_E0.05_t2.5_no_avalanche"
+PLOT_DIR="../figures_w_0.01_1.67_E0.05_t2.5_no_avalanche_s0.6_i5"
 
 # Create plot directory if it doesn't exist
 if [ ! -d "$PLOT_DIR" ]; then
