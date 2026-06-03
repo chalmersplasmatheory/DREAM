@@ -6,7 +6,9 @@
 #
 # Run as
 #
-#   $ ./generate_with_fre_whistler.py [--amplitude AMPLITUDE] [--a A] [--R R]
+#   $ ./generate_with_fre_whistler.py                                      # default parameters
+#   $ ./generate_with_fre_whistler.py --amplitude 1e3 --a 0.3 --R 1.67     # basic usage
+#   $ ./generate_with_fre_whistler.py --help                               # full parameter list
 #
 
 import numpy as np
@@ -59,6 +61,8 @@ parser.add_argument('--inject-cycle-duration', type=float, default=0.2, dest='in
                     help='Wave injection cycle duration in seconds (ON+OFF), default: 0.2')
 parser.add_argument('--ramp-time', type=float, default=0.02, dest='ramp_time',
                     help='Ramp-up time for injection to avoid step-function shock, default: 0.02')
+parser.add_argument('--source', type=str, default='off', choices=['on', 'off'],
+                    help='Enable (kinetic) or disable avalanche source, default: off')
 args = parser.parse_args()
 
 ds = DREAMSettings()
@@ -104,10 +108,11 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 # Disable Dreicer generation (kinetic simulation captures it naturally)
 ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_DISABLED)
 
-# Enable avalanche generation (kinetic model)
-# ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
-#
-ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
+# Enable/disable avalanche generation (kinetic model) — controlled by --source
+if args.source == 'on':
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
+else:
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
 # Disable Compton and tritium generation
 ds.eqsys.n_re.setCompton(Runaways.COMPTON_MODE_NEGLECT)

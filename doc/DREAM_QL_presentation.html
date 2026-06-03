@@ -361,47 +361,63 @@
     <rect x="0" y="0" width="1600" height="26" fill="#1F4E79"/>
     <text x="80" y="90" font-family="Arial" font-size="48" font-weight="700" fill="#1F2937">Diffusion Tensor Components</text>
     <rect x="80" y="110" width="400" height="4" fill="#1F4E79"/>
-    <rect x="100" y="160" width="1400" height="150" rx="8" fill="#F8FAFC" stroke="#D8E1EA" stroke-width="2"/>
-    <text x="800" y="210" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79" text-anchor="middle">D = Σ |Ψ_{n,k}|² A² × Geometric Matrix</text>
-    <text x="800" y="260" font-family="Arial" font-size="28" fill="#374151" text-anchor="middle">Sum over all modes (m) and harmonics (n)</text>
-    <rect x="100" y="340" width="450" height="480" rx="8" fill="#EEF6FB" stroke="#1F4E79" stroke-width="2"/>
-    <text x="325" y="380" font-family="Arial" font-size="28" font-weight="700" fill="#1F4E79" text-anchor="middle">D_pp (D11)</text>
-    <text x="140" y="430" font-family="Arial" font-size="22" fill="#374151">Momentum diffusion</text>
-    <foreignObject x="140" y="430" width="420" height="80">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:24px; color:#1F4E79; font-family:monospace; line-height:1.6; padding:0 0 20px 0;">
-        $$D_{pp} = \sum |\Psi|^2 A^2$$
+    <rect x="100" y="160" width="1400" height="230" rx="8" fill="#F8FAFC" stroke="#D8E1EA" stroke-width="2"/>
+    <foreignObject x="120" y="170" width="1360" height="140">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:22px; color:#1F4E79; font-family:monospace; font-weight:700; line-height:1.5; padding:0 5px 15px 0; text-align:center;">
+        $$D_{pq}(p_i, \xi_j) = \sum_{m}\sum_{n} |\Psi_{m,n}|^2 \; A_m^2 \; w_i \; \Delta k \, \Delta(\cos\theta_k) \times \text{Geometric Factor}$$
       </div>
     </foreignObject>
-    <text x="140" y="540" font-family="Arial" font-size="22" fill="#374151">Grid: f1 flux faces</text>
-    <text x="140" y="570" font-family="Arial" font-size="22" fill="#374151">Shape: (np1+1) × np2</text>
-    <text x="140" y="610" font-family="Arial" font-size="22" fill="#374151">• Always positive</text>
-    <text x="140" y="640" font-family="Arial" font-size="22" fill="#374151">• Energy diffusion</text>
-    <rect x="580" y="340" width="450" height="480" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
-    <text x="805" y="380" font-family="Arial" font-size="28" font-weight="700" fill="#1F4E79" text-anchor="middle">D_pξ (D12/D21)</text>
-    <text x="620" y="430" font-family="Arial" font-size="22" fill="#374151">Cross diffusion ⭐ KEY</text>
-    <foreignObject x="620" y="430" width="420" height="85">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:20px; color:#1F4E79; font-family:monospace; line-height:1.6; padding:0 0 20px 0;">
-        $$D_{p\xi} = -\sum |\Psi|^2 A^2 \sqrt{1-\xi^2}\left(\xi-\frac{k_\parallel v}{\omega}\right)$$
+    <foreignObject x="120" y="260" width="1360" height="90">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:20px; color:#374151; text-align:center; line-height:1.8; padding:0 5px 10px 0;">
+        $$w_i = \max\!\left(0,\; 1 - \frac{|p_{\rm res} - p_i|}{\Delta p}\right), \qquad
+        \Delta k = \frac{k_{\max}-k_{\min}}{N_k}, \qquad
+        \Delta(\cos\theta_k) = \frac{|\cos\theta_{\min} - \cos\theta_{\max}|}{N_{\theta_k}}$$
       </div>
     </foreignObject>
-    <text x="620" y="545" font-family="Arial" font-size="22" fill="#374151">Grid: f2 flux faces</text>
-    <text x="620" y="575" font-family="Arial" font-size="22" fill="#374151">Shape: np1 × (np2+1)</text>
-    <text x="620" y="615" font-family="Arial" font-size="22" fill="#374151">• ± sign possible</text>
-    <text x="620" y="645" font-family="Arial" font-size="22" fill="#374151">• Drives pitch-angle change</text>
-    <rect x="1060" y="340" width="450" height="480" rx="8" fill="#D1FAE5" stroke="#10B981" stroke-width="2"/>
-    <text x="1285" y="380" font-family="Arial" font-size="28" font-weight="700" fill="#1F4E79" text-anchor="middle">D_ξξ (D22)</text>
-    <text x="1100" y="430" font-family="Arial" font-size="22" fill="#374151">Pitch-angle diffusion</text>
-    <foreignObject x="1100" y="430" width="420" height="80">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:22px; color:#1F4E79; font-family:monospace; line-height:1.6; padding:0 0 20px 0;">
-        $$D_{\xi\xi} = \sum |\Psi|^2 A^2 \left(\xi-\frac{k_\parallel v}{\omega}\right)^2$$
+    <rect x="100" y="420" width="450" height="300" rx="8" fill="#EEF6FB" stroke="#1F4E79" stroke-width="2"/>
+    <text x="325" y="455" font-family="Arial" font-size="28" font-weight="700" fill="#1F4E79" text-anchor="middle">D_pp (D11)</text>
+    <text x="140" y="485" font-family="Arial" font-size="22" fill="#374151">Momentum diffusion</text>
+    <foreignObject x="140" y="485" width="420" height="90">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:20px; color:#1F4E79; font-family:monospace; line-height:1.5; padding:0 0 10px 0;">
+        $$D_{pp}(p_{i+\frac12},\xi_j) = \sum_{m,n} |\Psi|^2 A_m^2 \, w_i \, \Delta k\, \Delta(\cos\theta_k)$$
       </div>
     </foreignObject>
-    <text x="1100" y="540" font-family="Arial" font-size="22" fill="#374151">Grid: f2 flux faces</text>
-    <text x="1100" y="570" font-family="Arial" font-size="22" fill="#374151">Shape: np1 × (np2+1)</text>
-    <text x="1100" y="610" font-family="Arial" font-size="22" fill="#374151">• Always positive</text>
-    <text x="1100" y="640" font-family="Arial" font-size="22" fill="#374151">• Trapped-passing transitions</text>
-    <rect x="100" y="840" width="1400" height="40" rx="4" fill="#1F4E79"/>
-    <text x="800" y="868" font-family="Arial" font-size="22" font-weight="600" fill="#FFFFFF" text-anchor="middle">All coefficients scaled by wave amplitude squared (A²)</text>
+    <text x="140" y="580" font-family="Arial" font-size="22" fill="#374151">Grid: f1 flux faces</text>
+    <text x="140" y="605" font-family="Arial" font-size="22" fill="#374151">Shape: (np1+1) × np2</text>
+    <text x="140" y="640" font-family="Arial" font-size="22" fill="#374151">• Always positive</text>
+    <text x="140" y="665" font-family="Arial" font-size="22" fill="#374151">• Energy diffusion</text>
+    <rect x="580" y="420" width="450" height="300" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
+    <text x="805" y="455" font-family="Arial" font-size="28" font-weight="700" fill="#1F4E79" text-anchor="middle">D_pξ (D12/D21)</text>
+    <text x="620" y="485" font-family="Arial" font-size="22" fill="#374151">Cross diffusion </text>
+    <foreignObject x="620" y="485" width="420" height="150">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:18px; color:#1F4E79; font-family:monospace; line-height:1.8; padding:0 0 10px 0;">
+        $$D_{p\xi}(p_i,\xi_{j+\frac12}) = -\sum_{m,n} |\Psi|^2 A_m^2 \, w_i \, \Delta k\, \Delta(\cos\theta_k)$$
+        $$\times \; \sqrt{1-\xi_j^2}\left(\xi_j-\frac{k_\parallel v}{\omega}\right)$$
+      </div>
+    </foreignObject>
+    <text x="620" y="625" font-family="Arial" font-size="22" fill="#374151">Grid: f2 flux faces</text>
+    <text x="620" y="650" font-family="Arial" font-size="22" fill="#374151">Shape: np1 × (np2+1)</text>
+    <text x="620" y="680" font-family="Arial" font-size="22" fill="#374151">• ± sign possible</text>
+    <text x="620" y="705" font-family="Arial" font-size="22" fill="#374151">• Drives pitch-angle change</text>
+    <rect x="1060" y="420" width="450" height="300" rx="8" fill="#D1FAE5" stroke="#10B981" stroke-width="2"/>
+    <text x="1285" y="455" font-family="Arial" font-size="28" font-weight="700" fill="#1F4E79" text-anchor="middle">D_ξξ (D22)</text>
+    <text x="1100" y="485" font-family="Arial" font-size="22" fill="#374151">Pitch-angle diffusion</text>
+    <foreignObject x="1075" y="485" width="445" height="90">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:18px; color:#1F4E79; font-family:monospace; line-height:1.5; padding:0 0 10px 0;">
+        $$D_{\xi\xi}(p_i,\xi_{j+\frac12}) = \sum_{m,n} |\Psi|^2 A_m^2 \, w_i \, \Delta k\, \Delta(\cos\theta_k) \; \left(\xi_j-\frac{k_\parallel v}{\omega}\right)^2$$
+      </div>
+    </foreignObject>
+    <text x="1100" y="580" font-family="Arial" font-size="22" fill="#374151">Grid: f2 flux faces</text>
+    <text x="1100" y="605" font-family="Arial" font-size="22" fill="#374151">Shape: np1 × (np2+1)</text>
+    <text x="1100" y="640" font-family="Arial" font-size="22" fill="#374151">• Always positive</text>
+    <text x="1100" y="665" font-family="Arial" font-size="22" fill="#374151">• Trapped-passing transitions</text>
+    <rect x="100" y="830" width="1400" height="55" rx="4" fill="#1F4E79"/>
+    <text x="800" y="852" font-family="Arial" font-size="20" font-weight="600" fill="#FFFFFF" text-anchor="middle">
+      Interpolation weight: $w_i = \max\!\left(0,\, 1 - \frac{|p_{\rm res} - p_i|}{\Delta p}\right)$, adds to $p_i$ and $p_{i+1}$ &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; Quadrature: $\Delta k\,\Delta(\cos\theta_k)$ ensures grid-independent total diffusion
+    </text>
+    <text x="800" y="876" font-family="Arial" font-size="19" font-weight="400" fill="#D8E1EA" text-anchor="middle">
+      $\delta = 1.0$ guarantees $w_i + w_{i+1} \equiv 1$ &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp; $\int dk\,d(\cos\theta_k)$ not $dk\,d\theta_k$
+    </text>
   </svg>
 </section>
 

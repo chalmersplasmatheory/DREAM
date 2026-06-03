@@ -43,3 +43,7 @@ venv
 figures*/
 outputs/
 DREAMdoc*/
+
+.codegraph/
+.env
+reasonix.toml

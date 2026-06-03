@@ -642,6 +642,15 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
     len_t mode_count = 0;
     int total_resonance_points = 0;
     
+    // Quadrature weight for ∫ dk d(cos θ_k)
+    len_t num_k = spectrum->getNumK();
+    len_t num_ktheta = spectrum->getNumKtheta();
+    real_t dk = num_k > 1 ? (spectrum->getK(1) - spectrum->getK(0)) : 1.0;
+    real_t cos_theta_min = std::cos(spectrum->getKtheta(0));
+    real_t cos_theta_max = std::cos(spectrum->getKtheta(num_k * (num_ktheta - 1)));
+    real_t dcos_theta = num_ktheta > 1 ? std::abs(cos_theta_max - cos_theta_min) / num_ktheta : 1.0;
+    real_t cell_area = dk * dcos_theta;   // ∫ dk d(cos θ_k) per mode
+    
     // Loop over all wave modes
     for (len_t m = 0; m < numModes; m++) {
         real_t k = spectrum->getK(m);
@@ -765,6 +774,9 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
                     // Scale by wave amplitude
                     psi_squared *= amplitude * amplitude;
                     
+                    // Quadrature weight for ∫ dk d(cos θ_k) — grid-independent normalization
+                    psi_squared *= cell_area;
+                    
                     // Apply resonance weight
                     psi_squared *= weight_sum;  // Total weight for normalization
                     
@@ -776,11 +788,12 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
                     
                     // Accumulate to D_pp (at f1 grid points)
                     // Distribute to i_low and i_high with weights
+                    // D_pp ∝ (1 - ξ²) per Zehua Guo (2024) Eq. 11
                     len_t idx_pp_low = ir * (np1 + 1) * np2 + i_low * np2 + j;
                     len_t idx_pp_high = ir * (np1 + 1) * np2 + i_high * np2 + j;
                     
-                    D_pp_cache[idx_pp_low] += psi_squared * weight_low;
-                    D_pp_cache[idx_pp_high] += psi_squared * weight_high;
+                    D_pp_cache[idx_pp_low] += psi_squared * (1.0 - xi * xi) * weight_low;
+                    D_pp_cache[idx_pp_high] += psi_squared * (1.0 - xi * xi) * weight_high;
                     
                     // Accumulate to D_pξ and D_ξξ (at f2 grid points)
                     // For f2 grid, p index ranges from 0 to np1-1
