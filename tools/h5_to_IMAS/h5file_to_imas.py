@@ -85,6 +85,7 @@ else:
 
 # ------------------------ normalization factors---------------------------
 psi_cocos = 2.0*np.pi
+phi_sign   = -1.0  # positive is anti-clockwise in IMAS, ITER currents are negative in IMAS
 c_light    = 299792458.0
 m_electron = 9.10938356e-31
 p_norm = m_electron * c_light
@@ -271,6 +272,10 @@ IMAS_UNIT_FALLBACKS = [
     ("*.time", "s"),
     ("*.global_quantities.ip", "A"),
     ("*.global_quantities.ip.value", "A"),
+    ("*.global_quantities.r0", "m"),
+    ("*.global_quantities.r0.value", "m"),
+    ("*.global_quantities.b0", "T"),
+    ("*.global_quantities.b0.value", "T"),
     ("*.global_quantities.current", "A"),
     ("*.global_quantities.current_phi", "A"),
     ("*.global_quantities.current_ohm.value", "A"),
@@ -728,7 +733,7 @@ def common_grids(dream: DreamH5, report: MappingReport) -> dict[str, Any]:
     R0 = dream.scalar("/grid/R0", dream.scalar("/grid/eq/R0", None))
 
     # Flux averaged toroidal field in [T]
-    Bphi_avg = flatten_1d(dream.arr("/grid/geometry/GR0", report))
+    Bphi_avg = flatten_1d(dream.arr("/grid/geometry/GR0", report)) * phi_sign
 
     # Getting vacuum field from the toroidal field at the outermost radius
     if Bphi_avg is not None and Bphi_avg.size > 0:
@@ -738,15 +743,15 @@ def common_grids(dream: DreamH5, report: MappingReport) -> dict[str, Any]:
     # Toroidal flux in [Wb]
     phi_tor = flatten_1d(dream.arr("/grid/geometry/toroidalFlux", report))
 
-    rho_tor = np.sqrt(phi_tor / (np.pi * B0)) # minor radius like
+    rho_tor = np.sqrt(phi_tor / (np.pi * np.abs(B0))) # minor radius like
     rho_tor_norm = normalized_radius(rho_tor) # normalized to 1 at the outermost radius
 
     # Other geometric quantities
     vpvol  = flatten_1d(dream.arr("/grid/VpVol", report))
-    G      = flatten_1d(dream.arr("/grid/geometry/GR0", report))
+    G      = flatten_1d(dream.arr("/grid/geometry/GR0", report)) * phi_sign
     R2inv  = flatten_1d(dream.arr("/grid/geometry/FSA_R02OverR2", report))
-    Bmin   = flatten_1d(dream.arr("/grid/geometry/Bmin", report))
-    Bmax   = flatten_1d(dream.arr("/grid/geometry/Bmax", report))
+    Bmin   = flatten_1d(dream.arr("/grid/geometry/Bmin", report)) * phi_sign
+    Bmax   = flatten_1d(dream.arr("/grid/geometry/Bmax", report)) * phi_sign
     FSA_B_over_Bmin = flatten_1d(dream.arr("/grid/geometry/FSA_BOverBmin", report))
     FSA_B_over_Bmin2 = flatten_1d(dream.arr("/grid/geometry/FSA_BOverBmin2", report))
     effective_passing_fraction = flatten_1d(
@@ -879,8 +884,8 @@ def map_plasma_profiles(factory: Any, dream: DreamH5, grids: dict[str, Any], rep
     if profiles["electrons/density"][1] is None:
         profiles["electrons/density"] = ("/eqsys/n_cold", dream.arr("/eqsys/n_cold", report))
 
-    j_tot = dream.arr("/eqsys/j_tot", report)
-    j_ohm = dream.arr("/eqsys/j_ohm", report)
+    j_tot = dream.arr("/eqsys/j_tot", report) * phi_sign
+    j_ohm = dream.arr("/eqsys/j_ohm", report) * phi_sign
     aligned_profiles = {target: (source, time_aligned(data, nt)) for target, (source, data) in profiles.items()}
     j_tot_aligned = time_aligned(j_tot, nt)
     j_ohm_aligned = time_aligned(j_ohm, nt)
@@ -1434,7 +1439,7 @@ def map_runaway_electrons(factory: Any, dream: DreamH5, grids: dict[str, Any], r
 
     quantities = {
         "density": ("/eqsys/n_re", dream.arr("/eqsys/n_re", report)),
-        "current_density": ("/eqsys/j_re", dream.arr("/eqsys/j_re", report)),
+        "current_density": ("/eqsys/j_re", dream.arr("/eqsys/j_re", report) * phi_sign),
         #"energy_density_kinetic": ("/other/fluid/W_re", dream.arr("/other/fluid/W_re")),
         "ddensity_dt_total": ("/other/fluid/runawayRate", dream.arr("/other/fluid/runawayRate")),
         "ddensity_dt_dreicer": ("/other/fluid/gammaDreicer", dream.arr("/other/fluid/gammaDreicer")),
@@ -1468,7 +1473,7 @@ def map_runaway_electrons(factory: Any, dream: DreamH5, grids: dict[str, Any], r
                 report.missing(source)
 
 
-    j_re = dream.arr("/eqsys/j_re")
+    j_re = dream.arr("/eqsys/j_re") * phi_sign
     I_re = current_from_j_trace(j_re, grids, nt)
 
     fill_ids_field(re_ids, "global_quantities/current_phi", I_re, report, ids_name, "derived from j_re")
@@ -2186,8 +2191,8 @@ def map_equilibrium(factory: Any, dream: DreamH5, grids: dict[str, Any], report:
         return eq
 
     psi_p = scale_optional(time_aligned(dream.arr("/eqsys/psi_p", report), nt), psi_cocos)
-    j_tot = time_aligned(dream.arr("/eqsys/j_tot", report), nt)
-    ip = flatten_1d(dream.arr("/eqsys/I_p", report))
+    j_tot = time_aligned(dream.arr("/eqsys/j_tot", report), nt) * phi_sign
+    ip = flatten_1d(dream.arr("/eqsys/I_p", report)) * phi_sign
     
     r_boundary, z_boundary = boundary_outline(dream, R0, Z0)
 
@@ -2610,7 +2615,20 @@ def map_summary(factory: Any, dream: DreamH5, grids: dict[str, Any], report: Map
     fill_ids_field(summary, "time", time, report, ids_name, "/grid/t")
     fill_code_metadata(summary, dream, report, ids_name)
 
-    ip = scalar_time_trace(dream.arr("/eqsys/I_p"), nt)
+    R0 = grids.get("R0")
+    B0 = grids.get("B0")
+    if R0 is not None:
+        fill_ids_field(summary, "global_quantities/r0/value", float(R0), report, ids_name, "/grid/R0")
+        fill_ids_field(summary, "global_quantities/r0/source", "DREAM /grid/R0", report, ids_name, "/grid/R0")
+    else:
+        report.warn("summary: global_quantities/r0 was not filled because /grid/R0 is missing.")
+    if B0 is not None:
+        fill_ids_field(summary, "global_quantities/b0/value", np.full(time.shape, float(B0), dtype=float), report, ids_name, "/grid/B0")
+        fill_ids_field(summary, "global_quantities/b0/source", "DREAM /grid/B0", report, ids_name, "/grid/B0")
+    else:
+        report.warn("summary: global_quantities/b0 was not filled because B0 is missing.")
+
+    ip = scalar_time_trace(dream.arr("/eqsys/I_p"), nt) * phi_sign
     n_tot = dream.arr("/eqsys/n_tot")
     n_cold = dream.arr("/eqsys/n_cold")
     n_e_source = "/eqsys/n_tot"
@@ -2621,8 +2639,8 @@ def map_summary(factory: Any, dream: DreamH5, grids: dict[str, Any], report: Map
     t_cold = dream.arr("/eqsys/T_cold")
     e_field = dream.arr("/eqsys/E_field")
     zeff = dream.arr("/other/fluid/Zeff")
-    j_ohm = dream.arr("/eqsys/j_ohm")
-    j_re = dream.arr("/eqsys/j_re")
+    j_ohm = dream.arr("/eqsys/j_ohm")  * phi_sign
+    j_re = dream.arr("/eqsys/j_re")  * phi_sign
     w_cold = dream.arr("/eqsys/W_cold")
     w_i = dream.arr("/eqsys/W_i")
 

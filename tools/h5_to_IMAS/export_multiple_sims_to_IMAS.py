@@ -49,6 +49,7 @@ TOP_LEVEL_TIME_FIELDS = {
     "runaway_electrons": COMMON_TOP_LEVEL_TIME_FIELDS + ("global_quantities/current_phi",),
     "equilibrium": COMMON_TOP_LEVEL_TIME_FIELDS,
     "summary": (
+        "global_quantities/b0/value",
         "global_quantities/ip/value",
         "global_quantities/current_ohm/value",
         "global_quantities/energy_electrons_thermal/value",
