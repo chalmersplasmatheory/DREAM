@@ -54,6 +54,8 @@ parser.add_argument('--Nt', type=int, default=3000,
                     help='Number of time steps, default: 3000')
 parser.add_argument('--output', type=str, default='../outputs/dreicer_with_fre_output.h5',
                     help='Output HDF5 file path, default: ../outputs/dreicer_with_fre_output.h5')
+parser.add_argument('--source', type=str, default='off', choices=['on', 'off'],
+                    help='Enable (kinetic) or disable avalanche source, default: off')
 args = parser.parse_args()
 
 ds = DREAMSettings()
@@ -84,11 +86,11 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 # Disable Dreicer generation (kinetic simulation naturally captures Dreicer through distribution evolution)
 ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_DISABLED)
 
-# Enable avalanche generation (kinetic model - most accurate)
-# pCutAvalanche: momentum cutoff for avalanche generation (in units of m_e*c)
-# ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
-#
-ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
+# Enable/disable avalanche generation (kinetic model) — controlled by --source
+if args.source == 'on':
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=2.0)
+else:
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
 
 # Disable Compton and tritium generation

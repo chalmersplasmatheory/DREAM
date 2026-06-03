@@ -14,8 +14,103 @@ sys.path.append('/data/zhzhou/DREAM/py/')
 
 from DREAM import DREAMOutput
 
+# Physical constants
+C = 299792458.0        # Speed of light (m/s)
+E_CHARGE = 1.602176634e-19  # Elementary charge (C)
+M_ELECTRON = 9.10938356e-31 # Electron mass (kg)
+
+
+def calculate_resonance_lines(p_max, omega, k_par, B0, n_values=None):
+    """
+    Calculate resonance condition curves in (p, xi) space.
+
+    Resonance equation: ω - k_∥·v_∥ - n·Ω_ce = 0
+    Solved for xi as a function of p:
+        xi = (ω·γ - n·Ω_ce) / (k_∥·p·c)
+
+    Parameters
+    ----------
+    p_max : float
+        Maximum momentum (in m_e*c units) for the calculation grid.
+    omega : float
+        Wave angular frequency (rad/s).
+    k_par : float
+        Parallel wavenumber (m^-1).
+    B0 : float
+        Magnetic field strength (T).
+    n_values : list of int, optional
+        Resonance harmonic numbers. Default: [0, -1, +1].
+
+    Returns
+    -------
+    dict
+        {n: (p_plot, xi_plot)} where p_plot and xi_plot are masked arrays
+        satisfying |xi| <= 1.
+    """
+    if n_values is None:
+        n_values = [0, -1, 1]
+
+    # Electron cyclotron frequency (rad/s)
+    omega_ce = E_CHARGE * B0 / M_ELECTRON
+
+    # Momentum grid for resonance calculation (dense, to get smooth curves)
+    p_res = np.linspace(0.01, p_max, 2000)
+    gamma_res = np.sqrt(p_res**2 + 1)
+
+    resonance_lines = {}
+    for n in n_values:
+        # xi = (ω·γ - n·Ω_ce) / (k_∥·p·c)
+        xi = (omega * gamma_res - n * omega_ce) / (k_par * p_res * C)
+
+        # Physical constraint: |xi| <= 1
+        mask = np.abs(xi) <= 1
+        resonance_lines[n] = (p_res[mask], xi[mask])
+
+    return resonance_lines
+
+
+def plot_resonance_on_ax(ax, resonance_lines, n_values=None):
+    """
+    Overlay resonance curves on an existing Axes.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes to draw on.
+    resonance_lines : dict
+        Output from calculate_resonance_lines().
+    n_values : list of int, optional
+        Which harmonics to plot. Default: all keys in resonance_lines.
+    """
+    if n_values is None:
+        n_values = list(resonance_lines.keys())
+
+    # Colour mapping for different harmonic orders
+    color_map = {
+        0:  'yellow',
+        1:  'cyan',
+        -1: 'magenta',
+        2:  'lime',
+        -2: 'orange',
+    }
+
+    for n in n_values:
+        if n not in resonance_lines:
+            continue
+        p_plot, xi_plot = resonance_lines[n]
+        if len(p_plot) == 0:
+            continue
+
+        color = color_map.get(n, 'white')
+        ax.plot(p_plot, xi_plot, linestyle='--', color=color, linewidth=2,
+                label=f'n={n:+d} resonance')
+
+    return ax
+
+
 def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5', 
-                      time_index=-1, species='f_re', plot_dir='../figures'):
+                      time_index=-1, species='f_re', plot_dir='../figures',
+                      resonance_params=None):
     """
     Plot log(f) contour in p-xi space
     
@@ -27,6 +122,14 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
         Time index to plot (-1 for last time step)
     species : str
         'f_re' for runaway electrons or 'f_hot' for hot electrons
+    plot_dir : str
+        Directory to save figures
+    resonance_params : dict, optional
+        If provided, overlay resonance curves. Expected keys:
+        - 'omega' : float — wave angular frequency (rad/s)
+        - 'k_par' : float — parallel wavenumber (m^-1)
+        - 'B0' : float — magnetic field (T)
+        - 'n_values' : list of int, optional — harmonics to plot (default [-1, 0, 1])
     """
     
     # Load output data
@@ -96,6 +199,18 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
     contour_lines = ax.contour(P, XI, log_f, levels=levels[::2], colors='white', 
                                linewidths=0.5, alpha=0.5)
     
+    # Overlay resonance curves if parameters provided
+    if resonance_params is not None:
+        p_max = np.max(p)
+        rl = calculate_resonance_lines(
+            p_max,
+            omega=resonance_params['omega'],
+            k_par=resonance_params['k_par'],
+            B0=resonance_params['B0'],
+            n_values=resonance_params.get('n_values', None),
+        )
+        plot_resonance_on_ax(ax, rl, n_values=resonance_params.get('n_values', None))
+    
     # Add colorbar
     cbar = plt.colorbar(contour, ax=ax)
     cbar.set_label(r'$\log_{10}(f/f_{\mathrm{max}})$', fontsize=12)
@@ -103,6 +218,7 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
     # Labels and title
     ax.set_xlabel(r'Momentum $p$ [$m_e c$]', fontsize=12)
     ax.set_ylabel(r'Pitch $\xi = \cos(\theta)$', fontsize=12)
+    ax.invert_yaxis()  # xi=1 at bottom, xi=-1 at top
     
     time_val = do.grid.t[time_index]
     species_name = 'Runaway electrons ($f_\\mathrm{re}$)' if species == 'f_re' else 'Hot electrons ($f_\\mathrm{hot}$)'
@@ -114,6 +230,7 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
     ax.set_title(title, fontsize=14)
     
     ax.grid(True, linestyle='--', alpha=0.3)
+    ax.legend(loc='upper right', fontsize=10)
     
     plt.tight_layout()
     
@@ -131,7 +248,8 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
 
 
 def plot_multiple_times(output_file='../outputs/dreicer_with_fre_output.h5', 
-                       time_indices=None, species='f_re', plot_dir='../figures'):
+                       time_indices=None, species='f_re', plot_dir='../figures',
+                       resonance_params=None):
     """
     Plot log(f) contour at multiple time steps
     
@@ -143,6 +261,10 @@ def plot_multiple_times(output_file='../outputs/dreicer_with_fre_output.h5',
         List of time indices to plot (None for automatic selection)
     species : str
         'f_re' for runaway electrons or 'f_hot' for hot electrons
+    plot_dir : str
+        Directory to save figures
+    resonance_params : dict, optional
+        If provided, overlay resonance curves. Same keys as plot_logf_contour.
     """
     
     # Load output data
@@ -171,6 +293,18 @@ def plot_multiple_times(output_file='../outputs/dreicer_with_fre_output.h5',
     xi = grid.xi[:]
     P, XI = np.meshgrid(p, xi)
     
+    # Pre-calculate resonance lines if parameters provided
+    resonance_lines = None
+    if resonance_params is not None:
+        p_max = np.max(p)
+        resonance_lines = calculate_resonance_lines(
+            p_max,
+            omega=resonance_params['omega'],
+            k_par=resonance_params['k_par'],
+            B0=resonance_params['B0'],
+            n_values=resonance_params.get('n_values', None),
+        )
+    
     # Create subplots
     n_plots = len(time_indices)
     fig, axes = plt.subplots(1, n_plots, figsize=(5*n_plots, 5))
@@ -197,10 +331,17 @@ def plot_multiple_times(output_file='../outputs/dreicer_with_fre_output.h5',
         axes[idx].set_xlabel(r'$p$ [$m_e c$]', fontsize=10)
         if idx == 0:
             axes[idx].set_ylabel(r'$\xi$', fontsize=10)
+        axes[idx].invert_yaxis()  # xi=1 at bottom, xi=-1 at top
         
         time_val = do.grid.t[time_idx]
         axes[idx].set_title(f't = {time_val:.6e} s', fontsize=11)
         axes[idx].grid(True, linestyle='--', alpha=0.3)
+        
+        # Overlay resonance curves on each subplot
+        if resonance_lines is not None:
+            plot_resonance_on_ax(axes[idx], resonance_lines,
+                                 n_values=resonance_params.get('n_values', None))
+            axes[idx].legend(loc='upper right', fontsize=8)
     
     # Add colorbar
     cbar = fig.colorbar(contour, ax=axes.tolist(), fraction=0.02, pad=0.04)
@@ -231,6 +372,18 @@ def main():
                         help='Path to the DREAM output HDF5 file')
     parser.add_argument('--plot_dir', type=str, default='../figures',
                         help='Directory to save plots')
+
+    # Resonance overlay arguments
+    parser.add_argument('--omega', type=float, default=2*np.pi*476e6,
+                        help='Wave angular frequency (rad/s), default 2π×476 MHz')
+    parser.add_argument('--k_par', type=float, default=-41.0,
+                        help='Parallel wavenumber (m^-1), default -41')
+    parser.add_argument('--B0', type=float, default=1.4,
+                        help='Magnetic field (T), default 1.4')
+    parser.add_argument('--harmonics', type=str, default='-1,0,1,2',
+                        help='Comma-separated harmonic numbers to plot (default: -1,0,1,2)')
+    parser.add_argument('--no-resonance', action='store_true',
+                        help='Disable resonance curve overlay')
     args = parser.parse_args()
 
     print("="*60)
@@ -245,13 +398,30 @@ def main():
         print("Please run generate_with_fre.py first.")
         return
     
+    # Build resonance parameters dict (unless disabled)
+    resonance_params = None
+    if not args.no_resonance:
+        n_values = [int(x.strip()) for x in args.harmonics.split(',')]
+        resonance_params = {
+            'omega': args.omega,
+            'k_par': args.k_par,
+            'B0': args.B0,
+            'n_values': n_values,
+        }
+        print(f"  Resonance overlay: omega={args.omega:.3e} rad/s, "
+              f"k_par={args.k_par} m^-1, B0={args.B0} T, n={n_values}")
+    else:
+        print("  Resonance overlay: disabled")
+
     # Plot single time step (last time step)
     print("\n1. Plotting log(f) contour at last time step...")
-    plot_logf_contour(output_file, time_index=-1, species='f_re', plot_dir=args.plot_dir)
-    
+    plot_logf_contour(output_file, time_index=-1, species='f_re',
+                      plot_dir=args.plot_dir, resonance_params=resonance_params)
+
     # Plot evolution at multiple times
     print("\n2. Plotting log(f) evolution at multiple time steps...")
-    plot_multiple_times(output_file, species='f_re', plot_dir=args.plot_dir)
+    plot_multiple_times(output_file, species='f_re',
+                        plot_dir=args.plot_dir, resonance_params=resonance_params)
     
     print("\nVisualization completed!")
 
