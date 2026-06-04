@@ -20,6 +20,8 @@ parser.add_argument('--data_dir', type=str, default='../outputs/dreicer_with_fre
                     help='Path to the DREAM output HDF5 file')
 parser.add_argument('--plot_dir', type=str, default='../figures',
                     help='Directory to save plots')
+parser.add_argument('--time_series', type=str, default=None,
+                    help='Comma-separated time points (in seconds) to plot, e.g. "0.5,0.9,1.1,1.2,3.0"')
 args = parser.parse_args()
 
 # 创建保存图像的文件夹
@@ -54,10 +56,17 @@ def _auto_ylim(values, pad_bottom=3, pad_top=3):
 plt.figure(figsize=(6, 6))
 
 # 选取指定时间点对应的索引
-target_times = np.array([0.5, 0.9, 1.1, 1.2, 3.0])
+if args.time_series is not None:
+    user_times = [float(x.strip()) for x in args.time_series.split(',')]
+    target_times = np.array(user_times)
+    print(f"Using custom time points: {user_times}")
+else:
+    target_times = np.array([0.5, 0.9, 1.1, 1.2, 3.0])
 selected_times = np.unique([np.argmin(np.abs(do.grid.t[:] - tt)) for tt in target_times])
 
-colors = plt.cm.viridis(np.linspace(0, 1, len(selected_times)))
+# Use distinct colors for readability; first line dashed
+line_colors = ['#1f77b4', '#ff6b6b', '#2ca02c', '#ff7f0e', '#9467bd']
+line_styles = ['--'] + ['-'] * (len(selected_times) - 1)
 all_log = []
 
 for i, t_idx in enumerate(selected_times):
@@ -67,7 +76,8 @@ for i, t_idx in enumerate(selected_times):
     log_f = np.log10(f_nonzero)
     all_log.append(log_f)
     
-    plt.plot(p, log_f, color=colors[i], linewidth=2, 
+    plt.plot(p, log_f, color=line_colors[i % len(line_colors)],
+             linestyle=line_styles[i % len(line_styles)], linewidth=2,
              label=f't={do.grid.t[t_idx]:.3f} s')
 
 plt.xlabel('p ($m_e c$)')
@@ -152,7 +162,7 @@ if hasattr(do.grid, 'xi0TrappedBoundary') and do.grid.xi0TrappedBoundary is not 
 
     plt.figure(figsize=(6, 6))
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(selected_times)))
+    colors = plt.cm.turbo(np.linspace(0, 1, len(selected_times)))
     all_log = []
 
     for i, t_idx in enumerate(selected_times):

@@ -2,7 +2,7 @@
  * Implementation of the ResonanceSolver class.
  * 
  * Solves the coupled dispersion relation and resonance condition:
- *   ω(k, θ_k) = k cos(θ_k) v_∥ - n Ω_ce / γ
+ *   ω(k, θ_k) = k cos(θ_k) v_∥ + n Ω_ce / γ
  * 
  * Uses numerical root-finding to locate resonant wavenumbers.
  */
@@ -40,15 +40,15 @@ std::vector<real_t> ResonanceSolver::findResonantP(
     real_t cos_theta = std::cos(theta_k);
     real_t k_parallel = k * cos_theta;
     
-    // Define resonance residual function using QUADRE-style formulation:
-    // f(p) = omega_wave * gamma(p) - k_parallel * c * p * xi + n * omega_ce
+    // Define resonance residual function using standard resonance condition:
+    // f(p) = omega_wave * gamma(p) - k_parallel * c * p * xi - n * omega_ce
     // This avoids division by gamma and is numerically more stable
-    // Derived from: omega - k_parallel * v_parallel + n * omega_ce / gamma = 0
-    // Multiply by gamma: omega * gamma - k_parallel * (p/gamma) * xi * c * gamma + n * omega_ce = 0
-    // Simplify: omega * gamma - k_parallel * c * p * xi + n * omega_ce = 0
+    // Standard resonance: ω - k_∥·v_∥ - n·Ω_ce/γ = 0
+    // Multiply by γ: ω·γ - k_∥·v·γ·ξ - n·Ω_ce = 0
+    // Since v·γ = p·c: ω·γ - k_∥·c·p·ξ - n·Ω_ce = 0
     auto resonance_residual = [&](real_t p) -> real_t {
         real_t gamma = std::sqrt(1.0 + p * p);
-        return omega_wave * gamma - k_parallel * c * p * xi + static_cast<real_t>(n) * omega_ce;
+        return omega_wave * gamma - k_parallel * c * p * xi - static_cast<real_t>(n) * omega_ce;
     };
     
     // DEBUG: Print parameters for first call (disabled for cleaner output)
@@ -129,7 +129,7 @@ std::vector<real_t> ResonanceSolver::findResonantP(
             // Verify the root using original resonance condition
             real_t gamma_root = std::sqrt(1.0 + p_root * p_root);
             real_t v_parallel_root = (p_root / gamma_root) * xi * c;
-            real_t original_residual = omega_wave - k_parallel * v_parallel_root + static_cast<real_t>(n) * omega_ce / gamma_root;
+            real_t original_residual = omega_wave - k_parallel * v_parallel_root - static_cast<real_t>(n) * omega_ce / gamma_root;
             real_t relative_error = std::abs(original_residual) / (std::abs(omega_wave) + 1e-10);
             
             if (relative_error < 1e-6 && p_root > 0) {

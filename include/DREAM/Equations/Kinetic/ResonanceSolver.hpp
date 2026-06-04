@@ -11,7 +11,7 @@ namespace DREAM {
      * Class for solving the resonance condition between waves and particles.
      * 
      * The resonance condition is:
-     *   ω - k_∥ v_∥ + n Ω_ce / γ = 0
+     *   ω - k_∥ v_∥ - n Ω_ce / γ = 0
      * 
      * Combined with the dispersion relation ω = ω(k, θ_k), this becomes
      * a nonlinear equation for k that must be solved numerically.
@@ -40,10 +40,10 @@ namespace DREAM {
          * This is the REVERSE approach: instead of checking if a grid point is resonant,
          * we solve for the exact resonant p given (k, theta_k, n, xi).
          * 
-         * Solves: ω(k, θ_k) - k cos(θ_k) v_∥(p,xi) + n Ω_ce / γ(p) = 0
+         * Solves: ω(k, θ_k) - k cos(θ_k) v_∥(p,xi) - n Ω_ce / γ(p) = 0
          * 
          * For whistler waves with simplified dispersion ω = k|k_∥| * w:
-         *   k|k_∥| * w - k cos(θ_k) * (p/γ) * xi * c + n Ω_ce / γ = 0
+         *   k|k_∥| * w - k cos(θ_k) * (p/γ) * xi * c - n Ω_ce / γ = 0
          * 
          * This can be rearranged to a quadratic equation in p.
          * 
