@@ -19,9 +19,6 @@ HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(
     
     SetName("HyperresistiveDiffusionTerm");
 
-	if (this->Lambda == nullptr && this->dBB == nullptr)
-		throw DREAMException("HyperresistiveDiffusionTerm: either Lambda or dBB must be provided.");
-	
 	if (this->dBB != nullptr)
 		this->lambda_buf = new real_t[g->GetNr()+1];
 }
