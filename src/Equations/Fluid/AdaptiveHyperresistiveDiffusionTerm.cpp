@@ -96,10 +96,14 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 	const real_t *n_i = uqh->GetUnknownData(this->id_n_i);
 	for (len_t iZs = 0; iZs < nZs; iZs++) {
 		for (len_t ir = 0; ir < nr+1; ir++) {
+			real_t ni;
 			if (ir < nr)
-				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + ir]);
+				ni = n_i[iZs*nr + ir];
 			else
-				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + nr-1]);
+				ni = n_i[iZs*nr + nr-1];
+
+			if (ni > 0)
+				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*ni);
 		}
 	}
 	
