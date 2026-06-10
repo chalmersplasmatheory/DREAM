@@ -108,7 +108,8 @@ real_t SlowingDownFrequency::evaluateStoppingTermAtP(len_t iz, len_t Z0, real_t 
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
 
 
-    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL ||
+        collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
         return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
     else 
         return NBound*log(exp(1)+h*exp(-beta2));
