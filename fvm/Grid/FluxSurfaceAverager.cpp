@@ -496,7 +496,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     else if(params.integrateQAWS)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     else if(doCQUAD) {
-        len_t nevals;
+        size_t nevals;
         real_t intResult;
         len_t ntheta = 4;
         real_t dtheta = (theta_b2-theta_b1)/ntheta;
@@ -835,7 +835,7 @@ real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, r
  * Print the variation of B(theta) to stdout.
  */
 void FluxSurfaceAverager::PrintBOfTheta(const len_t ir, const len_t N, enum fluxGridType fgt) {
-	printf("B(theta) at ir = " LEN_T_PRINTF_FMT "\n", ir);
+	printf("B(theta) at ir = %llu\n", ir);
 	printf("theta = [%.12e", -M_PI);
 	for (len_t i = 1; i < N; i++)
 		printf(",%.12e", 2*M_PI * (i/((real_t)N)) - M_PI);

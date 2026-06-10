@@ -119,7 +119,7 @@ real_t FluxSurfaceAverager::integrandP(real_t p, real_t gamma_max, len_t ir, rea
             
         gsl_set_error_handler(NULL);
         if(status == GSL_ESING){
-            len_t nevals;
+            size_t nevals;
             gsl_integration_cquad(&int_gsl_func,xi_l,xi_u,epsabs,epsrel,gsl_ws_CH_cquad,&terms[i],&error,&nevals);
         }
         
