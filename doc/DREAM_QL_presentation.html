@@ -133,7 +133,7 @@
     <text x="140" y="660" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79">Key Physical Mechanism</text>
     <foreignObject x="140" y="660" width="1200" height="110">
       <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:28px; color:#374151; line-height:1.6; padding:0 0 20px 0;">
-        $$\omega(k, \theta_k) = k \cos(\theta_k) v_\parallel - n \frac{\Omega_{ce}}{\gamma} \quad \text{(Resonance condition)}$$
+        $$\omega - k_\parallel v_\parallel = n \frac{\Omega_{ce}}{\gamma} \quad \text{(Resonance condition)}$$
       </div>
     </foreignObject>
     <text x="140" y="790" font-family="Arial" font-size="24" fill="#374151">→ Quasi-linear diffusion in (p, ξ) phase space</text>
@@ -149,29 +149,59 @@
     <rect x="0" y="0" width="1600" height="26" fill="#1F4E79"/>
     <text x="80" y="90" font-family="Arial" font-size="48" font-weight="700" fill="#1F2937">Wave-Particle Resonance</text>
     <rect x="80" y="110" width="350" height="4" fill="#1F4E79"/>
-    <rect x="100" y="160" width="1400" height="200" rx="8" fill="#F8FAFC" stroke="#D8E1EA" stroke-width="2"/>
-    <text x="800" y="200" font-family="Arial" font-size="40" font-weight="700" fill="#1F4E79" text-anchor="middle">Resonance Condition:</text>
-    <foreignObject x="200" y="200" width="1200" height="200">
-      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:38px; text-align:center; color:#1F2937; font-weight:700; line-height:2.0; padding:5px 0 30px 0; overflow:visible;">
-        $$\omega(k, \theta_k) = k_\parallel v_\parallel - n \frac{\Omega_{ce}}{\gamma}$$
+    <rect x="100" y="160" width="1400" height="170" rx="8" fill="#F8FAFC" stroke="#D8E1EA" stroke-width="2"/>
+    <text x="800" y="200" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79" text-anchor="middle">Resonance Condition:</text>
+    <foreignObject x="200" y="200" width="1200" height="120">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:28px; text-align:center; color:#1F2937; font-weight:700; line-height:2.2; padding:5px 0 0 0; overflow:visible;">
+        $$\omega - k_\parallel v_\parallel = n \frac{\Omega_{ce}}{\gamma}$$
       </div>
     </foreignObject>
-    <rect x="100" y="370" width="680" height="450" rx="8" fill="#EEF6FB" stroke="#1F4E79" stroke-width="2"/>
-    <text x="140" y="420" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79">Wave Parameters:</text>
-    <text x="140" y="470" font-family="Arial" font-size="26" fill="#374151">• ω: wave frequency (from dispersion)</text>
-    <text x="140" y="510" font-family="Arial" font-size="26" fill="#374151">• k: wavenumber magnitude</text>
-    <text x="140" y="550" font-family="Arial" font-size="26" fill="#374151">• θₖ: propagation angle</text>
-    <text x="140" y="590" font-family="Arial" font-size="26" fill="#374151">• k∥ = k cos(θₖ): parallel wavenumber</text>
-    <text x="140" y="630" font-family="Arial" font-size="26" fill="#374151">• n: harmonic number (-2,-1,0,+1,+2)</text>
-    <rect x="820" y="370" width="680" height="450" rx="8" fill="#FEF3C7" stroke="#F59E0B" stroke-width="2"/>
-    <text x="860" y="420" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79">Particle Parameters:</text>
-    <text x="860" y="470" font-family="Arial" font-size="26" fill="#374151">• p: normalized momentum (p = γv/c)</text>
-    <text x="860" y="510" font-family="Arial" font-size="26" fill="#374151">• ξ: pitch angle cosine (ξ = v∥/v)</text>
-    <text x="860" y="550" font-family="Arial" font-size="26" fill="#374151">• γ = √(1+p²): Lorentz factor</text>
-    <text x="860" y="590" font-family="Arial" font-size="26" fill="#374151">• v∥ = (p/γ) ξ c: parallel velocity</text>
-    <text x="860" y="630" font-family="Arial" font-size="26" fill="#374151">• Ωce: electron cyclotron frequency</text>
-    <rect x="100" y="840" width="1400" height="40" rx="4" fill="#1F4E79"/>
-    <text x="800" y="868" font-family="Arial" font-size="24" font-weight="600" fill="#FFFFFF" text-anchor="middle">Example: 476 MHz whistler wave, B₀ = 1.4 T, nₑ = 5×10¹⁸ m⁻³</text>
+    <rect x="100" y="350" width="680" height="490" rx="8" fill="#EEF6FB" stroke="#1F4E79" stroke-width="2"/>
+    <text x="140" y="400" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79">Wave & Particle Parameters:</text>
+    <text x="140" y="455" font-family="Arial" font-size="26" fill="#374151">• ω: wave frequency (from dispersion relation)</text>
+    <text x="140" y="495" font-family="Arial" font-size="26" fill="#374151">• k: wavenumber magnitude</text>
+    <text x="140" y="535" font-family="Arial" font-size="26" fill="#374151">• θₖ: wave propagation angle w.r.t. B₀</text>
+    <text x="140" y="575" font-family="Arial" font-size="26" fill="#374151">• k∥ = k cos(θₖ): parallel wavenumber</text>
+    <text x="140" y="615" font-family="Arial" font-size="26" fill="#374151">• n: harmonic number (-2,-1,0,+1,+2,...)</text>
+    <text x="140" y="660" font-family="Arial" font-size="26" fill="#374151">• p: normalized momentum (p = γv/c)</text>
+    <text x="140" y="700" font-family="Arial" font-size="26" fill="#374151">• ξ = v∥/v: pitch-angle cosine</text>
+    <text x="140" y="740" font-family="Arial" font-size="26" fill="#374151">• γ = √(1+p²): Lorentz factor</text>
+    <text x="140" y="780" font-family="Arial" font-size="26" fill="#374151">• Ωce: electron cyclotron frequency</text>
+    <rect x="820" y="350" width="680" height="490" rx="8" fill="#FFFFFF" stroke="#1F4E79" stroke-width="2"/>
+    <text x="1160" y="400" font-family="Arial" font-size="32" font-weight="700" fill="#1F4E79" text-anchor="middle">Doppler Resonance Picture</text>
+    <!-- B-field direction arrow -->
+    <line x1="1000" y1="530" x2="1000" y2="810" stroke="#6B7280" stroke-width="2" stroke-dasharray="6,4"/>
+    <polygon points="1000,520 992,535 1008,535" fill="#6B7280" stroke="#6B7280" stroke-width="1"/>
+    <text x="1000" y="515" font-family="Arial" font-size="20" fill="#6B7280" text-anchor="middle" font-weight="bold">B₀ (z)</text>
+    <!-- Sine wave along the vertical direction -->
+    <path d="M 1040,545 Q 1055,555 1040,565 Q 1025,575 1040,585 Q 1055,595 1040,605 Q 1025,615 1040,625 Q 1055,635 1040,645 Q 1025,655 1040,665 Q 1055,675 1040,685 Q 1025,695 1040,705 Q 1055,715 1040,725 Q 1025,735 1040,745 Q 1055,755 1040,765" fill="none" stroke="#1F4E79" stroke-width="3"/>
+    <!-- Wavelength label -->
+    <line x1="1040" y1="545" x2="1040" y2="585" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3,3"/>
+    <text x="1040" y="578" font-family="Arial" font-size="18" fill="#F59E0B" text-anchor="start" dx="5">λ</text>
+    <!-- k_∥ arrow (vertical, left of sine wave) -->
+    <line x1="1020" y1="680" x2="1020" y2="630" stroke="#DC2626" stroke-width="2"/>
+    <polygon points="1020,625 1012,638 1028,638" fill="#DC2626"/>
+    <text x="1005" y="658" font-family="Arial" font-size="20" fill="#DC2626" text-anchor="end" font-weight="bold">k∥</text>
+    <!-- Electron dot with velocity arrow -->
+    <circle cx="1090" cy="660" r="10" fill="#2563EB" stroke="#1E3A5F" stroke-width="2"/>
+    <text x="1110" y="655" font-family="Arial" font-size="16" fill="#2563EB" font-weight="bold">e⁻</text>
+    <!-- v_∥ arrow from electron -->
+    <line x1="1090" y1="660" x2="1090" y2="600" stroke="#2563EB" stroke-width="3"/>
+    <polygon points="1090,595 1083,608 1097,608" fill="#2563EB"/>
+    <text x="1105" y="632" font-family="Arial" font-size="22" fill="#2563EB" font-weight="bold">v∥</text>
+    <!-- Wave frequency annotation -->
+    <text x="980" y="445" font-family="Arial" font-size="24" fill="#DC2626" text-anchor="end" font-weight="bold">ω</text>
+    <path d="M 985,450 Q 1005,460 1025,550" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <!-- Doppler shift annotation -->
+    <text x="1150" y="450" font-family="Arial" font-size="22" fill="#374151" text-anchor="start">Electron sees:</text>
+    <text x="1150" y="480" font-family="Arial" font-size="24" fill="#1F4E79" text-anchor="start" font-weight="bold">ω − k∥·v∥</text>
+    <!-- Resonance label -->
+    <text x="1150" y="560" font-family="Arial" font-size="22" fill="#374151" text-anchor="start">Resonance when:</text>
+    <foreignObject x="1150" y="570" width="350" height="110">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-size:26px; color:#1F4E79; font-weight:bold;">$$\omega - k_\parallel v_\parallel = n \frac{\Omega_{ce}}{\gamma}$$</div>
+    </foreignObject>
+    <rect x="100" y="860" width="1400" height="30" rx="4" fill="#1F4E79"/>
+    <text x="800" y="882" font-family="Arial" font-size="22" font-weight="600" fill="#FFFFFF" text-anchor="middle">Example: 476 MHz whistler wave, B₀ = 1.4 T, nₑ = 5×10¹⁸ m⁻³</text>
   </svg>
 </section>
 
@@ -560,6 +590,137 @@
     <text x="160" y="770" font-family="Arial" font-size="24" fill="#374151">• Optimization studies for ITER</text>
     <rect x="100" y="840" width="1400" height="40" rx="4" fill="#1F4E79"/>
     <text x="800" y="868" font-family="Arial" font-size="22" font-weight="600" fill="#FFFFFF" text-anchor="middle">Questions? Thank you!</text>
+  </svg>
+</section>
+
+<!-- Slide 13 - Møller Scattering Concept -->
+<section class="slide-wrap" id="slide-13" data-slide="13">
+  <div class="slide-topbar"><div class="slide-label">Slide 13 - Møller Scattering &amp; Trapped Particles</div><button class="fullscreen-slide-btn" data-slide="slide-13">Fullscreen</button></div>
+  <svg class="slide-svg" xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+    <rect x="0" y="0" width="1600" height="900" fill="#FFFFFF"/>
+    <rect x="0" y="0" width="1600" height="26" fill="#1F4E79"/>
+    <text x="80" y="90" font-family="Arial" font-size="48" font-weight="700" fill="#1F2937">Møller Scattering &amp; Trapped Particles</text>
+    <rect x="80" y="110" width="480" height="4" fill="#1F4E79"/>
+
+    <!-- ===== Left panel: Scattering diagram ===== -->
+    <rect x="60" y="140" width="720" height="730" rx="8" fill="#F8FAFC" stroke="#D8E1EA" stroke-width="2"/>
+
+    <!-- B field arrow (vertical) -->
+    <defs>
+      <marker id="arrowBlue" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8" fill="#2563EB"/>
+      </marker>
+      <marker id="arrowRed" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8" fill="#DC2626"/>
+      </marker>
+      <marker id="arrowGreen" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8" fill="#16A34A"/>
+      </marker>
+      <marker id="arrowOrange" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8" fill="#EA580C"/>
+      </marker>
+      <marker id="arrowGray" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto">
+        <path d="M0,0 L10,4 L0,8" fill="#9CA3AF"/>
+      </marker>
+    </defs>
+
+    <!-- B field label and arrow -->
+    <text x="110" y="195" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">B</text>
+    <line x1="120" y1="200" x2="120" y2="170" stroke="#2563EB" stroke-width="3" marker-end="url(#arrowBlue)"/>
+
+    <!-- Scattering center point -->
+    <circle cx="420" cy="470" r="8" fill="#DC2626" stroke="#991B1B" stroke-width="2"/>
+    <text x="430" y="445" font-family="Arial" font-size="22" font-weight="700" fill="#DC2626">Collision</text>
+
+    <!-- Incident primary electron (from top, along B) -->
+    <line x1="420" y1="260" x2="420" y2="460" stroke="#DC2626" stroke-width="4" marker-end="url(#arrowRed)"/>
+    <text x="440" y="350" font-family="Arial" font-size="22" fill="#DC2626" font-weight="600">Primary e⁻ (seed)</text>
+    <text x="440" y="378" font-family="Arial" font-size="18" fill="#6B7280">$\gamma_1 \gg 1$, $\xi_1 \approx 1$</text>
+
+    <!-- Scattered primary (slightly deflected, going down-right) -->
+    <line x1="420" y1="470" x2="540" y2="610" stroke="#EA580C" stroke-width="4" marker-end="url(#arrowOrange)"/>
+    <text x="555" y="605" font-family="Arial" font-size="20" fill="#EA580C" font-weight="600">Scattered primary</text>
+    <text x="555" y="630" font-family="Arial" font-size="18" fill="#6B7280">$\xi \approx 1$, small deflection</text>
+
+    <!-- Knocked-out secondary (at large angle, going left-down) -->
+    <line x1="420" y1="470" x2="230" y2="600" stroke="#16A34A" stroke-width="4" marker-end="url(#arrowGreen)"/>
+    <text x="115" y="608" font-family="Arial" font-size="20" fill="#16A34A" font-weight="600">Knocked-out e⁻</text>
+    <text x="115" y="633" font-family="Arial" font-size="18" fill="#6B7280">(secondary)</text>
+    <text x="115" y="658" font-family="Arial" font-size="18" fill="#6B7280">$\xi = \cos\theta$</text>
+
+    <!-- Angle arc between primary and secondary -->
+    <path d="M420,470 Q400,490 380,480" fill="none" stroke="#374151" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="350" y="495" font-family="Arial" font-size="18" fill="#374151">$\theta$</text>
+
+    <!-- Label: Møller scattering process -->
+    <rect x="100" y="690" width="640" height="155" rx="6" fill="#EEF6FB" stroke="#1F4E79" stroke-width="1.5"/>
+    <text x="120" y="720" font-family="Arial" font-size="20" font-weight="700" fill="#1F4E79">Møller Scattering Process</text>
+    <text x="120" y="755" font-family="Arial" font-size="18" fill="#374151">• Primary electron collides with a free electron (target)</text>
+    <text x="120" y="780" font-family="Arial" font-size="18" fill="#374151">• Both electrons emerge: scattered primary + knocked-out secondary</text>
+    <text x="120" y="805" font-family="Arial" font-size="18" fill="#374151">• Secondary pitch: $\xi = \xi_1 \cdot \sqrt{\gamma_{\rm rel}} \pm \sqrt{1-\xi_1^2} \sqrt{1-\gamma_{\rm rel}}$</text>
+    <text x="120" y="830" font-family="Arial" font-size="18" fill="#374151">• $\gamma_{\rm rel} = (\gamma_1+1)(\gamma-1) / [(\gamma_1-1)(\gamma+1)]$</text>
+
+    <!-- ===== Right panel: Trapped cone diagram ===== -->
+    <rect x="820" y="140" width="720" height="730" rx="8" fill="#F8FAFC" stroke="#D8E1EA" stroke-width="2"/>
+
+    <!-- Title -->
+    <text x="1180" y="195" font-family="Arial" font-size="24" font-weight="700" fill="#1F2937" text-anchor="middle">Trapped / Passing Boundary</text>
+
+    <!-- B field (vertical, centered) -->
+    <line x1="1180" y1="210" x2="1180" y2="200" stroke="#2563EB" stroke-width="3"/>
+    <text x="1195" y="215" font-family="Arial" font-size="18" font-weight="700" fill="#2563EB">B</text>
+
+    <!-- Trapped cone (shaded region, open upward) -->
+    <!-- Upper cone (passing region) -->
+    <path d="M1180,240 L1020,150 L1340,150 Z" fill="#D1FAE5" fill-opacity="0.4" stroke="#16A34A" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <text x="1030" y="175" font-family="Arial" font-size="16" fill="#16A34A">passing</text>
+
+    <!-- Lower cone (trapped region, shaded) -->
+    <path d="M1180,240 L1020,700 L1340,700 Z" fill="#FEE2E2" fill-opacity="0.4" stroke="#DC2626" stroke-width="1.5" stroke-dasharray="6,4"/>
+    <text x="1030" y="640" font-family="Arial" font-size="16" fill="#DC2626">trapped</text>
+
+    <!-- Horizontal dashed line at mid-plane -->
+    <line x1="1020" y1="240" x2="1340" y2="240" stroke="#374151" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+    <!-- Loss cone boundary line showing ξ_trapped -->
+    <!-- Left boundary -->
+    <line x1="1180" y1="240" x2="1020" y2="700" stroke="#1F4E79" stroke-width="2"/>
+    <!-- Right boundary -->
+    <line x1="1180" y1="240" x2="1340" y2="700" stroke="#1F4E79" stroke-width="2"/>
+
+    <!-- Angle arc for trapped cone -->
+    <path d="M1140,250 Q1150,270 1170,265" fill="none" stroke="#1F4E79" stroke-width="1.5"/>
+    <text x="1120" y="280" font-family="Arial" font-size="18" fill="#1F4E79">$\theta_T$</text>
+
+    <!-- ξ_trapped label -->
+    <text x="940" y="510" font-family="Arial" font-size="18" fill="#1F4E79">$\xi_{\rm trapped} = \cos\theta_T$</text>
+    <text x="940" y="535" font-family="Arial" font-size="18" fill="#1F4E79">$= \sqrt{1 - B_{\min}/B_{\max}}$</text>
+
+    <!-- Seed electron along B (passing) -->
+    <circle cx="1180" cy="300" r="6" fill="#EA580C"/>
+    <line x1="1180" y1="300" x2="1180" y2="370" stroke="#EA580C" stroke-width="3" marker-end="url(#arrowOrange)"/>
+    <text x="1200" y="345" font-family="Arial" font-size="18" fill="#EA580C" font-weight="600">Seed e⁻</text>
+    <text x="1200" y="368" font-family="Arial" font-size="16" fill="#6B7280">($\xi \approx 1$, passing)</text>
+
+    <!-- Secondary with large pitch → trapped -->
+    <circle cx="1180" cy="420" r="6" fill="#DC2626"/>
+    <line x1="1180" y1="420" x2="1100" y2="510" stroke="#DC2626" stroke-width="3" marker-end="url(#arrowRed)"/>
+    <text x="1050" y="495" font-family="Arial" font-size="18" fill="#DC2626" font-weight="600">Scattered e⁻</text>
+    <text x="1050" y="518" font-family="Arial" font-size="16" fill="#6B7280">($\xi &lt; \xi_T$, trapped!)</text>
+
+    <!-- Arrow showing secondary falls into trapped region -->
+    <path d="M1140,480 Q1130,530 1090,570" fill="none" stroke="#DC2626" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowRed)"/>
+
+    <!-- Explanation box -->
+    <rect x="860" y="600" width="640" height="245" rx="6" fill="#FEF2F2" stroke="#DC2626" stroke-width="1.5"/>
+    <text x="880" y="635" font-family="Arial" font-size="20" font-weight="700" fill="#DC2626">Consequence: Avalanche Suppression</text>
+    <text x="880" y="670" font-family="Arial" font-size="18" fill="#374151">• RP model assumes all secondaries at $\xi \approx 1$</text>
+    <text x="880" y="695" font-family="Arial" font-size="18" fill="#374151">• In reality, Møller scattering produces a broad</text>
+    <text x="880" y="720" font-family="Arial" font-size="18" fill="#374151">  angular distribution $\Pi(\xi)$</text>
+    <text x="880" y="755" font-family="Arial" font-size="18" fill="#374151">• Secondaries with $\xi &lt; \xi_T$ are trapped by</text>
+    <text x="880" y="780" font-family="Arial" font-size="18" fill="#374151">  magnetic mirrors — cannot accelerate further</text>
+    <text x="880" y="815" font-family="Arial" font-size="18" fill="#374151">• → Direct integration naturally excludes trapped</text>
+    <text x="880" y="840" font-family="Arial" font-size="18" fill="#374151">  region, correctly suppressing avalanche rate</text>
   </svg>
 </section>
 

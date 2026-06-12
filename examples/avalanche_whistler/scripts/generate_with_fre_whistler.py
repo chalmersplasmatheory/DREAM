@@ -91,7 +91,7 @@ print(f"\nPlasma Parameters:")
 print(f"  B0 = {B0} T")
 print(f"  n_e = {n:.2e} m^-3")
 print(f"  T = {T} eV")
-print(f"  E = {E:.2f} V/m (E/Ec = 0.045)")
+print(f"  E = {E:.2f} V/m ")
 
 # ============================================================================
 # Set electric field and temperature
@@ -131,7 +131,7 @@ ds.collisions.pstar_mode          = Collisions.PSTAR_MODE_COLLISIONLESS
 ds.hottailgrid.setNxi(Nxi)
 ds.hottailgrid.setNp(Np_hot)
 ds.hottailgrid.setPmax(pMax_hot)
-ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(dxiMax = 0.1)
+ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(dxiMax = 0.05)
 
 # ============================================================================
 # Runaway electron grid settings
@@ -140,7 +140,7 @@ ds.runawaygrid.setEnabled(True)
 ds.runawaygrid.setNxi(Nxi)
 ds.runawaygrid.setNp(Np_re)
 ds.runawaygrid.setPmax(pMax_re)
-ds.runawaygrid.setTrappedPassingBoundaryLayerGrid(dxiMax = 0.1)
+ds.runawaygrid.setTrappedPassingBoundaryLayerGrid(dxiMax = 0.05)
 
 # ============================================================================
 # Initial distribution and physics terms

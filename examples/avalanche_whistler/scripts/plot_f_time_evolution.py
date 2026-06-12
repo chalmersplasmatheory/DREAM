@@ -8,7 +8,7 @@ import numpy as np
 import sys
 import os
 
-sys.path.append('../../py')
+sys.path.append('/data/zhzhou/DREAM/py')
 
 from DREAM import *
 from DREAM.DREAMOutput import DREAMOutput
@@ -82,9 +82,9 @@ for i, t_idx in enumerate(selected_times):
 
 plt.xlabel('p ($m_e c$)')
 plt.ylabel(r'$\log_{10}( \int |f| \, d\xi )$')
-plt.xlim(0, 25)
+plt.xlim(0, 20)
 yl1, yh1 = _auto_ylim(np.concatenate(all_log))
-plt.ylim(0, yh1)
+plt.ylim(10, yh1)
 plt.title(r'Distribution function evolution ($\xi$-integrated)')
 plt.legend()
 plt.grid(True, linestyle='--', alpha=0.7)

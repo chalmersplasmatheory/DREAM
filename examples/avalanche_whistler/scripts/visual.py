@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # 添加DREAM路径
-sys.path.append('../../py')
+sys.path.append('/data/zhzhou/DREAM/py')
 
 from DREAM import DREAMOutput
 

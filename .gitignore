@@ -47,3 +47,5 @@ DREAMdoc*/
 .codegraph/
 .env
 reasonix.toml
+logs/
+*.png

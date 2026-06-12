@@ -88,8 +88,8 @@ def plot_resonance_on_ax(ax, resonance_lines, n_values=None):
     # Colour mapping for different harmonic orders
     color_map = {
         0:  'yellow',
-        1:  'cyan',
-        -1: 'magenta',
+        1:  'magenta',
+        -1: 'cyan',
         2:  'lime',
         -2: 'orange',
     }
@@ -247,6 +247,110 @@ def plot_logf_contour(output_file='../outputs/dreicer_with_fre_output.h5',
     return fig, ax
 
 
+def plot_logf_contour_zoomed(output_file='../outputs/dreicer_with_fre_output.h5',
+                             time_index=-1, species='f_re', plot_dir='../figures',
+                             resonance_params=None,
+                             xi_range=(1.0, 0.25), p_range=(0, 30)):
+    """
+    Plot log(f) contour in p-xi space with custom axis limits (zoomed view).
+    
+    Parameters:
+    -----------
+    output_file, time_index, species, plot_dir, resonance_params :
+        Same as plot_logf_contour().
+    xi_range : tuple
+        (xi_max, xi_min) — pitch range for the zoomed view (default (1, 0.25)).
+    p_range : tuple
+        (p_min, p_max) — momentum range for the zoomed view (default (0, 30)).
+    """
+    # Load output data
+    print(f"Loading data from {output_file}...")
+    do = DREAMOutput(output_file)
+    
+    # Get distribution function data
+    if species == 'f_re':
+        f = do.eqsys.f_re.get()
+        grid = do.grid.runaway
+    elif species == 'f_hot':
+        f = do.eqsys.f_hot.get()
+        grid = do.grid.hottail
+    else:
+        raise ValueError("species must be 'f_re' or 'f_hot'")
+    
+    # Get momentum and pitch grids
+    p = grid.p[:]  # momentum in units of m_e*c
+    xi = grid.xi[:]  # pitch coordinate (cosine of pitch angle)
+    
+    # Select radial point (first radial point)
+    f_data = f[time_index, 0, :, :]  # [time, radius, xi, p]
+    
+    # Create meshgrid for plotting
+    P, XI = np.meshgrid(p, xi)
+    
+    # Calculate log(f), handle zeros and negative values
+    f_abs = np.abs(f_data)
+    f_max = np.max(f_abs)
+    if f_max > 0:
+        log_f = np.log10(f_abs / f_max + 1e-30)
+    else:
+        log_f = np.zeros_like(f_abs)
+    
+    # Create figure
+    fig, ax = plt.subplots(1, 1, figsize=(6, 5))
+    
+    # Plot contour
+    levels = np.linspace(-12, 0, 25)
+    contour = ax.contourf(P, XI, log_f, levels=levels, cmap='turbo', extend='both')
+    
+    # Add contour lines
+    contour_lines = ax.contour(P, XI, log_f, levels=levels[::2], colors='white',
+                               linewidths=0.5, alpha=0.5)
+    
+    # Overlay resonance curves if parameters provided
+    if resonance_params is not None:
+        p_max = p_range[1]
+        rl = calculate_resonance_lines(
+            p_max,
+            omega=resonance_params['omega'],
+            k_par=resonance_params['k_par'],
+            B0=resonance_params['B0'],
+            n_values=resonance_params.get('n_values', None),
+        )
+        plot_resonance_on_ax(ax, rl, n_values=resonance_params.get('n_values', None))
+    
+    # Add colorbar
+    cbar = plt.colorbar(contour, ax=ax)
+    cbar.set_label(r'$\log_{10}(f/f_{\mathrm{max}})$', fontsize=12)
+    
+    # Labels and title
+    ax.set_xlabel(r'Momentum $p$ [$m_e c$]', fontsize=12)
+    ax.set_ylabel(r'Pitch $\xi = \cos(\theta)$', fontsize=12)
+    
+    # Apply zoom limits (ξ=1 at bottom, ξ=0.25 at top)
+    ax.set_xlim(p_range[0], p_range[1])
+    ax.set_ylim(xi_range[0], xi_range[1])
+    
+    time_val = do.grid.t[time_index]
+    species_name = 'Runaway electrons ($f_\\mathrm{re}$)' if species == 'f_re' else 'Hot electrons ($f_\\mathrm{hot}$)'
+    ax.set_title(f'{species_name} (zoomed)\nTime = {time_val:.6e} s', fontsize=14)
+    
+    ax.grid(True, linestyle='--', alpha=0.3)
+    ax.legend(loc='upper right', fontsize=10)
+    
+    plt.tight_layout()
+    
+    # Save figure
+    os.makedirs(plot_dir, exist_ok=True)
+    
+    filename = f'logf_contour_{species}_t{time_index}_zoomed.png'
+    save_path = os.path.join(plot_dir, filename)
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    print(f"Figure saved to {save_path}")
+    
+    plt.show()
+    
+    return fig, ax
+
 def plot_multiple_times(output_file='../outputs/dreicer_with_fre_output.h5', 
                        time_indices=None, species='f_re', plot_dir='../figures',
                        resonance_params=None):
@@ -384,6 +488,14 @@ def main():
                         help='Comma-separated harmonic numbers to plot (default: -1,0,1,2)')
     parser.add_argument('--no-resonance', action='store_true',
                         help='Disable resonance curve overlay')
+    parser.add_argument('--zoomed', action='store_true',
+                        help='Generate zoomed view with custom p/xi limits')
+    parser.add_argument('--xi-max', type=float, default=1.0,
+                        help='Maximum xi for zoomed view (default: 1.0)')
+    parser.add_argument('--xi-min', type=float, default=0.25,
+                        help='Minimum xi for zoomed view (default: 0.25)')
+    parser.add_argument('--p-max', type=float, default=30,
+                        help='Maximum p for zoomed view (default: 30)')
     args = parser.parse_args()
 
     print("="*60)
@@ -422,6 +534,19 @@ def main():
     print("\n2. Plotting log(f) evolution at multiple time steps...")
     plot_multiple_times(output_file, species='f_re',
                         plot_dir=args.plot_dir, resonance_params=resonance_params)
+    
+    # Zoomed view (if requested)
+    if args.zoomed:
+        print("\n3. Plotting zoomed log(f) contour...")
+        # Only show n=+1 and n=+2 in zoomed view (n=0 and n=-1 not visible)
+        zoom_resonance_params = dict(resonance_params) if resonance_params else None
+        if zoom_resonance_params is not None:
+            zoom_resonance_params['n_values'] = [1, 2]
+        plot_logf_contour_zoomed(
+            output_file, time_index=-1, species='f_re',
+            plot_dir=args.plot_dir, resonance_params=zoom_resonance_params,
+            xi_range=(args.xi_max, args.xi_min), p_range=(0, args.p_max)
+        )
     
     print("\nVisualization completed!")
 

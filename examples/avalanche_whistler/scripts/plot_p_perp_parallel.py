@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-sys.path.append('../../py')
+sys.path.append('/data/zhzhou/DREAM/py')
 
 from DREAM import *
 from DREAM.DREAMOutput import DREAMOutput

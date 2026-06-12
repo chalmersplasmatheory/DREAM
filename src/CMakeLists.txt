@@ -106,6 +106,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TritiumRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceDirect.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ComptonSource.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
