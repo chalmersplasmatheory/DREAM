@@ -634,6 +634,13 @@ void RunawayFluid::CalculateCriticalMomentum(){
 
             real_t s = pStar*constTerm;
             nuSnuDTerm = s*s*s*s + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
+        } else if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_REV){
+            gsl_func.function = &(pStarFunctionAlt);
+            pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+
+            real_t s = pStar*constTerm;
+            real_t nuSHat_PARSCREEN = evaluateNuSHat(ir, pStar, collSettingsForPc);
+            nuSnuDTerm = s*s*s*s + 4*nuSHat_PARSCREEN*nuSHat_PARSCREEN;
         } else {
 	        gsl_func.function = &(pStarFunction);
 	        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);

@@ -246,8 +246,7 @@ enum collqty_lnLambda_type {             // The Coulomb logarithm is...
     COLLQTY_LNLAMBDA_THERMAL=3,          // the thermal lnLambda, lnL = lnLT
     COLLQTY_LNLAMBDA_ION_ION=4,          // the ion-ion lnLambda, lnL = lnLii
     // Discussion is needed before merge request, -> separate setting is better or not.
-    COLLQTY_LNLAMBDA_CONSTANT_COLLECTIVE=5          // COLLQTY_LNLAMBDA_CONSANT=1 with collective Coulomb friction, lnL = lnLc + ln mc^2/Te
-    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE=6  // COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2 with collective Coulomb friction
+    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE=5  // COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2 with collective Coulomb friction
 };
 
 enum collqty_collfreq_mode {
@@ -293,7 +292,8 @@ enum eqterm_avalanche_mode {                        // Avalanche generation is..
     EQTERM_AVALANCHE_MODE_NEGLECT = 1,              // neglected
     EQTERM_AVALANCHE_MODE_FLUID = 2,                // modelled with fluid growth rate formula
     EQTERM_AVALANCHE_MODE_FLUID_HESSLOW = 3,        // modelled with fluid growth rate formula published by Hesslow et al NF 2019
-    EQTERM_AVALANCHE_MODE_KINETIC = 4               // modelled kinetically with RP avalanche source
+    EQTERM_AVALANCHE_MODE_KINETIC = 4,              // modelled kinetically with RP avalanche source
+    EQTERM_AVALANCHE_MODE_FLUID_REV = 5             // modelled with fluid growth rate formula with refinement 
 };
 
 enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...

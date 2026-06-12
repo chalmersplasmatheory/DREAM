@@ -77,7 +77,10 @@ real_t CoulombLogarithm::evaluateLnLambdaC(len_t ir){
     real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
     if(n_free==0)
         return 0;
-    return 14.6 + 0.5*log( T_cold/(n_free/1e20) );
+    if(collQtySettings->lnL_type == OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE)
+        return 21.2 - 0.5*log(n_free/1e20);          // LnLc from binary and collective collisions
+    else
+        return 14.6 + 0.5*log(T_cold/(n_free/1e20)); // LnLc from binary collisions
 
     // eventually, to be more accurate, we may want to define it as
     // lnLambda_c = lnLambda_T - 0.5*log(T_cold/Constants::mc2inEV);
@@ -128,13 +131,16 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSett
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t gamma = sqrt(1+p*p);
     real_t eFactor = 0.0;
+    real_t eFactor_pw = 1.0; // contribution from collective friction, default is 1.0
     real_t pTeOverC = sqrt(2*T_cold[ir]/Constants::mc2inEV);
     if(isLnEE)
         eFactor = sqrt(2*(gamma-1))/pTeOverC;
+        if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
+            eFactor_pw = sqrt(2)*p/gamma/pTeOverC;
     else if(isLnEI)
         eFactor = 2*p / pTeOverC;
 
-    return lnLambda_T[ir] + log( 1 + pow(eFactor,kInterpolate) )/kInterpolate;
+    return lnLambda_T[ir] + log( 1 + pow(eFactor*eFactor_pw,kInterpolate) )/kInterpolate;
 }
 
 
