@@ -33,7 +33,10 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     cqsetForPc->pstar_mode         = cqsetForEc->pstar_mode         = (enum OptionConstants::collqty_pstar_mode)             s->GetInteger(MODNAME "/pstar_mode");
 
     cqsetForPc->lnL_type = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(MODNAME "/lnlambda");
-    cqsetForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT; 
+    if(cqsetForPc->lnL_type == OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE)
+        cqsetForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE;
+    else // default setting
+        cqsetForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
 
     cqsetForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
     cqsetForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
