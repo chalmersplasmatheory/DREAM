@@ -133,10 +133,11 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSett
     real_t eFactor = 0.0;
     real_t eFactor_pw = 1.0; // contribution from collective friction, default is 1.0
     real_t pTeOverC = sqrt(2*T_cold[ir]/Constants::mc2inEV);
-    if(isLnEE)
+    if(isLnEE){
         eFactor = sqrt(2*(gamma-1))/pTeOverC;
-        if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
+        if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT_COLLECTIVE)
             eFactor_pw = sqrt(2)*p/gamma/pTeOverC;
+    }
     else if(isLnEI)
         eFactor = 2*p / pTeOverC;
 
