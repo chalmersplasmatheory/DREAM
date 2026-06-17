@@ -230,7 +230,7 @@ namespace DREAM {
         template<class T1, class T2>
         static T1 *ConstructTransportBoundaryCondition(
             enum OptionConstants::eqterm_transport_bc, T2*,
-            FVM::Operator*, const std::string&, FVM::Grid*
+            FVM::Operator*, const std::string&, FVM::Grid*, bool heat
         );
         template<typename T>
         static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, EquationSystem*, Settings*, const std::string& subname="transport");
