@@ -69,7 +69,7 @@ namespace DREAM {
             FVM::Grid*, real_t, enum SvenssonTransport<T>::svensson_interp1d_param,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
             struct dream_4d_data*
-            );
+		);
         
         virtual ~SvenssonTransport();
 

@@ -6,6 +6,7 @@ from . OtherKineticQuantity import OtherKineticQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
 
 from . AvalancheGrowthRate import AvalancheGrowthRate
+from . FrozenDIp import FrozenDIp
 from . LCFSLoss import LCFSLoss
 from . SafetyFactor import SafetyFactor
 
@@ -27,6 +28,7 @@ class OtherQuantities:
         'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,
         'nu_s_f2': OtherKineticQuantity,
+        'frozen_dIp': FrozenDIp,
         'qR0': SafetyFactor
     }
 
