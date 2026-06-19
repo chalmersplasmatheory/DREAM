@@ -147,7 +147,8 @@ namespace DREAM {
             OptionConstants::eqterm_compton_mode,
             FVM::Interpolator1D *compton_flux, 
             real_t, real_t, real_t, real_t
-        );
+
+            );
         ~RunawayFluid();
 
         static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s, real_t epsrel=1e-3, real_t epsabs=0);
@@ -199,6 +200,9 @@ namespace DREAM {
         
         const real_t GetElectronCollisionTimeThermal(len_t ir) const
             {return tauEETh[ir];}
+
+        // Used by generalized RR heat transport operators to build
+        // nu_c(r) = 1 / tau_th(r) for collisional/mean-free-path effects.
         const real_t* GetElectronCollisionTimeThermal() const
             {return tauEETh;}
         
