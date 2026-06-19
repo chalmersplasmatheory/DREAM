@@ -58,7 +58,7 @@ class OtherFluidQuantity(FluidQuantity):
 
         return t
 
-      
+
     def new_like(self, name=None, data=None, grid=None, output=None, attr=None, description=None):
         """
         Creates a new object of the same type where the provided quantities replace
