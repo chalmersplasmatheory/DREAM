@@ -2,14 +2,62 @@
 
 TimeStepper
 ===========
-The time stepper module is responsible for advancing the system in time. Three
+The time stepper module is responsible for advancing the system in time. Four
 different time steppers are available, namely a fixed length stepper, a simple
-error estimating adaptive stepper, and an adaptive stepper which estimates and
-rescales the time step based on the current ionization time.
+error estimating adaptive stepper, an adaptive stepper which estimates and
+rescales the time step based on the current ionization time, and a stepper
+which advances the system at a prescribed set of time points.
 
 .. contents:: Page overview
    :local:
    :depth: 3
+
+
+.. _ds-timestep-selecting:
+
+Selecting a time stepper
+------------------------
+The time stepper mode is selected with ``setType()``. The example below
+illustrates how to activate the (default) mode with constant time steps.
+
+.. code-block:: python
+
+   from DREAM import DREAMSettings
+   from DREAM.Settings import TimeStepper
+
+   ds = DREAMSettings()
+   ds.timestep.setType(TimeStepper.TYPE_CONSTANT)
+   ...  # further configuration
+
+
+The supported time stepper types in the Python interface are:
+
++---------------------+----------------------------+-----------------------------------------------+
+| Option              | Description                | Key settings / notes                          |
++=====================+============================+===============================================+
+| ``TYPE_CONSTANT``   | Constant step length       | Requires ``tmax`` and exactly one of ``dt``   |
+|                     |                            | or ``nt``. Supports ``setNumberOfSaveSteps()``|
++---------------------+----------------------------+-----------------------------------------------+
+| ``TYPE_PRESCRIBED`` | Prescribed time points     | Requires ``times`` (1D array). Must start at  |
+|                     |                            | 0 and be strictly increasing. ``tmax`` is     |
+|                     |                            | taken from ``times[-1]``. Supports            |
+|                     |                            | ``setNumberOfSaveSteps()``                    |
++---------------------+----------------------------+-----------------------------------------------+
+| ``TYPE_ADAPTIVE``   | Error-based adaptive       | Requires ``tmax``. Uses tolerance settings.   |
+|                     |                            | ``nt`` is not used.                           |
++---------------------+----------------------------+-----------------------------------------------+
+| ``TYPE_IONIZATION`` | Ionization-based adaptive  | Activated via ``setIonization()``. Uses       |
+|                     |                            | ``dt0/dtmax`` or automatic initial step.      |
+|                     |                            | Output limiting via ``setMinSaveTimestep()``. |
++---------------------+----------------------------+-----------------------------------------------+
+
+In the following sections, we describe how each mode can be configured.
+
+.. note::
+
+   ``TYPE_IONIZATION`` uses a custom interface, where the type is activated when
+   calling the helper ``setIonization()``.
+
 
 
 Constant step length
@@ -31,33 +79,79 @@ options are set using the following code in the Python interface:
    ds.timestep.setTmax(1e-2)
    ds.timestep.setNt(20)
 
+.. note::
+
+   The number of stored output time points can be reduced using
+   ``setNumberOfSaveSteps()``; see :ref:`ds-timestep-savesteps`.
+
+Prescribed time points
+----------------------
+The prescribed time stepper advances the system in time according to a user
+provided array of time points
+
+.. math::
+
+   t_0, t_1, \ldots, t_{N},
+
+where :math:`t_0=0` and :math:`t_{k} > t_{k-1}`. The stepper advances from
+:math:`t_{k-1}` to :math:`t_k` at each time step. The final simulation time
+is given by :math:`t_{\rm max}=t_{N}`.
+
+In the Python interface, this mode is enabled by setting a prescribed time
+array:
+
+.. code-block:: python
+
+   import numpy as np
+   from DREAM import DREAMSettings
+
+   ds = DREAMSettings()
+   ...
+   times = np.array([0.0, 1e-6, 2e-6, 5e-6, 1e-5])
+   ds.timestep.setTimes(times)
+
+This mode is useful when you want to enforce output and solver time points at
+specific times (for example to align with external data sampling or to help resolve
+rapid initial transients).
+
+.. note::
+
+   The final time is set by the last entry in ``times``. If ``tmax`` is set
+   separately, it must match ``times[-1]``.
+
+.. note::
+
+   The number of stored output time points can be reduced using
+   ``setNumberOfSaveSteps()``; see :ref:`ds-timestep-savesteps`.
+
+.. _ds-timestep-savesteps:
 
 Reducing number of saved steps
-******************************
+------------------------------
 By default, every time step taken is saved to the output file. For long
-simulations with fine time resolution this may however require a significant
-amount of memory and disk space. To reduce the amount of space needed, the
-constant time stepper can instructed to only store a certain number of time
+simulations this may require significant memory and disk space. To reduce the
+output size, DREAM can be instructed to only store a limited number of time
 steps in the final output file. This is achieved using the
-``setNumberOfSaveSteps()`` method as follows:
+``setNumberOfSaveSteps()`` method:
 
 .. code-block:: python
 
    ds = DREAMSettings()
    ...
-   ds.timestep.setNt(6000)
    ds.timestep.setNumberOfSaveSteps(1000)
 
-This will cause the DREAM output file to only contain every 6th time step
-taken by the solver. Note that the solutions are unaffected by this
-downsampling---the finer time resolution is still used for evolving the
-system in time---and the only effect is that the output file contains fewer
-of the time steps actually taken.
+For the constant and prescribed time steppers, this causes DREAM to select
+approximately evenly spaced steps (in step index, not evenly distributed in time) 
+from the internally taken steps to store in the output. The solution is unaffected 
+by this downsampling: the full time resolution is still used for evolving the
+system in time, and only the output contains fewer stored time slices. 
+
+
 
 Error-based adaptive step length
 --------------------------------
 A simple adaptive time stepper has been implemented for DREAM. Since DREAM
-uses an Euler backward method for time stepping, the adaptive scheme uses basic
+uses a backward Euler method for time stepping, the adaptive scheme uses basic
 two-point time step refinement to estimate the current error in the solution.
 The scheme consists of the following steps:
 
