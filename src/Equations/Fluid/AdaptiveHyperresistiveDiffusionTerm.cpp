@@ -18,7 +18,7 @@ AdaptiveHyperresistiveDiffusionTerm::AdaptiveHyperresistiveDiffusionTerm(
 	const real_t grad_j_tot_max, bool gradient_normalized,
 	const real_t dBB0, const real_t suppression_level, bool localized
 ) : AdaptiveMHDLikeTransportTerm(grid, uqh, grad_j_tot_max, gradient_normalized, suppression_level, localized),
-	HyperresistiveDiffusionTerm(grid, nullptr), ions(ions), dBB0(dBB0) {
+	HyperresistiveDiffusionTerm(grid, ions, nullptr, nullptr), ions(ions), dBB0(dBB0) {
 	
 	this->Lambda0 = new real_t[grid->GetNr()+1];
 	this->Lambda = new real_t[grid->GetNr()+1];
@@ -96,10 +96,14 @@ const real_t *AdaptiveHyperresistiveDiffusionTerm::EvaluateLambda(const real_t t
 	const real_t *n_i = uqh->GetUnknownData(this->id_n_i);
 	for (len_t iZs = 0; iZs < nZs; iZs++) {
 		for (len_t ir = 0; ir < nr+1; ir++) {
+			real_t ni;
 			if (ir < nr)
-				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + ir]);
+				ni = n_i[iZs*nr + ir];
 			else
-				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*n_i[iZs*nr + nr-1]);
+				ni = n_i[iZs*nr + nr-1];
+
+			if (ni > 0)
+				this->dLambda[iZs*(nr+1) + ir] = -this->Lambda[ir] / (2*ni);
 		}
 	}
 	

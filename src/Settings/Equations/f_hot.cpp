@@ -56,6 +56,11 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
 	
     s->DefineSetting(MODULENAME "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
+
+	// Initial j_hot in isotropic mode
+	s->DefineSetting(MODULENAME "/Ip0", "Plasma current at t=0, used to calculate initial j_hot in isotropic mode.", (real_t)0);
+	//s->DefineSetting(MODULENAME "/j_hot0", "Initial j_hot profile.", (real_t*)nullptr);
+	DefineDataR(MODULENAME, s, "j_hot0");
 }
 
 /**
