@@ -749,6 +749,8 @@ class FluidQuantity(UnknownQuantity):
             # Time selection
             if t is None:
                 tsel = slice(None)
+            elif isinstance(t, int):
+                tsel = slice(t,t+1,1)
             else:
                 tsel = t
 
@@ -760,7 +762,7 @@ class FluidQuantity(UnknownQuantity):
             elif arr.ndim != 2:
                 raise ValueError(f"Expected data with ndim 1 or 2, got shape {arr.shape}")
 
-            arr = arr[tsel]
+            arr = arr[tsel,:]
             nt_sel, nr = arr.shape
 
             # Pull equilibrium geometry.
