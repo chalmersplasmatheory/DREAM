@@ -28,9 +28,10 @@ using namespace DREAM::FVM::BC;
  */
 PXiExternalLoss::PXiExternalLoss(
     Grid *g, const Operator *eqn, const len_t fId,
-    Grid *distGrid, 
+    Grid *distGrid, const bool *trigger_mask, bool isAlternativeEquation,
     enum boundary_type boundary, enum bc_type bc
 ) : PXiAdvectionDiffusionBoundaryCondition(g, eqn), fId(fId),
+	trigger_mask(trigger_mask), isAlternativeEquation(isAlternativeEquation),
     boundaryCondition(bc), boundary(boundary) {
 
     SetName("PXiExternalLoss");
@@ -82,7 +83,10 @@ len_t PXiExternalLoss::GetNumberOfNonZerosPerRow_jac() const {
  * Rebuild coefficients for this term.
  * (not used)
  */
-bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler*) { return false; }
+bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler *uqh) {
+	this->f_data = uqh->GetUnknownData(this->fId);
+	return false;
+}
 
 /**
  * Add flux to jacobian block.
@@ -193,6 +197,13 @@ void PXiExternalLoss::__SetElements(
             // Select correct indices/volume elements, depending on
             // whether we're building
             len_t idx1, idx2 = offset + j*np + (np-1);
+
+			// If this equation is not triggered, just ignore
+			/*if (!(isAlternativeEquation && trigger->IsTriggered(idx2)) &&
+				!(!isAlternativeEquation && !trigger->IsTriggered(idx2))*/
+			if (trigger_mask != nullptr && (isAlternativeEquation != trigger_mask[idx2]))
+				continue;
+
             real_t iVd;
             if (this->boundary == BOUNDARY_FLUID) {
                 idx1 = ir;
@@ -214,8 +225,10 @@ void PXiExternalLoss::__SetElements(
 
                 // the interpolation on the outermost cell interface is set to 
                 // UPWIND: zero flux if negative advection, but free flow if positive. 
+				// (we also enforce that 'f' is positive, to avoid spurious numerical
+				// oscillations from causing negative fluxes)
                 if (Ap != nullptr) {
-                    real_t delta1 = (Ap[j*(np+1) + np]>0); 
+                    real_t delta1 = (Ap[j*(np+1) + np]>0 && f_data[j*np+(np-1)]>0); 
                     // Phi_{N_p+1/2}  -- f_{N_p+1} = 0
                     f(idx1, idx2, delta1*Ap[j*(np+1) + np] * Vd);
                 }

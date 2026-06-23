@@ -3,11 +3,11 @@ from .OtherFluidQuantity import OtherFluidQuantity
 class AvalancheGrowthRate(OtherFluidQuantity):
     
 
-    def __init__(self, name, data, description, grid, output, momentumgrid):
+    def __init__(self, name, data, description, grid, output, momentumgrid, triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, description=description, grid=grid, output=output)
+        super().__init__(name=name, data=data, description=description, grid=grid, output=output, triggerinfo=triggerinfo)
 
 
     def plotNormalized(self, r=None, t=None, ax=None, show=True, norm='Eceff'):

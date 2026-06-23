@@ -27,10 +27,13 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
-                : CollisionQuantity(g,u,ih,mgtype,cqset){
+ParallelDiffusionFrequency::ParallelDiffusionFrequency(
+	FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+	SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
+	enum OptionConstants::momentumgrid_type mgtype,
+	struct collqty_settings *cqset,
+	const len_t id_T, const len_t id_n
+) : CollisionQuantity(g,u,ih,mgtype,cqset,id_T,id_n) {
     this->lnLambdaEE = lnLee;
     this->nuS = nuS;
     includeDiffusion = (cqset->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
@@ -65,14 +68,14 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
                     collisionQuantity[ir][pind] = nuSQty[ir][pind] * rescaleFactor(ir,gammaVec[pind]);
                 }
     } else if(collQtySettings->screened_diffusion==OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_ZERO){
-        const real_t *partialNuS = nuS->GetUnknownPartialContribution(id_ncold,fluxGridType);
-        const real_t *ncold = unknowns->GetUnknownData(id_ncold);
+        const real_t *partialNuS = nuS->GetUnknownPartialContribution(id_n,fluxGridType);
+        const real_t *n = unknowns->GetUnknownData(id_n);
         len_t offset = 0;
         for(len_t ir=0; ir<nr; ir++){
             for(len_t i=0; i<np1; i++)
                 for(len_t j=0; j<np2; j++){
                     len_t pind = np1*j+i;
-                    collisionQuantity[ir][pind] = ncold[ir]*partialNuS[offset + pind] * rescaleFactor(ir,gammaVec[pind]);
+                    collisionQuantity[ir][pind] = n[ir]*partialNuS[offset + pind] * rescaleFactor(ir,gammaVec[pind]);
                 }
             offset += np1*np2;
         }
@@ -131,9 +134,9 @@ void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
 void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
     if(!includeDiffusion)
         return;
-    real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
+    real_t *T = unknowns->GetUnknownData(id_T);
     for(len_t ir=0; ir<nr;ir++)
-        Theta[ir] = Tcold[ir]/Constants::mc2inEV;
+        Theta[ir] = T[ir]/Constants::mc2inEV;
 }
 
 /**
@@ -162,9 +165,9 @@ real_t ParallelDiffusionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t 
     if(inSettings->collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return 0;
     real_t dnuPar0 = rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluatePartialAtP(ir,p,derivId,n,inSettings);
-    if(derivId==id_Tcold){ // and contribution from derivative of rescaleFactor \propto Tcold
-        real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-        dnuPar0 += evaluateAtP(ir,p,inSettings) / Tcold[ir];
+    if(derivId==id_T){ // and contribution from derivative of rescaleFactor \propto T
+        real_t *T = unknowns->GetUnknownData(id_T);
+        dnuPar0 += evaluateAtP(ir,p,inSettings) / T[ir];
     }
     return dnuPar0;
 }
@@ -276,7 +279,7 @@ void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
  * (ignoring variations with lnLambda). 
  */
 const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id_unknown, FVM::fluxGridType fluxGridType){
-    if( (id_unknown == id_ncold) || (id_unknown == id_ni) || (id_unknown == id_Tcold)){ // for ncold and ni, simply rescale the values from nuS
+    if( (id_unknown == id_n) || (id_unknown == id_ni) || (id_unknown == id_T)){ // for ne and ni, simply rescale the values from nuS
         if(!includeDiffusion)
             return partContrib;
         
@@ -304,7 +307,7 @@ const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id
                     partContrib[i] += partContribNuS[i]  * rescaleFact;
                 }
             }
-        if(id_unknown == id_Tcold){ // add jacobian of the rescale factor
+        if(id_unknown == id_T){ // add jacobian of the rescale factor
             const real_t *const *nuS0 = nuS->GetValue(fluxGridType);
             for(len_t pind=0; pind<np1*np2; pind++){
                 real_t partRescaleFact = gammaVec[pind] / Constants::mc2inEV;

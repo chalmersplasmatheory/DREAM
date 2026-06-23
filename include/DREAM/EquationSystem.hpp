@@ -88,6 +88,8 @@ namespace DREAM {
         bool timingStdout = false;
         bool timingFile = false;
 
+		std::map<len_t, bool> assignToAlternative;
+
         std::vector<timestep_finished_func_t> callbacks_timestepFinished;
         std::vector<void*> callbacks_timestepFinished_data;
 
@@ -128,6 +130,9 @@ namespace DREAM {
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
+		void CheckTriggerConditions(const real_t);
+		void SaveTriggerState();
+		bool HasUnknown(const std::string &name) { return unknowns.HasUnknown(name); }
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
         IonHandler *GetIonHandler() { return this->ionHandler; }
@@ -157,14 +162,19 @@ namespace DREAM {
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
         void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
-        //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when
         // performance is not a concern
-        void SetOperator(len_t blockrow, const std::string&, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
-        void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
-        void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(len_t blockrow, const std::string& qty2, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(const std::string& qty1, len_t blockcol, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
+        void SetOperator(const std::string& qty1, const std::string& qty2, FVM::Operator *eqn, const std::string& desc="", const bool solvedExternally=false);
+
+		bool IsAssigningToAlternativeEquation(const len_t uqtyId) {
+			return this->assignToAlternative[uqtyId];
+		}
+		void SetAssignToAlternativeEquation(const len_t, bool);
+		void SetTriggerCondition(const len_t, EquationTriggerCondition*);
 
         void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh) {
             this->cqh_hottail = cqh;
@@ -229,8 +239,10 @@ namespace DREAM {
         void SetSimulation(Simulation *sim) { this->simulation = sim; }
 		void AddRunawaySourceTermHandler(RunawaySourceTermHandler *rsth) { this->rsths.push_back(rsth); }
 
-        void SaveSolverData(SFile *sf, const std::string& n);
+		void SaveOperatorNames(SFile*, const std::string&);
+        void SaveSolverData(SFile*, const std::string&);
         void SaveTimings(SFile*, const std::string&);
+		void SaveTriggerConditionDiagnostics(SFile*, const std::string&);
 
         void Solve();
         // Info routines

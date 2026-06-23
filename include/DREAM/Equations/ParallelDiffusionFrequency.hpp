@@ -29,9 +29,13 @@ namespace DREAM {
 
     public:
     
-        ParallelDiffusionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,
+        ParallelDiffusionFrequency(
+			FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,
             SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
+			enum OptionConstants::momentumgrid_type mgtype,
+			struct collqty_settings *cqset,
+			const len_t id_T, const len_t id_n
+		);
         ~ParallelDiffusionFrequency();
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override; 
         virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings) override;

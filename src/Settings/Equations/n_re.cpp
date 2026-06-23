@@ -119,31 +119,48 @@ void SimulationGenerator::ConstructEquation_n_re(
 		// the diagonal block.
 		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetOperator(id_f_hot);
 
+		// The flux is only present in the actual kinetic equation,
+		// not in simplified equations such as 'InstantaneousMaxwellianTerm'.
+		// The characteristic of the former is that it has an
+		// AdvectionDiffusionTerm which is set. If we don't find the
+		// advection-diffusion terms in the main equation, we should check
+		// the alternative equation too.
+		bool isAlternativeEquation = false;
+		if (Op->GetAdvectionDiffusion() == nullptr) {
+			Op = eqsys->GetEquation(id_f_hot)->GetOperatorAlt(id_f_hot);
+			
+			if (Op->GetAdvectionDiffusion() == nullptr)
+				throw DREAMException("n_re: f_hot is present in the equation system, but no advection-diffusion terms in the equation. Cannot create runaway generation term.");
+
+			isAlternativeEquation = true;
+		}
+
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
 			// Influx from hot-tail grid (with runaway grid at higher p)
-            FVM::BC::PXiExternalKineticKinetic *xkinkin = new FVM::BC::PXiExternalKineticKinetic(
+			FVM::BC::PXiExternalKineticKinetic *xkinkin = new FVM::BC::PXiExternalKineticKinetic(
 				fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
 				Op, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_DENSITY
 			);
 
-            oqty_terms->f_re_f_hot_flux = xkinkin;
+			oqty_terms->f_re_f_hot_flux = xkinkin;
 
 			Op_nRE_fHot->AddBoundaryCondition(xkinkin);
 		} else {
 			// Influx from hot-tail grid (with "nothing" at higher p)
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
-				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
+				(enum FVM::BC::PXiExternalLoss::bc_type)_get_f_hot_int(s, "boundarycondition");
 			FVM::BC::PXiExternalLoss *xloss = new FVM::BC::PXiExternalLoss(
 				fluidGrid, Op, id_f_hot, hottailGrid,
+				eqsys->GetEquation(id_f_hot)->GetAlternativeEquationMask(), isAlternativeEquation,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			);
 			oqty_terms->n_re_f_hot_flux = xloss;
 
 			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
-        desc_sources += " [flux from f_hot]";
-        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
+		desc_sources += " [flux from f_hot]";
+		eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 
     // Add source terms

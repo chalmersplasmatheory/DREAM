@@ -328,6 +328,12 @@ void OutputGeneratorSFile::SaveUnknowns(const std::string& name, bool current) {
         this->unknowns->SaveSFileCurrent(this->sf, name, false);
     else
         this->unknowns->SaveSFile(this->sf, name, false);
+	
+	// Save information about terms included in equation
+	this->eqsys->SaveOperatorNames(this->sf, name);
+	
+	// Save information about trigger conditions
+	this->eqsys->SaveTriggerConditionDiagnostics(this->sf, name);
 }
 
 /**

@@ -117,9 +117,12 @@ void MeanExcitationEnergy::GetMeanExcitationEnergies(real_t *meanExcitationEnerg
     ionHandler->Rebuild();
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm lnLEE(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm lnLEI(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq);
+	const len_t id_Tcold = unknowns->GetUnknownID(DREAM::OptionConstants::UQTY_T_COLD);
+	const len_t id_ncold = unknowns->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);
+
+    DREAM::CoulombLogarithm lnLEE(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE, id_Tcold, id_ncold);
+    DREAM::CoulombLogarithm lnLEI(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI, id_Tcold, id_ncold);
+    DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq,id_Tcold,id_ncold);
     nuS.RebuildRadialTerms();
     
     len_t iz = 0;

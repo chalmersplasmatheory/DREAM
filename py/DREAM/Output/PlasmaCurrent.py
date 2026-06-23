@@ -8,7 +8,7 @@ from . ScalarQuantity import ScalarQuantity
 class PlasmaCurrent(ScalarQuantity):
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
 
@@ -18,7 +18,7 @@ class PlasmaCurrent(ScalarQuantity):
         :param grid:               Grid on which the quantity is defined.
         :param DREAMOutput output: Parent output object.
         """
-        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
 
     def plotCurrents(self, ax=None, show=None, t=None):

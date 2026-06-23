@@ -16,18 +16,19 @@ using namespace DREAM;
  * Constructor.
  */
 HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
-    FVM::Grid *grid,
-    FVM::Interpolator1D *dB_B, FVM::UnknownQuantityHandler *unknowns
+    FVM::Grid *grid, FVM::Interpolator1D *dB_B,
+	FVM::UnknownQuantityHandler *unknowns,
+	const len_t id_T, const len_t id_n
 ) : FVM::DiffusionTerm(grid), deltaBOverB(dB_B) {
 
     SetName("HeatTransportRechesterRosenbluth");
 
     this->unknowns = unknowns;
-    this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    this->id_n = id_n;
+    this->id_T = id_T;
     
-    AddUnknownForJacobian(unknowns, this->id_n_cold);
-    AddUnknownForJacobian(unknowns, this->id_T_cold);
+    AddUnknownForJacobian(unknowns, this->id_n);
+    AddUnknownForJacobian(unknowns, this->id_T);
 
     AllocateDiffCoeff();
 }
@@ -72,8 +73,8 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     const len_t nr = this->grid->GetNr();
     const real_t mc2 = Constants::mc2inEV;
 
-    const real_t *ncold = unknowns->GetUnknownData(this->id_n_cold);
-    const real_t *Tcold = unknowns->GetUnknownData(this->id_T_cold);
+    const real_t *ne = unknowns->GetUnknownData(this->id_n);
+    const real_t *Te = unknowns->GetUnknownData(this->id_T);
 
     FVM::RadialGrid *rg = this->grid->GetRadialGrid();
 
@@ -81,12 +82,12 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     for (len_t ir = 0; ir < nr+1; ir++) {
         real_t T=0, n=0;
         if(ir<nr){
-            T += deltaRadialFlux[ir] * Tcold[ir];
-            n += deltaRadialFlux[ir] * ncold[ir];
+            T += deltaRadialFlux[ir] * Te[ir];
+            n += deltaRadialFlux[ir] * ne[ir];
         } 
         if(ir>0){
-            T += (1-deltaRadialFlux[ir]) * Tcold[ir-1];
-            n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
+            T += (1-deltaRadialFlux[ir]) * Te[ir-1];
+            n += (1-deltaRadialFlux[ir]) * ne[ir-1];
         }
         real_t Theta = T / mc2;
         
@@ -121,18 +122,18 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
     const len_t nr = this->grid->GetNr();
     const real_t mc2 = Constants::mc2inEV;
 
-    const real_t *ncold = unknowns->GetUnknownData(this->id_n_cold);
-    const real_t *Tcold = unknowns->GetUnknownData(this->id_T_cold);
+    const real_t *ne = unknowns->GetUnknownData(this->id_n);
+    const real_t *Te = unknowns->GetUnknownData(this->id_T);
 
     for (len_t ir = 0; ir < nr+1; ir++) {
         real_t T=0, n=0;
         if(ir<nr){
-            T += deltaRadialFlux[ir] * Tcold[ir];
-            n += deltaRadialFlux[ir] * ncold[ir];
+            T += deltaRadialFlux[ir] * Te[ir];
+            n += deltaRadialFlux[ir] * ne[ir];
         } 
         if(ir>0){
-            T += (1-deltaRadialFlux[ir]) * Tcold[ir-1];
-            n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
+            T += (1-deltaRadialFlux[ir]) * Te[ir-1];
+            n += (1-deltaRadialFlux[ir]) * ne[ir-1];
         }
         real_t Theta = T / mc2;
         real_t qR0;
@@ -142,9 +143,9 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
         else
             qR0 = R0;       // TODO: safety factor with j_tot jacobian
 
-        if (derivId == this->id_n_cold)
+        if (derivId == this->id_n)
             dDrr(ir, 0, 0) = qR0 * this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);
-        else if (derivId == this->id_T_cold)
+        else if (derivId == this->id_T)
             dDrr(ir, 0, 0) = qR0 * this->dD[ir]/mc2 * n * (0.5 - 15.0/16.0*Theta) / sqrt(Theta);
     }
 }

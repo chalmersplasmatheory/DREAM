@@ -27,10 +27,15 @@ namespace DREAM {
         }
 
     public:
-        OhmicHeatingTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_J_OHM),u){}
+        OhmicHeatingTerm(
+			FVM::Grid* g, FVM::UnknownQuantityHandler *u,
+			const char *uqty_j=OptionConstants::UQTY_J_OHM
+		) : FVM::DiagonalQuadraticTerm(g, u->GetUnknownID(uqty_j), u){}
 
-
+		OhmicHeatingTerm(
+			FVM::Grid* g, FVM::UnknownQuantityHandler *u,
+			const len_t id_j
+		) : FVM::DiagonalQuadraticTerm(g, id_j, u) {}
     };
 }
 

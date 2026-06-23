@@ -56,7 +56,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         collqty_settings *collQtySettings;
 
-        len_t id_ncold, id_ni, id_Tcold;
+        len_t id_n, id_ni, id_T;
         len_t np1, np2, nr, nzs, nZ, np2_store;
         real_t kInterpolate;
 
@@ -79,8 +79,11 @@ namespace DREAM {
 
     public: 
 
-        CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
+        CollisionQuantity(
+			FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+			enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
+			const len_t id_T, const len_t id_n
+		);
         virtual ~CollisionQuantity();
         void Rebuild();
         void GridRebuilt(){gridRebuilt=true;}
