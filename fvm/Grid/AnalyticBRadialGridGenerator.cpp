@@ -82,6 +82,10 @@ AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
         gsl_spline_free(spline_kappa);
         gsl_interp_accel_free(gsl_acc_kappa);
     }
+    if (this->spline_zeta != nullptr) {
+        gsl_spline_free(spline_zeta);
+        gsl_interp_accel_free(gsl_acc_zeta);
+    }
     if (this->spline_delta != nullptr) {
         gsl_spline_free(spline_delta);
         gsl_interp_accel_free(gsl_acc_delta);
@@ -139,6 +143,7 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G_r,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi_r,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa_r, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nzeta,  pp->zeta_r,  pp->zeta,    spline_zeta,  gsl_acc_zeta,  &zeta,        &zetaPrime,   &zeta_f,        &zetaPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta_r, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta_r, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
 
@@ -161,28 +166,30 @@ real_t AnalyticBRadialGridGenerator::ROverR0AtTheta(const len_t ir, const real_t
     if(R0IsInf)
         return 1;
     else
-        return 1 + (Delta[ir] + r[ir]*cos(theta + delta[ir]*sin(theta)))/R0;
+        return 1 + (Delta[ir] + r[ir]*zeta[ir]*cos(theta + delta[ir]*sin(theta)))/R0;
 }
 // Same as ROverR0AtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::ROverR0AtTheta_f(const len_t ir, const real_t theta) {
     if(R0IsInf || (r_f[ir]==0 && Delta_f[ir]==0) )
         return 1;
     else
-        return 1 + (Delta_f[ir] + r_f[ir]*cos(theta + delta_f[ir]*sin(theta)))/R0;
+        return 1 + (Delta_f[ir] + r_f[ir]*zeta_f[ir]*cos(theta + delta_f[ir]*sin(theta)))/R0;
 }
 
 
 // Evaluates the spatial Jacobian normalized to r*R
 real_t AnalyticBRadialGridGenerator::normalizedJacobian(const len_t ir, const real_t theta, real_t ct, real_t st){
-    return kappa[ir]*cos(delta[ir]*st) + kappa[ir]*DeltaPrime[ir]*ct
-        + st*sin(theta+delta[ir]*st) * ( r[ir]*kappaPrime[ir] +
+    return kappa[ir]*zeta[ir]*cos(delta[ir]*st) + kappa[ir]*DeltaPrime[ir]*ct
+        + kappa[ir]*r[ir]*zetaPrime[ir]*cos(theta+delta[ir]*st)*ct
+        + zeta[ir]*st*sin(theta+delta[ir]*st) * ( r[ir]*kappaPrime[ir] +
         ct * (  delta[ir]*kappa[ir] + r[ir]* delta[ir]*kappaPrime[ir]
                - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
 }
 // Evaluates the spatial Jacobian normalized to r*R on the radial flux grid
 real_t AnalyticBRadialGridGenerator::normalizedJacobian_f(const len_t ir, const real_t theta, real_t ct, real_t st){
-    return kappa_f[ir]*cos(delta_f[ir]*st) + kappa_f[ir]*DeltaPrime_f[ir]*ct
-        + st*sin(theta+delta_f[ir]*st) * ( r_f[ir]*kappaPrime_f[ir] +
+    return kappa_f[ir]*zeta_f[ir]*cos(delta_f[ir]*st) + kappa_f[ir]*DeltaPrime_f[ir]*ct
+        + kappa_f[ir]*r_f[ir]*zetaPrime_f[ir]*cos(theta+delta_f[ir]*st)*ct
+        + zeta_f[ir]*st*sin(theta+delta_f[ir]*st) * ( r_f[ir]*kappaPrime_f[ir] +
         ct * (  delta_f[ir]*kappa_f[ir] + r_f[ir]* delta_f[ir]*kappaPrime_f[ir]
                - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
 }
@@ -214,7 +221,7 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t
     real_t sdt = sin(theta+delta[ir]*st);
     real_t cdt = 1+delta[ir]*ct;
     real_t JOverRr = normalizedJacobian(ir,theta,ct,st);
-    return (kappa[ir]*kappa[ir] * ct*ct + cdt * cdt
+    return (kappa[ir]*kappa[ir] * ct*ct + zeta[ir]*zeta[ir] * cdt * cdt
                 * sdt * sdt ) / (JOverRr*JOverRr);
 }
 /**
@@ -227,7 +234,7 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
     real_t sdt = sin(theta+delta_f[ir]*st);
     real_t cdt = 1+delta_f[ir]*ct;
     real_t JOverRr = normalizedJacobian_f(ir,theta,ct,st);
-    return (kappa_f[ir]*kappa_f[ir] * ct * ct + cdt * cdt 
+    return (kappa_f[ir]*kappa_f[ir] * ct * ct + zeta_f[ir]*zeta_f[ir] * cdt * cdt
                 * sdt * sdt)  / (JOverRr*JOverRr); 
 }
 
@@ -249,17 +256,17 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
     real_t ctdt = ct*cdt-st*sdt; // = cos(theta + delta*sin(theta))
 
     real_t rk = r[ir]*kappaPrime[ir];
-    real_t JOverRr = kappa[ir]*(cdt + DeltaPrime[ir]*ct)
-        + st*stdt * ( rk + ct * (  delta[ir]*(kappa[ir] + rk)
+    real_t JOverRr = kappa[ir]*(zeta[ir]*cdt + DeltaPrime[ir]*ct + r[ir]*zetaPrime[ir]*ctdt*ct)
+        + zeta[ir]*st*stdt * ( rk + ct * (  delta[ir]*(kappa[ir] + rk)
                - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
     
     ROverR0 = 1;
     if(!R0IsInf)
-        ROverR0 += (Delta[ir] + r[ir]*ctdt)/R0;
+        ROverR0 += (Delta[ir] + r[ir]*zeta[ir]*ctdt)/R0;
     
     Jacobian = r[ir] * ROverR0 * JOverRr;
 
-    real_t deltaTerm = (1.0+delta[ir]*ct)*stdt;
+    real_t deltaTerm = zeta[ir]*(1.0+delta[ir]*ct)*stdt;
     real_t kappaTerm = kappa[ir]*ct;
     NablaR2 = (kappaTerm*kappaTerm + deltaTerm*deltaTerm) / (JOverRr*JOverRr);
     
@@ -290,17 +297,17 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
 
     real_t rk = r_f[ir]*kappaPrime_f[ir];
-    real_t JOverRr = kappa_f[ir]*(cdt + DeltaPrime_f[ir]*ct)
-        + st*stdt * ( rk + ct * (  delta_f[ir]*(kappa_f[ir] + rk)
+    real_t JOverRr = kappa_f[ir]*(zeta_f[ir]*cdt + DeltaPrime_f[ir]*ct + r_f[ir]*zetaPrime[ir]*ctdt*ct)
+        + zeta_f[ir]*st*stdt * ( rk + ct * (  delta_f[ir]*(kappa_f[ir] + rk)
                - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
 
     ROverR0 = 1;
     if(!R0IsInf)
-        ROverR0 += (Delta_f[ir] + r_f[ir]*ctdt)/R0;
+        ROverR0 += (Delta_f[ir] + r_f[ir]*zeta_f[ir]*ctdt)/R0;
 
     Jacobian = r_f[ir] * ROverR0 * JOverRr;
 
-    real_t deltaTerm = (1+delta_f[ir]*ct)*stdt;
+    real_t deltaTerm = zeta_f[ir]*(1+delta_f[ir]*ct)*stdt;
     real_t kappaTerm = kappa_f[ir] * ct;
     NablaR2 = (kappaTerm*kappaTerm +  deltaTerm*deltaTerm)  / (JOverRr*JOverRr);
     
@@ -424,7 +431,7 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputProfileSingleDerivExtrap(re
 }
 
 /**
-* Helper function for interpolation of elongation data
+* Helper function for interpolation of Z elongation data
 */
 real_t AnalyticBRadialGridGenerator::InterpolateInputElongation(real_t r){
 	const real_t *kappaProf = this->providedProfiles->kappa;
@@ -436,7 +443,7 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputElongation(real_t r){
 }
 
 /**
-* Helper function for interpolation of the derivative of the elongation data
+* Helper function for interpolation of the derivative of the Z elongation data
 */
 real_t AnalyticBRadialGridGenerator::InterpolateInputElongationDeriv(real_t r){
 	const real_t *kappa_r = this->providedProfiles->kappa_r;
@@ -444,6 +451,29 @@ real_t AnalyticBRadialGridGenerator::InterpolateInputElongationDeriv(real_t r){
 	
 	return InterpolateInputProfileSingleDerivExtrap(r, nkappa, kappa_r, 
 	            this->spline_kappa, gsl_acc_kappa);
+}
+
+/**
+* Helper function for interpolation of R elongation data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputRElongation(real_t r){
+	const real_t *zetaProf = this->providedProfiles->zeta;
+	const real_t *zeta_r = this->providedProfiles->zeta_r;
+	const len_t nzeta = this->providedProfiles->nzeta;
+
+	return InterpolateInputProfileSingleExtrap(r, nzeta, zetaProf, zeta_r,
+	            this->spline_zeta, gsl_acc_zeta);
+}
+
+/**
+* Helper function for interpolation of the derivative of the R elongation data
+*/
+real_t AnalyticBRadialGridGenerator::InterpolateInputRElongationDeriv(real_t r){
+	const real_t *zeta_r = this->providedProfiles->zeta_r;
+	const len_t nzeta = this->providedProfiles->nzeta;
+
+	return InterpolateInputProfileSingleDerivExtrap(r, nzeta, zeta_r,
+	            this->spline_zeta, gsl_acc_zeta);
 }
 
 /**
@@ -538,10 +568,12 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	// Evaluate RMinusR0_crit corresponding to rmin
 	real_t delta;
 	real_t Delta; 
+	real_t zeta;
     delta = InterpolateInputTriangularity(rmin);
     Delta = InterpolateInputShafranovShift(rmin);
-    
-    real_t RMinusR0_crit=Delta-rmin*sin(delta);
+    zeta = InterpolateInputRElongation(rmin);
+
+    real_t RMinusR0_crit=Delta-rmin*zeta*sin(delta);
 	
 	// Determine the quadrant
 	len_t quadrant=0;
@@ -566,6 +598,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    // Calculate RMinusR0a corresponding to ra
         delta = InterpolateInputTriangularity(ra);
         Delta = InterpolateInputShafranovShift(ra);
+	    zeta  = InterpolateInputRElongation(ra);
 	    kappa = InterpolateInputElongation(ra);
         
         if(ra==0){
@@ -586,11 +619,12 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    else
 	        ct = -sqrt(1-st*st);
 	        
-        RMinusR0a = Delta + ra*(ct*cos(delta*st)-st*sin(delta*st));
+        RMinusR0a = Delta + ra*zeta*(ct*cos(delta*st)-st*sin(delta*st));
         
         // Similarly for rb
         delta = InterpolateInputTriangularity(rb);
         Delta = InterpolateInputShafranovShift(rb);
+	    zeta  = InterpolateInputRElongation(rb);
 	    kappa = InterpolateInputElongation(rb);
         
         st = y/(rb*kappa);
@@ -599,7 +633,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    else
 	        ct = -sqrt(1-st*st);
 	        
-        RMinusR0b = Delta + rb*(ct*cos(delta*st)-st*sin(delta*st));
+        RMinusR0b = Delta + rb*zeta*(ct*cos(delta*st)-st*sin(delta*st));
         
         // Move the search intervall if necessary (but make sure to keep ra>=rmin)
         if(quadrant==1 || quadrant==4){
@@ -630,6 +664,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    r_tmp=(ra+rb)/2.0;
         delta = InterpolateInputTriangularity(r_tmp);
         Delta = InterpolateInputShafranovShift(r_tmp);
+	    zeta  = InterpolateInputRElongation(r_tmp);
 	    kappa = InterpolateInputElongation(r_tmp);
         
         st = y/(r_tmp*kappa);
@@ -638,7 +673,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    else
 	        ct = -sqrt(1-st*st);
 	        
-	    RMinusR0_tmp = Delta + r_tmp*(ct*cos(delta*st)-st*sin(delta*st));
+	    RMinusR0_tmp = Delta + r_tmp*zeta*(ct*cos(delta*st)-st*sin(delta*st));
         if(quadrant==1 || quadrant==4){
             if(RMinusR0_tmp>RMinusR0){
                 rb=r_tmp;
@@ -661,6 +696,8 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	
 	real_t Delta_p;
 	real_t delta_p;
+	real_t zeta_p;
+	real_t zeta_p;
 	real_t st;
 	real_t st_p;
 	real_t ct;
@@ -674,6 +711,8 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    delta_p = InterpolateInputTriangularityDeriv(r_tmp);
 	    Delta   = InterpolateInputShafranovShift(r_tmp);
 	    Delta_p = InterpolateInputShafranovShiftDeriv(r_tmp);
+	    zeta    = InterpolateInputRElongation(r_tmp);
+	    zeta_p  = InterpolateInputRElongation(r_tmp);
 	    
 	    st = y/(r_tmp*kappa);
 	    st_p = -y/(r_tmp*r_tmp*kappa*kappa)*(kappa+r*kappa_p);
@@ -684,9 +723,9 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	        ct = -sqrt(1-st*st);
 	    ct_p = -st/ct*st_p;
 	    
-        RMinusR0_newton = Delta + r_tmp*(ct*cos(delta*st)-st*sin(delta*st));
-        ddrRMinusR0_newton = Delta_p + ct*cos(delta*st)-st*sin(delta*st)+
-                             r_tmp*(ct_p*cos(delta*st) - st_p*sin(delta*st)-
+        RMinusR0_newton = Delta + r_tmp*zeta*(ct*cos(delta*st)-st*sin(delta*st));
+        ddrRMinusR0_newton = Delta_p + (zeta + r_tmp*zeta_p)*(ct*cos(delta*st)-st*sin(delta*st))+
+                             r_tmp*zeta*(ct_p*cos(delta*st) - st_p*sin(delta*st)-
                              (ct*sin(delta*st)+st*cos(delta*st))*(delta_p*st+delta*st_p));
         r_tmp = r_tmp - (RMinusR0_newton - RMinusR0)/ddrRMinusR0_newton;
 	} while(std::abs(RMinusR0_newton-RMinusR0) > lengthScale * CartesianCoordinateTol);*/
@@ -699,7 +738,7 @@ void AnalyticBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t* r, real_t* 
 	    *theta=asin(st);
 	else if(quadrant==4)
 	    *theta=2*M_PI+asin(st);
-	else if(RMinusR0<Delta-r_tmp*sin(delta))
+	else if(RMinusR0<Delta-r_tmp*zeta*sin(delta))
 	    *theta=M_PI-asin(st);
 	    
 	*phi = atan2(z,(R0+x)); 
@@ -718,14 +757,17 @@ void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t* gradr, real_t r, re
     
     real_t Deltap = InterpolateInputShafranovShiftDeriv(r);
     
+    real_t zeta   = InterpolateInputRElongation(r);
+    real_t zetap  = InterpolateInputRElongationDeriv(r);
+    
     real_t kappa  = InterpolateInputElongation(r);
     real_t kappap = InterpolateInputElongationDeriv(r);
     
     real_t st = sin(theta);
     real_t ct = cos(theta);
     
-    real_t dRdr = Deltap + cos(theta + delta*st) - r*deltap*st*sin(theta + delta*st);
-    real_t dRdtheta = -r*(1+delta*ct)*sin(theta + delta*st);
+    real_t dRdr = Deltap + (zeta+r*zetap)*cos(theta + delta*st) - r*zeta*deltap*st*sin(theta + delta*st);
+    real_t dRdtheta = -r*zeta*(1+delta*ct)*sin(theta + delta*st);
     real_t dzdr = kappa*(1+r*kappap/kappa)*st;
     real_t dzdtheta = r*kappa*ct;
     
@@ -869,18 +911,22 @@ void AnalyticBRadialGridGenerator::DeallocateShapeProfiles(){
 
     delete [] psi;
     delete [] kappa;
+    delete [] zeta;
     delete [] delta;
     delete [] Delta;
     delete [] psi_f;
     delete [] kappa_f;
+    delete [] zeta_f;
     delete [] delta_f;
     delete [] Delta_f;
     delete [] GPrime;
     delete [] kappaPrime;
+    delete [] zetaPrime;
     delete [] deltaPrime;
     delete [] DeltaPrime;
     delete [] GPrime_f;
     delete [] kappaPrime_f;
+    delete [] zetaPrime_f;
     delete [] deltaPrime_f;
     delete [] DeltaPrime_f;
 }
@@ -915,6 +961,10 @@ void AnalyticBRadialGridGenerator::constructSplines(struct shape_profiles *pp){
     if (pp->nkappa > 1) {
         this->spline_kappa = construct_spline(pp->nkappa, pp->kappa_r, pp->kappa);
         this->gsl_acc_kappa = gsl_interp_accel_alloc();
+    }
+    if (pp->nzeta > 1) {
+        this->spline_zeta = construct_spline(pp->nzeta, pp->zeta_r, pp->zeta);
+        this->gsl_acc_zeta = gsl_interp_accel_alloc();
     }
     if (pp->ndelta > 1) {
         this->spline_delta = construct_spline(pp->ndelta, pp->delta_r, pp->delta);
