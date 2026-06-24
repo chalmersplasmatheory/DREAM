@@ -110,7 +110,7 @@ class OtherQuantities:
             else:
                 o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         elif name in self.SPECIAL_TREATMENT:
-            if self.SPECIAL_TREATMENT[name] == OtherIonSpeciesFluidQuantity or self.SPECIAL_TREATMENT[name] == LCFSLoss:
+            if self.SPECIAL_TREATMENT[name] == OtherIonSpeciesFluidQuantity:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)
             elif data.ndim == 5 and self.momentumgrid is not None:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
