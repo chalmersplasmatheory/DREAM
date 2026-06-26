@@ -2194,8 +2194,8 @@ def map_equilibrium(factory: Any, dream: DreamH5, grids: dict[str, Any], report:
         return eq
 
     psi_p = scale_optional(time_aligned(dream.arr("/eqsys/psi_p", report), nt), psi_cocos)
-    j_tot = time_aligned(dream.arr("/eqsys/j_tot", report), nt) * phi_sign
-    ip = flatten_1d(dream.arr("/eqsys/I_p", report)) * phi_sign
+    j_tot = scale_optional(time_aligned(dream.arr("/eqsys/j_tot", report), nt), phi_sign)
+    ip = scale_optional(flatten_1d(dream.arr("/eqsys/I_p", report)), phi_sign)
     
     r_boundary, z_boundary = boundary_outline(dream, R0, Z0)
 
