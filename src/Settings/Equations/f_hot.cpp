@@ -10,6 +10,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/DiagonalQuadraticTerm.hpp"
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
@@ -255,7 +256,7 @@ namespace DREAM {
 }
 
 namespace DREAM {
-    class TotalElectronDensityFromKineticCompton : public FVM::DiagonalQuadraticTerm {
+    class TotalElectronDensityFromKineticCompton : public FVM::DiagonalLinearTerm {
     private: 
         len_t limit;
         gsl_integration_workspace * wp;
@@ -266,9 +267,9 @@ namespace DREAM {
         FVM::Interpolator1D *comptonPhotonFlux;
         real_t scaleFactor;
         real_t photonFlux;
-        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, FVM::Interpolator1D *comptonPhotonFlux, 
+        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::Interpolator1D *comptonPhotonFlux, 
                 real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), 
+            : FVM::DiagonalLinearTerm(g), pLower(pLower), pUpper(pUpper), 
                 integratedComptonSpectrum(integratedComptonSpectrum), C1(C1), C2(C2), C3(C3), comptonPhotonFlux(comptonPhotonFlux), scaleFactor(scaleFactor) {
                 this->limit = 1000;
                 this->wp = gsl_integration_workspace_alloc(limit);
@@ -277,7 +278,7 @@ namespace DREAM {
         
         virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) override {
             this->photonFlux = this->comptonPhotonFlux->Eval(t)[0];
-            this->DiagonalQuadraticTerm::Rebuild(0,0,nullptr);
+            this->DiagonalLinearTerm::Rebuild(0,0,nullptr);
         }
         virtual void SetWeights() override {
             struct DREAM::ComptonSource::intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
@@ -289,13 +290,93 @@ namespace DREAM {
 }
 
 namespace DREAM {
-    class TotalElectronDensityFromKineticTritium : public FVM::DiagonalQuadraticTerm {
+    class TotalElectronDensityFromKineticTritium : public FVM::EquationTerm { // TODO: Uppdatera med setMatrix och setVectorElements
     public:
+        len_t id_nT;
+        len_t indT;
         real_t pLower, pUpper, scaleFactor;
-        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
+        real_t *weights = nullptr;
+        bool hasBeenInitialized = false;
+        
+        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, IonHandler *ions, len_t iIon, real_t scaleFactor = 1.0) 
+            : FVM::EquationTerm(g), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {
 
-        virtual void SetWeights() override {
+            this->id_nT = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+            
+            this->indT = ions->GetIndex(iIon, 0);
+        }
+        
+        ~TotalElectronDensityFromKineticTritium() {
+            this->DeallocateWeights();
+        }
+        void AllocateWeights() {
+            DeallocateWeights(); 
+
+            const len_t N = grid->GetNCells();
+            weights = new real_t[N];
+            for (len_t i = 0; i < N; i++)
+                weights[i] = 0;
+        }
+
+        void DeallocateWeights(){
+            if(weights!=nullptr) 
+            delete[] weights;
+        }
+        void InitializeWeights(){
+            AllocateWeights(); 
+            SetWeights();
+            hasBeenInitialized = false;
+        }
+        void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override { 
+            if(!hasBeenInitialized){
+                InitializeWeights();
+                hasBeenInitialized = true;
+            } 
+        }
+
+        bool SetJacobianBlock(const len_t , const len_t derivId, FVM::Matrix *jac, const real_t*){
+            if(derivId != id_nT)
+                return false;
+            SetMatrixElements(jac, nullptr);
+            return true;
+        }
+
+        void SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/) override {
+            for(len_t iZ0=0; iZ0<2; iZ0++){
+                len_t offset = 0;
+                for(len_t ir=0; ir<nr; ir++){
+                    for(len_t i=0; i<n1[ir]; i++){
+                        for(len_t j=0; j<n2[ir]; j++){
+                            len_t ind = offset + n1[ir]*j + i;
+                            mat->SetElement(ind, (iZ0 + indT)*nr + ir, weights[ind]);
+                        }
+                    }
+                    offset += n1[ir]*n2[ir];
+                }        
+            }
+        }
+
+        /**
+        * Set vector elements.
+        */
+        void SetVectorElements(real_t *vec, const real_t *x) override {
+            for(len_t iZ0=0; iZ0<2; iZ0++){
+                len_t offset = 0; 
+                for(len_t ir=0; ir<nr; ir++){
+                    for(len_t i=0; i<n1[ir]; i++){
+                        for(len_t j=0; j<n2[ir]; j++){
+                            len_t ind = offset + n1[ir]*j + i;
+                            vec[ind] += weights[ind]*x[(iZ0 + indT)*nr + ir];
+                        }
+                    }
+                    offset += n1[ir]*n2[ir];
+                }
+            }
+        }
+
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
+        virtual void SetWeights() {
             for(len_t i = 0; i<grid->GetNCells(); i++)
                 weights[i] = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
         }
@@ -382,7 +463,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             throw NotImplementedException("f_hot: Kinetic compton source only implemented for p-xi grid.");
 
         Op_Ntot->AddTerm(
-            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, unknowns, LoadDataT("eqsys/n_re/compton", s, "flux"), 
+            new TotalElectronDensityFromKineticCompton(fluidGrid, 0, pMax, LoadDataT("eqsys/n_re/compton", s, "flux"), 
                 s->GetReal("eqsys/n_re/compton/gammaInt"), s->GetReal("eqsys/n_re/compton/C1"), s->GetReal("eqsys/n_re/compton/C2"), 
                 s->GetReal("eqsys/n_re/compton/C3"), -1.0)
         );
@@ -404,11 +485,16 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             );
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic tritium source only implemented for p-xi grid.");
+        
+        const len_t *ti = eqsys->GetIonHandler()->GetTritiumIndices();
+        for(len_t iT=0; iT<eqsys->GetIonHandler()->GetNTritiumIndices(); iT++){
+            Op_Ni->AddTerm(
+                new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, eqsys->GetIonHandler(), ti[iT], -1.0)
+            );
+        }
 
-        Op_Ni->AddTerm(
-            new TotalElectronDensityFromKineticTritium(fluidGrid, 0, pLimTritium, unknowns, -1.0)
-        );
-        desc += " - internal Tritium";
+        
+        desc += " - internal tritium";
     }
     // Add source terms
     bool signPositive = false;
