@@ -2631,7 +2631,7 @@ def map_summary(factory: Any, dream: DreamH5, grids: dict[str, Any], report: Map
     else:
         report.warn("summary: global_quantities/b0 was not filled because B0 is missing.")
 
-    ip = scalar_time_trace(dream.arr("/eqsys/I_p"), nt) * phi_sign
+    ip = scale_optional(scalar_time_trace(dream.arr("/eqsys/I_p"), nt), phi_sign)
     n_tot = dream.arr("/eqsys/n_tot")
     n_cold = dream.arr("/eqsys/n_cold")
     n_e_source = "/eqsys/n_tot"
@@ -2642,8 +2642,8 @@ def map_summary(factory: Any, dream: DreamH5, grids: dict[str, Any], report: Map
     t_cold = dream.arr("/eqsys/T_cold")
     e_field = dream.arr("/eqsys/E_field")
     zeff = dream.arr("/other/fluid/Zeff")
-    j_ohm = dream.arr("/eqsys/j_ohm")  * phi_sign
-    j_re = dream.arr("/eqsys/j_re")  * phi_sign
+    j_ohm = scale_optional(dream.arr("/eqsys/j_ohm"), phi_sign)
+    j_re = scale_optional(dream.arr("/eqsys/j_re"), phi_sign)
     w_cold = dream.arr("/eqsys/W_cold")
     w_i = dream.arr("/eqsys/W_i")
 
