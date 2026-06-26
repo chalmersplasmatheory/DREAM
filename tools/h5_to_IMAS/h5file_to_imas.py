@@ -1476,7 +1476,7 @@ def map_runaway_electrons(factory: Any, dream: DreamH5, grids: dict[str, Any], r
                 report.missing(source)
 
 
-    j_re = dream.arr("/eqsys/j_re") * phi_sign
+    j_re = scale_optional(dream.arr("/eqsys/j_re", report), phi_sign)
     I_re = current_from_j_trace(j_re, grids, nt)
 
     fill_ids_field(re_ids, "global_quantities/current_phi", I_re, report, ids_name, "derived from j_re")
