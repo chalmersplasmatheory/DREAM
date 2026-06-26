@@ -44,8 +44,8 @@ Requirements
     pip install h5py numpy imas-python
 
 For writing to an IMAS HDF5 data entry you also need an IMAS-Core installation
-with the hdf5 backend available. Without IMAS-Core, use `--backend netcdf`.
-
+with the hdf5 backend available. Without IMAS-Core, write to a portable netCDF file
+by passing a filename to `--uri` (the default is `dream_imas.nc`).
 Examples
 --------
 Write to a local IMAS HDF5 data-entry directory:
