@@ -1442,13 +1442,13 @@ def map_runaway_electrons(factory: Any, dream: DreamH5, grids: dict[str, Any], r
 
     quantities = {
         "density": ("/eqsys/n_re", dream.arr("/eqsys/n_re", report)),
-        "current_density": ("/eqsys/j_re", dream.arr("/eqsys/j_re", report) * phi_sign),
+        "current_density": ("/eqsys/j_re", scale_optional(dream.arr("/eqsys/j_re", report), phi_sign)),
         #"energy_density_kinetic": ("/other/fluid/W_re", dream.arr("/other/fluid/W_re")),
         "ddensity_dt_total": ("/other/fluid/runawayRate", dream.arr("/other/fluid/runawayRate")),
         "ddensity_dt_dreicer": ("/other/fluid/gammaDreicer", dream.arr("/other/fluid/gammaDreicer")),
-        "ddensity_dt_hot_tail": ("/other/fluid/gammaHottail", dream.arr("/other/fluid/gammaHottail")), 
-        "ddensity_dt_tritium": ("/other/fluid/gammaTritium", dream.arr("/other/fluid/gammaTritium")),  
-        "ddensity_dt_compton": ("/other/fluid/gammaCompton", dream.arr("/other/fluid/gammaCompton")),  
+        "ddensity_dt_hot_tail": ("/other/fluid/gammaHottail", dream.arr("/other/fluid/gammaHottail")),
+        "ddensity_dt_tritium": ("/other/fluid/gammaTritium", dream.arr("/other/fluid/gammaTritium")),
+        "ddensity_dt_compton": ("/other/fluid/gammaCompton", dream.arr("/other/fluid/gammaCompton")),
         #"ddensity_dt_avalanche": ("/other/fluid/GammaAva", dream.arr("/other/fluid/GammaAva")),  #not available in dictionary
         "momentum_critical_avalanche": ("/other/fluid/pCrit", scale_optional(dream.arr("/other/fluid/pCrit"), p_norm)),
         "momentum_critical_hot_tail": ("/other/fluid/pCritHottail", scale_optional(dream.arr("/other/fluid/pCritHottail"), p_norm)),
