@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-dream_to_imas.py
+h5file_to_imas.py
 
 Map one DREAM HDF5 output file into selected IMAS IDSs with IMAS-Python.
+
 
 Current mapping overview
 ------------------------
