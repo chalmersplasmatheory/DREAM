@@ -887,8 +887,8 @@ def map_plasma_profiles(factory: Any, dream: DreamH5, grids: dict[str, Any], rep
     if profiles["electrons/density"][1] is None:
         profiles["electrons/density"] = ("/eqsys/n_cold", dream.arr("/eqsys/n_cold", report))
 
-    j_tot = dream.arr("/eqsys/j_tot", report) * phi_sign
-    j_ohm = dream.arr("/eqsys/j_ohm", report) * phi_sign
+    j_tot = scale_optional(dream.arr("/eqsys/j_tot", report), phi_sign)
+    j_ohm = scale_optional(dream.arr("/eqsys/j_ohm", report), phi_sign)
     aligned_profiles = {target: (source, time_aligned(data, nt)) for target, (source, data) in profiles.items()}
     j_tot_aligned = time_aligned(j_tot, nt)
     j_ohm_aligned = time_aligned(j_ohm, nt)
