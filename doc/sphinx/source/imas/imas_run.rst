@@ -37,7 +37,7 @@ The physical quantities are taken from the IDS fields:
 +------------------------------------------------------+---------------------------------------------------------------+
 | equilibrium/time_slice/global_quantities/ip          | Plasma current (scalar)                                       |
 +------------------------------------------------------+---------------------------------------------------------------+
-| quilibrium/time_slice/profiles_1d/j_tor              | Ohmic current density, (vector)                               |
+| equilibrium/time_slice/profiles_1d/j_tor             | Ohmic current density, (vector)                               |
 +------------------------------------------------------+---------------------------------------------------------------+
 | wall/description_2d/vessel/unit/annular/resistivity  | Wall resistivity (scalar)                                     |
 +------------------------------------------------------+---------------------------------------------------------------+
