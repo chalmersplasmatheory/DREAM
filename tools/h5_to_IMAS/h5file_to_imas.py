@@ -732,20 +732,26 @@ def common_grids(dream: DreamH5, report: MappingReport) -> dict[str, Any]:
 
     # R at magnetic axis in [m]
     R0 = dream.scalar("/grid/R0", dream.scalar("/grid/eq/R0", None))
+    if R0 is None:
+        raise ValueError("DREAM file does not contain a valid /grid/R0 (or /grid/eq/R0) scalar")
 
-    # Flux averaged toroidal field in [T]
-    Bphi_avg = flatten_1d(dream.arr("/grid/geometry/GR0", report)) * phi_sign
-
-    # Getting vacuum field from the toroidal field at the outermost radius
-    if Bphi_avg is not None and Bphi_avg.size > 0:
+    # Vacuum toroidal field [T] (fallback: explicit /grid/B0, else last GR0 sample)
+    B0 = dream.scalar("/grid/B0", None)
+    Bphi_avg = flatten_1d(dream.arr("/grid/geometry/GR0", report))
+    if Bphi_avg is not None:
+        Bphi_avg = Bphi_avg * phi_sign
+    if B0 is None and Bphi_avg is not None and Bphi_avg.size > 0:
         B0 = float(Bphi_avg[-1])
-        pass
-    
+
     # Toroidal flux in [Wb]
     phi_tor = flatten_1d(dream.arr("/grid/geometry/toroidalFlux", report))
+    if phi_tor is None or phi_tor.size == 0:
+        raise ValueError("DREAM file does not contain a valid /grid/geometry/toroidalFlux array")
+    if B0 is None or not np.isfinite(B0) or abs(float(B0)) < 1e-30:
+        raise ValueError("Could not determine vacuum toroidal field B0 from /grid/B0 or /grid/geometry/GR0")
 
-    rho_tor = np.sqrt(phi_tor / (np.pi * np.abs(B0))) # minor radius like
-    rho_tor_norm = normalized_radius(rho_tor) # normalized to 1 at the outermost radius
+    rho_tor = np.sqrt(phi_tor / (np.pi * np.abs(float(B0))))  # minor radius like
+    rho_tor_norm = normalized_radius(rho_tor)  # normalized to 1 at the outermost radius
 
     # Other geometric quantities
     vpvol  = flatten_1d(dream.arr("/grid/VpVol", report))
