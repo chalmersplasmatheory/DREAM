@@ -444,14 +444,16 @@ class EqBase:
         """
         psi_n = np.asarray(psi_n)
         scalar_input = psi_n.ndim == 0
-        psi_n = np.atleast_1d(psi_n)
+        orig_shape = psi_n.shape
+        psi_n = np.atleast_1d(psi_n).ravel()
 
-        r_dist = np.zeros(psi_n.shape)
-        for i in range(psi_n.size):
-            R, _ = self.get_flux_surface(psi_n[i], theta=0)
+        r_dist = np.empty(psi_n.size)
+        for i, p in enumerate(psi_n):
+            R, _ = self.get_flux_surface(p, theta=0)
             r_dist[i] = R - self.R0
 
-        return r_dist[0] if scalar_input else r_dist
+        r_dist = r_dist.reshape(orig_shape)
+        return r_dist.item() if scalar_input else r_dist
 
 
     def get_rho_tor(self, psi_n):
@@ -461,15 +463,15 @@ class EqBase:
         """
         psi_n = np.asarray(psi_n)
         scalar_input = psi_n.ndim == 0
-        psi_n = np.atleast_1d(psi_n)
+        orig_shape = psi_n.shape
+        psi_n = np.atleast_1d(psi_n).ravel()
 
-        PHI = self.q.integral(0, 1)
-        rho_tor = np.zeros(psi_n.shape)
-        for i in range(psi_n.size):
-            rho_tor[i] = self.q.integral(0, psi_n[i]) / PHI
+        Qint = self.q.antiderivative()
+        PHI = Qint(1.0) - Qint(0.0)
+        Phi = Qint(psi_n) - Qint(0.0)
+        rho_tor = np.sqrt(Phi/PHI).reshape(orig_shape)
 
-        rho_tor = np.sqrt(rho_tor)
-        return rho_tor[0] if scalar_input else rho_tor
+        return rho_tor.item() if scalar_input else rho_tor
 
 
     def process_data(self, data, override_psilim=False, plot_on_error=True):
