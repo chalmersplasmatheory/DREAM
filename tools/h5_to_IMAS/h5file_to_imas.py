@@ -769,6 +769,8 @@ def common_grids(dream: DreamH5, report: MappingReport) -> dict[str, Any]:
         raise ValueError("DREAM file does not contain a valid /grid/t array")
     if r is None or r.size == 0:
         raise ValueError("DREAM file does not contain a valid /grid/r array")
+    if dr is None or dr.size == 0:
+        raise ValueError("DREAM file does not contain a valid /grid/dr array")
 
     R_outboard = R0 + r
 
