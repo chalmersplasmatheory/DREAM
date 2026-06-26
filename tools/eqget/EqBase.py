@@ -437,6 +437,41 @@ class EqBase:
         return self.rho(psi_n)*self.a_minor
 
 
+    def get_r_distance(self, psi_n):
+        """
+        Get the distance from the magnetic axis to the given flux surface along
+        the Z=Z0 line.
+        """
+        psi_n = np.asarray(psi_n)
+        scalar_input = psi_n.ndim == 0
+        psi_n = np.atleast_1d(psi_n)
+
+        r_dist = np.zeros(psi_n.shape)
+        for i in range(psi_n.size):
+            R, _ = self.get_flux_surface(psi_n[i], theta=0)
+            r_dist[i] = R - self.R0
+
+        return r_dist[0] if scalar_input else r_dist
+
+
+    def get_rho_tor(self, psi_n):
+        """
+        Get the normalized toroidal flux coordinate corresponding to the
+        given normalized poloidal flux points.
+        """
+        psi_n = np.asarray(psi_n)
+        scalar_input = psi_n.ndim == 0
+        psi_n = np.atleast_1d(psi_n)
+
+        PHI = self.q.integral(0, 1)
+        rho_tor = np.zeros(psi_n.shape)
+        for i in range(psi_n.size):
+            rho_tor[i] = self.q.integral(0, psi_n[i]) / PHI
+
+        rho_tor = np.sqrt(rho_tor)
+        return rho_tor[0] if scalar_input else rho_tor
+
+
     def process_data(self, data, override_psilim=False, plot_on_error=True):
         """
         Load data from the given EQDSK dictionary.
