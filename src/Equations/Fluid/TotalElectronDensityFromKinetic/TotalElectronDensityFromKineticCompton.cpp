@@ -20,9 +20,9 @@ TotalElectronDensityFromKineticCompton::TotalElectronDensityFromKineticCompton(
 }
 
 TotalElectronDensityFromKineticCompton::~TotalElectronDensityFromKineticCompton() {
-    if (wp)
+    if (wp != nullptr)
         gsl_integration_workspace_free(wp);
-    if (wpOut) 
+    if (wpOut != nullptr) 
         gsl_integration_workspace_free(wpOut);
 }
 
