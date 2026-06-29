@@ -19,6 +19,9 @@
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/Equations/Fluid/FreeElectronDensityTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
+#include "DREAM/Equations/Fluid/TotalElectronDensityFromKinetic/TotalElectronDensityFromKineticAvalancheRP.hpp"
+#include "DREAM/Equations/Fluid/TotalElectronDensityFromKinetic/TotalElectronDensityFromKineticCompton.hpp"
+#include "DREAM/Equations/Fluid/TotalElectronDensityFromKinetic/TotalElectronDensityFromKineticTritium.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
@@ -238,152 +241,6 @@ void SimulationGenerator::ConstructEquation_f_hot_prescribed(
 }
 
 /**
- * Implementation of an equation term which represents the total
- * number of electrons created by the kinetic Rosenbluth-Putvinski source
- */
-namespace DREAM {
-    class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
-    public:
-        real_t pLower, pUpper, scaleFactor;
-        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
-
-        virtual void SetWeights() override {
-            for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pLower, pUpper);
-        }
-    };
-}
-
-namespace DREAM {
-    class TotalElectronDensityFromKineticCompton : public FVM::DiagonalLinearTerm {
-    private: 
-        len_t limit;
-        gsl_integration_workspace * wp;
-        gsl_integration_workspace * wpOut;
-    public:
-        real_t pLower, pUpper;
-        real_t integratedComptonSpectrum, C1, C2, C3;
-        FVM::Interpolator1D *comptonPhotonFlux;
-        real_t scaleFactor;
-        real_t photonFlux;
-        TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::Interpolator1D *comptonPhotonFlux, 
-                real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalLinearTerm(g), pLower(pLower), pUpper(pUpper), 
-                integratedComptonSpectrum(integratedComptonSpectrum), C1(C1), C2(C2), C3(C3), comptonPhotonFlux(comptonPhotonFlux), scaleFactor(scaleFactor) {
-                this->limit = 1000;
-                this->wp = gsl_integration_workspace_alloc(limit);
-                this->wpOut = gsl_integration_workspace_alloc(limit);
-            }
-        
-        virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) override {
-            this->photonFlux = this->comptonPhotonFlux->Eval(t)[0];
-            this->DiagonalLinearTerm::Rebuild(0,0,nullptr);
-        }
-        virtual void SetWeights() override {
-            struct DREAM::ComptonSource::intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
-            struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
-            for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * this->photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
-        }
-    };
-}
-
-namespace DREAM {
-    class TotalElectronDensityFromKineticTritium : public FVM::EquationTerm { // TODO: Uppdatera med setMatrix och setVectorElements
-    public:
-        len_t id_nT;
-        len_t indT;
-        real_t pLower, pUpper, scaleFactor;
-        real_t *weights = nullptr;
-        bool hasBeenInitialized = false;
-        
-        TotalElectronDensityFromKineticTritium(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, IonHandler *ions, len_t iIon, real_t scaleFactor = 1.0) 
-            : FVM::EquationTerm(g), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {
-
-            this->id_nT = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-            
-            this->indT = ions->GetIndex(iIon, 0);
-        }
-        
-        ~TotalElectronDensityFromKineticTritium() {
-            this->DeallocateWeights();
-        }
-        void AllocateWeights() {
-            DeallocateWeights(); 
-
-            const len_t N = grid->GetNCells();
-            weights = new real_t[N];
-            for (len_t i = 0; i < N; i++)
-                weights[i] = 0;
-        }
-
-        void DeallocateWeights(){
-            if(weights!=nullptr) 
-            delete[] weights;
-        }
-        void InitializeWeights(){
-            AllocateWeights(); 
-            SetWeights();
-            hasBeenInitialized = false;
-        }
-        void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override { 
-            if(!hasBeenInitialized){
-                InitializeWeights();
-                hasBeenInitialized = true;
-            } 
-        }
-
-        bool SetJacobianBlock(const len_t , const len_t derivId, FVM::Matrix *jac, const real_t*){
-            if(derivId != id_nT)
-                return false;
-            SetMatrixElements(jac, nullptr);
-            return true;
-        }
-
-        void SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/) override {
-            for(len_t iZ0=0; iZ0<2; iZ0++){
-                len_t offset = 0;
-                for(len_t ir=0; ir<nr; ir++){
-                    for(len_t i=0; i<n1[ir]; i++){
-                        for(len_t j=0; j<n2[ir]; j++){
-                            len_t ind = offset + n1[ir]*j + i;
-                            mat->SetElement(ind, (iZ0 + indT)*nr + ir, weights[ind]);
-                        }
-                    }
-                    offset += n1[ir]*n2[ir];
-                }        
-            }
-        }
-
-        /**
-        * Set vector elements.
-        */
-        void SetVectorElements(real_t *vec, const real_t *x) override {
-            for(len_t iZ0=0; iZ0<2; iZ0++){
-                len_t offset = 0; 
-                for(len_t ir=0; ir<nr; ir++){
-                    for(len_t i=0; i<n1[ir]; i++){
-                        for(len_t j=0; j<n2[ir]; j++){
-                            len_t ind = offset + n1[ir]*j + i;
-                            vec[ind] += weights[ind]*x[(iZ0 + indT)*nr + ir];
-                        }
-                    }
-                    offset += n1[ir]*n2[ir];
-                }
-            }
-        }
-
-        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
-        virtual void SetWeights() {
-            for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
-        }
-    };
-}
-
-/**
  * Build the equation for S_particle, which contains the rate at which the total local free electron density changes
  * (i.e. by ionization, transport of hot electrons, runaway sources).
  * Uses the implicit method, where the source amplitude is indirectly set by requiring
@@ -449,7 +306,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_Nre->AddTerm(
-            new TotalElectronDensityFromKineticAvalanche(fluidGrid, pCutoff, pMax, unknowns, -1.0)
+            new TotalElectronDensityFromKineticAvalancheRP(fluidGrid, pCutoff, pMax, unknowns, -1.0)
         );
         desc += " - internal avalanche";
     }
