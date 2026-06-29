@@ -11,8 +11,8 @@ namespace DREAM {
         : public FVM::DiagonalLinearTerm {
     private: 
         len_t limit;
-        gsl_integration_workspace * wp;
-        gsl_integration_workspace * wpOut;
+        gsl_integration_workspace * wp = nullptr;
+        gsl_integration_workspace * wpOut = nullptr;
     public:
         real_t pLower, pUpper;
         real_t integratedComptonSpectrum, C1, C2, C3;
@@ -21,6 +21,8 @@ namespace DREAM {
         real_t photonFlux;
         TotalElectronDensityFromKineticCompton(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::Interpolator1D *comptonPhotonFlux, 
                 real_t integratedComptonSpectrum, real_t C1, real_t C2, real_t C3, real_t scaleFactor = 1.0);
+        
+        ~TotalElectronDensityFromKineticCompton();
         
         virtual void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) override;
 

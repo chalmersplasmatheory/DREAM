@@ -19,13 +19,24 @@ TotalElectronDensityFromKineticCompton::TotalElectronDensityFromKineticCompton(
     this->wpOut = gsl_integration_workspace_alloc(limit);
 }
 
+TotalElectronDensityFromKineticCompton::~TotalElectronDensityFromKineticCompton() {
+    if (wp)
+        gsl_integration_workspace_free(wp);
+    if (wpOut) 
+        gsl_integration_workspace_free(wpOut);
+}
+
 void TotalElectronDensityFromKineticCompton::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*) {
     this->photonFlux = this->comptonPhotonFlux->Eval(t)[0];
-    this->DiagonalLinearTerm::Rebuild(0,0,nullptr);
+    this->DiagonalLinearTerm::Rebuild(t,0,nullptr);
+    this->SetWeights();
 }
 void TotalElectronDensityFromKineticCompton::SetWeights() {
     struct DREAM::ComptonSource::intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
     struct DREAM::ComptonSource::intparams paramsOut = {this->limit, this->wpOut, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
+
+    const real_t nCompton = ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
+    const real_t w = scaleFactor * this->photonFlux * nCompton;
     for(len_t i = 0; i<grid->GetNCells(); i++)
-        weights[i] = scaleFactor * this->photonFlux * ComptonSource::EvaluateTotalComptonNumber(pLower, &params, &paramsOut, pUpper);
+        weights[i] = w;
 }

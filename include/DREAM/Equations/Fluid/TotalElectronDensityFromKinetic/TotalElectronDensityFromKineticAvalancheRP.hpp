@@ -2,6 +2,8 @@
 #define _DREAM_EQUATIONS_TOTAL_ELECTRON_DENSITY_FROM_KINETIC_AVALANCHE_SOURCE_RP_HPP
 
 #include "FVM/Equation/DiagonalQuadraticTerm.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 /**
  * Implementation of an equation term which represents the total

@@ -85,6 +85,7 @@ void TotalElectronDensityFromKineticTritium::SetVectorElements(real_t *vec, cons
 }
 
 void TotalElectronDensityFromKineticTritium::SetWeights() {
+    const real_t w = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
     for(len_t i = 0; i<grid->GetNCells(); i++)
-        weights[i] = scaleFactor * TritiumSource::EvaluateTotalTritiumNumber(pLower, pUpper);
+        weights[i] = w;
 }
