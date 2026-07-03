@@ -15,6 +15,7 @@
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
+#include "DREAM/Equations/Kinetic/WarePinchTerm.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -53,8 +54,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
-	s->DefineSetting(mod + "/timevaryingbmode", "Enables/disabled the adiabatic compression force caused by a time varying magnetic field strength", (int_t)OptionConstants::EQTERM_TIMEVARYINGB_MODE_NEGLECT);
-
+    s->DefineSetting(mod + "/timevaryingbmode", "Enables/disabled the adiabatic compression force caused by a time varying magnetic field strength", (int_t)OptionConstants::EQTERM_TIMEVARYINGB_MODE_NEGLECT);
+    s->DefineSetting(mod + "/warepinchmode", "Enables/disables the radial advection term caused by the ware pinch effect ", (int_t)OptionConstants::EQTERM_WAREPINCH_MODE_NEGLECT);
     s->DefineSetting(mod + "/mode", "Which model to use for distribution (analytical function or numerical resolved on kinetic grid)", (int_t) OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
 
     // Initial distribution
@@ -97,7 +98,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
-	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
+    TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -173,6 +174,15 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 		*synchrotron = new SynchrotronTerm(grid, gridtype);
         eqn->AddTerm(*synchrotron);
 	}
+
+    // Ware Pinch
+    enum OptionConstants::eqterm_warepinch_mode waremode =
+        (enum OptionConstants::eqterm_warepinch_mode)s->GetInteger(mod + "/warepinchmode");
+    if (waremode == OptionConstants::EQTERM_WAREPINCH_MODE_INCLUDE) {
+        WarePinchTerm *warepinch = new WarePinchTerm(grid, gridtype,eqsys->GetUnknownHandler());
+        eqn->AddTerm(warepinch);
+        }
+
 
     // Add transport term
     bool hasTransport = ConstructTransportTerm(

@@ -315,7 +315,10 @@ enum eqterm_synchrotron_mode {                      // Synchrotron radiation rea
     EQTERM_SYNCHROTRON_MODE_NEGLECT=1,              // neglected
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included
 };
-
+enum eqterm_warepinch_mode {
+     EQTERM_WAREPINCH_MODE_NEGLECT=1,
+     EQTERM_WAREPINCH_MODE_INCLUDE=2
+};
 enum eqterm_timevaryingb_mode {						// Pitch angle advection due to time-varying B...
 	EQTERM_TIMEVARYINGB_MODE_NEGLECT=1,				// neglected
 	EQTERM_TIMEVARYINGB_MODE_INCLUDE=2				// included

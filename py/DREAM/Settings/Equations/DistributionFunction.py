@@ -30,6 +30,9 @@ AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
 SYNCHROTRON_MODE_NEGLECT = 1
 SYNCHROTRON_MODE_INCLUDE = 2
 
+WAREPINCH_MODE_NEGLECT = 1
+WAREPINCH_MODE_INCLUDE = 2
+
 RIPPLE_MODE_NEGLECT = 1
 RIPPLE_MODE_BOX = 2
 RIPPLE_MODE_GAUSSIAN = 3
@@ -65,6 +68,7 @@ class DistributionFunction(UnknownQuantity):
         self.mode = mode
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
+        self.warepinchmode = WAREPINCH_MODE_NEGLECT
         self.timevaryingbmode = TIME_VARYING_B_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
         self.fullIonJacobian = True
@@ -269,6 +273,19 @@ class DistributionFunction(UnknownQuantity):
         else:
             self.synchrotronmode = int(mode)
 
+
+    def setWarePinchMode(self, mode):
+        """
+        Sets the type of Ware Pinch effect advection to have (either enabled or disabled).
+
+        :param int mode: Flag indicating whether or not to enable Ware Pinch effect advection (may be bool).
+        """
+        if type(mode) == bool:
+            self.warepinchmode = WAREPINCH_MODE_INCLUDE if mode else WAREPINCH_MODE_NEGLECT
+        else:
+            self.warepinchmode = int(mode)
+
+
     def enableIonJacobian(self, includeJacobian):
         """
         Enables/disables the ion jacobian in the kinetic equation.
@@ -363,6 +380,9 @@ class DistributionFunction(UnknownQuantity):
 
         if 'synchrotronmode' in data:
             self.synchrotronmode = int(scal(data['synchrotronmode']))
+            
+        if 'warepinchmode' in data:
+            self.warepinchmode = int(scal(data['warepinchmode']))
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
@@ -419,6 +439,7 @@ class DistributionFunction(UnknownQuantity):
             
             data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
+            data['warepinchmode'] = self.warepinchmode
             data['timevaryingbmode'] = self.timevaryingbmode
             data['transport'] = self.transport.todict()
             data['fullIonJacobian'] = self.fullIonJacobian
@@ -480,7 +501,17 @@ class DistributionFunction(UnknownQuantity):
                 opt = [SYNCHROTRON_MODE_NEGLECT, SYNCHROTRON_MODE_INCLUDE]
                 if self.synchrotronmode not in opt:
                     raise EquationException("{}: Invalid option for synchrotron mode: {}".format(self.name, self.synchrotronmode))
-
+            
+            if type(self.warepinchmode) == bool:
+                self.setWarePinchMode(self.warepinchmode)
+            elif type(self.warepinchmode) != int:
+                raise EquationException("{}: Invalid type of warepinch mode option: {}".format(self.name, type(self.warepinchmode)))
+            else:
+                opt = [WAREPINCH_MODE_NEGLECT, WAREPINCH_MODE_INCLUDE]
+                if self.warepinchmode not in opt:
+                    raise EquationException("{}: Invalid option for warepinch mode: {}".format(self.name, self.warepinchmode))
+            
+            
             if type(self.timevaryingbmode) == bool:
                 self.setTimeVaryingBMode(self.timevaryingbmode)
             elif type(self.timevaryingbmode) != int:
