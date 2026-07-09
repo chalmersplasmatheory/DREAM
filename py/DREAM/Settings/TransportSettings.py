@@ -15,6 +15,9 @@ TRANSPORT_MHD_LIKE = 6
 TRANSPORT_MHD_LIKE_LOCAL = 7
 TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING = 8
 
+DETRAPPING_RR_MODE_LOCAL = 1
+DETRAPPING_RR_MODE_GENERALIZED = 2
+
 INTERP3D_NEAREST     = 0
 INTERP3D_LINEAR      = 1
 INTERP3D_LOGARITHMIC = 2
@@ -95,9 +98,11 @@ class TransportSettings:
         self.s_drr_interp1d = None
 
         # Rechester-Rosenbluth (diffusive) transport
-        self.dBB   = None
-        self.dBB_t = None
-        self.dBB_r = None
+        self.dBB             = None
+        self.dBB_t           = None
+        self.dBB_r           = None
+        self.detrapping_mode = DETRAPPING_RR_MODE_LOCAL
+        self.detrapping_scale = 1.0
 
         # MHD-like Rechester-Rosenbluth (diffusive) heat transport
         self.mhdlike_dBB0 = None
@@ -230,6 +235,9 @@ class TransportSettings:
             else:
                 coeff = coeff * np.ones((1,)*2)
 
+        if r is None:
+            raise TransportException("No radial grid provided for prescribed transport coefficient '{}'.".format(name))
+
         r = np.asarray(r)
         t = np.asarray(t)
         
@@ -289,7 +297,10 @@ class TransportSettings:
         self.dBB   = dBB
 
 
-    def setDetrappingRechesterRosenbluth(self, dBB, t=None, r=None):
+    def setDetrappingRechesterRosenbluth(
+        self, dBB, t=None, r=None, mode=DETRAPPING_RR_MODE_LOCAL,
+        detrapping_scale=1.0
+    ):
         """
         Prescribes the evolution of the magnetic perturbation level (dB/B)
         for the trapping-limited isotropic Rechester-Rosenbluth model.
@@ -297,8 +308,15 @@ class TransportSettings:
         :param dBB: Magnetic perturbation level.
         :param t:   Time grid on which the perturbation is defined.
         :param r:   Radial grid on which the perturbation is defined.
+        :param mode: Detrapping closure mode: 'local', 'generalized'
+            or the corresponding DETRAPPING_RR_MODE_* constant.
+        :param detrapping_scale: Multiplicative scale factor applied to the
+            generalized detrapping limit. Values above one correspond to a
+            shorter effective detrapping time.
         """
         self.type = TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING
+        self.detrapping_mode = self._parseDetrappingRRMode(mode)
+        self.detrapping_scale = float(scal(detrapping_scale))
 
         if np.isscalar(dBB):
             dBB = dBB * np.ones((1,1))
@@ -314,6 +332,29 @@ class TransportSettings:
         self.dBB_r = r
         self.dBB_t = t
         self.dBB   = dBB
+
+
+    def _parseDetrappingRRMode(self, mode):
+        """
+        Normalize the trapping-limited Rechester-Rosenbluth closure mode.
+        """
+        if isinstance(mode, str):
+            m = mode.strip().lower().replace('-', '_')
+            if m in ['local', 'random_walk', 'randomwalk']:
+                return DETRAPPING_RR_MODE_LOCAL
+            elif m in ['generalized', 'generalised', 'matthiessen']:
+                return DETRAPPING_RR_MODE_GENERALIZED
+            else:
+                raise TransportException("Invalid detrapping RR mode: '{}'.".format(mode))
+
+        mode = int(scal(mode))
+        if mode in [
+            DETRAPPING_RR_MODE_LOCAL,
+            DETRAPPING_RR_MODE_GENERALIZED
+        ]:
+            return mode
+
+        raise TransportException("Invalid detrapping RR mode: {}.".format(mode))
 
 
     def setMHDLikeRechesterRosenbluth(
@@ -427,6 +468,8 @@ class TransportSettings:
         self.dBB = None
         self.dBB_r = None
         self.dBB_t = None
+        self.detrapping_mode = DETRAPPING_RR_MODE_LOCAL
+        self.detrapping_scale = 1.0
 
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
@@ -501,6 +544,11 @@ class TransportSettings:
             self.dBB   = data['dBB']['x']
             self.dBB_r = data['dBB']['r']
             self.dBB_t = data['dBB']['t']
+
+        if 'detrapping_mode' in data:
+            self.detrapping_mode = self._parseDetrappingRRMode(data['detrapping_mode'])
+        if 'detrapping_scale' in data:
+            self.detrapping_scale = float(scal(data['detrapping_scale']))
 
         if 'mhdlike_dBB0' in data:
             self.mhdlike_dBB0 = float(scal(data['mhdlike_dBB0']))
@@ -612,6 +660,9 @@ class TransportSettings:
                 'r': self.dBB_r,
                 't': self.dBB_t
             }
+            if self.type == TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING:
+                data['detrapping_mode'] = self.detrapping_mode
+                data['detrapping_scale'] = self.detrapping_scale
 
         if self.type == TRANSPORT_MHD_LIKE or self.type == TRANSPORT_MHD_LIKE_LOCAL and self.mhdlike_dBB0 is not None:
             data['mhdlike_dBB0'] = self.mhdlike_dBB0
@@ -655,6 +706,7 @@ class TransportSettings:
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING:
             self.verifySettingsRechesterRosenbluth()
+            self.verifySettingsDetrappingRechesterRosenbluth()
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_FROZEN_CURRENT:
             self.verifyFrozenCurrent()
@@ -732,6 +784,26 @@ class TransportSettings:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
 
 
+    def verifySettingsDetrappingRechesterRosenbluth(self):
+        """
+        Verify consistency of the trapping-limited Rechester-Rosenbluth mode.
+        """
+        self.detrapping_mode = self._parseDetrappingRRMode(self.detrapping_mode)
+        self.detrapping_scale = float(scal(self.detrapping_scale))
+        if self.detrapping_scale <= 0:
+            raise TransportException(
+                "Detrapping Rechester-Rosenbluth: detrapping_scale must be positive."
+            )
+        if (
+            self.detrapping_mode == DETRAPPING_RR_MODE_LOCAL and
+            self.detrapping_scale != 1.0
+        ):
+            raise TransportException(
+                "Detrapping Rechester-Rosenbluth: detrapping_scale is only supported "
+                "for generalized mode."
+            )
+
+
     def verifyFrozenCurrent(self):
         """
         Verify consistency of the frozen current mode settings.
@@ -749,4 +821,3 @@ class TransportSettings:
 class TransportException(DREAMException):
     def __init__(self, msg):
         super().__init__(msg)
-

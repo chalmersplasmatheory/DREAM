@@ -152,11 +152,13 @@ namespace DREAM {
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
-            bool, bool, DREAM::FVM::Operator **transport=nullptr,
-            DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr,
-            DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
-			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
-        );
+	            bool, bool, DREAM::FVM::Operator **transport=nullptr,
+	            DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr,
+				DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
+				DREAM::TimeVaryingBTerm **tvbt=nullptr,
+				struct OtherQuantityHandler::eqn_terms *oqty_terms=nullptr,
+				bool rescaleMaxwellian=false
+	        );
 		static void ConstructEquation_f_prescribed(const len_t, EquationSystem*, FVM::Grid*, Settings*, const std::string&);
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         static DREAM::TimeVaryingBTerm *ConstructEquation_f_timevaryingb(Settings*, const std::string&, FVM::Grid*);

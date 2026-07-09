@@ -33,14 +33,12 @@
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
-#include "FVM/Interpolator3D.hpp"
 
 
 using namespace DREAM;
 using namespace std;
 
 #define MODULENAME "eqsys/f_hot"
-
 
 /**
  * Define settings for the hot-tail distribution function.
@@ -162,11 +160,11 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, modulename, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
         eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
-        nullptr,    // transport operator (only used for f_re)
-        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
-        &oqty_terms->f_hot_ripple_Dxx, &oqty_terms->f_hot_synchrotron,
-		&oqty_terms->f_hot_timevaryingb, rescaleMaxwellian
-    );
+	        nullptr,    // transport operator (only used for f_re)
+	        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
+	        &oqty_terms->f_hot_ripple_Dxx, &oqty_terms->f_hot_synchrotron,
+			&oqty_terms->f_hot_timevaryingb, oqty_terms, rescaleMaxwellian
+	    );
 
     // Add kinetic-kinetic boundary condition if necessary...
     if (!addExternalBC) {
@@ -553,17 +551,20 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
 
     // F_HOT TRANSPORT TERM
     FVM::Operator *Op_fhot_tmp = new FVM::Operator(eqsys->GetHotTailGrid()); // add all kinetic terms not conserving local electron density in this operator
+	bool hasFHotTerm = false;
     // Add transport term
-    bool hasFHotTerm = ConstructTransportTerm(
+    hasFHotTerm = ConstructTransportTerm(
         Op_fhot_tmp, "eqsys/f_hot", eqsys->GetHotTailGrid(),
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys,s, true, false,
-        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc
+        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
+        oqty_terms
     );
     if(hasFHotTerm){ // add kinetic term integrated over momentum
         FVM::Operator *Op_fhot = new FVM::Operator(fluidGrid);
            Op_fhot->AddTerm(new KineticEquationTermIntegratedOverMomentum(
-               fluidGrid, eqsys->GetHotTailGrid(), Op_fhot_tmp, id_fhot, eqsys->GetUnknownHandler()
+               fluidGrid, eqsys->GetHotTailGrid(), Op_fhot_tmp,
+			   id_fhot, eqsys->GetUnknownHandler()
            ));
         desc += " - f_hot transport";
         eqsys->SetOperator(id_Sp, id_fhot, Op_fhot);
@@ -613,6 +614,3 @@ real_t *SimulationGenerator::_get_f_hot_data_r(Settings *s, const std::string& n
 	path.pop_back();
 	return LoadDataR(path, rgrid, s, name);
 }
-
-
-

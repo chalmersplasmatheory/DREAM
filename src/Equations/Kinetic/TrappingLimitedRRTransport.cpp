@@ -11,11 +11,14 @@
 
 using namespace DREAM;
 
+static constexpr real_t CYLINDRICAL_INVENTORY_LOSS_SCALE = 5.783185962946785;
 
 TrappingLimitedRRTransport::TrappingLimitedRRTransport(
 	FVM::Grid *g, enum OptionConstants::momentumgrid_type mgtype,
 	FVM::Interpolator1D *dBB, CollisionQuantityHandler *cqh,
-	FVM::UnknownQuantityHandler *unknowns, bool withIonJacobian
+	FVM::UnknownQuantityHandler *unknowns, bool withIonJacobian,
+	enum OptionConstants::eqterm_transport_rechester_rosenbluth_detrapping_mode detrappingMode,
+	real_t detrappingScale
 ) : RechesterRosenbluthTransport(g, mgtype, dBB) {
 
 	SetName("TrappingLimitedRRTransport");
@@ -23,6 +26,15 @@ TrappingLimitedRRTransport::TrappingLimitedRRTransport(
 	auto mg = g->GetMomentumGrid(0);
 	if (mgtype != OptionConstants::MOMENTUMGRID_TYPE_PXI || mg->GetNp2() != 1)
 		throw DREAMException("The 'TrappingLimitedRRTransport' operator is only applicable in isotropic (nxi = 1) mode.");
+
+	if (
+		detrappingMode != OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL &&
+		detrappingMode != OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_GENERALIZED
+	)
+		throw DREAMException("The 'TrappingLimitedRRTransport' operator received an invalid detrapping mode.");
+
+	this->detrappingMode = detrappingMode;
+	this->detrappingScale = detrappingScale;
 
 	this->nuD = cqh->GetNuD();
 
@@ -38,9 +50,12 @@ TrappingLimitedRRTransport::TrappingLimitedRRTransport(
 	AllocateCache();
 }
 
-
 TrappingLimitedRRTransport::~TrappingLimitedRRTransport() {
 	delete [] this->jacobianPrefactor;
+	if (this->drrDetrap != nullptr) {
+		delete [] this->drrDetrap[0];
+		delete [] this->drrDetrap;
+	}
 }
 
 
@@ -48,9 +63,17 @@ void TrappingLimitedRRTransport::AllocateCache() {
 	const len_t nr = this->grid->GetNr();
 
 	delete [] this->jacobianPrefactor;
+	if (this->drrDetrap != nullptr) {
+		delete [] this->drrDetrap[0];
+		delete [] this->drrDetrap;
+	}
 
 	this->np1_cache = this->grid->GetMomentumGrid(0)->GetNp1();
 	this->jacobianPrefactor = new real_t[(nr+1) * this->np1_cache];
+	this->drrDetrap = new real_t*[nr+1];
+	this->drrDetrap[0] = new real_t[(nr+1) * this->np1_cache];
+	for (len_t ir = 1; ir < nr+1; ir++)
+		this->drrDetrap[ir] = this->drrDetrap[ir-1] + this->np1_cache;
 }
 
 
@@ -72,16 +95,18 @@ void TrappingLimitedRRTransport::Rebuild(
 
 	// TODO: Here I am assuming that all momentum grids are the same
 	// at all radii and probably is always correct? 
-	//
+
 	const len_t nr = this->grid->GetNr();
 	auto mg = this->grid->GetMomentumGrid(0);
 	FVM::RadialGrid *rg = this->grid->GetRadialGrid();
 
 	real_t qR0 = rg->GetR0();
+	const real_t minorRadius = rg->GetMinorRadius();
 	const real_t *p1 = mg->GetP1();
 	const len_t np1 = this->np1_cache;
 	real_t *const* nuD_f2 = this->nuD->GetValue_f2();
 	const real_t *drf = this->deltaRadialFlux;
+	std::fill(this->drrDetrap[0], this->drrDetrap[0] + (nr+1)*np1, 0.0);
 
 	// Major radius is set to 'inf' in cylindrical geometry.
 	if (std::isinf(qR0))
@@ -89,19 +114,53 @@ void TrappingLimitedRRTransport::Rebuild(
 
 	for (len_t ir = 0; ir < nr+1; ir++) {
 		const real_t xiT = rg->GetXi0TrappedBoundary_fr(ir);
-		const real_t fp = 0.5 * rg->GetFSA_B_f(ir) * (1 - xiT*xiT);
-		const real_t ft = std::max<real_t>(0, 1 - fp);
+		const real_t geometricFactor = 0.5 * rg->GetFSA_B_f(ir) * (1 - xiT*xiT);
+		const real_t ft = std::max<real_t>(0, 1 - geometricFactor);
+		const real_t xiT2 = xiT*xiT;
 		const real_t dBB2 = dB_B[ir] * dB_B[ir];
 		const real_t w1 = (ir < nr) ? drf[ir] : 0.0;
 		const real_t w2 = (ir > 0) ? 1.0 - drf[ir] : 0.0;
 		real_t *prefactorRow = this->jacobianPrefactor + ir*np1;
-		const bool trivial = (dBB2 == 0.0 || ft == 0.0 || xiT == 0.0);
+		const bool generalizedMode = (
+			this->detrappingMode ==
+			OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_GENERALIZED
+		);
+		const bool generalizedZeroLimit = (
+			generalizedMode &&
+			minorRadius <= 0.0
+		);
+		const bool localTrivial = (
+			this->detrappingMode ==
+			OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL &&
+			ft == 0.0
+		);
+		const bool trivial = (dBB2 == 0.0 || xiT == 0.0 || localTrivial);
+		real_t generalizedDetrapLimitPerNuD = 0.0;
+		if (
+			!trivial && !generalizedZeroLimit &&
+			generalizedMode
+		) {
+			const real_t angularFactor =
+				0.5 * (1 - xiT2) *
+				rg->CalculatePXiBounceAverageAtP(
+					ir, xiT, FVM::FLUXGRIDTYPE_RADIAL,
+					FVM::RadialGrid::BA_FUNC_XI_SQUARED_OVER_B
+			);
+			// Ddetrap/nuD = a^2/xiT^2 * Dc/nuD has units of m^2.
+			generalizedDetrapLimitPerNuD = minorRadius*minorRadius * angularFactor / xiT2;
+		}
 
 		for (len_t i = 0; i < np1; i++) {
 			const real_t p = p1[i];
 			const real_t gamma = std::sqrt(1 + p*p);
 			const real_t v = Constants::c * p / gamma;
-			const real_t DrrIso = M_PI * qR0 * dBB2 * v * fp;
+			const real_t DrrIso = M_PI * qR0 * dBB2 * v * geometricFactor;
+
+			if (generalizedZeroLimit) {
+				Drr(ir, i, 0) += 0.0;
+				prefactorRow[i] = 0.0;
+				continue;
+			}
 
 			if (trivial || v <= 0 || qR0 <= 0) {
 				Drr(ir, i, 0) += DrrIso;
@@ -121,9 +180,35 @@ void TrappingLimitedRRTransport::Rebuild(
 				continue;
 			}
 
-			const real_t tauStep = 2 * M_PI * qR0 / v;
-			const real_t beta = xiT*xiT / (nuD_f * tauStep);
-			const real_t h = 1 / (1 + ft * beta);
+			real_t x = 0.0;
+			if (
+				this->detrappingMode ==
+				OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL
+			) {
+				const real_t tauStep = 2 * M_PI * qR0 / v;
+				const real_t beta = xiT*xiT / (nuD_f * tauStep);
+				x = ft * beta;
+			} else {
+				if (generalizedDetrapLimitPerNuD <= 0) {
+					Drr(ir, i, 0) += 0.0;
+					prefactorRow[i] = 0.0;
+					continue;
+				}
+
+				const real_t Ddetrap =
+					this->detrappingScale *
+					CYLINDRICAL_INVENTORY_LOSS_SCALE *
+					generalizedDetrapLimitPerNuD * nuD_f;
+				this->drrDetrap[ir][i] = Ddetrap;
+				if (Ddetrap <= 0) {
+					Drr(ir, i, 0) += 0.0;
+					prefactorRow[i] = 0.0;
+					continue;
+				}
+				x = DrrIso / Ddetrap;
+			}
+
+			const real_t h = 1 / (1 + x);
 
 			Drr(ir, i, 0) += DrrIso * h;
 			prefactorRow[i] = DrrIso * h * (1 - h) / nuD_f;

@@ -1,7 +1,10 @@
 #ifndef _OTHER_QUANTITY_HANDLER_HPP
 #define _OTHER_QUANTITY_HANDLER_HPP
 
-namespace DREAM { class OtherQuantityHandler; }
+namespace DREAM {
+	class OtherQuantityHandler;
+	class TrappingLimitedRRTransport;
+}
 
 #include <map>
 #include <vector>
@@ -84,6 +87,8 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+            // Trapping-limited Rechester-Rosenbluth diagnostics
+            DREAM::TrappingLimitedRRTransport *f_hot_trappinglimited_rr=nullptr;
 			// Tritium and Compton source terms
 			DREAM::ComptonSource *comptonSource_hottail=nullptr;
 			DREAM::ComptonSource *comptonSource_runaway=nullptr;

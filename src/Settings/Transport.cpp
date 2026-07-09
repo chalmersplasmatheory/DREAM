@@ -62,6 +62,16 @@ void SimulationGenerator::DefineOptions_Transport(
 
     // Rechester-Rosenbluth diffusion
     DefineDataRT(mod + "/" + subname, s, "dBB");
+	s->DefineSetting(
+		mod + "/" + subname + "/detrapping_mode",
+		"Closure mode for trapping-limited Rechester-Rosenbluth transport.",
+		(int_t)OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL
+	);
+	s->DefineSetting(
+		mod + "/" + subname + "/detrapping_scale",
+		"Scale factor applied to the generalized finite-detrapping limit.",
+		(real_t)1.0
+	);
 
 	// Adaptive MHD-like transport options
 	s->DefineSetting(
@@ -409,12 +419,41 @@ bool SimulationGenerator::ConstructTransportTerm(
                     );
 
                 bool withIonJacobian = s->GetBool(mod + "/fullIonJacobian");
-                TrappingLimitedRRTransport *rrt = new TrappingLimitedRRTransport(
-                    grid, momtype, dBB, cqh, eqsys->GetUnknownHandler(), withIonJacobian
-                );
-                oprtr->AddTerm(rrt);
+				auto detrappingMode =
+					(enum OptionConstants::eqterm_transport_rechester_rosenbluth_detrapping_mode)
+						s->GetInteger(path + "/detrapping_mode");
+				if (
+					detrappingMode != OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL &&
+					detrappingMode != OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_GENERALIZED
+				)
+					throw SettingsException(
+						"%s: Invalid trapping-limited Rechester-Rosenbluth detrapping mode: %d.",
+						path.c_str(), detrappingMode
+					);
+				real_t detrappingScale = s->GetReal(path + "/detrapping_scale");
+				if (detrappingScale <= 0)
+					throw SettingsException(
+						"%s: Invalid trapping-limited Rechester-Rosenbluth detrapping scale: %e. Expected a positive value.",
+						path.c_str(), detrappingScale
+					);
+				if (
+					detrappingMode == OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL &&
+					detrappingScale != 1.0
+				)
+					throw SettingsException(
+						"%s: detrapping_scale is only supported for generalized trapping-limited Rechester-Rosenbluth transport.",
+						path.c_str()
+					);
 
-                dt = rrt;
+	                TrappingLimitedRRTransport *rrt = new TrappingLimitedRRTransport(
+	                    grid, momtype, dBB, cqh, eqsys->GetUnknownHandler(),
+						withIonJacobian, detrappingMode, detrappingScale
+	                );
+					if (oqty_terms != nullptr && grid == eqsys->GetHotTailGrid())
+						oqty_terms->f_hot_trappinglimited_rr = rrt;
+	                oprtr->AddTerm(rrt);
+
+	                dt = rrt;
             } else {
                 RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
                     grid, momtype, dBB

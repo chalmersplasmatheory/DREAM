@@ -372,6 +372,11 @@ enum eqterm_transport_type {
     EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING=8,	// Diffusive transport with a trapping-limited Rechester-Rosenbluth coefficient
 };
 
+enum eqterm_transport_rechester_rosenbluth_detrapping_mode {
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_LOCAL=1,
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_GENERALIZED=2
+};
+
 enum eqterm_frozen_current_mode {
 	EQTERM_FROZEN_CURRENT_MODE_DISABLED=1,			// Disable the frozen current mode transport
 	EQTERM_FROZEN_CURRENT_MODE_CONSTANT=2,			// Assume momentum-independent radial transport

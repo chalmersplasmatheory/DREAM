@@ -11,7 +11,7 @@ namespace DREAM {
         // to also define it in 'src/Settings/Constants.cpp'.
         // Please, also maintain alphabetical order.
         static const char
-			*UQTY_D_I,             *UQTY_D_I_DESC,
+            *UQTY_D_I,             *UQTY_D_I_DESC,
             *UQTY_E_FIELD,         *UQTY_E_FIELD_DESC,
             *UQTY_F_HOT,           *UQTY_F_HOT_DESC,
             *UQTY_F_RE,            *UQTY_F_RE_DESC,

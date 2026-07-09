@@ -94,10 +94,12 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
-    FVM::Operator **transport,
-    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
-    RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
-	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
+	    FVM::Operator **transport,
+	    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
+		RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
+		TimeVaryingBTerm **timevaryingb,
+		struct OtherQuantityHandler::eqn_terms *oqty_terms,
+		bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -178,7 +180,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     bool hasTransport = ConstructTransportTerm(
         eqn, mod, grid,
         gridtype, eqsys,
-        s, true, false, advective_bc, diffusive_bc
+        s, true, false, advective_bc, diffusive_bc, oqty_terms
     );
 
     // If a separate 'transport' operator is desired, repeat
@@ -410,4 +412,3 @@ void SimulationGenerator::ConstructEquation_f_maxwellian(
 
     delete [] init;
 }
-

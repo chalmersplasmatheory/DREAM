@@ -88,10 +88,10 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_re, runawayGrid, eqsys->GetRunawayGridType(),
         eqsys->GetRunawayCollisionHandler(), addExternalBC, addInternalBC,
-        transport, &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
-        &oqty_terms->f_re_ripple_Dxx, &oqty_terms->f_re_synchrotron,
-		&oqty_terms->f_re_timevaryingb
-    );
+	        transport, &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
+	        &oqty_terms->f_re_ripple_Dxx, &oqty_terms->f_re_synchrotron,
+			&oqty_terms->f_re_timevaryingb, oqty_terms
+	    );
 
     // Add fluid source terms (and kinetic avalanche, if enabled)
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
@@ -231,4 +231,3 @@ void SimulationGenerator::ConstructEquation_f_re_prescribed(
 		id_f_re, EqsysInitializer::INITRULE_EVAL_EQUATION
 	);
 }
-

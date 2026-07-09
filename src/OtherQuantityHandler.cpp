@@ -21,6 +21,7 @@
  * appropriate structs in the output file.
  */
 
+#include <algorithm>
 #include <map>
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/OtherQuantity.hpp"
@@ -32,6 +33,7 @@
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
+#include "DREAM/Equations/Kinetic/TrappingLimitedRRTransport.hpp"
 
 
 using namespace DREAM;
@@ -608,11 +610,19 @@ void OtherQuantityHandler::DefineQuantities() {
         const real_t *const* Axi = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff2();
         qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
     );
-    DEF_HT_FR("hottail/Drr", "Net radial diffusion on hot electron grid [m/s]",
-        const real_t *const* Drr = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeffRR();
-        qd->Store(nr_ht+1, n1_ht*n2_ht, Drr);
-    );
-    DEF_HT_F1("hottail/Dpp", "Net momentum-momentum diffusion on hot electron grid [m/s]",
+	    DEF_HT_FR("hottail/Drr", "Net radial diffusion on hot electron grid [m/s]",
+	        const real_t *const* Drr = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeffRR();
+	        qd->Store(nr_ht+1, n1_ht*n2_ht, Drr);
+	    );
+	    DEF_HT_FR("hottail/Drr_detrapping", "Detrapping-limited radial diffusion coefficient before RR harmonic limiting [m^2/s]",
+	        if (tracked_terms->f_hot_trappinglimited_rr != nullptr)
+	            qd->Store(nr_ht+1, n1_ht*n2_ht, tracked_terms->f_hot_trappinglimited_rr->GetDetrappingLimit());
+	        else {
+	            real_t *Ddetrap = qd->StoreEmpty();
+	            std::fill(Ddetrap, Ddetrap + (nr_ht+1)*n1_ht*n2_ht, 0.0);
+	        }
+	    );
+	    DEF_HT_F1("hottail/Dpp", "Net momentum-momentum diffusion on hot electron grid [m/s]",
         const real_t *const* Dpp = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff11();
         qd->Store(nr_ht, (n1_ht+1)*n2_ht, Dpp);
     );

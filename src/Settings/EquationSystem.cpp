@@ -328,9 +328,8 @@ void SimulationGenerator::ConstructUnknowns(
         scalarGrid,(NMULT))
 
     // Hot-tail quantities
-    if (hottailGrid != nullptr) {
+    if (hottailGrid != nullptr)
         DEFU_HOT(F_HOT);
-    }
 
     // Runaway quantities
     if (runawayGrid != nullptr) {
