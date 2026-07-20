@@ -219,6 +219,7 @@ void RadialGridStellarator::RebuildFluxSurfaceAveragedQuantities(){
             GSL_func.params = &params;
             real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
             gsl_integration_qag(&GSL_func, a, b, epsabs, epsrel, lim, GSL_INTEG_GAUSS41, gsl_adaptive, &psiExtraAtWall, &error);
+            gsl_integration_workspace_free(gsl_adaptive);
         } else 
             psiExtraAtWall = 0.;
     } else {
@@ -349,6 +350,7 @@ void RadialGridStellarator::DeallocateFSAvg(){
     if (this->FSA_BdotGradphi == nullptr)
         return;
 
+    // RadialGridStellarator owns all arrays installed by InitializeFSAvg().
     delete [] this->FSA_B;
     this->FSA_B = nullptr;
     delete [] this->FSA_B_f;
@@ -359,12 +361,24 @@ void RadialGridStellarator::DeallocateFSAvg(){
     this->FSA_B2_f = nullptr;
     delete [] this->effectivePassingFraction;
     this->effectivePassingFraction = nullptr;
+    delete [] this->effectivePassingFraction_f;
+    this->effectivePassingFraction_f = nullptr;
+    delete [] this->FSA_1OverB;
+    this->FSA_1OverB = nullptr;
+    delete [] this->FSA_1OverB_f;
+    this->FSA_1OverB_f = nullptr;
 
     delete [] this->FSA_BdotGradphi;
+    this->FSA_BdotGradphi = nullptr;
     delete [] this->FSA_BdotGradphi_f;
+    this->FSA_BdotGradphi_f = nullptr;
     delete [] this->FSA_gttOverJ2;
+    this->FSA_gttOverJ2 = nullptr;
     delete [] this->FSA_gttOverJ2_f;
+    this->FSA_gttOverJ2_f = nullptr;
     delete [] this->FSA_gtpOverJ2;
+    this->FSA_gtpOverJ2 = nullptr;
     delete [] this->FSA_gtpOverJ2_f;
+    this->FSA_gtpOverJ2_f = nullptr;
 }
 
