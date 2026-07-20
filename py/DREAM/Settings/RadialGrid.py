@@ -231,11 +231,11 @@ class RadialGrid(PrescribedScalarParameter):
     def setNphi(self, nphi):
         """
         (Analytic toroidal, numerical and stellarator)
-        Set the number of grid points to use for the poloidal grid on which bounce
+        Set the number of grid points to use for the toroidal grid on which bounce
         averages are calculated.
         """
         if nphi <= 0:
-            raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}".format(ntheta))
+            raise DREAMException("RadialGrid: Invalid value assigned to 'nphi': {}".format(nphi))
 
         self.nphi = nphi
 
@@ -249,7 +249,7 @@ class RadialGrid(PrescribedScalarParameter):
         if ntheta <= 0:
             raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {ntheta}.")
 
-        self.ntheta_out = ntheta_out
+        self.ntheta_out = ntheta
 
 
     def setShapeParameter(self, name, data, r=0.0):
