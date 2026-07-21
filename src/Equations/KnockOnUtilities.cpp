@@ -214,7 +214,7 @@ bool KnockOnUtilities::CheckIfReachableAndSetGeometricQuantities(
     );
     BOverBmin = B_ / Bmin;
     // Clamp BOverBmin to avoid issues with numerical geometry
-    std::max(BOverBmin, 1.0);    
+    BOverBmin = std::max(BOverBmin, 1.0);
     xi0Cutoff = sqrt(1 - 1 / BOverBmin);
 
     if (xi0Cutoff >= fabs(xi01)) {
