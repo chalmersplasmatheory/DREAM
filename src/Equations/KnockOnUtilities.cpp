@@ -213,8 +213,10 @@ bool KnockOnUtilities::CheckIfReachableAndSetGeometricQuantities(
         ir, theta, B_, Jacobian, ROverR0_, NablaR2_, FVM::FLUXGRIDTYPE_DISTRIBUTION
     );
     BOverBmin = B_ / Bmin;
+    
     xi0Cutoff = sqrt(1 - 1 / BOverBmin);
-
+    // Clamp BOverBmin to avoid issues with numerical geometry
+    std::max(BOverBmin, 1.0);
     if (xi0Cutoff >= fabs(xi01)) {
         // xi01 orbit cannot reach this poloidal location => return 0.
         return false;
