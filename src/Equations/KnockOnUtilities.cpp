@@ -213,6 +213,8 @@ bool KnockOnUtilities::CheckIfReachableAndSetGeometricQuantities(
         ir, theta, B_, Jacobian, ROverR0_, NablaR2_, FVM::FLUXGRIDTYPE_DISTRIBUTION
     );
     BOverBmin = B_ / Bmin;
+    // Clamp BOverBmin to avoid issues with numerical geometry
+    BOverBmin = std::max(BOverBmin, 1.0);
     xi0Cutoff = sqrt(1 - 1 / BOverBmin);
 
     if (xi0Cutoff >= fabs(xi01)) {
