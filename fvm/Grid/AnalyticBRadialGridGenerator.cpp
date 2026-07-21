@@ -753,7 +753,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0() {
 
 		for (len_t ir = 0; ir < nr; ir++, i++) {
 			if (std::isinf(this->R0))
-				R[i] = r[i] * cos(theta);
+				R[i] = r[ir] * cos(theta);
 			else
 				R[i] = ROverR0AtTheta(ir, theta) * this->R0 - this->R0;
 		}
@@ -777,7 +777,7 @@ const real_t *AnalyticBRadialGridGenerator::GetFluxSurfaceRMinusR0_f() {
 
 		for (len_t ir = 0; ir < nr+1; ir++, i++)
 			if (std::isinf(this->R0))
-				R[i] = r_f[i] * cos(theta);
+				R[i] = r_f[ir] * cos(theta);
 			else
 				R[i] = ROverR0AtTheta_f(ir, theta) * this->R0 - this->R0;
 	}
