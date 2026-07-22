@@ -9,7 +9,7 @@ import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 from .Equations.EquationException import EquationException
 from .LUKEMagneticField import LUKEMagneticField
-from .StellaratorMagneticField import StellaratorMagneticField
+from .NumericStellaratorMagneticField import NumericStellaratorMagneticField
 from .Equations.PrescribedScalarParameter import PrescribedScalarParameter
 
 
@@ -397,7 +397,7 @@ class RadialGrid(PrescribedScalarParameter):
                 self.ntheta_equil = ntheta_equil
             if nphi_equil is not None:
                 self.nphi_equil = nphi_equil
-            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, loadfilename)
+            self.num_stellarator = NumericStellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, loadfilename)
             if loadfilename is None:
                 self.num_stellarator.load(savefilename=savefilename)
         else:

@@ -15,7 +15,7 @@ from . NumericalMagneticField import NumericalMagneticField
 
 
 
-class StellaratorMagneticField(NumericalMagneticField):
+class NumericStellaratorMagneticField(NumericalMagneticField):
     
 
     def __init__(self, filename, nr, ntheta=129, nphi=129, loadfilename=None):
