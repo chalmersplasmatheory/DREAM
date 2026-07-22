@@ -83,9 +83,6 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/g_tp", "Poloidal/Toroidal element of covariant metric tensor", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/lambda_t", "Poloidal stream function to Boozer coordinates", 0, (real_t*) nullptr);
     s->DefineSetting(RADIALGRID "/lambda_p", "Toroidal stream function to Boozer coordinates", 0, (real_t*) nullptr);
-    s->DefineSetting(RADIALGRID "/nr_equil", "number of radial grid points for DESC equilibrium grid", (int_t)0);
-    s->DefineSetting(RADIALGRID "/ntheta_equil", "number of poloidal angle grid points for DESC equilibrium grid", (int_t)0);
-    s->DefineSetting(RADIALGRID "/nphi_equil", "number of toroidal angle grid points for DESC equilibrium grid", (int_t)0);
 }
 
 /**
@@ -341,9 +338,6 @@ FVM::RadialGridStellarator *SimulationGenerator::ConstructStellaratorRadialGrid_
     
     real_t b  = s->GetReal(RADIALGRID "/wall_radius");
     
-    int_t nr_equil     = s->GetInteger(RADIALGRID "/nr_equil");
-    int_t ntheta_equil = s->GetInteger(RADIALGRID "/ntheta_equil");
-    int_t nphi_equil   = s->GetInteger(RADIALGRID "/nphi_equil");
     // Uniform radial grid
     if (!custom_grid) {
         real_t a  = s->GetReal(RADIALGRID "/a");
