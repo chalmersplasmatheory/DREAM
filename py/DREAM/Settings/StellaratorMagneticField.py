@@ -20,7 +20,7 @@ from . NumericalMagneticField import NumericalMagneticField
 class StellaratorMagneticField(NumericalMagneticField):
     
 
-    def __init__(self, filename, nr, ntheta=129, nphi=129, datafilename=None): # TODO: OK?
+    def __init__(self, filename, nr, ntheta=129, nphi=129, loadfilename=None):
         """
         Constructor.
         """
@@ -57,7 +57,7 @@ class StellaratorMagneticField(NumericalMagneticField):
             
             self.eq = desc.io.load(self.filename)
 
-        if datafilename is None:
+        if loadfilename is None:
             self.grid = LinearGrid(L=int(self.nr-1), M=int((self.ntheta - 1) / 2), N=int((self.nphi - 1) / 2), endpoint=True, NFP=self.eq.NFP)
 
             self.R = np.array(self.eq.compute('R', grid=self.grid)['R'], dtype=np.float64)
@@ -70,7 +70,9 @@ class StellaratorMagneticField(NumericalMagneticField):
             self.theta = np.array(self.grid.nodes[self.grid.unique_theta_idx,1], dtype=np.float64)
             self.phi = np.array(self.grid.nodes[self.grid.unique_zeta_idx,2], dtype=np.float64)
         else:
-            with h5py.File(f"{datafilename}.h5", 'r') as hf:
+            if loadfilename[-3:] == ".h5":
+                loadfilename = loadfilename[:-3]
+            with h5py.File(f"{loadfilename}.h5", 'r') as hf:
                 self.R = np.array(hf['R'][:], dtype=np.float64)
                 self.Z = np.array(hf['Z'][:], dtype=np.float64)
                 self.R0 = hf["R0"][()]
@@ -95,7 +97,7 @@ class StellaratorMagneticField(NumericalMagneticField):
                 self.lambda_p = np.array(hf["lambda_p"][:], dtype=np.float64)
 
 
-    def load(self, savedata=True, savefilename='numericStellaratorSettings'): # TODO: Spara behandlad data till fil
+    def load(self, savefilename=None):
         """
         Load a DESC magnetic equilibrium from the named file.
         """
@@ -108,7 +110,7 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.G = np.array(self.eq.compute('G', grid=self.grid)['G'][self.grid.unique_rho_idx], dtype=np.float64)
         self.I = np.array(self.eq.compute('I', grid=self.grid)['I'][self.grid.unique_rho_idx], dtype=np.float64)
         iota = np.array(self.eq.compute('iota', grid=self.grid)['iota'], dtype=np.float64)
-        self.iota = iota[self.grid.unique_rho_idx]
+        self.iota = -iota[self.grid.unique_rho_idx]
         self.psi_T = np.array(self.eq.compute('Psi', grid=self.grid)['Psi'][self.grid.unique_rho_idx], dtype=np.float64)
 
         self.B = np.array(self.eq.compute('|B|', grid=self.grid)['|B|'], dtype=np.float64)
@@ -117,16 +119,19 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.g_tt = np.array(self.eq.compute('g_tt', grid=self.grid)['g_tt'], dtype=np.float64)
         self.g_tp = np.array(self.eq.compute('g_tz', grid=self.grid)['g_tz'], dtype=np.float64)
         isAxis = np.where(self.grid.nodes[:,0] == 0)
-        self.g_tt = self.g_tt / self.Jacobian**2
-        self.g_tp = self.g_tp / self.Jacobian**2
         for i in isAxis:
             self.g_tt[i] = self.g_tt[i+self.ntheta]
             self.g_tp[i] = self.g_tp[i+self.ntheta]
+        isNotAxis = np.where(self.grid.nodes[:,0] != 0)
+        self.g_tt[isNotAxis] = self.g_tt[isNotAxis] / self.Jacobian[isNotAxis]**2
+        self.g_tp[isNotAxis] = self.g_tp[isNotAxis] / self.Jacobian[isNotAxis]**2
 
         self.lambda_t = np.array(self.eq.compute('lambda_t', grid=self.grid)['lambda_t'] + iota*self.eq.compute('nu_t', grid=self.grid)['nu_t'], dtype=np.float64)
         self.lambda_p = np.array(self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota*self.eq.compute('nu_z', grid=self.grid)['nu_z'], dtype=np.float64)
 
-        if savedata:
+        if savefilename is not None:
+            if savefilename[-3:] == ".h5":
+                savefilename = savefilename[:-3]
             dic = { "R" : self.R,
                     "Z" : self.Z,
                     "R0" : self.R0,
@@ -153,10 +158,6 @@ class StellaratorMagneticField(NumericalMagneticField):
             with h5py.File(f"{savefilename}.h5", 'w') as hf:
                 for key, value in dic.items():
                     hf[key] = value
-
-        # TODO: Save this as quantities instead of R and Z, for ouput and for SPI in the future
-        #R_mn = self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota * \
-        #           self.eq.compute('nu_z', grid=self.grid)['nu_z']
 
 
 

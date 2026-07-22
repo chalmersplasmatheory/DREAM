@@ -379,7 +379,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.a = self.num_magneticfield.a
 
 
-    def setStellarator(self, filename, format=FILE_FORMAT_DESC, nr_equil=None, ntheta_equil=None, nphi_equil=None, datafilename=None):
+    def setStellarator(self, filename, format=FILE_FORMAT_DESC, nr_equil=None, ntheta_equil=None, nphi_equil=None, savefilename=None, loadfilename=None):
         """
         Sets the numerical magnetic field to use for the simulation.
 
@@ -400,9 +400,9 @@ class RadialGrid(PrescribedScalarParameter):
                 self.ntheta_equil = ntheta_equil
             if nphi_equil is not None:
                 self.nphi_equil = nphi_equil
-            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, datafilename)
-            if datafilename is None:
-                self.num_stellarator.load()
+            self.num_stellarator = StellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, loadfilename)
+            if loadfilename is None:
+                self.num_stellarator.load(savefilename=savefilename)
         else:
             DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
 
