@@ -151,11 +151,11 @@ DREAM::FVM::Grid *UnitTest::InitializeNumericFluidGrid(const real_t *r_f, const 
     eqdata->datalambdat     = s->GetDoubles1D("lambda_t", 1, dims);
     eqdata->datalambdap     = s->GetDoubles1D("lambda_p", 1, dims);
 
-    auto *NBrgg = new DREAM::FVM::NumericBRadialGridGenerator(r_f, nr, b, R0, nfp, eqdata, ntheta_interp, nphi_interp);
+    auto *NBrgg = new DREAM::FVM::NumericStellaratorRadialGridGenerator(r_f, nr, b, R0, nfp, eqdata, ntheta_interp, nphi_interp);
 
-    auto *rg   = new DREAM::FVM::StellaratorRadialGrid(NBrgg);
+    auto *rg   = new DREAM::FVM::RadialGridStellarator(NBrgg);
 
-    auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyStellaratorMomentumGrid(rg));
+    auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyRadialGridStellarator(rg));
     grid->Rebuild(0);
 
     return grid;

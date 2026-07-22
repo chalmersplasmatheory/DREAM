@@ -1,4 +1,4 @@
-include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
+#include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
 #include "gsl/gsl_multimin.h"
 
 #ifndef _DREAM_FVM_RADIAL_GRID_GENERATOR_STELLARATOR_HPP

@@ -74,7 +74,7 @@ namespace DREAM {
             len_t offset = 0;
             FVM::RadialGrid *rGrid = grid->GetRadialGrid();
             
-            if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) { // TODO: Is this the best way to avoid nr if-statements?
+            if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) { 
                 for (len_t ir = 0; ir < nr; ir++){
                     real_t BdotPhi = rGrid->GetFSA_BdotGradphi(ir);
 

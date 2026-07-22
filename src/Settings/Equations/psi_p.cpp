@@ -107,7 +107,7 @@ namespace DREAM {
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
             for (len_t ir = 0; ir < nr; ir++) {
                 real_t c_l, dr = grid->GetRadialGrid()->GetDr(ir);
-                if (ir == 0){ // TODO: Ok? Avoid gtp=0 at ir=0...
+                if (ir == 0){ 
                     c_l = grid->GetRadialGrid()->GetVpVol(ir) * grid->GetRadialGrid()->GetFSA_gtpOverJ2(ir) * grid->GetRadialGrid()->GetPsiPrimeRef(ir);
                     dr /= 2.;
                 } else
@@ -117,8 +117,8 @@ namespace DREAM {
             }
         }
         
-        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }; // TODO: ok?
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 0; }; // TODO: ok?
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; };
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 0; };
 
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {return false;};
 
@@ -157,8 +157,8 @@ namespace DREAM {
             }
         }
         
-        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }; // TODO: ok?
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 0; }; // TODO: ok?
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; };
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 0; };
 
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {return false;};
 
@@ -281,7 +281,7 @@ void SimulationGenerator::ConstructEquation_psi_init_integral(
         for(len_t ir=1; ir<nr; ir++)
             Itot[ir] = Itot[ir-1] + TotalPlasmaCurrentFromJTot::GetIpIntegrand(ir,rGrid) * j_tot_init[ir];
 
-        // we use the convention that the initial poloidal flux at the wall is 0 // TODO: Is this valid for stellarator?
+        // we use the convention that the initial poloidal flux at the wall is 0 
         real_t psi_edge_init = -M_inductance*Itot[nr-1]; 
         const real_t *r = rGrid->GetR();
         const real_t *dr = rGrid->GetDr();
@@ -450,7 +450,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             Op_I_w_2->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_w, L_ext));
             Op_I_w_3->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_p, L_ext));
             if (fluidGrid->GetRadialGrid()->isStellarator())
-                Op_I_w_1->AddTerm(new PsiWallStellaratorTerm(scalarGrid)); // TODO: Ok? Not tested
+                Op_I_w_1->AddTerm(new PsiWallStellaratorTerm(scalarGrid)); // TODO: not tested
 
 
             string psiw_desc = "psi_w = ";

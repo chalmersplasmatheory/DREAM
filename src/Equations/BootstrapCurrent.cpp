@@ -5,6 +5,7 @@
 #include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/NotImplementedException.hpp"
 #include <iostream>
 using namespace DREAM;
 
@@ -66,7 +67,6 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
 
             // calculate fraction of trapped particles
             ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
-            // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
             // this high-aspect ratio approximation for qR0 seems to match better with Redl-Sauter
             // than calculating it via the total current (also simpler for initialization)
@@ -103,16 +103,14 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
 
             // calculate fraction of trapped particles
             ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
-            // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
-            // TODO: Change this?
             qR0[ir] = fabs((BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / (rGrid->GetIota(ir)*iotaSignFactor) * FSA_1OverB / Bmin);
 
             eps[ir] = (Bmax - Bmin) / (Bmax + Bmin);
         }
-    } /*else {
-        Possibly do a warning here?
-    }*/
+    } else 
+        throw NotImplementedException("j_bs: Bootstrap current mode used not valid!");
+
     // locate the main ion index
     bool isFound = false;
     // IE: is this (below) the best practice?
@@ -210,12 +208,6 @@ void BootstrapCurrent::Rebuild() {
         //     real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
         //     qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, mu0Ip));
         // }
-        
-        /** TODO: Should we use this? 
-        if (stellarator) {
-            real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir, rGrid, jtot);
-            qR0[ir] = fabs(rGrid->SafetyFactorNormalized(ir, mu0Ip));
-        }*/
 
 
         // calculate collision frequencies
