@@ -42,6 +42,8 @@ namespace DREAM::FVM {
             virtual const len_t GetNPhi() override { return 0; }
 			virtual const real_t *GetPoloidalAngle() override { return nullptr; }
             virtual const real_t *GetToroidalAngle() override { return nullptr; }
+            virtual real_t GetFluxSurfaceRMinusR0_theta(len_t /*ir*/, real_t /*theta*/) override { return 0; }
+            virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t /*ir*/, real_t /*theta*/) override { return 0; }
     };
 
     class EmptyRadialGridStellarator : public RadialGridStellarator {
