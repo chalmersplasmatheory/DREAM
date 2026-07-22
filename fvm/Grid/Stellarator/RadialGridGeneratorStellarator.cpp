@@ -52,7 +52,7 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
         
         Bmin[ir] = BAtThetaPhi(ir,theta_Bmin[ir], phi_Bmin[ir]);
         Bmax[ir] = BAtThetaPhi(ir,theta_Bmax[ir], phi_Bmax[ir]);
-        xi0TrappedBoundary[ir] = 0; // Used for BA in E_ceff, simplified => no trapped particles
+        xi0TrappedBoundary[ir] = sqrt(1-Bmin[ir]/Bmax[ir]);
         
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
@@ -66,7 +66,7 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
 
         Bmin_f[ir] = BAtThetaPhi_f(ir,theta_Bmin_f[ir], phi_Bmin_f[ir]);
         Bmax_f[ir] = BAtThetaPhi_f(ir,theta_Bmax_f[ir], phi_Bmax_f[ir]);
-        xi0TrappedBoundary_f[ir] = 0;  // Used for BA in E_ceff, simplified => no trapped particles
+        xi0TrappedBoundary_f[ir] = sqrt(1-Bmin_f[ir]/Bmax_f[ir]);
     }
     rGrid->SetMagneticExtremumData(
         Bmin, Bmin_f, Bmax, Bmax_f, 
