@@ -46,12 +46,11 @@ FluxSurfaceAveragerStellarator::FluxSurfaceAveragerStellarator(
     BdotGradphi = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->BdotGradphiAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->BdotGradphiAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     gttOverJ2   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->gttAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->gttAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
     gtpOverJ2   = new FluxSurfaceQuantity(rGrid, [rgg](len_t ir, real_t theta, real_t phi){return rgg->gtpAtThetaPhi(ir,theta, phi);},            [rgg](len_t ir, real_t theta, real_t phi){return rgg->gtpAtThetaPhi_f(ir,theta, phi);}, interpolationMethod);
-    // TODO: Remove when BA?
     ROverR0     = new FluxSurfaceQuantity(rGrid, [rgg](len_t, real_t){return 1.;},            [rgg](len_t, real_t){return 1.;}, interpolationMethod);
     NablaR2     = new FluxSurfaceQuantity(rGrid, [rgg](len_t, real_t){return 1.;},            [rgg](len_t, real_t){return 1.;}, interpolationMethod);
 
+    // TODO, if we add bounce-averaging for stellarators
     // Use the Brent algorithm for root finding in determining the theta bounce points
-    // TODO: Take back if BA
     //const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     //gsl_fsolver = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     //qaws_table = gsl_integration_qaws_table_alloc(-0.5, -0.5, 0, 0);
@@ -61,7 +60,7 @@ FluxSurfaceAveragerStellarator::FluxSurfaceAveragerStellarator(
  * Destructor
  */
 FluxSurfaceAveragerStellarator::~FluxSurfaceAveragerStellarator(){
-    // TODO: Take back if BA
+    // TODO, if we add bounce-averaging for stellarators
     //gsl_root_fsolver_free(gsl_fsolver);
 
     DeallocateQuadrature();
@@ -108,7 +107,7 @@ real_t FluxSurfaceAveragerStellarator::CalculateFluxSurfaceAverage(len_t ir, flu
 
     // treat singular point r=0 separately where orbit parameters are constant 
     if(VpVol == 0) 
-        return F(1,1,1,1,par); // TODO: should we keep this as 1?
+        return F(1,1,1,1,par); 
 
     // otherwise use regular method
     return EvaluateFluxSurfaceIntegral(ir,fluxGridType, F, par, F_list) / VpVol;
@@ -198,7 +197,7 @@ real_t FluxSurfaceAveragerStellarator::EvaluateFluxSurfaceIntegral(len_t ir, flu
  * Deallocate quadrature.
  */
 void FluxSurfaceAveragerStellarator::DeallocateQuadrature(){
-    // TODO: Take back if BA
+    // TODO, if we add bounce-averaging for stellarators
     //gsl_integration_workspace_free(gsl_adaptive);
     //gsl_integration_workspace_free(gsl_adaptive_outer);
     //gsl_integration_qaws_table_free(qaws_table);
@@ -223,7 +222,7 @@ void FluxSurfaceAveragerStellarator::DeallocateQuadrature(){
  *      https://www.gnu.org/software/gsl/doc/html/integration.html
  */
 void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_method){
-    // TODO: Take back if BA
+    // TODO, if we add bounce-averaging for stellarators
     //gsl_adaptive = gsl_integration_workspace_alloc(1000);
     //gsl_adaptive_outer = gsl_integration_workspace_alloc(1000);
     gsl_adaptive_theta = gsl_integration_workspace_alloc(1000);
@@ -336,7 +335,7 @@ real_t FluxSurfaceAveragerStellarator::EvaluatePXiBounceIntegralAtP(len_t ir, re
     return bounceIntegral;
 }
 
-/** TODO: Take back code for BA, see original FluxSurfaceAverager */
+/** TODO, if we add bounce-averaging for stellarators, see original FluxSurfaceAverager */
 
 
 /**
@@ -374,8 +373,8 @@ real_t FluxSurfaceAveragerStellarator::AssembleFSAFunc(real_t BOverBmin, real_t 
     return FSA_Func;
 }
 
-/** TODO: This is a bit wrong.... We write the first element twice, but it is never used.
- * Print the variation of B(theta) to stdout.
+/** TODO: This is a bit wrong.... We write the first element twice, but it is never used. Should I remove?
+ * Print the variation of B(theta, phi) to stdout.
  */
 /*void FluxSurfaceAveragerStellarator::PrintBOfThetaPhi(const len_t ir, const len_t N, enum fluxGridType fgt) {
 	printf("B(theta,phi) at ir = " LEN_T_PRINTF_FMT "\n", ir);

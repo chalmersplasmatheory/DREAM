@@ -59,7 +59,7 @@ void FluxSurfaceQuantity::InterpolateMagneticDataToTheta(real_t *theta, len_t nt
     }
 }
 
-/** TODO: Is it*nphi_interp+ip correct indexing?
+/**
  * Interpolate (and store) data to theta grid.
  */
 void FluxSurfaceQuantity::InterpolateMagneticDataToThetaPhi(real_t *theta, len_t ntheta_interp, real_t *phi, len_t nphi_interp){
