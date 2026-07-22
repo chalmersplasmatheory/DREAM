@@ -10,7 +10,7 @@ using namespace DREAM::FVM;
 
 RadialGridGeneratorStellarator::RadialGridGeneratorStellarator(const len_t nr) 
         : RadialGridGenerator(nr) {
-    const gsl_multimin_fminimizer_type * T = gsl_multimin_fminimizer_nmsimplex2; // TODO: Ok?
+    const gsl_multimin_fminimizer_type * T = gsl_multimin_fminimizer_nmsimplex2;
     gsl_multi_fmin = gsl_multimin_fminimizer_alloc(T, 2);
 }
 
@@ -20,7 +20,7 @@ RadialGridGeneratorStellarator::~RadialGridGeneratorStellarator(){
 }
 
 
-/** TODO: Is this needed?
+/**
  * Rebuilds magnetic field data and stores all quantities needed for flux surface and bounce averages.
  */
 void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGrid) {
@@ -135,7 +135,7 @@ std::array<real_t,2> RadialGridGeneratorStellarator::FindMagneticFieldExtremumSt
     gsl_vector_set(guess, 1, phi_guess);
 
     gsl_vector *step = gsl_vector_alloc(2);
-    gsl_vector_set_all(step, STEP / 2); // TODO: OK Step size?
+    gsl_vector_set_all(step, STEP / 2);
 	
     EvalBParams params = {ir, this, sgn};
     gsl_multimin_function gsl_func;
@@ -144,7 +144,7 @@ std::array<real_t,2> RadialGridGeneratorStellarator::FindMagneticFieldExtremumSt
         gsl_func.f = &(gslEvalB); 
     else
         gsl_func.f = &(gslEvalB_f); 
-    gsl_func.params = &(params); // TODO: Should this be without &?
+    gsl_func.params = &(params);
 
     
     // otherwise, find extremum with fmin algorithm

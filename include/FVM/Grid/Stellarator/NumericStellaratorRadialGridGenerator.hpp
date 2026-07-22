@@ -12,7 +12,7 @@ namespace DREAM::FVM {
         struct eq_data {
             len_t nrho, ntheta, nphi;
             const real_t *rho, *theta, *phi;  // Coordinate arrays (1D)
-            const real_t *dataR, *dataZ;              // Cylindrical coordinates
+            const real_t *dataR, *dataZ;      // Cylindrical coordinates
             const real_t *dataG, *dataI;      // toroial and poloidal magnetic field strengths (1D)
             const real_t *dataiota;           // Rotational transform (1D)
             const real_t *datapsi;            // Toroidal flux (1D)
@@ -37,7 +37,7 @@ namespace DREAM::FVM {
         // Interpolation objects for interpolating in input data
         gsl_spline *spline_G, *spline_I, *spline_iota,  *spline_psi;
         
-        FVM::Interpolator3DSpatial *interp_B, *interp_Jacobian, //*interp_K, 
+        FVM::Interpolator3DSpatial *interp_B, *interp_Jacobian,
                             *interp_BdotGradphi, *interp_gtt, *interp_gtp,
                             *interp_lambdat, *interp_lambdap, 
                             *interp_R, *interp_Z; 
@@ -116,8 +116,8 @@ namespace DREAM::FVM {
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() override;
 
         // Debugging method
-        //void __SaveB(const char*); // TODO: Remove?
+        //void __SaveB(const char*);
     };
 }
 
-#endif/*_DREAM_FVM_NUMERIC_STELLARATOR_RADIAL_GRID_GENERATOR_HPP*/ // TODO
+#endif/*_DREAM_FVM_NUMERIC_STELLARATOR_RADIAL_GRID_GENERATOR_HPP*/

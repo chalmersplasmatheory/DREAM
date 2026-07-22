@@ -7,7 +7,6 @@ namespace DREAM::FVM { class FluxSurfaceAveragerStellarator; }
 
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
 #include "FVM/Grid/FluxSurfaceAverager.hpp"
-//#include "FVM/Grid/Stellarator/NumericStellaratorRadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
 #include "gsl/gsl_roots.h"
 
@@ -32,7 +31,7 @@ namespace DREAM::FVM {
         gsl_integration_fixed_workspace *gsl_w_phi    = nullptr;
         gsl_integration_workspace *gsl_adaptive_theta;
         gsl_integration_workspace *gsl_adaptive_phi;
-        // TODO: Take back if BA
+        // TODO, if we add bounce-averaging for stellarators
         //gsl_integration_workspace *gsl_adaptive;
         //gsl_integration_workspace *gsl_adaptive_outer;
         //gsl_root_fsolver *gsl_fsolver;

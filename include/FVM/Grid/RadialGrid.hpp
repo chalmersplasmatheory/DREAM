@@ -295,7 +295,7 @@ namespace DREAM::FVM {
 		virtual const real_t GetZ0() { return this->generator->GetZ0(); }
 		virtual const len_t GetNPsi() { return this->generator->GetNPsi(); }
 		virtual const len_t GetNTheta() { return this->generator->GetNTheta(); }
-		virtual const len_t GetNPhi() { return 0; }
+		virtual const len_t GetNPhi() { return 1; }
 		virtual const real_t *GetFluxSurfaceRMinusR0() { return this->generator->GetFluxSurfaceRMinusR0(); }
 		virtual const real_t *GetFluxSurfaceRMinusR0_f() { return this->generator->GetFluxSurfaceRMinusR0_f(); }
 		virtual const real_t *GetFluxSurfaceZMinusZ0() { return this->generator->GetFluxSurfaceZMinusZ0(); }

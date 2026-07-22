@@ -1,4 +1,4 @@
-#ifndef _DREAM_EMPTY_RADIAL_GRID_STELLARATOR_HPP // TODO
+#ifndef _DREAM_EMPTY_RADIAL_GRID_STELLARATOR_HPP
 #define _DREAM_EMPTY_RADIAL_GRID_STELLARATOR_HPP
 
 #include "FVM/Grid/Stellarator/RadialGridGeneratorStellarator.hpp"

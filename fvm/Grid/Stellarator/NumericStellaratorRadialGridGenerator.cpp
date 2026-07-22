@@ -44,8 +44,6 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
     this->iota_f = new real_t[GetNr()+1];
 	this->psiPrimeRef = new real_t[GetNr()];
 	this->psiPrimeRef_f = new real_t[GetNr()+1];
-    //this->BflxKOverR0 = new real_t[GetNr()*ntheta_interp*nphi_interp]; 
-    //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
     this->acc_r = gsl_interp_accel_alloc();
 }
@@ -90,8 +88,6 @@ NumericStellaratorRadialGridGenerator::NumericStellaratorRadialGridGenerator(
     this->iota_f = new real_t[GetNr()+1];
 	this->psiPrimeRef = new real_t[GetNr()];
 	this->psiPrimeRef_f = new real_t[GetNr()+1];
-    //this->BflxKOverR0 = new real_t[GetNr()*ntheta_interp*nphi_interp]; 
-    //this->BflxKOverR0_f = new real_t[(GetNr()+1)(ntheta_interp)*(nphi_interp)]; 
 
     this->acc_r = gsl_interp_accel_alloc();
 }
@@ -111,7 +107,6 @@ NumericStellaratorRadialGridGenerator::~NumericStellaratorRadialGridGenerator() 
         gsl_spline_free(this->spline_iota);
         gsl_spline_free(this->spline_psi);
         
-        //delete this->interp_K;
         delete this->interp_B;
         delete this->interp_Jacobian;
         delete this->interp_BdotGradphi;
@@ -125,7 +120,7 @@ NumericStellaratorRadialGridGenerator::~NumericStellaratorRadialGridGenerator() 
 
     gsl_interp_accel_free(this->acc_r);
 
-	delete this->providedData; // Is this ok?
+	delete this->providedData; 
 }
 
 
@@ -221,7 +216,6 @@ bool NumericStellaratorRadialGridGenerator::Rebuild(const real_t, RadialGridStel
     gsl_spline_init(this->spline_psi,  this->providedData->rho, this->providedData->datapsi, this->nrho);
     
     enum FVM::Interpolator3DSpatial::interp_method interp_meth = FVM::Interpolator3DSpatial::INTERP_LINEAR; 
-    //this->interp_K           = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->dataK,interp_meth);
     this->interp_B           = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->dataB, interp_meth);
     this->interp_Jacobian    = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->dataJacobian,interp_meth);
     this->interp_BdotGradphi = new FVM::Interpolator3DSpatial(this->nphi, this->nrho, this->ntheta, this->providedData->phi, this->providedData->rho, this->providedData->theta, this->providedData->dataBdotGradphi,interp_meth);
@@ -586,13 +580,13 @@ const real_t *NumericStellaratorRadialGridGenerator::GetToroidalAngle() {
         factor /= nfp;
 
 	for (len_t i = 0; i < nphi; i++)
-		phi[i] = 2*M_PI*i / nphi * factor; // TODO: Ok? 
+		phi[i] = 2*M_PI*i / nphi * factor;
 	
 	return phi;
 }
 
 
-/** TODO: Is this good?
+/**
  * Save the magnitude of the magnetic field vector to the named
  * output file (saved using the 'SFile' API).
  *
@@ -602,10 +596,10 @@ const real_t *NumericStellaratorRadialGridGenerator::GetToroidalAngle() {
     // DEBUG: Save magnetic field
     const len_t NTHETA = 100, NPHI = 100;
     real_t **B = new real_t*[GetNr()];
-    B[0] = new real_t[GetNr()*NTHETA];
+    B[0] = new real_t[GetNr()*NTHETA*NPHI];
     for (len_t i = 0; i < GetNr(); i++) {
         if (i > 0)
-            B[i] = B[i-1] + NTHETA;
+            B[i] = B[i-1] + NTHETA*NPHI;
 
         for (len_t j = 0; j < NPHI; j++)
             for (len_t k = 0; k < NTHETA; k++)
@@ -613,7 +607,7 @@ const real_t *NumericStellaratorRadialGridGenerator::GetToroidalAngle() {
     }
 
     SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
-    sf->WriteArray("B", B, GetNr(), NTHETA);
+    sf->WriteArray("B", B, GetNr(), NTHETA*NPHI);
     sf->Close();
 }*/
 

@@ -1,6 +1,4 @@
-//namespace DREAM::FVM { class RadialGridGeneratorStellarator; }
-
-#include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
+include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
 #include "gsl/gsl_multimin.h"
 
 #ifndef _DREAM_FVM_RADIAL_GRID_GENERATOR_STELLARATOR_HPP
@@ -37,7 +35,7 @@ namespace DREAM::FVM {
         // which is why we use this rather small value here. It does however not seem to slow down the
         // simulations significantly
         
-        len_t nfp = 0;  // Number of field periods?
+        len_t nfp = 0;  // Number of field periods
         real_t thetaMax = 2*M_PI, phiMax= 2*M_PI;
 
 
@@ -93,8 +91,6 @@ namespace DREAM::FVM {
 
 
         // Functions that are unused for a stellarator 
-        // TODO: Is this ok?
-
         virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t , real_t , real_t, real_t, real_t ){};
         virtual void GetGradRCartesian(real_t* ,real_t, real_t, real_t){};
         virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t ){return 0;};

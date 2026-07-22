@@ -94,7 +94,7 @@ real_t RadialGridStellarator::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType
     return fluxSurfaceAveragerS->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F, par, Flist);
 }
 
-/** TODO: Take back code for BA, see original RadialGrid */
+/** TODO, if we add bounce-averaging for stellarators, see original RadialGrid */
 
 /**
  * Sets magnetic field quantities that have been

@@ -1,4 +1,4 @@
-#ifndef _DREAM_FVM_RADIAL_GRID_STELLARATOR_HPP // TODO
+#ifndef _DREAM_FVM_RADIAL_GRID_STELLARATOR_HPP
 #define _DREAM_FVM_RADIAL_GRID_STELLARATOR_HPP
 
 namespace DREAM::FVM { class RadialGridStellarator; }
@@ -12,7 +12,7 @@ namespace DREAM::FVM { class RadialGridStellarator; }
 namespace DREAM::FVM {
 	class RadialGridStellarator : public RadialGrid {
     public:
-        /** TODO: Take back code for BA, see original RadialGrid */
+        /** TODO, if we add bounce-averaging for stellarators, see original RadialGrid */
 
 
         // Specification for functions used in flux surface averages
@@ -186,7 +186,7 @@ namespace DREAM::FVM {
 
         virtual const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const override {
             //real_t iota = this->iota[ir]; 
-            // TODO, future option, 
+            // TODO: future option
             // real_t iota = RotationalTransform(ir, mu0Ip); 
             //return (this->BtorGOverR0[ir] + iota * BpolIOverR0[ir]) * R0 / iota * FSA_1OverB[ir] / Bmin[ir];
             if(mu0Ip==0)
