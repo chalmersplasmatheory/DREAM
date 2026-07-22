@@ -77,9 +77,6 @@ class RadialGrid(PrescribedScalarParameter):
         # Stellarator magnetic field parameters
         self.num_stellarator = None
         self.nfp = None
-        self.nr_equil = int(0)
-        self.ntheta_equil = 129
-        self.nphi_equil = 129
         self.rho = None
         self.theta = None
         self.phi = None
@@ -390,14 +387,9 @@ class RadialGrid(PrescribedScalarParameter):
             self.num_fileformat = format
 
             if nr_equil is None:
-                self.nr_equil = self.nr
-            else:
-                self.nr_equil = nr_equil
-            if ntheta_equil is not None:
-                self.ntheta_equil = ntheta_equil
-            if nphi_equil is not None:
-                self.nphi_equil = nphi_equil
-            self.num_stellarator = NumericStellaratorMagneticField(filename, self.nr_equil, self.ntheta_equil, self.nphi_equil, loadfilename)
+                nr_equil = self.nr
+            
+            self.num_stellarator = NumericStellaratorMagneticField(filename, nr_equil, ntheta_equil, nphi_equil, loadfilename)
             if loadfilename is None:
                 self.num_stellarator.load(savefilename=savefilename)
         else:
@@ -612,9 +604,6 @@ class RadialGrid(PrescribedScalarParameter):
             self.nfp = data['nfp']
             self.ntheta = data['ntheta']
             self.nphi = data['nphi']
-            self.nr_equil = data['nr_equil']
-            self.ntheta_equil = data['ntheta_equil']
-            self.nphi_equil = data['nphi_equil']
             self.rho = data['rho']
             self.theta = data['theta']
             self.phi = data['phi']
@@ -697,9 +686,6 @@ class RadialGrid(PrescribedScalarParameter):
             data['nfp'] = self.nfp
             data['ntheta'] = self.ntheta
             data['nphi'] = self.nphi
-            data['nr_equil'] = self.nr_equil
-            data['ntheta_equil'] = self.ntheta_equil
-            data['nphi_equil'] = self.nphi_equil
             data['rho'] = self.rho
             data['theta'] = self.theta
             data['phi'] = self.phi
