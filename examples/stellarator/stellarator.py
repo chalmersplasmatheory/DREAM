@@ -86,7 +86,7 @@ def getInitialCurrentDensityProfile(ds, bootstrap=False, s=0, p=1, nr=NR):
         ds.eqsys.T_cold.setPrescribedData(Te[0,:], radius=r)
 
         ds.eqsys.E_field.setType(EField.TYPE_PRESCRIBED_OHMIC_CURRENT)
-        ds.eqsys.j_ohm.setCurrentProfile(np.ones_like(r), radius=r, Ip0=100e6)
+        ds.eqsys.j_ohm.setCurrentProfile(np.ones_like(r), radius=r, Ip0=10e6)
         ds.eqsys.j_bs.setMode(BootstrapCurrent.BOOTSTRAP_MODE_STELLARATOR)
         ds.eqsys.j_bs.setInitMode(BootstrapCurrent.BOOTSTRAP_INIT_MODE_TOTAL)
 

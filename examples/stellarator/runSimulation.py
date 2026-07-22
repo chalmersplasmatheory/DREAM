@@ -33,10 +33,8 @@ activated=True
 eqfile = "EQs/QA_A5.nc"
 if os.path.exists(f'{eqfile[:-3]}_settingsData.h5'):
     load = True
-    print('yes')
 else: 
     load = False
-    print('no')
 
 
 # Temperature evolution parameters 
