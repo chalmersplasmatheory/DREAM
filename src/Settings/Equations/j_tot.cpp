@@ -131,7 +131,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 
 			for (len_t ir = 0; ir < dd->nr; ir++) {
 				const real_t r = dd->r[ir];
-				real_t geom = iBmin->Eval(r)[0] * R0*R0*R0 / (iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0]); // TODO: Why R_0^3 here?
+				real_t geom = iBmin->Eval(r)[0] * R0*R0*R0 / (iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0]);
 
 				for (len_t i = 0; i < dd->nt; i++)
 					dd->x[i*(dd->nr)+ir] *= geom;
