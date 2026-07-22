@@ -52,7 +52,6 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
             const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
             const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
-            // IE: Should psiPrimeRef be held constant for a stellarator?
             const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
 
             constantPrefactor[ir] = -BtorGOverR0 / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
@@ -77,6 +76,9 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         }
     } else if (mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL_STELLARATOR) {
         stellarator = true;
+        real_t iotaSignFactor = 1.0;
+        if (rGrid->GetIota(0) < 0)
+            iotaSignFactor = -1.0;
         for (len_t ir = 0; ir < nr; ir++) {
             // calculate the geometric prefactor
             const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
@@ -88,7 +90,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
 
             // For stellarators, density and temperature gradients dX/dr->(dX/dr)/iota in the Redl formula
-            constantPrefactor[ir] = -BtorGOverR0 / rGrid->GetIota(ir) / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
+            constantPrefactor[ir] = -BtorGOverR0 / (rGrid->GetIota(ir)*iotaSignFactor) / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
             if (ir == 0)
                 constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
             else if (ir == nr - 1)
@@ -104,7 +106,7 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
             // ft[ir] = 1.46 * sqrt( rGrid->GetR(ir) / R0);
 
             // TODO: Change this?
-            qR0[ir] = fabs((BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / rGrid->GetIota(ir) * FSA_1OverB / Bmin);
+            qR0[ir] = fabs((BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / (rGrid->GetIota(ir)*iotaSignFactor) * FSA_1OverB / Bmin);
 
             eps[ir] = (Bmax - Bmin) / (Bmax + Bmin);
         }
