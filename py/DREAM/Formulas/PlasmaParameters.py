@@ -2,7 +2,6 @@
 import numpy as np
 import scipy.constants
 import scipy.interpolate
-import scipy.special
 
 def evaluateBraamsConductivity(n, T, Z):
     """
@@ -93,7 +92,8 @@ def getED(T, n):
     return Ec * me * c**2 / (e*T)
 
 
-def getDreicerElectricField(T, n): return getED(T, N)
+def getDreicerElectricField(T, n): 
+    return getED(T, n)
 
 
 def getSpitzerConductivity():
@@ -125,16 +125,17 @@ def getTauEETh(T, n):
     :param float T: Plasma temperature (eV).
     :param float n: Plasma density (m^-3).
     """
-    mc2  = scipy.constants.physical_constants['electron mass energy equivalent in MeV'][0] * 1e6
     betaTh2 = getBetaThermal(T)**2
 
     return getTauEERel(T, n) * betaTh2*np.sqrt(betaTh2)
 
 
-def getThermalElectronCollisionFrequency(T, n): return getTauEETh(T, n)
+def getThermalElectronCollisionFrequency(T, n):
+    return getTauEETh(T, n)
 
 
-def getBetaThermal(T): return getNormalizedThermalSpeed(T)
+def getBetaThermal(T):
+    return getNormalizedThermalSpeed(T)
 
 
 def getNormalizedThermalSpeed(T):
@@ -163,8 +164,6 @@ def getTauEERel(T, n):
     :param float n: Plasma density (m^-3).
     """
     c = scipy.constants.c
-    e = scipy.constants.e
-    me = scipy.constants.m_e
     r0 = scipy.constants.physical_constants['classical electron radius'][0]
 
     C = 4*np.pi * r0**2 * c
@@ -173,6 +172,7 @@ def getTauEERel(T, n):
     return 1/(logLambda * n * C)
 
 
-def getRelativisticElectronCollisionFrequency(T, n): return getTauEERel(T, n)
+def getRelativisticElectronCollisionFrequency(T, n):
+    return getTauEERel(T, n)
 
 

@@ -1,5 +1,4 @@
 import os
-import pathlib
 import subprocess
 import tempfile
 import time
@@ -45,7 +44,7 @@ class DREAMTask:
 
     def run(self):
         self.startTime= time.time()
-        if self.p != None: #if process is already created then we can safely od nothing
+        if self.p is not None: #if process is already created then we can safely od nothing
             return 
             
         if self.stdout_name != '':
@@ -71,7 +70,7 @@ class DREAMTask:
     def hasFinished(self, timeout=1):
         try:
             self.stderr_dat_byte=self.p.communicate(timeout=timeout)[1]
-            if self.stderr_dat_byte != None:
+            if self.stderr_dat_byte is not None:
                 self.stderr_data = self.stderr_dat_byte.decode('utf-8')
            
             if self.stdout_name!='':

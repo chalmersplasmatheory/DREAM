@@ -85,11 +85,12 @@ def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy
             if 'port' in conf:
                 port = conf['port']
 
-        except: pass
+        except Exception: 
+            pass
 
         try:
             client.connect(host, port=port, username=user)
-        except paramiko.ssh_exception.PasswordRequiredException as ex:
+        except paramiko.ssh_exception.PasswordRequiredException:
             pw = getpass.getpass(prompt=f"{user}@{host}'s password: ")
             client.connect(host, port=port, username=user, password=pw)
 

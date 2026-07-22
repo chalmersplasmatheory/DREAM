@@ -27,6 +27,7 @@
 
 static PyMethodDef dreampyMethods[] = {
     {"get_current_time", dreampy_get_current_time, METH_VARARGS, "Returns the current time of the given simulation."},
+	{"get_grid", dreampy_get_grid, METH_VARARGS, "Returns the 'grid' object from a DREAM output file."},
     {"get_max_time", dreampy_get_max_time, METH_VARARGS, "Returns the maximum simulation time of the given simulation."},
     {"get_others", dreampy_get_others, METH_VARARGS, "Returns a dictionary with information about all other quantities of the equation system."},
     {"get_other_data", (PyCFunction)(void(*)(void))dreampy_get_other_data, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with data for the other quantity corresponding to all completed time steps."},

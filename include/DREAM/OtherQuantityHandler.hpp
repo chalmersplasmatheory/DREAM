@@ -17,7 +17,6 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
-
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
@@ -38,6 +37,12 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "DREAM/Equations/Fluid/HaloRegionHeatLossTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIElectronTerm.hpp"
+#include "DREAM/Equations/Fluid/NBIIonTerm.hpp"
+#include "DREAM/NBIHandler.hpp"
+#include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
+
+
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -53,6 +58,11 @@ namespace DREAM {
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
             DREAM::HaloRegionHeatLossTerm *T_cold_halo=nullptr;
+            DREAM::NBIElectronTerm *T_cold_NBI = nullptr;
+            // Terms in the ion heat equation:
+            std::vector<NBIIonTerm*> T_i_NBI;
+            std::vector<std::vector<MaxwellianCollisionalEnergyTransferTerm*>> T_i_Qij;
+            std::vector<MaxwellianCollisionalEnergyTransferTerm*> T_i_Qie;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -146,7 +156,7 @@ namespace DREAM {
             struct eqn_terms*
         );
         virtual ~OtherQuantityHandler();
-
+        
         void DefineQuantities();
         OtherQuantity *GetByName(const std::string&);
         len_t GetNRegistered() const { return this->registered.size(); }

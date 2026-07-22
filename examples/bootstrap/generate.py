@@ -63,11 +63,11 @@ def generate():
     ds.eqsys.j_ohm.setConductivityMode(OhmicCurrent.CONDUCTIVITY_MODE_SAUTER_COLLISIONAL)
 
     # Include bootstrap current
-    ds.eqsys.j_bs.setMode(BootstrapCurrent.BOOTSTRAP_MODE_ENABLED)
+    ds.eqsys.j_bs.setMode(BootstrapCurrent.BOOTSTRAP_MODE_REDL)
     if INCLUDE_BOOTSTRAP_IN_INITIAL_CURRENT:
-        ds.eqsys.j_bs.setInitMode(BootstrapCurrent.BOOTSTRAP_INIT_MODE_TOTAL)
+        ds.eqsys.j_bs.setInitMode(BootstrapCurrent.BOOTSTRAP_INIT_MODE_TOTAL) # default init mode
     else:
-        ds.eqsys.j_bs.setInitMode(BootstrapCurrent.BOOTSTRAP_INIT_MODE_OHMIC) # default init mode
+        ds.eqsys.j_bs.setInitMode(BootstrapCurrent.BOOTSTRAP_INIT_MODE_OHMIC)
 
     # Set temperature
     ds.eqsys.T_cold.setPrescribedData(te(r), radius=r*a)

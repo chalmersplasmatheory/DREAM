@@ -75,6 +75,7 @@ namespace DREAM::FVM {
             BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1},
             BA_PARAM_B_CUBED[5] = {0,3,0,0,1},
             BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};
+        
 
 	private:
         // Flux-surface averaged quantities.
@@ -302,6 +303,9 @@ namespace DREAM::FVM {
 		virtual const real_t *GetFluxSurfaceZMinusZ0_f() { return this->generator->GetFluxSurfaceZMinusZ0_f(); }
 		virtual const real_t *GetPoloidalAngle() { return this->generator->GetPoloidalAngle(); }
         virtual const real_t *GetToroidalAngle() { return nullptr; }
+        real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta);
+        real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta);
+        real_t ComputeConfigurationSpaceJacobian(len_t ir, real_t theta);
         
         /**
          * Returns q*R0 on the distribution grid where q
@@ -367,6 +371,7 @@ namespace DREAM::FVM {
 
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 
+		bool HasMagneticFieldMultipleOptima() { return this->generator->HasFieldMultipleOptima(); }
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
         /**

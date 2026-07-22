@@ -82,7 +82,7 @@ the fit works well in the temperature region most relevant to tokamak plasmas.
 Adjustment must be done manually, but is helped by the GUI program
 ``tools/ADAS/gui/ManualFit.py`` (requires PyQt5).
 
-.. figure:: _static/figs/ManualFit-gui.png
+.. figure:: ../_static/figs/ManualFit-gui.png
    :width: 60%
    :align: center
    :alt: View of the GUI program tools/ADAS/gui/ManualFit.py

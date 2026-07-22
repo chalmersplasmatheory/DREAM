@@ -107,6 +107,7 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_T_cold(Settings*);
+        static void DefineOptions_T_cold_NBI(Settings*);
         static void DefineOptions_T_abl(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
@@ -158,10 +159,9 @@ namespace DREAM {
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_Ions_abl(EquationSystem*, Settings*, ADAS*, AMJUEL*);
         static void ConstructEquation_Ion_Ni(EquationSystem*, Settings*);
-        static void ConstructEquation_T_i(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_i_trivial(EquationSystem*, Settings*);
-        static void ConstructEquation_T_i_selfconsistent(EquationSystem*, Settings*);
-
+        static void ConstructEquation_T_i_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_abl(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
@@ -224,7 +224,7 @@ namespace DREAM {
         template<class T1, class T2>
         static T1 *ConstructTransportBoundaryCondition(
             enum OptionConstants::eqterm_transport_bc, T2*,
-            FVM::Operator*, const std::string&, FVM::Grid*
+            FVM::Operator*, const std::string&, FVM::Grid*, bool heat
         );
         template<typename T>
         static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, EquationSystem*, Settings*, const std::string& subname="transport");

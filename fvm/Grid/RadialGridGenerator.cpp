@@ -116,65 +116,89 @@ const real_t EPSREL = 0;
  * Finds the extremum of the magnetic field on the interval [0,pi]. 
  * If sgn=1, returns the minimum.
  * If sgn=-1, returns the maximum.
- *
- * This routine assumes that the the magnetic field strength attains
- * exactly one minimum and one maximum along a given flux surface, and
- * that the magnetic field strength varies monotonically along a flux
- * surface between the two extrema.
  */
 real_t RadialGridGenerator::FindMagneticFieldExtremum(
     len_t ir, int_t sgn, fluxGridType fluxGridType
 ) {
     real_t theta_lim_lower = 0, theta_lim_upper = M_PI;
+	real_t theta_guess;
 
-    // Adjust the limits if the magnetic field is not up-down symmetric...
-    if(!isUpDownSymmetric) {
-        real_t
-            B, Beps, guess = sgn>0 ? 0 : M_PI;
+	EvalBParams params = {ir, this, sgn};
+	gsl_function gsl_func;
+	if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+		gsl_func.function = &(gslEvalB_f);
+	else
+		gsl_func.function = &(gslEvalB);
+	gsl_func.params = &(params);
 
-        // Evaluate magnetic field on both sides of the guess point
-        // to determine in which direction (upper/lower half plane)
-        // the extremum lies...
-        if (fluxGridType == FLUXGRIDTYPE_DISTRIBUTION) {
-            B = BAtTheta(ir, guess+sgn*EPSABS);
-            Beps = BAtTheta(ir, 2*M_PI-(guess+sgn*EPSABS));
-        } else {
-            B = BAtTheta_f(ir, guess+sgn*EPSABS);
-            Beps = BAtTheta_f(ir, 2*M_PI-(guess+sgn*EPSABS));
-        }
+	if (this->CanGuessThetaOptimum()) {
+		if (sgn == 1)
+			theta_guess = this->GetThetaBminGuess(ir, fluxGridType);
+		else
+			theta_guess = this->GetThetaBmaxGuess(ir, fluxGridType);
 
-        // Is extremum in upper half plane?
-        if (sgn*B < sgn*Beps)
-            theta_lim_lower = 0, theta_lim_upper = M_PI;
-        else
-            theta_lim_lower = M_PI, theta_lim_upper = 2*M_PI;
-    }
-	
-    EvalBParams params = {ir, this, sgn};
-    gsl_function gsl_func;
-    if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-        gsl_func.function = &(gslEvalB_f);
-    else
-        gsl_func.function = &(gslEvalB);
-    gsl_func.params = &(params);
+		/*
+		// Adjust guess to lie within correct intervall
+		if (theta_guess < theta_lim_lower)
+			theta_guess += 2*M_PI;
+		else if(theta_guess > theta_lim_upper)
+			theta_guess -= 2*M_PI;
+		*/
 
-    real_t theta_guess;
-    if((sgn==1 && theta_lim_lower < M_PI) || (sgn==-1 && theta_lim_upper > M_PI)) {
-        // if B has an local minimum in theta=theta_lower, return theta_lower
-        theta_guess = theta_lim_lower + 10*EPSABS;
-        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
-            return theta_lim_lower;
-    } else {
-        // if B has a local maximum in theta=pi, return pi
-        theta_guess=theta_lim_upper-10*EPSABS;
-        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params)) {
-            if (theta_lim_upper == 2*M_PI)
-                return 0;
-            else
-                return theta_lim_upper;
-        }
-    }
-    // otherwise, find extremum with fmin algorithm
+		// Adjust search interval so that 'theta_guess' lies within it
+		if (theta_guess > M_PI)
+			theta_lim_lower = M_PI, theta_lim_upper = 2*M_PI;
+
+		// If the guess coincides with an interval limit, an
+		// error will be thrown by GSL...
+		if (theta_guess == theta_lim_lower)
+			theta_guess = theta_lim_lower + 10*EPSABS;
+		else if (theta_guess == theta_lim_upper)
+			theta_guess = theta_lim_upper - 10*EPSABS;
+	} else {
+		// Adjust the limits if the magnetic field is not up-down symmetric...
+		if(!isUpDownSymmetric) {
+			real_t
+				B, Beps, Bg, guess = sgn>0 ? 0 : M_PI;
+
+			// Evaluate magnetic field on both sides of the guess point
+			// to determine in which direction (upper/lower half plane)
+			// the extremum lies...
+			if (fluxGridType == FLUXGRIDTYPE_DISTRIBUTION) {
+				Bg = BAtTheta(ir, guess);
+				B = BAtTheta(ir, guess+sgn*1e-3);
+				Beps = BAtTheta(ir, 2*M_PI-(guess+sgn*1e-3));
+			} else {
+				Bg = BAtTheta_f(ir, guess);
+				B = BAtTheta_f(ir, guess+sgn*1e-3);
+				Beps = BAtTheta_f(ir, 2*M_PI-(guess+sgn*1e-3));
+			}
+
+			// Is extremum in upper half plane?
+			if (((sgn*Bg < sgn*B) && (sgn*Bg < sgn*Beps)) || sgn*B < sgn*Beps)
+				theta_lim_lower = 0, theta_lim_upper = M_PI;
+			else
+				theta_lim_lower = M_PI, theta_lim_upper = 2*M_PI;
+		}
+	}
+
+	if((sgn==1 && theta_lim_lower < M_PI) || (sgn==-1 && theta_lim_upper > M_PI)) {
+		// if B has a local minimum in theta=theta_lower, return theta_lower
+		theta_guess = theta_lim_lower + 10*EPSABS;
+		if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
+			return theta_lim_lower;
+	} else {
+		// if B has a local maximum in theta=pi, return pi
+		theta_guess=theta_lim_upper-10*EPSABS;
+		if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params)) {
+			if (theta_lim_upper == 2*M_PI)
+				return 0;
+			else
+				return theta_lim_upper;
+		}
+	}
+
+    // find extremum with fmin algorithm
     gsl_min_fminimizer_set(
         gsl_fmin, &gsl_func, theta_guess, theta_lim_lower, theta_lim_upper
     );

@@ -26,8 +26,10 @@ def synchrotron(P, XI, wavelength, magneticField):
     lowerBound = 4*np.pi/3 * c*m*np.divide(gmmpar, e*B*gmm**2)
     pf = 1/np.sqrt(3) * c*e**2 * np.divide(1, eps0*gmm**2)
 
-    try: wavelength[0]
-    except: wavelength = np.array([wavelength])
+    try:
+        wavelength[0]
+    except Exception: 
+        wavelength = np.array([wavelength])
 
     s = 0
     for i in range(0, len(wavelength)):

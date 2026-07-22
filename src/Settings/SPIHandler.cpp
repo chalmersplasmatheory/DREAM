@@ -17,6 +17,7 @@ void SimulationGenerator::DefineOptions_SPI(Settings *s){
     s->DefineSetting(MODULENAME "/abl_ioniz","method to use for calculating the charge state distribution with which the recently ablated material is deposited",(int_t)OptionConstants::EQTERM_SPI_MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/shift","method to use for displacing the plasma due to the drift",(int_t)OptionConstants::EQTERM_SPI_SHIFT_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/TDrift","Cloud temperature during the majority of the drift",0, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/heatReDepositionFactorDrift","fraction of the heat absorbed by the ablation cloud to be re-deposited at the location of deposition",1, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/T0Drift","Cloud temperature directly after the neutral phase", (real_t)0);
     s->DefineSetting(MODULENAME "/DeltaYDrift","Cloud half-width during the drift", (real_t)0);
     s->DefineSetting(MODULENAME "/RmDrift","Major radius to be used for the drift calculation (needed if the grid has an infinite major radius)", (real_t)0);
@@ -68,11 +69,14 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     }
     
 	len_t nShardTDrift;
+	len_t nShardHeatReDepositionFactorDrift;
     const real_t *_TDrift = s->GetRealArray(MODULENAME "/TDrift", 1, &nShardTDrift);
+    const real_t *_heatReDepositionFactorDrift = s->GetRealArray(MODULENAME "/heatReDepositionFactorDrift", 1, &nShardHeatReDepositionFactorDrift);
     const real_t *_ZavgDriftArray = s->GetRealArray(MODULENAME "/ZavgDriftArray", 1, &nZavgDrift);
     const int_t *_ZsDrift = s->GetIntegerArray(MODULENAME "/ZsDrift", 1, &nZavgDrift);
     const int_t *_isotopesDrift = s->GetIntegerArray(MODULENAME "/isotopesDrift", 1, &nZavgDrift);
     real_t *TDrift = new real_t[nShard];
+    real_t *heatReDepositionFactorDrift = new real_t[nShard];
     real_t *ZavgDriftArray = new real_t[nZavgDrift];
     len_t *ZsDrift = new len_t[nZavgDrift];
     len_t *isotopesDrift = new len_t[nZavgDrift];
@@ -106,6 +110,14 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
 		for (len_t ip = 0; ip < nShard; ip++)
 			TDrift[ip] = 0;
 	}
+	
+	if(spi_heat_absorbtion_mode != OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+        for (len_t i = 0; i < nShard; i++)
+            heatReDepositionFactorDrift[i] = (real_t)_heatReDepositionFactorDrift[i];
+    } else {
+		for (len_t ip = 0; ip < nShard; ip++)
+			heatReDepositionFactorDrift[ip] = 0;
+    }
 
 	for (len_t i = 0; i < nZavgDrift; i++){
 		ZavgDriftArray[i] = (real_t)_ZavgDriftArray[i];
@@ -113,9 +125,10 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
 		isotopesDrift[i] = (len_t)_isotopesDrift[i];
 	}
 
-    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, TDrift, T0Drift, DeltaYDrift, RmDrift, ZavgDriftArray, nZavgDrift, ZsDrift, isotopesDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
+    SPIHandler *SPI=new SPIHandler(g, unknowns, Z, isotopes, molarFraction, nZ, spi_velocity_mode, spi_ablation_mode, spi_deposition_mode, spi_heat_absorbtion_mode, spi_cloud_radius_mode, spi_magnetic_field_dependence_mode, spi_shift_mode, TDrift, T0Drift, DeltaYDrift, RmDrift, ZavgDriftArray, nZavgDrift, ZsDrift, isotopesDrift, heatReDepositionFactorDrift, VpVolNormFactor, rclPrescribedConstant, nbrShiftGridCell);
 
 	delete [] TDrift;
+	delete [] heatReDepositionFactorDrift;
 	delete [] isotopes;
 	delete [] Z;
 

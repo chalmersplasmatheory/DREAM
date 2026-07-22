@@ -39,6 +39,7 @@ namespace DREAM {
         const FVM::Operator *GetOperator(const len_t i) const { return this->equations.at(i); }
         FVM::Operator *GetOperatorUnsafe(const len_t i) { return this->equations.at(i); }
         FVM::UnknownQuantity *GetUnknown() { return this->uqty; }
+		bool HasOperatorAt(const len_t i) const { return (this->equations.find(i) != this->equations.end()); }
 
 		bool HasTransientTerm() const;
 

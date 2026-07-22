@@ -1,7 +1,6 @@
 # Handler for "other" quantities, such as collision frequencies,
 # bounce averages etc.
 
-import numpy as np
 from .. DREAMException import DREAMException
 
 
@@ -33,6 +32,9 @@ class OtherQuantities:
         'fluid/Tcold_binding_energy',
 #        'fluid/Tcold_radiationFromNuS',
         'fluid/Tcold_ion_coll',
+        'fluid/Ti_NBI',
+        'fluid/Ti_Qij',
+        'fluid/Ti_Qie',
         'fluid/tIoniz',
         'fluid/W_hot',
         'fluid/W_re',

@@ -29,6 +29,8 @@ namespace DREAM { class EquationSystem; class Simulation; }
 #include "FVM/UnknownQuantityHandler.hpp"
 //#include "IonHandler.hpp"
 #include "FVM/QuantityData.hpp"
+#include "DREAM/NBIHandler.hpp"
+
 
 namespace DREAM {
     class EquationSystem {
@@ -120,6 +122,7 @@ namespace DREAM {
         BootstrapCurrent *GetBootstrap() { return this->bootstrap; }
         Settings *GetSettings() { return this->settings; }
 
+        DREAM::NBIHandler *NBI_handler=nullptr;
         AnalyticDistributionRE *GetAnalyticREDistribution() { return this->distRE;}
         AnalyticDistributionHottail *GetAnalyticHottailDistribution() { return this->distHT;}
 

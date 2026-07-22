@@ -63,7 +63,8 @@ enum ion_neutral_advection_mode {
 
 enum ion_source_type {
 	ION_SOURCE_NONE=1,
-	ION_SOURCE_PRESCRIBED=2
+	ION_SOURCE_PRESCRIBED=2,
+	ION_SOURCE_PRESCRIBED_VOLUMETRIC=3
 };
 
 // Interpolation method for ADAS rate coefficients
@@ -354,6 +355,7 @@ enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
     EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
     EQTERM_TRANSPORT_BC_DF_CONST=3,                  // Assume d^2 f / dr^2 = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_KIRAMOV=4
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
@@ -463,4 +465,10 @@ enum eqterm_tritium_mode {                        // Tritium generation is...
 enum svensson_interp1d_param {
     SVENSSON_INTERP1D_TIME=1,
     SVENSSON_INTERP1D_IP=2
+};
+
+enum eqterm_NBI_gaussian_profile {
+    EQTERM_NBI_GAUSSIAN_PROFILE_TCV=1,
+    EQTERM_NBI_GAUSSIAN_PROFILE_ITER=2,
+    EQTERM_NBI_GAUSSIAN_PROFILE_CUSTOM=3
 };

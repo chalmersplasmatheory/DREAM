@@ -3,6 +3,7 @@
 import numpy as np
 from DREAM.DREAMException import DREAMException
 from DREAM.Settings.Equations.EquationException import EquationException
+from .. helpers import scal
 
 TYPE_UNIFORM = 1
 TYPE_BIUNIFORM = 2
@@ -147,9 +148,9 @@ class PGrid:
 
         if self.type == TYPE_BIUNIFORM:
             if 'npsep' in data:
-                self.npsep = int(data['npsep'])
+                self.npsep = int(scal(data['npsep']))
             if 'npsep_frac' in data:
-                self.npsep_frac = float(data['npsep_frac'])
+                self.npsep_frac = float(scal(data['npsep_frac']))
 
             self.psep  = data['psep']
         elif self.type == TYPE_CUSTOM:

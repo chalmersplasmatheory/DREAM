@@ -1,8 +1,8 @@
 # Settings for the equation system preconditioner
 
-import numpy as np
 from .. DREAMException import DREAMException
 from . import EquationSystem
+from .. helpers import scal
 
 
 class Preconditioner:
@@ -21,7 +21,7 @@ class Preconditioner:
         Load preconditioner settings from a dictionary.
         """
         if 'enabled' in data:
-            self.enabled = bool(data['enabled'])
+            self.enabled = bool(scal(data['enabled']))
 
         if 'names' in data:
             if 'equation_scales' not in data:

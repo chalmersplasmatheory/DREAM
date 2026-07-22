@@ -141,6 +141,8 @@ class EqBase:
                     plt.plot(vertices[i][:,0], vertices[i][:,1])
                     plotted = True
 
+            plt.plot(*self.opoint, 'r.')
+
             msg = f'No closed flux surface was found for psi_n={psi_n}'
             if plotted:
                 plt.title(msg)
@@ -433,6 +435,43 @@ class EqBase:
         Get the minor radius coordinate of the given flux surface.
         """
         return self.rho(psi_n)*self.a_minor
+
+
+    def get_r_distance(self, psi_n):
+        """
+        Get the distance from the magnetic axis to the given flux surface along
+        the Z=Z0 line.
+        """
+        psi_n = np.asarray(psi_n)
+        scalar_input = psi_n.ndim == 0
+        orig_shape = psi_n.shape
+        psi_n = np.atleast_1d(psi_n).ravel()
+
+        r_dist = np.empty(psi_n.size)
+        for i, p in enumerate(psi_n):
+            R, _ = self.get_flux_surface(p, theta=0)
+            r_dist[i] = R - self.R0
+
+        r_dist = r_dist.reshape(orig_shape)
+        return r_dist.item() if scalar_input else r_dist
+
+
+    def get_rho_tor(self, psi_n):
+        """
+        Get the normalized toroidal flux coordinate corresponding to the
+        given normalized poloidal flux points.
+        """
+        psi_n = np.asarray(psi_n)
+        scalar_input = psi_n.ndim == 0
+        orig_shape = psi_n.shape
+        psi_n = np.atleast_1d(psi_n).ravel()
+
+        Qint = self.q.antiderivative()
+        PHI = Qint(1.0) - Qint(0.0)
+        Phi = Qint(psi_n) - Qint(0.0)
+        rho_tor = np.sqrt(Phi/PHI).reshape(orig_shape)
+
+        return rho_tor.item() if scalar_input else rho_tor
 
 
     def process_data(self, data, override_psilim=False, plot_on_error=True):

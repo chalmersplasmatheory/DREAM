@@ -7,6 +7,7 @@ from scipy.constants import N_A
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 import DREAM.Settings.Equations.IonSpecies as Ions
+from ... helpers import scal
 
 
 
@@ -41,19 +42,19 @@ SHIFT_MODE_NEGLECT=1
 SHIFT_MODE_PRESCRIBED=2
 SHIFT_MODE_ANALYTICAL=3
 
-ZMolarMassList=[1,1,10]
-isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
-molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
+ZMolarMassList=[1,1,10,18]
+isotopesMolarMassList=[2,0,0,0]# 0 means naturally occuring mix
+molarMassList=[0.0020141,0.001008,0.020183,0.039948]# kg/mol
 
-ZSolidDensityList=[1,1,10]
-isotopesSolidDensityList=[2,0,0]
-solidDensityList=[205.9,86,1444]# kg/m^3
+ZSolidDensityList=[1,1,10,18]
+isotopesSolidDensityList=[2,0,0,0]
+solidDensityList=[205.9,86,1444,1623]# kg/m^3
 
 class SPI(UnknownQuantity):
     
 
     def __init__(self, settings, rp=None, vp=None, xp=None, t_delay = None, VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT, magneticFieldDependenceMode=MAGNETIC_FIELD_DEPENDENCE_MODE_NEGLECT, abl_ioniz=ABL_IONIZ_MODE_NEUTRAL, shiftMode = 
-SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift = None, ZavgDriftArray = None, ZsDrift = None, isotopesDrift = None):
+SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift = None, ZavgDriftArray = None, ZsDrift = None, isotopesDrift = None, heatReDepositionFactorDrift = None):
         """
         Constructor.
         
@@ -102,9 +103,10 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         self.ZavgDriftArray= [0.]
         self.ZsDrift       = [0]
         self.isotopesDrift = [0]
+        self.heatReDepositionFactorDrift = None
 
 
-    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, Ninj=None, nbrShiftGridCell = None, TDrift = None):
+    def setInitialData(self, rp=None, vp=None, xp=None, t_delay=None, Ninj=None, nbrShiftGridCell = None, TDrift = None, heatReDepositionFactorDrift = None):
 
         if Ninj is not None:
             if np.isscalar(Ninj):
@@ -141,6 +143,11 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             if np.isscalar(TDrift):
                 self.TDrift = np.asarray([TDrift])
             else: self.TDrift = np.asarray(TDrift)
+            
+        if heatReDepositionFactorDrift is not None:
+            if np.isscalar(heatReDepositionFactorDrift):
+                self.heatReDepositionFactorDrift = np.asarray([heatReDepositionFactorDrift])
+            else: self.heatReDepositionFactorDrift = np.asarray(heatReDepositionFactorDrift)
 
     def rpDistrParksStatistical(self,rp,kp):
         """
@@ -383,9 +390,9 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         """
         
         if shards is not None:
-        	nShard=len(self.vp[shards])
-        	add=False
-        	
+            nShard=len(self.vp[shards])
+            add=False
+
         if np.isscalar(t_delay): 
             t_delay = t_delay*np.ones(nShard)
         
@@ -411,47 +418,47 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
             alpha=np.arccos(1-random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
-            
+
             # The angle in the yz-plane is simply drawn randomly
             phi=2*np.pi*random.uniform(size=nShard)
-            
+
             # Finally calculate the velocity vectors
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
             vp_init[1::3]=abs_vp_init*np.sin(alpha)*np.cos(phi)
             vp_init[2::3]=abs_vp_init*np.sin(alpha)*np.sin(phi)
-            
+
         else:
             raise EquationException("spi: Invalid number of dimensions into which the pellet shards are spread")
-            
+
         if add and self.vp is not None:
             self.vp=np.concatenate((self.vp,vp_init))
             self.t_delay=np.concatenate((self.t_delay,t_delay))
         elif shards is not None:
         	# Pick out the components of the stored shard velocities...
-        	vpx=self.vp[0::3]
-        	vpy=self.vp[1::3]
-        	vpz=self.vp[2::3]
-        	
-        	# ... Change the velocities of the shards specified in the input...
-        	vpx[shards]=vp_init[0::3]
-        	vpy[shards]=vp_init[1::3]
-        	vpz[shards]=vp_init[2::3]
-        	
-        	# ...and finally set the stored velocities to the updated ones
-        	self.vp[0::3]=vpx
-        	self.vp[1::3]=vpy
-        	self.vp[2::3]=vpz
-        	
-        	self.t_delay[shards] = t_delay
+            vpx = self.vp[0::3]
+            vpy = self.vp[1::3]
+            vpz = self.vp[2::3]
+
+            # ... Change the velocities of the shards specified in the input...
+            vpx[shards]=vp_init[0::3]
+            vpy[shards]=vp_init[1::3]
+            vpz[shards]=vp_init[2::3]
+
+            # ...and finally set the stored velocities to the updated ones
+            self.vp[0::3]=vpx
+            self.vp[1::3]=vpy
+            self.vp[2::3]=vpz
+
+            self.t_delay[shards] = t_delay
         else:
             self.vp=vp_init
             self.t_delay = t_delay
-            
+
     def setParamsVallhagenMSc(
         self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
         shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay=0,
         tilt=0, nDim=2, add=True, opacity_modes=None, nbrShiftGridCell=0,
-        TDrift=None, random=np.random, **kwargs
+        TDrift=None, heatReDepositionFactorDrift = None, random=np.random, **kwargs
     ):
         """
         Wrapper for setRpParksStatistical(), setShardPositionSinglePoint() and setShardVelocitiesUniform(),
@@ -484,6 +491,14 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 self.TDrift = np.concatenate((self.TDrift,TDrift))
             else:
                 self.TDrift = TDrift
+                
+        if heatReDepositionFactorDrift is not None:
+            if np.isscalar(heatReDepositionFactorDrift):
+                heatReDepositionFactorDrift = heatReDepositionFactorDrift*np.ones(nShard)
+            if add and self.heatReDepositionFactorDrift is not None:
+                self.heatReDepositionFactorDrift = np.concatenate((self.heatReDepositionFactorDrift,heatReDepositionFactorDrift))
+            else:
+                self.heatReDepositionFactorDrift = heatReDepositionFactorDrift
 
         return kp
         
@@ -495,7 +510,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             else:
                 self.nbrShiftGridCell = nbrShiftGridCell
         
-    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0.], ZsDrift=[0], isotopesDrift=[0], add=True):
+    def setShiftParamsAnalytical(self, shift = SHIFT_MODE_ANALYTICAL, TDrift=None, T0Drift=0, DeltaYDrift=0, RmDrift=-1, ZavgDriftArray=[0.], ZsDrift=[0], isotopesDrift=[0], heatReDepositionFactorDrift=None, add=True):
         """
         Specifies model parameters to be used for calculating the shift. Apart from the shift mode-argument, the parameters below apply to SHIFT_MODE_ANALYTICAL
         
@@ -507,6 +522,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         :param list ZavgDriftArray: average charge states inside the drifting cloud of all drifting ion species. These can not be calculated using the ADAS rates because the conditions in the drifting cloud, especially the density and optical thickness, are very different from the validity range and assumptions in ADAS, and we therefore take user-given estimates for them. Note that his list does NOT neccessarily have the same shape as the list of atomic numbers and isotopes included in the simulation, but instead the ZavgDriftArray-list and the ZsDrift and isotopesDrift-lists below will instead be used to look up the average charge state inside the drifting cloud for all the simulated ion species included in the pellet.
         :param list ZsDrift: atomic numbers of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
         :param list isotopesDrift: isotopes of all the drifting ion species, corresponding to the average charge states listed in the ZavgDriftArray-list above
+        :param numpy.ndarray heatReDepositionFactorDrift: fraction of the heat absorbed by the ablation cloud to be re-deposited at the location of deposition
         """
         self.setShift(shift)
         if TDrift is not None:
@@ -517,6 +533,16 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                     self.TDrift = np.concatenate((self.TDrift, TDrift))
             else:
                 self.TDrift = TDrift
+                
+        if heatReDepositionFactorDrift is not None:
+            if add and self.heatReDepositionFactorDrift is not None:
+                if np.isscalar(heatReDepositionFactorDrift):
+                    self.heatReDepositionFactorDrift = np.concatenate((self.heatReDepositionFactorDrift, [heatReDepositionFactorDrift]))
+                else:
+                    self.heatReDepositionFactorDrift = np.concatenate((self.heatReDepositionFactorDrift, heatReDepositionFactorDrift))
+            else:
+                self.heatReDepositionFactorDrift = heatReDepositionFactorDrift
+                
         self.T0Drift = T0Drift
         self.DeltaYDrift = DeltaYDrift
         self.RmDrift = RmDrift
@@ -599,21 +625,23 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         Set all options from a dictionary.
         """
         if 'velocity' in data:
-            self.velocity       = int(data['velocity'])
+            self.velocity       = int(scal(data['velocity']))
         if 'ablation' in data:
-            self.ablation       = int(data['ablation'])
+            self.ablation       = int(scal(data['ablation']))
         if 'deposition' in data:
-            self.deposition     = int(data['deposition'])
+            self.deposition     = int(scal(data['deposition']))
         if 'shift' in data:
-            self.shift          = int(data['shift'])
+            self.shift          = int(scal(data['shift']))
         if 'TDrift' in data:
             self.TDrift              = [float(x) for x in data['TDrift']]
+        if 'heatReDepositionFactorDrift' in data:
+            self.heatReDepositionFactorDrift = [float(x) for x in data['heatReDepositionFactorDrift']]
         if 'T0Drift' in data:
-            self.T0Drift             = float(data['T0Drift'])
+            self.T0Drift             = float(scal(data['T0Drift']))
         if 'DeltaYDrift' in data:
-            self.DeltaYDrift        = float(data['DeltaYDrift'])
+            self.DeltaYDrift        = float(scal(data['DeltaYDrift']))
         if 'RmDrift' in data:
-            self.RmDrift             = float(data['RmDrift'])
+            self.RmDrift             = float(scal(data['RmDrift']))
         if 'ZavgDriftArray' in data:
             self.ZavgDriftArray      = [float(x) for x in data['ZavgDriftArray']]
         if 'ZsDrift' in data:        
@@ -621,13 +649,13 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         if 'isotopesDrift' in data:        
             self.isotopesDrift             = [float(x) for x in data['isotopesDrift']]
         if 'heatAbsorbtion' in data:
-            self.heatAbsorbtion = int(data['heatAbsorbtion'])
+            self.heatAbsorbtion = int(scal(data['heatAbsorbtion']))
         if 'cloudRadiusMode' in data:
-            self.cloudRadiusMode = int(data['cloudRadiusMode'])
+            self.cloudRadiusMode = int(scal(data['cloudRadiusMode']))
         if 'magneticFieldDependenceMode' in data:
-            self.magneticFieldDependenceMode = int(data['magneticFieldDependenceMode'])
+            self.magneticFieldDependenceMode = int(scal(data['magneticFieldDependenceMode']))
         if 'abl_ioniz' in data:
-            self.abl_ioniz = int(data['abl_ioniz'])
+            self.abl_ioniz = int(scal(data['abl_ioniz']))
             
 
         if 'VpVolNormFactor' in data:
@@ -721,6 +749,14 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         else:
             data['TDrift'] = self.TDrift
             
+        if self.heatReDepositionFactorDrift is None:
+            if self.rp is not None:
+                data['heatReDepositionFactorDrift'] = np.ones(self.rp.shape)
+            else:
+                data['heatReDepositionFactorDrift'] = np.array([0])
+        else:
+            data['heatReDepositionFactorDrift'] = self.heatReDepositionFactorDrift
+            
         return data
 
 
@@ -741,6 +777,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
             if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
+            if self.heatReDepositionFactorDrift is not None and (any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1):
+                raise EquationException("spi: Invalid value assigned to 'heatReDepositionFactorDrift'. Expected array of floats between 0 and 1.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
             if self.RmDrift<0 and self.RmDrift!=-1:
@@ -761,7 +799,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
 
 
     def verifySettingsPrescribedInitialData(self):
-        if vp.size!=3*rp.size:
-            raise EquationException("Missmatch in size of initial data arrays for rp and vp. Expected vp to have a size 3 times the size of rp")
-        if xp.size!=3*rp.size:
-            raise EquationException("Missmatch in size of initial data arrays for rp and xp. Expected xp to have a size 3 times the size of rp")
+        if self.vp.size!=3*self.rp.size:
+            raise EquationException("Mismatch in size of initial data arrays for rp and vp. Expected vp to have a size 3 times the size of rp")
+        if self.xp.size!=3*self.rp.size:
+            raise EquationException("Mismatch in size of initial data arrays for rp and xp. Expected xp to have a size 3 times the size of rp")
+

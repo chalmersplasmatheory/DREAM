@@ -25,9 +25,10 @@ SolverNonLinear::SolverNonLinear(
     enum OptionConstants::linear_solver ls,
     enum OptionConstants::linear_solver bk,
 	const int_t maxiter, const real_t reltol,
-	bool verbose, bool checkResidual
+	bool verbose, bool checkResidual, bool saveStatistics
 ) : Solver(unknowns, unknown_equations, eqsys, verbose, ls, bk),
-	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual) {
+	maxiter(maxiter), reltol(reltol), checkResidual(checkResidual),
+	saveStatistics(saveStatistics) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -265,9 +266,11 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
     }
 
     // Save basic statistics for step
-	this->solver_time.push_back(this->t);
-    this->nIterations.push_back(this->iteration);
-    this->usedBackupInverter.push_back(this->inverter == this->backupInverter);
+	if (this->saveStatistics) {
+		this->solver_time.push_back(this->t);
+		this->nIterations.push_back(this->iteration);
+		this->usedBackupInverter.push_back(this->inverter == this->backupInverter);
+	}
 
     this->timeKeeper->StopTimer(timerTot);
 }
@@ -727,20 +730,22 @@ void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
 	int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
 	sf->WriteList(name+"/type", &type, 1);
 
-	// Time array
-	sf->WriteList(name+"/solvertime", this->solver_time.data(), this->solver_time.size());
+	if (this->saveStatistics) {
+		// Time array
+		sf->WriteList(name+"/solvertime", this->solver_time.data(), this->solver_time.size());
 
-	// Number of iterations per time step
-	sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
+		// Number of iterations per time step
+		sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
 
-	// Whether or not backup inverter was used for a given time step
-	len_t nubi = this->usedBackupInverter.size();
-	int32_t *ubi = new int32_t[nubi];
-	for (len_t i = 0; i < nubi; i++)
-		ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
+		// Whether or not backup inverter was used for a given time step
+		len_t nubi = this->usedBackupInverter.size();
+		int32_t *ubi = new int32_t[nubi];
+		for (len_t i = 0; i < nubi; i++)
+			ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
 
-	sf->WriteList(name+"/backupinverter", ubi, nubi);
-	delete [] ubi;
+		sf->WriteList(name+"/backupinverter", ubi, nubi);
+		delete [] ubi;
+	}
 
 	if (this->checkResidual)
 		this->convChecker->SaveData(sf, name);
