@@ -1,4 +1,4 @@
-# Implementation of LUKE magnetic equilibrium data
+# Implementation of DESC magnetic equilibrium data
 
 import h5py
 import matplotlib.pyplot as plt
@@ -10,8 +10,6 @@ try:
     descImportFailed = False
 except:
     descImportFailed = True
-#from .. import DREAMIO
-#from .. import helpers
 from . NumericalMagneticField import NumericalMagneticField
 
 
@@ -35,9 +33,6 @@ class StellaratorMagneticField(NumericalMagneticField):
         self.rho = None
         self.theta = None
         self.phi = None
-        self.f_passing = None
-        self.B_min = None
-        self.B_max = None
         self.G = None
         self.I = None
         self.iota = None
@@ -81,9 +76,6 @@ class StellaratorMagneticField(NumericalMagneticField):
                 self.rho = np.array(hf["rho"][:], dtype=np.float64)
                 self.theta = np.array(hf["theta"][:], dtype=np.float64)
                 self.phi =np.array( hf["phi"][:], dtype=np.float64)
-                self.f_passing = np.array(hf["f_passing"][:], dtype=np.float64)
-                self.B_min = np.array(hf["B_min"][:], dtype=np.float64)
-                self.B_max = np.array(hf["B_max"][:], dtype=np.float64)
                 self.G = np.array(hf["G"][:], dtype=np.float64)
                 self.I = np.array(hf["I"][:], dtype=np.float64)
                 self.iota = np.array(hf["iota"][:], dtype=np.float64)
@@ -104,9 +96,6 @@ class StellaratorMagneticField(NumericalMagneticField):
         if descImportFailed: 
             raise ImportError("Was not able to import desc module for stellarator equilibrium.")
         
-        self.f_passing = np.array(1- self.eq.compute('trapped fraction', grid=self.grid)['trapped fraction'][self.grid.unique_rho_idx], dtype=np.float64)
-        self.B_min = np.array(self.eq.compute('min_tz |B|', grid=self.grid)['min_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
-        self.B_max = np.array(self.eq.compute('max_tz |B|', grid=self.grid)['max_tz |B|'][self.grid.unique_rho_idx], dtype=np.float64)
         self.G = np.array(self.eq.compute('G', grid=self.grid)['G'][self.grid.unique_rho_idx], dtype=np.float64)
         self.I = np.array(self.eq.compute('I', grid=self.grid)['I'][self.grid.unique_rho_idx], dtype=np.float64)
         iota = np.array(self.eq.compute('iota', grid=self.grid)['iota'], dtype=np.float64)
@@ -140,9 +129,6 @@ class StellaratorMagneticField(NumericalMagneticField):
                     "rho": self.rho,
                     "theta": self.theta,
                     "phi": self.phi,
-                    "f_passing": self.f_passing,
-                    "B_min": self.B_min,
-                    "B_max": self.B_max,
                     "G": self.G,
                     "I": self.I,
                     "iota": self.iota,
@@ -170,7 +156,7 @@ class StellaratorMagneticField(NumericalMagneticField):
 
     def getMajorRadius(self):
         """
-        Returns tokamak major radius.
+        Returns stellarator major radius.
         """
         return float(self.R0)
 

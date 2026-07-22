@@ -85,9 +85,6 @@ class RadialGrid(PrescribedScalarParameter):
         self.phi = None
         self.R = None
         self.Z = None
-        self.f_passing = None
-        self.B_min = None
-        self.B_max = None
         self.G = None
         self.I = None
         self.iota = None
@@ -240,7 +237,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.nphi = nphi
 
 
-    def setNthetaOut(self, ntheta): # TODO: For phi?
+    def setNthetaOut(self, ntheta):
         """
         (Cylindrical and analytic toroidal)
         Set the number of poloidal grid points to use for the flux surfaces
@@ -416,9 +413,6 @@ class RadialGrid(PrescribedScalarParameter):
         self.phi = self.num_stellarator.phi
         self.R = self.num_stellarator.R
         self.Z = self.num_stellarator.Z
-        self.f_passing = self.num_stellarator.f_passing
-        self.B_min = self.num_stellarator.B_min
-        self.B_max = self.num_stellarator.B_max
         self.G = self.num_stellarator.G
         self.I = self.num_stellarator.I
         self.iota = self.num_stellarator.iota
@@ -439,7 +433,7 @@ class RadialGrid(PrescribedScalarParameter):
         if ttype in types:
             self.type = ttype
             if self.type == TYPE_STELLARATOR:
-                self.ntheta = 64 # TODO: Ok?
+                self.ntheta = 64
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 
@@ -626,9 +620,6 @@ class RadialGrid(PrescribedScalarParameter):
             self.phi = data['phi']
             self.R = data['R']
             self.Z = data['Z']
-            #self.f_passing = data['f_passing']
-            #self.B_min = data['B_min']
-            #self.B_max = data['B_max']
             self.G = data['G']
             self.I = data['I']
             self.iota = data['iota']
@@ -640,7 +631,6 @@ class RadialGrid(PrescribedScalarParameter):
             self.g_tp = data['g_tp']
             self.lambda_t = data['lambda_t']
             self.lambda_p = data['lambda_p']
-            #self.num_stellarator = StellaratorMagneticField(self.num_filename, self.nr_equil, self.ntheta_equil, self.nphi_equil)
 
             if 'fileformat' in data:
                 self.num_fileformat = data['fileformat']
@@ -715,9 +705,6 @@ class RadialGrid(PrescribedScalarParameter):
             data['phi'] = self.phi
             data['R'] = self.R
             data['Z'] = self.Z
-            data['f_passing'] = self.f_passing
-            data['B_min'] = self.B_min
-            data['B_max'] = self.B_max
             data['G'] = self.G
             data['I'] = self.I
             data['iota'] = self.iota
@@ -829,25 +816,21 @@ class RadialGrid(PrescribedScalarParameter):
                     "RadialGrid: Last grid point can't be larger than minor radius from desc file.")
             elif self.a < self.num_stellarator.a:
                 print("*WARNING* RadialGrid: Using a smaller minor radius than in the equilibrium file.")
-            '''
-            verifySettingsStellaratorParameter('rho')
-            verifySettingsStellaratorParameter('theta')
-            verifySettingsStellaratorParameter('phi')
-            verifySettingsStellaratorParameter('f_passing')
-            verifySettingsStellaratorParameter('B_max')
-            verifySettingsStellaratorParameter('B_min')
-            verifySettingsStellaratorParameter('G')
-            verifySettingsStellaratorParameter('I')
-            verifySettingsStellaratorParameter('iota')
-            verifySettingsStellaratorParameter('psi_T')
-            verifySettingsStellaratorParameter('B')
-            verifySettingsStellaratorParameter('BdotGradPhi')
-            verifySettingsStellaratorParameter('Jacobian')
-            verifySettingsStellaratorParameter('g_tt')
-            verifySettingsStellaratorParameter('g_tp')
-            verifySettingsStellaratorParameter('lambda_t')
-            verifySettingsStellaratorParameter('lambda_p')
-            '''
+            
+            self.verifySettingsStellaratorParameter('rho')
+            self.verifySettingsStellaratorParameter('theta')
+            self.verifySettingsStellaratorParameter('phi')
+            self.verifySettingsStellaratorParameter('G')
+            self.verifySettingsStellaratorParameter('I')
+            self.verifySettingsStellaratorParameter('iota')
+            self.verifySettingsStellaratorParameter('psi_T')
+            self.verifySettingsStellaratorParameter('B')
+            self.verifySettingsStellaratorParameter('BdotGradPhi')
+            self.verifySettingsStellaratorParameter('Jacobian')
+            self.verifySettingsStellaratorParameter('g_tt')
+            self.verifySettingsStellaratorParameter('g_tp')
+            self.verifySettingsStellaratorParameter('lambda_t')
+            self.verifySettingsStellaratorParameter('lambda_p')
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
