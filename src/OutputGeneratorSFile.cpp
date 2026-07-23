@@ -155,6 +155,8 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     if (rgrid->isStellarator()){
         const real_t *BPolIOverR0 = rgrid->GetBPolI();
         this->sf->WriteList(geom + "IR0", BPolIOverR0, nr);
+        const real_t *iota = rgrid->GetIota();
+        this->sf->WriteList(geom + "iota", iota, nr);
         const real_t *FSA_BdotGradphi = rgrid->GetFSA_BdotGradphi();
         this->sf->WriteList(geom + "FSA_BdotGradphiR0", FSA_BdotGradphi, nr);
         const real_t *FSA_gttOverJ2 = rgrid->GetFSA_gttOverJ2();

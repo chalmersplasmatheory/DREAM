@@ -141,6 +141,8 @@ class Grid:
             self.GR0 = geom['GR0']
             if 'IR0' in geom:
                 self.IR0 = geom['IR0']
+            if 'iota' in geom:
+                self.iota = geom['iota']
             self.Bmin = geom['Bmin']
             self.Bmax = geom['Bmax']
             self.FSA_BOverBmin2 = geom['FSA_BOverBmin2']
