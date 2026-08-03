@@ -36,25 +36,25 @@ class IMASEq(EQDSK):
         if self.eqdsk is None:
             raise ValueError("Failed to load equilibrium data from IMAS.")
 
-        super().__init__(self, self.eqdsk, override_psilim=override_psilim)
+        super().__init__(self.eqdsk, override_psilim=override_psilim)
 
 
-    def _value(node, *, name):
+    def _value(self, node, *, name):
         if not node.has_value:
             raise ValueError(f"Required IMAS field is missing: {name}")
         return node.value
 
 
-    def _array(node, *, name):
+    def _array(self, node, *, name):
         return np.asarray(_value(node, name=name), dtype=float)
 
 
-    def _scalar(node, *, name):
+    def _scalar(self, node, *, name):
         return float(_value(node, name=name))
 
 
-    def _string(node, *, default=''):
-        if node.has_value:
+    def _string(self, node, *, default=''):
+        if not node.has_value:
             return default
 
         value = node.value
@@ -64,9 +64,9 @@ class IMASEq(EQDSK):
         return str(value)
     
 
-    def _get_summary_comment(dbentry, occurrence):
+    def _get_summary_comment(self, dbentry, occurrence):
         try:
-            summar = dbentry.get('summary', occurrence=occurrence)
+            summary = dbentry.get('summary', occurrence=occurrence)
         except Exception:
             return ''
 
