@@ -10,7 +10,7 @@ try:
     descImportFailed = False
 except:
     descImportFailed = True
-from . NumericalMagneticField import NumericalMagneticField
+from .NumericalMagneticField import NumericalMagneticField
 
 
 
