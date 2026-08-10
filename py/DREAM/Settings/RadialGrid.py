@@ -133,7 +133,7 @@ class RadialGrid(PrescribedScalarParameter):
         if np.min(r_f)<0:
             raise EquationException("RadialGrid: Custom grid points must be non-negative.")
         if self.type == TYPE_STELLARATOR and np.max(r_f) > 1:
-            raise EquationException("RadialGrid: In stellarator mode, custum grid must be within the interval [0, 1].")
+            raise EquationException("RadialGrid: In stellarator mode, custom grid must be within the interval [0, 1].")
 
         self.r_f = r_f
         self.custom_grid = True
