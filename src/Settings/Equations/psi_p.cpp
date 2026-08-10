@@ -133,8 +133,9 @@ namespace DREAM {
     class PsiWallStellaratorTerm : public FVM::EquationTerm {
     private: 
         real_t *term = nullptr; 
+        FVM::Grid *fluidGrid = nullptr;
     public:
-        PsiWallStellaratorTerm(FVM::Grid *g ) : FVM::EquationTerm(g) {
+        PsiWallStellaratorTerm(FVM::Grid *g, FVM::Grid *fg) : fluidGrid(fg), FVM::EquationTerm(g) {
             AllocateTerm();
         }
 
@@ -144,7 +145,7 @@ namespace DREAM {
         }
         
         void AllocateTerm() {
-            term = new real_t[nr];
+            term = new real_t[1];
         }
 
         void DeallocateTerm() {
@@ -152,9 +153,7 @@ namespace DREAM {
         }
 
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
-            for (len_t ir = 0; ir < nr; ir++) {
-                term[ir] = grid->GetRadialGrid()->GetPsiExtraAtWall();
-            }
+            term[0] = fluidGrid->GetRadialGrid()->GetPsiExtraAtWall();
         }
         
         virtual len_t GetNumberOfNonZerosPerRow() const { return 1; };
@@ -163,8 +162,7 @@ namespace DREAM {
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {return false;};
 
         virtual void SetVectorElements(real_t* vec, const real_t*) override {
-            for (len_t ir = 0; ir < nr; ir++)
-                vec[ir] += term[ir];
+            vec[0] += term[0];
         }
 
     };
@@ -450,7 +448,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             Op_I_w_2->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_w, L_ext));
             Op_I_w_3->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_p, L_ext));
             if (fluidGrid->GetRadialGrid()->isStellarator())
-                Op_I_w_1->AddTerm(new PsiWallStellaratorTerm(scalarGrid)); // TODO: not tested
+                Op_I_w_1->AddTerm(new PsiWallStellaratorTerm(scalarGrid, fluidGrid)); // TODO: not tested
 
 
             string psiw_desc = "psi_w = ";
