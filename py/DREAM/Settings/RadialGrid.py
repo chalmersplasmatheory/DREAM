@@ -228,11 +228,11 @@ class RadialGrid(PrescribedScalarParameter):
     def setNphi(self, nphi):
         """
         (Analytic toroidal, numerical and stellarator)
-        Set the number of grid points to use for the poloidal grid on which bounce
+        Set the number of grid points to use for the toroidal grid on which bounce
         averages are calculated.
         """
         if nphi <= 0:
-            raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}".format(ntheta))
+            raise DREAMException("RadialGrid: Invalid value assigned to 'nphi': {}".format(nphi))
 
         self.nphi = nphi
 
@@ -391,12 +391,16 @@ class RadialGrid(PrescribedScalarParameter):
 
             if nr_equil is None:
                 nr_equil = self.nr
+            if ntheta_equil is None:
+                ntheta_equil = self.ntheta
+            if nphi_equil is None:
+                nphi_equil = self.nphi
             
             self.num_stellarator = NumericStellaratorMagneticField(filename, nr_equil, ntheta_equil, nphi_equil, loadfilename)
             if loadfilename is None:
                 self.num_stellarator.load(savefilename=savefilename)
         else:
-            DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
+            raise DREAMException("RadialGrid: Only DESC files accepted for stellarator simulations.")
 
         self.a = self.num_stellarator.a
         if self.b == 0.:
@@ -854,12 +858,12 @@ class RadialGrid(PrescribedScalarParameter):
 
     def verifySettingsStellaratorParameter(self, stellaratorparam):
         """
-        Verify the settings of the named shape parameter.
+        Verify the settings of the named stellarator parameter.
 
-        :param str shapeparam: Name of shape parameter to verify settings for.
+        :param str stellaratorparam: Name of stellarator parameter to verify settings for.
         """
         v = getattr(self, stellaratorparam)
 
         if v is None or type(v) != np.ndarray:
-            raise DREAMException("RadialGrid: Invalid type of shape parameter '{}': {}.".format(shapeparam, type(v)))
+            raise DREAMException("RadialGrid: Invalid type of shape parameter '{}': {}.".format(stellaratorparam, type(v)))
 
