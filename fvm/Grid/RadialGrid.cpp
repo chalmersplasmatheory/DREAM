@@ -320,6 +320,10 @@ void RadialGrid::DeallocateFSAvg(){
         delete [] this->FSA_B2;
     if (this->FSA_B2_f != nullptr)
         delete [] this->FSA_B2_f;
+    if (this->FSA_1OverB != nullptr)
+        delete [] this->FSA_1OverB;
+    if (this->FSA_1OverB_f != nullptr)
+        delete [] this->FSA_1OverB_f;
     if (this->effectivePassingFraction != nullptr)
         delete [] this->effectivePassingFraction;
 

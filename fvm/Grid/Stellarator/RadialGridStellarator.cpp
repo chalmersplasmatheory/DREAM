@@ -357,6 +357,10 @@ void RadialGridStellarator::DeallocateFSAvg(){
     this->FSA_B2 = nullptr;
     delete [] this->FSA_B2_f;
     this->FSA_B2_f = nullptr;
+    delete [] this->FSA_1OverB;
+    this->FSA_1OverB = nullptr;
+    delete [] this->FSA_1OverB_f;
+    this->FSA_1OverB_f = nullptr;
     delete [] this->effectivePassingFraction;
     this->effectivePassingFraction = nullptr;
 
