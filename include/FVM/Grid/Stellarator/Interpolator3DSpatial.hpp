@@ -2,6 +2,7 @@
 #define _DREAM_FVM_INTERPOLATOR_3D_SPATIAL_HPP
 
 #include <gsl/gsl_interp.h>
+#include "FVM/FVMException.hpp"
 #include "FVM/config.h"
 
 namespace DREAM::FVM {
