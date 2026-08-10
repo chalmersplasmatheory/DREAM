@@ -282,7 +282,7 @@ void FluxSurfaceAveragerStellarator::InitializeQuadrature(quadrature_method q_me
  * Evaluates the bounce-integral integrand normalized to p^2*R0 at an arbitrary 
  * poloidal angle theta, in a form that can be used by gsl quadratures.
  */
-real_t FluxSurfaceAveragerStellarator::BounceIntegralFunction(real_t theta, void *par){
+real_t FluxSurfaceAveragerStellarator::BounceIntegralFunction(real_t, void *par){
     struct BounceIntegralParams *params = (struct BounceIntegralParams *) par;
     
     FluxSurfaceAverager *fluxAvg = params->fsAvg; 
