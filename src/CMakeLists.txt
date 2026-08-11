@@ -109,6 +109,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityFromKinetic/TotalElectronDensityFromKineticTritium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceDirect.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ComptonSource.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
@@ -122,6 +123,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TimeVaryingBTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/QuasilinearDiffusionBuilder.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/BootstrapCurrent.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/TritiumSource.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
@@ -154,9 +156,16 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SPIHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/WaveSpectrum.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/WhistlerDispersion.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ResonanceSolver.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/WaveParticleCoupling.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/QuasilinearDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/QLMatrixLoader.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/distribution.cpp"
+
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/E_field.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_re.cpp"
@@ -269,10 +278,34 @@ if (GSL_FOUND)
     target_link_libraries(dream PUBLIC "${GSL_CBLAS_LIBRARY}")
 endif()
 
+# Python C API for PDRF dispersion solver
+find_package(Python3 COMPONENTS Interpreter Development NumPy)
+if (Python3_FOUND)
+    message(STATUS "Found Python3: ${Python3_EXECUTABLE}")
+    message(STATUS "Python3 include dirs: ${Python3_INCLUDE_DIRS}")
+    target_include_directories(dream PUBLIC ${Python3_INCLUDE_DIRS})
+    target_link_libraries(dream PUBLIC ${Python3_LIBRARIES})
+    
+    # Find numpy headers
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -c "import numpy; print(numpy.get_include())"
+        OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (NUMPY_INCLUDE_DIR)
+        message(STATUS "NumPy include dir: ${NUMPY_INCLUDE_DIR}")
+        target_include_directories(dream PUBLIC ${NUMPY_INCLUDE_DIR})
+    endif()
+else()
+    message(WARNING "Python3 not found. WhistlerDispersion will not work.")
+endif()
+
 find_package(HDF5 COMPONENTS CXX)
 if (HDF5_FOUND)
     target_include_directories(dream PUBLIC ${HDF5_INCLUDE_DIRS})
     target_link_libraries(dream PUBLIC ${HDF5_LIBRARIES})
+    target_compile_definitions(dream PUBLIC BUILD_WITH_HDF5)
+    message(STATUS "HDF5 support enabled: ${HDF5_LIBRARIES}")
 else (HDF5_FOUND)
     message(FATAL_ERROR "No HDF5 C++ library was found on this system")
 endif (HDF5_FOUND)

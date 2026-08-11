@@ -28,6 +28,14 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
+
+// Forward declarations for kinetic terms
+namespace DREAM {
+    class QuasilinearDiffusionTerm;
+    class SynchrotronTerm;
+    class TimeVaryingBTerm;
+    class RipplePitchScattering;
+}
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
@@ -92,6 +100,9 @@ namespace DREAM {
 			// Synchrotron loss term
 			DREAM::SynchrotronTerm *f_hot_synchrotron=nullptr;
 			DREAM::SynchrotronTerm *f_re_synchrotron=nullptr;
+			// Quasilinear diffusion term
+			DREAM::QuasilinearDiffusionTerm *f_hot_quasilinear=nullptr;
+			DREAM::QuasilinearDiffusionTerm *f_re_quasilinear=nullptr;
 			// Flux of RE from hottail grid
 			DREAM::FVM::BC::PXiExternalLoss *n_re_f_hot_flux=nullptr;
 			DREAM::FVM::BC::PXiExternalKineticKinetic *f_re_f_hot_flux=nullptr;

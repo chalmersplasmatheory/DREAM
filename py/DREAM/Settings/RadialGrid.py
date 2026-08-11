@@ -479,6 +479,8 @@ class RadialGrid(PrescribedScalarParameter):
             if 'ntheta_out' in data:
                 self.ntheta_out = data['ntheta_out']
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
+            if 'B0' in data:
+                self.B0 = data['B0']  # B0 is also needed for toroidal geometry
             self.R0 = data['R0']
             self.ntheta = data['ntheta']
 
@@ -547,6 +549,7 @@ class RadialGrid(PrescribedScalarParameter):
             data['B0'] = self.B0
             data['ntheta_out'] = self.ntheta_out
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
+            data['B0'] = self.B0  # B0 is also needed for toroidal geometry
             data['R0'] = self.R0
             data['ntheta'] = self.ntheta
             data['ntheta_out'] = self.ntheta_out
