@@ -130,6 +130,7 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
 	s->DefineSetting(MODULENAME_HYPRES "/dBB0", "Magnetic perturbation value for calculating adaptive diffusion coefficient, when enabled", (real_t)0.0);
 	s->DefineSetting(MODULENAME_HYPRES "/suppression_level", "Fraction of the maximum current density gradient below which the adaptive transport should be disabled", (real_t)0.9);
     DefineDataRT(MODULENAME_HYPRES, s, "Lambda");
+	DefineDataRT(MODULENAME_HYPRES, s, "dBB");
 }
 
 /**
@@ -234,15 +235,29 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 	enum OptionConstants::eqterm_hyperresistivity_mode hypres_mode =
 		(enum OptionConstants::eqterm_hyperresistivity_mode)s->GetInteger(MODULENAME_HYPRES "/mode");
     if (hypres_mode == OptionConstants::EQTERM_HYPERRESISTIVITY_MODE_PRESCRIBED) {
-        FVM::Interpolator1D *Lambda = LoadDataRT_intp(
-            MODULENAME_HYPRES,
-            eqsys->GetFluidGrid()->GetRadialGrid(),
-            s, "Lambda", true
-        );
+		FVM::Interpolator1D *Lambda = nullptr, *dBB = nullptr;
+		len_t nr_inp;
+
+		if (s->GetRealArray(MODULENAME_HYPRES "/Lambda/r", 1, &nr_inp, false) != nullptr) {
+			Lambda = LoadDataRT_intp(
+				MODULENAME_HYPRES,
+				eqsys->GetFluidGrid()->GetRadialGrid(),
+				s, "Lambda", true
+			);
+		} else if (s->GetRealArray(MODULENAME_HYPRES "/dBB/r", 1, &nr_inp, false) != nullptr) {
+			dBB = LoadDataRT_intp(
+				MODULENAME_HYPRES,
+				eqsys->GetFluidGrid()->GetRadialGrid(),
+				s, "dBB", true
+			);
+		} else
+			throw SettingsException(
+				"For hyperresistive diffusion, one of 'Lambda' and 'dBB' must be provided."
+			);
 
         FVM::Operator *hypTerm = new FVM::Operator(fluidGrid);
         HyperresistiveDiffusionTerm *hrdt = new HyperresistiveDiffusionTerm(
-            fluidGrid, Lambda
+            fluidGrid, eqsys->GetIonHandler(), Lambda, dBB
         );
         hypTerm->AddTerm(hrdt);
         oqty_terms->psi_p_hyperresistive = hrdt;

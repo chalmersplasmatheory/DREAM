@@ -1,6 +1,7 @@
 
 from . import DistributionFunction as DistFunc
 from . DistributionFunction import DistributionFunction
+from . PrescribedInitialParameter import PrescribedInitialParameter
 
 # BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
 # (NOTE: These are kept for backwards compatibility. You
@@ -37,8 +38,9 @@ PARTICLE_SOURCE_SHAPE_DELTA = 2
 
 F_HOT_DIST_MODE_NONREL = 1
 
-class HotElectronDistribution(DistributionFunction):
+class HotElectronDistribution(DistributionFunction, PrescribedInitialParameter):
     
+
     def __init__(self, settings,
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
@@ -71,6 +73,9 @@ class HotElectronDistribution(DistributionFunction):
         self.particleSource = particleSource
         self.particleSourceShape = particleSourceShape
 
+        self.Ip0 = None
+        self.jhot0 = None
+
 
     def setHotRegionThreshold(self, pThreshold=7, pMode=HOT_REGION_P_MODE_THERMAL):
         """
@@ -93,6 +98,21 @@ class HotElectronDistribution(DistributionFunction):
         self.particleSourceShape = shape
 
 
+    def setInitialJHot(self, j, r=0, Ip0=None):
+        """
+        Set the initial current density carried by the hot electrons.
+        This is only relevant if using COLLFREQ_MODE_SUPERTHERMAL with nXi = 1.
+        Ip0 is used to re-scale the current density profile.
+        """
+        _data, _rad = self._setInitialData(data=j, radius=r)
+
+        self.jhot0 = _data
+        self.jhot0_r = _rad
+        self.Ip0 = Ip0
+
+        self._verifySettingsPrescribedInitialData('j_hot', self.jhot0, self.jhot0_r)
+
+
     def fromdict(self, data):
         """
         Load data for this object from the given dictionary.
@@ -108,6 +128,13 @@ class HotElectronDistribution(DistributionFunction):
         if 'particleSourceShape' in data:
             self.particleSourceShape = data['particleSourceShape']
 
+        if 'j_hot0' in data:
+            self.jhot0 = data['j_hot0']['x']
+            self.jhot0_r = data['j_hot0']['r']
+
+            if 'Ip0' in data:
+                self.Ip0 = data['Ip0']
+
 
     def todict(self):
         """
@@ -121,6 +148,15 @@ class HotElectronDistribution(DistributionFunction):
             data['pThresholdMode'] = self.pThresholdMode
             data['particleSource'] = self.particleSource
             data['particleSourceShape'] = self.particleSourceShape
+
+        if self.jhot0 is not None:
+            data['j_hot0'] = {
+                'x': self.jhot0,
+                'r': self.jhot0_r
+            }
+
+            if self.Ip0 is not None:
+                data['Ip0'] = self.Ip0
 
         return data
 

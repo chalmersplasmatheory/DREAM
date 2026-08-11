@@ -159,15 +159,32 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
 
     eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(-E/nu_D * df_hot/dp) + int(v*f_hot) [hot-tail mode]");
     eqsys->SetOperator(id_jhot, id_fhot, Op2);
-    // Set initialization method
-    eqsys->initializer->AddRule(
-        id_jhot,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        // Dependencies
-        id_fhot,
-        id_Eterm,
-        id_Tcold,
-        EqsysInitializer::COLLQTYHDL_HOTTAIL
-    );
+
+	if (s->GetReal("eqsys/f_hot/Ip0") != 0) {
+		real_t *j_hot0 = LoadDataR("eqsys/f_hot", eqsys->GetFluidGrid()->GetRadialGrid(), s, "j_hot0");
+		const real_t Ip0 = (real_t) s->GetReal("eqsys/f_hot/Ip0");
+		const real_t Ipj = TotalPlasmaCurrentFromJTot::EvaluateIp(
+			eqsys->GetFluidGrid()->GetRadialGrid(), j_hot0
+		);
+		const real_t f = Ip0 / Ipj;
+		const len_t nr = fluidGrid->GetNr();
+
+		for (len_t ir = 0; ir < nr; ir++)
+			j_hot0[ir] *= f;
+
+		eqsys->SetInitialValue(OptionConstants::UQTY_J_HOT, j_hot0);
+		delete [] j_hot0;
+	} else {
+		// Set initialization method
+		eqsys->initializer->AddRule(
+			id_jhot,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			// Dependencies
+			id_fhot,
+			id_Eterm,
+			id_Tcold,
+			EqsysInitializer::COLLQTYHDL_HOTTAIL
+		);
+	}
 }
