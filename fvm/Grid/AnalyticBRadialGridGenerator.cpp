@@ -297,7 +297,7 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
 
     real_t rk = r_f[ir]*kappaPrime_f[ir];
-    real_t JOverRr = kappa_f[ir]*(zeta_f[ir]*cdt + DeltaPrime_f[ir]*ct + r_f[ir]*zetaPrime[ir]*ctdt*ct)
+    real_t JOverRr = kappa_f[ir]*(zeta_f[ir]*cdt + DeltaPrime_f[ir]*ct + r_f[ir]*zetaPrime_f[ir]*ctdt*ct)
         + zeta_f[ir]*st*stdt * ( rk + ct * (  delta_f[ir]*(kappa_f[ir] + rk)
                - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
 
