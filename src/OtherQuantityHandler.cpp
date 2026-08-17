@@ -1229,7 +1229,7 @@ void OtherQuantityHandler::DefineQuantities() {
     }
 
     if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
-        this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL) && !this->fluidGrid->GetRadialGrid()->isStellarator()) {
+        this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {
         // Magnetic energy and internal inductance
         DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
             real_t v = evaluateMagneticEnergy();
@@ -1422,19 +1422,27 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
  */
 real_t OtherQuantityHandler::evaluateMagneticEnergy(){ // TODO: Not accurate for stellarator, need to be re-derived
     FVM::RadialGrid *rGrid = this->fluidGrid->GetRadialGrid();
-    const real_t *G_R0 = rGrid->GetBTorG();
-    const real_t *VpVol = rGrid->GetVpVol();
-    const real_t *dr = rGrid->GetDr();
-    const real_t *FSA_1OverR2 = rGrid->GetFSA_1OverR2();
-    const real_t *Bmin = rGrid->GetBmin();
     const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
     const real_t *psi_p = this->unknowns->GetUnknownData(id_psip);
     const real_t psi_p_wall = this->unknowns->GetUnknownData(id_psi_wall)[0];
     const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+    const real_t *VpVol = rGrid->GetVpVol();
+    const real_t *dr = rGrid->GetDr();
+    const real_t *Bmin = rGrid->GetBmin();
     real_t E_mag = .5 * psi_p_wall*Ip;
     real_t fourPiInv = 1/(4*M_PI);
-    for(len_t ir=0; ir<rGrid->GetNr(); ir++)
-        E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+    if (rGrid->isStellarator()) {
+        const real_t *FSA_BdotGradPhi = rGrid->GetFSA_BdotGradphi();
+
+        for(len_t ir=0; ir<rGrid->GetNr(); ir++)
+            E_mag -= fourPiInv*dr[ir] * VpVol[ir] * FSA_BdotGradPhi[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+    } else {
+        const real_t *G_R0 = rGrid->GetBTorG();
+        const real_t *FSA_1OverR2 = rGrid->GetFSA_1OverR2();
+
+        for(len_t ir=0; ir<rGrid->GetNr(); ir++)
+            E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+    }
 
     return E_mag;
 }
