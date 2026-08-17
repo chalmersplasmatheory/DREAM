@@ -76,10 +76,10 @@ namespace DREAM {
             
             if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) { 
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t BdotPhi = rGrid->GetFSA_BdotGradphi(ir);
+                    real_t BdotgradPhi = rGrid->GetFSA_BdotGradphi(ir);
 
                     // psit'/VpVol, multiplied by 2*pi
-                    real_t psitPrimeOverVpVol  = BdotPhi;
+                    real_t psitPrimeOverVpVol  = BdotgradPhi;
 
                     real_t w = -psitPrimeOverVpVol;
 
@@ -90,10 +90,10 @@ namespace DREAM {
                 }
             } else {
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
+                    real_t BdotgradPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
 
                     // psit'/VpVol, multiplied by 2*pi
-                    real_t psitPrimeOverVpVol  = BdotPhi;
+                    real_t psitPrimeOverVpVol  = BdotgradPhi;
 
                     real_t w = -psitPrimeOverVpVol;
 

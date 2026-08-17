@@ -78,7 +78,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 		if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
 			const len_t nr_f = rGrid->GetNr()+1;
 			const real_t *r_f = rGrid->GetR_f();
-			const real_t *BdotGradPhi_f = rGrid->GetFSA_BdotGradphi();
+			const real_t *BdotGradPhi_f = rGrid->GetFSA_BdotGradphi_f();
 			const real_t *Bmin_f = rGrid->GetBmin_f();
 			const real_t R0 = rGrid->GetR0();
 
@@ -146,7 +146,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 		if (type == OptionConstants::RADIALGRID_TYPE_NUMERICAL_STELLARATOR) {
 			const len_t nr_f = rGrid->GetNr()+1;
 			const real_t *r_f = rGrid->GetR_f();
-			const real_t *BdotGradPhi_f = rGrid->GetFSA_BdotGradphi();
+			const real_t *BdotGradPhi_f = rGrid->GetFSA_BdotGradphi_f();
 			const real_t *BOverBmin2_f = rGrid->GetFSA_B2_f();
 			const real_t *Bmin_f = rGrid->GetBmin_f();
 			const real_t R0 = rGrid->GetR0();
