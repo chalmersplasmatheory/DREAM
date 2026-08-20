@@ -11,6 +11,7 @@
 #include <string>
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/MoleculeHandler.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -27,7 +28,7 @@ using namespace std;
  *      nzs = sum_i (Z_i + 1), i = 0, 1, ..., nZ
  * The density of an ion of charge Z and charge state Z0 at radial point ir is given by
  *      n_i[nr * iz + ir]
- * and iz = offset(Z) + Z0, 
+ * and iz = offset(Z) + Z0, /fix this interpresation is not correct
  */
 
 
@@ -70,6 +71,11 @@ IonHandler::IonHandler(
     niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     this->ionNames = names;
+    //Check that not more than one species is named the same
+    for(len_t i=0; i<ionNames.size(); i++)
+        for(len_t j=i+1; j<ionNames.size(); j++)
+            if(ionNames[i] == ionNames[j])
+                throw FVM::FVMException("Ion species '%s' has been defined more than once.", ionNames[i].c_str());
 
     this->tritiumNames = tritium;
     this->nTritium = tritium.size();
@@ -121,6 +127,7 @@ IonHandler::~IonHandler(){
  */
 void IonHandler::Initialize() {
     DeallocateAll();
+    MoleculeHandler molecules;
     nzs = 0;
     for (len_t it=0; it<nZ; it++)
         nzs += Zs[it]+1;
@@ -151,6 +158,9 @@ void IonHandler::Initialize() {
     Ztot   = new real_t[nr];
 
     mi = new real_t[nZ];
+    
+    //TODO create the masses for the ions
+
     for(len_t iz=0; iz<nZ; iz++){
         if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
             bool isTritium = false, isHydrogen = false;
@@ -165,8 +175,11 @@ void IonHandler::Initialize() {
 			);
         } else if ( Zs[iz] > nIonMass ) // if heavier species than we store data for, assume simple linear scaling
             mi[iz] = 2.3*Zs[iz] * Constants::mu; 
-        else // read from table
-            mi[iz] = atomicMassInMu[Zs[iz]-1] * Constants::mu;
+        else 
+            if (molecules.IsMolecule(ionNames[iz]))
+                mi[iz] = molecules.GetMass(ionNames[iz]) * Constants::mu;
+            else
+                mi[iz] = atomicMassInMu[Zs[iz]-1] * Constants::mu;
     }
 }
 
@@ -209,26 +222,37 @@ void IonHandler::Rebuild(){
             Ztot[ir] = 1.0;
     }
 }
+/**
+ * Returns the index of the ion species with the given name.
+ * Throws an exception if no such species has been defined.
+ */
+const len_t IonHandler::GetIonIndex(const std::string& name) const {
+    for (len_t i = 0; i < this->nZ; i++)
+        if (this->ionNames[i] == name)
+            return i;
 
+    throw FVM::FVMException("IonHandler::GetIonIndex: No ion species with name '%s' has been defined.", name.c_str());
+}
 
 /**
  *  Returns the density of ions which are characterised by 
  * atomic number Z and charge number Z0 at radial index ir.
  */
-const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
-    real_t niReturn = 0;
-    const real_t *n_i = unknowns->GetUnknownData(niID);
-    for (len_t iz=0; iz<nZ; iz++)
-        if (Zs[iz] == Z){
-            len_t Zind = GetIndex(iz,Z0);
-            niReturn += n_i[nr*Zind + ir];
-        }
+// TODO this will need to be redone since Z can be the same for molecyles
+//const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
+//    real_t niReturn = 0;
+//    const real_t *n_i = unknowns->GetUnknownData(niID);
+//    for (len_t iz=0; iz<nZ; iz++)
+//        if (Zs[iz] == Z){
+//            len_t Zind = GetIndex(iz,Z0);
+//            niReturn += n_i[nr*Zind + ir];
+//        }
     
-    return niReturn;
-}
+//    return niReturn;
+//}
 
 // Returns the density of ions which are characterised by 
-// atomic number Z and charge number Z0 at radial index ir.
+// index iz and charge number Z0 at radial index ir.
 const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
 
     if (Z0 > Zs[iz])
@@ -240,6 +264,9 @@ const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
 }
 
 // Returns the densities of ions which have Z index "ir" at radial index ir, for each Z0 (size Z0+1).
+// TODO: I think this is no problem, just named Z wrongly. 
+//This returns the densities of ions which have Z index "iZ" at radial index ir, for each Z0 (size Z0+1).
+
 const real_t* IonHandler::GetIonDensity(len_t ir, len_t iZ) const{
     real_t *niReturn = new real_t[1+Zs[iZ]];
     const real_t *n_i = unknowns->GetUnknownData(niID);
@@ -252,6 +279,8 @@ const real_t* IonHandler::GetIonDensity(len_t ir, len_t iZ) const{
 }
 
 // Returns the total density of ions which have Z index "ir" at radial index ir (summed over Z0).
+// TODO: I think this is no problem, just named Z wrongly. 
+//This returns the densities of ions which have Z index "iZ" at radial index ir, for each Z0 (size Z0+1).
 const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
     real_t niReturn = 0;
     const real_t *n_i = unknowns->GetUnknownData(niID);
@@ -273,7 +302,6 @@ const real_t IonHandler::GetTotalIonMassDensity(const len_t ir) const {
 	
 	return rho;
 }
-
 /**
  * Calculates the density of tritium in the plasma.
  *
@@ -294,6 +322,8 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
 /**
  * Determines the 'main ion species' assuming it is the one with minimum charge.
  */
+// TODO this will need to be redone since Z can be the same for molecyles
+
 const int_t IonHandler::GetMainSpeciesIndex() const {
 	int_t minIndex = -1;
 	len_t minZ = std::numeric_limits<len_t>::max();
@@ -332,7 +362,7 @@ const real_t IonHandler::GetNZ0Z0(const len_t ion, const len_t ir) const {
 
 
 /**
- * The inverse of GetIndex(...): takes the ion index and 
+ * The inverse of GetIndex(...): takes the ion index (flat charge state index) and 
  * returns the corresponding iz and Z0
  */
 void IonHandler::GetIonIndices(len_t nMultiple, len_t &iz_in, len_t &Z0_in){

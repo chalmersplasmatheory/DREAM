@@ -76,6 +76,7 @@ namespace DREAM {
         const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
         void GetIonIndices(len_t, len_t&, len_t&);
 
+        const len_t GetIonIndex(const std::string& name) const;
 
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
@@ -86,7 +87,7 @@ namespace DREAM {
         bool IsTritium(const len_t) const;
 		bool IsHydrogen(const len_t) const;
 
-        const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
+        // const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
         const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
