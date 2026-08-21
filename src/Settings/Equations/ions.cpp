@@ -17,6 +17,10 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "DREAM/Equations/Fluid/IonSourceTerm.hpp"
+#include "DREAM/MoleculeHandler.hpp"
+#include "DREAM/Equations/Fluid/MolecularRateEquation.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
+
 
 #include <iostream>
 
@@ -262,10 +266,13 @@ void SimulationGenerator::ConstructEquation_Ions(
     );
 
     IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);
+    RateHandler *ratehandler = new RateHandler(ih, adas);
+    
     eqsys->SetIonHandler(ih);
 
     // Initialize ion equations
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
+    
 
     OptionConstants::eqterm_ionization_mode ionization_mode =
         (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
@@ -310,9 +317,13 @@ void SimulationGenerator::ConstructEquation_Ions(
 					eqn->AddTerm(ire);
 					oqty_terms->ni_rates.push_back(ire);
                 }else{
+                    //ad something abot molecyles that produces other molecyles and discard those,
+                    //which is not handled by IonRateEquation, but by MolecularRateEquation or similar
+                    
+
 					IonRateEquation *ire = new IonRateEquation(
 						fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-						addFluidIonization, addFluidJacobian, false
+						ratehandler, addFluidIonization, addFluidJacobian, false
 					);
 		            eqn->AddTerm(ire);
 					oqty_terms->ni_rates.push_back(ire);
@@ -368,6 +379,10 @@ void SimulationGenerator::ConstructEquation_Ions(
                 );
         }
     }
+    //something like this
+    //if (molecularRates->GetNReactions() > 0)
+    //  eqn->AddTerm(new MolecularRateEquation(fluidGrid, ih, molecularRates, id_ni));
+
 
     // Set equation description
     string desc;

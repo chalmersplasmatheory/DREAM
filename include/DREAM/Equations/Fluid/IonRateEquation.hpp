@@ -4,6 +4,7 @@
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
 #include "DREAM/IonHandler.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -13,6 +14,7 @@ namespace DREAM {
         enum SetMode {MATRIX, JACOBIAN};
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
+        RateHandler *ratehandler;
         len_t id_ions, id_n_cold, id_n_tot, id_T_cold;
         bool addFluidIonization; // the full ADAS ionization rate is added in this equation term
         bool addFluidJacobian;   // only the jacobian of the ionization is set with this term
@@ -34,7 +36,7 @@ namespace DREAM {
     public:
         IonRateEquation(
             FVM::Grid*, IonHandler*, const len_t, ADAS*, 
-            FVM::UnknownQuantityHandler*,bool,bool,bool
+            FVM::UnknownQuantityHandler*, RateHandler*, bool,bool,bool
         );
         virtual ~IonRateEquation();
 

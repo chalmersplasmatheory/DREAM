@@ -32,9 +32,10 @@ static const len_t nMolecules =
 
 bool MoleculeHandler::IsMolecule(const std::string& name) const {
       for (len_t i = 0; i < nMolecules; i++)
-          if (name == moleculeTable[i].name)
+          if (name == moleculeTable[i].name){
+            printf("MoleculeHandler::IsMolecule: Found molecule named '%s' with mass %e.\n", name.c_str(), moleculeTable[i].mass);
               return true;
-
+          }
       return false;
   }
 
