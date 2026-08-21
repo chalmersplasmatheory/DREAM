@@ -23,10 +23,10 @@ using namespace std;
  * Constructor.
  */
 IonSPIDepositionTerm::IonSPIDepositionTerm(
-    FVM::Grid *g, IonHandler *ihdl, const len_t iIon, ADAS *adas, FVM::UnknownQuantityHandler *unknowns,bool addFluidIonization, bool addFluidJacobian,
+    FVM::Grid *g, IonHandler *ihdl, const len_t iIon, ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool addFluidIonization, bool addFluidJacobian,
     SPIHandler *SPI, const real_t *SPIMolarFraction, len_t offset, real_t scaleFactor = 1.0, bool isAbl = false,
     OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED
-) : IonRateEquation(g, ihdl, iIon, adas, unknowns, addFluidIonization, addFluidJacobian, isAbl ), SPI(SPI), scaleFactor(scaleFactor){
+) : IonRateEquation(g, ihdl, iIon, adas, unknowns, nullptr, addFluidIonization, addFluidJacobian, isAbl ), SPI(SPI), scaleFactor(scaleFactor){
 
     len_t Nr = this->grid->GetNr();
     weights = new real_t[(Zion+1)*Nr];

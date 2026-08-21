@@ -27,7 +27,7 @@ namespace DREAM {
     real_t *EIonizTot;
     public:
         IonSPIIonizLossTerm(
-            FVM::Grid *g, IonHandler *ihdl, const len_t iIon,ADAS *adas, FVM::UnknownQuantityHandler *unknowns,bool addFluidIonization, bool addFluidJacobian,
+            FVM::Grid *g, IonHandler *ihdl, const len_t iIon,ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool addFluidIonization, bool addFluidJacobian,
             SPIHandler *SPI, const real_t *SPIMolarFraction, len_t offset, real_t scaleFactor, NIST *nist, bool isAbl = false,
             OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT
         ) : IonSPIDepositionTerm(g, ihdl, iIon, adas, unknowns, addFluidIonization, addFluidJacobian, SPI, SPIMolarFraction, offset, scaleFactor, isAbl, spi_abl_ioniz_mode) {
