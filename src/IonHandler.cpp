@@ -159,10 +159,12 @@ void IonHandler::Initialize() {
 
     mi = new real_t[nZ];
     
-    //TODO create the masses for the ions
 
     for(len_t iz=0; iz<nZ; iz++){
-        if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
+        if (molecules.IsMolecule(ionNames[iz])) { //check molecule first so that it works with charge states
+          mi[iz] = molecules.GetMass(ionNames[iz]);
+      }
+        else if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
             bool isTritium = false, isHydrogen = false;
             for(len_t it=0; it<nTritium; it++)
                 if(iz==tritiumIndices[it])
@@ -175,11 +177,8 @@ void IonHandler::Initialize() {
 			);
         } else if ( Zs[iz] > nIonMass ) // if heavier species than we store data for, assume simple linear scaling
             mi[iz] = 2.3*Zs[iz] * Constants::mu; 
-        else 
-            if (molecules.IsMolecule(ionNames[iz]))
-                mi[iz] = molecules.GetMass(ionNames[iz]) * Constants::mu;
-            else
-                mi[iz] = atomicMassInMu[Zs[iz]-1] * Constants::mu;
+        else
+            mi[iz] = atomicMassInMu[Zs[iz]-1] * Constants::mu;
     }
 }
 
@@ -234,6 +233,13 @@ const len_t IonHandler::GetIonIndex(const std::string& name) const {
     throw FVM::FVMException("IonHandler::GetIonIndex: No ion species with name '%s' has been defined.", name.c_str());
 }
 
+bool IonHandler::HasIon(const std::string& name) const {
+      for (len_t i = 0; i < this->nZ; i++)
+          if (this->ionNames[i] == name)
+              return true;
+
+      return false;
+  }
 /**
  *  Returns the density of ions which are characterised by 
  * atomic number Z and charge number Z0 at radial index ir.

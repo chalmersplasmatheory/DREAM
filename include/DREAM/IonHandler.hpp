@@ -77,6 +77,7 @@ namespace DREAM {
         void GetIonIndices(len_t, len_t&, len_t&);
 
         const len_t GetIonIndex(const std::string& name) const;
+        bool HasIon(const std::string& name) const;
 
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
