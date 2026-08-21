@@ -190,7 +190,7 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
 			        }else{
 					    eqn->AddTerm(new IonRateEquation(
 					        fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-					        addFluidIonization, addFluidJacobian, true
+					        nullptr, addFluidIonization, addFluidJacobian, true
 					    ));
 			        }
 			        if(includeKineticIonization){
