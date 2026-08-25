@@ -1,6 +1,7 @@
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "FVM/FVMException.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
+#include "DREAM/MoleculeHandler.hpp"
 
 
   using namespace DREAM;
@@ -12,6 +13,7 @@
       : ions(ions), adas(adas) {
 
       AddMolecularChargeStateRates();
+      AddAtomicChargeStateRates();
   }
 
 /**
@@ -24,36 +26,79 @@
       }
   }
 
-//PLACEHOLDER ADAS IMPLEMENTATION OF ADAS ATOM CHARGE STATE RATES
+
+  void RateHandler::AddAtomicChargeStateRates() {
+    for (len_t iIon = 0; iIon <ions->GetNZ(); iIon++){
+        const std::string& name = ions->GetName(iIon);
+        //check if not a molecule
+        if (MoleculeHandler().IsMolecule(name))
+            continue;
+        const len_t Z = ions->GetZ(iIon);
+
+        if (!adas->HasElement(Z))
+              continue;
+
+        ChargeStateRateSet rates;
+        rates.acd = new ADASChargeStateRate(name + "_ACD", adas->GetACD(Z));
+        rates.scd = new ADASChargeStateRate(name + "_SCD", adas->GetSCD(Z));
+        chargeStateRates[name] = rates;
+        printf(
+            "RateHandler: Added charge-state rates for atomic species '%s' (Z=%d).\n",
+            name.c_str(), Z
+        );
+    } 
+    printf("RateHandler: Added charge-state rates for %d species.\n", chargeStateRates.size());
+  }
 
 /**
  * Add charge-state rates for molecular species. 
- * Currently separate from the adas.
+ * Currently separate from the adas. and only for D2
  */
-  void RateHandler::AddMolecularChargeStateRates() {
-    //maybe to this as a for loop over all possible molecules (which are hardcoded)
-      if (ions->HasIon("D2")) { //this shouuld ideally not be checked fr name rather that iIon and loop thourgh
-        printf("RateHandler::AddMolecularChargeStateRates: Adding molecular charge-state rates for D2.\n");
+void RateHandler::AddMolecularChargeStateRates() {
+      MoleculeHandler molecules;
+
+      for (len_t iIon = 0; iIon < ions->GetNZ(); iIon++) {
+          const std::string& name = ions->GetName(iIon);
+          if (!molecules.IsMolecule(name))
+              continue;
           ChargeStateRateSet rates;
-          rates.acd = new ZeroChargeStateRate("D2_ACD_test");
-          rates.scd = new TabledChargeStateRate(
-              "D2_SCD_AMJUEL_2.2.9",
-              0,  // active Z0: D2^0 -> D2^1
-              D2_ioniz_229_nT,
-              D2_ioniz_229_nn,
-              D2_ioniz_229_coeff
-          );
+          if (name == "D2") {
+              printf(
+                  "RateHandler: Adding molecular charge-state rates for '%s'.\n",
+                  name.c_str()
+              );
 
-          chargeStateRates["D2"] = rates;
+              rates.acd = new ZeroChargeStateRate("D2_ACD_zero");
+              rates.scd = new TabledChargeStateRate(
+                  "D2_SCD_AMJUEL_2.2.9",
+                  0,
+                  D2_ioniz_229_nT,
+                  D2_ioniz_229_nn,
+                  D2_ioniz_229_coeff
+              );
+          } else {
+              printf(
+                  "WARNING: RateHandler: Molecule '%s' has no implemented charge-state rates. "
+                  "Using zero ACD/SCD rates.\n",
+                  name.c_str()
+              );
+
+              rates.acd = new ZeroChargeStateRate(name + "_ACD_zero");
+              rates.scd = new ZeroChargeStateRate(name + "_SCD_zero");
+          }
+
+          chargeStateRates[name] = rates;
       }
-
+      printf("RateHandler: Added charge-state rates for %d molecular species.\n", chargeStateRates.size());
   }
+
 
 //PLACEHOLDER ADAS IMPLEMENTATION OF RATES BETWEEN MOLECULAR AND ATOMIC SPECIES
 
 
 
 /**
+ * 
  * Get the ACD (recombination) charge-state rate for a given molecular species.
  */
   ChargeStateRate *RateHandler::GetACD(const std::string& name) const {

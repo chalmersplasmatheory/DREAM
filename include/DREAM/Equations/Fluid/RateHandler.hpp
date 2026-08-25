@@ -27,7 +27,7 @@ namespace DREAM {
 
         void AddMolecularChargeStateRates();
         //void AddMolecularRates()
-        //void addAtomicChargeStateRates();
+        void AddAtomicChargeStateRates();
 
     public:
         RateHandler(IonHandler *ions, ADAS *adas);
