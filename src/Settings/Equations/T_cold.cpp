@@ -288,7 +288,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         const len_t nZ = ionHandler->GetNZ();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[offset]>0){
-                Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(),
+                RateHandler *ratehandler = eqsys->GetRateHandler();
+                Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(), ratehandler,
                                                      addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, spi_abl_ioniz_mode));
                 offset+=nShard;
             }else {

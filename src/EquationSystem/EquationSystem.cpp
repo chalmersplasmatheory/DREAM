@@ -40,6 +40,9 @@ EquationSystem::EquationSystem(
  * Destructor.
  */
 EquationSystem::~EquationSystem() {
+    if (this->rateHandler != nullptr)
+        delete this->rateHandler;
+        
     if (this->ionHandler != nullptr)
         delete this->ionHandler;
 

@@ -139,6 +139,8 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
     );
 
 	IonHandler *ih=eqsys->GetIonHandler();
+    RateHandler *ratehandler = eqsys->GetRateHandler();
+
 	
     // Initialize ion equations
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
@@ -184,13 +186,13 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
 			        nEquil++;
 			        if(ih->GetZ(iZ)==1 && opacity_mode[iZ]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 					    eqn->AddTerm(new LyOpaqueDIonRateEquation(
-					        fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),
+					        fluidGrid, ih, iZ, eqsys->GetUnknownHandler(), ratehandler,
 					        addFluidIonization, addFluidJacobian, true, amjuel
 					    ));		            
 			        }else{
 					    eqn->AddTerm(new IonRateEquation(
-					        fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-					        nullptr, addFluidIonization, addFluidJacobian, true
+					        fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(), ratehandler,
+					         addFluidIonization, addFluidJacobian, true
 					    ));
 			        }
 			        if(includeKineticIonization){
@@ -247,7 +249,7 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
     	len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[SPIOffset]>=0){
-                eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
+                eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(), ratehandler,
                     addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction, SPIOffset,1,true,spi_abl_ioniz_mode));
                 SPIOffset+=nShard;
             }else {
