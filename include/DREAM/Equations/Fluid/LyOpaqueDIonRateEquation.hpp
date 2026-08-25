@@ -11,8 +11,8 @@ namespace DREAM {
     public:
     	LyOpaqueDIonRateEquation(
     		FVM::Grid* g, IonHandler* ions, const len_t iIon,
-    		FVM::UnknownQuantityHandler* unknowns, bool addFluidIonization, bool addFluidJacobian, bool isAbl, AMJUEL* amjuel
-    	):IonRateEquation(g,ions,iIon,nullptr,unknowns,nullptr,addFluidIonization, addFluidJacobian,isAbl), amjuel(amjuel){}
+    		FVM::UnknownQuantityHandler* unknowns, RateHandler* ratehandler, bool addFluidIonization, bool addFluidJacobian, bool isAbl, AMJUEL* amjuel
+    	):IonRateEquation(g,ions,iIon,nullptr,unknowns,ratehandler,addFluidIonization, addFluidJacobian,isAbl), amjuel(amjuel){}
  
     	virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{
     		const len_t Nr = this->grid->GetNr();

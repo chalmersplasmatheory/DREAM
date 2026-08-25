@@ -164,17 +164,13 @@ void IonRateEquation::Rebuild(
 
     real_t *T = unknowns->GetUnknownData(id_T_cold);
     real_t *n = unknowns->GetUnknownData(id_n_cold);
-    printf("Zion=%d\n", Zion);
     
     //here we must change it in some way to it does not only depend on Zion 
     //rather looking up the correct name and then connect it to the correct adas data
-    //TODO: Make this a general thing in the end so I dont have to repeat 
     
     MoleculeHandler molecules;
     const std::string& name = this->ions->GetName(this->iIon);
-    if (molecules.IsMolecule(name)) { //if molecule, collect from somewhere else
-        printf("IonRateEquation::Rebuild: Found molecule named '%s' with mass %e.\n", name.c_str(), molecules.GetMass(name));
-        ChargeStateRate *acd = this->ratehandler->GetACD(name);
+        ChargeStateRate *acd = this->ratehandler->GetACD(name); //should be iIon i think
         ChargeStateRate *scd = this->ratehandler->GetSCD(name);
 
         real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());
@@ -203,52 +199,12 @@ void IonRateEquation::Rebuild(
             real_t hT = eps*(1 + T[i]);
             for (len_t Z0 = 0; Z0 <= Zion; Z0++){
                 Ion[Z0][i]         = scd->Eval(Z0, n[i], T[i]);
-                printf("IonRateEquation::Rebuild: Ionization rate for molecule '%s' at Z0=%d, n=%e, T=%e is %e.\n", name.c_str(), Z0, n[i], T[i], Ion[Z0][i]);
                 PartialNIon[Z0][i] = (scd->Eval(Z0, n[i]+hn, T[i]) - Ion[Z0][i])/hn;
                 PartialTIon[Z0][i] = (scd->Eval(Z0, n[i], T[i]+hT) - Ion[Z0][i])/hT;
             }
         }
-    }
-    else { //is standard atom, get adas data
-        ADASRateInterpolator *acd = nullptr;
-        ADASRateInterpolator *scd = nullptr;
-        acd = adas->GetACD(Zion);
-        scd = adas->GetSCD(Zion);
     
 
-    
-
-    real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());
-    // Iterate over charge state (0 ... Z)
-    for (len_t i = 0; i < Nr; i++){
-        real_t hn = eps*(1 + n[i]);
-        real_t hT = eps*(1 + T[i]);
-        for (len_t Z0 = 0; Z0 <= Zion; Z0++){
-            Rec[Z0][i]         = acd->Eval(Z0, n[i], T[i]);
-            PartialNRec[Z0][i] = (acd->Eval(Z0, n[i]+hn, T[i]) - Rec[Z0][i])/hn;
-            PartialTRec[Z0][i] = (acd->Eval(Z0, n[i], T[i]+hT) - Rec[Z0][i])/hT;
-            Ion[Z0][i]         = 0;
-            PartialNIon[Z0][i] = 0;
-            PartialTIon[Z0][i] = 0;
-            
-            posIonizTerm[Z0][i] = 0;
-            negIonizTerm[Z0][i] = 0;
-            posRecTerm[Z0][i] = 0;
-            negRecTerm[Z0][i] = 0;
-        }
-    }
-    // if not covered by the kinetic ionization model, set fluid ionization rates
-    if(addFluidIonization || addFluidJacobian)
-        for (len_t i = 0; i < Nr; i++){
-            real_t hn = eps*(1 + n[i]);
-            real_t hT = eps*(1 + T[i]);
-            for (len_t Z0 = 0; Z0 <= Zion; Z0++){
-                Ion[Z0][i]         = scd->Eval(Z0, n[i], T[i]);
-                PartialNIon[Z0][i] = (scd->Eval(Z0, n[i]+hn, T[i]) - Ion[Z0][i])/hn;
-                PartialTIon[Z0][i] = (scd->Eval(Z0, n[i], T[i]+hT) - Ion[Z0][i])/hT;
-            }
-        }
-    }
 }
 
 

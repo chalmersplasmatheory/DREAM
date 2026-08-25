@@ -30,6 +30,7 @@ namespace DREAM { class EquationSystem; class Simulation; }
 //#include "IonHandler.hpp"
 #include "FVM/QuantityData.hpp"
 #include "DREAM/NBIHandler.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 
 
 namespace DREAM {
@@ -50,6 +51,7 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type runawayGrid_type;
 
         IonHandler *ionHandler=nullptr;
+        RateHandler *rateHandler=nullptr;
         Solver *solver=nullptr;
         TimeStepper *timestepper=nullptr;
         Simulation *simulation=nullptr;
@@ -131,6 +133,7 @@ namespace DREAM {
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
         IonHandler *GetIonHandler() { return this->ionHandler; }
+        RateHandler *GetRateHandler() { return this->rateHandler; }
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
 		std::vector<len_t> *GetExternallyIteratedUnknowns() { return &external_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
@@ -222,6 +225,9 @@ namespace DREAM {
         void SetIonHandler(IonHandler *ih) {
             this->ionHandler = ih;
             this->initializer->SetIonHandler(ih);
+        }
+        void SetRateHandler(RateHandler *rh) {
+            this->rateHandler = rh;
         }
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
