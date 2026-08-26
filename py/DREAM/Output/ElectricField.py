@@ -76,7 +76,7 @@ class ElectricField(FluidQuantity):
         :param int t: Index of time to calculate transferred momentum until.
         """
         if np.isscalar(t):
-            p = np.trapz(self[fromt:t], self.grid.t[fromt:t], axis=0)
+            p = np.trapezoid(self[fromt:t], self.grid.t[fromt:t], axis=0)
         else:
             p = []
             t = np.asarray(t)
@@ -85,7 +85,7 @@ class ElectricField(FluidQuantity):
                 raise OutputException("Unrecognized dimensions of time index: {}.".format(t.ndim))
 
             for time in t:
-                p.append(np.trapz(self[fromt:time], self.grid.t[fromt:time], axis=0))
+                p.append(np.trapezoid(self[fromt:time], self.grid.t[fromt:time], axis=0))
 
             p = np.array(p)
 
