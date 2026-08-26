@@ -16,17 +16,10 @@ class ChargeStateRate {
 
         virtual real_t Eval(const len_t Z0,  real_t n,  real_t T) const = 0;
 
-        virtual real_t Eval_deriv_n(const len_t Z0,  real_t n,  real_t T) const {
-            real_t eps = std::numeric_limits<real_t>::epsilon();
-            real_t dn = sqrt(eps)*n + eps;
-            return (Eval(Z0, n+dn, T) - Eval(Z0, n, T)) / dn;
-        }
+        virtual real_t Eval_deriv_n(const len_t Z0,  real_t n,  real_t T) const = 0;
 
-        virtual real_t Eval_deriv_T(const len_t Z0,  real_t n,  real_t T) const {
-            real_t eps = std::numeric_limits<real_t>::epsilon();
-            real_t dT = sqrt(eps)*T + eps;
-            return (Eval(Z0, n, T+dT) - Eval(Z0, n, T)) / dT;
-        }
+
+        virtual real_t Eval_deriv_T(const len_t Z0,  real_t n,  real_t T) const = 0;
 
         virtual const std::string& GetName() const = 0;
     };

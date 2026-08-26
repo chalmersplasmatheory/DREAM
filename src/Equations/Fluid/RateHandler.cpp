@@ -2,6 +2,7 @@
 #include "FVM/FVMException.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
 #include "DREAM/MoleculeHandler.hpp"
+#include "DREAM/Equations/Fluid/AMJUELData.hpp"
 
 
   using namespace DREAM;
@@ -11,22 +12,37 @@
   */
     RateHandler::RateHandler(IonHandler *ions, ADAS *adas)
       : ions(ions), adas(adas) {
+    
+    //Set rates for IonRateEquation
+    AddMolecularChargeStateRates();
+    AddAtomicChargeStateRates();
+      
+    //Add and set rates for MolecularRateEquation (to be implemented)  
+    AddMolecularReactionRates();
 
-      AddMolecularChargeStateRates();
-      AddAtomicChargeStateRates();
+    //Add and set rates to runaway ionizationfluid equation (to be implemented)
   }
 
 /**
  * Destructor.
  */
-  RateHandler::~RateHandler() {
+RateHandler::~RateHandler() {
       for (auto it = chargeStateRates.begin(); it != chargeStateRates.end(); it++) {
           delete it->second.acd;
           delete it->second.scd;
       }
+
+      for (auto it = molecularRatePairs.begin(); it != molecularRatePairs.end(); it++) {
+          delete it->chargeExchange;
+          delete it->dissociation;
+          delete it->dissociativeRecombination;
+      }
   }
 
 
+  /**
+   * Add charge-state rates for atomic species.
+   */
   void RateHandler::AddAtomicChargeStateRates() {
     for (len_t iIon = 0; iIon <ions->GetNZ(); iIon++){
         const std::string& name = ions->GetName(iIon);
@@ -93,13 +109,9 @@ void RateHandler::AddMolecularChargeStateRates() {
   }
 
 
-//PLACEHOLDER ADAS IMPLEMENTATION OF RATES BETWEEN MOLECULAR AND ATOMIC SPECIES
-
-
-
 /**
  * 
- * Get the ACD (recombination) charge-state rate for a given molecular species.
+ * Get the ACD (recombination) charge-state rate for a given species.
  */
   ChargeStateRate *RateHandler::GetACD(const std::string& name) const {
       auto it = chargeStateRates.find(name);
@@ -114,7 +126,7 @@ void RateHandler::AddMolecularChargeStateRates() {
 
 
 /**
- * Get the SCD (ionization) charge-state rate for a given molecular species.
+ * Get the SCD (ionization) charge-state rate for a given species.
  */
   ChargeStateRate *RateHandler::GetSCD(const std::string& name) const {
       auto it = chargeStateRates.find(name);
@@ -125,4 +137,80 @@ void RateHandler::AddMolecularChargeStateRates() {
           );
 
       return it->second.scd;
+  }
+
+/*
+ * Add molecular reaction rates for all defined molecular rate pairs.
+ */
+void RateHandler::AddMolecularReactionRates() {
+      for (len_t i = 0; i < molecularRatePairDefinitionCount; i++) { //loop over all molecular rate pair definitions
+          const MolecularRatePairDefinition& def = molecularRatePairDefinitions[i];
+
+          MolecularRatePair pair; //create a new molecular rate pair object in ratehandler
+          pair.reactant1Name = def.reactant1.name;
+          pair.reactant1Z0   = def.reactant1.Z0;
+          pair.reactant2Name = def.reactant2.name;
+          pair.reactant2Z0   = def.reactant2.Z0;
+        pair.product1Name  = def.product1.name;
+            pair.product1Z0    = def.product1.Z0;
+            pair.product2Name  = def.product2.name;
+            pair.product2Z0    = def.product2.Z0;
+
+          const std::string prefix = pair.reactant1Name + "_" + pair.reactant2Name;
+            // create the molecular reaction rates for the pair and add them to the ratehandler
+          pair.chargeExchange = CreateMolecularReactionRate(
+              prefix + "_chargeExchange",
+              def.chargeExchange
+          );
+
+          pair.dissociation = CreateMolecularReactionRate(
+              prefix + "_dissociation",
+              def.dissociation
+          );
+
+          pair.dissociativeRecombination = CreateMolecularReactionRate(
+              prefix + "_dissociativeRecombination",
+              def.dissociativeRecombination
+          );
+
+          molecularRatePairs.push_back(pair);
+      }
+
+      printf(
+          "RateHandler: Added " LEN_T_PRINTF_FMT " molecular reaction pairs.\n",
+          molecularRatePairs.size()
+      );
+  }
+/* Create a molecular reaction rate object based on the given definition. */
+MolecularReactionRate *RateHandler::CreateMolecularReactionRate(
+      const std::string& name,
+      const MolecularRateDefinition& def
+  ) {
+      switch (def.model) {
+          case MolecularRateModel::ZERO:
+              return new ZeroMolecularReactionRate(name + "_zero");
+
+          case MolecularRateModel::CONSTANT:
+              return new ConstantMolecularReactionRate(
+                  name + "_constant",
+                  def.constantValue
+              );
+
+          case MolecularRateModel::AMJUEL_POLYNOMIAL:
+              return new AMJUELTable(
+                  name + "_AMJUEL",
+                  0, //activeZ0
+                  def.nT,
+                  def.nn,
+                  def.coeff
+              );
+            case MolecularRateModel::INTERPOLATE_ENERGY:
+                return new EnergyInterpolatedMolecularReactionRate(
+                    name + "_energyInterp",
+                    def.energyPoints,
+                    def.crossSectionPoints
+                );
+      }
+
+      throw FVM::FVMException("RateHandler: Unknown molecular rate model.");
   }
