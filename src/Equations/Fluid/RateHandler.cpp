@@ -2,7 +2,9 @@
 #include "FVM/FVMException.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
 #include "DREAM/MoleculeHandler.hpp"
-#include "DREAM/Equations/Fluid/AMJUELData.hpp"
+#include "DREAM/MolecularRateData.hpp"
+#include "DREAM/MolecularRateInterpolator.hpp"
+
 
 
   using namespace DREAM;
@@ -68,7 +70,7 @@ RateHandler::~RateHandler() {
 
 /**
  * Add charge-state rates for molecular species. 
- * Currently separate from the adas. and only for D2
+ * Currently separate from the adas and only for D2
  */
 void RateHandler::AddMolecularChargeStateRates() {
       MoleculeHandler molecules;
@@ -77,33 +79,16 @@ void RateHandler::AddMolecularChargeStateRates() {
           const std::string& name = ions->GetName(iIon);
           if (!molecules.IsMolecule(name))
               continue;
-          ChargeStateRateSet rates;
+          ChargeStateRateSet rates
           if (name == "D2") {
-              printf(
-                  "RateHandler: Adding molecular charge-state rates for '%s'.\n",
-                  name.c_str()
-              );
-
               rates.acd = new ZeroChargeStateRate("D2_ACD_zero");
-              rates.scd = new TabledChargeStateRate(
-                  "D2_SCD_AMJUEL_2.2.9",
-                  0,
-                  D2_ioniz_229_nT,
-                  D2_ioniz_229_nn,
-                  D2_ioniz_229_coeff
-              );
-          } else {
-              printf(
-                  "WARNING: RateHandler: Molecule '%s' has no implemented charge-state rates. "
-                  "Using zero ACD/SCD rates.\n",
-                  name.c_str()
-              );
-
-              rates.acd = new ZeroChargeStateRate(name + "_ACD_zero");
-              rates.scd = new ZeroChargeStateRate(name + "_SCD_zero");
-          }
-
-          chargeStateRates[name] = rates;
+              rates.scd = new MolecularTableChargeStateRate(
+                "D2_SCD_AMJUEL_2.2.9",
+                0,
+                GetMolecularRateByName("D2_charge_state_ionization")
+            );
+          } 
+          chargeStateRates[name] = rates;s
       }
       printf("RateHandler: Added charge-state rates for %d molecular species.\n", chargeStateRates.size());
   }
@@ -143,74 +128,53 @@ void RateHandler::AddMolecularChargeStateRates() {
  * Add molecular reaction rates for all defined molecular rate pairs.
  */
 void RateHandler::AddMolecularReactionRates() {
-      for (len_t i = 0; i < molecularRatePairDefinitionCount; i++) { //loop over all molecular rate pair definitions
-          const MolecularRatePairDefinition& def = molecularRatePairDefinitions[i];
+    for (len_t i = 0; i < molecularRatePairDefinitionCount; i++) { //loop over all molecular rate pair definitions and add to the system
+        const MolecularRatePairDefinition& def = molecularRatePairDefinitions[i];
 
-          MolecularRatePair pair; //create a new molecular rate pair object in ratehandler
-          pair.reactant1Name = def.reactant1.name;
-          pair.reactant1Z0   = def.reactant1.Z0;
-          pair.reactant2Name = def.reactant2.name;
-          pair.reactant2Z0   = def.reactant2.Z0;
+        MolecularRatePair pair; //create a new molecular rate pair object in ratehandler
+        pair.reactant1Name = def.reactant1.name;
+        pair.reactant1Z0   = def.reactant1.Z0;
+        pair.reactant2Name = def.reactant2.name;
+        pair.reactant2Z0   = def.reactant2.Z0;
         pair.product1Name  = def.product1.name;
-            pair.product1Z0    = def.product1.Z0;
-            pair.product2Name  = def.product2.name;
-            pair.product2Z0    = def.product2.Z0;
+        pair.product1Z0    = def.product1.Z0;
+        pair.product2Name  = def.product2.name;
+        pair.product2Z0    = def.product2.Z0;
 
-          const std::string prefix = pair.reactant1Name + "_" + pair.reactant2Name;
-            // create the molecular reaction rates for the pair and add them to the ratehandler
-          pair.chargeExchange = CreateMolecularReactionRate(
-              prefix + "_chargeExchange",
-              def.chargeExchange
-          );
+        pair.chargeExchange = nullptr;
+        pair.dissociation = nullptr;
+        pair.dissociativeRecombination = nullptr;
 
-          pair.dissociation = CreateMolecularReactionRate(
-              prefix + "_dissociation",
-              def.dissociation
-          );
+        //maybe this could be simplified liter is the RateData.cpp is created manually bc then this would be ovious that the rateName is not nullptr but for now we keep it like this
 
-          pair.dissociativeRecombination = CreateMolecularReactionRate(
-              prefix + "_dissociativeRecombination",
-              def.dissociativeRecombination
-          );
+        if (def.chargeExchange.rateName != nullptr)
+              pair.chargeExchange = GetMolecularRateByName(def.chargeExchange.rateName);
 
-          molecularRatePairs.push_back(pair);
-      }
+        if (def.dissociation.rateName != nullptr)
+              pair.dissociation = GetMolecularRateByName(def.dissociation.rateName);
 
-      printf(
-          "RateHandler: Added " LEN_T_PRINTF_FMT " molecular reaction pairs.\n",
+        if (def.dissociativeRecombination.rateName != nullptr)
+              pair.dissociativeRecombination =GetMolecularRateByName(def.dissociativeRecombination.rateName);
+        
+        molecularRatePairs.push_back(pair);
+  }
+  printf(
+          "RateHandler: Added %zu molecular reaction pairs.\n",
           molecularRatePairs.size()
       );
-  }
-/* Create a molecular reaction rate object based on the given definition. */
-MolecularReactionRate *RateHandler::CreateMolecularReactionRate(
-      const std::string& name,
-      const MolecularRateDefinition& def
-  ) {
-      switch (def.model) {
-          case MolecularRateModel::ZERO:
-              return new ZeroMolecularReactionRate(name + "_zero");
-
-          case MolecularRateModel::CONSTANT:
-              return new ConstantMolecularReactionRate(
-                  name + "_constant",
-                  def.constantValue
-              );
-
-          case MolecularRateModel::AMJUEL_POLYNOMIAL:
-              return new AMJUELTable(
-                  name + "_AMJUEL",
-                  0, //activeZ0
-                  def.nT,
-                  def.nn,
-                  def.coeff
-              );
-            case MolecularRateModel::INTERPOLATE_ENERGY:
-                return new EnergyInterpolatedMolecularReactionRate(
-                    name + "_energyInterp",
-                    def.energyPoints,
-                    def.crossSectionPoints
-                );
+}
+MolecularRateInterpolator *RateHandler::GetMolecularRateByName(
+      const char *rateName
+  ) const {
+      for (len_t i = 0; i < molecular_rate_n; i++) {
+            //here we just check so that the name of the rate 
+            //has an interpolated version in the molecular rate table
+          if (std::string(molecular_rate_table[i].name) == rateName) 
+              return new MolecularRateInterpolator(&molecular_rate_table[i]);
       }
 
-      throw FVM::FVMException("RateHandler: Unknown molecular rate model.");
+      throw FVM::FVMException(
+          "RateHandler: No molecular rate table named '%s'.",
+          rateName
+      );
   }
