@@ -1,4 +1,4 @@
-
+//Goal is to remove this file later when mearching is easier
 #ifndef _DREAM_CHARGE_STATE_RATE_HPP
 #define _DREAM_CHARGE_STATE_RATE_HPP
 
@@ -7,6 +7,8 @@
 #include <string>
 #include "FVM/config.h"
 #include "DREAM/ADASRateInterpolator.hpp"
+#include "DREAM/MolecularRateInterpolator.hpp"
+
 
 namespace DREAM {
 
@@ -40,122 +42,48 @@ class ZeroChargeStateRate : public ChargeStateRate {
                 return name;}
 };
 
-class TabledChargeStateRate : public ChargeStateRate {
-    private:
-        std::string name;
-        len_t activeZ0;
-        len_t nT, nn;
-        const real_t *coeff;
-    public:
-        TabledChargeStateRate(
-            const std::string& name, const len_t activeZ0,
-            const len_t nT, const len_t nn, const real_t *coeff
-        ) : name(name), activeZ0(activeZ0), nT(nT), nn(nn), coeff(coeff) {}
-        
-        virtual const std::string& GetName() const override { return name; }
-        virtual real_t Eval(const len_t Z0,  real_t n,  real_t T) const override {
-                if (Z0 != activeZ0)
-                    return 0;
-                if(n>1e22)
-                    n=1e22;
-                else if(n<1e14)
-                    n=1e14;
+class MolecularTableChargeStateRate : public ChargeStateRate {
+  private:
+      std::string name;
+      len_t activeZ0;
+      MolecularRateInterpolator *rate;
 
-                const real_t n_cm3 = n * 1e-6 * 1e-8; //legacy conversoin
-                const real_t logT = std::log(T);
-                const real_t logn = std::log(n_cm3);
+  public:
+      MolecularTableChargeStateRate(
+          const std::string& name,
+          const len_t activeZ0,
+          MolecularRateInterpolator *rate
+      ) : name(name), activeZ0(activeZ0), rate(rate) {}
 
-                real_t sum = 0;
-                real_t pT = 1;
+      virtual ~MolecularTableChargeStateRate() override {
+          delete rate;
+      }
 
-                for (len_t iT = 0; iT < nT; iT++) {
-                    real_t pn = 1;
-                    for (len_t in = 0; in < nn; in++) {
-                        sum += coeff[iT*nn + in] * pT * pn;
-                        pn *= logn;
-                    }
-                    pT *= logT;
-                }
-                return std::exp(sum) * 1e-6; // Factor 1e6 converts from cm^3 to m^3
+      virtual real_t Eval(const len_t Z0, real_t n, real_t T) const override {
+          if (Z0 != activeZ0)
+              return 0;
+          return rate->Eval(n, T);
+      }
 
-        }
-          virtual real_t Eval_deriv_n(const len_t Z0,  real_t n,  real_t T) const override {
-            if (Z0 != activeZ0)
-                return 0;
+      virtual real_t Eval_deriv_n(const len_t Z0, real_t n, real_t T) const override {
+          if (Z0 != activeZ0)
+              return 0;
+          return rate->Eval_deriv_n(n, T);
+      }
 
-            if (n <= 0 || T <= 0)
-                return 0;
+      virtual real_t Eval_deriv_T(const len_t Z0, real_t n, real_t T) const override {
+          if (Z0 != activeZ0)
+              return 0;
+          return rate->Eval_deriv_T(n, T);
+      }
 
-            const real_t nScaled = n * 1e-14;
-            const real_t lnT = std::log(T);
-            const real_t lnn = std::log(nScaled);
-
-            real_t sum = 0;
-            real_t dsum_dn = 0;
-
-            real_t pT = 1;
-            for (len_t iT = 0; iT < nT; iT++) {
-                real_t pn = 1;
-                real_t pn_minus_1 = 1;
-
-                for (len_t in = 0; in < nn; in++) {
-                    const real_t c = coeff[iT*nn + in];
-
-                    sum += c * pT * pn;
-
-                    if (in > 0)
-                        dsum_dn += c * pT * in * pn_minus_1 / n;
-
-                    pn_minus_1 = pn;
-                    pn *= lnn;
-                }
-
-                pT *= lnT;
-            }
-
-            return std::exp(sum) * dsum_dn * 1e-6;
-        }
+      virtual const std::string& GetName() const override {
+          return name;
+      }
+  };
 
 
-        virtual real_t Eval_deriv_T(const len_t Z0,  real_t n,  real_t T) const override {
-            if (Z0 != activeZ0)
-                return 0;
 
-            if (n <= 0 || T <= 0)
-                return 0;
-
-            const real_t nScaled = n * 1e-14;
-            const real_t lnT = std::log(T);
-            const real_t lnn = std::log(nScaled);
-
-            real_t sum = 0;
-            real_t dsum_dT = 0;
-
-            real_t pT = 1;
-            real_t pT_minus_1 = 1;
-
-            for (len_t iT = 0; iT < nT; iT++) {
-                real_t pn = 1;
-
-                for (len_t in = 0; in < nn; in++) {
-                    const real_t c = coeff[iT*nn + in];
-
-                    sum += c * pT * pn;
-
-                    if (iT > 0)
-                        dsum_dT += c * iT * pT_minus_1 * pn / T;
-
-                    pn *= lnn;
-                }
-
-                pT_minus_1 = pT;
-                pT *= lnT;
-            }
-
-            return std::exp(sum) * dsum_dT * 1e-6;
-        }
-        
-    };
 
     class ADASChargeStateRate : public ChargeStateRate {
     private:

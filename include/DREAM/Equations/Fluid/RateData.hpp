@@ -5,14 +5,7 @@
 
 namespace DREAM {
 
-    //MOLECULAR RATES
-    //Different models for molecular reaction rates
-    enum class MolecularRateModel {
-        ZERO,
-        CONSTANT,
-        AMJUEL_POLYNOMIAL,
-        INTERPOLATE_ENERGY
-    };
+
 
     //How to identify a molecule (should probably add iz)
     struct RateSpeciesState {
@@ -22,15 +15,7 @@ namespace DREAM {
 
     //Definition of a molecular reaction rate
     struct MolecularRateDefinition {
-        MolecularRateModel model;
-        len_t nT;
-        len_t nn;
-        const real_t *coeff;
-        const real_t constantValue;
-
-        len_t nEnergy;
-        const real_t* energyPoints;
-        const real_t* crossSectionPoints;
+        const char *rateName;
     };
 
     //Definition of a pair of molecules and their reaction rates

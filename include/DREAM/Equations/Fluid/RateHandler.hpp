@@ -9,7 +9,7 @@
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/ChargeStateRate.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
-#include "DREAM/Equations/Fluid/MolecularReactionRate.hpp"
+#include "DREAM/MolecularRateInterpolator.hpp"
 #include <vector>
 
 namespace DREAM {
@@ -34,9 +34,9 @@ namespace DREAM {
     std::string product2Name;
     len_t product2Z0;
 
-    MolecularReactionRate *chargeExchange;
-    MolecularReactionRate *dissociation;
-    MolecularReactionRate *dissociativeRecombination;
+    MolecularRateInterpolator *chargeExchange;
+    MolecularRateInterpolator *dissociation;
+    MolecularRateInterpolator *dissociativeRecombination;
   };
 
 
@@ -48,11 +48,13 @@ namespace DREAM {
         std::unordered_map<std::string, ChargeStateRateSet> chargeStateRates;
         std::vector<MolecularRatePair> molecularRatePairs;
 
-        MolecularReactionRate *CreateMolecularReactionRate(const std::string& name, const MolecularRateDefinition& def);
+        MolecularRateInterpolator *CreateMolecularReactionRate(const std::string& name, const MolecularRateDefinition& def);
+        MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
         
         void AddMolecularChargeStateRates();
         void AddAtomicChargeStateRates();
         void AddMolecularReactionRates();
+
 
     public:
         RateHandler(IonHandler *ions, ADAS *adas);

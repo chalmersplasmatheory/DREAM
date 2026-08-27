@@ -88,7 +88,9 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RateHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RateData.cpp"
-    ##"${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MolecularRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/MolecularRateData.cpp"
+    "${PROJECT_SOURCE_DIR}/src/MolecularRateInterpolator.cpp"
+    ##"${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MolecularRateEquation.cpp" //this we will not have
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonSPIDepositionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SPIAblationTerm.cpp"
