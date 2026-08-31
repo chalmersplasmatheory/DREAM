@@ -18,7 +18,6 @@
 #include "FVM/Equation/Operator.hpp"
 #include "DREAM/Equations/Fluid/IonSourceTerm.hpp"
 #include "DREAM/MoleculeHandler.hpp"
-#include "DREAM/Equations/Fluid/MolecularRateEquation.hpp"
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 
 
