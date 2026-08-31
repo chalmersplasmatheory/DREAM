@@ -79,7 +79,7 @@ void RateHandler::AddMolecularChargeStateRates() {
           const std::string& name = ions->GetName(iIon);
           if (!molecules.IsMolecule(name))
               continue;
-          ChargeStateRateSet rates
+          ChargeStateRateSet rates;
           if (name == "D2") {
               rates.acd = new ZeroChargeStateRate("D2_ACD_zero");
               rates.scd = new MolecularTableChargeStateRate(
@@ -88,7 +88,7 @@ void RateHandler::AddMolecularChargeStateRates() {
                 GetMolecularRateByName("D2_charge_state_ionization")
             );
           } 
-          chargeStateRates[name] = rates;s
+          chargeStateRates[name] = rates;
       }
       printf("RateHandler: Added charge-state rates for %d molecular species.\n", chargeStateRates.size());
   }

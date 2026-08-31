@@ -48,7 +48,6 @@ namespace DREAM {
         std::unordered_map<std::string, ChargeStateRateSet> chargeStateRates;
         std::vector<MolecularRatePair> molecularRatePairs;
 
-        MolecularRateInterpolator *CreateMolecularReactionRate(const std::string& name, const MolecularRateDefinition& def);
         MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
         
         void AddMolecularChargeStateRates();
