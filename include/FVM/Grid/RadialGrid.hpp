@@ -95,7 +95,7 @@ namespace DREAM::FVM {
         void DeallocateFSAvg();
         void InitializeFSAvg(
             real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f,
-            real_t *B2avg, real_t *B2avg_f,
+            real_t *B2avg, real_t *B2avg_f, real_t *OneOverBavg, real_t *OneOverBavg_f,
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
 
