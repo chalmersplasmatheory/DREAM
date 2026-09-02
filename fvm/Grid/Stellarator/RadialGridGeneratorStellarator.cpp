@@ -75,6 +75,8 @@ void RadialGridGeneratorStellarator::RebuildJacobians(RadialGridStellarator *rGr
     );
     delete [] phi_Bmin;
     delete [] phi_Bmax;
+    delete [] phi_Bmin_f;
+    delete [] phi_Bmax_f;
 }
 
 // The remaining functions are related to determining theta_Bmin and theta_Bmax
