@@ -1,9 +1,11 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 import sys
 
-sys.path.append('/home/ekmark/Desktop/DREAM/py')
-import DREAM
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Ensure DREAM python package is importable when running from a repo checkout
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'py')))
 
 from DREAM import DREAMSettings, runiface
 import DREAM.Settings.RadialGrid as RadialGrid
