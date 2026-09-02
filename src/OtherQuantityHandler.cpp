@@ -1433,9 +1433,24 @@ real_t OtherQuantityHandler::evaluateMagneticEnergy(){ // TODO: Not accurate for
     real_t fourPiInv = 1/(4*M_PI);
     if (rGrid->isStellarator()) {
         const real_t *FSA_BdotGradPhi = rGrid->GetFSA_BdotGradphi();
-
-        for(len_t ir=0; ir<rGrid->GetNr(); ir++)
-            E_mag -= fourPiInv*dr[ir] * VpVol[ir] * FSA_BdotGradPhi[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+        const real_t *psi_t = rGrid->GetToroidalFlux();
+        const real_t *dpsi_t = rGrid->GetPsiPrimeRef();
+        const real_t *r = rGrid->GetR();
+        real_t dpsi_p_m, dpsi_p_p, dpsi_p;
+        for(len_t ir=0; ir<rGrid->GetNr(); ir++){
+            if (ir == 0) {
+                dpsi_p_m = 0;
+                dpsi_p_p = (psi_p[ir+1] - psi_p[ir]) / (r[ir+1] - r[ir]);
+            } else if (ir == rGrid->GetNr()-1) {
+                dpsi_p_m = (psi_p[ir] - psi_p[ir-1]) / (r[ir] - r[ir-1]);
+                dpsi_p_p = 0;
+            } else {
+                dpsi_p_m = (psi_p[ir] - psi_p[ir-1]) / (r[ir] - r[ir-1]);
+                dpsi_p_p = (psi_p[ir+1] - psi_p[ir]) / (r[ir+1] - r[ir]);
+            }
+            dpsi_p = (dpsi_p_m + dpsi_p_p) / 2;
+            E_mag += fourPiInv*dr[ir] * VpVol[ir] * FSA_BdotGradPhi[ir] * jtot[ir] * (psi_t[ir]*dpsi_p/dpsi_t[ir] - psi_p[ir]) / Bmin[ir];
+        }
     } else {
         const real_t *G_R0 = rGrid->GetBTorG();
         const real_t *FSA_1OverR2 = rGrid->GetFSA_1OverR2();
