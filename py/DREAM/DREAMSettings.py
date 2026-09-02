@@ -2,11 +2,12 @@
 # An object representing the settings passed when running DREAM.
 # ###############################################################
 
-import copy
-import numpy as np
 import os
+
 from . import DREAMIO as DREAMIO
 from . helpers import merge_dicts
+
+from .DREAMException import DREAMException
 
 # Settings objects
 from .Settings.CollisionHandler import CollisionHandler

@@ -45,6 +45,13 @@ class Simulation:
         return libdreampy.get_current_time(self.ptr)
 
 
+    def getGrid(self):
+        """
+        Return the simulation grid object.
+        """
+        return libdreampy.get_grid(self.ptr)
+
+
     def getMaxTime(self):
         """
         Returns the maximum simulation time.

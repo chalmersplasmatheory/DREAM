@@ -4,7 +4,6 @@ from . import resolvedreampaths
 from PyQt5 import QtWidgets
 import numpy as np
 import sys
-import time
 
 from DREAM import DREAMSettings
 from dreampyface import Simulation

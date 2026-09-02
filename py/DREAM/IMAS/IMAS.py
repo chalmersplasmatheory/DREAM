@@ -1,20 +1,17 @@
 # Functions to load data from IDS format and save DREAM output to IDS format
 
-import imas
 import numpy as np
-from imas import imasdef
 import logging
 import os
-import sys
-#sys.path.append (os.environ['DREAMPATH']+'/py')
-import h5py
 
-import DREAM
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.ElectricField as ElectricField
 import DREAM.Settings.Equations.ColdElectronTemperature as Tcold
 from scipy.interpolate import CubicSpline
+
+import imas
+from imas import imasdef
 
 '''
 The readInIDSSlice function takes a single time slice from the IDS database defined by the shot and run numbers, the tokamak and the time points from which the data will be loaded. If the time specified by the user is not available in the requested IDS, an interpolation from the closest timepoints will be performed. This function is optimal to perform DREAM simulations using IDS data as initial condition.
@@ -40,8 +37,8 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, 
 			if log:
 				logging.info('The time used in loading IDS data is %s s\n', str(time))
 		
-		except:
-			raise Exception('The equilibrium or the core profiles IDS seems to be empty. Please check the shot file!')
+		except Exception as e:
+			raise Exception('The equilibrium or the core profiles IDS seems to be empty. Please check the shot file!') from e
 			
 	# get the necessary IDS-s
 	coreprof = dataEntry.get_slice('core_profiles', time, imasdef.LINEAR_INTERP)
@@ -82,7 +79,7 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, 
 			logging.warning('The electron density from core profiles IDS seems to be empty!\n')
 			raise Exception('Error in loading core profiles data. Please check the input data!')
 		else:
-			n_e = coreprof.profiles_1d[0].electrons.density
+			# n_e = coreprof.profiles_1d[0].electrons.density
 			if log:
 				logging.info('The electron density from core profiles IDS loaded successfully!\n')
 
@@ -148,7 +145,7 @@ def readInIDSSlice(shot, run, tokamak, user=os.getlogin(), time=-999, log=None, 
 		logging.warning('The 2D minor radius from equilibrium IDS seems to be empty!\n')
 		raise Exception('Error in loading equilibrium data. Please check the input data!')
 	else:
-		r = equilibrium.time_slice[0].profiles_2d[0].r
+		# r = equilibrium.time_slice[0].profiles_2d[0].r
 		if log:
 			logging.info('The 2D minor radius from equilibrium IDS loaded successfully!\n')
 
@@ -444,7 +441,7 @@ def readInIDS(shot, run, tokamak, user=os.getlogin(), log=False, setUpDream=True
 		logging.warning('The 2D minor radius from equilibrium IDS seems to be empty!\n')
 		raise Exception('Error in loading equilibrium data. Please check the input data!')
 	else:
-		r = equilibrium.time_slice[0].profiles_2d[0].r
+		# r = equilibrium.time_slice[0].profiles_2d[0].r
 		if log:
 			logging.info('The 2D minor radius from equilibrium IDS loaded successfully!\n')
 

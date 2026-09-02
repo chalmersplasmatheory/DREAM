@@ -1,7 +1,6 @@
 
 import matplotlib as mpl
 from matplotlib.colors import LinearSegmentedColormap
-import numpy as np
 
 
 def get(reverse=False, N=256):

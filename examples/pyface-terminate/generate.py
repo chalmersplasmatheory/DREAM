@@ -24,6 +24,8 @@ def terminate_ioniz(sim):
 
     ncold = sim.unknowns.getData('n_cold')
     ntot  = sim.unknowns.getData('n_tot')
+    grid = sim.getGrid()
+    #print(f'R0 = {grid["grid"]["R0"]}')
 
     if ncold['x'].shape[0] < 2:
         return False

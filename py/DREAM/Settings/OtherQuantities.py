@@ -1,7 +1,6 @@
 # Handler for "other" quantities, such as collision frequencies,
 # bounce averages etc.
 
-import numpy as np
 from .. DREAMException import DREAMException
 
 

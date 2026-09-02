@@ -1,8 +1,8 @@
 import numpy as np
+
 from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . UnknownQuantity import UnknownQuantity
-from .. TransportSettings import TransportSettings
 from ... helpers import scal
 
 

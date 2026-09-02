@@ -2,7 +2,6 @@
 # Solver settings object
 #################################
 
-import numpy as np
 from .. DREAMException import DREAMException
 from .. helpers import scal
 from . ToleranceSettings import ToleranceSettings

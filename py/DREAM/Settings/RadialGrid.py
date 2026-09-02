@@ -204,7 +204,7 @@ class RadialGrid(PrescribedScalarParameter):
         if ntheta <= 0:
             raise DREAMException(f"RadialGrid: Invalid value assigned to 'ntheta_out': {ntheta}.")
 
-        self.ntheta_out = ntheta_out
+        self.ntheta_out = ntheta
 
 
     def setShapeParameter(self, name, data, r=0.0):
@@ -504,7 +504,7 @@ class RadialGrid(PrescribedScalarParameter):
                 if self.num_fileformat == FILE_FORMAT_LUKE:
                     try:
                         self.num_magneticfield = LUKEMagneticField(self.num_filename)
-                    except:
+                    except Exception:
                         self.num_magneticfield = None
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
@@ -596,7 +596,7 @@ class RadialGrid(PrescribedScalarParameter):
             elif (self.r0 is None or self.r0 < 0) and self.r_f is None:
                 raise DREAMException("RadialGrid: Invalid value assigned to innermost simulated radius 'r0': {}".format(self.r0))
             elif self.b is None or self.b<self.a:
-                raise DREAMException("RadialGrid: Invalid value assigned to wall radius 'b' (must be explicitly set to >= 'a' using 'setWallRadius'): ".format(self.b))
+                raise DREAMException("RadialGrid: Invalid value assigned to wall radius 'b' (must be explicitly set to >= 'a' using 'setWallRadius'): {}".format(self.b))
             if self.r0 >= self.a and self.r_f is None:
                 raise DREAMException("RadialGrid: 'r0' must be strictly less than 'a'.")
             if self.nr <= 0 and self.r_f is None:
@@ -658,7 +658,7 @@ class RadialGrid(PrescribedScalarParameter):
             elif type(self.ripple_t) != np.ndarray or self.ripple_t.ndim != 1:
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_t'.")
             elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_t.size, self.ripple_r.size):
-                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
+                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B': {}".format(self.ripple_dB_B))
 
         
     def verifySettingsShapeParameter(self, shapeparam):
