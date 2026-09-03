@@ -1,39 +1,45 @@
 #ifndef _DREAM_RATE_DATA_HPP
 #define _DREAM_RATE_DATA_HPP
 
-#include "FVM/config.h"
+  #include "FVM/config.h"
 
-namespace DREAM {
+  namespace DREAM {
+
+      enum class MolecularReactionProcess {
+          CHARGE_EXCHANGE,
+          IONIZATION,
+          RECOMBINATION,
+          DISSOCIATION,
+          DISSOCIATIVE_IONIZATION,
+          DISSOCIATIVE_RECOMBINATION,
+          ION_MOLECULE_CONVERSION,
+          REACTIVE_CHARGE_TRANSFER
+      };
 
 
 
-    //How to identify a molecule (should probably add iz)
-    struct RateSpeciesState {
-        const char *name;
-        len_t Z0;
-    };
+      struct MolecularReactionSpecies {
+          const char *name;
+          int_t Z0;
+          len_t coefficient;
+      };
 
-    //Definition of a molecular reaction rate
-    struct MolecularRateDefinition {
-        const char *rateName;
-    };
+      struct MolecularReactionDefinition {
+          const char *rateName;
 
-    //Definition of a pair of molecules and their reaction rates
-    struct MolecularRatePairDefinition {
-        RateSpeciesState reactant1;
-        RateSpeciesState reactant2;
+          MolecularReactionProcess process;
 
-        RateSpeciesState product1;
-        RateSpeciesState product2;
+          len_t nReactants;
+          const MolecularReactionSpecies *reactants;
 
-        MolecularRateDefinition chargeExchange;
-        MolecularRateDefinition dissociation;
-        MolecularRateDefinition dissociativeRecombination;
-    };
+          len_t nProducts;
+          const MolecularReactionSpecies *products;
+      };
 
-    
-    extern const len_t molecularRatePairDefinitionCount; // number of molecular rate pair definitions
-    extern const MolecularRatePairDefinition molecularRatePairDefinitions[]; // array of molecular rate pair definitions
+      extern const len_t molecularReactionDefinitionCount;
+      extern const MolecularReactionDefinition
+      molecularReactionDefinitions[];
+
   }
 
-  #endif/*_DREAM_RATE_DATA_HPP*/
+  #endif /* _DREAM_RATE_DATA_HPP */

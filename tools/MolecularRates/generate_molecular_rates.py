@@ -242,12 +242,88 @@ def compile_molecular_rates(outputfile, inttype="len_t", realtype="real_t"):
       pathlib.Path(outputfile).parent.mkdir(parents=True, exist_ok=True)
       pathlib.Path(outputfile).write_text(filecontents)
 
+def cpp_identifier(name):
+        return (
+            name.replace("+", "p")
+                .replace("-", "m")
+                .replace(".", "_")
+                .replace(" ", "_")
+        )
 
+
+def cpp_species(spec):
+        name, Z0, coefficient = spec
+        return f'{{"{name}", {Z0}, {coefficient}}}'
+
+
+def cpp_process(classification):
+        process_map = {
+            "CHARGE_EXCHANGE": "CHARGE_EXCHANGE",
+            "IONIZATION": "IONIZATION",
+            "RECOMBINATION": "RECOMBINATION",
+            "DISSOCIATION": "DISSOCIATION",
+            "DISSOCIATION_IONIZATION": "DISSOCIATIVE_IONIZATION",
+            "DISSOCIATIVE_IONIZATION": "DISSOCIATIVE_IONIZATION",
+            "DISSOCIATIVE_RECOMBINATION": "DISSOCIATIVE_RECOMBINATION",
+            "ION_MOLECULE_CONVERSION": "ION_MOLECULE_CONVERSION",
+            "REACTIVE_CHARGE_TRANSFER": "REACTIVE_CHARGE_TRANSFER",
+        }
+
+        if classification not in process_map:
+            raise ValueError(f"Unknown molecular reaction classification '{classification}'")
+
+        return f"MolecularReactionProcess::{process_map[classification]}"
+
+
+def compile_rate_data(outputfile):
+        body = ""
+        body += '#include "DREAM/Equations/Fluid/RateData.hpp"\n\n'
+        body += "namespace DREAM {\n\n"
+
+        entries = ""
+
+        for reaction in data.MOLECULAR_REACTIONS:
+            name = reaction["name"]
+            cname = cpp_identifier(name)
+
+            reactants = reaction["reactants"]
+            products = reaction["products"]
+
+            reactants_name = f"{cname}_reactants"
+            products_name = f"{cname}_products"
+
+            body += f"static const MolecularReactionSpecies {reactants_name}[] = {{\n"
+            for species in reactants:
+                body += f"    {cpp_species(species)},\n"
+            body += "};\n\n"
+
+            body += f"static const MolecularReactionSpecies {products_name}[] = {{\n"
+            for species in products:
+                body += f"    {cpp_species(species)},\n"
+            body += "};\n\n"
+
+            entries += "    {\n"
+            entries += f'        "{name}",\n'
+            entries += f"        {cpp_process(reaction['classification'])},\n"
+            entries += f"        {len(reactants)}, {reactants_name},\n"
+            entries += f"        {len(products)}, {products_name}\n"
+            entries += "    },\n"
+
+        body += "const MolecularReactionDefinition molecularReactionDefinitions[] = {\n"
+        body += entries
+        body += "};\n\n"
+        body += "const len_t molecularReactionDefinitionCount =\n"
+        body += "    sizeof(molecularReactionDefinitions) / sizeof(molecularReactionDefinitions[0]);\n\n"
+        body += "} // namespace DREAM\n"
+
+        pathlib.Path(outputfile).parent.mkdir(parents=True, exist_ok=True)
+        pathlib.Path(outputfile).write_text(body)
 
 def main():
-      root = pathlib.Path(__file__).resolve().parents[2]
-      outputfile = root / "src/MolecularRateData.cpp"
-      compile_molecular_rates(outputfile)
+        root = pathlib.Path(__file__).resolve().parents[2]
+
+        compile_molecular_rates(root / "src/MolecularRateData.cpp")
+        compile_rate_data(root / "src/Equations/Fluid/RateData.cpp")
 
 
 if __name__ == "__main__":

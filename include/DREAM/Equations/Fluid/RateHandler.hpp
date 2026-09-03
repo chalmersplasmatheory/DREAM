@@ -20,23 +20,31 @@ namespace DREAM {
       ChargeStateRate *scd;
 
     };
+
+   // enum class MolecularReactionType {
+   //       CHARGE_EXCHANGE,
+   //       IONIZATION,
+   //       RECOMBINATION,
+    //      DISSOCIATION,
+     //     DISSOCIATIVE_IONIZATION,
+      //    DISSOCIATIVE_RECOMBINATION,
+      //    ION_MOLECULE_CONVERSION,
+     //     REACTIVE_CHARGE_TRANSFER
+     // };
   
     //Struct to hold the molecular reaction rates for a given pair of species
-    struct MolecularRatePair {
-    std::string reactant1Name;
-    len_t reactant1Z0;
+    struct MolecularReaction {
+      const char *rateName;
 
-    std::string reactant2Name;
-    len_t reactant2Z0;
+          MolecularReactionProcess process;
 
-    std::string product1Name;
-    len_t product1Z0;
-    std::string product2Name;
-    len_t product2Z0;
+          len_t nReactants;
+          const MolecularReactionSpecies *reactants;
 
-    MolecularRateInterpolator *chargeExchange;
-    MolecularRateInterpolator *dissociation;
-    MolecularRateInterpolator *dissociativeRecombination;
+          len_t nProducts;
+          const MolecularReactionSpecies *products;
+
+        MolecularRateInterpolator *rate;
   };
 
 
@@ -46,7 +54,7 @@ namespace DREAM {
         ADAS *adas;
 
         std::unordered_map<std::string, ChargeStateRateSet> chargeStateRates;
-        std::vector<MolecularRatePair> molecularRatePairs;
+        std::vector<MolecularReaction> molecularReactions;
 
         MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
         
@@ -60,9 +68,10 @@ namespace DREAM {
         ~RateHandler();
 
 
-        const std::vector<MolecularRatePair>& GetMolecularRatePairs() const {
-                return molecularRatePairs;
-            }
+
+        //const std::vector<MolecularReaction>& GetMolecularRatePairs() const {
+          //      return molecularReactions;
+           // }
 
         ChargeStateRate *GetACD(const std::string& name) const;
         ChargeStateRate *GetSCD(const std::string& name) const;
