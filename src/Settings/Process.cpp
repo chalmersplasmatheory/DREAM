@@ -28,7 +28,7 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     const real_t t0 = 0;
     // Construct grids
     enum OptionConstants::momentumgrid_type ht_type, re_type;
-    FVM::Grid *scalarGrid  = ConstructScalarGrid();
+    FVM::Grid *scalarGrid  = ConstructScalarGrid(s);
     FVM::Grid *fluidGrid   = ConstructRadialGrid(s);
     FVM::Grid *hottailGrid = ConstructHotTailGrid(s, fluidGrid->GetRadialGrid(), &ht_type);
     

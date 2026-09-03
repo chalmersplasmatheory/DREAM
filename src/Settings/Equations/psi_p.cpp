@@ -4,7 +4,7 @@
  * radius of the magnetic axis,
  * psi_p = poloidal flux / R0
  */
-
+#include "FVM/Matrix.hpp"
 #include <iostream>
 #include <string>
 #include "DREAM/EquationSystem.hpp"
@@ -53,6 +53,119 @@ namespace DREAM {
             }
         }
     };
+    class AmperesLawJTotTermStellarator : public FVM::DiagonalLinearTerm {
+    public:
+        AmperesLawJTotTermStellarator(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){}
+
+        virtual void SetWeights() override {
+            len_t offset = 0;
+            for (len_t ir = 0; ir < nr; ir++){
+                real_t w = 2*M_PI*Constants::mu0 * grid->GetRadialGrid()->GetFSA_BdotGradphi(ir) 
+                    / grid->GetRadialGrid()->GetBmin(ir);
+                for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                    weights[offset + i] = w;
+                offset += n1[ir]*n2[ir];
+            }
+        }
+    };
+    // Term representing the diffusion term on psi_p
+    class AmperesLawDiffusionTermStellaratorPoloidalFlux : public FVM::DiffusionTerm {
+    public:
+        AmperesLawDiffusionTermStellaratorPoloidalFlux(FVM::Grid *g ) : FVM::DiffusionTerm(g) {}        
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
+            for (len_t ir = 0; ir <= nr; ir++) {
+                real_t drr = grid->GetRadialGrid()->GetFSA_gttOverJ2_f(ir);
+                for (len_t j = 0; j < n2[0]; j++) 
+                    for (len_t i = 0; i < n1[0]; i++) 
+                        Drr(ir, i, j) += drr;
+            }
+        }
+    };
+    // Term representing the diffusion term on psi_p
+    class AmperesLawConstantTermStellaratorToroidalFlux : public FVM::EquationTerm {
+    private: 
+        real_t *term = nullptr; 
+    public:
+        AmperesLawConstantTermStellaratorToroidalFlux(FVM::Grid *g ) : FVM::EquationTerm(g) {
+            AllocateTerm();
+
+        }
+
+        ~AmperesLawConstantTermStellaratorToroidalFlux()
+        {
+            DeallocateTerm();
+        }
+        
+        void AllocateTerm() {
+            term = new real_t[nr];
+        }
+
+        void DeallocateTerm() {
+            delete [] term;
+        }
+
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
+            for (len_t ir = 0; ir < nr; ir++) {
+                real_t c_l, dr = grid->GetRadialGrid()->GetDr(ir);
+                if (ir == 0){ 
+                    c_l = grid->GetRadialGrid()->GetVpVol(ir) * grid->GetRadialGrid()->GetFSA_gtpOverJ2(ir) * grid->GetRadialGrid()->GetPsiPrimeRef(ir);
+                    dr /= 2.;
+                } else
+                    c_l = grid->GetRadialGrid()->GetVpVol_f(ir) * grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir);
+                real_t c_u = grid->GetRadialGrid()->GetVpVol_f(ir+1) * grid->GetRadialGrid()->GetFSA_gtpOverJ2_f(ir+1) * grid->GetRadialGrid()->GetPsiPrimeRef_f(ir+1);
+                term[ir] = 1 / grid->GetRadialGrid()->GetVpVol(ir) * (c_u - c_l) / dr;
+            }
+        }
+        
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; };
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 0; };
+
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {return false;};
+
+        virtual void SetVectorElements(real_t* vec, const real_t*) override {
+            for (len_t ir = 0; ir < nr; ir++)
+                vec[ir] += term[ir];
+        }
+
+    };
+
+    // Term representing the extra term to psi_wall
+    class PsiWallStellaratorTerm : public FVM::EquationTerm {
+    private: 
+        real_t *term = nullptr; 
+        FVM::Grid *fluidGrid = nullptr;
+    public:
+        PsiWallStellaratorTerm(FVM::Grid *g, FVM::Grid *fg) : fluidGrid(fg), FVM::EquationTerm(g) {
+            AllocateTerm();
+        }
+
+        ~PsiWallStellaratorTerm()
+        {
+            DeallocateTerm();
+        }
+        
+        void AllocateTerm() {
+            term = new real_t[1];
+        }
+
+        void DeallocateTerm() {
+            delete [] term;
+        }
+
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {
+            term[0] = fluidGrid->GetRadialGrid()->GetPsiExtraAtWall();
+        }
+        
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; };
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 0; };
+
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {return false;};
+
+        virtual void SetVectorElements(real_t* vec, const real_t*) override {
+            vec[0] += term[0];
+        }
+
+    };
 }
 
 #define MODULENAME "eqsys/E_field/bc"
@@ -66,7 +179,7 @@ namespace DREAM {
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_psi_p(
-    EquationSystem *eqsys, Settings*
+    EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
@@ -81,10 +194,15 @@ void SimulationGenerator::ConstructEquation_psi_p(
     FVM::Operator *eqn_j2 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn_j3 = new FVM::Operator(fluidGrid);
 
-    eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
-    eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
+    if (fluidGrid->GetRadialGrid()->isStellarator()) {
+        eqn_j1->AddTerm(new AmperesLawJTotTermStellarator(fluidGrid));
+        eqn_j2->AddTerm(new AmperesLawDiffusionTermStellaratorPoloidalFlux(fluidGrid));
+        eqn_j2->AddTerm(new AmperesLawConstantTermStellaratorToroidalFlux(fluidGrid));
+    } else {
+        eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
+        eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
+    }
     eqsys->SetOperator(id_psi_p, id_j_tot, eqn_j1, "Poloidal flux Ampere's law");
-
 	/*enum OptionConstants::uqty_E_field_eqn Etype =
 		(enum OptionConstants::uqty_E_field_eqn)s->GetInteger("eqsys/E_field/type");*/
 
@@ -161,22 +279,35 @@ void SimulationGenerator::ConstructEquation_psi_init_integral(
         for(len_t ir=1; ir<nr; ir++)
             Itot[ir] = Itot[ir-1] + TotalPlasmaCurrentFromJTot::GetIpIntegrand(ir,rGrid) * j_tot_init[ir];
 
-        // we use the convention that the initial poloidal flux at the wall is 0
+        // we use the convention that the initial poloidal flux at the wall is 0 
         real_t psi_edge_init = -M_inductance*Itot[nr-1]; 
-
         const real_t *r = rGrid->GetR();
         const real_t *dr = rGrid->GetDr();
         const real_t a = rGrid->GetR_f(nr);
-        #define integrand(I, Ip) 2*M_PI*Constants::mu0*Ip/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
-        psi_p_init[nr-1] = psi_edge_init - (a-r[nr-1])*integrand(nr-1, I_p_init[0]);
-        if(nr>1)
-            for(len_t ir = nr-2; true; ir--){
-                psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir, Itot[ir]);
-                if(ir==0)
-                    break;
-            }
+        
+        if (rGrid->isStellarator()) {
+            #define integrand(I, Ip) 2*M_PI*Constants::mu0*Ip/(rGrid->GetVpVol(I)*rGrid->GetFSA_gttOverJ2_f(I)) - rGrid->GetFSA_gtpOverJ2_f(I)/rGrid->GetFSA_gttOverJ2_f(I) * rGrid->GetPsiPrimeRef_f(I)
+            psi_p_init[nr-1] = psi_edge_init - (a-r[nr-1])*integrand(nr-1, I_p_init[0]);
+            if(nr>1)
+                for(len_t ir = nr-2; true; ir--){
+                    psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir, Itot[ir]);
+                    if(ir==0)
+                        break;
+                }
 
-        #undef integrand
+            #undef integrand
+        } else {
+            #define integrand(I, Ip) 2*M_PI*Constants::mu0*Ip/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
+            psi_p_init[nr-1] = psi_edge_init - (a-r[nr-1])*integrand(nr-1, I_p_init[0]);
+            if(nr>1)
+                for(len_t ir = nr-2; true; ir--){
+                    psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir, Itot[ir]);
+                    if(ir==0)
+                        break;
+                }
+
+            #undef integrand
+        }
         delete [] Itot;
     };
             
@@ -274,7 +405,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             
             Op_V_loop_wall_1->AddTerm(new FVM::ConstantParameter(scalarGrid,0.0));
             eqsys->SetOperator(id_V_loop_wall, id_V_loop_wall, Op_V_loop_wall_1, "zero");
-        } else {
+        } else { 
             // Introduce I_w and set 
             //      V_loop_wall = R_W * I_w
             //      dpsi_w/dt = -L_w*(dI_p/dt+dI_w/dt)
@@ -316,6 +447,9 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             Op_I_w_1->AddTerm(new FVM::TransientTerm(scalarGrid,id_psi_wall));
             Op_I_w_2->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_w, L_ext));
             Op_I_w_3->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_p, L_ext));
+            if (fluidGrid->GetRadialGrid()->isStellarator())
+                Op_I_w_1->AddTerm(new PsiWallStellaratorTerm(scalarGrid, fluidGrid)); // TODO: not tested
+
 
             string psiw_desc = "psi_w = ";
 
@@ -362,6 +496,8 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             }
 
             psiw_desc += "- L_ext*(I_p+I_w)";
+            if (fluidGrid->GetRadialGrid()->isStellarator())
+                psiw_desc += "- psi_extra(b)";
 
             eqsys->SetOperator(id_I_w,id_psi_wall,Op_I_w_1, psiw_desc);
             eqsys->SetOperator(id_I_w,id_I_w,Op_I_w_2);
