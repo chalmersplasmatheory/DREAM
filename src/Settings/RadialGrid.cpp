@@ -48,7 +48,8 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
 
     DefineDataR(RADIALGRID, s, "delta");    // Triangularity
     DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
-    DefineDataR(RADIALGRID, s, "kappa");    // Elongation
+    DefineDataR(RADIALGRID, s, "kappa");    // Z Elongation
+    DefineDataR(RADIALGRID, s, "zeta");     // R Elongation
     DefineDataR(RADIALGRID, s, "GOverR0");        // G/R0 = (R/R0)*Bphi
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
     // Magnetic ripple effects
@@ -189,6 +190,8 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
     shapes->Delta_r = s->GetRealArray(RADIALGRID "/Delta/r", 1, &shapes->nDelta);
     shapes->kappa   = s->GetRealArray(RADIALGRID "/kappa/x", 1, &shapes->nkappa);
     shapes->kappa_r = s->GetRealArray(RADIALGRID "/kappa/r", 1, &shapes->nkappa);
+    shapes->zeta   = s->GetRealArray(RADIALGRID "/zeta/x", 1, &shapes->nzeta);
+    shapes->zeta_r = s->GetRealArray(RADIALGRID "/zeta/r", 1, &shapes->nzeta);
     shapes->psi     = s->GetRealArray(RADIALGRID "/psi_p0/x", 1, &shapes->npsi);
     shapes->psi_r   = s->GetRealArray(RADIALGRID "/psi_p0/r", 1, &shapes->npsi);
 

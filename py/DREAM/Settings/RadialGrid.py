@@ -47,8 +47,10 @@ class RadialGrid(PrescribedScalarParameter):
         self.delta_r = None
         self.GOverR0 = None     # R*Bphi/R0
         self.GOverR0_r = None
-        self.kappa = None       # Elongation
+        self.kappa = None       # Elongation in Z
         self.kappa_r = None
+        self.zeta = None       # Elongation in R
+        self.zeta_r = None
         self.psi_p0 = None      # Reference poloidal flux
         self.psi_p0_r = None
         # Ripple parameters
@@ -212,7 +214,7 @@ class RadialGrid(PrescribedScalarParameter):
         (Analytic toroidal)
         Set a specific magnetic field shape parameter.
         """
-        if name not in ['Delta', 'delta', 'GOverR0', 'kappa', 'psi_p0']:
+        if name not in ['Delta', 'delta', 'GOverR0', 'kappa', 'zeta', 'psi_p0']:
             raise DREAMException("RadialGrid: Invalid name of shape parameter specified: '{}'.".format(name))
 
         if type(data) in [float, int]:
@@ -227,11 +229,14 @@ class RadialGrid(PrescribedScalarParameter):
 
         setattr(self, name, data)
         setattr(self, name+'_r', r)
+        if name == 'kappa' and self.zeta is None:
+            setattr(self, 'zeta', data / data)
+            setattr(self, 'zeta_r', r)
 
 
     def setShaping(self, psi, GOverR0, rpsi=0.0, rG=0.0,
         Delta=0.0, rDelta=0.0, delta=0.0, rdelta=0.0,
-        kappa=1.0, rkappa=0.0):
+        kappa=1.0, rkappa=0.0, zeta=1.0, rzeta=0.0):
         """
         (Analytic toroidal)
         Set the plasma shape parameters to use with the magnetic field.
@@ -244,8 +249,10 @@ class RadialGrid(PrescribedScalarParameter):
         :param rDelta: Radial grid for Shafranov shift.
         :param delta:  Triangularity.
         :param rdelta: Radial grid for triangularity.
-        :param kappa:  Elongation.
-        :param rkappa: Radial grid for elongation.
+        :param kappa:  Elongation in Z.
+        :param rkappa: Radial grid for elongation in Z.
+        :param zeta:  Elongation in R.
+        :param rzeta: Radial grid for elongation in R.
         """
         self.setType(TYPE_ANALYTIC_TOROIDAL)
 
@@ -253,6 +260,7 @@ class RadialGrid(PrescribedScalarParameter):
         self.setShapeParameter('delta',   r=rdelta, data=delta)
         self.setShapeParameter('GOverR0', r=rG,     data=GOverR0)
         self.setShapeParameter('kappa',   r=rkappa, data=kappa)
+        self.setShapeParameter('zeta',   r=rzeta, data=zeta)
         self.setShapeParameter('psi_p0',  r=rpsi,   data=psi)
 
 
@@ -423,12 +431,13 @@ class RadialGrid(PrescribedScalarParameter):
         Delta = lambda r : interppar(r, self.Delta_r, self.Delta)
         delta = lambda r : interppar(r, self.delta_r, self.delta)
         kappa = lambda r : interppar(r, self.kappa_r, self.kappa)
+        zeta = lambda r : interppar(r, self.zeta_r, self.zeta)
 
         # Construct flux surfaces
         if np.isinf(self.R0):
-            R = lambda r, t : Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+            R = lambda r, t : Delta(r) + r*zeta(r)*np.cos(t + delta(r)*np.sin(t))
         else:
-            R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+            R = lambda r, t : self.R0 + Delta(r) + r*zeta(r)*np.cos(t + delta(r)*np.sin(t))
         Z = lambda r, t : r*kappa(r)*np.sin(t)
 
         # Flux surfaces
@@ -493,6 +502,8 @@ class RadialGrid(PrescribedScalarParameter):
             self.GOverR0_r = data['GOverR0']['r']
             self.kappa = data['kappa']['x']
             self.kappa_r = data['kappa']['r']
+            self.zeta = data['zeta']['x']
+            self.zeta_r = data['zeta']['r']
             self.psi_p0 = data['psi_p0']['x']
             self.psi_p0_r = data['psi_p0']['r']
         elif self.type == TYPE_NUMERICAL:
@@ -555,6 +566,7 @@ class RadialGrid(PrescribedScalarParameter):
             data['delta']   = {'x': self.delta, 'r': self.delta_r}
             data['GOverR0'] = {'x': self.GOverR0, 'r': self.GOverR0_r}
             data['kappa']   = {'x': self.kappa, 'r': self.kappa_r}
+            data['zeta']   = {'x': self.zeta, 'r': self.zeta_r}
             data['psi_p0']  = {'x': self.psi_p0, 'r': self.psi_p0_r}
         elif self.type == TYPE_NUMERICAL:
             data['filename'] = self.num_filename
@@ -621,6 +633,7 @@ class RadialGrid(PrescribedScalarParameter):
             self.verifySettingsShapeParameter('delta')
             self.verifySettingsShapeParameter('GOverR0')
             self.verifySettingsShapeParameter('kappa')
+            self.verifySettingsShapeParameter('zeta')
             self.verifySettingsShapeParameter('psi_p0')
 
             if np.size(self.Delta_r)>1:
