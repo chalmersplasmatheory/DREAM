@@ -12,7 +12,7 @@ Shared grid and metadata helpers:
 *.vacuum_toroidal_field.b0 | time trace filled with B0 derived from PHI_SIGN * /grid/geometry/GR0[-1].
 *.profiles_1d.grid.rho_tor | derived from sqrt(/grid/geometry/toroidalFlux / (pi * abs(B0))).
 *.profiles_1d.grid.rho_tor_norm | normalized rho_tor.
-*.profiles_1d.grid.psi | PSI_COCOS * /eqsys/psi_p.
+*.profiles_1d.grid.psi | R0 * /eqsys/psi_p.
 *.profiles_1d.grid.psi_magnetic_axis | first radial value of mapped psi.
 *.profiles_1d.grid.psi_boundary | last radial value of mapped psi.
 *.profiles_1d.grid.rho_pol_norm | normalized mapped psi.
@@ -103,7 +103,7 @@ equilibrium.time_slice[*].profiles_1d.trapped_fraction | 1 - /grid/geometry/effe
 equilibrium.time_slice[*].profiles_1d.gm1 | /grid/geometry/FSA_R02OverR2 / R0**2.
 equilibrium.time_slice[*].profiles_1d.gm5 | b_field_min**2 * /grid/geometry/FSA_BOverBmin2.
 equilibrium.time_slice[*].profiles_1d.j_parallel | /eqsys/j_tot.
-equilibrium.time_slice[*].profiles_1d.psi | PSI_COCOS * /eqsys/psi_p.
+equilibrium.time_slice[*].profiles_1d.psi | R0 * /eqsys/psi_p.
 equilibrium.time_slice[*].profiles_1d.psi_norm | normalized mapped psi.
 equilibrium.time_slice[*].global_quantities.psi_magnetic_axis | first radial value of mapped psi.
 equilibrium.time_slice[*].global_quantities.psi_boundary | last radial value of mapped psi.
@@ -175,7 +175,6 @@ else:
     IMAS_IMPORT_ERROR = None
 
 
-PSI_COCOS = 2.0 * np.pi
 PHI_SIGN = -1.0
 C_LIGHT = 299792458.0
 M_ELECTRON = 9.10938356e-31
@@ -431,7 +430,7 @@ def build_dynamic_data(raw: dict[str, Any], static: dict[str, Any]) -> dict[str,
         "j_re": time_radial_aligned(raw.get("j_re"), nt),
         "E_field": time_radial_aligned(raw.get("E_field"), nt),
         "I_p": scale_optional(scalar_time_trace(raw.get("I_p"), nt), PHI_SIGN),
-        "psi_p": scale_optional(time_radial_aligned(raw.get("psi_p"), nt), PSI_COCOS),
+        "psi_p": scale_optional(time_radial_aligned(raw.get("psi_p"), nt), static.get("R0")),
         "W_cold": time_radial_aligned(raw.get("W_cold"), nt),
         "W_i": time_aligned(raw.get("W_i"), nt),
         "conductivity": time_radial_aligned(raw.get("conductivity"), nt),
@@ -1458,8 +1457,8 @@ def scalar_first(value: Any, default: float | None = None) -> float | None:
 
 
 def scale_optional(value: Any, factor: float) -> Any:
-    if value is None:
-        return None
+    if value is None or factor is None:
+        return value
     return np.asarray(value, dtype=float) * factor
 
 

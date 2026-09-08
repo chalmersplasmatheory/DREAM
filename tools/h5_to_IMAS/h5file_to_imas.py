@@ -85,7 +85,6 @@ else:
     IMAS_IMPORT_ERROR = None
 
 # ------------------------ normalization factors---------------------------
-psi_cocos = 2.0*np.pi
 phi_sign   = -1.0  # positive is anti-clockwise in IMAS, ITER currents are negative in IMAS
 c_light    = 299792458.0
 m_electron = 9.10938356e-31
@@ -515,8 +514,8 @@ def flatten_1d(x: Optional[np.ndarray]) -> Optional[np.ndarray]:
 
 
 def scale_optional(data: Optional[np.ndarray], factor: float) -> Optional[np.ndarray]:
-    if data is None:
-        return None
+    if data is None or factor is None:
+        return data
     return np.asarray(data, dtype=float) * factor
 
 
@@ -849,7 +848,7 @@ def fill_1d_grid(
 
     psi_p = psi_p_aligned
     if psi_p is None:
-        psi_p = scale_optional(time_aligned(dream.arr("/eqsys/psi_p"), nt), psi_cocos)
+        psi_p = scale_optional(time_aligned(dream.arr("/eqsys/psi_p"), nt), grids.get("R0"))
     if psi_p is not None:
         psi_arr  = np.asarray(psi_p[it], dtype=float)
         psi_bnd  = float(psi_arr[-1]) if psi_arr.size > 0 else 0.0
@@ -898,7 +897,7 @@ def map_plasma_profiles(factory: Any, dream: DreamH5, grids: dict[str, Any], rep
     aligned_profiles = {target: (source, time_aligned(data, nt)) for target, (source, data) in profiles.items()}
     j_tot_aligned = time_aligned(j_tot, nt)
     j_ohm_aligned = time_aligned(j_ohm, nt)
-    psi_p_aligned = scale_optional(time_aligned(dream.arr("/eqsys/psi_p"), nt), psi_cocos)
+    psi_p_aligned = scale_optional(time_aligned(dream.arr("/eqsys/psi_p"), nt), grids.get("R0"))
     ion_context = prepare_ion_profile_context(dream, nt, report)
 
     for it in range(nt):
@@ -1465,7 +1464,7 @@ def map_runaway_electrons(factory: Any, dream: DreamH5, grids: dict[str, Any], r
         target: (source, time_aligned(data, nt))
         for target, (source, data) in quantities.items()
     }
-    psi_p_aligned = scale_optional(time_aligned(dream.arr("/eqsys/psi_p"), nt), psi_cocos)
+    psi_p_aligned = scale_optional(time_aligned(dream.arr("/eqsys/psi_p"), nt), grids.get("R0"))
 
     # Fill up profiles_1d for each time step
     for it in range(nt):
@@ -2199,7 +2198,7 @@ def map_equilibrium(factory: Any, dream: DreamH5, grids: dict[str, Any], report:
         report.skip(ids_name, "time_slice", "could not resize AoS", "")
         return eq
 
-    psi_p = scale_optional(time_aligned(dream.arr("/eqsys/psi_p", report), nt), psi_cocos)
+    psi_p = scale_optional(time_aligned(dream.arr("/eqsys/psi_p", report), nt), R0)
     j_tot = scale_optional(time_aligned(dream.arr("/eqsys/j_tot", report), nt), phi_sign)
     ip = scale_optional(flatten_1d(dream.arr("/eqsys/I_p", report)), phi_sign)
     
