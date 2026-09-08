@@ -29,7 +29,7 @@ summary.time | corrected combined /grid/t.
 summary.global_quantities.r0.value | /grid/R0.
 summary.global_quantities.b0.value | time trace filled with derived B0.
 summary.global_quantities.ip.value | PHI_SIGN * /eqsys/I_p.
-summary.global_quantities.current_ohm.value | radial integral of /eqsys/j_ohm with DREAM area weights.
+summary.global_quantities.current_ohm.value | radial integral of PHI_SIGN * /eqsys/j_ohm with DREAM area weights.
 summary.global_quantities.energy_electrons_thermal.value | volume integral of /eqsys/W_cold.
 summary.global_quantities.energy_ion_total_thermal.value | volume integral of /eqsys/W_i.
 summary.global_quantities.energy_thermal.value | sum of electron and ion thermal energies when available.
@@ -73,8 +73,8 @@ plasma_profiles.profiles_1d[*].electrons.density_thermal | /eqsys/n_cold.
 plasma_profiles.profiles_1d[*].conductivity_parallel | /other/fluid/conductivity.
 plasma_profiles.profiles_1d[*].e_field.parallel | /eqsys/E_field.
 plasma_profiles.profiles_1d[*].zeff | /other/fluid/Zeff.
-plasma_profiles.profiles_1d[*].j_total | /eqsys/j_tot.
-plasma_profiles.profiles_1d[*].j_ohmic | /eqsys/j_ohm.
+plasma_profiles.profiles_1d[*].j_total | PHI_SIGN * /eqsys/j_tot.
+plasma_profiles.profiles_1d[*].j_ohmic | PHI_SIGN * /eqsys/j_ohm.
 plasma_profiles.profiles_1d[*].ion[*].neutral_index | DREAM ion species index.
 plasma_profiles.profiles_1d[*].neutral[*].ion_index | DREAM ion species index.
 plasma_profiles.profiles_1d[*].neutral[*].element[0].z_n | /settings/eqsys/n_i/Z or /ionmeta/Z.
@@ -96,13 +96,13 @@ equilibrium.time_slice[*].profiles_1d.rho_tor | derived from toroidal flux and B
 equilibrium.time_slice[*].profiles_1d.rho_tor_norm | normalized rho_tor.
 equilibrium.time_slice[*].profiles_1d.phi | /grid/geometry/toroidalFlux.
 equilibrium.time_slice[*].profiles_1d.r_outboard | /grid/R0 + /grid/r.
-equilibrium.time_slice[*].profiles_1d.b_field_min | PHI_SIGN * /grid/geometry/Bmin.
-equilibrium.time_slice[*].profiles_1d.b_field_max | PHI_SIGN * /grid/geometry/Bmax.
+equilibrium.time_slice[*].profiles_1d.b_field_min | /grid/geometry/Bmin.
+equilibrium.time_slice[*].profiles_1d.b_field_max | /grid/geometry/Bmax.
 equilibrium.time_slice[*].profiles_1d.b_field_average | b_field_min * /grid/geometry/FSA_BOverBmin.
 equilibrium.time_slice[*].profiles_1d.trapped_fraction | 1 - /grid/geometry/effectivePassingFraction, clipped to [0, 1].
 equilibrium.time_slice[*].profiles_1d.gm1 | /grid/geometry/FSA_R02OverR2 / R0**2.
 equilibrium.time_slice[*].profiles_1d.gm5 | b_field_min**2 * /grid/geometry/FSA_BOverBmin2.
-equilibrium.time_slice[*].profiles_1d.j_parallel | /eqsys/j_tot.
+equilibrium.time_slice[*].profiles_1d.j_parallel | PHI_SIGN * /eqsys/j_tot.
 equilibrium.time_slice[*].profiles_1d.psi | R0 * /eqsys/psi_p.
 equilibrium.time_slice[*].profiles_1d.psi_norm | normalized mapped psi.
 equilibrium.time_slice[*].global_quantities.psi_magnetic_axis | first radial value of mapped psi.
@@ -349,8 +349,8 @@ def build_static_data(raw: dict[str, Any]) -> dict[str, Any]:
 
     vpvol = flatten_1d(raw.get("VpVol"))
     r2inv = flatten_1d(raw.get("FSA_R02OverR2"))
-    bmin = scale_optional(flatten_1d(raw.get("Bmin")), PHI_SIGN)
-    bmax = scale_optional(flatten_1d(raw.get("Bmax")), PHI_SIGN)
+    bmin = flatten_1d(raw.get("Bmin"))
+    bmax = flatten_1d(raw.get("Bmax"))
     fsa_b_over_bmin = flatten_1d(raw.get("FSA_BOverBmin"))
     fsa_b_over_bmin2 = flatten_1d(raw.get("FSA_BOverBmin2"))
     effective_passing_fraction = flatten_1d(raw.get("effectivePassingFraction"))
@@ -425,9 +425,9 @@ def build_dynamic_data(raw: dict[str, Any], static: dict[str, Any]) -> dict[str,
         "n_cold": time_radial_aligned(raw.get("n_cold"), nt),
         "n_i": time_aligned(raw.get("n_i"), nt),
         "n_re": time_radial_aligned(raw.get("n_re"), nt),
-        "j_tot": time_radial_aligned(raw.get("j_tot"), nt),
-        "j_ohm": time_radial_aligned(raw.get("j_ohm"), nt),
-        "j_re": time_radial_aligned(raw.get("j_re"), nt),
+        "j_tot": scale_optional(time_radial_aligned(raw.get("j_tot"), nt), PHI_SIGN),
+        "j_ohm": scale_optional(time_radial_aligned(raw.get("j_ohm"), nt), PHI_SIGN),
+        "j_re": scale_optional(time_radial_aligned(raw.get("j_re"), nt), PHI_SIGN),
         "E_field": time_radial_aligned(raw.get("E_field"), nt),
         "I_p": scale_optional(scalar_time_trace(raw.get("I_p"), nt), PHI_SIGN),
         "psi_p": scale_optional(time_radial_aligned(raw.get("psi_p"), nt), static.get("R0")),

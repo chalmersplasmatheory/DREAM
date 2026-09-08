@@ -756,8 +756,8 @@ def common_grids(dream: DreamH5, report: MappingReport) -> dict[str, Any]:
     vpvol  = flatten_1d(dream.arr("/grid/VpVol", report))
     G      = scale_optional(flatten_1d(dream.arr("/grid/geometry/GR0", report)), phi_sign)
     R2inv  = flatten_1d(dream.arr("/grid/geometry/FSA_R02OverR2", report))
-    Bmin   = scale_optional(flatten_1d(dream.arr("/grid/geometry/Bmin", report)), phi_sign)
-    Bmax   = scale_optional(flatten_1d(dream.arr("/grid/geometry/Bmax", report)), phi_sign)
+    Bmin   = flatten_1d(dream.arr("/grid/geometry/Bmin", report))
+    Bmax   = flatten_1d(dream.arr("/grid/geometry/Bmax", report))
     FSA_B_over_Bmin = flatten_1d(dream.arr("/grid/geometry/FSA_BOverBmin", report))
     FSA_B_over_Bmin2 = flatten_1d(dream.arr("/grid/geometry/FSA_BOverBmin2", report))
     effective_passing_fraction = flatten_1d(
