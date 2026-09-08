@@ -17,14 +17,15 @@ struct molecule_data {
       const char *name;
       real_t mass;
   };
-
+// in kg
 static const molecule_data moleculeTable[] = {
       {"H2", 2 * Constants::mH},
       {"D2", 2 * Constants::mD},
       {"T2", 2 * Constants::mT},
-      {"HD", Constants::mH + Constants::mD},
-      {"HT", Constants::mH + Constants::mT},
-      {"DT", Constants::mD + Constants::mT}
+      {"D3", 3 * Constants::mD},
+      {"ArD", 6.97e-26},
+      {"HeD",  9.99e-27},
+  
   };
 
 static const len_t nMolecules =

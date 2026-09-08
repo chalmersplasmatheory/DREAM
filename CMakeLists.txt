@@ -101,7 +101,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "IntelLLVM")
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-ignored-qualifiers)
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-O3 -fno-finite-math-only)
+        add_compile_options(-O3)
     endif()
 else ()
     message(WARNING "You are using an un-tested compiler.")
@@ -123,4 +123,20 @@ endif()
 if (DREAM_BUILD_TESTS)
     add_subdirectory(tests/cxx)
 endif ()
+
+# -------------------------------------------------------------
+# Enable Intel MKL PARDISO support
+# -------------------------------------------------------------
+# Define to tell DREAM/PETSc that MKL PARDISO is available
+add_compile_definitions(HAVE_MKL_PARDISO)
+
+# Link MKL runtime libraries explicitly (needed for PARDISO)
+link_libraries(
+    /opt/intel/oneapi/mkl/2025.3/lib/libmkl_rt.so
+    pthread
+    m
+    dl
+)
+# -------------------------------------------------------------
+
 

@@ -126,32 +126,79 @@ void RateHandler::AddMolecularChargeStateRates() {
  * Add molecular reaction rates for all defined molecular rate pairs.
  */
 void RateHandler::AddMolecularReactionRates() {
-    //Loop though all the molecular reactions in Ratedata.cpp
-    for (len_t i = 0; i < molecularReactionDefinitionCount; i++) { 
-        
-        ///Here we should add a check if the reactants and products are defined in the ionhandler and if not throw an exception
-        const MolecularReactionDefinition& def = molecularReactionDefinitions[i];
+      MoleculeHandler molecules;
 
-        MolecularReaction reaction; //create a new molecularreaction
-        reaction.rateName = def.rateName;
-        reaction.process = def.process;
-        reaction.nReactants = def.nReactants;
-        reaction.reactants = def.reactants;
-        reaction.nProducts = def.nProducts;
-        reaction.products = def.products;
-    
-  
-    printf(
-            "RateHandler: Added %zu molecular reaction.\n",
-            molecularReactions.size()
-        );
+      for (len_t i = 0; i < molecularReactionDefinitionCount; i++) {
+          const MolecularReactionDefinition& def = molecularReactionDefinitions[i];
 
-        //Set the correct rate. No problem since every reaction only has 1 rate
-        reaction.rate = GetMolecularRateByName(def.rateName);
-        molecularReactions.push_back(reaction);
-  }
+          bool allReactantsExist = true;
+
+          for (len_t j = 0; j < def.nReactants; j++) {
+              const MolecularReactionSpecies& r = def.reactants[j];
+
+              //we dont care if it has an electron
+              if (std::string(r.name) == "e")
+                  continue;
+
+                //if not all reactants exist (remebers they are added as ions to the system before)
+              if (!ions->HasIon(r.name)) {
+                  allReactantsExist = false;
+                  break;
+              }
+            
+              //check if the charge state is valid for the reactant
+              const len_t iIon = ions->GetIonIndex(r.name);
+              if (r.Z0 < 0 || (len_t)r.Z0 > ions->GetZ(iIon)) {
+                  allReactantsExist = false;
+                  break;
+              }
+          }
+
+          if (!allReactantsExist)
+              continue;
+
+          for (len_t j = 0; j < def.nProducts; j++) {
+              const MolecularReactionSpecies& p = def.products[j];
+
+              if (std::string(p.name) == "e")
+                  continue;
+
+              if (!ions->HasIon(p.name))
+                  throw FVM::FVMException(
+                      "RateHandler: Molecular reaction '%s' is enabled, but product species '%s' is not defined.",
+                      def.rateName, p.name
+                  );
+
+              const len_t iIon = ions->GetIonIndex(p.name);
+              if (p.Z0 < 0 || (len_t)p.Z0 > ions->GetZ(iIon))
+                  throw FVM::FVMException(
+                      "RateHandler: Molecular reaction '%s' references invalid charge state Z0=%d for product species '%s'.",
+                      def.rateName, p.Z0, p.name
+                  );
+
+              if (molecules.IsMolecule(p.name))
+                  molecules.GetMass(p.name); // throws if missing
+          }
+
+          MolecularReaction reaction;
+          reaction.rateName = def.rateName;
+          reaction.process = def.process;
+          reaction.nReactants = def.nReactants;
+          reaction.reactants = def.reactants;
+          reaction.nProducts = def.nProducts;
+          reaction.products = def.products;
+          reaction.rate = GetMolecularRateByName(def.rateName);
+
+          molecularReactions.push_back(reaction);
+      }
+
+      printf(
+          "RateHandler: Added %zu molecular reactions.\n",
+          molecularReactions.size()
+      );
+
   printf(
-          "RateHandler: Added %zu molecular reaction pairs.\n",
+          "RateHandler: Added %zu molecular reactions.\n",
           molecularReactions.size()
       );
 }
@@ -169,3 +216,8 @@ MolecularRateInterpolator *RateHandler::GetMolecularRateByName(
           rateName
       );
   }
+
+
+    
+      
+  

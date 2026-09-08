@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Fluid/ChargeStateRate.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
 #include "DREAM/MolecularRateInterpolator.hpp"
+#include "DREAM/Settings/Settings.hpp"
 #include <vector>
 
 namespace DREAM {
@@ -69,9 +70,9 @@ namespace DREAM {
 
 
 
-        //const std::vector<MolecularReaction>& GetMolecularRatePairs() const {
-          //      return molecularReactions;
-           // }
+      const std::vector<MolecularReaction>& GetMolecularReactions() const {
+      return molecularReactions;
+      }
 
         ChargeStateRate *GetACD(const std::string& name) const;
         ChargeStateRate *GetSCD(const std::string& name) const;

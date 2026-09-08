@@ -4,6 +4,7 @@
 
 #include "DREAM/Equations/Fluid/IonPrescribedParameter.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Fluid/MoleculeChargeExchangeRateReaction.hpp"
 #include "DREAM/Equations/Fluid/LyOpaqueDIonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
@@ -326,6 +327,13 @@ void SimulationGenerator::ConstructEquation_Ions(
 						ratehandler, addFluidIonization, addFluidJacobian, false
 					);
 		            eqn->AddTerm(ire);
+
+                    MoleculeChargeExchangeRateReaction *mcer = new MoleculeChargeExchangeRateReaction(
+						fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
+						ratehandler, addFluidIonization, addFluidJacobian, false
+					);
+
+                    //eqn->AddTerm(mcer);
 					oqty_terms->ni_rates.push_back(ire);
                 }
                 if(includeKineticIonization){
