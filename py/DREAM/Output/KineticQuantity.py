@@ -257,7 +257,8 @@ class KineticQuantity(UnknownQuantity):
         ax.set_xlabel(r'$r/a$ (m)')
 
         # Create the animation
-        ani = animation.FuncAnimation(fig, update_ani, frames=self.time.size,
+        nframes = int(self.time.size)
+        ani = animation.FuncAnimation(fig, update_ani, frames=nframes,
             interval=speed, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
             fargs=(self, ax, lines, txt, favg, keeplines, tfac, tunits[idx], keep))
 

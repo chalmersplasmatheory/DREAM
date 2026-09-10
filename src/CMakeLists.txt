@@ -105,6 +105,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/SvenssonTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TritiumRateTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityFromKinetic/TotalElectronDensityFromKineticCompton.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityFromKinetic/TotalElectronDensityFromKineticTritium.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
