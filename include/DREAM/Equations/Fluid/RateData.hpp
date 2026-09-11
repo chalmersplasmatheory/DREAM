@@ -7,13 +7,13 @@
 
       enum class MolecularReactionProcess {
           CHARGE_EXCHANGE,
+          CHARGE_EXCHANGE_RESONANT,
           IONIZATION,
+          IONIZATION_RUNAWAY,
           RECOMBINATION,
           DISSOCIATION,
-          DISSOCIATIVE_IONIZATION,
-          DISSOCIATIVE_RECOMBINATION,
-          ION_MOLECULE_CONVERSION,
-          REACTIVE_CHARGE_TRANSFER
+          DISSOCIATION_MULTIPLE,
+          DISSOCIATION_RUNAWAY,
       };
 
 

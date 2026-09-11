@@ -384,25 +384,25 @@ static const MolecularReactionSpecies Hep_D_2_charge_exchange_products[] = {
 const MolecularReactionDefinition molecularReactionDefinitions[] = {
     {
         "Ar_Ar+_charge_exchange",
-        MolecularReactionProcess::CHARGE_EXCHANGE,
+        MolecularReactionProcess::CHARGE_EXCHANGE_RESONANT,
         2, Ar_Arp_charge_exchange_reactants,
         2, Ar_Arp_charge_exchange_products
     },
     {
         "Ar_Ar2+_charge_exchange",
-        MolecularReactionProcess::CHARGE_EXCHANGE,
+        MolecularReactionProcess::CHARGE_EXCHANGE_RESONANT,
         2, Ar_Ar2p_charge_exchange_reactants,
         2, Ar_Ar2p_charge_exchange_products
     },
     {
         "D_D+_charge_exchange",
-        MolecularReactionProcess::CHARGE_EXCHANGE,
+        MolecularReactionProcess::CHARGE_EXCHANGE_RESONANT,
         2, D_Dp_charge_exchange_reactants,
         2, D_Dp_charge_exchange_products
     },
     {
         "D_2_D_2+_charge_exchange",
-        MolecularReactionProcess::CHARGE_EXCHANGE,
+        MolecularReactionProcess::CHARGE_EXCHANGE_RESONANT,
         2, D_2_D_2p_charge_exchange_reactants,
         2, D_2_D_2p_charge_exchange_products
     },
@@ -450,7 +450,7 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "D_2_dissociation_2",
-        MolecularReactionProcess::DISSOCIATIVE_IONIZATION,
+        MolecularReactionProcess::DISSOCIATION,
         2, D_2_dissociation_2_reactants,
         2, D_2_dissociation_2_products
     },
@@ -462,7 +462,7 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "D_2+_D_2_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, D_2p_D_2_dissociation_reactants,
         2, D_2p_D_2_dissociation_products
     },
@@ -474,7 +474,7 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "Ar+_D_2_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, Arp_D_2_dissociation_reactants,
         2, Arp_D_2_dissociation_products
     },
@@ -498,19 +498,19 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "ArD+_D_2_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, ArDp_D_2_dissociation_reactants,
         2, ArDp_D_2_dissociation_products
     },
     {
         "D_2+_Ar_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, D_2p_Ar_dissociation_reactants,
         2, D_2p_Ar_dissociation_products
     },
     {
         "D_3+_Ar_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, D_3p_Ar_dissociation_reactants,
         2, D_3p_Ar_dissociation_products
     },
@@ -540,7 +540,7 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "D_2+Ar2+_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, D_2pAr2p_dissociation_reactants,
         2, D_2pAr2p_dissociation_products
     },
@@ -564,7 +564,7 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "He+_He_charge_exchange",
-        MolecularReactionProcess::CHARGE_EXCHANGE,
+        MolecularReactionProcess::CHARGE_EXCHANGE_RESONANT,
         2, Hep_He_charge_exchange_reactants,
         2, Hep_He_charge_exchange_products
     },
@@ -582,25 +582,25 @@ const MolecularReactionDefinition molecularReactionDefinitions[] = {
     },
     {
         "HeD+_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, HeDp_dissociation_reactants,
         2, HeDp_dissociation_products
     },
     {
         "He_D_2+_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, He_D_2p_dissociation_reactants,
         2, He_D_2p_dissociation_products
     },
     {
         "D_HeD+_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, D_HeDp_dissociation_reactants,
         2, D_HeDp_dissociation_products
     },
     {
         "D_2_HeD+_dissociation",
-        MolecularReactionProcess::DISSOCIATION,
+        MolecularReactionProcess::DISSOCIATION_MULTIPLE,
         2, D_2_HeDp_dissociation_reactants,
         2, D_2_HeDp_dissociation_products
     },

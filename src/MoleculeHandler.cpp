@@ -25,6 +25,7 @@ static const molecule_data moleculeTable[] = {
       {"D3", 3 * Constants::mD},
       {"ArD", 6.97e-26},
       {"HeD",  9.99e-27},
+      {"DT", 8.35e-27}
   
   };
 

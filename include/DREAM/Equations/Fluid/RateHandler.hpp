@@ -61,11 +61,11 @@ namespace DREAM {
         
         void AddMolecularChargeStateRates();
         void AddAtomicChargeStateRates();
-        void AddMolecularReactionRates();
+        void AddMolecularReactionRates( const std::vector<std::string>& enabledReactionNames);
 
 
     public:
-        RateHandler(IonHandler *ions, ADAS *adas);
+        RateHandler(IonHandler *ions, ADAS *adas, bool reactionsEnabled, const std::vector<std::string>& enabledReactionNames);
         ~RateHandler();
 
 
