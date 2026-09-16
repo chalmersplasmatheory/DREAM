@@ -25,7 +25,7 @@ class EQDSK(EqBase):
         elif type(eqdskin) == dict:
             self.eqdsk = eqdskin
             if process:
-                self.process_data(eqdskin, cocos=cocos, override_psilim=override_psilim, plot_on_error=plot_on_error)
+                self.process_data(eqdskin, override_psilim=override_psilim, plot_on_error=plot_on_error)
         else:
             raise ValueError("Unrecognized input argument.")
 
