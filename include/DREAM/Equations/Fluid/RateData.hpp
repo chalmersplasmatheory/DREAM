@@ -15,6 +15,23 @@
           DISSOCIATION_MULTIPLE,
           DISSOCIATION_RUNAWAY,
       };
+      enum class MolecularInputKind {
+      NONE,
+      ELECTRON,
+      SPECIES,
+      RELATIVE
+    };
+
+    struct MolecularInput {
+        MolecularInputKind kind;
+
+        const char *name1;
+        int_t charge1;
+
+        const char *name2;
+        int_t charge2;
+    };
+
 
 
 
@@ -23,6 +40,8 @@
           int_t Z0;
           len_t coefficient;
       };
+
+      
 
       struct MolecularReactionDefinition {
           const char *rateName;
@@ -34,6 +53,10 @@
 
           len_t nProducts;
           const MolecularReactionSpecies *products;
+
+          MolecularInput temperatureInput;
+          MolecularInput densityInput;
+
       };
 
       extern const len_t molecularReactionDefinitionCount;
