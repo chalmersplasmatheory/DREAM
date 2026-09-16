@@ -74,6 +74,13 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     DefineDataIonRT(MODULENAME, s, "neutral_prescribed_advection");
 	DefineDataIonT(MODULENAME, s, "ion_source");
     DefineDataIonRT(MODULENAME, s, "ion_source_volumetric");
+
+
+    s->DefineSetting(MODULENAME "/reactions/enabled", "Enable selected molecular reactions", (int_t)0);
+
+    s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
+
+
 }
 
 /**
@@ -268,7 +275,15 @@ void SimulationGenerator::ConstructEquation_Ions(
     IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);    
     eqsys->SetIonHandler(ih);
 
-    RateHandler *ratehandler = new RateHandler(ih, adas);
+    const bool reactionsEnabled =
+      s->GetInteger(MODULENAME "/reactions/enabled") != 0;
+
+    const vector<string> reactionNames =
+        s->GetStringList(MODULENAME "/reactions/names");
+
+    RateHandler *ratehandler = new RateHandler(
+        fluidGrid ,ih, adas, eqsys->GetUnknownHandler(),reactionsEnabled, reactionNames
+    );
     eqsys->SetRateHandler(ratehandler);
 
     // Initialize ion equations
@@ -297,6 +312,15 @@ void SimulationGenerator::ConstructEquation_Ions(
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
     len_t nDynamic = 0, nEquil = 0;
+
+    bool hasChargeExchange = false;
+
+    for (const auto& reaction : ratehandler->GetMolecularReactions()) {
+        if (reaction.process == MolecularReactionProcess::CHARGE_EXCHANGE) {
+            hasChargeExchange = true;
+            break;
+        }
+    }
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         switch (types[iZ]) {
             case OptionConstants::ION_DATA_PRESCRIBED:
@@ -328,12 +352,13 @@ void SimulationGenerator::ConstructEquation_Ions(
 					);
 		            eqn->AddTerm(ire);
 
-                    MoleculeChargeExchangeRateReaction *mcer = new MoleculeChargeExchangeRateReaction(
-						fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-						ratehandler, addFluidIonization, addFluidJacobian, false
-					);
+                    if (hasChargeExchange) {
+                        eqn->AddTerm(new MoleculeChargeExchangeRateReaction(
+                            fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
+                            ratehandler, addFluidIonization, addFluidJacobian, false
+                        ));
+                    }
 
-                    //eqn->AddTerm(mcer);
 					oqty_terms->ni_rates.push_back(ire);
                 }
                 if(includeKineticIonization){
