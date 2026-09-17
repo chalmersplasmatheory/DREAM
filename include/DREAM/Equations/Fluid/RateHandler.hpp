@@ -46,13 +46,19 @@ namespace DREAM {
           const MolecularReactionSpecies *products;
 
         MolecularRateInterpolator *rate;
+        MolecularInput temperatureInput;
+        MolecularInput densityInput;
+
   };
 
 
     class RateHandler {
     private:
+        FVM::Grid *grid;
         IonHandler *ions;
         ADAS *adas;
+
+        len_t id_ions, id_n_cold, id_Ni, id_T_cold, id_Wi;
 
         std::unordered_map<std::string, ChargeStateRateSet> chargeStateRates;
         std::vector<MolecularReaction> molecularReactions;
@@ -63,9 +69,10 @@ namespace DREAM {
         void AddAtomicChargeStateRates();
         void AddMolecularReactionRates( const std::vector<std::string>& enabledReactionNames);
 
+        FVM::UnknownQuantityHandler *unknowns;
 
     public:
-        RateHandler(IonHandler *ions, ADAS *adas, bool reactionsEnabled, const std::vector<std::string>& enabledReactionNames);
+        RateHandler(FVM::Grid *grid, IonHandler *ions, ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled, const std::vector<std::string>& enabledReactionNames);
         ~RateHandler();
 
 
@@ -76,6 +83,16 @@ namespace DREAM {
 
         ChargeStateRate *GetACD(const std::string& name) const;
         ChargeStateRate *GetSCD(const std::string& name) const;
+
+      real_t ResolveDensity(
+            const MolecularInput& input,
+            const len_t ir
+        ) ;
+
+      real_t ResolveTemperature(
+            const MolecularInput& input,
+            const len_t ir
+        ) ;
 
         
   };

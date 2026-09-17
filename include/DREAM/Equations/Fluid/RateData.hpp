@@ -19,7 +19,8 @@
       NONE,
       ELECTRON,
       SPECIES,
-      RELATIVE
+      RELATIVE,
+      NEUTRAL
     };
 
     struct MolecularInput {

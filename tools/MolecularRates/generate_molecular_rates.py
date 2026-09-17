@@ -9,6 +9,15 @@ import numpy as np
 from math import factorial
 from scipy.special import gamma as gamma_function
 from scipy.optimize import brentq
+import sys
+from functools import lru_cache
+import json
+
+# Make DREAM/tools/ADAS available to import.
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
+
+from ADAS.data import parse_adas
+from ADAS.rates import ADASRate
 
 
 
@@ -115,7 +124,7 @@ def integral_formula_eval(I_energy,m,l,v_ms,T,n, mass):
 def amjuel_eval(coeff, n, T, nT=9, nn=9):
       n_eval = min(max(n, 1e14), 1e22)
       logn = np.log(n_eval * 1e-14)   # n / 1e14 = n[m^-3] / (1e8 cm^-3)
-      logT = np.log(T)
+      logT = np.log(np.clip(T, 1.0, 1e4))
 
       s = 0.0
       pT = 1.0
@@ -128,16 +137,50 @@ def amjuel_eval(coeff, n, T, nT=9, nn=9):
 
       return np.exp(s) * 1e-6         # cm^3/s -> m^3/s
 
-def temperature_equation_eval(T):
-      #turn T into Kelvin
-      T = T * 11604.5250061657
+def temperature_equation_eval(T, factor):
+      #if T > 1.2:
+       #   return 0.0
+
+      return (
+          -1.3e-8 + 1.42e-8*T**(-0.48)
+      ) * factor * 1e-6
+
+@lru_cache(maxsize=None)
+def load_adas_rate(filename):
+    path = pathlib.Path(__file__).resolve().parent / filename
+
+    Z, logn, logT, coefficients = parse_adas(path.read_text())
+
+      # Standard ADAS filenames begin with ccd, scd, acd, etc.
+    rate_type = path.name[:3].lower()
+
+    return ADASRate(
+          name=rate_type,
+          x=coefficients,
+          n=logn,
+          T=logT,
+          Z=Z,
+          species=path.stem,
+          shiftup=rate_type in ("acd", "ccd", "prb")
+      )
+
      
-      return (-1.3e-8 + 1.27e-6*T**(-0.48)) *1e-6  # cm^3/s -> m^3/s
+def adas_eval(filename, Z0, T, n):
+     rate = load_adas_rate(filename)
+     return rate.eval(Z0,n,T)
 
 def constant_eval(value, n, T):
       return value
 
 
+def energy_interpolate(n, T, energies, cross_sections):
+      cs = cross_sections[0] ##placeholder for now, but should interpolate later
+      energie = energies[0] ##placeholder for now, but should interpolate later
+      velocity = 1e6*np.sqrt(T/4)
+
+      # Later this becomes cross-section -> <sigma v>(n,T).
+      return cs* velocity *1e-15* 1e-6 #cm^3/s -> m^3/s
+     
 def zero_eval(n, T):
       return 0.0
 
@@ -149,7 +192,7 @@ def build_rate_table(reaction, n_grid, T_grid):
       for T in T_grid: 
             for n in n_grid:
           
-                if dtype in ("TODO", "FORMULA", "UNCLEAR"):
+                if dtype in ("TODO"):
                     v = zero_eval(n, T)
 
                 elif dtype == "CONSTANT":
@@ -166,9 +209,61 @@ def build_rate_table(reaction, n_grid, T_grid):
                         raw["mass"]
                     )
                 elif dtype == "TEMPERATURE_EQUATION":
-                    v = temperature_equation_eval(T)
+                    v = temperature_equation_eval(T,factor=raw)
 
-                elif dtype in ("AMJUEL", "AMJUEL_POLYNOMIAL"):
+                elif dtype == "APPROXIMATION":
+                        constant = raw["constant"]
+                        denominator = raw["denominator"]
+                        v = constant * (T/denominator)**(0.5)
+
+                elif dtype == "ADAS":
+                    v = adas_eval(raw["filename"], raw["Z0"], T,n)
+
+                elif dtype == "UNIQUE_FORMULA_1":
+                    v = 7e-17*np.sqrt(T)*np.exp(-2/T)  #cm^3/s -> m^3/s
+
+                elif dtype == "UNIQUE_FORMULA_2":
+                    Tfit = min(T, 30.0)
+                    v = (
+                        1.3e-14 * Tfit**(-0.6) * np.exp(-4.0/Tfit)
+                        if Tfit > 0 else 0.0
+                    )
+
+                elif dtype == "UNIQUE_FORMULA_3":
+                    Tfit = min(T, 30.0)
+                    v = (
+                        3e-15 * Tfit**0.2 * np.exp(-10.0/Tfit)
+                        if Tfit > 0 else 0.0
+                    )
+
+                elif dtype == "UNIQUE_FORMULA_4":
+                    Tfit = np.clip(T, 0.5, 100.0)
+                    v = 1e-6 * np.exp(
+                        1.5*np.log(Tfit) - 28.079956019889512
+                    )
+
+                elif dtype == "UNIQUE_FORMULA_5":
+                    T_use = min(max(T, 0.5), 100)
+                    v = 1e-9*np.exp(-T/1.5) *1e-6 #cm^3/s -> m^3/s
+
+                elif dtype == "POLYFIT":
+                    # T must represent the relative temperature:
+                    # Trel = (T_He + T_He_plus) / 2
+                    Trel = T
+                    Tfit = np.clip(Trel, 0.1, 20.0)
+
+                    sigma_cm2 = 1e-15 * np.polyval(raw, Tfit)
+                    velocity_cm_s = 1e6 * np.sqrt(Trel)
+
+                    # Reproduce rate_HepHecx / ion density, converted to m³/s.
+                    v = 2.26 * sigma_cm2 * velocity_cm_s * 1e-6
+
+                elif dtype == "POLYFIT_2":
+                    Tfit = np.clip(T, 0.5, 100.0)
+                    log_rate_cm3_s = np.polyval(raw, np.log(Tfit))
+                    v = np.exp(log_rate_cm3_s) * 1e-6  # m³/s
+
+                elif dtype in ("AMJUEL_POLYNOMIAL"):
                     coeff = getattr(data, raw["coefficients"])
                     v = amjuel_eval(
                         coeff,
@@ -181,7 +276,7 @@ def build_rate_table(reaction, n_grid, T_grid):
                 elif dtype == "ENERGY_INTERPOLATE":
                     # For now: placeholder zero until you decide the physics conversion.
                     # Later this becomes cross-section -> <sigma v>(n,T).
-                    v = zero_eval(n, T)
+                    v = energy_interpolate(n, T, raw["energy"], raw["cross_section"])
 
                 else:
                     raise ValueError(f"Unknown data_type '{dtype}' for {reaction['name']}")
@@ -193,7 +288,36 @@ def build_rate_table(reaction, n_grid, T_grid):
                     #print(f"WARNING: Molecular rate '{reaction['name']}' evaluated to a negative value at n={n:.3e}, T={T:.3e}. Using -300.0 instead.")
 
       return values
+def cpp_input(selector):
+      kind = selector["kind"]
 
+      if kind in ("none", "electron"):
+          return (
+              "{MolecularInputKind::"
+              + kind.upper()
+              + ", nullptr, 0, nullptr, 0}"
+          )
+
+      if kind == "species":
+          return (
+              "{MolecularInputKind::SPECIES, "
+              + json.dumps(selector["name"])
+              + f', {selector["charge"]}, nullptr, 0'
+              + "}"
+          )
+
+      if kind == "relative":
+          a, b = selector["species"]
+          return (
+              "{MolecularInputKind::RELATIVE, "
+              + json.dumps(a["name"])
+              + f', {a["charge"]}, '
+              + json.dumps(b["name"])
+              + f', {b["charge"]}'
+              + "}"
+          )
+
+      raise ValueError(f"Unknown input kind: {kind}")
 
 def compile_molecular_rates(outputfile, inttype="len_t", realtype="real_t"):
       n_grid = np.logspace(14, 22, 50)   # m^-3
@@ -259,14 +383,13 @@ def cpp_species(spec):
 def cpp_process(classification):
         process_map = {
             "CHARGE_EXCHANGE": "CHARGE_EXCHANGE",
+            "CHARGE_EXCHANGE_RESONANT": "CHARGE_EXCHANGE_RESONANT",
             "IONIZATION": "IONIZATION",
+            "IONIZATION_RUNAWAY": "IONIZATION_RUNAWAY",
             "RECOMBINATION": "RECOMBINATION",
             "DISSOCIATION": "DISSOCIATION",
-            "DISSOCIATION_IONIZATION": "DISSOCIATIVE_IONIZATION",
-            "DISSOCIATIVE_IONIZATION": "DISSOCIATIVE_IONIZATION",
-            "DISSOCIATIVE_RECOMBINATION": "DISSOCIATIVE_RECOMBINATION",
-            "ION_MOLECULE_CONVERSION": "ION_MOLECULE_CONVERSION",
-            "REACTIVE_CHARGE_TRANSFER": "REACTIVE_CHARGE_TRANSFER",
+            "DISSOCIATION_MULTIPLE": "DISSOCIATION_MULTIPLE",
+            "DISSOCIATION_RUNAWAY": "DISSOCIATION_RUNAWAY",
         }
 
         if classification not in process_map:
@@ -306,7 +429,9 @@ def compile_rate_data(outputfile):
             entries += f'        "{name}",\n'
             entries += f"        {cpp_process(reaction['classification'])},\n"
             entries += f"        {len(reactants)}, {reactants_name},\n"
-            entries += f"        {len(products)}, {products_name}\n"
+            entries += f"        {len(products)}, {products_name},\n"
+            entries += (f"        {cpp_input(reaction['temperature_input'])},\n")
+            entries += (f"        {cpp_input(reaction['density_input'])}\n")
             entries += "    },\n"
 
         body += "const MolecularReactionDefinition molecularReactionDefinitions[] = {\n"

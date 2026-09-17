@@ -4,6 +4,8 @@
 #include "DREAM/MoleculeHandler.hpp"
 #include "DREAM/MolecularRateData.hpp"
 #include "DREAM/MolecularRateInterpolator.hpp"
+#include <algorithm>
+#include "DREAM/Constants.hpp"
 
 
 
@@ -12,15 +14,23 @@
 /**
  * Constructor.
   */
-    RateHandler::RateHandler(IonHandler *ions, ADAS *adas)
-      : ions(ions), adas(adas) {
+    RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions, ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled, const std::vector<std::string>& enabledReactionNames)
+      :  grid(grid), ions(ions), adas(adas), unknowns(unknowns) {
+
+    this->unknowns  = unknowns;
+    this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+	this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+	this->id_Ni  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+	this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     
     //Set rates for IonRateEquation
     AddMolecularChargeStateRates();
     AddAtomicChargeStateRates();
+
       
-    //Add and set rates for MolecularRateEquation (to be implemented)  
-    AddMolecularReactionRates();
+    if (reactionsEnabled)
+          AddMolecularReactionRates(enabledReactionNames);
 
     //Add and set rates to runaway ionizationfluid equation (to be implemented)
   }
@@ -85,7 +95,11 @@ void RateHandler::AddMolecularChargeStateRates() {
                 0,
                 GetMolecularRateByName("D_2_ionization")
             );
-          } 
+          } else {
+        rates.acd = new ZeroChargeStateRate("zero_ACD"); //this needs to be generalized
+        rates.scd = new ZeroChargeStateRate("zero_SCD"); //this needs to be generalized
+            }
+            
           chargeStateRates[name] = rates;
       }
       printf("RateHandler: Added charge-state rates for %d molecular species.\n", chargeStateRates.size());
@@ -125,11 +139,19 @@ void RateHandler::AddMolecularChargeStateRates() {
 /*
  * Add molecular reaction rates for all defined molecular rate pairs.
  */
-void RateHandler::AddMolecularReactionRates() {
+void RateHandler::AddMolecularReactionRates( const std::vector<std::string>& enabledReactionNames) {
       MoleculeHandler molecules;
 
       for (len_t i = 0; i < molecularReactionDefinitionCount; i++) {
           const MolecularReactionDefinition& def = molecularReactionDefinitions[i];
+
+          // Skip definitions that Python did not select.
+          if (std::find(
+                  enabledReactionNames.begin(),
+                  enabledReactionNames.end(),
+                  std::string(def.rateName)
+              ) == enabledReactionNames.end())
+              continue;
 
           bool allReactantsExist = true;
 
@@ -180,6 +202,7 @@ void RateHandler::AddMolecularReactionRates() {
                   molecules.GetMass(p.name); // throws if missing
           }
 
+
           MolecularReaction reaction;
           reaction.rateName = def.rateName;
           reaction.process = def.process;
@@ -187,6 +210,8 @@ void RateHandler::AddMolecularReactionRates() {
           reaction.reactants = def.reactants;
           reaction.nProducts = def.nProducts;
           reaction.products = def.products;
+          reaction.temperatureInput = def.temperatureInput;
+          reaction.densityInput = def.densityInput;
           reaction.rate = GetMolecularRateByName(def.rateName);
 
           molecularReactions.push_back(reaction);
@@ -217,7 +242,75 @@ MolecularRateInterpolator *RateHandler::GetMolecularRateByName(
       );
   }
 
-
-    
       
-  
+real_t RateHandler::ResolveDensity(
+      const MolecularInput& input,
+      const len_t ir
+  ) {
+        if (input.kind == MolecularInputKind::NONE) {
+              // Positive coordinate inside the current density grid.
+              return 1e19;
+        }
+        if (input.kind == MolecularInputKind::ELECTRON) {
+              return unknowns->GetUnknownData(id_n_cold)[ir];
+        }
+      else {
+          throw std::runtime_error("Invalid density selector");
+      }
+  }
+real_t RateHandler::ResolveTemperature(
+      const MolecularInput& input,
+      const len_t ir
+  ) { ///TODO  add charge temperatures
+      if (input.kind == MolecularInputKind::NONE) {
+          return 1.0;
+      }
+
+      if (input.kind == MolecularInputKind::ELECTRON) {
+          return unknowns->GetUnknownData(id_T_cold)[ir];
+      }
+
+      if (input.kind == MolecularInputKind::SPECIES) {
+          const len_t i = ions->GetIonIndex(input.name1);
+          const len_t index = i * grid->GetNr() + ir;
+
+          const real_t W =
+              unknowns->GetUnknownData(id_Wi)[index];
+          const real_t N =
+              unknowns->GetUnknownData(id_Ni)[index];
+
+          return 2.0 * W / (3.0 * Constants::ec * N);
+      }
+
+      //if (input.kind == MolecularInputKind::NEUTRAL) {
+      //return unknowns->GetUnknownData(id_T_neutral)[ir];
+    //}
+
+      if (input.kind == MolecularInputKind::RELATIVE) {
+          const len_t i1 = ions->GetIonIndex(input.name1);
+          const len_t i2 = ions->GetIonIndex(input.name2);
+
+          const len_t index1 = i1 * grid->GetNr() + ir;
+          const len_t index2 = i2 * grid->GetNr() + ir;
+
+          const real_t W1 =
+              unknowns->GetUnknownData(id_Wi)[index1];
+          const real_t N1 =
+              unknowns->GetUnknownData(id_Ni)[index1];
+
+          const real_t W2 =
+              unknowns->GetUnknownData(id_Wi)[index2];
+          const real_t N2 =
+              unknowns->GetUnknownData(id_Ni)[index2];
+
+          const real_t T1 =
+              2.0 * W1 / (3.0 * Constants::ec * N1);
+          const real_t T2 =
+              2.0 * W2 / (3.0 * Constants::ec * N2);
+
+          return 0.5 * (T1 + T2);
+      }
+
+      throw std::runtime_error("Invalid temperature selector");
+  }
+
