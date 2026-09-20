@@ -31,6 +31,7 @@
 #include "tests/FVM/Interpolator1D.hpp"
 #include "tests/FVM/Interpolator3D.hpp"
 #include "tests/FVM/PXiExternalKineticKinetic.hpp"
+#include "tests/FVM/RadialGridGenerator.hpp"
 
 using namespace std;
 using namespace DREAMTESTS;
@@ -55,6 +56,7 @@ void init() {
     add_test(new DREAMTESTS::FVM::Interpolator1D("fvm/interpolator1d"));
     add_test(new DREAMTESTS::FVM::Interpolator3D("fvm/interpolator3d"));
     add_test(new DREAMTESTS::FVM::PXiExternalKineticKinetic("fvm/boundaryflux/2kinetic"));
+    add_test(new DREAMTESTS::FVM::RadialGridGenerator("fvm/radialgrid"));
 }
 
 /**

@@ -546,13 +546,12 @@ real_t NumericBRadialGridGenerator::JacobianAtTheta(
     real_t dZdr = gsl_spline2d_eval_deriv_x(this->spline_Z, r, t, this->acc_r, this->acc_theta);
     real_t dZdt = gsl_spline2d_eval_deriv_y(this->spline_Z, r, t, this->acc_r, this->acc_theta);
 
-    real_t R    = gsl_spline2d_eval(this->spline_R, r, t, this->acc_r, this->acc_theta);
-
-    if (_R != nullptr) *_R = R;
+    real_t ROverR0 = this->ROverR0AtTheta(r, theta);
+    if (_R != nullptr) *_R = ROverR0 * this->Rp;
     if (_dRdt != nullptr) *_dRdt = dRdt;
     if (_dZdt != nullptr) *_dZdt = dZdt;
 
-    return R/this->Rp*fabs(dRdr*dZdt - dRdt*dZdr);
+    return ROverR0*fabs(dRdr*dZdt - dRdt*dZdr);
 }
 
 /**
@@ -603,7 +602,7 @@ void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
 
     Jacobian = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
     ROverR0  = R/this->Rp;
-    NablaR2  = r==0 ? 0 : (R*R/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt));
+    NablaR2  = r==0 ? 0 : (ROverR0*ROverR0/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt));
 
     B = gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
 }
