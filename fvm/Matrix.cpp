@@ -5,6 +5,7 @@
  * 'EquationSystem' class.
  */
 
+#include <algorithm>
 #include <iostream>
 #include <petscmat.h>
 #include "FVM/Matrix.hpp"
@@ -64,7 +65,7 @@ void Matrix::Construct(
     // kept when 'ZeroRows()' is called.
     MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
-    // Don't complain about new allocations
+    // Fail if the code attempts to insert a structural nonzero not covered by preallocation.
     MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     //MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
     
@@ -77,6 +78,7 @@ void Matrix::Construct(
     // diagonals to be explicitly set, even if not used)
     for (PetscInt i = 0; i < m; i++)
         MatSetValue(this->petsc_mat, i, i, 0, ADD_VALUES);
+
 
     this->PartialAssemble();
 }
@@ -366,8 +368,96 @@ void Matrix::SetElement(
     const PetscInt irow, const PetscInt icol,
     const PetscScalar v, InsertMode insert_mode
 ) {
-    if (v != 0)
-        MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
+    if (v == 0) return;
+
+    const PetscInt row = rowOffset + irow;
+    const PetscInt col = colOffset + icol;
+
+    if (!buffering) {
+        MatSetValue(petsc_mat, row, col, v, insert_mode);
+        return;
+    }
+
+    // buffering mode: flush when row changes
+    if (bufRow != row) {
+        FlushBufferedRow();
+        bufRow = row;
+    }
+
+
+    // rare slow path if row exceeds reserve
+    if (bufLen >= (PetscInt)bufCols.size()) {
+        const PetscInt newCap = std::max((PetscInt)16, 2*(PetscInt)bufCols.size());
+        bufCols.resize(newCap);
+        bufVals.resize(newCap);
+    }
+
+    bufCols[bufLen] = col;
+    bufVals[bufLen] = v;
+    ++bufLen;
+}
+
+void Matrix::SetColumn(
+    PetscInt firstLocalRow, PetscInt localCol,
+    PetscInt m, const PetscScalar *vals,
+    InsertMode mode
+) {
+    if (m <= 0) return;
+
+    const PetscInt col = this->colOffset + localCol;
+    const PetscInt r0  = this->rowOffset + firstLocalRow;
+
+    if ((PetscInt)tmpRows.size() < m) tmpRows.resize(m);
+    if ((PetscInt)tmpVals.size() < m) tmpVals.resize(m);
+
+    PetscInt nnz = 0;
+    for (PetscInt r = 0; r < m; ++r) {
+        const PetscScalar v = vals[r];
+        if (v == 0)
+            continue;
+        tmpRows[nnz] = r0 + r;
+        tmpVals[nnz] = v;
+        ++nnz;
+    }
+
+    if (nnz > 0) {
+        MatSetValues(this->petsc_mat, nnz, tmpRows.data(), 1, &col, tmpVals.data(), mode);
+    }
+}
+
+/**
+ * Buffered insertion implementation:
+ * Accumulate entries for one row and submit them in a single MatSetValues()
+ * call. This is primarily meant to speed up row-oriented assembly loops.
+ */
+void Matrix::BeginBufferedSet(InsertMode mode, PetscInt reserve) {
+    buffering = true;
+    bufMode = mode;
+    bufRow = -1;
+    bufLen = 0;
+
+    if (reserve > 0 && (PetscInt)bufCols.size() < reserve) {
+        bufCols.resize(reserve);
+        bufVals.resize(reserve);
+    }
+}
+
+void Matrix::FlushBufferedRow() {
+    if (bufRow < 0 || bufLen == 0) 
+        return;
+
+    MatSetValues(petsc_mat, 1, &bufRow,
+                 bufLen, bufCols.data(),
+                 bufVals.data(), bufMode);
+
+    bufLen = 0;
+}
+
+void Matrix::EndBufferedSet() {
+    FlushBufferedRow();
+    buffering = false;
+    bufRow = -1;
+    bufLen = 0;
 }
 
 /**
