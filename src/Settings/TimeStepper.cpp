@@ -5,7 +5,10 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
+#include "DREAM/TimeStepper/TimeStepperAdaptive.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
+#include "DREAM/TimeStepper/TimeStepperIonization.hpp"
+#include "DREAM/TimeStepper/TimeStepperPrescribed.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 
@@ -35,7 +38,7 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
 	s->DefineSetting(MODULENAME "/alpha", "Scaling factor for the ionization time. If not zero, timesteps are updated as: dt = min(dtmax, alpha * t_ioniz)", (real_t)0.0);
     s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
-
+    s->DefineSetting(MODULENAME "/times", "Prescribed simulation time points (1D array). The simulation advances from times[k-1] to times[k].", (len_t)0, (const real_t*)nullptr);
 #ifdef DREAM_IS_PYTHON_LIBRARY
     s->DefineSetting(MODULENAME "/terminatefunc", "Python function used to determine when to terminate time stepping", (void*)nullptr);
 #endif
@@ -68,6 +71,10 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
 		case OptionConstants::TIMESTEPPER_TYPE_IONIZATION:
 			ts = ConstructTimeStepper_ionization(s, u, eqsys);
 			break;
+
+        case OptionConstants::TIMESTEPPER_TYPE_PRESCRIBED:
+            ts = ConstructTimeStepper_prescribed(s, u, eqsys);
+            break;
 
         default:
             throw SettingsException(
@@ -178,4 +185,79 @@ TimeStepperIonization *SimulationGenerator::ConstructTimeStepper_ionization(
 		throw SettingsException("TimeStepper ionization: Initial time step 'dt0' must be non-negative.");
 
 	return new TimeStepperIonization(tmax, dt, dtmax, u, eqsys, automaticstep, safetyfactor, minSaveDt, alpha);
+}
+
+/**
+ * Construct a TimeStepperPrescribed object according to the
+ * provided settings.
+ *
+ * s: Settings object specifying how to construct the
+ *    TimeStepperPrescribed object.
+ */
+TimeStepperPrescribed *SimulationGenerator::ConstructTimeStepper_prescribed(
+    Settings *s, FVM::UnknownQuantityHandler *u,
+    EquationSystem *eqsys
+) {
+    // tmax is still part of the standard interface. For prescribed stepping,
+    // we require that (if set) it matches the last time point.
+    real_t tmax = s->GetReal(MODULENAME "/tmax");
+
+    // Disallow mixing with dt/nt for clarity.
+    real_t dt = s->GetReal(MODULENAME "/dt", false);
+    int_t  nt = s->GetInteger(MODULENAME "/nt", false);
+    if (dt > 0 || nt > 0)
+        throw SettingsException(
+            "TimeStepper prescribed: "
+            "Ambiguous time step specified. 'dt'/'nt' cannot be used together "
+            "with the prescribed time grid 'times'."
+        );
+
+    int_t nSaveSteps_i = s->GetInteger(MODULENAME "/nsavesteps");
+    if (nSaveSteps_i < 0)
+        throw SettingsException(
+            "TimeStepper prescribed: "
+            "Invalid negative value assigned to 'nsavesteps': %d.", nSaveSteps_i
+        );
+    len_t nSaveSteps = (len_t)nSaveSteps_i;
+
+    // Load prescribed time array (1D).
+    len_t dims[1] = {0};
+    const real_t *times = s->GetRealArray(MODULENAME "/times", 1, dims);
+    const len_t ntimes = dims[0];
+
+    if (ntimes < 2)
+        throw SettingsException(
+            "TimeStepper prescribed: "
+            "Invalid time grid. 'times' must contain at least two time points."
+        );
+
+    // Validate time grid.
+    if (times[0] != 0)
+        throw SettingsException(
+            "TimeStepper prescribed: "
+            "Invalid time grid. The first time point must be 0."
+        );
+
+    for (len_t i = 1; i < ntimes; i++) {
+        if (times[i] <= times[i-1])
+            throw SettingsException(
+                "TimeStepper prescribed: "
+                "Invalid time grid. 'times' must be strictly increasing."
+            );
+    }
+
+    const real_t tmax_times = times[ntimes-1];
+    if (tmax <= 0) {
+        // If user did not set tmax, accept and implicitly use the last time point.
+        // (We still keep 'tmax' in settings for consistency with other steppers.)
+        tmax = tmax_times;
+    } else if (tmax != tmax_times) {
+        throw SettingsException(
+            "TimeStepper prescribed: "
+            "Inconsistent final time. 'tmax' (= %.16e) must match times[end] (= %.16e).",
+            tmax, tmax_times
+        );
+    }
+
+    return new TimeStepperPrescribed(ntimes, times, u, eqsys, nSaveSteps);
 }

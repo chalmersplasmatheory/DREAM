@@ -12,18 +12,18 @@ from .. helpers import scal
 TYPE_CONSTANT = 1
 TYPE_ADAPTIVE = 2
 TYPE_IONIZATION = 3
-
+TYPE_PRESCRIBED = 5  # PYTHON_TERMINATE holds ==4 in the C++ kernel
 
 class TimeStepper:
 
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, terminatefunc=None):
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, terminatefunc=None, times=None):
         """
         Constructor.
         """
-        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep, terminatefunc=None)
+        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep, terminatefunc=terminatefunc, times=times)
 
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0, terminatefunc=None):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False, minsavedt=0, terminatefunc=None, times=None):
         """
         Set properties of the time stepper.
         """
@@ -33,6 +33,7 @@ class TimeStepper:
         self.setTmax(tmax)
         self.setDt(dt)
         self.setNt(nt)
+        self.setTimes(times)
         self.setMinSaveTimestep(minsavedt)
         self.setNumberOfSaveSteps(nSaveSteps)
         self.setVerbose(verbose)
@@ -111,7 +112,35 @@ class TimeStepper:
         self.nSaveSteps = nSaveSteps
 
 
-    def setRelTol(self, reltol): self.setRelativeTolerance(reltol=reltol)
+    def setTimes(self, times):
+        """
+        Sets a prescribed array of times to step to. 
+        The times array must start with t=0 and be monotonically increasing.
+
+        Also sets tmax to times[-1] and resets Nt, dt.
+        """
+        if times is None:
+            self.times = None
+            return
+
+        t = np.array(times, dtype=float).flatten()
+        if t.size < 2:
+            raise DREAMException("TimeStepper prescribed: 'times' must contain at least two time points.")
+        if t[0] != 0:
+            raise DREAMException("TimeStepper prescribed: The first time point in 'times' must be 0.")
+        if np.any(np.diff(t) <= 0):
+            raise DREAMException("TimeStepper prescribed: 'times' must be strictly increasing.")
+
+        # Disallow mixing with dt/nt.
+        self.dt = None
+        self.nt = None
+
+        self.times = t
+        self.tmax = float(t[-1])
+
+
+    def setRelTol(self, reltol):
+        self.setRelativeTolerance(reltol=reltol)
 
 
     def setRelativeTolerance(self, reltol):
@@ -144,10 +173,10 @@ class TimeStepper:
 
 
     def setType(self, ttype, *args, **kwargs):
-        if ttype not in [TYPE_CONSTANT, TYPE_ADAPTIVE, TYPE_IONIZATION]:
+        if ttype not in [TYPE_CONSTANT, TYPE_ADAPTIVE, TYPE_IONIZATION, TYPE_PRESCRIBED]:
             raise DREAMException("TimeStepper: Unrecognized time stepper type specified: {}".format(ttype))
 
-        if ttype in [TYPE_ADAPTIVE, TYPE_IONIZATION]:
+        if ttype in [TYPE_ADAPTIVE, TYPE_IONIZATION, TYPE_PRESCRIBED]:
             self.nt = None
 
         self.type = int(ttype)
@@ -193,6 +222,7 @@ class TimeStepper:
         if 'dtmax' in data: self.dtmax = float(scal(data['dtmax']))
         if 'minsavedt' in data: self.minsavedt = float(scal(data['minsavedt']))
         if 'nt' in data: self.nt = int(scal(data['nt']))
+        if 'times' in data: self.times = np.array(data['times'], dtype=float).flatten()
         if 'nsavesteps' in data: self.nSaveSteps = int(scal(data['nsavesteps']))
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'safetyfactor' in data: self.safetyfactor = float(scal(data['safetyfactor']))
@@ -236,6 +266,11 @@ class TimeStepper:
             data['minsavedt'] = self.minsavedt
             data['alpha'] = self.alpha
 
+            if self.terminatefunc is not None:
+                data['terminatefunc'] = self.terminatefunc
+        elif self.type == TYPE_PRESCRIBED:
+            data['times'] = self.times
+            data['nsavesteps'] = int(scal(self.nSaveSteps))
             if self.terminatefunc is not None:
                 data['terminatefunc'] = self.terminatefunc
 
@@ -284,5 +319,32 @@ class TimeStepper:
                 raise DREAMException("TimeStepper ionization: 'minsavedt' must be non-negative.")
             elif not 0 <= self.alpha <= 1:
                 raise DREAMException("TimeStepper ionization: 'alpha' must be between 0 and 1.")
+        elif self.type == TYPE_PRESCRIBED:
+            if self.times is None:
+                raise DREAMException("TimeStepper prescribed: 'times' must be set.")
+            t = np.array(self.times, dtype=float).flatten()
+            if t.size < 2:
+                raise DREAMException("TimeStepper prescribed: 'times' must contain at least two time points.")
+            if t[0] != 0:
+                raise DREAMException("TimeStepper prescribed: The first time point in 'times' must be 0.")
+            if np.any(np.diff(t) <= 0):
+                raise DREAMException("TimeStepper prescribed: 'times' must be strictly increasing.")
+
+            # Ensure tmax consistency (and set it if missing).
+            if self.tmax is None:
+                self.tmax = float(t[-1])
+            elif self.tmax != float(t[-1]):
+                raise DREAMException("TimeStepper prescribed: 'tmax' must match times[-1].")
+
+            # Disallow dt/nt.
+            if self.dt is not None and self.dt > 0:
+                raise DREAMException("TimeStepper prescribed: 'dt' cannot be used with prescribed 'times'.")
+            if self.nt is not None and self.nt > 0:
+                raise DREAMException("TimeStepper prescribed: 'nt' cannot be used with prescribed 'times'.")
+
+            Nt = t.size - 1
+            if self.nSaveSteps < 0 or self.nSaveSteps > Nt:
+                raise DREAMException("TimeStepper prescribed: Invalid value assigned to 'nSaveSteps'. Must be between 0 and Nt.")
+
         else:
             raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
