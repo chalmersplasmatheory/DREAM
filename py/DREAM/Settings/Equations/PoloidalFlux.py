@@ -41,6 +41,10 @@ class PoloidalFlux(UnknownQuantity,PrescribedParameter):
         :param radius: Radial grid on which  ``Lambda`` is specified (if any).
         :param times:  Time grid on which ``Lambda`` is specified (if any).
         """
+        if np.isscalar(Lambda):
+            radius = np.array([0])
+            times = np.array([0])
+
         d, r, t = self._setPrescribedData(data=Lambda, radius=radius, times=times)
 
         self.hyperresistivity_mode = HYPERRESISTIVITY_MODE_PRESCRIBED
