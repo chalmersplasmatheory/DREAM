@@ -32,7 +32,7 @@ module load gcc
 module load hdf5-serial/1.14.1 openmpi/5.0
 module load petsc-real-double/3.25	# load PETSc module rather than install
 module load cmake git gsl
-module load aug_sfutils #python-waterboa
+module load python-waterboa
 
 alias dreamviz="python -i $DREAMPATH/py/cli/cli.py"
 alias dreami="$DREAMPATH/build/iface/dreami"
