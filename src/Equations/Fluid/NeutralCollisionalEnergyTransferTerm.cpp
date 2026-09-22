@@ -13,12 +13,13 @@ using namespace DREAM;
  * Constructor
  */
 NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
-    FVM::Grid *grid, len_t iz, FVM::UnknownQuantityHandler *unknowns,IonHandler *ions
-): FVM::EquationTerm(grid), unknowns(unknowns), ions(ions), iz(iz){
+    FVM::Grid *grid, len_t iz, len_t jz, FVM::UnknownQuantityHandler *unknowns,IonHandler *ions
+): FVM::EquationTerm(grid), unknowns(unknowns), ions(ions), iz(iz), jz(jz){
     
     SetName("NeutralCollisionalEnergyTransferTerm");
 
     this->mi = ions->GetIonSpeciesMass(iz);
+    this->mj = ions->GetIonSpeciesMass(jz);
     this->id_ions =unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_Wn =unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
 

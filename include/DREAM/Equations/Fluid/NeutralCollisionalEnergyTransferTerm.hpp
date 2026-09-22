@@ -13,10 +13,11 @@ private:
     FVM::UnknownQuantityHandler *unknowns;
     IonHandler *ions;
     len_t iz;
+    len_t jz;
     len_t id_ions;
     len_t id_Wn;
     real_t mi;
-
+    real_t mj;
 
     real_t getMomentumScatteringRadius(len_t species);
     void GetNeutralParameters(len_t ir, real_t&, real_t&, real_t&);
@@ -25,7 +26,7 @@ private:
 
 public:
     NeutralCollisionalEnergyTransferTerm(
-        FVM::Grid*, len_t, FVM::UnknownQuantityHandler*, IonHandler*
+        FVM::Grid*, len_t, len_t, FVM::UnknownQuantityHandler*, IonHandler*
     );
     virtual ~NeutralCollisionalEnergyTransferTerm() {}
     virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
