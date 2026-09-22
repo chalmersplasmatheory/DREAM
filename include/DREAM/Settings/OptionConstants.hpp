@@ -45,6 +45,7 @@ namespace DREAM {
             *UQTY_V_P,             *UQTY_V_P_DESC,
             *UQTY_W_ABL,           *UQTY_W_ABL_DESC,
             *UQTY_W_COLD,          *UQTY_W_COLD_DESC,
+            *UQTY_WN_ENER,         *UQTY_WN_ENER_DESC,
             *UQTY_W_HOT,           *UQTY_W_HOT_DESC,
             *UQTY_WI_ENER,         *UQTY_WI_ENER_DESC,
             *UQTY_X_P,             *UQTY_X_P_DESC,

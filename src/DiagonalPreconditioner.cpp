@@ -191,6 +191,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE; // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_WI_ENER) {
             uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE;
+		} else if (name == OptionConstants::UQTY_WN_ENER) {
+			uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE;
 		} else if (name == OptionConstants::UQTY_X_P) {
 			uqn_scales[id] = eqn_scales[id] = 1;
 		} else if (name == OptionConstants::UQTY_Y_P) {

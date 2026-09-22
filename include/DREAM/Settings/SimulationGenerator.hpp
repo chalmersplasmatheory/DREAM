@@ -160,6 +160,7 @@ namespace DREAM {
         static void ConstructEquation_T_i(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_i_trivial(EquationSystem*, Settings*);
         static void ConstructEquation_T_i_selfconsistent(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_n(EquationSystem*,Settings*,struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_abl(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);

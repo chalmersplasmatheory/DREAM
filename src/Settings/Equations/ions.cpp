@@ -59,11 +59,14 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/hydrogennames", "Names of the hydrogen ion species", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
     s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
+    s->DefineSetting(MODULENAME "/typeTn", "Model to use for neutral heat equation", (int_t) OptionConstants::UQTY_T_N_NEGLECT);
 	s->DefineSetting(MODULENAME "/init_equilibrium", "Flags indicating whether to initialize species in coronal equilibrium.", 1, dims, (int_t*)nullptr);
 	s->DefineSetting(MODULENAME "/reioniz_scale", "Factor by which to rescale ion runaway ionization term.", (real_t)1.0);
 
     s->DefineSetting(MODULENAME "/SPIMolarFraction", "molar fraction of SPI injection (if any)",0, (real_t*)nullptr);
 
+    s->DefineSetting(MODULENAME "/reactions/enabled", "Enable selected molecular reactions", (int_t)0);
+    s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonR(MODULENAME, s, "initialTi");
 	DefineDataIonR(MODULENAME, s, "initialNi");
@@ -74,12 +77,6 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     DefineDataIonRT(MODULENAME, s, "neutral_prescribed_advection");
 	DefineDataIonT(MODULENAME, s, "ion_source");
     DefineDataIonRT(MODULENAME, s, "ion_source_volumetric");
-
-
-    s->DefineSetting(MODULENAME "/reactions/enabled", "Enable selected molecular reactions", (int_t)0);
-
-    s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
-
 
 }
 

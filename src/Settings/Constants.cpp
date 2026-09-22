@@ -47,7 +47,9 @@ DEF_UQTY(V_LOOP_WALL,     "V_loop_w",     "Loop voltage on tokamak wall normaliz
 DEF_UQTY(V_P,             "v_p",          "Pellet shard velocities (Cartesian) [m/s]");
 DEF_UQTY(W_ABL,           "W_abl",        "Flux surface averaged ablated but not equilibrated electron energy density (3n_abl T_abl/2) [J/m^3]");
 DEF_UQTY(W_COLD,          "W_cold",       "Cold electron energy density (3nT/2) [J/m^3]");
+DEF_UQTY(WN_ENER,         "W_n",          "Neutral thermal energy density [J/m^3]");
 DEF_UQTY(W_HOT,           "W_hot",        "Hot electron energy density [J/m^3]");
 DEF_UQTY(WI_ENER,         "W_i",          "Total ion energy density (3N_iT_i/2) of each species [J/m^3]");
 DEF_UQTY(X_P,             "x_p",          "Pellet shard coordinates (Cartesian) [m]");
 DEF_UQTY(Y_P,             "Y_p",          "Pellet shard radii to the power of 5/3 [m^(5/3)]");
+

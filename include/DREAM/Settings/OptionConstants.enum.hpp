@@ -224,6 +224,11 @@ enum uqty_T_i_eqn {
     UQTY_T_I_INCLUDE=2              // Ion temperature(s) calculated self-consistently
 };
 
+enum uqty_T_n_eqn {
+    UQTY_T_N_NEGLECT=1,             // Neutral temperature not modelled
+    UQTY_T_N_INCLUDE=2              // Neutral temperature calculated self-consistently
+};
+
 enum uqty_distribution_mode {
     UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
     UQTY_DISTRIBUTION_MODE_ANALYTICAL=2,   // distribution modelled with analytical distribution function

@@ -15,6 +15,7 @@ from .Equations.BootstrapCurrent import BootstrapCurrent
 from .Equations.RunawayElectronDistribution import RunawayElectronDistribution
 from .Equations.PoloidalFlux import PoloidalFlux
 from .Equations.EquationException import EquationException
+from .Equations.NeutralThermalEnergy import NeutralThermalEnergy
 
 
 # List of names of unknown quantities in DREAM. This list can be
@@ -23,7 +24,7 @@ UNKNOWNS = [
     'E_field', 'f_hot', 'f_re', 'n_i', 'I_p', 'I_wall',
     'j_bs', 'j_hot', 'j_ohm', 'j_re', 'j_tot', 'n_cold', 'n_hot',
     'n_re', 'n_tot', 'N_i', 'psi_p', 'psi_wall', 'psi_edge',
-    'tau_coll','T_cold', 'V_loop_w', 'W_cold', 'W_i'
+    'tau_coll','T_cold', 'V_loop_w', 'W_cold', 'W_i', 'W_n'
 ]
 
 
@@ -50,6 +51,8 @@ class EquationSystem:
         self.addUnknown('psi_p', PoloidalFlux(settings=settings))
         self.addUnknown('T_cold', ColdElectronTemperature(settings=settings))
         self.addUnknown('spi', SPI(settings=settings))
+        self.addUnknown('W_n',NeutralThermalEnergy(settings=settings))
+
 
 
     def __getitem__(self, name):
