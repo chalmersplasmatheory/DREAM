@@ -6,6 +6,7 @@ from ... helpers import scal
 
 BOOTSTRAP_MODE_DISABLED = 1
 BOOTSTRAP_MODE_REDL = 2
+BOOTSTRAP_MODE_STELLARATOR = 3
 
 BOOTSTRAP_INIT_MODE_TOTAL = 1 
 BOOTSTRAP_INIT_MODE_OHMIC = 2
@@ -35,7 +36,7 @@ class BootstrapCurrent(UnknownQuantity):
             self.mode = BOOTSTRAP_MODE_REDL
         elif mode is False:
             self.mode = BOOTSTRAP_MODE_DISABLED
-        elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_REDL]:
+        elif mode in [BOOTSTRAP_MODE_DISABLED, BOOTSTRAP_MODE_REDL, BOOTSTRAP_MODE_STELLARATOR]:
             self.mode = int(scal(mode))
         else:
             print(type(mode), mode)

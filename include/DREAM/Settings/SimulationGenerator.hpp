@@ -26,6 +26,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Stellarator/RadialGridStellarator.hpp"
 #include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
 
@@ -44,7 +45,7 @@ namespace DREAM {
 
         // FOR INTERNAL USE
         static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, FVM::Grid*,  enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*, NIST*, AMJUEL*);
-        static FVM::Grid *ConstructScalarGrid();
+        static FVM::Grid *ConstructScalarGrid(Settings*);
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
 
@@ -65,6 +66,7 @@ namespace DREAM {
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_ToroidalAnalytical(const int_t, Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Numerical(const int_t, Settings*);
+        static FVM::RadialGridStellarator *ConstructStellaratorRadialGrid_Numerical(const int_t, Settings*);
 
         static FVM::PXiGrid::PXiMomentumGrid *Construct_PXiGrid(
             Settings*, const std::string&, const real_t, FVM::RadialGrid*

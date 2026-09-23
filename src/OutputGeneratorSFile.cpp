@@ -151,14 +151,31 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     this->sf->WriteList(geom + "FSA_BOverBmin2", FSA_B2, nr);
     const real_t *FSA_B = rgrid->GetFSA_B();
     this->sf->WriteList(geom + "FSA_BOverBmin", FSA_B, nr);
-    const real_t *FSA_1OverR2 = rgrid->GetFSA_1OverR2();
-    this->sf->WriteList(geom + "FSA_R02OverR2", FSA_1OverR2, nr);
-    const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
-    this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
+
+    if (rgrid->isStellarator()){
+        const real_t *BPolIOverR0 = rgrid->GetBPolI();
+        this->sf->WriteList(geom + "IR0", BPolIOverR0, nr);
+        const real_t *iota = rgrid->GetIota();
+        this->sf->WriteList(geom + "iota", iota, nr);
+        const real_t *FSA_BdotGradphi = rgrid->GetFSA_BdotGradphi();
+        this->sf->WriteList(geom + "FSA_BdotGradphiR0", FSA_BdotGradphi, nr);
+        const real_t *FSA_gttOverJ2 = rgrid->GetFSA_gttOverJ2();
+        this->sf->WriteList(geom + "FSA_gttR02OverJ2", FSA_gttOverJ2, nr);
+        const real_t *FSA_gtpOverJ2 = rgrid->GetFSA_gtpOverJ2();
+        this->sf->WriteList(geom + "FSA_gtpR02OverJ2", FSA_gtpOverJ2, nr);
+    } else {
+        const real_t *FSA_1OverR2 = rgrid->GetFSA_1OverR2();
+        this->sf->WriteList(geom + "FSA_R02OverR2", FSA_1OverR2, nr);
+        const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
+        this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
+    }
 
 	// Equilibrium data
 	this->sf->CreateStruct(group + "eq");
-	SaveEquilibrium(this->sf, group + "eq/");
+    if (rgrid->isStellarator())
+        SaveStellaratorEquilibrium(this->sf, group + "eq/");
+	else
+        SaveEquilibrium(this->sf, group + "eq/");
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -206,6 +223,49 @@ void OutputGeneratorSFile::SaveEquilibrium(
 	sf->WriteList(group + "theta", theta, ntheta);
 
 	delete [] theta;
+	delete [] Z_f;
+	delete [] Z;
+	delete [] R_f;
+	delete [] R;
+}
+
+/**
+ * Save stellarator equilibrium data to the output.
+ *
+ * sf:    SFile object to write data to.
+ * group: Full path to the equilibrium in the output.
+ */
+void OutputGeneratorSFile::SaveStellaratorEquilibrium(
+	SFile *sf, const string& group
+) {
+	FVM::RadialGrid *rg = this->fluidGrid->GetRadialGrid();
+
+	sf->WriteScalar(group + "R0", rg->GetR0());
+	sf->WriteScalar(group + "Z0", 0);
+
+	// Flux surface coordinates
+	len_t npsi = rg->GetNPsi();
+	len_t ntheta = rg->GetNTheta();
+	len_t nphi = rg->GetNPhi();
+
+	const real_t *R = rg->GetFluxSurfaceRMinusR0();
+	const real_t *R_f = rg->GetFluxSurfaceRMinusR0_f();
+	const real_t *Z = rg->GetFluxSurfaceZMinusZ0();
+	const real_t *Z_f = rg->GetFluxSurfaceZMinusZ0_f();
+	const real_t *theta = rg->GetPoloidalAngle();
+	const real_t *phi = rg->GetToroidalAngle();
+
+	sfilesize_t dims[3] = {nphi, ntheta, npsi};
+	sfilesize_t dims_f[3] = {nphi, ntheta, npsi+1};
+	sf->WriteMultiArray(group + "RMinusR0", R, 3, dims);
+	sf->WriteMultiArray(group + "RMinusR0_f", R_f, 3, dims_f);
+	sf->WriteMultiArray(group + "ZMinusZ0", Z, 3, dims);
+	sf->WriteMultiArray(group + "ZMinusZ0_f", Z_f, 3, dims_f);
+	sf->WriteList(group + "theta", theta, ntheta);
+    sf->WriteList(group + "phi", phi, nphi);
+
+	delete [] theta;
+    delete [] phi;
 	delete [] Z_f;
 	delete [] Z;
 	delete [] R_f;
