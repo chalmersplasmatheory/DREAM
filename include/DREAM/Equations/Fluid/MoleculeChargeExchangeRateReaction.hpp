@@ -17,7 +17,7 @@ namespace DREAM {
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
         RateHandler *ratehandler;
-        len_t id_ions, id_n_cold, id_n_tot, id_T_cold;
+        len_t id_ions, id_n_cold, id_n_tot, id_T_cold, id_Wi;
         bool addFluidIonization; // the full ADAS ionization rate is added in this equation term
         bool addFluidJacobian;   // only the jacobian of the ionization is set with this term
         real_t **Rate = nullptr;

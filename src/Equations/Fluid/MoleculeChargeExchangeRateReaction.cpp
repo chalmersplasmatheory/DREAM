@@ -5,7 +5,6 @@
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Equations/Fluid/MoleculeChargeExchangeRateReaction.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/Equations/Fluid/MoleculeChargeExchangeRateReaction.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/MoleculeHandler.hpp"
 
@@ -20,7 +19,6 @@ MoleculeChargeExchangeRateReaction::MoleculeChargeExchangeRateReaction(
     ratehandler(ratehandler), addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
         SetName("MoleculeChargeExchangeRateReaction");
-        printf("Species name called in MoleculeChargeExchangeRateReaction: %s\n", this->ions->GetName(iIon).c_str());
 
         this->unknowns  = unknowns;
 
@@ -28,6 +26,7 @@ MoleculeChargeExchangeRateReaction::MoleculeChargeExchangeRateReaction(
 		this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
 		this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
 		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+        this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
         const len_t allocationSize = FindRelevantMolecularReactions();
         AllocateRateCoefficients(allocationSize);
@@ -91,17 +90,17 @@ void MoleculeChargeExchangeRateReaction::Rebuild(
     const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns
 ) {
     const len_t Nr = this->grid->GetNr();
-
-    real_t *T = unknowns->GetUnknownData(id_T_cold);
-    real_t *n = unknowns->GetUnknownData(id_n_cold);
-    
+     
     for (len_t rateIndex = 0; rateIndex < chargeExchangeReactions.size(); rateIndex++) {
         const MolecularReaction& reaction = chargeExchangeReactions[rateIndex];
       
         for (len_t ir = 0; ir < Nr; ir++) {
-            Rate[rateIndex][ir]   = reaction.rate->Eval(n[ir], T[ir]);
-            Rate_N[rateIndex][ir] = reaction.rate->Eval_deriv_n(n[ir], T[ir]);
-            Rate_T[rateIndex][ir] = reaction.rate->Eval_deriv_T(n[ir], T[ir]);
+            real_t density, temperature;
+            density = ratehandler->ResolveDensity(reaction.densityInput, ir);
+            temperature = ratehandler->ResolveTemperature(reaction.temperatureInput, ir);
+            Rate[rateIndex][ir]   = reaction.rate->Eval(density, temperature);
+            Rate_N[rateIndex][ir] = reaction.rate->Eval_deriv_n(density, temperature);
+            Rate_T[rateIndex][ir] = reaction.rate->Eval_deriv_T(density, temperature);
         }
     }
 }
@@ -237,7 +236,6 @@ void MoleculeChargeExchangeRateReaction::Rebuild(
         if (net == 0)
             continue;
             
-        printf("Net production of %s (Z0=%d) in reaction %s: %g\n", name.c_str(), Z0, reaction.rateName, net);
         const auto& a = reaction.reactants[0];
         const auto& b = reaction.reactants[1];
 
@@ -247,12 +245,11 @@ void MoleculeChargeExchangeRateReaction::Rebuild(
         const len_t offsetA = ions->GetIndex(ia, a.Z0) * nr;
         const len_t offsetB = ions->GetIndex(ib, b.Z0) * nr;
           
-        for (len_t ir = 0; ir < nr; ir++) {
+        for (len_t ir = 0; ir < nr; ir++) { //TODO check that thrtr id only to reactants, will not be a problem here but in other files...
             const real_t R =
                 Rate[rateIndex][ir] *
                 x[offsetA + ir] *
                 x[offsetB + ir];
-                printf("Added density for reaction %s at radial index %d: %g\n", reaction.rateName, ir, R);
 
             vec[rOffset + ir] += net * R;
           }
