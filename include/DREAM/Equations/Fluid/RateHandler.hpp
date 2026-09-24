@@ -57,6 +57,8 @@ namespace DREAM {
         FVM::Grid *grid;
         IonHandler *ions;
         ADAS *adas;
+        bool separateNeutrals;
+        len_t id_Wn;
 
         len_t id_ions, id_n_cold, id_Ni, id_T_cold, id_Wi;
 
@@ -92,6 +94,9 @@ namespace DREAM {
       real_t ResolveTemperature(
             const MolecularInput& input,
             const len_t ir
+        ) ;
+      real_t ResolveSpeciesTemperature(
+            len_t species, int_t charge, len_t ir
         ) ;
 
         

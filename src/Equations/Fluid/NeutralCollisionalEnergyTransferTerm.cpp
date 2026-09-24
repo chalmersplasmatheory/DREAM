@@ -94,15 +94,17 @@ real_t NeutralCollisionalEnergyTransferTerm::CalculateNeutralScatteringRate(
     const real_t reducedMass =(miAMU*mjAMU)/ (miAMU + mjAMU);
 
     const real_t v_ij =std::sqrt(2 * Constants::ec * reducedTemperature/ (reducedMass * Constants::mu));
-    const real_t r_ij = 0.5 *(ri+rj);
-    const real_t vNN_inj = 2*std::sqrt(M_PI)/3 * nj *v_ij*(mj/(mi + mj))* r_ij*r_ij;
+    //const real_t r_ij = 0.5 *(ri+rj);
+    const real_t r_ij = (ri+rj);
+    //const real_t vNN_inj = 2*std::sqrt(M_PI)/3 * nj *v_ij*(mj/(mi + mj))* r_ij*r_ij;
+    const real_t vNN_inj = 2*2*std::sqrt(M_PI)/3 * nj *v_ij* r_ij*r_ij;
 
     return vNN_inj;
   }
 
 /**
-* Sets the elements of the vector based on the neutral collisional energy transfer.
-*/
+ * Sets the elements of the vector based on the neutral collisional energy transfer.
+ */
 void NeutralCollisionalEnergyTransferTerm::SetVectorElements(
     real_t *vec,
     const real_t*
@@ -143,12 +145,89 @@ void NeutralCollisionalEnergyTransferTerm::SetVectorElements(
     } 
   }
 
-
+/**
+ * Sets the elements of the Jacobian matrix based on the neutral 
+ * collisional energy transfer. TODO: Check this math
+ */
 bool NeutralCollisionalEnergyTransferTerm::SetJacobianBlock(
-      const len_t,
-      const len_t,
-      FVM::Matrix *,
-      const real_t*
+    const len_t,const len_t derivId,
+    FVM::Matrix *jac,
+    const real_t*
   ) {
-      return false;
+      if (derivId != id_Wn && derivId != id_ions)
+          return false;
+
+    const real_t *densities = unknowns->GetUnknownData(id_ions);
+    const real_t *energies = unknowns->GetUnknownData(id_Wn);
+
+    const len_t neutralIndexI = ions->GetIndex(iz, 0);
+    const len_t neutralIndexJ = ions->GetIndex(jz, 0);
+
+    const real_t A = 1.5 * Constants::ec;
+    const real_t massFactor = 2 * mi * mj / ((mi + mj) * (mi + mj));
+
+    bool contributes = false;
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t rowI = iz * nr + ir;
+        const len_t rowJ = jz * nr + ir;
+        const len_t densityColI = neutralIndexI * nr + ir;
+        const len_t densityColJ = neutralIndexJ * nr + ir;
+
+        const real_t ni = densities[densityColI];
+        const real_t nj = densities[densityColJ];
+
+        if (ni <= 0 || nj <= 0)
+            continue;
+
+        const real_t Ti = energies[rowI] / (A * ni);
+        const real_t Tj = energies[rowJ] / (A * nj);
+
+        const real_t nuT = massFactor * CalculateNeutralScatteringRate(
+            iz, jz, ir, mi, mj, Ti, Tj, nj);
+
+        // At Ti = Tj = 0, the first derivatives vanish.
+        if (Ti == 0 && Tj == 0)
+            continue;
+
+        const real_t s = Ti / mi + Tj / mj;
+        const real_t dT = Tj - Ti;
+        const real_t prefactor = A * ni * nuT;
+        const real_t Q = prefactor * dT;
+
+        // Temperature derivatives at fixed densities.
+        const real_t dQdTi =
+            prefactor * (dT / (2 * mi * s) - 1);
+        const real_t dQdTj =
+            prefactor * (dT / (2 * mj * s) + 1);
+
+        real_t dQdxI, dQdxJ;
+        len_t colI, colJ;
+
+        if (derivId == id_Wn) {
+            colI = rowI;
+            colJ = rowJ;
+
+            dQdxI = dQdTi / (A * ni);
+            dQdxJ = dQdTj / (A * nj);
+        } else {
+            colI = densityColI;
+            colJ = densityColJ;
+
+            // Density derivatives at fixed energy densities.
+            dQdxI = (Q - Ti * dQdTi) / ni;
+            dQdxJ = (Q - Tj * dQdTj) / nj;
+        }
+
+        // Species i receives Q; species j loses exactly Q.
+        jac->SetElement(rowI, colI,  dQdxI);
+        jac->SetElement(rowI, colJ,  dQdxJ);
+        jac->SetElement(rowJ, colI, -dQdxI);
+        jac->SetElement(rowJ, colJ, -dQdxJ);
+
+        contributes = true;
+    }
+
+    return contributes;
   }
+
