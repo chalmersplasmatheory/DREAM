@@ -69,6 +69,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonR(MODULENAME, s, "initialTi");
+    DefineDataIonR(MODULENAME, s, "initialTn");
 	DefineDataIonR(MODULENAME, s, "initialNi");
     DefineDataIonRT(MODULENAME, s, "prescribed");
     DefineDataIonRT(MODULENAME, s, "charged_prescribed_diffusion");

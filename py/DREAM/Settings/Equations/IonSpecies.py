@@ -75,7 +75,7 @@ class IonSpecies:
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
         t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, r_expdecay_all_cs = None, t_expdecay_all_cs = None,
-        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False):
+        init_equil=False, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False, hydrogen=False, Tn = None):
         """
         Constructor.
 
@@ -88,6 +88,7 @@ class IonSpecies:
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection
         :param bool init_equil:        Initialize ion species in coronal equilibrium.
+        :param float Tn:               Ion initial neutral temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param float T:                Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
@@ -185,6 +186,8 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
         self.T = self.setTemperature(T)
+        self.Tn = self.setTemperature(Tn)
+
 
         # Initialize diffusion
         self.setChargedDiffusion(
@@ -462,6 +465,10 @@ class IonSpecies:
         the ion heat of this species
         """
         return self.T
+
+    def getNeutralTemperature(self):
+        """Return the initial neutral temperature profile in eV."""
+        return self.Tn
 
 
     def getZ(self):

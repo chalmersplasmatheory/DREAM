@@ -7,6 +7,7 @@ from . RunawayElectronDistributionFunction import RunawayElectronDistributionFun
 from . IonHandler import IonHandler
 from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
 from . IonThermalEnergy import IonThermalEnergy
+from . NeutralThermalEnergy import NeutralThermalEnergy
 from . PlasmaCurrent import PlasmaCurrent
 from . PoloidalFlux import PoloidalFlux
 from . RunawayElectronDensity import RunawayElectronDensity
@@ -51,6 +52,7 @@ class EquationSystem:
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
         'W_i':          IonThermalEnergy,
+        'W_n':          NeutralThermalEnergy,
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
     }
