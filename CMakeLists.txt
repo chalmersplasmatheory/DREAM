@@ -124,19 +124,5 @@ if (DREAM_BUILD_TESTS)
     add_subdirectory(tests/cxx)
 endif ()
 
-# -------------------------------------------------------------
-# Enable Intel MKL PARDISO support
-# -------------------------------------------------------------
-# Define to tell DREAM/PETSc that MKL PARDISO is available
-add_compile_definitions(HAVE_MKL_PARDISO)
-
-# Link MKL runtime libraries explicitly (needed for PARDISO)
-link_libraries(
-    /opt/intel/oneapi/mkl/2025.3/lib/libmkl_rt.so
-    pthread
-    m
-    dl
-)
-# -------------------------------------------------------------
 
 
