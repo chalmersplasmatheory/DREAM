@@ -32,12 +32,9 @@ public:
     virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
     virtual void SetVectorElements(real_t*, const real_t*) override;
     virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
-    virtual len_t GetNumberOfNonZerosPerRow() const override {
-      return 0; //TODO
-  }
+    virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
+    virtual len_t GetNumberOfNonZerosPerRow() const override {return 2;}
 };
-
-
 }
 
-#endif
+#endif /* DREAM_NEUTRAL_COLLISIONAL_ENERGY_TRANSFER_TERM_HPP */
