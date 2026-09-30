@@ -52,25 +52,25 @@ NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
  * Calculates the momentum scattering radius for a given neutral species. In units of Ångström.
  */
 real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t IZ){
-    //TODO: Look this up
+    //https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Supplemental_Modules_(Physical_and_Theoretical_Chemistry)/Kinetics/06%3A_Modeling_Reaction_Kinetics/6.01%3A_Collision_Theory/6.1.01%3A_Collisional_Cross_Section
     const std::string name = ions->GetName(IZ);
     if (name == "D")
-        return 1.35;
+        return 1.54;
 
     else if (name == "D2")
-          return 2.01;
+          return 2.07;
 
-    else if (name == "D3")
-        return 2.01;   // must be confirmed
+    else if (name == "H2")
+        return 2.07;   
 
     else if (name == "He")
-        return 1.47;
+        return 1.83;
 
     else if (name == "Ne")
-        return 1.91;
+        return 1.95;
 
     else if (name == "Ar")
-          return 2.45;
+          return 2.39;
     else{
         return 0;
     }
