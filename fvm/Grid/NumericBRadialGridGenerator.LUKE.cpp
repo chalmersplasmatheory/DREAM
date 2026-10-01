@@ -47,7 +47,7 @@ struct NumericBData *DREAM::FVM::LoadNumericBFromLUKE(SFile *sf, const std::stri
     double **_Z = sf->GetDoubles("equil/pty", fsize); ASSERT_DIMS("pty");
 
     double **_Br   = sf->GetDoubles("equil/ptBx", fsize); ASSERT_DIMS("ptBx");
-    double **_Bz   = sf->GetDoubles("equil/ptBy", fsize); ASSERT_DIMS("ptBz");
+    double **_Bz   = sf->GetDoubles("equil/ptBy", fsize); ASSERT_DIMS("ptBy");
     double **_Bphi = sf->GetDoubles("equil/ptBPHI", fsize); ASSERT_DIMS("ptBPHI");
 
 	// We need only a pointer to the full chunk of
@@ -59,9 +59,10 @@ struct NumericBData *DREAM::FVM::LoadNumericBFromLUKE(SFile *sf, const std::stri
 	d->Bphi = _Bphi[0]; delete [] _Bphi;
 
     // DREAM works with psi/R0 so we want to divide psi by the
-    // minor radius here...
+    // minor radius here (note LUKE R is major radius relative to magnetic axis)
+    real_t minor_radius = d->R[d->npsi-1];
     for (len_t i = 0; i < d->npsi; i++)
-        d->psi[i] /= d->R[d->npsi-1];
+        d->psi[i] /= minor_radius;
 
     return d;
 }

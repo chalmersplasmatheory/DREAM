@@ -17,7 +17,8 @@ def saveLUKE(filename, data):
 
     # Poloidal flux is normalized by the aspect ratio, Rp/ap
     # (major radius over minor radius) in LUKE equilibria
-    equil['psi_apRp'] = data['psi'] * ((data['R'][0,-1]-data['Rp']) / data['Rp'])
+    minor_radius = (data['R'][0,-1]-data['Rp'])
+    equil['psi_apRp'] = data['psi'] * (minor_radius / data['Rp'])
     equil['theta']    = data['theta']
 
     equil['ptx']      = data['R']-data['Rp']
