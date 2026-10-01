@@ -40,8 +40,11 @@ namespace DREAM {
         real_t *NiMain=nullptr;
         real_t *WiMain=nullptr;
 
+        bool stellarator = false;
+
         real_t *ft=nullptr;             // fraction of trapped particles
         real_t *qR0=nullptr;            // safety factor multiplied by R0
+        real_t *eps=nullptr;            // safety factor multiplied by R0
 
         real_t *constantPrefactor=nullptr;
 
@@ -63,7 +66,7 @@ namespace DREAM {
         real_t *p;
         real_t *n;
 
-        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*);
+        BootstrapCurrent(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, CoulombLogarithm*, enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode=OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL);
         ~BootstrapCurrent();
 
         void AllocateQuantities();

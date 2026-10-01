@@ -16,7 +16,7 @@ namespace DREAM::FVM {
             **quantityData_fr  = nullptr;
 
         RadialGrid *rGrid; 
-        len_t nr;        
+        len_t nr;
 
         gsl_spline  
             **quantitySpline = nullptr,
@@ -24,6 +24,9 @@ namespace DREAM::FVM {
         
         std::function<real_t(len_t,real_t)> evaluateFuncAtTheta;
         std::function<real_t(len_t,real_t)> evaluateFuncAtTheta_f;
+        
+        std::function<real_t(len_t,real_t,real_t)> evaluateFuncAtThetaPhi;
+        std::function<real_t(len_t,real_t,real_t)> evaluateFuncAtThetaPhi_f;
 
         gsl_interp_accel *gsl_acc;
         const gsl_interp_type *interpolationMethod;
@@ -34,17 +37,24 @@ namespace DREAM::FVM {
             RadialGrid *rGrid, std::function<real_t(len_t,real_t)>, std::function<real_t(len_t,real_t)>, 
             const gsl_interp_type *interpType
             );
+        FluxSurfaceQuantity(
+            RadialGrid *rGrid, std::function<real_t(len_t,real_t,real_t)>, std::function<real_t(len_t,real_t,real_t)>, 
+            const gsl_interp_type *interpType
+            );
 
         ~FluxSurfaceQuantity();
         
         void SetData(real_t *theta);
         const real_t *GetData(len_t ir, fluxGridType) const;
         const real_t evaluateAtTheta(len_t ir, real_t theta, fluxGridType) const;
+        const real_t evaluateAtThetaPhi(len_t ir, real_t theta, real_t phi, fluxGridType) const;
         
         void InterpolateMagneticDataToTheta(real_t *theta, len_t ntheta_interp);
+        void InterpolateMagneticDataToThetaPhi(real_t *theta, len_t ntheta_interp, real_t *phi, len_t nphi_interp);
 
         real_t *const* GetData() const {return quantityData;}
         real_t *const* GetData_fr() const {return quantityData_fr;}
+        
     };
 
 

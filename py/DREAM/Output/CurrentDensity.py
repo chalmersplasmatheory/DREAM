@@ -19,7 +19,10 @@ class CurrentDensity(FluidQuantity):
         """
         Calculates the total current corresponding to this current density.
         """
-        geom = self.grid.GR0/self.grid.Bmin * self.grid.FSA_R02OverR2
+        if hasattr(self.grid, 'FSA_R02OverR2'):
+            geom = self.grid.GR0/self.grid.Bmin * self.grid.FSA_R02OverR2
+        else:
+            geom = self.grid.FSA_BdotGradphiR0/self.grid.Bmin
 
         return self.integral(t=t, w=geom) / (2*np.pi)
 
