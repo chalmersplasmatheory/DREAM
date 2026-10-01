@@ -36,5 +36,16 @@ src/Atomics/adasdata.cpp
 tools/cache
 *.CDF
 *.cdf
+*.npz
+examples/test_dispersion_relation/*.png
 venv
 .venv
+figures*/
+outputs/
+DREAMdoc*/
+
+.codegraph/
+.env
+reasonix.toml
+logs/
+*.png

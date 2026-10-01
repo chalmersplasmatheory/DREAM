@@ -29,6 +29,14 @@
 #include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
 
+// Forward declarations for kinetic terms
+namespace DREAM {
+    class QuasilinearDiffusionTerm;
+    class SynchrotronTerm;
+    class TimeVaryingBTerm;
+    class RipplePitchScattering;
+}
+
 namespace DREAM {
     class SimulationGenerator {
     public:
@@ -146,7 +154,7 @@ namespace DREAM {
             bool, bool, DREAM::FVM::Operator **transport=nullptr,
             DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr,
             DREAM::RipplePitchScattering **rps=nullptr, DREAM::SynchrotronTerm **st=nullptr,
-			DREAM::TimeVaryingBTerm **tvbt=nullptr, bool rescaleMaxwellian=false
+			DREAM::TimeVaryingBTerm **tvbt=nullptr, DREAM::QuasilinearDiffusionTerm **qlt=nullptr, bool rescaleMaxwellian=false
         );
 		static void ConstructEquation_f_prescribed(const len_t, EquationSystem*, FVM::Grid*, Settings*, const std::string&);
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
