@@ -101,6 +101,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KiramovBoundaryHeatTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NeutralCollisionalEnergyTransferTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ExotermicEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIIonTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
@@ -241,6 +242,21 @@ endif ()
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if (Python3_FOUND)
     add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/src/Atomics/adasdata.cpp" COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/get_adas.py" WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tools" DEPENDS "${PROJECT_SOURCE_DIR}/tools/elements.json")
+    add_custom_command(
+        OUTPUT
+            "${PROJECT_SOURCE_DIR}/src/MolecularRateData.cpp"
+            "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RateData.cpp"
+        COMMAND
+            "${Python3_EXECUTABLE}"
+            "${PROJECT_SOURCE_DIR}/tools/MolecularRates/generate_molecular_rates.py"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tools/MolecularRates"
+        DEPENDS
+            "${PROJECT_SOURCE_DIR}/tools/MolecularRates/generate_molecular_rates.py"
+            "${PROJECT_SOURCE_DIR}/tools/MolecularRates/data.py"
+            "${PROJECT_SOURCE_DIR}/tools/MolecularRates/ccd89_ar.dat"
+        COMMENT "Generating molecular reaction rates"
+        VERBATIM
+    )
 endif ()
 
 ######################
