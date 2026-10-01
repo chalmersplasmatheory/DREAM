@@ -159,7 +159,14 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
         crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a, ntheta_out);
     } else {
         len_t len_rf; // equals nr+1 of the simulation
-        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
+        const real_t *_r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
+
+        // Copy grid points, since 'CylindricalRadialGridGenerator'
+        // takes ownership of (and deletes) the array
+        real_t *r_f = new real_t[len_rf];
+        for (len_t i = 0; i < len_rf; i++)
+            r_f[i] = _r_f[i];
+
         crgg = new FVM::CylindricalRadialGridGenerator(r_f, len_rf-1, B0, ntheta_out);
     }
     return new FVM::RadialGrid(crgg);
