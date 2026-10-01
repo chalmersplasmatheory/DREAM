@@ -17,9 +17,6 @@ public:
     ~MoleculeHandler() = default;
 
   };
-
-
-
-} // namespace DREAM
+} 
 
 #endif // _DREAM_EQUATIONS_MOLECULE_HANDLER_HPP

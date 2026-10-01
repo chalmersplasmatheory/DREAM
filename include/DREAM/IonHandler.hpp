@@ -88,7 +88,6 @@ namespace DREAM {
         bool IsTritium(const len_t) const;
 		bool IsHydrogen(const len_t) const;
 
-        // const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
         const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;

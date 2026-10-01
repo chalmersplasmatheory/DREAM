@@ -22,7 +22,7 @@ struct ChargeStateRateSet {
 };
 
 //Struct to hold the molecular reaction rates for a given pair of species
- //This is to connect the rate with the MolecularReaction struct.
+//This is to connect the rate with the MolecularReaction struct.
 struct MolecularReaction {
 /// Name of the reaction
     const char *rateName;
