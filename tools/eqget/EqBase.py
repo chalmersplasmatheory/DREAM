@@ -33,6 +33,18 @@ class EqBase:
         pass
 
 
+    @staticmethod
+    def _as_scalar(value):
+        """
+        Convert a scalar-like spline evaluation result to a Python float.
+        """
+        arr = np.asarray(value)
+        if arr.size != 1:
+            raise ValueError(f"Expected scalar-like value, got shape {arr.shape}.")
+
+        return float(arr.reshape(-1)[0])
+
+
     def _next_value(self, fh):
         """
         Load the next value from the text stream 'fh'.
@@ -484,8 +496,8 @@ class EqBase:
 
         psi = data['psi']
         self.bcentr = data['bcentr']
-        self.psi_axis = data['psiaxis']
-        self.psi_bdry = data['psiedge']
+        self.psi_axis = self._as_scalar(data['psiaxis'])
+        self.psi_bdry = self._as_scalar(data['psiedge'])
 
         psi_n = np.linspace(0, 1, self.nr)
 
@@ -520,13 +532,13 @@ class EqBase:
         self.opoint = self.find_o_point()
 
         if override_psilim:
-            self.psi_axis = self.psi(*self.opoint)
+            self.psi_axis = self._as_scalar(self.psi(*self.opoint))
             if override_psilim == True:
                 eps = 2e-4 * np.sign(self.psi_bdry)
             else:
                 eps = override_psilim * np.sign(self.psi_bdry)
 
-            self.psi_bdry = self.psi(self.rplas[0], self.zplas[0]) - eps
+            self.psi_bdry = self._as_scalar(self.psi(self.rplas[0], self.zplas[0])) - eps
 
         # Set up contour generator
         psi2d = np.transpose(self.psi(self.R, self.Z))
@@ -571,7 +583,7 @@ class EqBase:
         Make a contour plot of the poloidal flux.
         """
         psi2d = np.transpose(self.psi(self.R, self.Z))
-        psi_bdry = self.psi_bdry
+        psi_bdry = self._as_scalar(self.psi_bdry)
         if normalized:
             psi2d = (psi2d - self.psi_axis) / (self.psi_bdry - self.psi_axis)
             psi_bdry = 1
@@ -697,7 +709,11 @@ class EqBase:
         else:
             jac = None
 
-        res = scipy.optimize.minimize(lambda x : self.psi(*x)*sBp, x0=(self.R0, self.Z0), jac=jac)
+        res = scipy.optimize.minimize(
+            lambda x: self._as_scalar(self.psi(*x)) * sBp,
+            x0=(self.R0, self.Z0),
+            jac=jac
+        )
 
         if res.success:
             return res.x
@@ -782,5 +798,4 @@ class EqBase:
         with h5py.File(filename, 'w') as f:
             for key in equil.keys():
                 f[key] = equil[key]
-
 
