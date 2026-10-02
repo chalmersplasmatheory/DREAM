@@ -1,6 +1,13 @@
-
-
-
+/**
+ * Implementation of a charge-exchange rate reaction,
+ * of the form:
+ *
+ * A+ + B -> A + B+
+ * 
+ * This class in very similar to the IonRateEquation class, 
+ * but is specifically designed to handle charge-exchange reactions 
+ * involving molecular species. .
+*/
 
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Equations/Fluid/MoleculeChargeExchangeRateReaction.hpp"
@@ -11,6 +18,9 @@
 
 using namespace DREAM;
 
+/**
+ * Constructor
+ */
 MoleculeChargeExchangeRateReaction::MoleculeChargeExchangeRateReaction(
     FVM::Grid *g, IonHandler *ihdl,
     const len_t iIon,ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
@@ -18,21 +28,24 @@ MoleculeChargeExchangeRateReaction::MoleculeChargeExchangeRateReaction(
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), 
     ratehandler(ratehandler), addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
-        SetName("MoleculeChargeExchangeRateReaction");
+    SetName("MoleculeChargeExchangeRateReaction");
 
-        this->unknowns  = unknowns;
+    this->unknowns  = unknowns;
 
-        this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-		this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-		this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
-		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-        this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+    this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+	this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+	this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+	this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
-        const len_t allocationSize = FindRelevantMolecularReactions();
-        AllocateRateCoefficients(allocationSize);
+    const len_t allocationSize = FindRelevantMolecularReactions();
+    AllocateRateCoefficients(allocationSize);
 
     }
-
+/*
+ * Finds the relevant molecular reactions for this ion species and charge state.
+ * Returns the number of relevant reactions found.
+ */
 len_t MoleculeChargeExchangeRateReaction::FindRelevantMolecularReactions() {
     const auto& reactions = this->ratehandler->GetMolecularReactions();
     len_t ReactionsCount = 0;
@@ -45,10 +58,12 @@ len_t MoleculeChargeExchangeRateReaction::FindRelevantMolecularReactions() {
     return ReactionsCount;
 }
 
+/**
+ * Allocates memory for the rate coefficients.
+ */
 void MoleculeChargeExchangeRateReaction::AllocateRateCoefficients(const len_t allocationSize) {
     const len_t Nr  = this->grid->GetNr();
-    //the size should be all charge exchange reaction, not Zion+1
-    //FindRelevantMolecularReactions should have been called before this function to find the relevant reactions
+
     if (allocationSize == 0) return;
     this->Rate = new real_t*[allocationSize];
     this->Rate_N = new real_t*[allocationSize];
@@ -63,9 +78,11 @@ void MoleculeChargeExchangeRateReaction::AllocateRateCoefficients(const len_t al
         this->Rate_N[i] = this->Rate_N[i-1] + Nr;
         this->Rate_T[i] = this->Rate_T[i-1] + Nr;
     }
-    
-
 }
+
+/**
+ * Destructor.
+ */
 MoleculeChargeExchangeRateReaction::~MoleculeChargeExchangeRateReaction() {
     DeallocateRateCoefficients();
 }
@@ -86,6 +103,9 @@ void MoleculeChargeExchangeRateReaction::DeallocateRateCoefficients() {
     }
 }
 
+/*
+* Rebuild the rate coefficients.
+*/
 void MoleculeChargeExchangeRateReaction::Rebuild(
     const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns
 ) {
@@ -105,7 +125,8 @@ void MoleculeChargeExchangeRateReaction::Rebuild(
     }
 }
 
- bool MoleculeChargeExchangeRateReaction::SetCSJacobianBlock(
+
+bool MoleculeChargeExchangeRateReaction::SetCSJacobianBlock(
       const len_t uqtyId, const len_t derivId,
       FVM::Matrix *jac, const real_t *x,
       const len_t iIon, const len_t Z0, const len_t rOffset
@@ -200,12 +221,12 @@ void MoleculeChargeExchangeRateReaction::Rebuild(
 }
 
 
-  void MoleculeChargeExchangeRateReaction::SetCSMatrixElements(
+void MoleculeChargeExchangeRateReaction::SetCSMatrixElements(
       FVM::Matrix*, real_t*, const len_t, const len_t, const len_t
-  ) {
+  ) { //TODO: implement this function if needed
   }
 
-  void MoleculeChargeExchangeRateReaction::SetCSVectorElements(
+void MoleculeChargeExchangeRateReaction::SetCSVectorElements(
       real_t *vec, const real_t *x, const len_t iIon, const len_t Z0, const len_t rOffset
   ) {
     const len_t nr = this->grid->GetNr();
@@ -255,10 +276,3 @@ void MoleculeChargeExchangeRateReaction::Rebuild(
           }
       }
   }
-
-    
-  
-
-
-
-////then figure out how to set the matrix elements
