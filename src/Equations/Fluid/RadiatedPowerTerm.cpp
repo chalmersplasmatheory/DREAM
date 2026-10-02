@@ -100,6 +100,8 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 	}
 
     for(len_t iz = 0; iz<nZ; iz++){
+        if (ionHandler->IsMolecule(iz)) //skip molecules
+            continue;
         ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
         ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
         ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
@@ -204,6 +206,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     
     if(derivId == id_ni){
         for(len_t iz = 0; iz<nZ; iz++){
+            if (ionHandler->IsMolecule(iz)) //skip molecules
+                continue;
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
             ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
@@ -276,6 +280,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         }
     } else if(derivId == id_ncold){
         for(len_t iz = 0; iz<nZ; iz++){
+            if (ionHandler->IsMolecule(iz)) //skip molecules
+                continue;
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
             ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
@@ -337,6 +343,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 diffWeights[i] += bremsPrefactor*sqrt(T_cold[i])*bremsRel2*T_cold[i]/Constants::mc2inEV;
     } else if (derivId == id_Tcold){
         for(len_t iz = 0; iz<nZ; iz++){
+            if (ionHandler->IsMolecule(iz)) //skip molecules
+                continue;
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
             ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
