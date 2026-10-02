@@ -1,3 +1,10 @@
+/**
+ * Implementation of the RateHandler class.
+ * This class is responsible for managing and providing access to various rate coefficients
+ * used in the fluid equations, including atomic and molecular charge-state rates,
+ * as well as molecular reaction rates.
+ */
+
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "FVM/FVMException.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
@@ -29,12 +36,12 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
     if (separateNeutrals)
         id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
     
-    //Set rates for IonRateEquation. TODO: Change so other parts of code use Ratehandler as well.
-    AddMolecularChargeStateRates();
+    
     AddAtomicChargeStateRates();
       
     if (reactionsEnabled)
-          AddMolecularReactionRates(enabledReactionNames);
+        AddMolecularChargeStateRates();
+        AddMolecularReactionRates(enabledReactionNames);
 
     //TODO: Add and set rates to runaway ionizationfluid equation 
   }

@@ -13,18 +13,17 @@
  *              of ion species 'i'.
  *
  * Note that this equation is applied to a single _ion species_,
+ * (can be both atomic and molecular),
  * (and to all its charge states).
  * If using collfreq_mode FULL and kinetic ionization is used,
  * ionization rates will here be set to 0 to avoid double counting.
  */
 
-#include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
-#include "DREAM/MoleculeHandler.hpp"
 
 
 using namespace DREAM;
@@ -35,9 +34,9 @@ using namespace DREAM;
  */
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
-    ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
+    FVM::UnknownQuantityHandler *unknowns,
     RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), 
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), 
     ratehandler(ratehandler), addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
     SetName("IonRateEquation");
@@ -165,15 +164,11 @@ void IonRateEquation::Rebuild(
     real_t *T = unknowns->GetUnknownData(id_T_cold);
     real_t *n = unknowns->GetUnknownData(id_n_cold);
     
-    //here we must change it in some way to it does not only depend on Zion 
-    //rather looking up the correct name and then connect it to the correct adas data
-    
-    MoleculeHandler molecules;
     const std::string& name = this->ions->GetName(this->iIon);
-        ChargeStateRate *acd = this->ratehandler->GetACD(name); //should be iIon i think
-        ChargeStateRate *scd = this->ratehandler->GetSCD(name);
+    ChargeStateRate *acd = this->ratehandler->GetACD(name); //should be iIon i think
+    ChargeStateRate *scd = this->ratehandler->GetSCD(name);
 
-        real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());
+    real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());
     // Iterate over charge state (0 ... Z)
     for (len_t i = 0; i < Nr; i++){
         real_t hn = eps*(1 + n[i]);
@@ -203,8 +198,6 @@ void IonRateEquation::Rebuild(
                 PartialTIon[Z0][i] = (scd->Eval(Z0, n[i], T[i]+hT) - Ion[Z0][i])/hT;
             }
         }
-    
-
 }
 
 
