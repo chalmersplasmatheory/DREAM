@@ -1,8 +1,5 @@
 # Class for handling code information output
 
-from ..DataObject import DataObject
-
-
 class Code:
     
 

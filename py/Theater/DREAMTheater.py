@@ -8,7 +8,7 @@ from . import resolvedreampaths
 from PyQt5 import QtGui, QtWidgets, Qt
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 from PyQt5.QtGui import QCursor
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import QPoint
 from .ui import DREAMTheater_design
 
 from DREAM import DREAMSettings, DREAMOutput
@@ -18,7 +18,6 @@ from . DataProviderSimulation import DataProviderSimulation
 from . import evaluateExpression
 from . PlotConfiguration import PlotConfiguration
 from . SimulationThread import SimulationThread
-import dreampyface
 from dreampyface import Simulation
 import h5py
 import matplotlib as mpl
@@ -131,7 +130,6 @@ class DREAMTheater(QtWidgets.QMainWindow):
         out = not self.isSimulation()
 
         simOnly = not out
-        outOnly = out
 
         self.ui.tabSimulation.setEnabled(simOnly)
 
@@ -255,7 +253,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
         """
         Returns the treeview "path" to the given item.
         """
-        if item == None:
+        if item is None:
             return ''
         else:
             return self.getPlottablePath(item.parent()) + '/' + item.text()
@@ -438,7 +436,7 @@ class DREAMTheater(QtWidgets.QMainWindow):
         """
         # Prevent multiple simulations from running simultaneously
         # in the same window...
-        if self.simulationThread != None:
+        if self.simulationThread is not None:
             return
 
         if not self.isSimulation():

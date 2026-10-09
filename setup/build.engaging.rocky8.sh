@@ -50,11 +50,16 @@ function install_hdf5 {
 }
 
 function install_dream {
+	export HDF5_USE_SHLIB=yes
+
 	cd "$DREAMPATH" && rm -rf build && mkdir build && cd build &&
 	cmake .. -DPETSC_EXECUTABLE_RUNS=YES \
 		-DCMAKE_CXX_COMPILER=$HDF5_DIR/bin/h5c++ \
 		-DGSL_ROOT_DIR=/home/software/modulefiles/gsl/2.5 \
-		-DDREAM_BUILD_TESTS=NO
+		-DDREAM_BUILD_TESTS=NO \
+		-DPython3_EXECUTABLE=$(which python3) \
+		-DHDF5_ROOT=$HDF5_DIR \
+		-DHDF5_USE_STATIC_LIBRARIES=OFF
 	
 	make -j 8
 }

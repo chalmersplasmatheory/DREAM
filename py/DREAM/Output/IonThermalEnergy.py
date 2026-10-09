@@ -9,14 +9,6 @@ from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
 
 class IonThermalEnergy(IonSpeciesFluidQuantity):
     
-
-    def __init__(self, *args, **kwargs):
-        """
-        Constructor.
-        """
-        super().__init__(*args, **kwargs)
-
-
     def getTemperature(self, ion=None):
         """
         Returns the temperature of the named ion species. If no

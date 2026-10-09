@@ -1,6 +1,4 @@
-#
 
-import numpy as np
 from . CurrentDensity import CurrentDensity
 from . ElectricField import ElectricField
 from . FluidQuantity import FluidQuantity

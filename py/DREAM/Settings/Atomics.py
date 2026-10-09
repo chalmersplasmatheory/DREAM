@@ -1,7 +1,3 @@
-# Settings related to atomic data  
-
-import numpy as np
-from DREAM.DREAMException import DREAMException
 
 # ADAS interpolation method
 ADAS_INTERP_BILINEAR = 1

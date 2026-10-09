@@ -2,8 +2,6 @@
 ###################################
 
 import copy
-import numpy as np
-from .. DREAMException import DREAMException
 
 from .Equations.ColdElectrons import ColdElectrons
 from .Equations.ColdElectronTemperature import ColdElectronTemperature

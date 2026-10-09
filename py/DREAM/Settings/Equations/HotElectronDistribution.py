@@ -1,5 +1,4 @@
 
-import numpy as np
 from . import DistributionFunction as DistFunc
 from . DistributionFunction import DistributionFunction
 

@@ -1,5 +1,4 @@
 
-import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter

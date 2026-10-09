@@ -122,7 +122,6 @@ class SPIShardPositions(ScalarQuantity):
         
         xp = self.data[:,0::3,0] 
         yp = self.data[:,1::3,0]
-        zp = self.data[:,2::3,0]
         
         rhop   = np.sqrt(xp[t,shards]**2+yp[t,shards]**2)
         thetap = np.arctan2(yp[t,shards],xp[t,shards])
@@ -169,10 +168,8 @@ class SPIShardPositions(ScalarQuantity):
         # Plot color scale showing the chosen background quantity, if any
         if backgroundQuantity is not None:
             # We set zorder = 0 to make sure the background color scale is actually plotted in the background and does not cover the shards
-            contours, cb = backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t, shifted = True, zorder = 0, **kwargs)
-        else:
-            contours = None
-            
+            backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t, shifted = True, zorder = 0, **kwargs)
+
         if shards is None:
             shards = slice(None)
 
@@ -290,7 +287,7 @@ class SPIShardPositions(ScalarQuantity):
         """
         Plot the trajectory of one or more shards in a poloidal cross-section.
         """
-        black = (87/255, 117/255, 144/255)
+        # black = (87/255, 117/255, 144/255)
         red = (249/255, 65/255, 68/255)
 
         if ax is None:

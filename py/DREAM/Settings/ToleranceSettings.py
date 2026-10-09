@@ -1,6 +1,5 @@
 # Settings for tolerances of computed quantities
 
-import numpy as np
 from .. DREAMException import DREAMException
 from . import EquationSystem
 from .. helpers import scal

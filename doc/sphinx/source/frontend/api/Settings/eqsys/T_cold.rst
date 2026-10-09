@@ -226,6 +226,8 @@ energy components.
 
 
 The discretization of the beam in the radial, polar, and beam direction can be set using the method ``nbi.setDiscretization()``, which allows setting the number of points used in each direction. The default values are 25 radial points, 25 polar points, and 50 points along the beam direction.
+
+
 .. code-block:: python
 
    ...
