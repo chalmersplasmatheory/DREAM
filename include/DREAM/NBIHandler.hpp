@@ -3,7 +3,7 @@
 
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/ADAS.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "FVM/Matrix.hpp"
 #include <unordered_map>
@@ -21,7 +21,7 @@ namespace DREAM {
         
         FVM::Grid *grid;
         FVM::RadialGrid *radialGrid;
-        ADAS *adas;
+        RateHandler *rateHandler;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
@@ -107,7 +107,7 @@ namespace DREAM {
             std::vector<real_t> &dfi_dn_ij, std::vector<real_t> &dfi_dT_ij, real_t Ti_beam);
 
     public:
-        NBIHandler(FVM::Grid *, ADAS *, IonHandler *ions);
+        NBIHandler(FVM::Grid *, RateHandler *, IonHandler *ions);
         
         void ConfigureFromSettings(
             Settings*, FVM::UnknownQuantityHandler *unknowns,

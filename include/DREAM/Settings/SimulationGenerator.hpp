@@ -2,6 +2,7 @@
 #define _DREAM_PROCESS_SETTINGS_HPP
 
 #include "DREAM/ADAS.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/AMJUEL.hpp"
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/DiagonalPreconditioner.hpp"
@@ -211,8 +212,8 @@ namespace DREAM {
 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
-		static void EvaluateADASRates(ADAS*, const len_t, const real_t, const real_t, real_t*, real_t*);
-		static void EvaluateIonEquilibrium(IonHandler*, ADAS*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
+		static void EvaluateChargeStateRates(RateHandler*, const std::string&, const len_t, const real_t, const real_t, real_t*, real_t*);
+		static void EvaluateIonEquilibrium(IonHandler*, RateHandler*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
 
 
         template<typename T>

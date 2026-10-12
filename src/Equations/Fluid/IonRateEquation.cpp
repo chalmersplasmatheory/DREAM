@@ -23,7 +23,6 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/Equations/Fluid/RateHandler.hpp"
 
 
 using namespace DREAM;
@@ -34,9 +33,9 @@ using namespace DREAM;
  */
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
-    FVM::UnknownQuantityHandler *unknowns,
+    ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
     RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), 
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas),
     ratehandler(ratehandler), addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
     SetName("IonRateEquation");

@@ -38,11 +38,11 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
     
     
     AddAtomicChargeStateRates();
+    AddMolecularChargeStateRates();
       
-    if (reactionsEnabled)
-        AddMolecularChargeStateRates();
+    if (reactionsEnabled){
         AddMolecularReactionRates(enabledReactionNames);
-
+    }
     //TODO: Add and set rates to runaway ionizationfluid equation 
   }
 
@@ -50,9 +50,12 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
  * Destructor.
  */
 RateHandler::~RateHandler() {
-      for (auto it = chargeStateRates.begin(); it != chargeStateRates.end(); it++) {
-          delete it->second.acd;
-          delete it->second.scd;
+    for (auto it = chargeStateRates.begin(); it != chargeStateRates.end(); it++) {
+        delete it->second.acd;
+        delete it->second.scd;
+        delete it->second.plt;
+        delete it->second.prb;
+        delete it->second.ccd;
       }
 
       for (auto it = molecularReactions.begin(); it != molecularReactions.end(); it++) {
@@ -78,7 +81,10 @@ void RateHandler::AddAtomicChargeStateRates() {
         ChargeStateRateSet rates;
         rates.acd = new ADASChargeStateRate(name + "_ACD", adas->GetACD(Z));
         rates.scd = new ADASChargeStateRate(name + "_SCD", adas->GetSCD(Z));
-        chargeStateRates[name] = rates;
+        rates.plt = new ADASChargeStateRate(name + "_PLT", adas->GetPLT(Z));
+        rates.prb = new ADASChargeStateRate(name + "_PRB", adas->GetPRB(Z));
+        rates.ccd = new ADASChargeStateRate(name + "_CCD", adas->GetCCD(Z));
+        chargeStateRates[name] = rates; //TODO: Handler if it does not exist
     } 
 }
 
@@ -115,7 +121,7 @@ void RateHandler::AddMolecularChargeStateRates() {
  */
 ChargeStateRate *RateHandler::GetACD(const std::string& name) const {
     auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end())
+    if (it == chargeStateRates.end() || it->second.acd == nullptr)
         throw FVM::FVMException(
             "RateHandler: No ACD-like charge-state rate available for '%s'.",
             name.c_str()
@@ -129,12 +135,52 @@ ChargeStateRate *RateHandler::GetACD(const std::string& name) const {
  */
 ChargeStateRate *RateHandler::GetSCD(const std::string& name) const {
     auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end())
+    if (it == chargeStateRates.end() || it->second.scd == nullptr)
         throw FVM::FVMException(
             "RateHandler: No SCD-like charge-state rate available for '%s'.",
             name.c_str()
         );
       return it->second.scd;
+}
+
+ChargeStateRate *RateHandler::GetPLT(const std::string& name) const {
+    auto it = chargeStateRates.find(name);
+    if (it == chargeStateRates.end() || it->second.plt == nullptr)
+        throw FVM::FVMException(
+            "RateHandler: No PLT-like charge-state rate available for '%s'.",
+            name.c_str()
+        );
+      return it->second.plt;
+}
+
+ChargeStateRate *RateHandler::GetPRB(const std::string& name) const {
+    auto it = chargeStateRates.find(name);
+    if (it == chargeStateRates.end() || it->second.prb == nullptr)
+        throw FVM::FVMException(
+            "RateHandler: No PRB-like charge-state rate available for '%s'.",
+            name.c_str()
+        );
+      return it->second.prb;
+}
+ChargeStateRate *RateHandler::GetCCD(const std::string& name) const {
+    auto it = chargeStateRates.find(name);
+    if (it == chargeStateRates.end() || it->second.ccd == nullptr)
+        throw FVM::FVMException(
+            "RateHandler: No charge-exchange coefficient available for '%s'.",
+            name.c_str()
+        );
+    return it->second.ccd;
+}
+
+ChargeStateRate *RateHandler::GetAtomicBeamSCD(len_t Z) {
+    auto it = atomicBeamSCD.find(Z);
+    if (it == atomicBeamSCD.end()) {
+        auto rate = std::make_unique<ADASChargeStateRate>(
+            "beam_SCD_" + std::to_string(Z), adas->GetSCD(Z)
+        );
+        it = atomicBeamSCD.emplace(Z, std::move(rate)).first;
+    }
+    return it->second.get();
 }
 
 /*

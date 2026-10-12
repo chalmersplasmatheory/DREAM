@@ -28,7 +28,7 @@ using namespace std;
  *      nzs = sum_i (Z_i + 1), i = 0, 1, ..., nZ
  * The density of an ion of charge Z and charge state Z0 at radial point ir is given by
  *      n_i[nr * iz + ir]
- * and iz = offset(Z) + Z0, /fix this interpresation is not correct
+ * and iz = offset(Z) + Z0, 
  */
 
 
@@ -126,8 +126,8 @@ IonHandler::~IonHandler(){
  * for where different ion species start in the ion array.
  */
 void IonHandler::Initialize() {
-    DeallocateAll();
     MoleculeHandler molecules;
+    DeallocateAll();
     nzs = 0;
     for (len_t it=0; it<nZ; it++)
         nzs += Zs[it]+1;
@@ -269,10 +269,9 @@ const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
     return n_i[nr*Zind + ir];
 }
 
-// Returns the densities of ions which have Z index "ir" at radial index ir, for each Z0 (size Z0+1).
-// TODO: I think this is no problem, just named Z wrongly. 
-//This returns the densities of ions which have Z index "iZ" at radial index ir, for each Z0 (size Z0+1).
-
+/**
+ * Returns the densities of ions which have Z index "iZ" at radial index ir, for each Z0 (size Z0+1).
+ */
 const real_t* IonHandler::GetIonDensity(len_t ir, len_t iZ) const{
     real_t *niReturn = new real_t[1+Zs[iZ]];
     const real_t *n_i = unknowns->GetUnknownData(niID);
@@ -284,9 +283,9 @@ const real_t* IonHandler::GetIonDensity(len_t ir, len_t iZ) const{
     return niReturn;
 }
 
-// Returns the total density of ions which have Z index "ir" at radial index ir (summed over Z0).
-// TODO: I think this is no problem, just named Z wrongly. 
-//This returns the densities of ions which have Z index "iZ" at radial index ir, for each Z0 (size Z0+1).
+/**
+ * Returns the total density of ions which have Z index "iZ" at radial index ir (summed over Z0).
+ */
 const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
     real_t niReturn = 0;
     const real_t *n_i = unknowns->GetUnknownData(niID);

@@ -594,7 +594,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 	const len_t id_T = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
 	std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_ni =
-		[ih,ipp,t0,adas,dynamic_indices,dynamic_densities,initNi,init_equil,Nr,nZ_dynamic,id_T](FVM::UnknownQuantityHandler *u, real_t *ni) {
+		[ih,ipp,t0,ratehandler,dynamic_indices,dynamic_densities,initNi,init_equil,Nr,nZ_dynamic,id_T](FVM::UnknownQuantityHandler *u, real_t *ni) {
 		const real_t *Te = u->GetUnknownData(id_T);
 
 		// Begin by evaluating prescribed densities
@@ -644,7 +644,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 		}
 
 		// Finally, we initialize dynamic ions in equilibrium
-		EvaluateIonEquilibrium(ih, adas, eq_ions, nfree0, initNi, Te, Nr, vecni);
+		EvaluateIonEquilibrium(ih, ratehandler, eq_ions, nfree0, initNi, Te, Nr, vecni);
 
 		delete [] nfree0;
 		delete [] initNi;
