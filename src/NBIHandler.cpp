@@ -4,7 +4,7 @@
 #include <cmath>
 #include "DREAM/NBIHandler.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
-#include "DREAM/ADAS.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -19,8 +19,8 @@ using namespace DREAM;
 /**
  * Constructor initializing member variables
  */
-NBIHandler::NBIHandler(FVM::Grid* grid, ADAS* adas, IonHandler* ions
-): grid(grid), radialGrid(grid->GetRadialGrid()), adas(adas), ions(ions) {
+NBIHandler::NBIHandler(FVM::Grid* grid, RateHandler* rateHandler, IonHandler* ions
+): grid(grid), radialGrid(grid->GetRadialGrid()), rateHandler(rateHandler), ions(ions) {
 
     nr = radialGrid->GetNr();
     nZ = ions->GetNZ();
@@ -394,8 +394,7 @@ void NBIHandler::ComputeMeanFreePath(
     real_t Ti_beam_input
 ) {
     real_t Z0_b = 0; // Neutral beam, so Z0 = 0
-    real_t Zion_b = 1; // Deterium beam
-    ADASRateInterpolator* scd = adas->GetSCD(Zion_b);
+    ChargeStateRate* scd = rateHandler->GetSCD("D");
     dI_e_dTe = scd->Eval_deriv_T(Z0_b, ncold, Tcold);
 
     real_t dI_e_dne = scd->Eval_deriv_n(Z0_b, ncold, Tcold);
@@ -418,7 +417,8 @@ void NBIHandler::ComputeMeanFreePath(
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /(1.5 * niZ_tot * Constants::ec);
 
         // Calculate total CX rate
-        ADASRateInterpolator* ccd = adas->GetCCD(Zmax);
+        const std::string& name = ions->GetName(iz);
+        ChargeStateRate* ccd = rateHandler->GetCCD(name);
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             real_t niZ = ions->GetIonDensity(ir, iz, Z0);
 
@@ -431,8 +431,9 @@ void NBIHandler::ComputeMeanFreePath(
     // Do the same calculation for the derivatives where the total_CX is needed
     for (len_t iz = 0; iz < nZ; iz++) {
         len_t Zmax = ions->GetZ(iz);
+        const std::string& name = ions->GetName(iz);
 
-        ADASRateInterpolator* ccd = adas->GetCCD(Zmax);
+        ChargeStateRate* ccd = rateHandler->GetCCD(name);
         real_t niZ_tot = 0.0;
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             niZ_tot += ions->GetIonDensity(ir, iz, Z0);

@@ -24,8 +24,10 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
             FVM::Grid *g, 
             const len_t index_i, bool isIon_i,
             const len_t index_j, bool isIon_j, 
-            FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler, real_t scaleFactor
+            FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler,
+            real_t scaleFactor, bool separateNeutrals
 ) : FVM::EquationTerm(g), index_i(index_i), index_j(index_j), isIon_i(isIon_i), isIon_j(isIon_j),
+    separateNeutrals(separateNeutrals),
     unknowns(u), lnLambda(lnL), ionHandler(ionHandler)
 {
     SetName("MaxwellianCollisionalEnergyTransferTerm");
@@ -118,9 +120,9 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
         len_t ii = index_i*nr + ir;
         len_t jj = index_j*nr + ir;
         real_t val1 = 0, val2 = 0;
-        if( (isIon_i &&  derivId==id_Ni) || (!isIon_i && derivId==id_ncold) ) 
+        if( (isIon_i && !separateNeutrals && derivId==id_Ni) || (!isIon_i && derivId==id_ncold) )
             val1 += vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
-        if( (isIon_j &&  derivId==id_Ni) || (!isIon_j && derivId==id_ncold) ) 
+        if( (isIon_j && !separateNeutrals && derivId==id_Ni) || (!isIon_j && derivId==id_ncold) )
             val2 += vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) );
         if( (isIon_i&&derivId==id_Wi) || (!isIon_i&&derivId==id_Wcold) )
             val1 += vec*nj*(-1.0/up - 1.5*mj/down );
@@ -129,22 +131,32 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
         jac->SetElement(ii, ii, val1);
         jac->SetElement(ii, jj, val2);
 
-        // handle the nZ2 term:
+        // Density and nZ2 derivatives with respect to charge-state densities.
         if(isIon_i && derivId==id_ions){
+            real_t dvec_dni = vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
             real_t preOverNZ2 = sqrt(ni*nj)*nZ2_j; // rebuild 'vec' without the nZ2_i factor
             real_t vecOverNZ2 = lnL[ir] * constPreFactor * preOverNZ2 * up / (down*sqrt(down));
-            for(len_t Z0=0; Z0<=Zi; Z0++){
+            const len_t Zmin = separateNeutrals ? 1 : 0;
+            for(len_t Z0=Zmin; Z0<=Zi; Z0++){
                 len_t indZ = ionHandler->GetIndex(index_i, Z0);
-                jac->SetElement(ii, indZ*nr + ir, vecOverNZ2 * Z0*Z0);
+                real_t value = vecOverNZ2 * Z0*Z0;
+                if (separateNeutrals)
+                    value += dvec_dni; //must be differentiated with respect ni instead of only Ni
+                jac->SetElement(ii, indZ*nr + ir, value);
             }
         } else if(!isIon_i && derivId == id_ncold)
             jac->SetElement(ii,ir, vec/nZ2_i);
         if(isIon_j && derivId==id_ions){
+            real_t dvec_dnj = vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) );
             real_t preOverNZ2 = sqrt(ni*nj)*nZ2_i; // rebuild 'vec' without the nZ2_j factor
             real_t vecOverNZ2 = lnL[ir] * constPreFactor * preOverNZ2 * up / (down*sqrt(down));
-            for(len_t Z0=0; Z0<=Zj; Z0++){
+            const len_t Zmin = separateNeutrals ? 1 : 0;
+            for(len_t Z0=Zmin; Z0<=Zj; Z0++){
                 len_t indZ = ionHandler->GetIndex(index_j, Z0);
-                jac->SetElement(ii, indZ*nr + ir, vecOverNZ2 * Z0*Z0);
+                real_t value = vecOverNZ2 * Z0*Z0;
+                if (separateNeutrals)
+                    value += dvec_dnj;
+                jac->SetElement(ii, indZ*nr + ir, value);
             }
         } else if(!isIon_j && derivId == id_ncold)
             jac->SetElement(ii,ir, vec/nZ2_j);
@@ -169,7 +181,16 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
  */
 void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, len_t index,bool isIon, real_t &n, real_t &W, real_t &nZ2){
     if(isIon){
-        n = unknowns->GetUnknownData(id_Ni)[nr*index + ir];
+        if (!separateNeutrals) {
+            n = unknowns->GetUnknownData(id_Ni)[nr*index + ir];
+        } else {
+            const real_t *ni = unknowns->GetUnknownData(id_ions);
+            n = 0;
+            for (len_t Z0=1; Z0<=ionHandler->GetZ(index); Z0++) {
+                const len_t indZ = ionHandler->GetIndex(index, Z0);
+                n += ni[nr*indZ + ir];
+            }
+        }
         W = unknowns->GetUnknownData(id_Wi)[nr*index + ir];
         nZ2=ionHandler->GetNZ0Z0(index, ir);
     } else {
@@ -178,5 +199,3 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
         W = unknowns->GetUnknownData(id_Wcold)[ir];
     }
 }
-
-
