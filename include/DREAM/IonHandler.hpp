@@ -72,12 +72,13 @@ namespace DREAM {
 
         const len_t  GetZ(const len_t iZ) const { return Zs[iZ]; }
         const len_t* GetZs() const {return Zs;}
-        
+
         const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
         void GetIonIndices(len_t, len_t&, len_t&);
 
         const len_t GetIonIndex(const std::string& name) const;
         bool HasIon(const std::string& name) const;
+        bool IsMolecule(const len_t iZ) const;
 
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }

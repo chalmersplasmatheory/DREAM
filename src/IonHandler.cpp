@@ -471,6 +471,10 @@ real_t IonHandler::evaluateZ0_Z(len_t ir) {
     return nZ0_Z[ir]/ntot[ir];
 }
 
+bool IonHandler::IsMolecule(const len_t iZ) const {
+    return MoleculeHandler().IsMolecule(this->ionNames[iZ]);
+}
+
 
 void IonHandler::DeallocateAll(){
     if(ZOffsets == nullptr)

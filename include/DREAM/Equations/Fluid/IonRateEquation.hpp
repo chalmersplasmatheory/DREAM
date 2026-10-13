@@ -1,7 +1,6 @@
 #ifndef _DREAM_EQUATION_ION_RATE_EQUATION_HPP
 #define _DREAM_EQUATION_ION_RATE_EQUATION_HPP
 
-#include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
@@ -12,7 +11,6 @@ namespace DREAM {
     class IonRateEquation : public IonEquationTerm<FVM::EquationTerm> {
     protected:
         enum SetMode {MATRIX, JACOBIAN};
-        ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
         RateHandler *ratehandler;
         len_t id_ions, id_n_cold, id_n_tot, id_T_cold;
@@ -35,7 +33,7 @@ namespace DREAM {
             **negRecTerm;
     public:
         IonRateEquation(
-            FVM::Grid*, IonHandler*, const len_t, ADAS*, 
+            FVM::Grid*, IonHandler*, const len_t, 
             FVM::UnknownQuantityHandler*, RateHandler*, bool,bool,bool
         );
         virtual ~IonRateEquation();

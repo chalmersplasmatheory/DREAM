@@ -1,7 +1,6 @@
 #ifndef _DREAM_EQUATION_ION_SPI_DEPOSITION_TERM_HPP
 #define _DREAM_EQUATION_ION_SPI_DEPOSITION_TERM_HPP
 
-#include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -22,7 +21,7 @@ namespace DREAM {
 
     public:
         IonSPIDepositionTerm(
-            FVM::Grid *g, IonHandler *ihdl, const len_t iIon,  ADAS *adas, FVM::UnknownQuantityHandler *unknowns, RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian,
+            FVM::Grid *g, IonHandler *ihdl, const len_t iIon, FVM::UnknownQuantityHandler *unknowns, RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian,
             SPIHandler *SPI, const real_t *SPIMolarFraction, len_t offset, real_t scaleFactor, bool isAbl, OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode
         );
         virtual ~IonSPIDepositionTerm();

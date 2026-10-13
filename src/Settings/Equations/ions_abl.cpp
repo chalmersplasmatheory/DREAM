@@ -191,7 +191,7 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
 					    ));		            
 			        }else{
 					    eqn->AddTerm(new IonRateEquation(
-					        fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(), ratehandler,
+					        fluidGrid, ih, iZ, eqsys->GetUnknownHandler(), ratehandler,
 					         addFluidIonization, addFluidJacobian, true
 					    ));
 			        }
@@ -249,7 +249,7 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
     	len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[SPIOffset]>=0){
-                eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(), ratehandler,
+                eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, eqsys->GetUnknownHandler(), ratehandler,
                     addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction, SPIOffset,1,true,spi_abl_ioniz_mode));
                 SPIOffset+=nShard;
             }else {

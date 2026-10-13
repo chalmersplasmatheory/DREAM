@@ -32,10 +32,9 @@ using namespace DREAM;
  * Constructor.
  */
 IonRateEquation::IonRateEquation(
-    FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
-    ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
+    FVM::Grid *g, IonHandler *ihdl, const len_t iIon, FVM::UnknownQuantityHandler *unknowns,
     RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas),
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon),
     ratehandler(ratehandler), addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
     SetName("IonRateEquation");
