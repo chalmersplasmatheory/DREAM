@@ -4,7 +4,7 @@
  */
 
 #include <vector>
-#include "DREAM/ADAS.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 
 using namespace DREAM;
@@ -12,14 +12,14 @@ using namespace std;
 
 
 /**
- * Evaluate the ADAS rates at the given density and temperature.
+ * Evaluate the species charge-state rates at the given density and temperature.
  */
-void SimulationGenerator::EvaluateADASRates(
-	ADAS *adas, const len_t Z, const real_t n, const real_t T,
+void SimulationGenerator::EvaluateChargeStateRates(
+	RateHandler *rateHandler, const std::string& name, const len_t Z, const real_t n, const real_t T,
 	real_t *I, real_t *R
 ) {
-	ADASRateInterpolator *acd = adas->GetACD(Z);
-	ADASRateInterpolator *scd = adas->GetSCD(Z);
+	ChargeStateRate *acd = rateHandler->GetACD(name);
+	ChargeStateRate *scd = rateHandler->GetSCD(name);
 
 	for (len_t j = 0; j < Z+1; j++) {
 		I[j] = scd->Eval(j, n, T);
@@ -49,7 +49,7 @@ bool OUFLOW(real_t x1, real_t x2) {
  * coronal equilibrium.
  *
  * ih:            Ion handler.
- * adas:          ADAS rate handler.
+ * rateHandler:   Rate handler.
  * equil_indices: Ion indices for the ions to be initialized in equilibrium.
  * nfree0:        Vector containing background free electron density as function
  *                of radius.
@@ -61,10 +61,18 @@ bool OUFLOW(real_t x1, real_t x2) {
  * ni:            List of ion charge state and radial density distributions.
  */
 void SimulationGenerator::EvaluateIonEquilibrium(
-	IonHandler *ih, ADAS *adas, vector<len_t>& equil_indices,
+	IonHandler *ih, RateHandler *rateHandler, vector<len_t>& equil_indices,
 	const real_t *nfree0, const real_t *Ni, const real_t *T,
 	len_t Nr, vector<real_t*>& ni
 ) {
+    // The atomic charge-state-chain solver does not solve a molecular network.
+    for (len_t iSpecies : equil_indices)
+        if (ih->IsMolecule(iSpecies))
+            throw SettingsException(
+                "Molecular equilibrium initialization is not implemented for '%s'.",
+                ih->GetName(iSpecies).c_str()
+            );
+
 	len_t Nequil = equil_indices.size();
 	vector<len_t> Z(Nequil);
 	
@@ -73,8 +81,8 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 	vector<real_t*> R(Nequil);
 	for (len_t i = 0; i < Nequil; i++) {
 		Z[i] = ih->GetZ(equil_indices[i]);
-		I[i] = new real_t[Z[i]];
-		R[i] = new real_t[Z[i]];
+		I[i] = new real_t[Z[i]+1];
+		R[i] = new real_t[Z[i]+1];
 	}
 
 	// Initial guess for nfree is that all atoms are fully ionized
@@ -95,7 +103,7 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 				real_t *II = I[iZ];
 				real_t *RR = R[iZ];
 
-				EvaluateADASRates(adas, Z[iZ], nfree, T[ir], II, RR);
+				EvaluateChargeStateRates(rateHandler, ih->GetName(equil_indices[iZ]), Z[iZ], nfree, T[ir], II, RR);
 
 				for (len_t l = 0; l < Z[iZ]+1; l++) {
 					real_t s = 0;
