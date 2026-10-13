@@ -145,6 +145,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     IonHandler *ionHandler = eqsys->GetIonHandler();
+    RateHandler *rateHandler = eqsys->GetRateHandler();
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
@@ -185,7 +186,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         opacity_mode[i] = (enum OptionConstants::ion_opacity_mode)iopacity_modes[i];
 
     oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
-        fluidGrid,unknowns,ionHandler,adas,nist,amjuel,opacity_mode,withRecombinationRadiation
+        fluidGrid,unknowns,ionHandler,rateHandler,nist,amjuel,opacity_mode,withRecombinationRadiation
     );
     Op3->AddTerm(oqty_terms->T_cold_radiation);
 
@@ -232,7 +233,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         );
         NBIHandler *handler = eqsys->NBI_handler;
         if (handler == nullptr) {
-            handler = new NBIHandler(eqsys->GetFluidGrid(), adas, ionHandler);
+            handler = new NBIHandler(eqsys->GetFluidGrid(), rateHandler, ionHandler);
             handler->ConfigureFromSettings(
                 s, unknowns,
                 s_max, r_beam,
@@ -288,8 +289,13 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         const len_t nZ = ionHandler->GetNZ();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[offset]>0){
+                // If molcule, skip atomic NIST energy losses.
+                if (ionHandler->IsMolecule(iZ)) {
+                    offset += nShard;
+                    continue;
+                }
                 RateHandler *ratehandler = eqsys->GetRateHandler();
-                Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(), ratehandler,
+                Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, eqsys->GetUnknownHandler(), ratehandler,
                                                      addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, spi_abl_ioniz_mode));
                 offset+=nShard;
             }else {
