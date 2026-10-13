@@ -172,17 +172,6 @@ ChargeStateRate *RateHandler::GetCCD(const std::string& name) const {
     return it->second.ccd;
 }
 
-ChargeStateRate *RateHandler::GetAtomicBeamSCD(len_t Z) {
-    auto it = atomicBeamSCD.find(Z);
-    if (it == atomicBeamSCD.end()) {
-        auto rate = std::make_unique<ADASChargeStateRate>(
-            "beam_SCD_" + std::to_string(Z), adas->GetSCD(Z)
-        );
-        it = atomicBeamSCD.emplace(Z, std::move(rate)).first;
-    }
-    return it->second.get();
-}
-
 /*
  * Add molecular reaction rates for all defined molecular rate pairs.
  */
