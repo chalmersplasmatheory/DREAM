@@ -6,13 +6,13 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/Equations/Fluid/RateHandler.hpp"
+#include "DREAM/ADAS.hpp"
 #include "DREAM/NIST.hpp"
 
 namespace DREAM {
     class IonisationHeatingTerm : public FVM::DiagonalComplexTerm {
     private:
-        RateHandler *rateHandler;
+        ADAS *adas;
         NIST *nist;
         IonHandler *ionHandler;
 
@@ -35,7 +35,7 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
     public:
-        IonisationHeatingTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, RateHandler*, NIST*);
+        IonisationHeatingTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*);
     };
 }
 
