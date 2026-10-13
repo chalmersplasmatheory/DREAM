@@ -252,7 +252,7 @@ if (Python3_FOUND)
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tools/MolecularRates"
         DEPENDS
             "${PROJECT_SOURCE_DIR}/tools/MolecularRates/generate_molecular_rates.py"
-            "${PROJECT_SOURCE_DIR}/tools/MolecularRates/data.py"
+            "${PROJECT_SOURCE_DIR}/py/DREAM/Settings/MolecularReactionData.py"
             "${PROJECT_SOURCE_DIR}/tools/MolecularRates/ccd89_ar.dat"
         COMMENT "Generating molecular reaction rates"
         VERBATIM

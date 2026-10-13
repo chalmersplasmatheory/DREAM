@@ -4,7 +4,6 @@
 import argparse
 import datetime
 import pathlib
-import data
 import numpy as np
 from math import factorial
 from scipy.special import gamma as gamma_function
@@ -12,6 +11,8 @@ from scipy.optimize import brentq
 import sys
 from functools import lru_cache
 import json
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "py"))
+from DREAM.Settings import MolecularReactionData as data
 
 # Make DREAM/tools/ADAS available to import.
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
