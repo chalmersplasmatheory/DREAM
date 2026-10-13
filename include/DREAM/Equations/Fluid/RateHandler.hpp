@@ -3,6 +3,7 @@
 
 
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include "FVM/config.h"
 #include "DREAM/IonHandler.hpp"
@@ -17,8 +18,11 @@ namespace DREAM {
 
 //Struct to hold the charge state rates for a given species
 struct ChargeStateRateSet {
-    ChargeStateRate *acd;
-    ChargeStateRate *scd;
+    ChargeStateRate *acd = nullptr;
+    ChargeStateRate *scd = nullptr;
+    ChargeStateRate *plt = nullptr;
+    ChargeStateRate *prb = nullptr;
+    ChargeStateRate *ccd = nullptr;
 };
 
 //Struct to hold the molecular reaction rates for a given pair of species
@@ -74,6 +78,10 @@ public:
 
     ChargeStateRate *GetACD(const std::string& name) const;
     ChargeStateRate *GetSCD(const std::string& name) const;
+    ChargeStateRate *GetPLT(const std::string& name) const;
+    ChargeStateRate *GetPRB(const std::string& name) const;
+    ChargeStateRate *GetCCD(const std::string& name) const;
+
 
     real_t ResolveDensity(const MolecularInput& input, const len_t ir);
     real_t ResolveTemperature(const MolecularInput& input,const len_t ir);

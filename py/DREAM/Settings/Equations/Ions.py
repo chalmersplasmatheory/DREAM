@@ -8,11 +8,15 @@ from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
 from ... DREAMException import DREAMException
 from ... helpers import scal
+from .IonSpecies import IONS_DYNAMIC
+from .. import MolecularReactionData as reaction_data
 
 
 # Model to use for ion heat
 IONS_T_I_NEGLECT = 1
 IONS_T_I_INCLUDE = 2
+IONS_T_N_NEGLECT = 1
+IONS_T_N_INCLUDE = 2
 
 # Interpolation methods for advection term in transport equation
 AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
@@ -61,6 +65,9 @@ class Ions(UnknownQuantity):
         self.advectionInterpolationCharged = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.advectionInterpolationNeutral = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
 
+        self.reactions_enabled = False
+        self.enabled_reaction_names = []
+        self.typeTn = IONS_T_N_NEGLECT
 
     def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT,
         charged_diffusion_mode=ION_CHARGED_DIFFUSION_MODE_NONE, charged_prescribed_diffusion=None, rChargedPrescribedDiffusion=None, tChargedPrescribedDiffusion=None,
@@ -68,13 +75,13 @@ class Ions(UnknownQuantity):
         charged_advection_mode=ION_CHARGED_ADVECTION_MODE_NONE, charged_prescribed_advection=None, rChargedPrescribedAdvection=None, tChargedPrescribedAdvection=None,
         neutral_advection_mode=ION_NEUTRAL_ADVECTION_MODE_NONE, neutral_prescribed_advection=None, rNeutralPrescribedAdvection=None, tNeutralPrescribedAdvection=None,
         t_transp_expdecay_all_cs = None, t_transp_start_expdecay_all_cs = 0, diffusion_initial_all_cs = None, diffusion_final_all_cs = 0, diffusion_offset_all_cs = 0, advection_initial_all_cs = None, advection_final_all_cs = 0, advection_offset_all_cs = 0, 
-        r_expdecay_all_cs = None, t_expdecay_all_cs = None, init_equil=False, T=None, n=None, r=None, t=None, tritium=False, hydrogen=False):
+        r_expdecay_all_cs = None, t_expdecay_all_cs = None, init_equil=False, T=None, n=None, r=None, t=None, tritium=False, hydrogen=False, Tn = None):
 
         """
         Adds a new ion species to the plasma.
 
         :param str name:        Name by which the ion species will be referred to.
-        :param int Z:           Ion charge number.
+        :param int Z:           Ion charge number (and summed nuclear charges for molecular species).
         :param int isotope:            Ion mass number.
         :param int iontype:     Method to use for evolving ions in time.
         :param int Z0:          Charge state to populate (used for populating exactly one charge state for the ion).
@@ -82,6 +89,7 @@ class Ions(UnknownQuantity):
         :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection
         :param numpy.ndarray r: Radial grid on which the input density is defined.
         :param T:               Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
+        :param Tn:              Ion initial neutral temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param numpy.ndarray r: Radial grid on which the input density and temperature is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
@@ -117,8 +125,8 @@ class Ions(UnknownQuantity):
             diffusion_initial_all_cs = diffusion_initial_all_cs, diffusion_final_all_cs = diffusion_final_all_cs, 
             diffusion_offset_all_cs = diffusion_offset_all_cs, advection_initial_all_cs = advection_initial_all_cs, 
             advection_final_all_cs = advection_final_all_cs, advection_offset_all_cs = advection_offset_all_cs, 
-            r_expdecay_all_cs = r_expdecay_all_cs, t_expdecay_all_cs = t_expdecay_all_cs,            
-            init_equil=init_equil, T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium, hydrogen=hydrogen)
+            r_expdecay_all_cs = r_expdecay_all_cs, t_expdecay_all_cs = t_expdecay_all_cs,
+            init_equil=init_equil, T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium, hydrogen=hydrogen, Tn=Tn)
 
         self.ions.append(ion)
 
@@ -180,6 +188,176 @@ class Ions(UnknownQuantity):
         if not found:
             raise EquationException(f"No ion species with name '{species}' has been added to the simulation. Unable to add source term.")
 
+    def enableReactions(self, selection=None):
+        """
+        Enable molecular reactions for the ion species. 
+        This will call a method to add all species that are required for the 
+        selected reactions to the list of ions. If selection is None, 
+        all (possible) reactions will be enabled. 
+        Otherwise, only the selected reactions will be enabled."""
+
+        reactions = list(reaction_data.MOLECULAR_REACTIONS)
+
+        #If we select certain reactions, filter the list of reactions to only include those.
+        if selection is not None:
+            selected = []
+            for process, requests in selection.items():
+                candidates = [
+                                r for r in reactions
+                                if r["classification"] == process
+                            ]
+
+                if not candidates:
+                    raise EquationException(
+                        f"Unknown or empty reaction process '{process}'."
+                    )
+
+                if requests == "all":
+                    selected.extend(candidates)
+                    continue
+
+                
+                for request in requests:
+                  # A list preserves repeated reactants.
+                  wanted = sorted(tuple(x) for x in request["reactants"])
+                  matches = []
+
+                  for reaction in candidates:
+                      actual = []
+
+                      for name, Z0, coefficient in reaction["reactants"]:
+                          actual.extend([(name, Z0)] * coefficient)
+
+                      if sorted(actual) == wanted:
+                          matches.append(reaction)
+
+                  if not matches:
+                      raise EquationException(
+                          f"No reaction matches {request}."
+                      )
+
+                  for reaction in matches:
+                      if reaction not in selected:
+                          selected.append(reaction)
+
+            reactions = selected
+
+        self.addRequiredSpecies(reactions)
+
+        self.reactions_enabled = True
+        self.enabled_reaction_names = []
+        species_names = []
+        for ion in self.ions:
+            species_names.append(ion.getName())
+        
+        # Check each reaction.
+        for reaction in reactions:
+            all_reactants_exist = True
+
+            for reactant in reaction["reactants"]:
+                name = reactant[0]
+
+                # Electrons do not need to be declared as ion species.
+                if name == "e":
+                    continue
+
+                if name not in species_names:
+                    all_reactants_exist = False
+                    print(f"Warning: Reaction '{reaction['name']}' is disabled because reactant species '{name}' does not exist.")
+                    break
+
+            # Save the reaction's name if all its reactant species exist.
+            if all_reactants_exist:
+                self.enabled_reaction_names.append(reaction["name"])
+                    
+    def addRequiredSpecies(self, reactions):
+        """
+        Add all species required by reactions with available reactants.
+        """
+        charges = {}
+        initial_names = set()
+
+        for ion in self.ions:
+            name = ion.getName()
+            Z = ion.getZ()
+
+            charges[name] = Z
+            initial_names.add(name)
+
+        changed = True
+
+        while changed:
+              changed = False ##Assume we will not discove somet
+
+              for reaction in reactions:
+                  all_reactants_exist = True
+
+                  for name, Z0, coefficient in reaction["reactants"]:
+                      if name == "e":
+                          continue
+
+                      if name not in charges: #If the name is not in charges we add it in the next loop, and then we have to go though it again
+                          all_reactants_exist = False
+                          break
+
+                  if not all_reactants_exist:
+                      continue
+
+                  for name, Z0, coefficient in reaction["products"]:
+                      if name == "e":
+                          continue
+
+                      if name in charges:
+                          continue
+
+                      if name not in reaction_data.SPECIES_Z:
+                          raise EquationException(
+                              f"Add species metadata for '{name}' in data.py."
+                          )
+
+                      charges[name] = reaction_data.SPECIES_Z[name]
+                      changed = True
+
+      # Check charge states before adding species to self.ions.
+        for reaction in reactions:
+            all_reactants_exist = True
+
+            for name, Z0, coefficient in reaction["reactants"]:
+                if name == "e":
+                    continue
+
+                if name not in charges:
+                    all_reactants_exist = False
+                    break
+
+            if not all_reactants_exist:
+                continue
+
+            participants = reaction["reactants"] + reaction["products"]
+
+            for name, Z0, coefficient in participants:
+                if name == "e":
+                    continue
+
+                if Z0 < 0 or Z0 > charges[name]:
+                    raise EquationException(
+                        f"Unsupported charge state {Z0} for '{name}'."
+                      )
+
+          # Add the newly discovered species with zero density.
+        for name in charges:
+            if name not in initial_names:
+                self.addIon(
+                      name=name,
+                      Z=charges[name],
+                      iontype=IONS_DYNAMIC,
+                      Z0=0,
+                      n=0,
+                      r=self.r,
+                  )
+
+
+
 
     def changeRadialGrid(self, r):
         """
@@ -190,14 +368,21 @@ class Ions(UnknownQuantity):
                 ion.n = ion.n * np.ones(ion.n.shape[:-1] + (r.size,))
                 ion.T = ion.T * np.ones(ion.T.shape[:-1] + (r.size,))
                 ion.r = r
+                ion.Tn = ion.Tn * np.ones(ion.Tn.shape[:-1] + (r.size,))
             else:
                 fn = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
-                fT = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                fT = scipy.interpolate.interp1d(ion.r, ion.T, axis=-1, bounds_error=False, fill_value='extrapolate')
+                fTn = scipy.interpolate.interp1d(ion.r, ion.Tn, axis=-1, bounds_error=False, fill_value='extrapolate'
+  )
                 ion.n = fn(r)
                 ion.T = fT(r)
+                ion.Tn = fTn(r)
                 ion.r = r
 
         self.r = r
+        
+    def setNeutralTemperatureEnabled(self, enabled=True):
+      self.typeTn = (IONS_T_N_INCLUDE if enabled else IONS_T_N_NEGLECT)
 
 
     def getCharges(self):
@@ -570,6 +755,9 @@ class Ions(UnknownQuantity):
             opacity_modes = data['opacity_modes']
         else:
             opacity_modes = self.getOpacityModes()
+            
+        if 'typeTn' in data:
+            self.typeTn = int(scal(data['typeTn']))
 
         charged_diffusion_modes = [ION_CHARGED_DIFFUSION_MODE_NONE]*len(Z)
         neutral_diffusion_modes = [ION_NEUTRAL_DIFFUSION_MODE_NONE]*len(Z)
@@ -605,6 +793,7 @@ class Ions(UnknownQuantity):
         initial    = None
         prescribed = None
         initialTi  = None
+        initialTn  = None
         charged_prescribed_diffusion = None
         neutral_prescribed_diffusion = None
         charged_prescribed_advection = None
@@ -613,8 +802,11 @@ class Ions(UnknownQuantity):
         ion_source_x = None
         ion_source_r = None
         self.typeTi = IONS_T_I_NEGLECT
+        self.typeTn = IONS_T_N_NEGLECT
         if 'typeTi' in data:
             self.typeTi = int(scal(data['typeTi']))
+        if 'typeTn' in data:
+            self.typeTn = int(scal(data['typeTn']))
         if 'initial' in data:
             initial = data['initial']
         if 'prescribed' in data:
@@ -633,6 +825,8 @@ class Ions(UnknownQuantity):
             self.advectionInterpolationNeutral.fromdict(data['adv_interp_neutral'])
         if 'initialTi' in data:
             initialTi = data['initialTi']
+        if 'initialTn' in data:
+            initialTn = data['initialTn']
         if 'init_equilibrium' in data:
             init_equilibrium = data['init_equilibrium']
         if 'initialNi' in data:
@@ -678,6 +872,10 @@ class Ions(UnknownQuantity):
                 T = initialTi['x'][i]
             else:
                 T = None
+            if initialTn is not None:
+                Tn = initialTn['x'][i]
+            else:
+                Tn = None
             if SPIMolarFraction[spiidx]>=0:
                 SPIMolarFractionSingleSpecies = SPIMolarFraction[spiidx:spiidx+nShard]
                 spiidx+=nShard
@@ -745,7 +943,7 @@ class Ions(UnknownQuantity):
                 # Neutral advection
                 neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa,
                 rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
-                T=T, n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
+                T=T, Tn = Tn,n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
 
             # Load ion source
             if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
@@ -768,6 +966,18 @@ class Ions(UnknownQuantity):
         if 'reioniz_scale' in data:
             self.reioniz_scale = float(scal(data['reioniz_scale']))
 
+        if "reactions" in data:
+            reactions = data["reactions"]
+
+            self.reactions_enabled = bool(
+                scal(reactions.get("enabled", 0))
+            )
+
+            names = reactions.get("names", "")
+            self.enabled_reaction_names = [
+                name for name in names.split(";") if name
+            ]
+
         self.verifySettings()
 
 
@@ -787,6 +997,7 @@ class Ions(UnknownQuantity):
         isotopes     = self.getIsotopes()
         initial = None
         initialTi = None
+        initialTn = None
         prescribed = None
         sourceterm = None
         sourceterm_types = []
@@ -869,6 +1080,12 @@ class Ions(UnknownQuantity):
                 initialTi = np.copy(ion.getTemperature())
             else:
                 initialTi = np.concatenate((initialTi, ion.getTemperature()))
+            if initialTn is None:
+                initialTn = np.copy(ion.getNeutralTemperature())
+            else:
+                initialTn = np.concatenate(
+                    (initialTn, ion.getNeutralTemperature())
+                )
 
             initialNi.append(ion.getInitialSpeciesDensity())
 
@@ -991,8 +1208,14 @@ class Ions(UnknownQuantity):
             'r': self.r,
             'x': initialTi
         }
+        data['initialTn'] = {
+            'r': self.r,
+            'x': initialTn
+        }
+
         data['ionization'] = self.ionization
         data['typeTi'] = self.typeTi
+        data['typeTn'] = self.typeTn
         data['reioniz_scale'] = self.reioniz_scale
 
         # Initial equilibrium
@@ -1006,6 +1229,11 @@ class Ions(UnknownQuantity):
             'r': self.r,
             'x': initialNi
         }
+
+        data["reactions"] = {
+        "enabled": int(self.reactions_enabled),
+        "names": ";".join(self.enabled_reaction_names),
+            }
 
         return data
 
