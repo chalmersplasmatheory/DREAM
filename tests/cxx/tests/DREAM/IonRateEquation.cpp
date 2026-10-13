@@ -2,7 +2,7 @@
  * A test for the IonRateEquation term in DREAM.
  */
 
- //TODO: Update withthe new tests
+ //TODO: Update with the new tests
 
 #include <vector>
 #include <string>
@@ -114,7 +114,7 @@ bool IonRateEquation::CheckConservativity() {
     // Construct equation for each ion species
     DREAM::IonRateEquation *ire[N_IONS];
     for (len_t iIon = 0; iIon < N_IONS; iIon++)
-        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh, nullptr, true, true,false);
+        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, uqh, nullptr, true, true,false);
 
         //ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh,true, true,false);
 
