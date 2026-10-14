@@ -6,14 +6,14 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/ADAS.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/AMJUEL.hpp"
 
 namespace DREAM {
     class RadiatedPowerTerm : public FVM::DiagonalComplexTerm {
     private:
-        ADAS *adas;
+        RateHandler *rateHandler;
         NIST *nist;
         AMJUEL *amjuel;
         IonHandler *ionHandler;
@@ -31,6 +31,8 @@ namespace DREAM {
             
         bool includePRB = true;
 
+        real_t GetAtomicIonTerm(len_t ir, const real_t *ionScaleFactor) const;
+
 		real_t *Prad;
 		real_t *Pion;
 
@@ -46,7 +48,7 @@ namespace DREAM {
 
 
     public:
-        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, AMJUEL*,enum OptionConstants::ion_opacity_mode*, bool);
+        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, RateHandler*, NIST*, AMJUEL*,enum OptionConstants::ion_opacity_mode*, bool);
 		~RadiatedPowerTerm();
 
 
