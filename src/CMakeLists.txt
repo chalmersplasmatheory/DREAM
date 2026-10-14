@@ -86,6 +86,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonFluidRunawayIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MoleculeDissociationRateReaction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MoleculeChargeExchangeRateReaction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RateHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RateData.cpp"

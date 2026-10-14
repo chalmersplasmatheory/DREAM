@@ -21,17 +21,17 @@ using namespace DREAM;
  */
 RadiatedPowerTerm::RadiatedPowerTerm(
     FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, 
-	ADAS *adas, NIST *nist, AMJUEL* amjuel,
+	RateHandler *rateHandler, NIST *nist, AMJUEL* amjuel,
     enum OptionConstants::ion_opacity_mode *opacity_modes, bool includePRB
 ) : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) {
 
     SetName("RadiatedPowerTerm");
 
-    this->adas = adas;
     this->nist = nist;
     this->amjuel = amjuel;
     this->ionHandler = ionHandler;
     
+    this->rateHandler = rateHandler;
     this->opacity_modes = new enum OptionConstants::ion_opacity_mode[ionHandler->GetNZ()];
     for(len_t iz=0;iz<ionHandler->GetNZ();iz++)
     	this->opacity_modes[iz] = opacity_modes[iz];
@@ -100,12 +100,14 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 	}
 
     for(len_t iz = 0; iz<nZ; iz++){
-        if (ionHandler->IsMolecule(iz)) //skip molecules
+        const std::string& name = ionHandler->GetName(iz);
+        // Molecular radiation and binding-energy changes are neglected here.
+        if (ionHandler->IsMolecule(iz))
             continue;
-        ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
-        ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
-        ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
-        ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
+        ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
+        ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
+        ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
+        ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
         real_t dWi = 0;
         real_t Li = 0;
         real_t Bi = 0;
@@ -183,12 +185,32 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
      */
     if(!includePRB) 
         for(len_t i=0; i<NCells; i++){
-            real_t ionTerm = ionHandler->GetZeff(i)*ionHandler->GetFreeElectronDensityFromQuasiNeutrality(i);
+            real_t ionTerm = GetAtomicIonTerm(i, ionScaleFactor);
             real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i];
             real_t L = bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
 			weights[i] += L;
 			Prad[i] += L * n_cold[i];
         }
+}
+
+/**
+ * Atomic contribution to sum(n_i * Z0^2), in m^-3. Molecular populations
+ * are excluded, while electron-electron bremsstrahlung is handled separately.
+ */
+real_t RadiatedPowerTerm::GetAtomicIonTerm(
+    len_t ir, const real_t *ionScaleFactor
+) const {
+    real_t ionTerm = 0;
+    for (len_t iz = 0; iz < ionHandler->GetNZ(); iz++) {
+        if (ionHandler->IsMolecule(iz))
+            continue;
+        for (len_t Z0 = 1; Z0 <= ionHandler->GetZ(iz); Z0++) {
+            const len_t index = ionHandler->GetIndex(iz, Z0);
+            const real_t scale = ionScaleFactor ? ionScaleFactor[index] : 1;
+            ionTerm += scale * ionHandler->GetIonDensity(ir, iz, Z0) * Z0 * Z0;
+        }
+    }
+    return ionTerm;
 }
 
 void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t indZs){
@@ -206,12 +228,14 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     
     if(derivId == id_ni){
         for(len_t iz = 0; iz<nZ; iz++){
-            if (ionHandler->IsMolecule(iz)) //skip molecules
+            const std::string& name = ionHandler->GetName(iz);
+            // Molecular radiation and binding-energy changes are neglected here.
+            if (ionHandler->IsMolecule(iz))
                 continue;
-            ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
-            ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
-            ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
-            ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
+            ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
+            ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
+            ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
+            ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
             
             real_t dWi = 0;
             real_t Li = 0;
@@ -264,7 +288,9 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         }
         if(!includePRB){ //bremsstrahlung contribution
             for(len_t i=0; i<NCells; i++){
-                for(len_t iz = 0; iz<nZ; iz++)
+                for(len_t iz = 0; iz<nZ; iz++) {
+                    if (ionHandler->IsMolecule(iz))
+                        continue;
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         len_t indZ = ionHandler->GetIndex(iz,Z0);
                         real_t dIonTerm = Z0*Z0;
@@ -276,17 +302,20 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                         else
                             diffWeights[NCells*indZ + i] += bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
                     }
+                }
             }
         }
     } else if(derivId == id_ncold){
         for(len_t iz = 0; iz<nZ; iz++){
-            if (ionHandler->IsMolecule(iz)) //skip molecules
+            const std::string& name = ionHandler->GetName(iz);
+            // Molecular radiation and binding-energy changes are neglected here.
+            if (ionHandler->IsMolecule(iz))
                 continue;
-            ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
-            ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
-            ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
-            ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
-            
+            ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
+            ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
+            ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
+            ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
+
             real_t dWi = 0;
             real_t dLi = 0;
             real_t dBi = 0;
@@ -343,12 +372,14 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 diffWeights[i] += bremsPrefactor*sqrt(T_cold[i])*bremsRel2*T_cold[i]/Constants::mc2inEV;
     } else if (derivId == id_Tcold){
         for(len_t iz = 0; iz<nZ; iz++){
-            if (ionHandler->IsMolecule(iz)) //skip molecules
+            const std::string& name = ionHandler->GetName(iz);
+            // Molecular radiation and binding-energy changes are neglected here.
+            if (ionHandler->IsMolecule(iz))
                 continue;
-            ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
-            ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
-            ADASRateInterpolator *ACD_interper = adas->GetACD(Zs[iz]);
-            ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
+            ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
+            ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
+            ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
+            ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
             
             real_t dWi = 0;
             real_t dLi = 0;
@@ -406,7 +437,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         }
         if(!includePRB){ //bremsstrahlung contribution
             for(len_t i=0; i<NCells; i++){
-                real_t ionTerm = ionHandler->GetZeff(i)*ionHandler->GetFreeElectronDensityFromQuasiNeutrality(i);
+                real_t ionTerm = GetAtomicIonTerm(i, ionScaleFactor);
                 real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i]; 
                 diffWeights[i] += 0.5*bremsPrefactor/sqrt(T_cold[i])*(ionTerm + 3.0*relativisticCorrection*T_cold[i]/Constants::mc2inEV);
             }
