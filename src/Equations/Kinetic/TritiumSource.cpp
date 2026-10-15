@@ -138,13 +138,12 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
 real_t TritiumSource::GetSourceFunction(len_t ir, len_t i, len_t j){
     if(sourceMode == SOURCE_MODE_FLUID){
         real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
-        if (!has_fhot && !has_fre) {
+        if (has_fhot || has_fre)
+            pc = pLower;
+        else {
             if (pc == std::numeric_limits<real_t>::infinity())
                 return 0.;
-            if (pc < pLower)
-                pc = pLower;
-        } else
-            pc = pLower;
+        }  
         return scaleFactor * EvaluateTotalTritiumNumber(pc);
     }
     len_t offset = 0;

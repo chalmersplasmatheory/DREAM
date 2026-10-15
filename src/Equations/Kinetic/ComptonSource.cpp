@@ -173,13 +173,12 @@ real_t ComptonSource::GetSourceFunction(len_t ir, len_t i, len_t j){
     struct intparams paramsOut = {this->limit, this->wpOut, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
     if(sourceMode == SOURCE_MODE_FLUID){
         real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
-        if (!has_fhot && !has_fre) {
+        if (has_fhot || has_fre)
+            pc = pLower;
+        else {
             if (pc == std::numeric_limits<real_t>::infinity())
                 return 0.;
-            if (pc < pLower)
-                pc = pLower;
-        } else
-            pc = pLower;
+        }  
         return scaleFactor * this->photonFlux * EvaluateTotalComptonNumber(pc, &params, &paramsOut);
     }
     
