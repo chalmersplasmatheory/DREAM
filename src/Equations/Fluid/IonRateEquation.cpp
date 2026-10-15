@@ -162,9 +162,8 @@ void IonRateEquation::Rebuild(
     real_t *T = unknowns->GetUnknownData(id_T_cold);
     real_t *n = unknowns->GetUnknownData(id_n_cold);
     
-    const std::string& name = this->ions->GetName(this->iIon);
-    ChargeStateRate *acd = this->ratehandler->GetACD(name); //should be iIon i think
-    ChargeStateRate *scd = this->ratehandler->GetSCD(name);
+    ChargeStateRate *acd = this->ratehandler->GetACD(this->iIon); 
+    ChargeStateRate *scd = this->ratehandler->GetSCD(this->iIon);
 
     real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());
     // Iterate over charge state (0 ... Z)

@@ -119,7 +119,8 @@ void RateHandler::AddMolecularChargeStateRates() {
 /**
  * Get the ACD (recombination) charge-state rate for a given species.
  */
-ChargeStateRate *RateHandler::GetACD(const std::string& name) const {
+ChargeStateRate *RateHandler::GetACD(const len_t iz) const {
+    const std::string& name = ions->GetName(iz);
     auto it = chargeStateRates.find(name);
     if (it == chargeStateRates.end() || it->second.acd == nullptr)
         throw FVM::FVMException(
@@ -133,7 +134,8 @@ ChargeStateRate *RateHandler::GetACD(const std::string& name) const {
 /**
  * Get the SCD (ionization) charge-state rate for a given species.
  */
-ChargeStateRate *RateHandler::GetSCD(const std::string& name) const {
+ChargeStateRate *RateHandler::GetSCD(const len_t iz) const {
+    const std::string& name = ions->GetName(iz);
     auto it = chargeStateRates.find(name);
     if (it == chargeStateRates.end() || it->second.scd == nullptr)
         throw FVM::FVMException(
@@ -143,7 +145,8 @@ ChargeStateRate *RateHandler::GetSCD(const std::string& name) const {
       return it->second.scd;
 }
 
-ChargeStateRate *RateHandler::GetPLT(const std::string& name) const {
+ChargeStateRate *RateHandler::GetPLT(const len_t iz) const {
+    const std::string& name = ions->GetName(iz);
     auto it = chargeStateRates.find(name);
     if (it == chargeStateRates.end() || it->second.plt == nullptr)
         throw FVM::FVMException(
@@ -153,7 +156,8 @@ ChargeStateRate *RateHandler::GetPLT(const std::string& name) const {
       return it->second.plt;
 }
 
-ChargeStateRate *RateHandler::GetPRB(const std::string& name) const {
+ChargeStateRate *RateHandler::GetPRB(const len_t iz) const {
+    const std::string& name = ions->GetName(iz);
     auto it = chargeStateRates.find(name);
     if (it == chargeStateRates.end() || it->second.prb == nullptr)
         throw FVM::FVMException(
@@ -162,7 +166,8 @@ ChargeStateRate *RateHandler::GetPRB(const std::string& name) const {
         );
       return it->second.prb;
 }
-ChargeStateRate *RateHandler::GetCCD(const std::string& name) const {
+ChargeStateRate *RateHandler::GetCCD(const len_t iz) const {
+    const std::string& name = ions->GetName(iz);
     auto it = chargeStateRates.find(name);
     if (it == chargeStateRates.end() || it->second.ccd == nullptr)
         throw FVM::FVMException(

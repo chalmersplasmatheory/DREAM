@@ -15,11 +15,11 @@ using namespace std;
  * Evaluate the species charge-state rates at the given density and temperature.
  */
 void SimulationGenerator::EvaluateChargeStateRates(
-	RateHandler *rateHandler, const std::string& name, const len_t Z, const real_t n, const real_t T,
+	RateHandler *rateHandler, const len_t iz, const len_t Z, const real_t n, const real_t T,
 	real_t *I, real_t *R
 ) {
-	ChargeStateRate *acd = rateHandler->GetACD(name);
-	ChargeStateRate *scd = rateHandler->GetSCD(name);
+	ChargeStateRate *acd = rateHandler->GetACD(iz);
+	ChargeStateRate *scd = rateHandler->GetSCD(iz);
 
 	for (len_t j = 0; j < Z+1; j++) {
 		I[j] = scd->Eval(j, n, T);
@@ -103,7 +103,7 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 				real_t *II = I[iZ];
 				real_t *RR = R[iZ];
 
-				EvaluateChargeStateRates(rateHandler, ih->GetName(equil_indices[iZ]), Z[iZ], nfree, T[ir], II, RR);
+				EvaluateChargeStateRates(rateHandler, equil_indices[iZ], Z[iZ], nfree, T[ir], II, RR);
 
 				for (len_t l = 0; l < Z[iZ]+1; l++) {
 					real_t s = 0;

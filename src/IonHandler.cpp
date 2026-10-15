@@ -240,22 +240,7 @@ bool IonHandler::HasIon(const std::string& name) const {
 
       return false;
   }
-/**
- *  Returns the density of ions which are characterised by 
- * atomic number Z and charge number Z0 at radial index ir.
- */
-// TODO this will need to be redone since Z can be the same for molecyles
-//const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
-//    real_t niReturn = 0;
-//    const real_t *n_i = unknowns->GetUnknownData(niID);
-//    for (len_t iz=0; iz<nZ; iz++)
-//        if (Zs[iz] == Z){
-//            len_t Zind = GetIndex(iz,Z0);
-//            niReturn += n_i[nr*Zind + ir];
-//        }
-    
-//    return niReturn;
-//}
+
 
 // Returns the density of ions which are characterised by 
 // index iz and charge number Z0 at radial index ir.

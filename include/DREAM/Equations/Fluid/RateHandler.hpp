@@ -76,11 +76,11 @@ public:
     return molecularReactions;
     }
 
-    ChargeStateRate *GetACD(const std::string& name) const;
-    ChargeStateRate *GetSCD(const std::string& name) const;
-    ChargeStateRate *GetPLT(const std::string& name) const;
-    ChargeStateRate *GetPRB(const std::string& name) const;
-    ChargeStateRate *GetCCD(const std::string& name) const;
+    ChargeStateRate *GetACD(const len_t iz) const;
+    ChargeStateRate *GetSCD(const len_t iz) const;
+    ChargeStateRate *GetPLT(const len_t iz) const;
+    ChargeStateRate *GetPRB(const len_t iz) const;
+    ChargeStateRate *GetCCD(const len_t iz) const;
 
 
     real_t ResolveDensity(const MolecularInput& input, const len_t ir);

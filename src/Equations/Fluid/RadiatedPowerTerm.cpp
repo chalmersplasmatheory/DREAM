@@ -100,14 +100,13 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 	}
 
     for(len_t iz = 0; iz<nZ; iz++){
-        const std::string& name = ionHandler->GetName(iz);
         // Molecular radiation and binding-energy changes are neglected here.
         if (ionHandler->IsMolecule(iz))
             continue;
-        ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
-        ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
-        ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
-        ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
+        ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
+        ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
+        ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
+        ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
         real_t dWi = 0;
         real_t Li = 0;
         real_t Bi = 0;
@@ -185,7 +184,7 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
      */
     if(!includePRB) 
         for(len_t i=0; i<NCells; i++){
-            real_t ionTerm = GetAtomicIonTerm(i, ionScaleFactor);
+            real_t ionTerm = GetAtomicIonTerm(i);
             real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i];
             real_t L = bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
 			weights[i] += L;
@@ -197,17 +196,14 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
  * Atomic contribution to sum(n_i * Z0^2), in m^-3. Molecular populations
  * are excluded, while electron-electron bremsstrahlung is handled separately.
  */
-real_t RadiatedPowerTerm::GetAtomicIonTerm(
-    len_t ir, const real_t *ionScaleFactor
+real_t RadiatedPowerTerm::GetAtomicIonTerm(len_t ir
 ) const {
     real_t ionTerm = 0;
     for (len_t iz = 0; iz < ionHandler->GetNZ(); iz++) {
         if (ionHandler->IsMolecule(iz))
             continue;
         for (len_t Z0 = 1; Z0 <= ionHandler->GetZ(iz); Z0++) {
-            const len_t index = ionHandler->GetIndex(iz, Z0);
-            const real_t scale = ionScaleFactor ? ionScaleFactor[index] : 1;
-            ionTerm += scale * ionHandler->GetIonDensity(ir, iz, Z0) * Z0 * Z0;
+            ionTerm +=  ionHandler->GetIonDensity(ir, iz, Z0) * Z0 * Z0;
         }
     }
     return ionTerm;
@@ -228,14 +224,13 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     
     if(derivId == id_ni){
         for(len_t iz = 0; iz<nZ; iz++){
-            const std::string& name = ionHandler->GetName(iz);
             // Molecular radiation and binding-energy changes are neglected here.
             if (ionHandler->IsMolecule(iz))
                 continue;
-            ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
-            ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
-            ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
-            ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
+            ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
+            ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
+            ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
+            ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
             
             real_t dWi = 0;
             real_t Li = 0;
@@ -307,14 +302,13 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         }
     } else if(derivId == id_ncold){
         for(len_t iz = 0; iz<nZ; iz++){
-            const std::string& name = ionHandler->GetName(iz);
             // Molecular radiation and binding-energy changes are neglected here.
             if (ionHandler->IsMolecule(iz))
                 continue;
-            ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
-            ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
-            ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
-            ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
+            ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
+            ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
+            ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
+            ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
 
             real_t dWi = 0;
             real_t dLi = 0;
@@ -372,14 +366,13 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 diffWeights[i] += bremsPrefactor*sqrt(T_cold[i])*bremsRel2*T_cold[i]/Constants::mc2inEV;
     } else if (derivId == id_Tcold){
         for(len_t iz = 0; iz<nZ; iz++){
-            const std::string& name = ionHandler->GetName(iz);
             // Molecular radiation and binding-energy changes are neglected here.
             if (ionHandler->IsMolecule(iz))
                 continue;
-            ChargeStateRate *PLT_interper = rateHandler->GetPLT(name);
-            ChargeStateRate *PRB_interper = rateHandler->GetPRB(name);
-            ChargeStateRate *ACD_interper = rateHandler->GetACD(name);
-            ChargeStateRate *SCD_interper = rateHandler->GetSCD(name);
+            ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
+            ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
+            ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
+            ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
             
             real_t dWi = 0;
             real_t dLi = 0;
@@ -437,7 +430,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         }
         if(!includePRB){ //bremsstrahlung contribution
             for(len_t i=0; i<NCells; i++){
-                real_t ionTerm = GetAtomicIonTerm(i, ionScaleFactor);
+                real_t ionTerm = GetAtomicIonTerm(i);
                 real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i]; 
                 diffWeights[i] += 0.5*bremsPrefactor/sqrt(T_cold[i])*(ionTerm + 3.0*relativisticCorrection*T_cold[i]/Constants::mc2inEV);
             }

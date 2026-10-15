@@ -31,7 +31,7 @@ namespace DREAM {
             
         bool includePRB = true;
 
-        real_t GetAtomicIonTerm(len_t ir, const real_t *ionScaleFactor) const;
+        real_t GetAtomicIonTerm(len_t ir) const;
 
 		real_t *Prad;
 		real_t *Pion;

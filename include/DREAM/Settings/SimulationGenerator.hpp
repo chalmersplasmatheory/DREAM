@@ -212,7 +212,7 @@ namespace DREAM {
 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
-		static void EvaluateChargeStateRates(RateHandler*, const std::string&, const len_t, const real_t, const real_t, real_t*, real_t*);
+		static void EvaluateChargeStateRates(RateHandler*, const len_t, const len_t, const real_t, const real_t, real_t*, real_t*);
 		static void EvaluateIonEquilibrium(IonHandler*, RateHandler*, std::vector<len_t>&, const real_t*, const real_t*, const real_t*, len_t, std::vector<real_t*>&);
 
 
