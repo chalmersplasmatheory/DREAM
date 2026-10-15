@@ -4,8 +4,7 @@
 
 #include "DREAM/Equations/Fluid/IonPrescribedParameter.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
-#include "DREAM/Equations/Fluid/MoleculeChargeExchangeRateReaction.hpp"
-#include "DREAM/Equations/Fluid/MoleculeDissociationRateReaction.hpp"
+#include "DREAM/Equations/Fluid/MoleculeRateReaction.hpp"
 #include "DREAM/Equations/Fluid/LyOpaqueDIonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
 #include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
@@ -312,17 +311,6 @@ void SimulationGenerator::ConstructEquation_Ions(
     // Construct dynamic equations
     len_t nDynamic = 0, nEquil = 0;
 
-    bool hasChargeExchange = false;
-    bool hasDissociation = false;
-
-    for (const auto& reaction : ratehandler->GetMolecularReactions()) {
-        if (reaction.process == MolecularReactionProcess::CHARGE_EXCHANGE) {
-            hasChargeExchange = true;
-        }
-        if (reaction.process == MolecularReactionProcess::DISSOCIATION ||
-            reaction.process == MolecularReactionProcess::DISSOCIATION_MULTIPLE)
-            hasDissociation = true;
-    }
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         switch (types[iZ]) {
             case OptionConstants::ION_DATA_PRESCRIBED:
@@ -344,9 +332,6 @@ void SimulationGenerator::ConstructEquation_Ions(
 					eqn->AddTerm(ire);
 					oqty_terms->ni_rates.push_back(ire);
                 }else{
-                    //ad something abot molecyles that produces other molecyles and discard those,
-                    //which is not handled by IonRateEquation, but by MolecularRateEquation or similar
-                    
 
 					IonRateEquation *ire = new IonRateEquation(
 						fluidGrid, ih, iZ, eqsys->GetUnknownHandler(), ratehandler,
@@ -354,20 +339,14 @@ void SimulationGenerator::ConstructEquation_Ions(
 					);
 		            eqn->AddTerm(ire);
 
-                    if (hasChargeExchange) {
-                        eqn->AddTerm(new MoleculeChargeExchangeRateReaction(
-                            fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
-                            ratehandler, addFluidIonization, addFluidJacobian, false
-                        ));
-                    }
-
 					oqty_terms->ni_rates.push_back(ire);
                 }
-                if (hasDissociation) {
-                    eqn->AddTerm(new MoleculeDissociationRateReaction(
-                        fluidGrid, ih, iZ, eqsys->GetUnknownHandler(), ratehandler
-                    ));
-                }
+                if (reactionsEnabled) {
+                        eqn->AddTerm(new MoleculeRateReaction(
+                            fluidGrid, ih, iZ, , eqsys->GetUnknownHandler(),
+                            ratehandler
+                        ));
+                    }
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid
                         if(Op_kiniz == nullptr)
