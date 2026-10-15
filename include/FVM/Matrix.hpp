@@ -8,6 +8,18 @@
 #include "FVM/FVMException.hpp"
 
 namespace DREAM::FVM {
+    /**
+     * Matrix wrapper around a PETSc Mat.
+     *
+     * The Matrix object may represent a view into a sub-block of a larger
+     * matrix. In that case, rowOffset/colOffset are added to all indices
+     * passed to setters/getters.
+     *
+     * Performance:
+     *  - Repeated calls to MatSetValue() can be expensive. For assembly code
+     *    that inserts many entries per row, the buffered insertion API can
+     *    reduce PETSc call overhead by batching row insertions via MatSetValues().
+     */
     class Matrix {
         protected:
             Mat petsc_mat;
@@ -16,7 +28,18 @@ namespace DREAM::FVM {
 
             PetscInt rowOffset=0, colOffset=0;
 
+            std::vector<PetscInt> tmpRows;
+            std::vector<PetscScalar> tmpVals;
+
             bool allocated=false;
+
+            bool buffering = false;
+            PetscInt bufRow = -1;
+            PetscInt bufLen = 0;
+            InsertMode bufMode = ADD_VALUES;
+            std::vector<PetscInt> bufCols;
+            std::vector<PetscScalar> bufVals;
+            void FlushBufferedRow();
 
             void Construct(
                 const PetscInt, const PetscInt,
@@ -65,11 +88,62 @@ namespace DREAM::FVM {
             PetscInt GetRowOffset() const { return this->rowOffset; }
             PetscInt GetColOffset() const { return this->colOffset; }
 
+            /**
+             * Set one matrix element.
+             *
+             * If buffered insertion is enabled (BeginBufferedSet), values are queued
+             * and flushed per row using MatSetValues(). Otherwise, this calls MatSetValue().
+             */
             void SetElement(
                 const PetscInt, const PetscInt,
                 const PetscScalar, InsertMode im=ADD_VALUES
             );
-			void SetRow(
+
+            /**
+             * Insert values in a single column for a contiguous block of rows.
+             *
+             * This is a fast path for column-oriented assembly where the caller has a
+             * contiguous block of values corresponding to rows:
+             *
+             *   row = firstLocalRow + r,   r = 0..m-1
+             *   col = localCol
+             *   value(row, col) = vals[r]
+             *
+             * Applies rowOffset/colOffset internally. Exact zeros are skipped to avoid
+             * creating structural nonzeros for inactive rows (matching SetElement()).
+             */
+            void SetColumn(
+                PetscInt firstLocalRow, PetscInt localCol,
+                PetscInt m, const PetscScalar *vals,
+                InsertMode im=ADD_VALUES
+            );
+
+            /**
+             * Enable buffered insertion mode.
+             *
+             * While buffering is enabled, SetElement() accumulates (col,value) pairs
+             * for the current row and flushes them with MatSetValues() when the row
+             * changes or EndBufferedSet() is called.
+             *
+             * mode:    Insert mode for the whole buffered region (typically ADD_VALUES).
+             * reserve: Optional hint for expected nnz per row.
+             */
+            void BeginBufferedSet(InsertMode mode = ADD_VALUES, PetscInt reserve = 0);
+
+            /**
+             * Disable buffered insertion mode and flush any pending row.
+             */
+            void EndBufferedSet();
+
+            /**
+             * Insert values in a single row for multiple columns (row-oriented bulk insert).
+             *
+             * Notes:
+             *  - Applies rowOffset/colOffset.
+             *  - Does not filter zeros (callers may intentionally insert zeros to
+             *    establish a stable sparsity pattern).
+             */
+            void SetRow(
 				PetscInt, const PetscInt,
 				PetscInt*, const PetscScalar*,
 				InsertMode im=ADD_VALUES
