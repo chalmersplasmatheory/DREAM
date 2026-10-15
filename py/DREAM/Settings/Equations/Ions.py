@@ -872,7 +872,7 @@ class Ions(UnknownQuantity):
                 T = initialTi['x'][i]
             else:
                 T = None
-            if initialTn is not None:
+            if self.typeTn==IONS_T_N_INCLUDE and initialTn is not None:
                 Tn = initialTn['x'][i]
             else:
                 Tn = None
