@@ -65,7 +65,8 @@ class DREAMTask:
         if self.quiet: 
             self.p = subprocess.Popen([f'{self.DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, stdout=self.open_stdout, env=env)
         else:
-            self.p = subprocess.Popen([f'{self.DREAMPATH}/build/iface/dreami', self.infile], stderr=self.open_stderr, env=env)
+            # When not quiet, let stderr go to the terminal for real-time debugging
+            self.p = subprocess.Popen([f'{self.DREAMPATH}/build/iface/dreami', self.infile], stderr=None, env=env)
 
     def hasFinished(self, timeout=1):
         try:
