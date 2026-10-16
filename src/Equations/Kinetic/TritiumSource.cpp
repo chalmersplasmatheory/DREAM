@@ -26,6 +26,11 @@ TritiumSource::TritiumSource(
     sourceVec = new real_t[2 * kineticGrid->GetNCells()];
     
     source = new real_t[kineticGrid->GetNCells()];
+
+    if (this->unknowns->HasUnknown(OptionConstants::UQTY_F_HOT))
+        this->has_fhot = true;
+    if (this->unknowns->HasUnknown(OptionConstants::UQTY_F_RE))
+        this->has_fre = true;
     
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
@@ -133,10 +138,12 @@ real_t TritiumSource::EvaluateSource(len_t ir, len_t i, len_t) {
 real_t TritiumSource::GetSourceFunction(len_t ir, len_t i, len_t j){
     if(sourceMode == SOURCE_MODE_FLUID){
         real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
-        if (pc == std::numeric_limits<real_t>::infinity())
-            return 0.;
-        if (pc < pLower)
+        if (has_fhot || has_fre)
             pc = pLower;
+        else {
+            if (pc == std::numeric_limits<real_t>::infinity())
+                return 0.;
+        }  
         return scaleFactor * EvaluateTotalTritiumNumber(pc);
     }
     len_t offset = 0;
