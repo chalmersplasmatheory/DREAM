@@ -19,15 +19,15 @@ using namespace std;
  * This is in turn needed in the NGS formula since the ablation rate (from Parks TSDW 2017) is given in g/s
  * Isotope 0 means naturally occuring mix
  */
-const len_t SPIHandler::nMolarMassList=3;
-const len_t SPIHandler::ZMolarMassList[nMolarMassList]={1,1,10};
-const len_t SPIHandler::isotopesMolarMassList[nMolarMassList]={2,0,0};// 0 means naturally occuring mix
-const real_t SPIHandler::molarMassList[nMolarMassList]={0.0020141,0.001008,0.020183};// kg/mol
+const len_t SPIHandler::nMolarMassList=4;
+const len_t SPIHandler::ZMolarMassList[nMolarMassList]={1,1,10,18};
+const len_t SPIHandler::isotopesMolarMassList[nMolarMassList]={2,0,0,0};// 0 means naturally occuring mix
+const real_t SPIHandler::molarMassList[nMolarMassList]={0.0020141,0.001008,0.020183,0.039948};// kg/mol
 
-const len_t SPIHandler::nSolidDensityList=3;
-const len_t SPIHandler::ZSolidDensityList[nSolidDensityList]={1,1,10};
-const len_t SPIHandler::isotopesSolidDensityList[nSolidDensityList]={2,0,0};
-const real_t SPIHandler::solidDensityList[nSolidDensityList]={205.9,86,1444};// kg/m^3
+const len_t SPIHandler::nSolidDensityList=4;
+const len_t SPIHandler::ZSolidDensityList[nSolidDensityList]={1,1,10,18};
+const len_t SPIHandler::isotopesSolidDensityList[nSolidDensityList]={2,0,0,0};
+const real_t SPIHandler::solidDensityList[nSolidDensityList]={205.9,86,1444,1623};// kg/m^3
 
 // Normalisation constants used in the NGS formula
 const real_t T0=2000.0;// eV
@@ -88,6 +88,9 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->spi_cloud_radius_mode=spi_cloud_radius_mode;
     this->spi_magnetic_field_dependence_mode=spi_magnetic_field_dependence_mode;
     this->spi_shift_mode=spi_shift_mode;
+
+    if (this->spi_shift_mode == OptionConstants::EQTERM_SPI_SHIFT_MODE_ANALYTICAL && DeltaYDrift <= 0)
+        throw DREAMException("SPIHandler: DeltaYDrift must be non-zero when using the plasmoid drift model.");
 
     // Set prescribed cloud radius (if any)
     if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT){
@@ -272,6 +275,7 @@ void SPIHandler::AllocateQuantities(){
     rpdot=new real_t[nShard];
     shift_r=new real_t[nShard];
     shift_store=new real_t[nShard];
+    shift_store_major_radius=new real_t[nShard];
     YpdotPrevious=new real_t[nShard];
     ZavgDrift=new real_t[nShard];
     plasmoidAbsorbtionFactor=new real_t[nShard];
@@ -318,6 +322,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] rpdot;
     delete [] shift_r;
     delete [] shift_store;
+    delete [] shift_store_major_radius;
     delete [] YpdotPrevious;
     delete [] ZavgDrift;
     delete [] plasmoidAbsorbtionFactor;
@@ -494,6 +499,7 @@ real_t SPIHandler::DriftRadius(len_t ip){
     real_t factor = (1+ZavgDrift[ip])*2*qe*TDrift[ip]*qBgDrift/(CSTDrift*pelletMolarMass[ip]/N_Avogadro)*tAccDrift;
 
 	real_t DeltaR = (term1 + factor * (first + second + third));
+        shift_store_major_radius[ip] = DeltaR;
 
 	real_t xpDrift = this->xp[ip*3] + DeltaR*cos(this->phiCoordPNext[ip]);
 	real_t ypDrift = this->xp[ip*3+1];

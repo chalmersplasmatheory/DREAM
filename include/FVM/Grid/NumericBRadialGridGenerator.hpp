@@ -33,6 +33,11 @@ namespace DREAM::FVM {
 
         std::string name;
 
+		// Estimates of where the global minima/maxima of the
+		// magnetic field strength are located in the poloidal plane
+		real_t *guess_theta_global_Bmin = nullptr,
+			   *guess_theta_global_Bmax = nullptr;
+
         // Interpolation objects for interpolating in input data
         gsl_spline *spline_psi;
         gsl_spline2d
@@ -119,6 +124,11 @@ namespace DREAM::FVM {
 		virtual const real_t *GetPoloidalAngle() override;
         virtual real_t GetFluxSurfaceRMinusR0_theta(len_t ir, real_t theta) override;
         virtual real_t GetFluxSurfaceZMinusZ0_theta(len_t ir, real_t theta) override;
+
+		virtual bool CanGuessThetaOptimum() override { return true; }
+		virtual real_t GetThetaBminGuess(const len_t, enum fluxGridType) override;
+		virtual real_t GetThetaBmaxGuess(const len_t, enum fluxGridType) override;
+		real_t GetThetaOptimumGuess(const len_t, enum fluxGridType, const real_t*);
 
         // Debugging method
         void __SaveB(const char*);

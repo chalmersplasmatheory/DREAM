@@ -26,7 +26,7 @@ To compile DREAM, you need to have the following software installed:
 - [GNU Scientific Library](https://www.gnu.org/software/gsl/) >= 2.4
 - [HDF5](https://www.hdfgroup.org/)
 - [PETSc](https://www.mcs.anl.gov/petsc)
-- Python 3 (required for generating ADAS data and using the Python interface)
+- Python (required for generating ADAS data and using the Python interface)
 
 Additionally, to use the DREAM Python interface, you need the following
 Python packages:

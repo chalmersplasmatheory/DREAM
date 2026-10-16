@@ -42,13 +42,13 @@ SHIFT_MODE_NEGLECT=1
 SHIFT_MODE_PRESCRIBED=2
 SHIFT_MODE_ANALYTICAL=3
 
-ZMolarMassList=[1,1,10]
-isotopesMolarMassList=[2,0,0]# 0 means naturally occuring mix
-molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
+ZMolarMassList=[1,1,10,18]
+isotopesMolarMassList=[2,0,0,0]# 0 means naturally occuring mix
+molarMassList=[0.0020141,0.001008,0.020183,0.039948]# kg/mol
 
-ZSolidDensityList=[1,1,10]
-isotopesSolidDensityList=[2,0,0]
-solidDensityList=[205.9,86,1444]# kg/m^3
+ZSolidDensityList=[1,1,10,18]
+isotopesSolidDensityList=[2,0,0,0]
+solidDensityList=[205.9,86,1444,1623]# kg/m^3
 
 class SPI(UnknownQuantity):
     
@@ -390,9 +390,9 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
         """
         
         if shards is not None:
-        	nShard=len(self.vp[shards])
-        	add=False
-        	
+            nShard=len(self.vp[shards])
+            add=False
+
         if np.isscalar(t_delay): 
             t_delay = t_delay*np.ones(nShard)
         
@@ -418,42 +418,42 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
             alpha=np.arccos(1-random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
-            
+
             # The angle in the yz-plane is simply drawn randomly
             phi=2*np.pi*random.uniform(size=nShard)
-            
+
             # Finally calculate the velocity vectors
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
             vp_init[1::3]=abs_vp_init*np.sin(alpha)*np.cos(phi)
             vp_init[2::3]=abs_vp_init*np.sin(alpha)*np.sin(phi)
-            
+
         else:
             raise EquationException("spi: Invalid number of dimensions into which the pellet shards are spread")
-            
+
         if add and self.vp is not None:
             self.vp=np.concatenate((self.vp,vp_init))
             self.t_delay=np.concatenate((self.t_delay,t_delay))
         elif shards is not None:
         	# Pick out the components of the stored shard velocities...
-        	vpx=self.vp[0::3]
-        	vpy=self.vp[1::3]
-        	vpz=self.vp[2::3]
-        	
-        	# ... Change the velocities of the shards specified in the input...
-        	vpx[shards]=vp_init[0::3]
-        	vpy[shards]=vp_init[1::3]
-        	vpz[shards]=vp_init[2::3]
-        	
-        	# ...and finally set the stored velocities to the updated ones
-        	self.vp[0::3]=vpx
-        	self.vp[1::3]=vpy
-        	self.vp[2::3]=vpz
-        	
-        	self.t_delay[shards] = t_delay
+            vpx = self.vp[0::3]
+            vpy = self.vp[1::3]
+            vpz = self.vp[2::3]
+
+            # ... Change the velocities of the shards specified in the input...
+            vpx[shards]=vp_init[0::3]
+            vpy[shards]=vp_init[1::3]
+            vpz[shards]=vp_init[2::3]
+
+            # ...and finally set the stored velocities to the updated ones
+            self.vp[0::3]=vpx
+            self.vp[1::3]=vpy
+            self.vp[2::3]=vpz
+
+            self.t_delay[shards] = t_delay
         else:
             self.vp=vp_init
             self.t_delay = t_delay
-            
+
     def setParamsVallhagenMSc(
         self, nShard, Ninj, Zs, isotopes, molarFractions, ionNames,
         shatterPoint, abs_vp_mean,abs_vp_diff,alpha_max,t_delay=0,
@@ -777,7 +777,7 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
                 raise EquationException("spi: Invalid value assigned to 'T0Drift'. Expected positive float.")
             if any(self.TDrift)<=0:
                 raise EquationException("spi: Invalid value assigned to 'TDrift'. Expected array of positive floats.")
-            if any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1:
+            if self.heatReDepositionFactorDrift is not None and (any(self.heatReDepositionFactorDrift)<0 or any(self.heatReDepositionFactorDrift)>1):
                 raise EquationException("spi: Invalid value assigned to 'heatReDepositionFactorDrift'. Expected array of floats between 0 and 1.")
             if self.DeltaYDrift<0:
                 raise EquationException("spi: Invalid value assigned to 'DeltaYDrift'. Expected positive float.")
@@ -799,7 +799,8 @@ SHIFT_MODE_NEGLECT, TDrift = None, T0Drift = None, DeltaYDrift = None, RmDrift =
 
 
     def verifySettingsPrescribedInitialData(self):
-        if vp.size!=3*rp.size:
-            raise EquationException("Missmatch in size of initial data arrays for rp and vp. Expected vp to have a size 3 times the size of rp")
-        if xp.size!=3*rp.size:
-            raise EquationException("Missmatch in size of initial data arrays for rp and xp. Expected xp to have a size 3 times the size of rp")
+        if self.vp.size!=3*self.rp.size:
+            raise EquationException("Mismatch in size of initial data arrays for rp and vp. Expected vp to have a size 3 times the size of rp")
+        if self.xp.size!=3*self.rp.size:
+            raise EquationException("Mismatch in size of initial data arrays for rp and xp. Expected xp to have a size 3 times the size of rp")
+

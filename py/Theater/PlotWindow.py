@@ -9,7 +9,6 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
-import numpy as np
 from dreampyface import Simulation
 
 from DREAM import GeriMap
@@ -85,7 +84,7 @@ class PlotWindow(QtWidgets.QFrame):
         """
         Run the simulation.
         """
-        if self.simthread != None:
+        if self.simthread is not None:
             raise Exception("Cannot run more than one simulation at a time.")
 
         self.simthread = SimulationThread(self.simulation, self.callback)
@@ -139,7 +138,7 @@ class SimulationThread(QThread):
         Run the simulation.
         """
         self.simulation.onTimestep(lambda sim : self.timestepCompleted(sim))
-        out = self.simulation.run()
+        self.simulation.run()
 
 
     def timestepCompleted(self, sim):

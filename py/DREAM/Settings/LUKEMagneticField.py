@@ -70,7 +70,6 @@ class LUKEMagneticField(NumericalMagneticField):
         Visualize this magnetic field.
         """
         red   = (249/255, 65/255, 68/255)
-        black = (87/255, 117/255, 144/255)
         gray  = (120/255, 120/255, 120/255)
 
         genax = ax is None

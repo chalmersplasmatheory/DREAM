@@ -354,6 +354,7 @@ enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
     EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
     EQTERM_TRANSPORT_BC_DF_CONST=3,                  // Assume d^2 f / dr^2 = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_KIRAMOV=4
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
@@ -433,6 +434,16 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
+};
+
+enum eqterm_bootstrap_mode {
+    EQTERM_BOOTSTRAP_MODE_NEGLECT = 1,
+    EQTERM_BOOTSTRAP_MODE_REDL = 2,
+};
+
+enum eqterm_bootstrap_init_mode {
+    EQTERM_BOOTSTRAP_INIT_MODE_OHMIC = 1, 
+    EQTERM_BOOTSTRAP_INIT_MODE_TOTAL = 2
 };
 
 enum eqterm_lcfs_loss_mode {                        // Loss term

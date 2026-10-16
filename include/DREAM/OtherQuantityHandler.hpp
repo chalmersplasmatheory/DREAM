@@ -12,6 +12,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -108,8 +109,6 @@ namespace DREAM {
 			std::vector<IonKineticIonizationTerm*> f_re_kin_rates;
             // List of approximated RE impact ionization rates for each ion species
             std::vector<IonFluidRunawayIonizationTerm*> n_re_kin_rates;
-
-            
         };
 
     protected:
@@ -146,12 +145,13 @@ namespace DREAM {
         real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
         SPIHandler *SPI;
+        BootstrapCurrent *bootstrap;
 
     public:
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
-            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*,
+            std::vector<UnknownQuantityEquation*>*, IonHandler*, SPIHandler*, BootstrapCurrent*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );

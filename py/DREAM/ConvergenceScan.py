@@ -150,7 +150,6 @@ class ConvergenceScan:
         tolerance, or if there is no previous or next scan index.
         Otherwise, returns True (meaning that the parameter is converged).
         """
-        sp = self.scanParameters[scanParameter]
         converged = True
 
         if scanParameter not in self.result:

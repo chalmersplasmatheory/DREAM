@@ -7,7 +7,6 @@ from matplotlib import animation
 
 from . ScalarQuantity import ScalarQuantity
 from .FluidQuantity import FluidQuantity
-from . OutputException import OutputException
 
 
 anim_contours = None
@@ -77,7 +76,7 @@ class SPIShardRadii(ScalarQuantity):
         return Vp_tot
 
 
-    def calcTotalParticles(self, shards=None, t=None):
+    def calcTotalParticles(self, molarVolume, N_A, shards=None, t=None):
         """
         Calculates the total number of particles in the specified shards.
         """

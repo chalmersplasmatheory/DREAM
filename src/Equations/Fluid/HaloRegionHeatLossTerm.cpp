@@ -29,19 +29,12 @@ HaloRegionHeatLossTerm::HaloRegionHeatLossTerm(
     this->id_W_i = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
-    // Loop through all ions to get the one with the minimum Z
-    for (len_t i = 0; i < ions->GetNZ(); i++) {
-        int currentZ = ions->GetZ(i); 
-        if (currentZ < minZ) {        
-            minZ = currentZ;          
-            minIndex = i;             
-        }
-    }
+	int_t iZ = ions->GetMainSpeciesIndex();
 
     // Check if a valid minimum Z was found and set the ion quantities
-    if (minIndex != -1) {
-        this-> m_i = ions->GetIonSpeciesMass(minIndex); 
-        this-> Z = minZ;  
+    if (iZ != -1) {
+        this-> m_i = ions->GetIonSpeciesMass(iZ); 
+        this-> Z = ions->GetZ(iZ);  
                                      
     }
 }

@@ -21,6 +21,7 @@ of the equation system. The following unknown quantities are available in any
    eqsys/distribution
    eqsys/ions
    eqsys/j_ohm
+   eqsys/j_bs
    eqsys/n_cold
    eqsys/n_re
    eqsys/SPI
@@ -38,6 +39,8 @@ of the equation system. The following unknown quantities are available in any
 | :ref:`ions<ds-eqsys-ions>`         | Ion densities and charge states        |
 +------------------------------------+----------------------------------------+
 | :ref:`j_ohm<ds-eqsys-j_ohm>`       | Ohmic current density                  |
++------------------------------------+----------------------------------------+
+| :ref:`j_bs<ds-eqsys-j_bs>`         | Bootstrap current density              |
 +------------------------------------+----------------------------------------+
 | :ref:`n_cold<ds-eqsys-n_cold>`     | Cold electron density                  |
 +------------------------------------+----------------------------------------+

@@ -1,6 +1,3 @@
-
-import numpy as np
-
 from . OtherQuantity import OtherQuantity
 from . OtherFluidQuantity import OtherFluidQuantity
 from . OtherIonSpeciesFluidQuantity import OtherIonSpeciesFluidQuantity
@@ -10,6 +7,7 @@ from . OtherScalarQuantity import OtherScalarQuantity
 
 from . AvalancheGrowthRate import AvalancheGrowthRate
 from . LCFSLoss import LCFSLoss
+from . SafetyFactor import SafetyFactor
 
 
 class OtherQuantities:
@@ -29,6 +27,7 @@ class OtherQuantities:
         'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,
         'nu_s_f2': OtherKineticQuantity,
+        'qR0': SafetyFactor
     }
 
 

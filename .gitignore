@@ -36,3 +36,5 @@ src/Atomics/adasdata.cpp
 tools/cache
 *.CDF
 *.cdf
+venv
+.venv
