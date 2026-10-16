@@ -29,7 +29,7 @@ class Temperature(FluidQuantity):
             q = self.output.other.fluid[o]
 
             if integrate:
-                ax = q.plotIntegral(ax=ax, show=show)
+                ax = q.plotIntegral(ax=ax, show=show, log=log)
             else:
                 ax = q.plot(r=r, t=t, ax=ax, show=False, log=log)
 

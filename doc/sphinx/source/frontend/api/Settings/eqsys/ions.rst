@@ -667,7 +667,7 @@ The corresponding runaway rate is given by
    \left( \frac{\mathrm{d} n_{\rm RE}}{\mathrm{d} t} \right)_{\rm T} \approx
    \ln 2 \frac{n_{\rm T}}{\tau_{\rm T}} F_\beta\left( \gamma_{\rm c} \right),
 
-where :math:`n_{\rm T}` is the tritium density, :math:`\tau_{\rm T} = 4800\pm 8`
+where :math:`n_{\rm T}` is the tritium density, :math:`\tau_{\rm T} = 4500\pm 8`
 days is the tritium half-life, and :math:`F_\beta(\gamma_{\rm c})` denotes the
 fraction of beta electrons generated with an energy above the critical energy
 :math:`\gamma_{\rm c}` for runaway to occur.
