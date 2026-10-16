@@ -1420,21 +1420,44 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
  * Returns the total poloidal magnetic energy internal
  * to the tokamak chamber normalized to R0
  */
-real_t OtherQuantityHandler::evaluateMagneticEnergy(){
+real_t OtherQuantityHandler::evaluateMagneticEnergy(){ // TODO: Not accurate for stellarator, need to be re-derived
     FVM::RadialGrid *rGrid = this->fluidGrid->GetRadialGrid();
-    const real_t *G_R0 = rGrid->GetBTorG();
-    const real_t *VpVol = rGrid->GetVpVol();
-    const real_t *dr = rGrid->GetDr();
-    const real_t *FSA_1OverR2 = rGrid->GetFSA_1OverR2();
-    const real_t *Bmin = rGrid->GetBmin();
     const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
     const real_t *psi_p = this->unknowns->GetUnknownData(id_psip);
     const real_t psi_p_wall = this->unknowns->GetUnknownData(id_psi_wall)[0];
     const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+    const real_t *VpVol = rGrid->GetVpVol();
+    const real_t *dr = rGrid->GetDr();
+    const real_t *Bmin = rGrid->GetBmin();
     real_t E_mag = .5 * psi_p_wall*Ip;
     real_t fourPiInv = 1/(4*M_PI);
-    for(len_t ir=0; ir<rGrid->GetNr(); ir++)
-        E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+    if (rGrid->isStellarator()) {
+        const real_t *FSA_BdotGradPhi = rGrid->GetFSA_BdotGradphi();
+        const real_t *psi_T = rGrid->GetToroidalFlux();
+        const real_t *dpsi_T = rGrid->GetPsiPrimeRef();
+        const real_t *r = rGrid->GetR();
+        real_t dpsi_p_m, dpsi_p_p, dpsi_p;
+        for(len_t ir=0; ir<rGrid->GetNr(); ir++){
+            if (ir == 0) {
+                dpsi_p_m = 0;
+                dpsi_p_p = (psi_p[ir+1] - psi_p[ir]) / (r[ir+1] - r[ir]);
+            } else if (ir == rGrid->GetNr()-1) {
+                dpsi_p_m = (psi_p[ir] - psi_p[ir-1]) / (r[ir] - r[ir-1]);
+                dpsi_p_p = 0;
+            } else {
+                dpsi_p_m = (psi_p[ir] - psi_p[ir-1]) / (r[ir] - r[ir-1]);
+                dpsi_p_p = (psi_p[ir+1] - psi_p[ir]) / (r[ir+1] - r[ir]);
+            }
+            dpsi_p = (dpsi_p_m + dpsi_p_p) / 2;
+            E_mag += fourPiInv*dr[ir] * VpVol[ir] * FSA_BdotGradPhi[ir] * jtot[ir] * (psi_T[ir]*dpsi_p/dpsi_T[ir] - psi_p[ir]) / Bmin[ir];
+        }
+    } else {
+        const real_t *G_R0 = rGrid->GetBTorG();
+        const real_t *FSA_1OverR2 = rGrid->GetFSA_1OverR2();
+
+        for(len_t ir=0; ir<rGrid->GetNr(); ir++)
+            E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+    }
 
     return E_mag;
 }
