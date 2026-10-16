@@ -12,10 +12,11 @@ namespace DREAM::FVM {
     class AnalyticBRadialGridGenerator : public RadialGridGenerator {
     public:
         struct shape_profiles {
-            len_t nG, npsi, nkappa, ndelta, nDelta;
+            len_t nG, npsi, nkappa, nzeta, ndelta, nDelta;
             const real_t *GOverR0, *G_r;      // G/R0 = R/R0*Bphi
             const real_t *psi, *psi_r;        // Poloidal flux
-            const real_t *kappa, *kappa_r;    // Elongation
+            const real_t *kappa, *kappa_r;    // Elongation Z
+            const real_t *zeta, *zeta_r;    // Elongation R
             const real_t *delta, *delta_r;    // Triangularity
             const real_t *Delta, *Delta_r;    // Shafranov shift
         };
@@ -25,10 +26,10 @@ namespace DREAM::FVM {
         struct shape_profiles *providedProfiles;
 		len_t ntheta_out = 120;
 
-        real_t *psi = nullptr, *kappa, *delta, *Delta,
-            *GPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
-        real_t *psi_f, *kappa_f, *delta_f, *Delta_f,
-            *GPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
+        real_t *psi = nullptr, *kappa, *zeta, *delta, *Delta,
+            *GPrime, *kappaPrime, *zetaPrime, *deltaPrime, *DeltaPrime;
+        real_t *psi_f, *kappa_f, *zeta_f, *delta_f, *Delta_f,
+            *GPrime_f, *kappaPrime_f, *zetaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
         real_t *rf_provided=nullptr;
         real_t *r, *r_f=nullptr;
@@ -55,13 +56,15 @@ namespace DREAM::FVM {
 			);
 		real_t InterpolateInputElongation(real_t r);
 		real_t InterpolateInputElongationDeriv(real_t r);
+		real_t InterpolateInputRElongation(real_t r);
+		real_t InterpolateInputRElongationDeriv(real_t r);
 		real_t InterpolateInputTriangularity(real_t r);
 		real_t InterpolateInputTriangularityDeriv(real_t r);
 		real_t InterpolateInputShafranovShift(real_t r);
 		real_t InterpolateInputShafranovShiftDeriv(real_t r);
 			
-        gsl_spline *spline_G=nullptr, *spline_psi=nullptr, *spline_kappa=nullptr, *spline_delta=nullptr, *spline_Delta=nullptr;
-        gsl_interp_accel *gsl_acc_G, *gsl_acc_psi, *gsl_acc_kappa, *gsl_acc_delta, *gsl_acc_Delta;
+        gsl_spline *spline_G=nullptr, *spline_psi=nullptr, *spline_kappa=nullptr, *spline_zeta=nullptr, *spline_delta=nullptr, *spline_Delta=nullptr;
+        gsl_interp_accel *gsl_acc_G, *gsl_acc_psi, *gsl_acc_kappa, *gsl_acc_zeta, *gsl_acc_delta, *gsl_acc_Delta;
 
         real_t normalizedJacobian(len_t ir,real_t theta) 
             {return normalizedJacobian(ir,theta,cos(theta),sin(theta));}
