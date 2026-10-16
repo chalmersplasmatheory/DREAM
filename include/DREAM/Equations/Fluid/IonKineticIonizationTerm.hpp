@@ -19,6 +19,7 @@ namespace DREAM {
         OptionConstants::eqterm_ionization_mode ionization_mode;
         bool isPXiGrid;
         bool collfreqModeIsFull;
+        bool isMolecule;
         len_t id_ions, id_nfast;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
@@ -55,6 +56,7 @@ namespace DREAM {
 
         static real_t EvaluateIonizationCrossSection(real_t p, const real_t *params);
         static int_t GetTableIndex(len_t Z);
+        static int_t GetTableIndex(IonHandler *ions, len_t iIon);
 
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
             len_t nnz = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)

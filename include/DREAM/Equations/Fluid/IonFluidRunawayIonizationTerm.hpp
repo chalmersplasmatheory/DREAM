@@ -24,6 +24,8 @@ namespace DREAM {
 
             len_t nr;
 
+            bool isMolecule;
+
             /**
              * The ionisation cross-section scales logarithmically with the runaway momentum p, 
              * and thus only weakly depends on p at relevant energies. This motivates the 
