@@ -30,7 +30,9 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
 /**
  * Constructor.
  *
- * x_f_input: Grid points on the flux grid (e.g. the cell edges)
+ * x_f_input: Grid points on the flux grid (e.g. the cell edges).
+ *            NOTE: This generator takes ownership of the array
+ *            and deletes it.
  * nx: Number of radial grid points (so that nx+1 is the size of x_f_input).
  * B0: Magnetic field strength.
  */
