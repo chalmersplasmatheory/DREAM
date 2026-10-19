@@ -18,7 +18,9 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         RateHandler *ratehandler;
         bool separateNeutrals;
-        len_t id_ions, id_n_cold, id_n_tot, id_T_cold, id_Wi, id_Ni, id_Wn;
+        len_t id_ions, id_n_cold, id_n_re, id_n_tot, id_T_cold, id_Wi, id_Ni, id_Wn;
+        bool includeFluidREIonization; // include IONIZATION_RUNAWAY reactions (ionization = FLUID_RE)
+        real_t reionizScale;           // scale factor for runaway ionization (ions/reioniz_scale)
         bool addFluidIonization; // the full ADAS ionization rate is added in this equation term
         bool addFluidJacobian;   // only the jacobian of the ionization is set with this term
         real_t **Rate = nullptr;
@@ -27,11 +29,13 @@ namespace DREAM {
 
         len_t FindRelevantMolecularReactions();
         std::vector<MolecularReaction> moleculeReactions;
-       
+        void GetReactantDensity(const MolecularReactionSpecies&, len_t &id, len_t &offset) const;
+
     public:
         MoleculeRateReaction(
             FVM::Grid*, IonHandler*, const len_t,
-            FVM::UnknownQuantityHandler*, RateHandler*);
+            FVM::UnknownQuantityHandler*, RateHandler*,
+            bool includeFluidREIonization, real_t reionizScale);
         virtual ~MoleculeRateReaction();
 
         void AllocateRateCoefficients(const len_t allocationSize);
@@ -40,7 +44,7 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 2 * moleculeReactions.size(); }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
             {
-                return ions->GetNzs() + 2*ions->GetNZ() + 2;
+                return ions->GetNzs() + 2*ions->GetNZ() + 3;
             }
 
         //virtual bool GridRebuilt() override;

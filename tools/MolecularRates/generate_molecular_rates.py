@@ -182,6 +182,13 @@ def energy_interpolate(n, T, energies, cross_sections):
       # Later this becomes cross-section -> <sigma v>(n,T).
       return cs* velocity *1e-15* 1e-6 #cm^3/s -> m^3/s
      
+def runaway_cross_section_eval(sigma):
+      # Runaways assumed mono-energetic with p* = 20 m_e c (as in IonFluidRunawayIonizationTerm):
+      # <sigma v> = v* sigma,  v* = c p* / sqrt(1 + p*^2)
+      p = 20.0
+      c = 2.99792458e8              # m/s
+      return c * p / np.sqrt(1 + p*p) * sigma   # m^2 * m/s -> m^3/s
+
 def zero_eval(n, T):
       return 0.0
 
@@ -198,6 +205,9 @@ def build_rate_table(reaction, n_grid, T_grid):
 
                 elif dtype == "CONSTANT":
                     v = constant_eval(raw, n, T)
+
+                elif dtype == "RUNAWAY_CROSS_SECTION":
+                    v = runaway_cross_section_eval(raw)
 
                 elif dtype == "INTEGRAL_FORMULA":
                     v = integral_formula_eval(

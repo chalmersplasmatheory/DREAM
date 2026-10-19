@@ -299,6 +299,7 @@ void SimulationGenerator::ConstructEquation_Ions(
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
     bool includeFluidREIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE);
+    real_t reionizScale = s->GetReal(MODULENAME "/reioniz_scale");
 
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
@@ -336,7 +337,8 @@ void SimulationGenerator::ConstructEquation_Ions(
                 }
                 if (reactionsEnabled) {
                         eqn->AddTerm(new MoleculeRateReaction(
-                            fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),ratehandler
+                            fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),ratehandler,
+                            includeFluidREIonization, reionizScale
                         ));
                     }
                 if(includeKineticIonization){
@@ -375,9 +377,9 @@ void SimulationGenerator::ConstructEquation_Ions(
 						Op_kiniz_re->AddTerm(ikit);
                     }
                 }
-                else if (includeFluidREIonization) {
-					real_t scaleFactor = s->GetReal(MODULENAME "/reioniz_scale");
-                    IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, scaleFactor);
+                // Molecules get their RE ionization from MoleculeRateReaction
+                else if (includeFluidREIonization && !MoleculeHandler().IsMolecule(ih->GetName(iZ))) {
+                    IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, reionizScale);
                     oqty_terms->n_re_kin_rates.push_back(ifrit);
                     eqn->AddTerm(ifrit);
                 }

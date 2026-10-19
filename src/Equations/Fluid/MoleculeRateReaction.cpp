@@ -25,8 +25,9 @@ using namespace DREAM;
 MoleculeRateReaction::MoleculeRateReaction(
     FVM::Grid *g, IonHandler *ihdl,
     const len_t iIon, FVM::UnknownQuantityHandler *unknowns,
-    RateHandler *ratehandler
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), ratehandler(ratehandler) {
+    RateHandler *ratehandler, bool includeFluidREIonization, real_t reionizScale
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), ratehandler(ratehandler),
+    includeFluidREIonization(includeFluidREIonization), reionizScale(reionizScale) {
     
     SetName("MoleculeRateReaction");
 
@@ -34,6 +35,7 @@ MoleculeRateReaction::MoleculeRateReaction(
 
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 	this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    this->id_n_re   = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
 	this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
 	this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
@@ -44,6 +46,7 @@ MoleculeRateReaction::MoleculeRateReaction(
 
     AddUnknownForJacobian(unknowns, id_ions);
     AddUnknownForJacobian(unknowns, id_n_cold);
+    AddUnknownForJacobian(unknowns, id_n_re);
     AddUnknownForJacobian(unknowns, id_T_cold);
     AddUnknownForJacobian(unknowns, id_Ni);
     AddUnknownForJacobian(unknowns, id_Wi);
@@ -68,14 +71,36 @@ len_t MoleculeRateReaction::FindRelevantMolecularReactions() {
             case MolecularReactionProcess::RECOMBINATION:
                 moleculeReactions.push_back(reaction);
                 break;
+            case MolecularReactionProcess::IONIZATION_RUNAWAY:
+                if (includeFluidREIonization)
+                    moleculeReactions.push_back(reaction);
+                break;
             default:
                 // IONIZATION:               in IonRateEquation (D2 SCD)
                 // CHARGE_EXCHANGE_RESONANT: no net particle change
-                // *_RUNAWAY:                not supported yet
                 break;
         }
     }
     return moleculeReactions.size();
+}
+
+/**
+ * Unknown ID and offset of a reactant density:
+ * "e" -> n_cold, "RE" -> n_re, otherwise the ion density n_i(Z0).
+ */
+void MoleculeRateReaction::GetReactantDensity(
+    const MolecularReactionSpecies& s, len_t &id, len_t &offset
+) const {
+    const std::string name(s.name);
+    offset = 0;
+    if (name == "e")
+        id = id_n_cold;
+    else if (name == "RE")
+        id = id_n_re;
+    else {
+        id = id_ions;
+        offset = ions->GetIndex(ions->GetIonIndex(s.name), s.Z0) * this->grid->GetNr();
+    }
 }
 
 /**
@@ -134,14 +159,17 @@ void MoleculeRateReaction::Rebuild(
     for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) {
         const MolecularReaction& reaction = moleculeReactions[rateIndex];
       
+        // Runaway ionization is rescaled by ions/reioniz_scale
+        const real_t scale = (reaction.process == MolecularReactionProcess::IONIZATION_RUNAWAY) ? reionizScale : 1.0;
+
         for (len_t ir = 0; ir < Nr; ir++) {
             real_t density, temperature;
             density = ratehandler->ResolveDensity(reaction.densityInput, ir);
             temperature = ratehandler->ResolveTemperature(reaction.temperatureInput, ir);
             // here we need to save the ID of density and temp and thats what the jacobian shold depend on
-            Rate[rateIndex][ir]   = reaction.rate->Eval(density, temperature);
-            Rate_N[rateIndex][ir] = reaction.rate->Eval_deriv_n(density, temperature);
-            Rate_T[rateIndex][ir] = reaction.rate->Eval_deriv_T(density, temperature);
+            Rate[rateIndex][ir]   = scale * reaction.rate->Eval(density, temperature);
+            Rate_N[rateIndex][ir] = scale * reaction.rate->Eval_deriv_n(density, temperature);
+            Rate_T[rateIndex][ir] = scale * reaction.rate->Eval_deriv_T(density, temperature);
         }
     }
 }
@@ -159,9 +187,6 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
 
     const len_t nr = this->grid->GetNr();
     const std::string name = ions->GetName(iIon);
-    const auto& reactions = ratehandler->GetMolecularReactions();
-    const real_t *ne = unknowns->GetUnknownData(id_n_cold);
-
     bool contributes = false;
 
     for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) {
@@ -190,26 +215,20 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
         if (net == 0)
             continue;
 
-        const auto& a = reaction.reactants[0];
-        const auto& b = reaction.reactants[1];
+        len_t idA, idB, offsetA, offsetB;
+        GetReactantDensity(reaction.reactants[0], idA, offsetA);
+        GetReactantDensity(reaction.reactants[1], idB, offsetB);
+        const real_t *dA = (idA == id_ions) ? x : unknowns->GetUnknownData(idA);
+        const real_t *dB = (idB == id_ions) ? x : unknowns->GetUnknownData(idB);
 
-        const bool electronA = std::string(a.name) == "e";
-        const bool electronB = std::string(b.name) == "e";
-
-        const len_t idA = electronA ? id_n_cold : id_ions;
-        const len_t idB = electronB ? id_n_cold : id_ions;
-
-        const len_t offsetA = electronA ? 0 : ions->GetIndex(ions->GetIonIndex(a.name), a.Z0) * nr;
-        const len_t offsetB = electronB ? 0 : ions->GetIndex(ions->GetIonIndex(b.name), b.Z0) * nr;
-        
         const MolecularInput& Tin = reaction.temperatureInput;
         for (len_t ir = 0; ir < nr; ir++) {
             const len_t row = rOffset + ir;
 
-            const real_t nA = electronA ? ne[ir] : x[offsetA + ir];
-            const real_t nB = electronB ? ne[ir] : x[offsetB + ir];
+            const real_t nA = dA[offsetA + ir];
+            const real_t nB = dB[offsetB + ir];
             //Dependance on the species densities, nA and nB.
-            // dS/dnA  →  column n_cold (electron) or n_i (ion)
+            // dS/dnA  →  column n_cold (electron), n_re (runaway) or n_i (ion)
             if (derivId == idA)
                 jac->SetElement(row, offsetA + ir, net * Rate[rateIndex][ir] * nB);
 
@@ -277,7 +296,6 @@ void MoleculeRateReaction::SetCSVectorElements(
   ) {
     const len_t nr = this->grid->GetNr();
     const std::string name = ions->GetName(iIon);
-    const real_t *ne = unknowns->GetUnknownData(id_n_cold);
 
     for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) { //go though all CS reactions and find the ones that are charge exchange
         const MolecularReaction& reaction = moleculeReactions[rateIndex];
@@ -305,18 +323,15 @@ void MoleculeRateReaction::SetCSVectorElements(
         if (net == 0)
             continue;
             
-        const auto& a = reaction.reactants[0];
-        const auto& b = reaction.reactants[1];
-          
-        const bool electronA = std::string(a.name) == "e";
-        const bool electronB = std::string(b.name) == "e";
+        len_t idA, idB, offsetA, offsetB;
+        GetReactantDensity(reaction.reactants[0], idA, offsetA);
+        GetReactantDensity(reaction.reactants[1], idB, offsetB);
+        const real_t *dA = (idA == id_ions) ? x : unknowns->GetUnknownData(idA);
+        const real_t *dB = (idB == id_ions) ? x : unknowns->GetUnknownData(idB);
 
-        const len_t offsetA = electronA ? 0 : ions->GetIndex(ions->GetIonIndex(a.name), a.Z0) * nr;
-        const len_t offsetB = electronB ? 0 : ions->GetIndex(ions->GetIonIndex(b.name), b.Z0) * nr;
-          
         for (len_t ir = 0; ir < nr; ir++) {
-            const real_t nA = electronA ? ne[ir] : x[offsetA + ir];
-            const real_t nB = electronB ? ne[ir] : x[offsetB + ir];
+            const real_t nA = dA[offsetA + ir];
+            const real_t nB = dB[offsetB + ir];
             const real_t R = Rate[rateIndex][ir] * nA * nB;
 
             vec[rOffset + ir] += net * R;

@@ -198,8 +198,8 @@ void RateHandler::AddMolecularReactionRates( const std::vector<std::string>& ena
         for (len_t j = 0; j < def.nReactants; j++) {
             const MolecularReactionSpecies& r = def.reactants[j];
 
-            //We dont care if it has an electron
-            if (std::string(r.name) == "e")
+            //We dont care if it has an electron or runaway electron
+            if (std::string(r.name) == "e" || std::string(r.name) == "RE")
                 continue;
 
             //If not all reactants exist (existance is handeled by python)
@@ -222,7 +222,7 @@ void RateHandler::AddMolecularReactionRates( const std::vector<std::string>& ena
         for (len_t j = 0; j < def.nProducts; j++) {
             const MolecularReactionSpecies& p = def.products[j];
 
-            if (std::string(p.name) == "e")
+            if (std::string(p.name) == "e" || std::string(p.name) == "RE")
                 continue;
 
             if (!ions->HasIon(p.name))

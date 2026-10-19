@@ -258,7 +258,7 @@ class Ions(UnknownQuantity):
                 name = reactant[0]
 
                 # Electrons do not need to be declared as ion species.
-                if name == "e":
+                if name in ("e", "RE"):
                     continue
 
                 if name not in species_names:
@@ -293,7 +293,7 @@ class Ions(UnknownQuantity):
                   all_reactants_exist = True
 
                   for name, Z0, coefficient in reaction["reactants"]:
-                      if name == "e":
+                      if name in ("e", "RE"):
                           continue
 
                       if name not in charges: #If the name is not in charges we add it in the next loop, and then we have to go though it again
@@ -304,7 +304,7 @@ class Ions(UnknownQuantity):
                       continue
 
                   for name, Z0, coefficient in reaction["products"]:
-                      if name == "e":
+                      if name in ("e", "RE"):
                           continue
 
                       if name in charges:
@@ -323,7 +323,7 @@ class Ions(UnknownQuantity):
             all_reactants_exist = True
 
             for name, Z0, coefficient in reaction["reactants"]:
-                if name == "e":
+                if name in ("e", "RE"):
                     continue
 
                 if name not in charges:
@@ -336,7 +336,7 @@ class Ions(UnknownQuantity):
             participants = reaction["reactants"] + reaction["products"]
 
             for name, Z0, coefficient in participants:
-                if name == "e":
+                if name in ("e", "RE"):
                     continue
 
                 if Z0 < 0 or Z0 > charges[name]:
