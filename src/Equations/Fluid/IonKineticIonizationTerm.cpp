@@ -19,7 +19,6 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/MoleculeHandler.hpp"
 
 
 using namespace DREAM;
@@ -49,9 +48,7 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
         this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
     
 
-    this->tableIndexIon = GetTableIndex(ihdl, iIon);
-    isMolecule = ihdl->IsMolecule(iIon);
-
+    this->tableIndexIon = GetTableIndex(Zion);
     
     this->GridRebuilt();
     this->FVM::MomentQuantity::AllocateDiffIntegrand();
@@ -158,8 +155,7 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
     len_t np2 = mg->GetNp2();
     if(isPXiGrid)
         for(len_t Z0=0; Z0<Zion; Z0++){
-            len_t iParam = isMolecule ? 0 : Z0;
-            const real_t *params = kinetic_rate_table[tableIndexIon].params + iParam*this->nParamsForFit;
+            const real_t *params = kinetic_rate_table[tableIndexIon].params + Z0*this->nParamsForFit;
             for(len_t i=0; i<np1; i++){
                 real_t in=0;
                 const real_t p = mg->GetP1(i);
@@ -171,8 +167,7 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
         }
     else
         for(len_t Z0=0; Z0<Zion; Z0++){
-            len_t iParam = isMolecule ? 0 : Z0;
-            const real_t *params = kinetic_rate_table[tableIndexIon].params + iParam*this->nParamsForFit;
+            const real_t *params = kinetic_rate_table[tableIndexIon].params + Z0*this->nParamsForFit;
             for(len_t i=0; i<np1; i++)
                 for(len_t j=0; j<np2; j++){
                     const real_t p = mg->GetP(i,j);
@@ -251,11 +246,7 @@ int_t IonKineticIonizationTerm::GetTableIndex(len_t Z){
     return ind;
 }
 
-int_t IonKineticIonizationTerm::GetTableIndex(IonHandler *ions, const len_t iIon) {
-    if (ions->IsMolecule(iIon))
-        return GetTableIndex(MoleculeHandler().GetHeavyZ(ions->GetName(iIon)));
-    return GetTableIndex(ions->GetZ(iIon));
-}
+
 /**
  * Sets the jacobian block for this equation term 
  * utilizing the functionality in MomentQuantity.

@@ -30,8 +30,7 @@ IonFluidRunawayIonizationTerm::IonFluidRunawayIonizationTerm(
     nr = g->GetNr();
     weights = new real_t[(Zion+1)*nr];
 
-    tableIndexIon = IonKineticIonizationTerm::GetTableIndex(ihdl, iIon);
-    isMolecule = ihdl->IsMolecule(iIon);
+    tableIndexIon = IonKineticIonizationTerm::GetTableIndex(Zion);
 }
 
 /**
@@ -46,8 +45,7 @@ void IonFluidRunawayIonizationTerm::Rebuild(
 ) {
     // set weights
     for (len_t iZ = 0; iZ < Zion; iZ++) {
-        len_t iParam = isMolecule ? 0 : iZ;
-        const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndexIon].params + iParam *  IonKineticIonizationTerm::nParamsForFit;
+        const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndexIon].params + iZ *  IonKineticIonizationTerm::nParamsForFit;
         for (len_t ir = 0; ir < nr; ir++) {
             weights[ir*(Zion+1)+iZ] = scaleFactor * preFactor * IonKineticIonizationTerm::EvaluateIonizationCrossSection(CHARACTERISTIC_RUNAWAY_MOMENTUM, params);
         }
