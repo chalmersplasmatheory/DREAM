@@ -58,6 +58,7 @@ class MollerProductionRateTerm : public FVM::EquationTerm {
     virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqh)
         override;
     virtual void SetVectorElements(real_t *vec, const real_t *n_tot) override;
+    virtual void SetMatrixElements(FVM::Matrix *, real_t *) override;
 
     virtual bool SetJacobianBlock(
         const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *x

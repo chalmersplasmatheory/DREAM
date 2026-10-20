@@ -173,19 +173,20 @@ void MollerBoltzmannOperator::SetSourceVector(const real_t *f_primary) {
     }
 }
 
-void MollerBoltzmannOperator::Rebuild(real_t t, real_t /*dt*/, FVM::UnknownQuantityHandler *uqh) {
+void MollerBoltzmannOperator::Rebuild(real_t /*t*/, real_t /*dt*/, FVM::UnknownQuantityHandler *uqh) {
     if (uqh != nullptr) {
+        if (uqh != this->unknowns)
+            t_source_rebuilt = -std::numeric_limits<real_t>::infinity();
         this->unknowns = uqh;
     }
-    constexpr real_t TIME_EPS_FACTOR = 100;
-    const bool timeHasUpdated =
-        std::abs(t - t_source_rebuilt) > TIME_EPS_FACTOR * std::numeric_limits<real_t>::epsilon();
-
-    // only update the f_primary-dependent source function once per time step
-    if (timeHasUpdated) {
+    // Adaptive half-step and full-step trials may have the same endpoint t,
+    // but different previous solutions. Cache against the time of the data
+    // actually used, which is unchanged during Newton iterations.
+    const real_t t_previous = unknowns->GetUnknownDataPreviousTime(id_f_primary);
+    if (t_previous != t_source_rebuilt) {
         const real_t *f_primary = unknowns->GetUnknownDataPrevious(id_f_primary);
         SetSourceVector(f_primary);
-        t_source_rebuilt = t;
+        t_source_rebuilt = t_previous;
     }
 }
 
@@ -213,6 +214,11 @@ bool MollerBoltzmannOperator::SetJacobianBlock(
     if (derivId != uqtyId) {
         return false;
     }
+    SetMatrixElements(jac, nullptr);
+    return true;
+}
+
+void MollerBoltzmannOperator::SetMatrixElements(FVM::Matrix *mat, real_t * /*rhs*/) {
     len_t offset = 0;
     for (len_t ir = 0; ir < grid->GetNr(); ++ir) {
         const auto *mg = grid->GetMomentumGrid(ir);
@@ -223,13 +229,11 @@ bool MollerBoltzmannOperator::SetJacobianBlock(
             const len_t base = offset + Np * j;
             for (len_t i = 0; i < Np; ++i) {
                 const len_t ind = base + i;
-                jac->SetElement(ind, ir, sourceVector[ind]);
+                mat->SetElement(ind, ir, sourceVector[ind]);
             }
         }
         offset += mg->GetNCells();
     }
-
-    return true;
 }
 
 bool MollerBoltzmannOperator::GridRebuilt() {

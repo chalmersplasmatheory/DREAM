@@ -44,11 +44,16 @@ void MollerProductionRateTerm::Validate() const {
 }
 
 void MollerProductionRateTerm::Rebuild(
-    const real_t t, const real_t /*dt*/, FVM::UnknownQuantityHandler * /*uqh*/
+    const real_t /*t*/, const real_t /*dt*/, FVM::UnknownQuantityHandler *uqh
 ) {
-    // explicit-time cache: rebuild only when time changes beyond roundoff
-    constexpr real_t TIME_EPS_FACTOR = 100;
-    if (std::abs(t - t_rebuilt) <= TIME_EPS_FACTOR * std::numeric_limits<real_t>::epsilon()) {
+    if (uqh != nullptr) {
+        if (uqh != unknowns)
+            t_rebuilt = -std::numeric_limits<real_t>::infinity();
+        unknowns = uqh;
+    }
+    // Match the kinetic source's cache key, including adaptive rollbacks.
+    const real_t t_previous = unknowns->GetUnknownDataPreviousTime(id_f_primary);
+    if (t_previous == t_rebuilt) {
         return;
     }
     const real_t *fP = unknowns->GetUnknownDataPrevious(id_f_primary);
@@ -87,7 +92,7 @@ void MollerProductionRateTerm::Rebuild(
         rate[ir] = scaleFactor * sum;
         offP += mgP->GetNCells();
     }
-    t_rebuilt = t;
+    t_rebuilt = t_previous;
 }
 
 void MollerProductionRateTerm::SetVectorElements(real_t *vec, const real_t *n_tot) {
@@ -102,11 +107,14 @@ bool MollerProductionRateTerm::SetJacobianBlock(
     if (derivId != id_ntot) {
         return false;
     }
+    SetMatrixElements(jac, nullptr);
+    return true;
+}
+
+void MollerProductionRateTerm::SetMatrixElements(FVM::Matrix *mat, real_t * /*rhs*/) {
     // Intended usage: equation row is fluid (n_re or S_particle), derivative w.r.t n_tot.
     // The coupling is local in radius: d/dn_tot[ir] (n_tot[ir]*rate[ir]) = rate[ir].
     for (len_t ir = 0; ir < grid->GetNr(); ++ir) {
-        jac->SetElement(ir, ir, rate[ir]);
+        mat->SetElement(ir, ir, rate[ir]);
     }
-
-    return true;
 }
