@@ -35,10 +35,12 @@ class MollerDeltaAngleKernel {
     // xi_star tabulation grid
     real_t xiStarMin = 0, xiStarMax = 1, dXiStar = 1;
     real_t *xiStarsTab = nullptr;
+    bool hasActivePairs = false;
 
     // deltaTable[ir][m] -> slice pointer, each plane is contiguous storage of size NxiK*NxiP
     real_t ***deltaTable = nullptr;
     real_t **deltaTableStorage = nullptr;
+    len_t nrAllocated = 0;
 
     // interpolation metadata per (ir,i,k)
     XiStarInterp **xiInterp = nullptr;
@@ -51,6 +53,7 @@ class MollerDeltaAngleKernel {
     void AllocateDeltaTables();
     void TabulateDeltaMatrixOnXiStarGrid();
     void EvaluateXiStarRangeOnGrids(real_t &xiStarMin, real_t &xiStarMax);
+    bool EvaluateXiStarOnGrids(len_t i, len_t k, real_t &xiStar) const;
     void BuildXiStarInterp();
 
     const DeltaInterp GetDeltaInterp(len_t ir, len_t i, len_t k) const;

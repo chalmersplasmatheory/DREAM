@@ -16,8 +16,10 @@ class MollerBoltzmannOperator : public UnitTest {
     bool CheckBO_GlobalProductionIdentity();
     bool CheckBO_HotRunawayGlobalProductionIdentity();
     bool CheckBO_TimeCachingRegression();
+    bool CheckBO_MatrixAssemblyAndFluidIdentity();
     bool CheckBO_NonNegativity();
     bool CheckBO_RadiusLocality();
+    bool CheckBO_IsotropicZeroCurrentAndReflection();
 
     virtual bool Run(bool) override;
 };

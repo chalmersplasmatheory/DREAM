@@ -27,7 +27,7 @@ MollerDeltaAngleKernel::MollerDeltaAngleKernel(
 MollerDeltaAngleKernel::~MollerDeltaAngleKernel() { Deallocate(); }
 
 void MollerDeltaAngleKernel::Deallocate() {
-    const len_t Nr = (gridK != nullptr) ? gridK->GetNr() : 0;
+    const len_t Nr = nrAllocated;
 
     if (deltaTable != nullptr) {
         for (len_t ir = 0; ir < Nr; ++ir) {
@@ -50,13 +50,14 @@ void MollerDeltaAngleKernel::Deallocate() {
         delete[] xiStarsTab;
         xiStarsTab = nullptr;
     }
+    nrAllocated = 0;
 }
 
 void DREAM::MollerDeltaAngleKernel::ValidateGridAssumptions() const {
     if (gridK == nullptr || gridP == nullptr)
         throw DREAMException("MollerDeltaAngleKernel: grid pointers must not be null.");
 
-    if (!(pCutoff > 0))
+    if (!std::isfinite(pCutoff) || !(pCutoff > 0))
         throw DREAMException(
             "MollerDeltaAngleKernel: invalid pCutoff=%.16g (must be > 0).", pCutoff
         );
@@ -104,32 +105,44 @@ void DREAM::MollerDeltaAngleKernel::ValidateInputParameters() const {
     }
 }
 
-// Evaluate the min and max values of xiStar on the grid.
-// Note, we here allow all energies up to the incident energy (-cutoff energy transfer).
-// For the regular knock-on problem we could in principle cut it off at half the energy,
-// to squeeze out a tiny bit of performance, but leaving it general for future safety
-// and it being no huge performance bottleneck.
+// Use exactly the same non-zero momentum-cell support as the energy kernel.
+// In a partially accessible cell, keep the representative momentum inside
+// the integration interval: a coarse cell centre can lie above p1 and yield
+// xi_star > 1 even though part of the cell has a non-zero cross section.
+bool MollerDeltaAngleKernel::EvaluateXiStarOnGrids(
+    len_t i, len_t k, real_t &xiStar
+) const {
+    if (KnockOnUtilities::EvaluateMollerFluxMatrixElementOnGrid(
+            i, k, gridK, gridP, pCutoff) == 0)
+        return false;
+
+    const auto *mgK = gridK->GetMomentumGrid(0);
+    const auto *mgP = gridP->GetMomentumGrid(0);
+    const real_t p1 = mgP->GetP1(k);
+    const real_t pLower = std::max(pCutoff, mgK->GetP1_f(i));
+    const real_t pUpper = std::min(
+        mgK->GetP1_f(i+1), KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(p1)
+    );
+    const real_t p = std::max(pLower, std::min(mgK->GetP1(i), pUpper));
+    xiStar = KnockOnUtilities::Kinematics::EvaluateXiStar(p, p1);
+    if (!std::isfinite(xiStar) || xiStar < 0 || xiStar > 1)
+        throw DREAMException(
+            "MollerDeltaAngleKernel: invalid xi_star=%.16g at i=%ld, k=%ld.",
+            xiStar, (long)i, (long)k
+        );
+    return true;
+}
+
+// Evaluate the range of angles which will actually be used by the operator.
 void MollerDeltaAngleKernel::EvaluateXiStarRangeOnGrids(real_t &xiStarMin, real_t &xiStarMax) {
     auto *mgK = gridK->GetMomentumGrid(0);
     auto *mgP = gridP->GetMomentumGrid(0);
     xiStarMin = +std::numeric_limits<real_t>::infinity();
     xiStarMax = -std::numeric_limits<real_t>::infinity();
-    real_t gammaCutoff = 1;
     for (len_t i = 0; i < mgK->GetNp1(); ++i) {
-        real_t p = mgK->GetP1(i);
-        real_t p_f1 = mgK->GetP1_f(i);
-        real_t p_f2 = mgK->GetP1_f(i + 1);
-        real_t gamma_f1 = std::sqrt(1 + p_f1 * p_f1);
         for (len_t k = 0; k < mgP->GetNp1(); ++k) {
-            real_t p1 = mgP->GetP1(k);
-            real_t gamma1 = std::sqrt(1 + p1 * p1);
-            real_t gammaMax = gamma1 - gammaCutoff;
-            bool kinematicallyAvailable = p_f2 > pCutoff && gamma_f1 < gammaMax;
-            if (!kinematicallyAvailable) {
-                continue;
-            }
-            real_t xs = KnockOnUtilities::Kinematics::EvaluateXiStar(p, p1);
-            if (!std::isfinite(xs)) {
+            real_t xs;
+            if (!EvaluateXiStarOnGrids(i, k, xs)) {
                 continue;
             }
             xiStarMin = std::min(xiStarMin, xs);
@@ -143,6 +156,10 @@ void MollerDeltaAngleKernel::EvaluateXiStarRangeOnGrids(real_t &xiStarMin, real_
 // on the given grids and only sample between those.
 void MollerDeltaAngleKernel::BuildXiStarTabulationGrid() {
     EvaluateXiStarRangeOnGrids(xiStarMin, xiStarMax);
+    hasActivePairs = std::isfinite(xiStarMin) && std::isfinite(xiStarMax);
+    // A grid with no allowed collisions is a valid zero source.
+    if (!hasActivePairs)
+        xiStarMin = xiStarMax = 0;
     dXiStar = (xiStarMax - xiStarMin) / (real_t)(nXiStarsTabulate - 1);
 
     xiStarsTab = new real_t[nXiStarsTabulate];
@@ -153,6 +170,7 @@ void MollerDeltaAngleKernel::BuildXiStarTabulationGrid() {
 
 void MollerDeltaAngleKernel::AllocateDeltaTables() {
     const len_t Nr = gridK->GetNr();
+    nrAllocated = Nr;
 
     deltaTable = new real_t **[Nr];
     deltaTableStorage = new real_t *[Nr];
@@ -163,7 +181,7 @@ void MollerDeltaAngleKernel::AllocateDeltaTables() {
         const len_t sliceSize = NxiK * NxiP;
 
         deltaTable[ir] = new real_t *[nXiStarsTabulate];
-        deltaTableStorage[ir] = new real_t[nXiStarsTabulate * sliceSize];
+        deltaTableStorage[ir] = new real_t[nXiStarsTabulate * sliceSize]();
 
         for (len_t m = 0; m < nXiStarsTabulate; ++m) {
             deltaTable[ir][m] = deltaTableStorage[ir] + m * sliceSize;
@@ -179,6 +197,8 @@ void MollerDeltaAngleKernel::AllocateDeltaTables() {
 // The real kinematic delta depends on p_i, p1_k only indirectly via xi_star(p, p1),
 // therefore we here tabulate on a grid of xi_star values.
 void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
+    if (!hasActivePairs)
+        return;
     const len_t Nr = gridK->GetNr();
     for (len_t ir = 0; ir < Nr; ++ir) {
         const len_t NxiK = gridK->GetNp2(ir);
@@ -199,7 +219,7 @@ void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
 
 // Precompute interpolation tables for linear interpolation in delta vs xi_star.
 void MollerDeltaAngleKernel::BuildXiStarInterp() {
-    const real_t inv_dXiStar = 1.0 / dXiStar;
+    const real_t inv_dXiStar = (dXiStar > 0) ? 1.0 / dXiStar : 0;
     const len_t n = nXiStarsTabulate;  // validated >= 2
 
     for (len_t ir = 0; ir < gridK->GetNr(); ++ir) {
@@ -209,13 +229,14 @@ void MollerDeltaAngleKernel::BuildXiStarInterp() {
         const len_t NpK = mgK->GetNp1();
         const len_t NpP = mgP->GetNp1();
 
-        const real_t *p = mgK->GetP1();
-        const real_t *p1 = mgP->GetP1();
-
         for (len_t i = 0; i < NpK; ++i) {
             for (len_t k = 0; k < NpP; ++k) {
                 XiStarInterp &T = xiInterp[ir][i * NpP + k];
-                const real_t xs = KnockOnUtilities::Kinematics::EvaluateXiStar(p[i], p1[k]);
+                T.m0 = 0;
+                T.w1 = 0;
+                real_t xs;
+                if (!hasActivePairs || dXiStar == 0 || !EvaluateXiStarOnGrids(i, k, xs))
+                    continue;
 
                 if (xs <= xiStarMin) {
                     // clamp to first slice: D0=slice0, D1=slice1, w1=0 -> uses slice0 exactly
@@ -290,7 +311,7 @@ const MollerDeltaAngleKernel::DeltaInterp MollerDeltaAngleKernel::GetDeltaInterp
 void MollerDeltaAngleKernel::AccumulatePitch(
     len_t ir, len_t i, len_t k, const real_t *Wkl, real_t sigma_ik, real_t *Cj
 ) const {
-    if (sigma_ik == 0) {
+    if (sigma_ik == 0 || !hasActivePairs) {
         return;
     }
     const auto *mgK = gridK->GetMomentumGrid(ir);
