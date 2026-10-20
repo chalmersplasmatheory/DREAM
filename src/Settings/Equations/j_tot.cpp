@@ -73,7 +73,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 
 	// Re-scale if not j_parallel
 	if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_J_DOT_GRADPHI) {
-		// Conversion from <j . grad phi>  -->  j_||
+		// Convert <j_parallel . grad phi> to DREAM's j_parallel at B=Bmin.
 		const len_t nr_f = rGrid->GetNr()+1;
 		const real_t *r_f = rGrid->GetR_f();
 		const real_t *GR0_f = rGrid->GetBTorG_f();
@@ -99,7 +99,7 @@ void SimulationGenerator::ConstructEquation_j_tot_prescribed(
 
 		for (len_t ir = 0; ir < dd->nr; ir++) {
 			const real_t r = dd->r[ir];
-			real_t geom = iBmin->Eval(r)[0] * R0*R0*R0 / (iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0]);
+			real_t geom = iBmin->Eval(r)[0] * R0 / (iGR0->Eval(r)[0] * iR02OverR2->Eval(r)[0]);
 
 			for (len_t i = 0; i < dd->nt; i++)
 				dd->x[i*(dd->nr)+ir] *= geom;
@@ -227,7 +227,7 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 
 		// Need to convert to j_|| first?
 		if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_J_DOT_GRADPHI) {
-			// Conversion from <j . grad phi>  -->  j_||
+			// Convert <j_parallel . grad phi> to DREAM's j_parallel at B=Bmin.
 			const len_t nr = rGrid->GetNr();
 			const real_t *GR0 = rGrid->GetBTorG();
 			const real_t *R02OverR2 = rGrid->GetFSA_1OverR2();
@@ -241,7 +241,7 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
 				);
 
 			for (len_t ir = 0; ir < nr; ir++)
-				johm_init[ir] *= Bmin[ir] * R0*R0*R0 / (GR0[ir] * R02OverR2[ir]);
+				johm_init[ir] *= Bmin[ir] * R0 / (GR0[ir] * R02OverR2[ir]);
 
 		} else if (prof_type == OptionConstants::CURRENT_PROFILE_TYPE_JTOR_OVER_R) {
 			// Conversion from <j . B> / <B . grad phi>  -->  j_||
