@@ -186,7 +186,7 @@ The recommendation way of kinetic avalanche modelling is:
    With ``BOLTZMANN_KNOCK_ON``: either use no runaway grid, with :math:`p_\mathrm{max}` on the
    hot-tail grid sufficiently large that the RP approximation is valid for 
    the :math:`n_\mathrm{re}` population; or: a runaway grid with :math:`p_\mathrm{max}` large
-   enough that :math:`n_\mathrm{re}` is negligible.
+   enough that the runaway population beyond the upper momentum boundary is negligible.
 
 
 .. warning::
@@ -204,6 +204,16 @@ The recommendation way of kinetic avalanche modelling is:
    accounts for knock-ons produced by kinetically resolved electrons on the hot-tail
    and runaway grids. When kinetically resolving runaways, the external runaways, 
    (present in :math:`n_{\rm re}` but not :math:`f_{\rm re}`) will not contribute.
+
+.. note::
+
+   Boltzmann mode also includes primaries from :math:`f_{\rm hot}`, so its
+   source need not vanish when :math:`n_{\rm re}=0`. This is a gain-only model:
+   it does not include the complementary recoil loss of the incident electron.
+   As discussed in the theory notes, the cutoff must therefore also be large
+   enough to keep the added bulk energy and momentum negligible. Check this
+   with cutoff scans, in addition to checking the upper bound set by the
+   runaway threshold.
 
 .. note::
 
@@ -277,6 +287,8 @@ Furthermore, we make the following three approximations:
   case this approximation allows us to view solutions as local to radius :math:`r_{i_r}`.
 * We assume that :math:`\delta` is constant w.r.t. :math:`p` within each cell; in practice
   it varies via :math:`\xi^\star`, but this typically-weak dependence is neglected.
+  The representative momentum is the cell centre, clipped to the accessible
+  interval when the cutoff or the half-energy boundary cuts through the cell.
 * The target-electron density :math:`n_\mathrm{target}` is taken as constant along each fast-electron orbit.
 
 In this case, the operator factorizes to
