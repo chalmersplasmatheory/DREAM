@@ -286,11 +286,7 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
         real_t Bmin = GetBmin(ir);
         real_t Bmax = GetBmax(ir);
         real_t BminOverBmax;
-<<<<<<< HEAD
-        if(!HasTrapped()) // handles B(theta) = 0 case
-=======
         if(!HasTrapped() || Bmin == Bmax) // also handles a local B=0 surface
->>>>>>> boltzmann
             BminOverBmax = 1; 
         else
             BminOverBmax = Bmin/Bmax;
