@@ -21,8 +21,6 @@ namespace DREAM {
         len_t id_ions, id_n_cold, id_n_re, id_n_tot, id_T_cold, id_Wi, id_Ni, id_Wn;
         bool includeFluidREIonization; // include IONIZATION_RUNAWAY reactions (ionization = FLUID_RE)
         real_t reionizScale;           // scale factor for runaway ionization (ions/reioniz_scale)
-        bool addFluidIonization; // the full ADAS ionization rate is added in this equation term
-        bool addFluidJacobian;   // only the jacobian of the ionization is set with this term
         real_t **Rate = nullptr;
         real_t **Rate_N = nullptr;
         real_t **Rate_T = nullptr;
