@@ -689,6 +689,12 @@ class KineticQuantity(UnknownQuantity):
         else:
             raise ValueError(f"Unrecognized 'axis': {axis}")
 
+        
+        if self.data.shape[axis] != x.size:
+            raise OutputException(
+                "Resolution sensors can only be applied to quantities which are computed on the distribution grid (i.e. not on quantities computed on the flux grid)."
+            )
+
         S_grad, S_curv = helpers.compute_S_grad_S_curv(
             self.data, x, dx, axis=axis, y_floor=y_floor
         )
