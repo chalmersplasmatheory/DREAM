@@ -8,7 +8,7 @@ import scipy.constants
 from . import Bekefi
 from . KineticQuantity import KineticQuantity
 from . OutputException import OutputException
-from .. import GeriMap
+from .. import GeriMap, Formulas
 from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 
 
@@ -71,8 +71,7 @@ class DistributionFunction(KineticQuantity):
         Calculates the current density carried by the electrons of
         this distribution function.
         """
-#        Vpar = self.momentumgrid.getBounceAveragedVpar()
-        Vpar = self.momentumgrid.getVpar()
+        Vpar = self.momentumgrid.getBounceAveragedVpar()
         return self.moment(Vpar, t=t, r=r) * scipy.constants.e
 
 
@@ -164,7 +163,7 @@ class DistributionFunction(KineticQuantity):
                 n = self.output.eqsys.n_cold[:]
                 E = self.output.eqsys.E_field[:]
 
-                Ec = Formulas.Ec(T=T, n=n)
+                Ec = Formulas.getEc(T=T, n=n)
                 pc = 1/np.sqrt(E/Ec-1)
 
             if pc.shape[0] == self.grid.t.size-1:
@@ -222,12 +221,10 @@ class DistributionFunction(KineticQuantity):
         if model == 'total':
             data = np.zeros((len(t), len(r), self.data.shape[-2], self.data.shape[-1]))
             pperp2 = self.momentumgrid.PPERP**2
-            m2c2   = (scipy.constants.m_e * scipy.constants.c)**2
             for i in range(len(t)):
                 for j in range(len(r)):
                     data[i,j,:,:] = pperp2 * self.data[t[i],r[j],:,:] * self.momentumgrid.Vprime_VpVol[r[j],:,:]
         elif model == 'spectrum':
-            S = []
             W = Bekefi.synchrotron(self.momentumgrid.P, self.momentumgrid.XI, wavelength, B)
             data = W * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
         else:

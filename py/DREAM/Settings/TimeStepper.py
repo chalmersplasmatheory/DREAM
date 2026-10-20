@@ -75,7 +75,7 @@ class TimeStepper:
             return
 
         if dt < 0 or (dt == 0 and self.type != TYPE_IONIZATION):
-            raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
+            raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(dt))
         if self.nt is not None and dt > 0:
             raise DREAMException("TimeStepper: 'dt' may not be set alongside 'nt'.")
 
@@ -96,7 +96,7 @@ class TimeStepper:
             return
 
         if nt <= 0:
-            raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
+            raise DREAMException("TimeStepper: Invalid value assigned to 'nt': {}".format(nt))
         if self.dt is not None and self.dt > 0:
             raise DREAMException("TimeStepper: 'nt' may not be set alongside 'dt'.")
 
@@ -222,7 +222,7 @@ class TimeStepper:
             if self.nt is not None: data['nt'] = self.nt
             data['nsavesteps'] = int(scal(self.nSaveSteps))
 
-            if self.terminatefunc != None:
+            if self.terminatefunc is not None:
                 data['terminatefunc'] = self.terminatefunc
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
@@ -236,7 +236,7 @@ class TimeStepper:
             data['minsavedt'] = self.minsavedt
             data['alpha'] = self.alpha
 
-            if self.terminatefunc != None:
+            if self.terminatefunc is not None:
                 data['terminatefunc'] = self.terminatefunc
 
         return data

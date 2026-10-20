@@ -23,7 +23,6 @@ ComptonSource::ComptonSource(
     pLower(pLower), scaleFactor(scaleFactor), sourceMode(sm), REFluid(REFluid)
 {
     SetName("ComptonSource");
-    this->id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->id_Eterm = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->id_ntot = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     
@@ -190,9 +189,7 @@ real_t ComptonSource::GetSourceFunction(len_t ir, len_t i, len_t j){
  * Returns the source function at (ir,i,j) differentiated with respect to the unknown x_derivId at (ir,i,j)
  */
 real_t ComptonSource::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
-    if(derivId==id_ntot) 
-        return GetSourceFunction(ir,i,j);
-    else if(sourceMode == SOURCE_MODE_FLUID){
+    if(sourceMode == SOURCE_MODE_FLUID){
         if(derivId==id_Eterm) {
             struct intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
             real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
@@ -214,6 +211,8 @@ real_t ComptonSource::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, cons
         else
             return 0;
     } 
+    else if(derivId==id_ntot)
+        return GetSourceFunction(ir,i,j);
     else
         return 0;
 }

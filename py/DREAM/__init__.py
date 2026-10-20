@@ -9,5 +9,5 @@ from .ConvergenceScanPlot import ConvergenceScanPlot
 from .interactive import *
 from .runiface import *
 
-from .GeriMap import register
+from . import GeriMap
 GeriMap.register()

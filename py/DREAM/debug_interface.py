@@ -1,12 +1,11 @@
 #!/usr/bin/python3 -i
 
 import argparse
-from DREAM import DREAMOutput, setup_interactive, who
+from DREAM import DREAMOutput, setup_interactive
 from DREAM.Output import UnknownQuantity
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import sys
 
 
 def collect_single(name, output):
@@ -117,11 +116,14 @@ def plotConvergenceUnknown(u):
     pass
 
 
-def plotConvergence(u=None):
+def plotConvergence(u=None, glob=None):
     """
     Plot the convergence of a given unknown quantity of DREAMOutput object.
     """
-    if u == None:
+    if glob is None:
+        glob = globals()
+
+    if u is None:
         u = glob['do']
     
     if isinstance(u, type(UnknownQuantity)):

@@ -138,6 +138,7 @@
       <string>Export</string>
      </property>
      <addaction name="actionShapingProfiles"/>
+     <addaction name="actionSOFT"/>
     </widget>
     <addaction name="actionOpen"/>
     <addaction name="actionSaveAs"/>
@@ -210,6 +211,14 @@
   <action name="actionWall">
    <property name="text">
     <string>Wall</string>
+   </property>
+  </action>
+  <action name="actionSOFT">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>SOFT equilibrium</string>
    </property>
   </action>
  </widget>

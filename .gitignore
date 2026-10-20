@@ -37,3 +37,6 @@ tools/cache
 *.CDF
 *.cdf
 *.synctex.gz
+venv
+.venv
+
