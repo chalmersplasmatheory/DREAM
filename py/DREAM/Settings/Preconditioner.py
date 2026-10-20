@@ -1,6 +1,5 @@
 # Settings for the equation system preconditioner
 
-import numpy as np
 from .. DREAMException import DREAMException
 from . import EquationSystem
 from .. helpers import scal

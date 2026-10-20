@@ -408,7 +408,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     real_t Bmin = GetBmin(ir,fluxGridType, &theta_Bmin);
     real_t Bmax = GetBmax(ir,fluxGridType, &theta_Bmax);
     real_t BminOverBmax;
-    if(!rGrid->HasTrapped()) // handles Bmax=0 case
+    if(!rGrid->HasTrapped() || Bmin == Bmax) // also handles a local B=0 surface
         BminOverBmax = 1; 
     else
         BminOverBmax = Bmin/Bmax;        

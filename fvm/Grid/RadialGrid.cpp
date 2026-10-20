@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <limits>
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
@@ -127,37 +128,23 @@ real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridTy
 }
 
 namespace {
-// Helper to check if the magnetic field is inhomogeneous,
-// thus supporting trapped orbits. Returns true if this is the case.
+// Trapping requires poloidal variation on at least one flux surface.
+// Comparing extrema from different radii would also count a purely radial
+// variation of B, even when every surface has Bmin == Bmax.
 bool checkIfInhomogeneousB(
     const real_t *Bmin, const real_t *Bmin_f, const real_t *Bmax, const real_t *Bmax_f, len_t nr
 ) {
-    real_t global_Bmin = std::numeric_limits<real_t>::infinity();
-    real_t global_Bmax = 0;
-    for (len_t ir = 0; ir < nr; ir++) {
-        if (Bmax[ir] > global_Bmax) {
-            global_Bmax = Bmax[ir];
-        }
-        if (Bmax_f[ir] > global_Bmax) {
-            global_Bmax = Bmax_f[ir];
-        }
-        if (Bmin[ir] < global_Bmin) {
-            global_Bmin = Bmin[ir];
-        }
-        if (Bmin_f[ir] < global_Bmin) {
-            global_Bmin = Bmin_f[ir];
-        }
-    }
-    if (Bmax_f[nr] > global_Bmax) {
-        global_Bmax = Bmax_f[nr];
-    }
-    if (Bmin_f[nr] < global_Bmin) {
-        global_Bmin = Bmin_f[nr];
-    }
-    real_t eps_roundoff = 100 * std::numeric_limits<real_t>::epsilon();
-    real_t tol = eps_roundoff * (1 + global_Bmax);
-    bool hasTrapped = global_Bmax - global_Bmin > tol;
-    return hasTrapped;
+    const auto variesOnSurface = [](real_t bmin, real_t bmax) {
+        const real_t tol = 100 * std::numeric_limits<real_t>::epsilon() * (1 + bmax);
+        return bmax - bmin > tol;
+    };
+    for (len_t ir = 0; ir < nr; ir++)
+        if (variesOnSurface(Bmin[ir], Bmax[ir]))
+            return true;
+    for (len_t ir = 0; ir <= nr; ir++)
+        if (variesOnSurface(Bmin_f[ir], Bmax_f[ir]))
+            return true;
+    return false;
 }
 }  // namespace
 
@@ -299,7 +286,11 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
         real_t Bmin = GetBmin(ir);
         real_t Bmax = GetBmax(ir);
         real_t BminOverBmax;
+<<<<<<< HEAD
         if(!HasTrapped()) // handles B(theta) = 0 case
+=======
+        if(!HasTrapped() || Bmin == Bmax) // also handles a local B=0 surface
+>>>>>>> boltzmann
             BminOverBmax = 1; 
         else
             BminOverBmax = Bmin/Bmax;

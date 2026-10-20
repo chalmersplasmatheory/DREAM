@@ -1,10 +1,6 @@
 # Special treatment for poloidal flux
 
-import numpy as np
-
 from .FluidQuantity import FluidQuantity
-from .OutputException import OutputException
-
 
 class PoloidalFlux(FluidQuantity):
     

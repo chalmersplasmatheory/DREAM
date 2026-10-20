@@ -26,7 +26,6 @@
 #include "tests/DREAM/MollerDeltaAngleKernel.hpp"
 #include "tests/DREAM/MeanExcitationEnergy.hpp"
 #include "tests/DREAM/RunawayFluid.hpp"
-
 #include "tests/FVM/AdvectionTerm.hpp"
 #include "tests/FVM/AdvectionDiffusionTerm.hpp"
 #include "tests/FVM/AnalyticBRadialGridGenerator.hpp"
@@ -34,6 +33,7 @@
 #include "tests/FVM/Grid.hpp"
 #include "tests/FVM/Interpolator1D.hpp"
 #include "tests/FVM/Interpolator3D.hpp"
+#include "tests/FVM/Matrix.hpp"
 #include "tests/FVM/PXiExternalKineticKinetic.hpp"
 
 using namespace std;
@@ -54,7 +54,6 @@ void init() {
     add_test(new DREAMTESTS::_DREAM::MollerDeltaAngleKernel("dream/mollerdelta"));
     add_test(new DREAMTESTS::_DREAM::MeanExcitationEnergy("dream/meanexcitationenergy"));
     add_test(new DREAMTESTS::_DREAM::RunawayFluid("dream/runawayfluid"));
-
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
     add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));
     add_test(new DREAMTESTS::FVM::AdvectionDiffusionTerm("fvm/advectiondiffusionterm"));
@@ -62,6 +61,7 @@ void init() {
     add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));
     add_test(new DREAMTESTS::FVM::Interpolator1D("fvm/interpolator1d"));
     add_test(new DREAMTESTS::FVM::Interpolator3D("fvm/interpolator3d"));
+    add_test(new DREAMTESTS::FVM::Matrix("fvm/matrix"));
     add_test(new DREAMTESTS::FVM::PXiExternalKineticKinetic("fvm/boundaryflux/2kinetic"));
 }
 

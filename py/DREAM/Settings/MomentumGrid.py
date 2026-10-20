@@ -59,7 +59,7 @@ class MomentumGrid:
     # SETTERS
     ##################
     def setEnabled(self, enabled=True):
-        self.enabled = (enabled == True)
+        self.enabled = bool(enabled)
 
 
     def setNp(self, np):

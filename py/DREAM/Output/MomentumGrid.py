@@ -2,7 +2,7 @@
 import numpy as np
 
 from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
-
+from .OutputException import OutputException
 
 class MomentumGrid:
     

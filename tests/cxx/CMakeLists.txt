@@ -29,6 +29,7 @@ set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator3D.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Matrix.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/PXiExternalKineticKinetic.cpp"
 )
 

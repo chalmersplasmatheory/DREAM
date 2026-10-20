@@ -1,6 +1,5 @@
 # A class for generating matplotlib plots from DataProvider objects.
 
-import matplotlib.pyplot as plt
 import numpy as np
 import numbers
 
@@ -100,7 +99,7 @@ class PlotConfiguration:
                 break
 
         if not found:
-            raise Exception(f"The selected quantity could not be found in the plot.")
+            raise Exception("The selected quantity could not be found in the plot.")
 
         self.reshape()
 

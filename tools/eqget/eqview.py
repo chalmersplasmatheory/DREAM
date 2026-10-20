@@ -74,6 +74,7 @@ class EqView(QtWidgets.QMainWindow):
         self.ui.actionOpen.triggered.connect(self.open)
         self.ui.actionSaveAs.triggered.connect(self.save)
         self.ui.actionShapingProfiles.triggered.connect(self.exportShaping)
+        self.ui.actionSOFT.triggered.connect(self.exportSOFT)
 
         self.ui.actionPlotG.triggered.connect(self.plotG)
         self.ui.actionPlotJ.triggered.connect(self.plotJ)
@@ -168,6 +169,7 @@ class EqView(QtWidgets.QMainWindow):
 
         self.ui.actionSaveAs.setEnabled(False)
         self.ui.actionShapingProfiles.setEnabled(False)
+        self.ui.actionSOFT.setEnabled(False)
 
 
     def load_EQDSK(self, filename, **params):
@@ -184,6 +186,7 @@ class EqView(QtWidgets.QMainWindow):
 
         self.ui.actionSaveAs.setEnabled(True)
         self.ui.actionShapingProfiles.setEnabled(True)
+        self.ui.actionSOFT.setEnabled(True)
 
 
     def special_load(self, filename, oldparams):
@@ -343,6 +346,27 @@ class EqView(QtWidgets.QMainWindow):
                 QMessageBox.information(self, "Successfully saved shaping parameters", f"Successfully saved the shaping parameters to '{filename}'.")
             except Exception as ex:
                 QMessageBox.critical(self, "Failed to export shaping parameters", f"An error occurred while saving the equilibrium shaping parameters.\n\n{ex}")
+
+
+    def exportSOFT(self):
+        """
+        Export SOFT equilibrium.
+        """
+        if self.equil_type != EQTYPE_EQDSK:
+            QMessageBox.critical(self, "Cannot export SOFT equilibrium", "SOFT equilibria can only be exported from EQDSK equilibria.")
+            return
+
+        filename, _ = QFileDialog.getSaveFileName(
+            parent=self, caption="Export SOFT equilibrium",
+            filter="HDF5 file (*.h5);;All files (*.*)"
+        )
+
+        if filename:
+            try:
+                self.equil.save_SOFT(filename)
+                QMessageBox.information(self, "Successfully saved SOFT equilibrium", f"Successfully saved SOFT equilibrium to '{filename}'.")
+            except Exception as ex:
+                QMessageBox.critical(self, "Failed to export SOFT equilibrium", f"An error occurred while saving the SOFT equilibrium.\n\n{ex}")
 
 
     def save(self):

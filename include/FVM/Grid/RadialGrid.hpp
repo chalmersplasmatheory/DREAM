@@ -116,7 +116,7 @@ namespace DREAM::FVM {
             *psiToroidal_f = nullptr,
             R0;
 
-        bool hasTrapped;
+        bool hasTrapped = false;
 
         // Orbit-phase-space Jacobian factors
         real_t
