@@ -499,7 +499,7 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
         Bmax = fluxSurfaceAverager->GetBmax(ir,fluxGridType, &theta_Bmax);
 
         // in cylindrical grid or at r=0, isTrapped is false and we skip to next radius 
-        if(!grid->HasTrapped()){
+        if(!grid->HasTrapped() || Bmin == Bmax){
             for(len_t i = 0; i<n1*n2; i++)
                 isTrapped[ir][i] = false;
             continue;
