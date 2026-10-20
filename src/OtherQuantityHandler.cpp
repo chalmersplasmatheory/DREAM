@@ -721,11 +721,10 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
 	DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
+		real_t *v = qd->StoreEmpty();
+        for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++)
+            v[idx] = 0;
 		if (this->unknown_equations->at(this->id_f_hot)->HasOperatorAt(this->id_n_re)) {
-			real_t *v = qd->StoreEmpty();
-            for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
-                v[idx] = 0;
-            }
 			FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
 			const real_t *nre = unknowns->GetUnknownData(id_n_re);
 			avaPos->SetVectorElements(v, nre);
@@ -916,8 +915,10 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
     DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
+        real_t *v = qd->StoreEmpty();
+        for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++)
+            v[idx] = 0;
 		if (this->unknown_equations->at(this->id_f_re)->HasOperatorAt(this->id_n_re)) {
-            real_t *v = qd->StoreEmpty();
 
             FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
             const real_t *nre = unknowns->GetUnknownData(id_n_re);
