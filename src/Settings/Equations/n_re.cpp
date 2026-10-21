@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
+#include "DREAM/Equations/Fluid/MollerProductionRateTerm.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
@@ -155,6 +156,24 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
+
+    auto ava_mode = (OptionConstants::eqterm_avalanche_mode)
+    s->GetInteger("eqsys/n_re/avalanche");
+
+    if (eqsys->HasRunawayGrid() &&
+        ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON
+    ) {
+        // add the electrons created due to runaway-runaway knock-ons
+        const real_t sourceSign = -1.0;
+        const len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+        const MollerKernelHandler *kh = eqsys->GetMollerKernelHandler();
+        Op_n_tot->AddTerm(new MollerProductionRateTerm(
+            fluidGrid, runawayGrid, runawayGrid,
+            eqsys->GetUnknownHandler(), id_f_re,
+            kh->EnergyReRe(), sourceSign
+        ));
+        desc_sources += " + internal avalanche";
+    }
 
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(

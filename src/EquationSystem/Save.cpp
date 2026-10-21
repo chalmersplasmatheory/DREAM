@@ -34,6 +34,11 @@ void EquationSystem::SaveTimings(SFile *sf, const string& name) {
     path = name + "/runawayfluid";
     sf->CreateStruct(path);
     this->REFluid->SaveTimings(sf, path);
+	if (this->mollerKH != nullptr) {
+		path = name + "/mollerkernels";
+	    sf->CreateStruct(path);
+	    this->mollerKH->SaveTimings(sf, path);
+	}
 }
 
 /**

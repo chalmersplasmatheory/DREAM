@@ -26,6 +26,7 @@ AVALANCHE_MODE_NEGLECT = 1
 AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
 AVALANCHE_MODE_KINETIC = 4
+AVALANCHE_MODE_BOLTZMANN_KNOCK_ON = 5
 
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
@@ -455,7 +456,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'hottail'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
-        if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
+        if self.avalanche in (AVALANCHE_MODE_KINETIC, AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
         if type(self.tritium) != int:
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected integer.")
