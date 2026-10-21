@@ -198,10 +198,10 @@ namespace DREAM {
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold(EquationSystem*, Settings*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_tau_coll(EquationSystem*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl_prescribed(EquationSystem*, Settings*);
 

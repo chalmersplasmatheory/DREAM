@@ -21,7 +21,7 @@ private:
 
     real_t getMomentumScatteringRadius(len_t species);
     void GetNeutralParameters(len_t ir, real_t&, real_t&, real_t&);
-    real_t CalculateNeutralScatteringRate(len_t, len_t, len_t, real_t, real_t, real_t, real_t, real_t);
+    real_t CalculateNeutralScatteringRate(len_t, len_t, real_t, real_t, real_t);
 
 
 public:

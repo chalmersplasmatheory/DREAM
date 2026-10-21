@@ -181,7 +181,6 @@ ChargeStateRate *RateHandler::GetCCD(const len_t iz) const {
  * Add molecular reaction rates for all defined molecular rate pairs.
  */
 void RateHandler::AddMolecularReactionRates( const std::vector<std::string>& enabledReactionNames) {
-    MoleculeHandler molecules;
 
     for (len_t i = 0; i < molecularReactionDefinitionCount; i++) {
         const MolecularReactionDefinition& def = molecularReactionDefinitions[i];
@@ -314,7 +313,6 @@ real_t RateHandler::ResolveTemperature(
     }
     //Rate depends on a specific species temperature
     if (input.kind == MolecularInputKind::SPECIES) {
-        const len_t i = ions->GetIonIndex(input.name1);
         return ResolveSpeciesTemperature(ions->GetIonIndex(input.name1), input.charge1, ir
     );}
     //Rate depends on the average temperature of two species

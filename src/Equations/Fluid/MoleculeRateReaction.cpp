@@ -26,7 +26,7 @@ MoleculeRateReaction::MoleculeRateReaction(
     FVM::Grid *g, IonHandler *ihdl,
     const len_t iIon, FVM::UnknownQuantityHandler *unknowns,
     RateHandler *ratehandler, bool includeFluidREIonization, real_t reionizScale
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), ratehandler(ratehandler),
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), ratehandler(ratehandler),
     includeFluidREIonization(includeFluidREIonization), reionizScale(reionizScale) {
     
     SetName("MoleculeRateReaction");
@@ -164,9 +164,10 @@ void MoleculeRateReaction::Rebuild(
 
         for (len_t ir = 0; ir < Nr; ir++) {
             real_t density, temperature;
+            //Is it a problem that I dont send in the unknowns here and that they are called in ratehandler?
+            //Either way maybe its better to send in them for understanding?
             density = ratehandler->ResolveDensity(reaction.densityInput, ir);
             temperature = ratehandler->ResolveTemperature(reaction.temperatureInput, ir);
-            // here we need to save the ID of density and temp and thats what the jacobian shold depend on
             Rate[rateIndex][ir]   = scale * reaction.rate->Eval(density, temperature);
             Rate_N[rateIndex][ir] = scale * reaction.rate->Eval_deriv_n(density, temperature);
             Rate_T[rateIndex][ir] = scale * reaction.rate->Eval_deriv_T(density, temperature);
@@ -177,9 +178,9 @@ void MoleculeRateReaction::Rebuild(
 
 
 bool MoleculeRateReaction::SetCSJacobianBlock(
-      const len_t uqtyId, const len_t derivId,
-      FVM::Matrix *jac, const real_t *x,
-      const len_t iIon, const len_t Z0, const len_t rOffset
+    const len_t /*uqtyId*/, const len_t derivId,
+    FVM::Matrix *jac, const real_t *x,
+    const len_t iIon, const len_t Z0, const len_t rOffset
   ) {
       // This term depends on ion densities, n_cold and T_cold.
     if (!HasJacobianContribution(derivId))

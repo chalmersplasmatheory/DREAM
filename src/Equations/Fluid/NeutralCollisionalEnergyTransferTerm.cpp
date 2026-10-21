@@ -82,7 +82,7 @@ real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t I
  * and their temperatures.
  */
 real_t NeutralCollisionalEnergyTransferTerm::CalculateNeutralScatteringRate(
-      len_t iz, len_t jz, len_t ir, real_t mi, real_t mj, real_t Ti, real_t Tj, real_t nj
+      len_t iz, len_t jz, real_t Ti, real_t Tj, real_t nj
 ) {
 
     real_t ri = getMomentumScatteringRadius(iz) * 1e-10; // convert to meters
@@ -131,7 +131,7 @@ void NeutralCollisionalEnergyTransferTerm::SetVectorElements(
         const real_t Ti = Wi / (1.5 * Constants::ec * ni);
         const real_t Tj = Wj / (1.5 * Constants::ec * nj);
 
-        const real_t nuNN_ij = CalculateNeutralScatteringRate(iz, jz, ir, mi, mj, Ti, Tj, nj);
+        const real_t nuNN_ij = CalculateNeutralScatteringRate(iz, jz, Ti, Tj, nj);
         const real_t nuT_ij = massFactor * nuNN_ij;
 
         // Power density transferred from species j to species i [W/m^3].
@@ -182,7 +182,7 @@ bool NeutralCollisionalEnergyTransferTerm::SetJacobianBlock(
         const real_t Tj = energies[rowJ] / (A * nj);
 
         const real_t nuT = massFactor * CalculateNeutralScatteringRate(
-            iz, jz, ir, mi, mj, Ti, Tj, nj);
+            iz, jz, Ti, Tj, nj);
 
         // At Ti = Tj = 0, the first derivatives vanish.
         if (Ti == 0 && Tj == 0)
@@ -260,7 +260,7 @@ void NeutralCollisionalEnergyTransferTerm::SetMatrixElements(
         const real_t Tj = energies[rowJ] / (A * nj);
 
         const real_t nuT = massFactor * CalculateNeutralScatteringRate(
-            iz, jz, ir, mi, mj, Ti, Tj, nj
+            iz, jz, Ti, Tj, nj
         );
         const real_t coupling = nuT * ni / nj;
 

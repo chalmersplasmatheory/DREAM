@@ -196,7 +196,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
+    ConstructEquation_T_cold(eqsys, s, nist, amjuel, oqty_terms);
 
     if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn")
             == OptionConstants::UQTY_T_N_INCLUDE)
