@@ -182,6 +182,15 @@ def energy_interpolate(n, T, energies, cross_sections):
       # Later this becomes cross-section -> <sigma v>(n,T).
       return cs* velocity *1e-15* 1e-6 #cm^3/s -> m^3/s
      
+def rieke_cross_section(p, M2, C):
+      # Relativistic electron impact ionization cross section [m^2], fit of
+      # Rieke & Prepejchal, PRA 6, 1507 (1972) (same as Sei_RE.m in IonBalance):
+      # sigma = 4 pi (alpha a0)^2 [M2 (ln(p^2)/beta^2 - 1) + C/beta^2]
+      a0 = 5.29177210903e-11        # m
+      alpha = 7.2973525693e-3
+      beta2 = p*p / (1 + p*p)
+      return 4*np.pi*(alpha*a0)**2 * (M2*(np.log(p*p)/beta2 - 1) + C/beta2)
+
 def runaway_cross_section_eval(sigma):
       # Runaways assumed mono-energetic with p* = 20 m_e c (as in IonFluidRunawayIonizationTerm):
       # <sigma v> = v* sigma,  v* = c p* / sqrt(1 + p*^2)
@@ -209,6 +218,10 @@ def build_rate_table(reaction, n_grid, T_grid):
                 elif dtype == "RUNAWAY_CROSS_SECTION":
                     v = runaway_cross_section_eval(raw)
 
+                elif dtype == "RIEKE":
+                    sigma = raw["factor"] * rieke_cross_section(20.0, raw["M2"], raw["C"])
+                    v = runaway_cross_section_eval(sigma)
+
                 elif dtype == "INTEGRAL_FORMULA":
                     v = integral_formula_eval(
                         raw["I_energy"],
@@ -231,7 +244,8 @@ def build_rate_table(reaction, n_grid, T_grid):
                     v = adas_eval(raw["filename"], raw["Z0"], T,n)
 
                 elif dtype == "UNIQUE_FORMULA_1":
-                    v = 7e-17*np.sqrt(T)*np.exp(-2/T)  #cm^3/s -> m^3/s
+                    #From IonBalance
+                    v = 7e-17*np.sqrt(T)*np.exp(-2/T)  
 
                 elif dtype == "UNIQUE_FORMULA_2":
                     Tfit = min(T, 30.0)
@@ -397,6 +411,7 @@ def cpp_process(classification):
             "CHARGE_EXCHANGE_RESONANT": "CHARGE_EXCHANGE_RESONANT",
             "IONIZATION": "IONIZATION",
             "IONIZATION_RUNAWAY": "IONIZATION_RUNAWAY",
+            "RUNAWAY": "IONIZATION_RUNAWAY",
             "RECOMBINATION": "RECOMBINATION",
             "DISSOCIATION": "DISSOCIATION",
             "DISSOCIATION_MULTIPLE": "DISSOCIATION_MULTIPLE",
