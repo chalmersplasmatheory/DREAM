@@ -175,7 +175,7 @@ Therefore, analogous to the pitch case, we define $k_m$ as the index (at a given
 For accuracy, it is probably good if the $i_m$ cells have as small a volume as possible. This is because the distribution in these cells are not followed dynamically (only mirrored), yet still are partially in the passing region where we wish to evolve the distribution. Therefore, the grid can be \emph{refined} by adding additional pitch grid points that tightly straddle the trapped-passing boundary, such that the cell volume $\mathcal{V}'_{kji_m} \Delta r_k \Delta p_j \Delta \xi_{i_m}$ becomes much smaller than adjacent cells.  Since we wish to avoid having cell faces too close to the trapped-passing region because the fluxes diverge there, it is good to center these additional cells on the trapped passing boundary and having the width sufficiently large that the `entire' singularity is captured (typically there is a distinct peak that has a full-width of $\Delta \xi \sim 0.05$. See figure 2 of how $\mathcal{V}'$ depends on $\xi$ in a magnetic geometry with circular flux surfaces. 
 
 
-\begin{figure}[H]
+\begin{figure}
 \begin{center}
 \includegraphics[width=1.02\textwidth,trim=0 0 0 20mm]{trappedbc_VpPlot}
 \caption{Dependence of bounce averaged metric in a magnetic field with circular flux surfaces. The metric is normalized to the minor and major radius $R_0a$.}

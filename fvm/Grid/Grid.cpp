@@ -481,13 +481,12 @@ void Grid::DeallocateBAvg(){
 /**
  * Set data for isTrapped and poloidal-angle bounce points 
  */
-void Grid::SetBounceParameters(bool hasTrapped, bool **isTrapped, bool **isTrapped_fr, 
+void Grid::SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
             bool **isTrapped_f1, bool **isTrapped_f2, 
             real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
             real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 )
 {
     DeallocateBounceParameters();
-    this->hasTrapped   = hasTrapped;
     this->isTrapped    = isTrapped;
     this->isTrapped_fr = isTrapped_fr;
     this->isTrapped_f1 = isTrapped_f1;
