@@ -61,8 +61,10 @@ FluxSurfaceAverager::~FluxSurfaceAverager(){
     DeallocateReferenceData();
     delete BOverBmin;
     delete Jacobian;
-    delete ROverR0;
-    delete NablaR2;
+    if (ROverR0 != nullptr)
+        delete ROverR0;
+    if (NablaR2 != nullptr)
+        delete NablaR2;
 }
 
 
@@ -373,7 +375,7 @@ real_t FluxSurfaceAverager::BounceIntegralFunction(real_t theta, void *par){
     fluxAvg->GeometricQuantitiesAtTheta(params->ir,theta,B,Jacobian,ROverR0,NablaR2,params->fgType);
     real_t BOverBmin=1;
     if(Bmin != 0)
-        BOverBmin = B/Bmin;    
+        BOverBmin = B/Bmin;
     real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0, BOverBmin);
     real_t Function = (Flist_eval != nullptr) ? 
         fluxAvg->AssembleBAFunc(xiOverXi0,BOverBmin,ROverR0,NablaR2,Flist_eval)

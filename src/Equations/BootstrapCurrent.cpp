@@ -5,12 +5,15 @@
 #include "DREAM/Equations/BootstrapCurrent.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/NotImplementedException.hpp"
+//#include <iostream> // TODO
+
 using namespace DREAM;
 
 /**
  * Constructor.
  */
-BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih, CoulombLogarithm *lnL) {
+BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih, CoulombLogarithm *lnL, enum OptionConstants::eqterm_bootstrap_mode mode) {
 
     rGrid = g->GetRadialGrid();
     unknowns = u;
@@ -43,31 +46,71 @@ BootstrapCurrent::BootstrapCurrent(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
     AllocateQuantities();
 
     // equilibrium constants
-    for (len_t ir = 0; ir < nr; ir++) {
-        // calculate the geometric prefactor
-        const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        		// G / R0
-        const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            		// <B^2> / Bmin^2
-        const real_t Bmin = rGrid->GetBmin(ir);                		// Bmin
-        const real_t psiPrimeRef = abs(rGrid->GetPsiPrimeRef(ir));  // d(psi_ref)/dr / R0
-        constantPrefactor[ir] = -BtorGOverR0 / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
-        if (ir == 0)
-            constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
-        else if (ir == nr - 1)
-            constantPrefactor[ir] /= rGrid->GetDr_f(ir-1);
-        else
-            constantPrefactor[ir] /= ( rGrid->GetDr_f(ir-1) + rGrid->GetDr_f(ir) );
+    const real_t R0 = rGrid->GetR0();
+    if (mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL) {
+        for (len_t ir = 0; ir < nr; ir++) {
+            // calculate the geometric prefactor
+            const real_t BtorGOverR0 = rGrid->GetBTorG(ir);             // G / R0
+            const real_t FSA_B2 = rGrid->GetFSA_B2(ir);                 // <B^2> / Bmin^2
+            const real_t Bmin = rGrid->GetBmin(ir);                     // Bmin
+            const real_t psiPrimeRef = abs(rGrid->GetPsiPrimeRef(ir));  // d(psi_ref)/dr / R0
 
-        // convert eV to J by multiplying with the electron charge
-        constantPrefactor[ir] *= Constants::ec;
+            constantPrefactor[ir] = -BtorGOverR0 / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
+            if (ir == 0)
+                constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
+            else if (ir == nr - 1)
+                constantPrefactor[ir] /= rGrid->GetDr_f(ir-1);
+            else
+                constantPrefactor[ir] /= ( rGrid->GetDr_f(ir-1) + rGrid->GetDr_f(ir) );
+            // convert eV to J by multiplying with the electron charge
+            constantPrefactor[ir] *= Constants::ec;
 
-        // calculate fraction of trapped particles
-        ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
+            // calculate fraction of trapped particles
+            ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
 
-		// calculate safety factor (fix reference geometry)
-		const real_t VpVol = rGrid->GetVpVol(ir);					// V' / R0
-		const real_t FSA_1OverR2 = rGrid->GetFSA_1OverR2(ir);		// <R0^2 / R^2>
-		qR0[ir] = VpVol * abs(BtorGOverR0) * FSA_1OverR2 / (2*M_PI * psiPrimeRef);
-	}
+            // calculate safety factor (fix reference geometry)
+            const real_t VpVol = rGrid->GetVpVol(ir);					// V' / R0
+            const real_t FSA_1OverR2 = rGrid->GetFSA_1OverR2(ir);		// <R0^2 / R^2>
+            qR0[ir] = VpVol * abs(BtorGOverR0) * FSA_1OverR2 / (2*M_PI * psiPrimeRef);
+
+            eps[ir] = rGrid->GetR(ir) / rGrid->GetR0();
+        }
+    } else if (mode == OptionConstants::EQTERM_BOOTSTRAP_MODE_REDL_STELLARATOR) {
+        stellarator = true;
+        real_t iotaSignFactor = 1.0;
+        if (rGrid->GetIota(0) < 0)
+            iotaSignFactor = -1.0;
+        for (len_t ir = 0; ir < nr; ir++) {
+            // calculate the geometric prefactor
+            const real_t BtorGOverR0 = rGrid->GetBTorG(ir);        // G / R0
+            const real_t BpolIOverR0 = rGrid->GetBPolI(ir);        // I / R0
+            const real_t FSA_B2 = rGrid->GetFSA_B2(ir);            // <B^2> / Bmin^2
+            const real_t FSA_1OverB = rGrid->GetFSA_1OverB(ir);    // <1 / B> * Bmin
+            const real_t Bmin = rGrid->GetBmin(ir);                // Bmin
+            const real_t Bmax = rGrid->GetBmax(ir);                // Bmax
+            const real_t psiPrimeRef = rGrid->GetPsiPrimeRef(ir);  // d(psi_ref)/dr / R0
+
+            // For stellarators, density and temperature gradients dX/dr->(dX/dr)/iota in the Redl formula
+            constantPrefactor[ir] = -BtorGOverR0 / (rGrid->GetIota(ir)*iotaSignFactor) / ( FSA_B2 * Bmin * psiPrimeRef / (2 * M_PI));
+            if (ir == 0)
+                constantPrefactor[ir] /= 2 * rGrid->GetDr_f(ir);
+            else if (ir == nr - 1)
+                constantPrefactor[ir] /= rGrid->GetDr_f(ir-1);
+            else
+                constantPrefactor[ir] /= ( rGrid->GetDr_f(ir-1) + rGrid->GetDr_f(ir) );
+
+            // convert eV to J by multiplying with the electron charge
+            constantPrefactor[ir] *= Constants::ec;
+
+            // calculate fraction of trapped particles
+            ft[ir] = 1. - rGrid->GetEffPassFrac(ir);
+
+            qR0[ir] = fabs((BtorGOverR0 + rGrid->GetIota(ir) * BpolIOverR0) * R0 / (rGrid->GetIota(ir)*iotaSignFactor) * FSA_1OverB / Bmin);
+
+            eps[ir] = (Bmax - Bmin) / (Bmax + Bmin);
+        }
+    } else 
+        throw NotImplementedException("j_bs: Bootstrap current mode used not valid!");
 
     // locate the main ion index
 	iZMain = ions->GetMainSpeciesIndex();	
@@ -93,6 +136,7 @@ void BootstrapCurrent::AllocateQuantities() {
     NiMain            = new real_t[nr];
     WiMain            = new real_t[nr];
     qR0               = new real_t[nr];
+    eps               = new real_t[nr];
     ft                = new real_t[nr];
     n                 = new real_t[nr];
     p                 = new real_t[nr];
@@ -109,6 +153,7 @@ void BootstrapCurrent::DeallocateQuantities() {
     delete [] NiMain;
     delete [] WiMain;
     delete [] qR0;
+    delete [] eps;
     delete [] ft;
     delete [] n;
     delete [] p;
@@ -168,8 +213,7 @@ void BootstrapCurrent::Rebuild() {
 real_t BootstrapCurrent::evaluateElectronCollisionFrequency(len_t ir) {
     real_t lnLee = lnLambda->evaluateLnLambdaT(ir);
     real_t Zeff = ions->GetZeff(ir);
-    real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
-    return 6.921e-18 * ncold[ir] * lnLee * Zeff * qR0[ir] / (eps * sqrt(eps) * Tcold[ir] * Tcold[ir]);
+    return 6.921e-18 * ncold[ir] * lnLee * Zeff * qR0[ir] / (eps[ir] * sqrt(eps[ir]) * Tcold[ir] * Tcold[ir]);
 }
 
 /**
@@ -183,8 +227,7 @@ real_t BootstrapCurrent::evaluateIonCollisionFrequency(len_t ir) {
     real_t TiMain2 = TiMain * TiMain;
     real_t Zeff = ions->GetZeff(ir);
     real_t Zeff4 = Zeff * Zeff * Zeff * Zeff;
-    real_t eps = rGrid->GetR(ir) / rGrid->GetR0();
-    return 4.90e-18  * NiMain[ir] * lnLii * Zeff4 * qR0[ir] / (eps * sqrt(eps) * TiMain2 );
+    return 4.90e-18  * NiMain[ir] * lnLii * Zeff4 * qR0[ir] / (eps[ir] * sqrt(eps[ir]) * TiMain2 );
 }
 
 
