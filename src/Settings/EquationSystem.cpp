@@ -66,7 +66,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
-    ADAS *adas, NIST *nist, AMJUEL *amjuel
+    ADAS *adas, NIST *nist, AMJUEL *amjuel, struct OutputGenerator::static_qtys *staticQuantities
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid, s);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
@@ -82,7 +82,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas, nist, amjuel, oqty_terms);
+    ConstructEquations(eqsys, s, adas, nist, amjuel, oqty_terms, staticQuantities);
 
     // Construct the "other" quantity handler
     ConstructOtherQuantityHandler(eqsys, s, oqty_terms);
@@ -123,7 +123,8 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  */
 void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+	struct OutputGenerator::static_qtys *staticQuantities
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -189,6 +190,7 @@ void SimulationGenerator::ConstructEquations(
             hottailGrid, runawayGrid, pCutoff, nXiStars, nIntPts, integrationMethod
         );
         eqsys->SetMollerKernelHandler(MKH);
+		staticQuantities->mollerKernelHandler = MKH;
     }
 
     // Hot-tail quantities

@@ -156,6 +156,10 @@ class MollerKernelHandler {
     const MollerDeltaAngleKernel *AngleHotRe() const { return HotRe().angle; }
     const MollerDeltaAngleKernel *AngleReRe() const { return ReRe().angle; }
 
+	bool HasHotHot() const { return hot_hot.IsValid(); }
+	bool HasHotRe() const { return hot_re.IsValid(); }
+	bool HasReRe() const { return re_re.IsValid(); }
+
     void GridRebuilt() {
         timeKeeper->StartTimer(timerTot);
         if (hot_hot.energy) hot_hot.energy->GridRebuilt();
