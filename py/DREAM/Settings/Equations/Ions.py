@@ -192,7 +192,7 @@ class Ions(UnknownQuantity):
                 ion.r = r
             else:
                 fn = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
-                fT = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
+                fT = scipy.interpolate.interp1d(ion.r, ion.T, axis=-1, bounds_error=False, fill_value='extrapolate')
                 ion.n = fn(r)
                 ion.T = fT(r)
                 ion.r = r
