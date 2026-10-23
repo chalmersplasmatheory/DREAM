@@ -21,6 +21,7 @@
 #include <cmath>
 
 #include "DREAM/Constants.hpp"
+#include "DREAM/Equations/KnockOnQuadrature.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -142,6 +143,15 @@ bool CheckIfReachableAndSetGeometricQuantities(
 
 // Evaluate the theta-local integrand of the orbit-averaged \delta_j function.
 real_t OrbitDeltaIntegrand(
+    real_t theta, len_t ir, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t xi_star,
+    const FVM::RadialGrid *rg
+);
+
+// Unnormalized primary-volume-weighted orbit numerator. Its theta integral
+// equals (Vp1/p1^2)*delta_j before trapped-sign/cell corrections. The existing
+// integrand already divides by the outgoing cell width; do not divide again.
+// This explicit-pitch interface introduces no grid-centre substitution.
+real_t OrbitNumeratorIntegrand(
     real_t theta, len_t ir, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t xi_star,
     const FVM::RadialGrid *rg
 );

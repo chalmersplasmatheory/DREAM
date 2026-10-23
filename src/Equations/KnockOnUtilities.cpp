@@ -261,6 +261,16 @@ real_t KnockOnUtilities::OrbitDeltaIntegrand(
     return sqrtG * D;
 }
 
+real_t KnockOnUtilities::OrbitNumeratorIntegrand(
+    real_t theta, len_t ir, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t xi_star,
+    const FVM::RadialGrid *rg
+) {
+    // OrbitDeltaIntegrand contains the metric over p1^2 and the outgoing
+    // pitch-cell average. Supply the remaining toroidal factor, without ever
+    // dividing by the (singular at the separatrix) pointwise primary volume.
+    return 2*M_PI*OrbitDeltaIntegrand(theta,ir,xi0_f1,xi0_f2,xi01,xi_star,rg);
+}
+
 namespace {
 // Purely numerical helpers for quadrature, containing no knock-on physics.
 

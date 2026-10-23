@@ -45,6 +45,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FrozenCurrentCoefficient.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/KnockOnUtilities.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/KnockOnQuadrature.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AdaptiveHyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
