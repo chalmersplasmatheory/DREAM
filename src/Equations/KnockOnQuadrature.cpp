@@ -78,7 +78,7 @@ std::vector<real_t> Q::ContactFieldLevels(
     // Contact with a face clipped to local pitch zero. Compare before dividing
     // to avoid overflow for arbitrarily small nonzero scattering cosine.
     const long double numerator=u2-s2;
-    if (c>0 && numerator>0 && numerator<c*c*reach)
+    if (c>0 && numerator>0 && numerator<c*c*reach && numerator>=c*c*v2)
         add(numerator/(c*c));
     SortUnique(levels);
     return levels;
@@ -364,4 +364,96 @@ Q::Interval Q::OrbitGeometry::GetReachableBounds(real_t u, real_t lowerFace, rea
     const real_t reach=std::min(u*u,std::max(lowerFace*lowerFace,upperFace*upperFace));
     if (impl->constant || reach>=impl->betaMax) return GetAngularDomain();
     return InvertBeta(reach);
+}
+
+std::vector<std::vector<real_t>> Q::PoloidalSplitPoints(
+    OrbitGeometry& geometry, real_t u, real_t xiStar,
+    const std::vector<Interval>& cells
+) {
+    ValidatePitch(u); ValidatePitch(xiStar);
+    const real_t betaMax=geometry.GetBetaMax(), u2=u*u;
+    const bool constant=geometry.IsConstantField();
+    if (!constant && (u2==betaMax || std::abs(u)==std::sqrt(betaMax)))
+        throw DREAMException("KnockOnQuadrature: pointwise primary pitch is on the separatrix.");
+
+    // Keep each row's contacts separate: applying every column contact to
+    // every row would needlessly increase the number of integrand samples.
+    std::vector<std::vector<real_t>> contacts(cells.size());
+    const real_t orbitLevel=std::min(u2,betaMax);
+    std::vector<real_t> reach(cells.size()), levels{0, betaMax, orbitLevel};
+    for (len_t j=0; j<cells.size(); ++j) {
+        ValidatePitch(cells[j].lower); ValidatePitch(cells[j].upper);
+        ValidateInterval(cells[j]);
+        reach[j]=std::min({u2, betaMax,
+            std::max(cells[j].lower*cells[j].lower,cells[j].upper*cells[j].upper)});
+        levels.push_back(reach[j]);
+        for (real_t face : {cells[j].lower,cells[j].upper}) {
+            const auto candidates=ContactFieldLevels(u,face,xiStar,betaMax);
+            for (real_t beta : candidates)
+                if (beta<reach[j]) contacts[j].push_back(beta);
+        }
+        levels.insert(levels.end(),contacts[j].begin(),contacts[j].end());
+    }
+
+    // At a smooth field maximum, betaMax-beta ~ curvature*distance^2/2.
+    // Invert a field drop |u^2-betaMax| to determine the layer width on
+    // each branch directly. This also works for asymmetric/flat maxima.
+    const real_t gap=std::abs(u2-betaMax);
+    const bool nearSeparatrix=!constant && gap>0 && gap<0.1*betaMax;
+    const real_t layerLevel=nearSeparatrix ? betaMax-gap : 0;
+    if (nearSeparatrix) levels.push_back(layerLevel);
+    const auto roots=geometry.InvertLevels(std::move(levels));
+    auto at=[&](real_t beta) {
+        return std::lower_bound(roots.begin(),roots.end(),beta,
+            [](const FieldLevel& level, real_t value) { return level.beta<value; })->roots;
+    };
+    const auto domain=geometry.GetAngularDomain();
+    const real_t minimum=constant ? (domain.lower+domain.upper)/2 : at(0).lower;
+    std::vector<real_t> sharedCuts{minimum};
+    if (nearSeparatrix) {
+        const auto layer=at(layerLevel);
+        for (bool left : {true,false}) {
+            const real_t endpoint=left ? domain.lower : domain.upper;
+            const real_t width=left ? layer.lower-endpoint : endpoint-layer.upper;
+            const real_t branch=std::abs(minimum-endpoint);
+            // A field level indistinguishable from Bmax has zero width.
+            // Do not loop forever or invent a finite layer in that case.
+            for (real_t d=width; d>0 && d<branch; d*=4)
+                sharedCuts.push_back(left ? endpoint+d : endpoint-d);
+        }
+    }
+
+    std::vector<std::vector<real_t>> panels;
+    panels.reserve(cells.size());
+    for (len_t j=0; j<cells.size(); ++j) {
+        auto cuts=sharedCuts;
+        for (real_t beta : contacts[j]) {
+            const auto contact=at(beta);
+            cuts.push_back(contact.lower); cuts.push_back(contact.upper);
+        }
+        // A contact close to a primary bounce puts the inverse-square-root
+        // layer just OUTSIDE the adjacent panel. Its own endpoint map cannot
+        // remove that nearby singularity. Grade distances from the physical
+        // bounce by factors of four before applying the panel map. Only the
+        // affected row is refined; all added angles reuse the existing roots.
+        if (!constant && u2<betaMax) {
+            const auto orbit=at(orbitLevel), bounds=at(reach[j]);
+            cuts.push_back(bounds.lower); cuts.push_back(bounds.upper);
+            const auto originalCuts=cuts;
+            for (bool left : {true,false}) {
+                const real_t endpoint=left ? orbit.lower : orbit.upper;
+                const real_t branch=std::abs(minimum-endpoint);
+                real_t distance=branch;
+                for (real_t cut : originalCuts) {
+                    const real_t d=left ? cut-endpoint : endpoint-cut;
+                    if (d>0) distance=std::min(distance,d);
+                }
+                if (distance<0.1*branch)
+                    for (real_t d=4*distance; d>0 && d<branch; d*=4)
+                        cuts.push_back(left ? endpoint+d : endpoint-d);
+            }
+        }
+        panels.push_back(SplitPoints(at(reach[j]),std::move(cuts)));
+    }
+    return panels;
 }

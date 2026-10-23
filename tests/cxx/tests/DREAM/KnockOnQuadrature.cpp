@@ -49,6 +49,7 @@ bool KnockOnQuadrature::Run(bool) {
     check(CheckPrimaryPitchSplits(),"Primary-pitch splits include endpoint contacts and bounce coincidences.");
     check(CheckGeometry(),"Prepared B-only inversion handles both branches, explicit pitches and reset.");
     check(CheckGaussRule(),"Gauss rules and mapped panels preserve constants and midpoint weights.");
+    check(CheckPoloidalPanels(),"Poloidal panels resolve narrow support and asymmetric separatrix layers.");
     check(CheckValidation(),"Invalid quadrature and geometry inputs are rejected.");
     return success;
 }
@@ -264,4 +265,75 @@ bool KnockOnQuadrature::CheckValidation() {
     const auto after=geometry.InvertBeta(0.2);
     if (after.lower!=before.lower || after.upper!=before.upper) return false;
     return true;
+}
+
+bool KnockOnQuadrature::CheckPoloidalPanels() {
+    const real_t eps=0.3, betaMax=2*eps/(1+eps), T=std::sqrt(betaMax);
+    for (real_t shift : {-1.3,0.0,5.4})
+        for (real_t asymmetry : {0.0,0.25}) {
+            auto fail=[&](const char *message) {
+                PrintError("%s (shift=%.8g, asymmetry=%.8g).",message,shift,asymmetry);
+                return false;
+            };
+            auto phase=[&](real_t theta) {
+                const real_t x=theta-shift;
+                return x+asymmetry*std::sin(x)*std::sin(x);
+            };
+            auto B=[&](real_t theta) { return (1+eps)/(1+eps*std::cos(phase(theta))); };
+            Q::OrbitGeometry geometry({1,(1+eps)/(1-eps),shift,shift+M_PI},B);
+            // This interval of outgoing pitch is reached only on a narrow
+            // poloidal arc that the former 50-point adaptive rule missed.
+            const real_t lo=0.5593522358906405, hi=0.5597629528924587;
+            const auto panels=Q::PoloidalSplitPoints(geometry,1,0.55,{{lo,hi}})[0];
+            for (len_t n : {1,2,4,8,16}) {
+                Q::GaussLegendreRule rule(n);
+                real_t measure=0;
+                for (len_t k=1; k<panels.size(); ++k)
+                    for (const auto& point : rule.MappedPoints({panels[k-1],panels[k]})) {
+                        const real_t beta=1-1/B(point.x);
+                        measure+=point.weight*Fraction(1,lo,hi,0.55,beta);
+                    }
+                // Invert phase with an independent bisection, rather than
+                // the production field-level root helper.
+                auto invertPhase=[&](real_t target) {
+                    real_t a=shift-M_PI, b=shift+M_PI;
+                    for (len_t k=0; k<60; ++k) {
+                        const real_t m=(a+b)/2;
+                        if (phase(m)<target) a=m; else b=m;
+                    }
+                    return (a+b)/2;
+                };
+                const real_t expected=invertPhase(0.369)-invertPhase(0.361)
+                    +invertPhase(-0.361)-invertPhase(-0.369);
+                if (std::abs(measure/expected-1)>2e-8)
+                    return fail("Narrow-support measure mismatch");
+            }
+            for (real_t u : {T*(1-1e-8),T*(1+1e-8)}) {
+                const auto cuts=Q::PoloidalSplitPoints(geometry,u,0.55,{{-1,1}})[0];
+                if (cuts.size()<10 || !Contains(cuts,shift))
+                    return fail("Missing separatrix layers or field minimum");
+                const auto bounds=geometry.GetOrbitBounds(u);
+                if (cuts.front()!=bounds.lower || cuts.back()!=bounds.upper)
+                    return fail("Panel bounds differ from the actual primary orbit");
+                for (len_t k=1; k<cuts.size(); ++k) {
+                    if (!(cuts[k]>cuts[k-1])) return fail("Unordered panel boundaries");
+                    const Q::GaussLegendreRule rule(8);
+                    for (const auto& point : rule.MappedPoints({cuts[k-1],cuts[k]}))
+                        if (!(point.x>cuts[k-1] && point.x<cuts[k] && point.weight>0))
+                            return fail("Quadrature node is not strictly interior with positive weight");
+                }
+            }
+            if (!Throws([&] {
+                Q::PoloidalSplitPoints(geometry,std::sqrt(geometry.GetBetaMax()),0.55,{{-1,1}});
+            })) return fail("An exactly separatrix primary was accepted");
+        }
+    // A repeated face/row must not trigger additional B inversions.
+    len_t calls=0;
+    Q::OrbitGeometry geometry({1,(1+eps)/(1-eps),0,M_PI},[&](real_t theta) {
+        ++calls; return (1+eps)/(1+eps*std::cos(theta));
+    });
+    calls=0; Q::PoloidalSplitPoints(geometry,0.8,0.55,{{0.1,0.7}});
+    const len_t once=calls;
+    calls=0; Q::PoloidalSplitPoints(geometry,0.8,0.55,{{0.1,0.7},{0.1,0.7}});
+    return calls==once;
 }

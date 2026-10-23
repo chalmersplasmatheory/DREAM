@@ -11,15 +11,13 @@ using namespace DREAM;
 
 MollerDeltaAngleKernel::MollerDeltaAngleKernel(
     const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t p_cutoff,
-    len_t n_xi_stars_tabulate, len_t n_points_integral,
-    KnockOnUtilities::orbit_integration_method integration_method
+    len_t n_xi_stars_tabulate, len_t poloidal_order
 )
     : gridK(grid_knockon),
       gridP(grid_primary),
       pCutoff(p_cutoff),
       nXiStarsTabulate(n_xi_stars_tabulate),
-      nPointsIntegral(n_points_integral),
-      integrationMethod(integration_method) {
+      poloidalOrder(poloidal_order) {
     ValidateInputParameters();
     GridRebuilt();
 }
@@ -67,9 +65,9 @@ void DREAM::MollerDeltaAngleKernel::ValidateGridAssumptions() const {
             "MollerDeltaAngleKernel: nXiStarsTabulate must be >= 2 (got %ld).",
             (long)nXiStarsTabulate
         );
-    if (nPointsIntegral < 1)
+    if (poloidalOrder < 1)
         throw DREAMException(
-            "MollerDeltaAngleKernel: nPointsIntegral must be >= 1 (got %ld).", (long)nPointsIntegral
+            "MollerDeltaAngleKernel: poloidalOrder must be >= 1 (got %ld).", (long)poloidalOrder
         );
 
     const len_t NrK = gridK->GetNr();
@@ -98,9 +96,9 @@ void DREAM::MollerDeltaAngleKernel::ValidateInputParameters() const {
             (long)nXiStarsTabulate
         );
     }
-    if (nPointsIntegral < 1) {
+    if (poloidalOrder < 1) {
         throw DREAMException(
-            "MollerDeltaAngleKernel: nPointsIntegral must be >= 1 (got %ld).", (long)nPointsIntegral
+            "MollerDeltaAngleKernel: poloidalOrder must be >= 1 (got %ld).", (long)poloidalOrder
         );
     }
 }
@@ -200,7 +198,11 @@ void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
     if (!hasActivePairs)
         return;
     const len_t Nr = gridK->GetNr();
+    const KnockOnUtilities::Quadrature::GaussLegendreRule rule(poloidalOrder);
     for (len_t ir = 0; ir < Nr; ++ir) {
+        KnockOnUtilities::Quadrature::OrbitGeometry geometry(
+            gridP->GetRadialGrid()->GetFluxSurfaceAverager(),ir
+        );
         const len_t NxiK = gridK->GetNp2(ir);
         const len_t NxiP = gridP->GetNp2(ir);
 
@@ -209,8 +211,7 @@ void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
             for (len_t l = 0; l < NxiP; ++l) {
                 const len_t offset = l * NxiK;
                 KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xiStarsTab[m], l, gridK, gridP, slice + offset, nPointsIntegral,
-                    integrationMethod
+                    ir, xiStarsTab[m], l, gridK, gridP, slice + offset, geometry, rule
                 );
             }
         }

@@ -12,6 +12,7 @@ class KnockOn : public UnitTest {
 
     bool CheckDeltaMirrorProperties();
     bool CheckDeltaQuadratureConvergence();
+    bool CheckPoloidalNumerators();
     bool CheckLocalContributionConservationProperty();
     bool CheckDeltaConservationProperty();
     bool CheckDeltaConservationPropertyConstantB();

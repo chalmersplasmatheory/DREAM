@@ -99,5 +99,18 @@ public:
     Interval GetReachableBounds(real_t u, real_t lowerFace, real_t upperFace);
 };
 
+/**
+ * Open-panel boundaries for a batch of outgoing pitch intervals at fixed
+ * primary pitch/scattering cosine. Shared field levels are inverted once.
+ * Includes contacts, reachability endpoints, Bmin and separatrix layers.
+ * The latter use the actual field on each branch, without a curvature model.
+ * A point exactly on the separatrix has no finite orbit integral and is
+ * rejected; primary cell averaging must sample on either side instead.
+ */
+std::vector<std::vector<real_t>> PoloidalSplitPoints(
+    OrbitGeometry& geometry, real_t u, real_t xiStar,
+    const std::vector<Interval>& secondaryCells
+);
+
 } // namespace DREAM::KnockOnUtilities::Quadrature
 #endif

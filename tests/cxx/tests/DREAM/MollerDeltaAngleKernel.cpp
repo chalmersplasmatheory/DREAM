@@ -49,7 +49,7 @@ bool MollerDeltaAngleKernel::CheckMDK_IsotropicAndDipoleMoments() {
         auto *mgK = target->GetMomentumGrid(0), *mgP = primary->GetMomentumGrid(0);
         DREAM::MollerEnergyKernel energy(target.get(), primary.get(), 0.1);
         DREAM::MollerDeltaAngleKernel angle(target.get(), primary.get(), 0.1,
-            80, 50, DREAM::KnockOnUtilities::MIDPOINT_RULE);
+            80, 8);
         std::vector<real_t> isotropic(nP), dipole(nP), output(nK), outputDipole(nK);
         real_t incidentDipoleMoment = 0;
         for (len_t l=0; l<nP; ++l) {
@@ -120,7 +120,7 @@ bool MollerDeltaAngleKernel::CheckMDK_KinematicEdgeCases() {
             InitializeGridRCylPXi(1, c.npP, 20, 1.0, 0.0, c.maxP));
         DREAM::MollerEnergyKernel energy(target.get(), primary.get(), c.cutoff);
         DREAM::MollerDeltaAngleKernel angle(target.get(), primary.get(), c.cutoff,
-            80, 50, DREAM::KnockOnUtilities::MIDPOINT_RULE);
+            80, 8);
         auto *mgK = target->GetMomentumGrid(0);
         auto *mgP = primary->GetMomentumGrid(0);
         std::vector<real_t> weights(20, 0), pitch(40, 0), direct(40, 0);
@@ -138,7 +138,7 @@ bool MollerDeltaAngleKernel::CheckMDK_KinematicEdgeCases() {
             const real_t p = std::max(plo, std::min(mgK->GetP1(i), phi));
             const real_t xs = DREAM::KnockOnUtilities::Kinematics::EvaluateXiStar(p, p1);
             DREAM::KnockOnUtilities::SetDeltaMatrixColumnOnGrid(0, xs, 19,
-                target.get(), primary.get(), direct.data(), 50);
+                target.get(), primary.get(), direct.data(), 8);
             real_t norm = 0, error = 0;
             for (len_t j=0; j<40; ++j) {
                 success &= std::isfinite(pitch[j]);
@@ -180,11 +180,10 @@ bool MollerDeltaAngleKernel::CheckMDK_DeltaInterpolationConservation() {
 
     const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1(1);
     constexpr len_t n_xi_stars_tabulate = 80;
-    constexpr len_t n_points_integral = 80;
-    DREAM::KnockOnUtilities::orbit_integration_method integrationMethod = DREAM::KnockOnUtilities::MIDPOINT_RULE;
+    constexpr len_t poloidal_order = 8;
 
     DREAM::MollerDeltaAngleKernel K(
-        gridK, gridP, pCutoff, n_xi_stars_tabulate, n_points_integral, integrationMethod
+        gridK, gridP, pCutoff, n_xi_stars_tabulate, poloidal_order
     );
     K.GridRebuilt();
 

@@ -11,6 +11,9 @@
  */
 #include "KnockOn.hpp"
 
+#include <algorithm>
+#include <memory>
+
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -38,6 +41,13 @@ bool KnockOn::Run(bool) {
         this->PrintError(
             "Knock-on test failed: delta-function quadrature is not sufficiently accurate."
         );
+    }
+
+    if (CheckPoloidalNumerators())
+        this->PrintOK("Raw poloidal numerators agree with an independent dense orbit integral.");
+    else {
+        success = false;
+        this->PrintError("Knock-on unnormalized poloidal numerator regression failed.");
     }
 
     if (CheckLocalContributionConservationProperty())
@@ -202,18 +212,12 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                         continue;
                     }
                     real_t Vp1 = grid->GetVpOverP2AtZero(ir)[l];
-                    real_t theta1, theta2;
-                    DREAM::KnockOnUtilities::EstimateBoundingTheta(
-                        ir, j, l, theta1, theta2, grid, grid
-                    );
 
                     real_t delta1 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, 30,
-                        DREAM::KnockOnUtilities::MIDPOINT_RULE
+                        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, rg, 8
                     );
                     real_t delta2 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                        ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, 30,
-                        DREAM::KnockOnUtilities::MIDPOINT_RULE
+                        ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, rg, 8
                     );
                     if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold) {
                         this->PrintError(
@@ -223,8 +227,7 @@ bool KnockOn::CheckDeltaMirrorProperties() {
                         success = false;
                     }
                     real_t delta3 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                        ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, theta1, theta2, rg, 30,
-                        DREAM::KnockOnUtilities::MIDPOINT_RULE
+                        ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, rg, 8
                     );
                     if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold) {
                         this->PrintError(
@@ -260,7 +263,7 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
 
-    const real_t nPointsIntegral = 80;
+    const real_t poloidalOrder = 8;
 
     bool success = true;
     real_t xi_stars[3] = {0.0, 0.5, 1.0};
@@ -279,11 +282,10 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                     len_t l = xi01_indices[idx_l];
                     real_t delta_default =
                         DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                            ir, xi_star, j, l, grid, grid, nPointsIntegral,
-                            DREAM::KnockOnUtilities::MIDPOINT_RULE
+                            ir, xi_star, j, l, grid, grid, poloidalOrder
                         );
                     real_t delta_hires = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid, grid, 300, DREAM::KnockOnUtilities::MIDPOINT_RULE
+                        ir, xi_star, j, l, grid, grid, 32
                     );
                     if (fabs(delta_default - delta_hires) >
                         successRelErrorThreshold * (1 + fabs(delta_default))) {
@@ -396,7 +398,7 @@ bool KnockOn::_checkDeltaConservationProperty(
 ) {
     DREAM::FVM::RadialGrid *rg = grid_knockon->GetRadialGrid();
     real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    const real_t nPointsIntegral = 50;
+    const real_t poloidalOrder = 8;
 
     bool success = true;
     for (len_t ir = 0; ir < rg->GetNr(); ir++) {
@@ -432,8 +434,7 @@ bool KnockOn::_checkDeltaConservationProperty(
                     continue;
                 }
                 real_t deltaXiIntegral = DREAM::KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xi_star, l, grid_knockon, grid_primary, _deltaCol, nPointsIntegral,
-                    DREAM::KnockOnUtilities::ADAPTIVE_TRAPEZOID
+                    ir, xi_star, l, grid_knockon, grid_primary, _deltaCol, poloidalOrder
                 );
                 if (fabs(deltaXiIntegral - 1) > successRelErrorThreshold) {
                     real_t xi01 = mg->GetP2(l);
@@ -556,7 +557,7 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
     constexpr real_t eps = 5 * std::numeric_limits<real_t>::epsilon();
     bool success = true;
     real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    const real_t nPointsIntegral = 80;
+    const real_t poloidalOrder = 8;
 
     for (len_t ir = 0; ir < nr; ir++) {
         DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
@@ -583,8 +584,7 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
                                          dxi;
                     }
                     real_t delta = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid, grid, nPointsIntegral,
-                        DREAM::KnockOnUtilities::MIDPOINT_RULE
+                        ir, xi_star, j, l, grid, grid, poloidalOrder
                     );
                     if (fabs(delta - delta_expected) > successRelErrorThreshold) {
                         this->PrintError("failed at ir=%ld, n=%ld, j=%ld, l=%ld:", ir, n, j, l);
@@ -607,7 +607,7 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
 // implementation tailored to the Rosenbluth-Putvinski limit. This regression
 // test ensures sufficient agreement between the two approaches in the regime
 // where both are applicable.
-// Uses the adaptive quadrature to demonstrate agreement to very high precision.
+// Uses a higher mapped Gauss order to compare with the independent RP implementation.
 bool KnockOn::CheckAgreementWithOldRPTerm() {
     real_t successRelErrorThreshold = 1e-3;
     bool success = true;
@@ -639,18 +639,13 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
         for (len_t j = 0; j < Nxi; j++) {
             real_t xi0_f1 = mg->GetP2_f(j);
             real_t xi0_f2 = mg->GetP2_f(j + 1);
-            real_t theta1, theta2;
-            DREAM::KnockOnUtilities::EstimateBoundingTheta(
-                ir, j, Nxi - 1, theta1, theta2, grid, grid
-            );
             real_t Vp = grid->GetVp(ir, idx_p, j);
             real_t VpVol = grid->GetVpVol(ir);
             real_t FSA_B = rg->GetFSA_B(ir);
             real_t old_delta =
                 FSA_B * Vp / Vp1 * fsa->EvaluateAvalancheDeltaHat(ir, p, xi0_f1, xi0_f2, Vp, VpVol);
             real_t new_delta = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, theta1, theta2, rg, 200,
-                DREAM::KnockOnUtilities::ADAPTIVE_TRAPEZOID
+                ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, rg, 16
             );
             if (fabs(new_delta - old_delta) > old_delta * successRelErrorThreshold) {
                 this->PrintError("FSA_B * Vp / Vp1: %.8g", FSA_B * Vp / Vp1);
@@ -809,4 +804,76 @@ bool KnockOn::CheckMollerSConservationProperty() {
     bool success = _checkMollerSConservationProperty(grid, grid);
     delete grid;
     return success;
+}
+
+/**
+ * Reference uses a dense midpoint rule on one globally mapped orbit and the
+ * elementary gyro-cone probability. It uses neither contact cuts nor the
+ * production local-delta/metric helpers. Check raw values before normalization.
+ */
+bool KnockOn::CheckPoloidalNumerators() {
+    namespace K = DREAM::KnockOnUtilities;
+    namespace Q = K::Quadrature;
+    // Pole sources on faces, including +/-1, must belong to exactly one
+    // outgoing cell in cylindrical geometry.
+    for (real_t u : {-1.0,1.0})
+        for (real_t chi : {-1.0,-0.5,0.0,0.5,1.0}) {
+            real_t sum=0;
+            for (len_t j=0; j<4; ++j) {
+                real_t ratio;
+                sum+=0.5*K::AnalyticDelta::EvaluateLocalContribution(
+                    -1+0.5*j,-0.5+0.5*j,u,1,chi,0,ratio
+                );
+            }
+            if (sum!=1) return false;
+        }
+    std::unique_ptr<DREAM::FVM::Grid> grid(InitializeGridGeneralRPXi(2,2,12,100,8));
+    auto *rg=grid->GetRadialGrid();
+    auto *fsa=rg->GetFluxSurfaceAverager();
+    const Q::GaussLegendreRule rule(8);
+    for (len_t ir=0; ir<grid->GetNr(); ++ir) {
+        Q::OrbitGeometry geometry(fsa,ir);
+        const real_t T=std::sqrt(geometry.GetBetaMax());
+        for (real_t u : {0.6*T,T*(1-1e-4),T*(1+1e-4),(1+T)/2,1.0}) {
+            const auto bounds=geometry.GetOrbitBounds(u);
+            auto reference=[&](real_t lo, real_t hi, real_t chi, len_t n) {
+                real_t result=0;
+                const real_t Bmin=fsa->GetBmin(ir,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
+                for (len_t k=0; k<n; ++k) {
+                    const real_t t=(k+0.5)/n;
+                    const real_t theta=bounds.lower+(bounds.upper-bounds.lower)*std::pow(std::sin(M_PI*t/2),2);
+                    const real_t weight=(bounds.upper-bounds.lower)*M_PI/2*std::sin(M_PI*t)/n;
+                    real_t B,J,R,nabla;
+                    fsa->GeometricQuantitiesAtTheta(ir,theta,B,J,R,nabla,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
+                    const real_t b=std::max(1.0,B/Bmin), beta=1-1/b;
+                    if (beta>=u*u) continue;
+                    const real_t eta=std::sqrt((u*u-beta)/(1-beta));
+                    auto local=[&](real_t v) { return std::copysign(std::sqrt(std::max(0.0,(v*v-beta)/(1-beta))),v); };
+                    const real_t a=chi*eta, d=std::sqrt(std::max(0.0,(1-eta*eta)*(1-chi*chi)));
+                    real_t probability;
+                    if (d==0) probability=local(lo)<a && a<=local(hi) ? 1 : 0;
+                    else {
+                        auto angle=[](real_t x) { return std::acos(std::max(-1.0,std::min(1.0,x))); };
+                        probability=(angle((local(lo)-a)/d)-angle((local(hi)-a)/d))/M_PI;
+                    }
+                    result+=weight*4*M_PI*M_PI*J*b*u/eta*probability/(hi-lo);
+                }
+                return result;
+            };
+            const real_t volume=2*reference(-1,1,0.55,32768);
+            for (real_t chi : {0.1,0.55,0.9999})
+                for (const auto cell : {Q::Interval{-1,1},Q::Interval{0.15,0.85}}) {
+                    const real_t ref=reference(cell.lower,cell.upper,chi,32768);
+                    const real_t check=reference(cell.lower,cell.upper,chi,16384);
+                    const real_t value=K::EvaluateOrbitNumerator(ir,chi,u,cell.lower,cell.upper,rg,geometry,rule);
+                    const real_t scale=(cell.upper-cell.lower)/volume;
+                    if (!std::isfinite(value) || value<0 || std::abs(ref-check)*scale>2e-4
+                        || std::abs(value-ref)*scale>1e-3) {
+                        PrintError("Raw orbit: ir=%ld u=%.16g chi=%.8g value=%.8g reference=%.8g",(long)ir,u,chi,value,ref);
+                        return false;
+                    }
+                }
+        }
+    }
+    return true;
 }

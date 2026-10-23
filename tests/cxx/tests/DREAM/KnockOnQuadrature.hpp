@@ -11,6 +11,7 @@ public:
     bool CheckPrimaryPitchSplits();
     bool CheckGeometry();
     bool CheckGaussRule();
+    bool CheckPoloidalPanels();
     bool CheckValidation();
 };
 }

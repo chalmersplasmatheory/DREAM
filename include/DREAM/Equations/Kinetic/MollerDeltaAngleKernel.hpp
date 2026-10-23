@@ -29,8 +29,8 @@ class MollerDeltaAngleKernel {
 
     real_t pCutoff = 0;
     len_t nXiStarsTabulate = 0;
-    len_t nPointsIntegral = 0;
-    KnockOnUtilities::orbit_integration_method integrationMethod;
+    len_t poloidalOrder = 0;
+
 
     // xi_star tabulation grid
     real_t xiStarMin = 0, xiStarMax = 1, dXiStar = 1;
@@ -61,8 +61,7 @@ class MollerDeltaAngleKernel {
    public:
     MollerDeltaAngleKernel(
         const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t p_cutoff,
-        len_t n_xi_stars_tabulate, len_t n_points_integral,
-        KnockOnUtilities::orbit_integration_method integration_method
+        len_t n_xi_stars_tabulate, len_t poloidal_order
     );
     ~MollerDeltaAngleKernel();
 
