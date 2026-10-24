@@ -163,6 +163,16 @@ real_t EvaluateOrbitNumerator(
     const Quadrature::GaussLegendreRule& rule, bool mirror=false
 );
 
+// Continuum integral of the unnormalized numerator over represented primary
+// pitch. Includes trapped signs, but no native void-column or boundary-row
+// transfer. The secondary interval is averaged, the primary interval integrated.
+real_t EvaluatePitchCellNumerator(
+    len_t ir, real_t xi_star, Quadrature::Interval primary, Quadrature::Interval secondary,
+    const FVM::RadialGrid *rg, Quadrature::OrbitGeometry& geometry,
+    const Quadrature::GaussLegendreRule& poloidalRule,
+    const Quadrature::GaussLegendreRule& pitchRule
+);
+
 /**
  * Fundamental gyro-, bounce-, and FVM-averaged kinematic delta function.
  *
@@ -191,25 +201,27 @@ real_t EvaluateOrbitAveragedDeltaWithTrappingCorrection(
 // ============================================================================
 
 /**
- * Set a single pitch matrix element \delta_{jl} on a DREAM grid.
- * This wraps EvaluateOrbitAveragedDeltaWithTrappingCorrection.
+ * Unnormalized cell-averaged matrix element A_jl/Hgrid_l on a DREAM grid.
+ * This is a diagnostic; complete columns are normalized by the helper below.
  */
 real_t EvaluateDeltaMatrixElementOnGrid(
     len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
-    const FVM::Grid *grid_primary, len_t poloidalOrder
+    const FVM::Grid *grid_primary, len_t poloidalOrder, len_t pitchOrder=4
 );
 
 // Set a full column {j} of pitch matrix elements \delta_{jl} on a DREAM grid,
 // applying the exact conservation constraint \sum_j dxi_j delta_{jl} == 1.
+// Returns Hquad/Hgrid before normalization (not generally unity).
 real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
-    real_t *deltaCol, len_t poloidalOrder
+    real_t *deltaCol, len_t poloidalOrder, len_t pitchOrder=4
 );
 
-// Reuse one geometry per radius and one rule per table build.
+// Reuse one geometry per radius and both Gauss rules per table build.
 real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
-    real_t *deltaCol, Quadrature::OrbitGeometry& geometry, const Quadrature::GaussLegendreRule& rule
+    real_t *deltaCol, Quadrature::OrbitGeometry& geometry, const Quadrature::GaussLegendreRule& rule,
+    const Quadrature::GaussLegendreRule& pitchRule
 );
 
 // Set a single momentum matrix element S_{ik} on a DREAM grid.

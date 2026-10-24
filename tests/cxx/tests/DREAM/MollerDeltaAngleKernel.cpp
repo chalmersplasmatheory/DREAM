@@ -1,4 +1,5 @@
 #include "MollerDeltaAngleKernel.hpp"
+#include "DREAM/DREAMException.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -118,6 +119,11 @@ bool MollerDeltaAngleKernel::CheckMDK_KinematicEdgeCases() {
             InitializeGridRCylPXi(1, c.npK, 40, 1.0, 0.0, c.maxK));
         std::unique_ptr<DREAM::FVM::Grid> primary(
             InitializeGridRCylPXi(1, c.npP, 20, 1.0, 0.0, c.maxP));
+        bool rejected=false;
+        try {
+            DREAM::MollerDeltaAngleKernel invalid(target.get(),primary.get(),c.cutoff,80,8,0);
+        } catch (const DREAM::DREAMException&) { rejected=true; }
+        if (!rejected) return false;
         DREAM::MollerEnergyKernel energy(target.get(), primary.get(), c.cutoff);
         DREAM::MollerDeltaAngleKernel angle(target.get(), primary.get(), c.cutoff,
             80, 8);

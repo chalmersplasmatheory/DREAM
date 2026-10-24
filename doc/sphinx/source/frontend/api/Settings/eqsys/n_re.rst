@@ -316,6 +316,40 @@ zero pitch angle, in which case the operator takes the form
 .. math::
    C_{i, j} = n_\mathrm{target} \langle n_\mathrm{RE}\rangle \frac{V'}{\mathcal{V}'_{i,j}}\delta_j(\xi^\star_i(\infty),\,1) S_i(\infty).
 
+Boltzmann angular resolution
+****************************
+
+The Boltzmann mode integrates over the primary pitch cell with a constant
+primary distribution in each stored cell. It retains the analytic outgoing
+pitch-cell integral and the representative momentum used for
+:math:`\xi^\star`. Both numerical angular integrals use contact splits and
+mapped Gauss--Legendre quadrature. Configure their resolution with
+
+.. code-block:: python
+
+   ds.eqsys.n_re.setBoltzmannQuadrature(poloidal=8, pitch=4, nxi=80)
+
+``poloidal`` and ``pitch`` are the numbers of Gauss points **per split panel**
+in poloidal angle and primary pitch, respectively; both must be integers >=1.
+``nxi`` is the requested number of tabulated scattering cosines and must be
+an integer >=2. These are the defaults, also used when loading settings files
+without the new group. The controls affect only ``BOLTZMANN_KNOCK_ON``.
+
+At order one, each contact panel uses its midpoint. This is a faster way to
+initialize exploratory simulations, with less accurate angular redistribution
+on coarse grids. Increase the two orders separately to check convergence,
+then increase ``nxi`` to check interpolation error. Increasing these controls
+does not resolve a primary distribution inadequately represented by its
+momentum/pitch grid. The cost of primary integration grows approximately
+linearly with ``pitch`` on typical toroidal test cases.
+
+Completed columns are normalized once, after integrating all primary samples
+and trapped pieces. This preserves the kinetic/fluid production identity and
+positive source terms, but exact total production alone does not establish
+accuracy of the angular shape. The native discrete primary-cell volumes
+continue to determine particle inventory.
+
+
 Dreicer
 ^^^^^^^
 The first runaway mechanism to be discovered is the so-called *Dreicer runaway

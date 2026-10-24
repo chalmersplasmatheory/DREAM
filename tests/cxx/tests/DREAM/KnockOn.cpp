@@ -13,9 +13,15 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
+#include <vector>
 
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
+#include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiCustomGridGenerator.hpp"
 
 using namespace DREAMTESTS::_DREAM;
 
@@ -48,6 +54,13 @@ bool KnockOn::Run(bool) {
     else {
         success = false;
         this->PrintError("Knock-on unnormalized poloidal numerator regression failed.");
+    }
+
+    if (CheckPitchCellAverages())
+        this->PrintOK("Primary cell averages preserve raw volumes and boundary-row weights.");
+    else {
+        success=false;
+        this->PrintError("Primary pitch cell-average regression failed.");
     }
 
     if (CheckLocalContributionConservationProperty())
@@ -396,61 +409,31 @@ bool KnockOn::_checkDeltaConservationProperty(
     const DREAM::FVM::Grid *grid_knockon, const DREAM::FVM::Grid *grid_primary,
     real_t successRelErrorThreshold
 ) {
-    DREAM::FVM::RadialGrid *rg = grid_knockon->GetRadialGrid();
-    real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    const real_t poloidalOrder = 8;
-
-    bool success = true;
-    for (len_t ir = 0; ir < rg->GetNr(); ir++) {
-        real_t xi0T = rg->GetXi0TrappedBoundary(ir);
-        const DREAM::FVM::MomentumGrid *mg = grid_primary->GetMomentumGrid(ir);
-
-        len_t Nxi = grid_knockon->GetNp2(ir);
-        len_t Nxi1 = grid_primary->GetNp2(ir);
-        real_t *_deltaCol = new real_t[Nxi];
-        for (len_t n = 0; n < 3; n++) {
-            real_t xi_star = xi_stars[n];
-            for (len_t l = 0; l < Nxi1; l++) {
-                real_t xi01_f1 = mg->GetP2_f(l);
-                real_t xi01_f2 = mg->GetP2_f(l + 1);
-
-                // Skip cells where the phase-space Jacobian Vp(xi01) is evaluated using
-                // cell-averaged bounce integrals; in this case the delta normalization
-                // is not expected to be exact. This is fine in the final collision operators,
-                // where we correct the matrix elements to account for this deviation.
-                if (rg->GetFluxSurfaceAverager()->shouldCellAverageBounceIntegral(
-                        ir, xi01_f1, xi01_f2, DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION
-                    )) {
-                    continue;
-                }
-                // Also skip cells that contain 0 - these are also handled in a special way
-                // in the FluxSurfaceAverager, since otherwise Vp==0 in this cell.
-                if (xi01_f1 < 0 && xi01_f2 > 0) {
-                    continue;
-                }
-                // Continue if primary pitch is in a void FVM cell -- this represents the negative
-                // trapped region, and will not contribute to the total knock on collision terms.
-                if (grid_primary->GetVpOverP2AtZero(ir)[l] == 0) {
-                    continue;
-                }
-                real_t deltaXiIntegral = DREAM::KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xi_star, l, grid_knockon, grid_primary, _deltaCol, poloidalOrder
+    const auto *rg = grid_knockon->GetRadialGrid();
+    for (len_t ir=0; ir<rg->GetNr(); ++ir) {
+        const auto *mg=grid_knockon->GetMomentumGrid(ir);
+        std::vector<real_t> column(mg->GetNp2());
+        for (real_t chi : {0.0,0.5,1.0})
+            for (len_t l=0; l<grid_primary->GetNp2(ir); ++l) {
+                const bool isVoid=grid_primary->GetVpOverP2AtZero(ir)[l]==0;
+                const real_t rawNorm=DREAM::KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
+                    ir,chi,l,grid_knockon,grid_primary,column.data(),8,4
                 );
-                if (fabs(deltaXiIntegral - 1) > successRelErrorThreshold) {
-                    real_t xi01 = mg->GetP2(l);
-                    this->PrintError("failed at ir=%ld, n=%ld, l=%ld:", ir, n, l);
-                    this->PrintError("  xi_star: %.8g", xi_star);
-                    this->PrintError("  trapped boundary: %.8g", xi0T);
-                    this->PrintError("  xi01: %.8g (%.8g, %.8g)", xi01, xi01_f1, xi01_f2);
-                    this->PrintError("  deltaXiIntegral: %.8g", deltaXiIntegral);
-                    success = false;
-                    // return success;
+                real_t mass=0;
+                for (len_t j=0; j<column.size(); ++j) {
+                    if (!std::isfinite(column[j]) || column[j]<0) return false;
+                    if (grid_knockon->GetVpOverP2AtZero(ir)[j]==0 && column[j]!=0) return false;
+                    mass+=mg->GetDp2(j)*column[j];
                 }
+                // Hquad/Hgrid is NOT generally one: the grid stores its own
+                // bounce-volume approximation. Check the normalized invariant
+                // here, including boundary/origin cells and native voids.
+                if (isVoid ? (mass!=0 || rawNorm!=0)
+                    : (!(rawNorm>0) || !std::isfinite(rawNorm)
+                        || std::abs(mass-1)>successRelErrorThreshold)) return false;
             }
-        }
-        delete[] _deltaCol;
     }
-    return success;
+    return true;
 }
 
 // The Delta function in our formulation of the knock-on operator satisfies
@@ -460,8 +443,8 @@ bool KnockOn::_checkDeltaConservationProperty(
 // the accuracy expected from the chosen quadrature resolution, for all
 // cells that it is expected to hold (e.g. not in the negative-trapped region).
 bool KnockOn::CheckDeltaConservationProperty() {
-    // Note: with higher nxi, relative error decreases
-    real_t successRelErrorThreshold = 4e-2;
+    // Conservation is enforced on each completed non-void column.
+    real_t successRelErrorThreshold = 1e-12;
 
     len_t nr = 5;
     len_t np = 4;
@@ -488,7 +471,7 @@ bool KnockOn::CheckDeltaConservationProperty() {
 // the accuracy expected from the chosen quadrature resolution, for all
 // cells that it is expected to hold (e.g. not in the negative-trapped region).
 bool KnockOn::CheckDeltaConservationPropertyConstantB() {
-    // Note: with higher nxi, relative error decreases
+    // Conservation is enforced on each completed non-void column.
     real_t successRelErrorThreshold = 1e-12;
 
     len_t nr = 5;
@@ -510,8 +493,8 @@ bool KnockOn::CheckDeltaConservationPropertyConstantB() {
 // Like CheckDeltaConservationProperty, but when secondary and primary
 // electrons live on different grids.
 bool KnockOn::CheckDeltaConservationPropertyDifferentGrids() {
-    // Note: with higher nxi, relative error decreases
-    real_t successRelErrorThreshold = 3e-2;
+    // Conservation is enforced on each completed non-void column.
+    real_t successRelErrorThreshold = 1e-12;
 
     len_t nr = 5;
     len_t np = 4;
@@ -541,66 +524,34 @@ bool KnockOn::CheckDeltaConservationPropertyDifferentGrids() {
 // the FVM xi-cell width. This test verifies that the general implementation
 // reproduces this limit.
 bool KnockOn::CheckCylindricalDeltaCalculation() {
-    real_t successRelErrorThreshold = 1e-10;
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 60;
-
-    real_t B0 = 1;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid = InitializeGridRCylPXi(nr, np, nxi, B0, pMin, pMax);
-
-    constexpr real_t eps = 5 * std::numeric_limits<real_t>::epsilon();
-    bool success = true;
-    real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    const real_t poloidalOrder = 8;
-
-    for (len_t ir = 0; ir < nr; ir++) {
-        DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
-        len_t Nxi = mg->GetNp2();
-        for (len_t n = 0; n < 3; n++) {
-            real_t xi_star = xi_stars[n];
-            for (len_t l = 0; l < Nxi; l++) {
-                real_t xi01 = mg->GetP2(l);
-                for (len_t j = 0; j < Nxi; j++) {
-                    real_t xi0_f1 = mg->GetP2_f(j);
-                    real_t xi0_f2 = mg->GetP2_f(j + 1);
-                    real_t z1;
-                    real_t z2;
-                    DREAM::KnockOnUtilities::AnalyticDelta::ComputeXi1Bounds(
-                        z1, z2, xi0_f1, xi0_f2, xi_star
+    namespace K=DREAM::KnockOnUtilities;
+    // For chi=1 in a cylinder the exact cell integral is the interval overlap.
+    // Unlike, odd/even grids test the primary cell average, not a centre sample.
+    for (const auto sizes : {std::pair<len_t,len_t>{13,18},{18,13}}) {
+        std::unique_ptr<DREAM::FVM::Grid> target(InitializeGridRCylPXi(1,2,sizes.first,1,0,2));
+        std::unique_ptr<DREAM::FVM::Grid> primary(InitializeGridRCylPXi(1,2,sizes.second,1,0,2));
+        const auto *s=target->GetMomentumGrid(0), *p=primary->GetMomentumGrid(0);
+        for (len_t order : {len_t(1),len_t(4)})
+            for (len_t l=0; l<p->GetNp2(); ++l)
+                for (len_t j=0; j<s->GetNp2(); ++j) {
+                    const real_t overlap=std::max(real_t(0),std::min(s->GetP2_f(j+1),p->GetP2_f(l+1))
+                        -std::max(s->GetP2_f(j),p->GetP2_f(l)));
+                    const real_t expected=overlap/(p->GetDp2(l)*s->GetDp2(j));
+                    const real_t value=K::EvaluateDeltaMatrixElementOnGrid(
+                        0,1,j,l,target.get(),primary.get(),8,order
                     );
-
-                    real_t dxi = mg->GetDp2(j);
-                    real_t delta_expected = 0;
-                    if (z1 < xi01 + eps && xi01 < z2 - eps) {
-                        delta_expected = DREAM::KnockOnUtilities::AnalyticDelta::EvaluateXiIntegral(
-                                             xi0_f1, xi0_f2, xi01, xi_star
-                                         ) /
-                                         dxi;
-                    }
-                    real_t delta = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid, grid, poloidalOrder
-                    );
-                    if (fabs(delta - delta_expected) > successRelErrorThreshold) {
-                        this->PrintError("failed at ir=%ld, n=%ld, j=%ld, l=%ld:", ir, n, j, l);
-                        this->PrintError("  delta: %.8g", delta);
-                        this->PrintError("  delta_expected: %.8g", delta_expected);
-                        this->PrintError("  xi_star: %.8g", xi_star);
-                        this->PrintError("  xi0 in [%.8g, %.8g]", xi0_f1, xi0_f2);
-                        this->PrintError("  xi01: %.8g", xi01);
-                        success = false;
-                    }
+                    if (!std::isfinite(value) || std::abs(value-expected)>1e-11) return false;
                 }
-            }
-        }
     }
-    delete grid;
-    return success;
+    // Regression: contact rounding in a coarse toroidal table used to pass an
+    // asin argument just outside [-1,1]. The saturated probability is finite.
+    for (real_t x : {-1.0,1.0}) {
+        const real_t value=K::AnalyticDelta::EvaluateXiAntiderivative(
+            std::nextafter(x,2*x),0,0
+        );
+        if (value!=0.5*x) return false;
+    }
+    return true;
 }
 
 // Compares the new implementation of the collision kernel with the previous
@@ -873,6 +824,112 @@ bool KnockOn::CheckPoloidalNumerators() {
                         return false;
                     }
                 }
+        }
+    }
+    return true;
+}
+
+namespace {
+// Grid deliberately does not own its radial grid. These fixtures own both.
+struct PitchGridDeleter {
+    void operator()(DREAM::FVM::Grid *grid) const {
+        auto *rg=grid->GetRadialGrid();
+        delete grid;
+        delete rg;
+    }
+};
+using OwnedPitchGrid=std::unique_ptr<DREAM::FVM::Grid,PitchGridDeleter>;
+
+// A circular surface at r/R0=epsilon with independently chosen pitch faces.
+// The generator owns the profile descriptor; its constant arrays live statically.
+DREAM::FVM::Grid *PitchTestGrid(real_t epsilon, const std::vector<real_t>& faces) {
+    using namespace DREAM::FVM;
+    static const real_t r[]={0,1}, one[]={1,1}, zero[]={0,0};
+    auto *profiles=new AnalyticBRadialGridGenerator::shape_profiles{
+        2,2,2,2,2, one,r,zero,r,one,r,zero,r,zero,r
+    };
+    auto *generator=new AnalyticBRadialGridGenerator(1,epsilon-0.01,epsilon+0.01,1,128,profiles);
+    auto *rg=new RadialGrid(generator);
+    auto *mg=new PXiGrid::PXiMomentumGrid(new PXiGrid::MomentumGridGenerator(
+        new PXiGrid::PUniformGridGenerator(2,0,2),
+        new PXiGrid::XiCustomGridGenerator(faces.data(),faces.size()-1)
+    ),0,rg);
+    auto *grid=new Grid(rg,mg);
+    grid->Rebuild(0);
+    return grid;
+}
+}
+
+bool KnockOn::CheckPitchCellAverages() {
+    namespace K=DREAM::KnockOnUtilities;
+    namespace Q=K::Quadrature;
+    // No sign symmetry or shared faces: the negative boundary row and its
+    // receiving positive row have different widths; one cell crosses zero.
+    const std::vector<real_t> sf={-1,-.82,-.55,-.2,.12,.43,.72,.86,1};
+    const std::vector<real_t> pf={-1,-.79,-.51,-.11,.17,.57,.83,1};
+    for (real_t epsilon : {0.05,0.3}) {
+        OwnedPitchGrid target(PitchTestGrid(epsilon,sf));
+        OwnedPitchGrid primary(PitchTestGrid(epsilon,pf));
+        auto *rg=primary->GetRadialGrid();
+        auto *fsa=rg->GetFluxSurfaceAverager();
+        Q::OrbitGeometry geometry(fsa,0);
+        const real_t T=std::sqrt(geometry.GetBetaMax());
+        const real_t Bmin=fsa->GetBmin(0,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
+        // Independent continuum cell volume: integrate in theta AFTER changing
+        // u to local pitch eta. The singular u/eta metric cancels du exactly.
+        // No production contacts, orbit integrals, or stored Vp enter this reference.
+        auto volume=[&](real_t lo,real_t hi,len_t n=32768) {
+            if (hi<=lo) return real_t(0);
+            real_t result=0;
+            for (len_t k=0; k<n; ++k) {
+                const real_t theta=2*M_PI*(k+0.5)/n;
+                real_t B,J,R,nabla;
+                fsa->GeometricQuantitiesAtTheta(0,theta,B,J,R,nabla,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
+                const real_t beta=std::max(real_t(0),1-Bmin/B);
+                auto eta=[&](real_t u) {
+                    return std::copysign(std::sqrt(std::max(real_t(0),(u*u-beta)/(1-beta))),u);
+                };
+                real_t length=0;
+                // Negative passing, positive trapped (both orbit signs), positive passing.
+                for (const auto part : {Q::Interval{-1,-T},{0,T},{T,1}}) {
+                    const real_t a=std::max(lo,part.lower), b=std::min(hi,part.upper);
+                    if (b>a) length+=(eta(b)-eta(a))*(part.lower==0 ? 2 : 1);
+                }
+                result+=4*M_PI*M_PI*J*length*(2*M_PI/n);
+            }
+            return result;
+        };
+        std::vector<real_t> column(sf.size()-1);
+        for (len_t l=0; l+1<pf.size(); ++l) {
+            if (primary->GetVpOverP2AtZero(0)[l]==0) continue;
+            const real_t H=volume(pf[l],pf[l+1]);
+            if (!(H>0) || std::abs(volume(pf[l],pf[l+1],16384)/H-1)>1e-4) return false;
+            const real_t Hgrid=(pf[l+1]-pf[l])*primary->GetVpOverP2AtZero(0)[l];
+            for (real_t chi : {0.0,0.55,1.0}) {
+                const real_t norm=K::SetDeltaMatrixColumnOnGrid(
+                    0,chi,l,target.get(),primary.get(),column.data(),8,4
+                );
+                if (!std::isfinite(norm) || std::abs(norm*Hgrid/H-1)>0.005) {
+                    PrintError("Raw pitch volume: eps=%g l=%ld chi=%g Hquad/H=%g",epsilon,(long)l,chi,norm*Hgrid/H);
+                    return false;
+                }
+                if (chi!=1) continue;
+                for (len_t j=0; j<column.size(); ++j) {
+                    real_t expected=0;
+                    if (target->GetVpOverP2AtZero(0)[j]!=0) {
+                        expected=volume(std::max(pf[l],sf[j]),std::min(pf[l+1],sf[j+1]));
+                        if (sf[j]<=T && T<sf[j+1])
+                            for (len_t k=0; k+1<sf.size(); ++k)
+                                if (target->GetVpOverP2AtZero(0)[k]==0 && sf[k]<-T && sf[k+1]>-T)
+                                    expected+=volume(std::max(pf[l],sf[k]),std::min(pf[l+1],-T));
+                    }
+                    const real_t actual=column[j]*(sf[j+1]-sf[j])*norm*Hgrid;
+                    if (!std::isfinite(actual) || std::abs(actual-expected)/H>0.005) {
+                        PrintError("Pitch overlap: eps=%g j=%ld l=%ld error/H=%g",epsilon,(long)j,(long)l,(actual-expected)/H);
+                        return false;
+                    }
+                }
+            }
         }
     }
     return true;

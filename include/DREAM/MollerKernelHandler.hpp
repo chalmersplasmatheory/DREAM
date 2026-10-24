@@ -36,7 +36,7 @@ class MollerKernelHandler {
    private:
     real_t pCutoff;
     len_t nXiStars;
-    len_t poloidalOrder;
+    len_t poloidalOrder, pitchOrder;
 
     const FVM::Grid *hottailGrid = nullptr;
     const FVM::Grid *runawayGrid = nullptr;
@@ -46,7 +46,7 @@ class MollerKernelHandler {
     Bundle hot_re;
     Bundle re_re;
 
-    static void ValidateParams(real_t pCutoff, len_t nXiStars, len_t poloidalOrder) {
+    static void ValidateParams(real_t pCutoff, len_t nXiStars, len_t poloidalOrder, len_t pitchOrder) {
         if (!(pCutoff > 0)) {
             throw DREAMException("MollerKernelHandler: pCutoff must be > 0 (got %.16g).", pCutoff);
         }
@@ -55,6 +55,8 @@ class MollerKernelHandler {
                 "MollerKernelHandler: nXiStars must be >= 2 (got %ld).", (long)nXiStars
             );
         }
+        if (pitchOrder < 1)
+            throw DREAMException("MollerKernelHandler: pitchOrder must be >= 1.");
         if (poloidalOrder < 1) {
             throw DREAMException(
                 "MollerKernelHandler: poloidalOrder must be >= 1 (got %ld).", (long)poloidalOrder
@@ -64,12 +66,12 @@ class MollerKernelHandler {
 
     static Bundle MakeBundle(
         const FVM::Grid *target, const FVM::Grid *primary, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder
+        len_t poloidalOrder, len_t pitchOrder
     ) {
         Bundle b;
         b.energy = new MollerEnergyKernel(target, primary, pCutoff);
         b.angle = new MollerDeltaAngleKernel(
-            target, primary, pCutoff, nXiStars, poloidalOrder
+            target, primary, pCutoff, nXiStars, poloidalOrder, pitchOrder
         );
         return b;
     }
@@ -80,14 +82,15 @@ class MollerKernelHandler {
    public:
     MollerKernelHandler(
         const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder
+        len_t poloidalOrder, len_t pitchOrder
     )
         : pCutoff(pCutoff),
           nXiStars(nXiStars),
           poloidalOrder(poloidalOrder),
+          pitchOrder(pitchOrder),
           hottailGrid(hottailGrid),
           runawayGrid(runawayGrid) {
-        ValidateParams(pCutoff, nXiStars, poloidalOrder);
+        ValidateParams(pCutoff, nXiStars, poloidalOrder, pitchOrder);
 
         timeKeeper = new FVM::TimeKeeper("MøllerKernels");
         timerTot = timeKeeper->AddTimer("total", "Total Boltzmann initialization");
@@ -95,16 +98,16 @@ class MollerKernelHandler {
         // Explicitly build only what is possible.
         if (hottailGrid != nullptr) {
             hot_hot =
-                MakeBundle(hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder);
+                MakeBundle(hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder);
             if (runawayGrid != nullptr) {
                 hot_re = MakeBundle(
-                    hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder
+                    hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
                 );
             }
         }
         if (runawayGrid != nullptr) {
             re_re =
-                MakeBundle(runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder);
+                MakeBundle(runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder);
         }
         timeKeeper->StopTimer(timerTot);
     }
@@ -167,6 +170,7 @@ class MollerKernelHandler {
 
     real_t GetPCutoff() const { return pCutoff; }
     len_t GetNXiStars() const { return nXiStars; }
+    len_t GetPitchOrder() const { return pitchOrder; }
     len_t GetPoloidalOrder() const { return poloidalOrder; }
 
     void PrintTimings(bool normalize=false) {

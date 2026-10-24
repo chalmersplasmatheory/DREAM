@@ -759,7 +759,8 @@ In terms of the discretized version,
 \begin{align}
 \Delta_j = \frac{1}{V'}\sum_l \Delta \xi_l \mathcal{V}'(r,\,p_1,\,\xi_l) f(r,\,p_1,\xi_l) \delta_{jl}
 \end{align}
-where $\delta_{jl} = \delta_j(p,\,p_1,\,\xi_l)$ (possibly containing corrections at the end points of the interval), the above condition takes the form
+where $\delta_{jl}$ is the primary-cell averaged angular shape defined below
+(the earlier midpoint approximation was $\delta_j(p,p_1,\xi_l)$), the above condition takes the form
 \begin{align}
 \sum_j \Delta \xi_j V' \Delta_j \equiv  \sum_l \Delta \xi_l \mathcal{V}'(r,\,p_1,\,\xi_l) f(r,\,p_1,\xi_l) \sum_j \Delta \xi_j \delta_{jl} = \sum_l \Delta\xi_l \mathcal{V}'_l f_l.
 \end{align}
@@ -768,6 +769,42 @@ Therefore, we should expect
 \sum_{j=1}^{N_\xi} \Delta \xi_j\delta_{jl} = 1
 \end{align}
 to hold for each $l$. This can be used not only as validation of the implementation of $\delta_j$, but also to correct for quadrature errors in the evaluation of $\delta$ to ensure that the correct total number of knock-ons are always produced, regardless of resolution (although the distribution within each cell may be skewed). That is, in the definition of the discretized $\Delta_j$ we could replace $\delta_{jl}$ by $\delta_{jl}/\sum_{j=1}^{N_\xi} \Delta \xi_j\delta_{jl}$ to ensure particle ``conservation''.
+
+
+\paragraph{Primary pitch cell integration.}
+Write $u=\xi_{01}$, $\chi=\xi^\star$, and $h(u)=\mathcal{V}'(r,p_1,u)/p_1^2$.
+For the represented pieces $R_l$ of a primary cell, the continuum quantities are
+\begin{align}
+ A_{jl}(\chi)&=\int_{R_l}\rd u\,h(u)\delta_j(\chi,u), &
+ H_l&=\int_{R_l}\rd u\,h(u).
+\end{align}
+The primary distribution is constant on each original stored cell. The
+implementation integrates the unnormalized orbit numerator $h\delta_j$,
+without dividing by the singular pointwise volume near a separatrix. Both the
+poloidal and primary-pitch integrals use contact splits and Gauss--Legendre
+quadrature after a sine-squared panel mapping. The outgoing pitch integral
+remains analytic, and the momentum approximation for $\chi$ is unchanged.
+All virtual subcell and quadrature contributions are accumulated before the
+single column normalization
+\begin{align}
+ H_l^{\mathrm{quad}}=\sum_j\Delta\xi_j A_{jl}^{\mathrm{quad}},\qquad
+ \overline\delta_{jl}=A_{jl}^{\mathrm{quad}}/H_l^{\mathrm{quad}}.
+\end{align}
+The collision operator retains its stored primary particle weight
+$\Delta p_k\,p_{1,k}^2 H_l^{\mathrm{grid}}f_{kl}$, where
+$H_l^{\mathrm{grid}}=\Delta\xi_l(\mathcal{V}'/p_1^2)_l^{\mathrm{grid}}$.
+This discrete metric need not equal $H_l$; the new integral determines the
+angular shape, while the discrete kinetic and fluid production rates remain
+consistent. Raw $H_l^{\mathrm{quad}}/H_l$ and normalized shape errors must
+therefore be checked separately.
+
+Negative trapped primary cells with zero stored volume remain void, including
+any passing sliver in such a cell. Positive trapped pieces represent both orbit
+directions. Outgoing cells are split at $-\xi_T$, zero and $\xi_T$ before
+applying the trapped-sign multiplicities. The negative-passing part of a void
+outgoing boundary cell is assigned to the positive boundary row with the
+\emph{receiving} row's width, preserving its integrated source on nonuniform
+grids. This row assignment never transfers primary particle inventory.
 
 
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}

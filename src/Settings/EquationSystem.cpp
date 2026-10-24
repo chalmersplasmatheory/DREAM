@@ -182,11 +182,15 @@ void SimulationGenerator::ConstructEquations(
     OptionConstants::eqterm_avalanche_mode ava_mode = (OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) {
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
-        constexpr len_t nXiStars = 80;
-        constexpr len_t poloidalOrder = 8;
+        const int_t nXiStars = s->GetInteger("eqsys/n_re/boltzmann/nxi");
+        const int_t poloidalOrder = s->GetInteger("eqsys/n_re/boltzmann/poloidal");
+        const int_t pitchOrder = s->GetInteger("eqsys/n_re/boltzmann/pitch");
+        // Validate signed settings before conversion to the unsigned len_t.
+        if (nXiStars<2 || poloidalOrder<1 || pitchOrder<1)
+            throw SettingsException("Boltzmann quadrature requires poloidal>=1, pitch>=1 and nxi>=2.");
 
         MollerKernelHandler *MKH = new MollerKernelHandler(
-            hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder
+            hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
         );
         eqsys->SetMollerKernelHandler(MKH);
     }

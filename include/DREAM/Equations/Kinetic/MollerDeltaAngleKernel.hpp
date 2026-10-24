@@ -8,8 +8,8 @@
 namespace DREAM {
 
 /**
- * Helper representing the orbit-averaged kinematic delta function
- * appearing in the Møller knock-on problem.
+ * Normalized angular shape for Møller knock-ons, averaged over both
+ * outgoing and primary pitch cells with the continuum orbit measure.
  */
 class MollerDeltaAngleKernel {
     struct XiStarInterp {
@@ -29,7 +29,7 @@ class MollerDeltaAngleKernel {
 
     real_t pCutoff = 0;
     len_t nXiStarsTabulate = 0;
-    len_t poloidalOrder = 0;
+    len_t poloidalOrder = 0, pitchOrder = 0;
 
 
     // xi_star tabulation grid
@@ -61,7 +61,7 @@ class MollerDeltaAngleKernel {
    public:
     MollerDeltaAngleKernel(
         const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t p_cutoff,
-        len_t n_xi_stars_tabulate, len_t poloidal_order
+        len_t n_xi_stars_tabulate, len_t poloidal_order, len_t pitch_order=4
     );
     ~MollerDeltaAngleKernel();
 

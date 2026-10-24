@@ -11,13 +11,13 @@ using namespace DREAM;
 
 MollerDeltaAngleKernel::MollerDeltaAngleKernel(
     const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t p_cutoff,
-    len_t n_xi_stars_tabulate, len_t poloidal_order
+    len_t n_xi_stars_tabulate, len_t poloidal_order, len_t pitch_order
 )
     : gridK(grid_knockon),
       gridP(grid_primary),
       pCutoff(p_cutoff),
       nXiStarsTabulate(n_xi_stars_tabulate),
-      poloidalOrder(poloidal_order) {
+      poloidalOrder(poloidal_order), pitchOrder(pitch_order) {
     ValidateInputParameters();
     GridRebuilt();
 }
@@ -90,6 +90,9 @@ void DREAM::MollerDeltaAngleKernel::ValidateGridAssumptions() const {
 }
 
 void DREAM::MollerDeltaAngleKernel::ValidateInputParameters() const {
+    if (pitchOrder<1)
+        throw DREAMException("MollerDeltaAngleKernel: pitchOrder must be >= 1.");
+
     if (nXiStarsTabulate < 2) {
         throw DREAMException(
             "MollerDeltaAngleKernel: nXiStarsTabulate must be >= 2 (got %ld).",
@@ -198,7 +201,7 @@ void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
     if (!hasActivePairs)
         return;
     const len_t Nr = gridK->GetNr();
-    const KnockOnUtilities::Quadrature::GaussLegendreRule rule(poloidalOrder);
+    const KnockOnUtilities::Quadrature::GaussLegendreRule rule(poloidalOrder), pitchRule(pitchOrder);
     for (len_t ir = 0; ir < Nr; ++ir) {
         KnockOnUtilities::Quadrature::OrbitGeometry geometry(
             gridP->GetRadialGrid()->GetFluxSurfaceAverager(),ir
@@ -211,7 +214,7 @@ void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
             for (len_t l = 0; l < NxiP; ++l) {
                 const len_t offset = l * NxiK;
                 KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xiStarsTab[m], l, gridK, gridP, slice + offset, geometry, rule
+                    ir, xiStarsTab[m], l, gridK, gridP, slice + offset, geometry, rule, pitchRule
                 );
             }
         }
