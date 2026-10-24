@@ -780,9 +780,7 @@ For the represented pieces $R_l$ of a primary cell, the continuum quantities are
 \end{align}
 The primary distribution is constant on each original stored cell. The
 implementation integrates the unnormalized orbit numerator $h\delta_j$,
-without dividing by the singular pointwise volume near a separatrix. Both the
-poloidal and primary-pitch integrals use contact splits and Gauss--Legendre
-quadrature after a sine-squared panel mapping. The outgoing pitch integral
+without dividing by the singular pointwise volume near a separatrix. The angular quadrature is described below; the outgoing pitch integral
 remains analytic, and the momentum approximation for $\chi$ is unchanged.
 All virtual subcell and quadrature contributions are accumulated before the
 single column normalization
@@ -805,6 +803,32 @@ applying the trapped-sign multiplicities. The negative-passing part of a void
 outgoing boundary cell is assigned to the positive boundary row with the
 \emph{receiving} row's width, preserving its integrated source on nonuniform
 grids. This row assignment never transfers primary particle inventory.
+
+
+\subsubsection{Numerical angular quadrature}
+For $u=\xi_{01}$ and $\chi=\xi^\star$, both the primary-pitch and poloidal
+integrals are split at scattering-cone contacts with outgoing cell faces and
+at changes of orbit accessibility. With $\beta(\theta)=1-B\sub{min}/B(\theta)$,
+contacts at reachable faces satisfy
+\begin{equation}
+ (\xi-\chi\xi_1)^2=(1-\chi^2)(1-\xi_1^2),\qquad
+ \xi_1^2=\frac{u^2-\beta}{1-\beta},\quad
+ \xi^2=\frac{v^2-\beta}{1-\beta},
+\end{equation}
+where $v$ is an outgoing invariant-pitch face; unreachable faces are clipped
+to $\xi=0$. Contact field levels are inverted
+on each monotone magnetic branch; primary-pitch cuts also include zero,
+$\pm\xi_T$, and contact--bounce coincidences. Additional geometrically spaced
+poloidal panels resolve separatrix layers and nearby bounce singularities.
+
+On each panel $[a,b]$, Gauss--Legendre quadrature in $0<t<1$ is applied after
+$x=a+(b-a)\sin^2(\pi t/2)$. Positive mapped weights are rescaled to sum to
+$b-a$, so order one is the panel midpoint rule. The raw numerator is accumulated
+before the single column normalization above. Constant-field surfaces require
+no poloidal quadrature. Defaults are 8 poloidal and 4 primary-pitch points per
+panel, with 80 uniformly tabulated scattering cosines and linear interpolation.
+These controls resolve angular integration separately from the momentum-grid
+approximation and the piecewise constant representation of the primary distribution.
 
 
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
