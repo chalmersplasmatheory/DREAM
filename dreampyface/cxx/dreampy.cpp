@@ -228,7 +228,8 @@ static PyObject *dreampy_run_simulation(
 
     try {
         ogs = new DREAM::OutputGeneratorSFile(
-            sim->GetEquationSystem(), sfp
+            sim->GetEquationSystem(), sfp,
+			sim->GetOutputGenerator()->GetStaticQuantities()
         );
         sim->Run();
 

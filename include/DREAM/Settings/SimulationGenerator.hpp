@@ -43,7 +43,7 @@ namespace DREAM {
         static Simulation *ProcessSettings(Settings*);
 
         // FOR INTERNAL USE
-        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, FVM::Grid*,  enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*, NIST*, AMJUEL*);
+        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, FVM::Grid*,  enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*, NIST*, AMJUEL*, struct OutputGenerator::static_qtys*);
         static FVM::Grid *ConstructScalarGrid();
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
@@ -118,9 +118,9 @@ namespace DREAM {
         static ADAS *LoadADAS(Settings*);
         static AMJUEL *LoadAMJUEL(Settings*);
         static NIST *LoadNIST(Settings*);
-        static void LoadOutput(Settings*, Simulation*);
+        static void LoadOutput(Settings*, Simulation*, struct OutputGenerator::static_qtys*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
-        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*, struct OutputGenerator::static_qtys*);
         static real_t ConstructInitializer(EquationSystem*, Settings*);
         static void ConstructOtherQuantityHandler(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructSolver(EquationSystem*, Settings*);

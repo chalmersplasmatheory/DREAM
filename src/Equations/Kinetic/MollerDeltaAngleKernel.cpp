@@ -194,6 +194,23 @@ void MollerDeltaAngleKernel::AllocateDeltaTables() {
     }
 }
 
+/**
+ * Return the number of elements allocated for the
+ * Delta tables.
+ */
+len_t MollerDeltaAngleKernel::GetDeltaTableSize() const {
+	len_t n = 0;
+	for (len_t ir = 0; ir < nrAllocated; ++ir) {
+		len_t NxiK = gridK->GetNp2(0);
+		len_t NxiP = gridP->GetNp2(0);
+		len_t sliceSize = NxiK * NxiP;
+
+		n += NxiK * nXiStarsTabulate * sliceSize;
+	}
+
+	return nrAllocated * n;
+}
+
 // The real kinematic delta depends on p_i, p1_k only indirectly via xi_star(p, p1),
 // therefore we here tabulate on a grid of xi_star values.
 void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {

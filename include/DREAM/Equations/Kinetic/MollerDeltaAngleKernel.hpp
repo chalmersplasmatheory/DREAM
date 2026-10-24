@@ -71,6 +71,10 @@ class MollerDeltaAngleKernel {
     void AccumulatePitch(
         len_t ir, len_t i, len_t k, const real_t *W_l, real_t Sik, real_t *outPitch_j
     ) const;
+
+	real_t ***GetDeltaTable() const { return deltaTable; }
+	len_t GetDeltaTableSize() const;
+	len_t GetNxiStarsTabulate() const { return nXiStarsTabulate; }
 };
 
 }  // namespace DREAM
