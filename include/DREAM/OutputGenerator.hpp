@@ -44,6 +44,8 @@ namespace DREAM {
 		);
         virtual ~OutputGenerator();
 
+		struct static_qtys *GetStaticQuantities() { return this->staticQuantities; }
+
 		virtual void Save(bool current=false);
         virtual void SaveCurrent() { this->Save(true); }
 	};
