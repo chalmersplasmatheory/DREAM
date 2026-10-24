@@ -89,3 +89,18 @@ if (PETSC_FOUND)
     add_definitions(${PETSC_DEFINITIONS})
 endif()
 
+
+# Explicitly build/run extended numerical checks; neither the normal build nor
+# 'dreamtests all' includes this executable. Reuse the normal test dependencies.
+add_executable(dreamtests_knockon_extended EXCLUDE_FROM_ALL
+    "${PROJECT_SOURCE_DIR}/tests/cxx/extended/knockon.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/UnitTest.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/UnitTest.grids.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/KnockOn.cpp"
+)
+target_include_directories(dreamtests_knockon_extended PRIVATE
+    $<TARGET_PROPERTY:dreamtests,INCLUDE_DIRECTORIES>)
+target_link_libraries(dreamtests_knockon_extended PRIVATE
+    $<TARGET_PROPERTY:dreamtests,LINK_LIBRARIES>)
+set_target_properties(dreamtests_knockon_extended PROPERTIES
+    CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)

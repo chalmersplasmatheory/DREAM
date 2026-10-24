@@ -14,6 +14,7 @@ class MollerDeltaAngleKernel : public UnitTest {
     bool CheckMDK_DeltaInterpolationConservation();
     bool CheckMDK_KinematicEdgeCases();
     bool CheckMDK_IsotropicAndDipoleMoments();
+    bool CheckMDK_GridRebuilt();
     virtual bool Run(bool) override;
 };
 

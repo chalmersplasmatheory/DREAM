@@ -15,6 +15,7 @@
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "KnockOnTestHelpers.hpp"
+#include "KnockOnTestGrid.hpp"
 
 using namespace DREAMTESTS::_DREAM;
 
@@ -34,24 +35,40 @@ void ApplyTerm(
 
 }  // anonymous namespace
 
+struct MollerBoltzmannOperator::Fixture {
+    KnockOnTest::OwnedGrid fluid, target, primary;
+    DREAM::MollerEnergyKernel energy;
+    DREAM::MollerDeltaAngleKernel angle;
+    static constexpr real_t cutoff = 0.2;
+
+    Fixture(DREAM::FVM::Grid *f, DREAM::FVM::Grid *k, DREAM::FVM::Grid *p)
+        : fluid(f), target(k), primary(p), energy(k,p,cutoff),
+          angle(k,p,cutoff,3,8,4) {}
+};
+
 bool MollerBoltzmannOperator::Run(bool) {
+    // This table is shared only as immutable data; every check creates fresh
+    // unknowns and equation terms. Unlike grids and two radii expose indexing.
+    Fixture fixture(InitializeFluidGrid(2,1),
+        InitializeGridRCylPXi(2,3,7,1,0,3),
+        InitializeGridRCylPXi(2,4,9,1,0,4));
     bool success = true;
 
-    if (CheckBO_LinearityInFPrimary())
+    if (CheckBO_LinearityInFPrimary(fixture))
         this->PrintOK("Assembled contribution is linear in f_primary.");
     else {
         success = false;
         this->PrintError("Test failed: assembled contribution is not linear in f_primary.");
     }
 
-    if (CheckBO_JacobianFiniteDifferenceNt())
+    if (CheckBO_JacobianFiniteDifferenceNt(fixture))
         this->PrintOK("Jacobian w.r.t. n_tot matches finite-difference derivative.");
     else {
         success = false;
         this->PrintError("Test failed: Jacobian w.r.t. n_tot does not match FD.");
     }
 
-    if (CheckBO_GlobalProductionIdentity())
+    if (CheckBO_GlobalProductionIdentity(fixture))
         this->PrintOK("Global production identity matches Moller-S prediction.");
     else {
         success = false;
@@ -65,28 +82,28 @@ bool MollerBoltzmannOperator::Run(bool) {
         this->PrintError("Test failed: hot<-runaway (cross-grid) global identity.");
     }
 
-    if (CheckBO_TimeCachingRegression())
+    if (CheckBO_TimeCachingRegression(fixture))
         this->PrintOK("Time caching regression test passed.");
     else {
         success = false;
         this->PrintError("Test failed: time caching regression.");
     }
 
-    if (CheckBO_MatrixAssemblyAndFluidIdentity())
+    if (CheckBO_MatrixAssemblyAndFluidIdentity(fixture))
         this->PrintOK("Kinetic/fluid matrix assembly and production identity passed.");
     else {
         success = false;
         this->PrintError("Test failed: kinetic/fluid matrix assembly or production identity.");
     }
 
-    if (CheckBO_NonNegativity())
+    if (CheckBO_NonNegativity(fixture))
         this->PrintOK("Non-negativity sanity check passed.");
     else {
         success = false;
         this->PrintError("Test failed: non-negativity sanity check.");
     }
 
-    if (CheckBO_RadiusLocality())
+    if (CheckBO_RadiusLocality(fixture))
         this->PrintOK("Radius locality test passed.");
     else {
         success = false;
@@ -104,15 +121,15 @@ bool MollerBoltzmannOperator::Run(bool) {
 }
 
 bool MollerBoltzmannOperator::CheckBO_IsotropicZeroCurrentAndReflection() {
-    std::unique_ptr<DREAM::FVM::Grid> fluid(InitializeFluidGrid(1, 1.0));
-    std::unique_ptr<DREAM::FVM::Grid> target(InitializeGridRCylPXi(1, 20, 45, 1.0, 0, 2));
-    std::unique_ptr<DREAM::FVM::Grid> primary(InitializeGridRCylPXi(1, 30, 30, 1.0, 0, 3));
+    KnockOnTest::OwnedGrid fluid(InitializeFluidGrid(1, 1.0));
+    KnockOnTest::OwnedGrid target(InitializeGridRCylPXi(1, 5, 15, 1.0, 0, 2));
+    KnockOnTest::OwnedGrid primary(InitializeGridRCylPXi(1, 6, 12, 1.0, 0, 3));
     len_t idN, idE, idF;
     std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> uqh(
         BuildUQH_Minimal(fluid.get(), primary.get(), idN, idE, idF));
     DREAM::MollerEnergyKernel energy(target.get(), primary.get(), 0.1);
     DREAM::MollerDeltaAngleKernel angle(target.get(), primary.get(), 0.1,
-        80, 8);
+        3, 8);
     DREAM::MollerBoltzmannOperator term(target.get(), primary.get(), uqh.get(),
         idF, &energy, &angle, 1.0);
     auto *mgP = primary->GetMomentumGrid(0), *mgK = target->GetMomentumGrid(0);
@@ -144,34 +161,17 @@ bool MollerBoltzmannOperator::CheckBO_IsotropicZeroCurrentAndReflection() {
         && reflectionError/gain<1e-12;
 }
 
-bool MollerBoltzmannOperator::CheckBO_LinearityInFPrimary() {
+bool MollerBoltzmannOperator::CheckBO_LinearityInFPrimary(const Fixture& fixture) {
     const real_t tol = 1e-10;
 
-    len_t nr = 2;
-    len_t np = 6;
-    len_t nxi = 20;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-    real_t pMin = 0;
-    real_t pMax = 3;
-
-    real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-    auto *gridK = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    auto *gridP = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
+    auto *gridF = fixture.fluid.get(), *gridK = fixture.target.get(), *gridP = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
-    auto *uqh = BuildUQH_Minimal(gridF, gridP, id_ntot, id_E, id_f);
-
-    const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1_f(2);
-
-    const real_t scaleFactor = 1.0;
-    const len_t nXiStars = 60;
-    const len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridK, gridP, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridK, gridP, pCutoff, nXiStars, poloidalOrder);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_Minimal(gridF,gridP,id_ntot,id_E,id_f));
+    auto *uqh = unknowns.get();
+    const real_t scaleFactor = 1;
+    const auto *energy = &fixture.energy;
+    const auto *angle = &fixture.angle;
     DREAM::MollerBoltzmannOperator op(gridK, gridP, uqh, id_f, energy, angle, scaleFactor);
 
     const len_t NP = gridP->GetNCells();
@@ -215,49 +215,35 @@ bool MollerBoltzmannOperator::CheckBO_LinearityInFPrimary() {
         }
     }
 
+    // Explicitly test the zero input as well as additivity.
+    std::fill(fAB,fAB+NP,0);
+    SetPreviousUnknownData(uqh,id_f,fAB,3.0);
+    op.Rebuild(4,1,uqh);
+    std::vector<real_t> zero;
+    ApplyTerm(op,gridK,ntot,zero);
+    for (real_t value : zero) success &= std::isfinite(value) && value==0;
+    success &= std::any_of(RA.begin(),RA.end(),[](real_t value) { return value>0; });
+
     delete[] fA;
     delete[] fB;
     delete[] fAB;
 
-    delete uqh;
-    delete gridF;
-    delete gridK;
-    delete gridP;
-
-    delete energy;
-    delete angle;
-
     return success;
 }
 
-bool MollerBoltzmannOperator::CheckBO_JacobianFiniteDifferenceNt() {
+bool MollerBoltzmannOperator::CheckBO_JacobianFiniteDifferenceNt(const Fixture& fixture) {
     const real_t tol = 1e-6;
     const real_t eps = 1e-7;
 
-    len_t nr = 2;
-    len_t np = 6;
-    len_t nxi = 10;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-    real_t pMin = 0;
-    real_t pMax = 3;
-
-    real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-    auto *gridK = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    auto *gridP = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
+    const len_t nr = fixture.target->GetNr();
+    auto *gridF = fixture.fluid.get(), *gridK = fixture.target.get(), *gridP = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
-    auto *uqh = BuildUQH_Minimal(gridF, gridP, id_ntot, id_E, id_f);
-
-    const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1_f(2);
-    constexpr real_t scaleFactor = 1.0;
-    constexpr len_t nXiStars = 80;
-    constexpr len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridK, gridP, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridK, gridP, pCutoff, nXiStars, poloidalOrder);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_Minimal(gridF,gridP,id_ntot,id_E,id_f));
+    auto *uqh = unknowns.get();
+    const real_t scaleFactor = 1;
+    const auto *energy = &fixture.energy;
+    const auto *angle = &fixture.angle;
     DREAM::MollerBoltzmannOperator op(gridK, gridP, uqh, id_f, energy, angle, scaleFactor);
 
     const len_t NP = gridP->GetNCells();
@@ -289,10 +275,11 @@ bool MollerBoltzmannOperator::CheckBO_JacobianFiniteDifferenceNt() {
     for (len_t q = 0; q < NK; q++) {
         dR[q] = (R1[q] - R0[q]) / eps;
     }
-    DREAM::FVM::Matrix jac(NK, NK, 1);
+    DREAM::FVM::Matrix jac(NK, NK, 2);
     jac.Zero();
     jac.PartialAssemble();
-    op.SetJacobianBlock(id_ntot, id_ntot, &jac, nullptr);
+    if (!op.SetJacobianBlock(id_ntot,id_ntot,&jac,nullptr)) return false;
+    if (op.SetJacobianBlock(id_ntot,id_f,&jac,nullptr)) return false;
     jac.Assemble();
 
     bool success = true;
@@ -310,46 +297,21 @@ bool MollerBoltzmannOperator::CheckBO_JacobianFiniteDifferenceNt() {
     delete[] R1;
     delete[] nt;
 
-    delete uqh;
-    delete gridF;
-    delete gridK;
-    delete gridP;
-
-    delete energy;
-    delete angle;
-
     return success;
 }
 
-bool MollerBoltzmannOperator::CheckBO_GlobalProductionIdentity() {
+bool MollerBoltzmannOperator::CheckBO_GlobalProductionIdentity(const Fixture& fixture) {
     const real_t rtol = 1e-14;
     const real_t atol = 1e-14;
 
-    len_t nr = 2;
-    len_t np = 15;
-    len_t nxi = 30;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-    real_t pMin = 0;
-    real_t pMax = 4;
-
-    real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-    auto *gridK = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    auto *gridP = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
+    auto *gridF = fixture.fluid.get(), *gridK = fixture.target.get(), *gridP = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
-    auto *uqh = BuildUQH_Minimal(gridF, gridP, id_ntot, id_E, id_f);
-
-    const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1_f(2);
-
-    const real_t scaleFactor = 1.0;
-    const len_t nXiStars = 80;
-    const len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridK, gridP, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridK, gridP, pCutoff, nXiStars, poloidalOrder);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_Minimal(gridF,gridP,id_ntot,id_E,id_f));
+    auto *uqh = unknowns.get();
+    const real_t pCutoff = Fixture::cutoff, scaleFactor = 1;
+    const auto *energy = &fixture.energy;
+    const auto *angle = &fixture.angle;
     DREAM::MollerBoltzmannOperator op(gridK, gridP, uqh, id_f, energy, angle, scaleFactor);
 
     const len_t NP = gridP->GetNCells();
@@ -369,7 +331,7 @@ bool MollerBoltzmannOperator::CheckBO_GlobalProductionIdentity() {
     const real_t RHS = scaleFactor * RHS0;
 
     const real_t diff = fabs(LHS - RHS);
-    const bool success = (diff <= atol + rtol * (fabs(LHS) + fabs(RHS)));
+    const bool success = RHS>0 && std::isfinite(LHS) && (diff <= atol + rtol * (fabs(LHS) + fabs(RHS)));
 
     if (!success) {
         this->PrintError("Global identity failed:");
@@ -380,14 +342,6 @@ bool MollerBoltzmannOperator::CheckBO_GlobalProductionIdentity() {
 
     delete[] f;
 
-    delete uqh;
-    delete gridF;
-    delete gridK;
-    delete gridP;
-
-    delete energy;
-    delete angle;
-
     return success;
 }
 
@@ -397,41 +351,18 @@ bool MollerBoltzmannOperator::CheckBO_HotRunawayGlobalProductionIdentity() {
     const real_t absTolNonNeg = 1e-13;
 
     const len_t nr = 2;
-
-    const len_t npHot = 18;
-    const len_t nxiHot = 12;
-
-    const len_t npRe = 22;
-    const len_t nxiRe = 14;
-
-    const len_t ntheta_interp = 50;
-    const len_t nrProfiles = 8;
-
-    const real_t pMin = 0.0;
-    const real_t pMaxHot = 4.0;
-    const real_t pMaxRe = 20.0;
-
-    const real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-
-    auto *gridHot =
-        InitializeGridGeneralRPXi(nr, npHot, nxiHot, ntheta_interp, nrProfiles, pMin, pMaxHot);
-    auto *gridRe =
-        InitializeGridGeneralRPXi(nr, npRe, nxiRe, ntheta_interp, nrProfiles, pMin, pMaxRe);
-
+    KnockOnTest::OwnedGrid fluid(InitializeFluidGrid(nr,1));
+    auto hot = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(7),nr,3,0,3);
+    auto runaway = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(9),nr,4,0,6);
+    auto *gridHot = hot.get(), *gridRe = runaway.get();
     len_t id_ntot, id_E, id_f_re;
-    auto *uqh = BuildUQH_MinimalFRe(gridF, gridRe, id_ntot, id_E, id_f_re);
-
-    const real_t pCutoff = gridHot->GetMomentumGrid(0)->GetP1_f(2);
-
-    const real_t ntot = 1.0;
-    const real_t scaleFactor = 1.0;
-    const len_t nXiStars = 80;
-    const len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridHot, gridRe, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridHot, gridRe, pCutoff, nXiStars, poloidalOrder);
-    DREAM::MollerBoltzmannOperator op(gridHot, gridRe, uqh, id_f_re, energy, angle, scaleFactor);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_MinimalFRe(fluid.get(),gridRe,id_ntot,id_E,id_f_re));
+    auto *uqh = unknowns.get();
+    const real_t pCutoff = 0.2, ntot = 1, scaleFactor = 1;
+    DREAM::MollerEnergyKernel energy(gridHot,gridRe,pCutoff);
+    DREAM::MollerDeltaAngleKernel angle(gridHot,gridRe,pCutoff,3,8,4);
+    DREAM::MollerBoltzmannOperator op(gridHot,gridRe,uqh,id_f_re,&energy,&angle,scaleFactor);
 
     const len_t NRe = gridRe->GetNCells();
     real_t *f = new real_t[NRe];
@@ -466,11 +397,21 @@ bool MollerBoltzmannOperator::CheckBO_HotRunawayGlobalProductionIdentity() {
         }
     }
 
+    len_t offset = 0;
+    for (len_t ir=0; ir<nr; ++ir) {
+        const auto *mg = gridHot->GetMomentumGrid(ir);
+        for (len_t j=0; j<mg->GetNp2(); ++j)
+            for (len_t i=0; i<mg->GetNp1(); ++i)
+                if (gridHot->GetVp(ir,i,j)==0 && vec[offset+j*mg->GetNp1()+i]!=0)
+                    success = false;
+        offset += mg->GetNCells();
+    }
     const real_t LHS = IntegrateTotalProductionOverKnockonGrid(gridHot, vec.data());
 
     const real_t RHS0 = PredictTotalProductionFromMollerS(gridHot, gridRe, f, pCutoff);
     const real_t RHS = scaleFactor * ntot * RHS0;
 
+    success &= RHS>0 && std::isfinite(LHS);
     const real_t diff = fabs(LHS - RHS);
     if (diff > atol + rtol * (fabs(LHS) + fabs(RHS))) {
         this->PrintError("hot<-re global identity failed:");
@@ -482,44 +423,20 @@ bool MollerBoltzmannOperator::CheckBO_HotRunawayGlobalProductionIdentity() {
 
     delete[] f;
 
-    delete uqh;
-    delete gridF;
-    delete gridHot;
-    delete gridRe;
-
-    delete energy;
-    delete angle;
-
     return success;
 }
 
-bool MollerBoltzmannOperator::CheckBO_TimeCachingRegression() {
+bool MollerBoltzmannOperator::CheckBO_TimeCachingRegression(const Fixture& fixture) {
     const real_t rtol = 1e-12;
 
-    len_t nr = 2;
-    len_t np = 6;
-    len_t nxi = 12;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-    real_t pMin = 0;
-    real_t pMax = 3;
-
-    real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-    auto *gridK = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    auto *gridP = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
+    auto *gridF = fixture.fluid.get(), *gridK = fixture.target.get(), *gridP = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
-    auto *uqh = BuildUQH_Minimal(gridF, gridP, id_ntot, id_E, id_f);
-
-    const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1_f(2);
-    const real_t scaleFactor = 1.0;
-    const len_t nXiStars = 60;
-    const len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridK, gridP, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridK, gridP, pCutoff, nXiStars, poloidalOrder);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_Minimal(gridF,gridP,id_ntot,id_E,id_f));
+    auto *uqh = unknowns.get();
+    const real_t scaleFactor = 1;
+    const auto *energy = &fixture.energy;
+    const auto *angle = &fixture.angle;
     DREAM::MollerBoltzmannOperator op(gridK, gridP, uqh, id_f, energy, angle, scaleFactor);
 
     const len_t NP = gridP->GetNCells();
@@ -562,7 +479,7 @@ bool MollerBoltzmannOperator::CheckBO_TimeCachingRegression() {
         maxDiffNew = std::max(maxDiffNew, fabs(vecNewT[q] - 2.0 * vecA[q]));
     }
 
-    bool success = true;
+    bool success = maxRef>0 && std::isfinite(maxRef);
     if (maxDiffSame > rtol * (1.0 + maxRef)) {
         this->PrintError("Time-caching failed: vec changed despite same t.");
         this->PrintError("  maxDiffSame=%.8g maxRef=%.8g", maxDiffSame, maxRef);
@@ -585,32 +502,21 @@ bool MollerBoltzmannOperator::CheckBO_TimeCachingRegression() {
     delete[] fA;
     delete[] fB;
 
-    delete uqh;
-    delete gridF;
-    delete gridK;
-    delete gridP;
-
-    delete energy;
-    delete angle;
-
     return success;
 }
 
-bool MollerBoltzmannOperator::CheckBO_MatrixAssemblyAndFluidIdentity() {
+bool MollerBoltzmannOperator::CheckBO_MatrixAssemblyAndFluidIdentity(const Fixture& fixture) {
     using DREAM::FVM::Grid;
-    const len_t nr = 2;
-    std::unique_ptr<Grid> fluid(InitializeFluidGrid(nr, 1.0));
-    std::unique_ptr<Grid> target(InitializeGridRCylPXi(nr, 12, 20, 1.0, 0.0, 3.0));
-    std::unique_ptr<Grid> primary(InitializeGridRCylPXi(nr, 12, 20, 1.0, 0.0, 3.0));
+    const len_t nr = fixture.target->GetNr();
+    auto *fluid = fixture.fluid.get(), *target = fixture.target.get(), *primary = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
     std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> uqh(
-        BuildUQH_Minimal(fluid.get(), primary.get(), id_ntot, id_E, id_f)
-    );
-    DREAM::MollerEnergyKernel energy(target.get(), primary.get(), 0.5);
-    DREAM::MollerDeltaAngleKernel angle(target.get(), primary.get(), 0.5, 80, 8);
-    DREAM::MollerBoltzmannOperator kinetic(target.get(), primary.get(), uqh.get(),
+        BuildUQH_Minimal(fluid,primary,id_ntot,id_E,id_f));
+    const auto& energy = fixture.energy;
+    const auto& angle = fixture.angle;
+    DREAM::MollerBoltzmannOperator kinetic(target, primary, uqh.get(),
         id_f, &energy, &angle, -1.0);
-    DREAM::MollerProductionRateTerm fluidRate(fluid.get(), target.get(), primary.get(),
+    DREAM::MollerProductionRateTerm fluidRate(fluid, target, primary,
         uqh.get(), id_f, &energy, -1.0);
     std::vector<real_t> f(primary->GetNCells(), 1e20);
     SetPreviousUnknownData(uqh.get(), id_f, f.data(), 0.0);
@@ -676,33 +582,17 @@ bool MollerBoltzmannOperator::CheckBO_MatrixAssemblyAndFluidIdentity() {
     return success;
 }
 
-bool MollerBoltzmannOperator::CheckBO_NonNegativity() {
+bool MollerBoltzmannOperator::CheckBO_NonNegativity(const Fixture& fixture) {
     const real_t absTol = 1e-13;
 
-    len_t nr = 2;
-    len_t np = 10;
-    len_t nxi = 16;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-    real_t pMin = 0;
-    real_t pMax = 3;
-
-    real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-    auto *gridK = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    auto *gridP = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
+    auto *gridF = fixture.fluid.get(), *gridK = fixture.target.get(), *gridP = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
-    auto *uqh = BuildUQH_Minimal(gridF, gridP, id_ntot, id_E, id_f);
-
-    const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1_f(2);
-    const real_t scaleFactor = 1.0;
-    const len_t nXiStars = 60;
-    const len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridK, gridP, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridK, gridP, pCutoff, nXiStars, poloidalOrder);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_Minimal(gridF,gridP,id_ntot,id_E,id_f));
+    auto *uqh = unknowns.get();
+    const real_t scaleFactor = 1;
+    const auto *energy = &fixture.energy;
+    const auto *angle = &fixture.angle;
     DREAM::MollerBoltzmannOperator op(gridK, gridP, uqh, id_f, energy, angle, scaleFactor);
 
     const len_t NP = gridP->GetNCells();
@@ -753,45 +643,22 @@ bool MollerBoltzmannOperator::CheckBO_NonNegativity() {
 
     delete[] f;
 
-    delete uqh;
-    delete gridF;
-    delete gridK;
-    delete gridP;
-
-    delete energy;
-    delete angle;
-
     return success;
 }
 
-bool MollerBoltzmannOperator::CheckBO_RadiusLocality() {
+bool MollerBoltzmannOperator::CheckBO_RadiusLocality(const Fixture& fixture) {
     const real_t absTol = 1e-14;
     const real_t relTol = 1e-12;
 
-    len_t nr = 3;
-    len_t np = 8;
-    len_t nxi = 12;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-    real_t pMin = 0;
-    real_t pMax = 3;
-
-    real_t B0 = 1.0;
-    auto *gridF = InitializeFluidGrid(nr, B0);
-    auto *gridK = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    auto *gridP = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
+    const len_t nr = fixture.target->GetNr();
+    auto *gridF = fixture.fluid.get(), *gridK = fixture.target.get(), *gridP = fixture.primary.get();
     len_t id_ntot, id_E, id_f;
-    auto *uqh = BuildUQH_Minimal(gridF, gridP, id_ntot, id_E, id_f);
-
-    const real_t pCutoff = gridK->GetMomentumGrid(0)->GetP1_f(2);
-    const real_t scaleFactor = 1.0;
-    const len_t nXiStars = 60;
-    const len_t poloidalOrder = 8;
-
-    auto *energy = new DREAM::MollerEnergyKernel(gridK, gridP, pCutoff);
-    auto *angle = new DREAM::MollerDeltaAngleKernel(gridK, gridP, pCutoff, nXiStars, poloidalOrder);
+    std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+        BuildUQH_Minimal(gridF,gridP,id_ntot,id_E,id_f));
+    auto *uqh = unknowns.get();
+    const real_t scaleFactor = 1;
+    const auto *energy = &fixture.energy;
+    const auto *angle = &fixture.angle;
     DREAM::MollerBoltzmannOperator op(gridK, gridP, uqh, id_f, energy, angle, scaleFactor);
 
     const len_t NP = gridP->GetNCells();
@@ -813,7 +680,7 @@ bool MollerBoltzmannOperator::CheckBO_RadiusLocality() {
     ntot_arr[ir0] = 1.0;
     op.SetVectorElements(vecLocal.data(), ntot_arr.data());
 
-    bool success = true;
+    bool success = std::any_of(vecAll.begin(),vecAll.end(),[](real_t value) { return value>0; });
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
         const auto *mg = gridK->GetMomentumGrid(ir);
@@ -855,14 +722,6 @@ bool MollerBoltzmannOperator::CheckBO_RadiusLocality() {
     }
 
     delete[] f;
-
-    delete uqh;
-    delete gridF;
-    delete gridK;
-    delete gridP;
-
-    delete energy;
-    delete angle;
 
     return success;
 }

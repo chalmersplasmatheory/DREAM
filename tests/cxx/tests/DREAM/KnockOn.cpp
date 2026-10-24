@@ -18,10 +18,9 @@
 
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
-#include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
-#include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
-#include "FVM/Grid/PXiGrid/XiCustomGridGenerator.hpp"
+#include "KnockOnTestGrid.hpp"
+#include "KnockOnTestReference.hpp"
+#include <map>
 
 using namespace DREAMTESTS::_DREAM;
 
@@ -185,135 +184,70 @@ bool KnockOn::Run(bool) {
 // particle orbits in the magnetic field. This test verifies that this
 // physical invariance is preserved numerically.
 bool KnockOn::CheckDeltaMirrorProperties() {
-    real_t successRelErrorThreshold = 1e-5;
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 30;
-
-    len_t ntheta_interp = 100;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
-
-    bool success = true;
-    real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    len_t xi0_indices[6] = {0, 5, 16, 20, 25, 29};
-    len_t xi01_indices[6] = {0, 5, 16, 20, 25, 29};
-    for (len_t ir = 0; ir < nr; ir++) {
-        DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
-        for (len_t n = 0; n < 3; n++) {
-            real_t xi_star = xi_stars[n];
-            for (len_t idx_j = 0; idx_j < 6; idx_j++) {
-                len_t j = xi0_indices[idx_j];
-                if (grid->IsNegativePitchTrappedIgnorableCell(ir, j)) {
-                    // everything should be 0, not interesting
-                    continue;
-                }
-                real_t xi0_f1 = mg->GetP2_f(j);
-                real_t xi0_f2 = mg->GetP2_f(j + 1);
-                for (len_t idx_l = 0; idx_l < 6; idx_l++) {
-                    len_t l = xi01_indices[idx_l];
-                    real_t xi01 = mg->GetP2(l);
-                    if (grid->IsNegativePitchTrappedIgnorableCell(ir, l)) {
-                        // everything should be 0, not interesting
-                        continue;
-                    }
-                    real_t Vp1 = grid->GetVpOverP2AtZero(ir)[l];
-
-                    real_t delta1 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                        ir, xi_star, xi01, xi0_f1, xi0_f2, Vp1, rg, 8
-                    );
-                    real_t delta2 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                        ir, -xi_star, -xi01, xi0_f1, xi0_f2, Vp1, rg, 8
-                    );
-                    if (fabs(delta1 - delta2) > fabs(delta1) * successRelErrorThreshold) {
-                        this->PrintError(
-                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g", ir, j,
-                            l, xi_star
-                        );
-                        success = false;
-                    }
-                    real_t delta3 = DREAM::KnockOnUtilities::EvaluateOrbitAveragedDelta(
-                        ir, -xi_star, xi01, -xi0_f2, -xi0_f1, Vp1, rg, 8
-                    );
-                    if (fabs(delta2 - delta3) > fabs(delta2) * successRelErrorThreshold) {
-                        this->PrintError(
-                            "Mirror symmetry failed at ir=%ld, j=%ld, l=%ld, xi_star=%.3g", ir, j,
-                            l, xi_star
-                        );
-                        success = false;
-                    }
-                }
-            }
+    namespace K = DREAM::KnockOnUtilities;
+    namespace Q = K::Quadrature;
+    auto grid = KnockOnTest::ToroidalGrid(0.3,{-1,1});
+    auto *radial = grid->GetRadialGrid();
+    Q::OrbitGeometry geometry(radial->GetFluxSurfaceAverager(),0);
+    Q::GaussLegendreRule rule(8);
+    const real_t T = std::sqrt(geometry.GetBetaMax());
+    struct Case { const char *name; real_t u, lo, hi, chi; };
+    const Case cases[] = {
+        {"passing",0.9,0.1,0.8,0.55}, {"trapped",0.6*T,0.1,0.9,0.55},
+        {"near separatrix",T*(1-1e-4),0.15,0.85,0.1},
+        {"near perpendicular",0.9,-0.1,0.1,0}, {"near forward",0.9,0.8,1,0.9999},
+        {"pole",1,0.1,0.8,0.55}
+    };
+    for (const auto& c : cases) {
+        const real_t a = K::EvaluateOrbitNumerator(0,c.chi,c.u,c.lo,c.hi,radial,geometry,rule);
+        const real_t b = K::EvaluateOrbitNumerator(0,-c.chi,-c.u,c.lo,c.hi,radial,geometry,rule);
+        const real_t d = K::EvaluateOrbitNumerator(0,-c.chi,c.u,-c.hi,-c.lo,radial,geometry,rule);
+        const real_t scale = std::max({real_t(1e-100),std::abs(a),std::abs(b),std::abs(d)});
+        if (!std::isfinite(a) || !std::isfinite(b) || !std::isfinite(d)
+            || std::abs(a-b)>1e-5*scale || std::abs(b-d)>1e-5*scale) {
+            PrintError("Mirror symmetry: %s",c.name);
+            return false;
         }
     }
-    delete grid;
-    return success;
+    return true;
 }
 
 // Tests that the orbit-averaged delta calculation converges with increasing
 // number of quadrature points. This is a numerical consistency test rather
 // than a test of a physical invariant.
 bool KnockOn::CheckDeltaQuadratureConvergence() {
-    real_t successRelErrorThreshold = 0.1;
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 31;
-
-    len_t ntheta_interp = 100;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
-    const real_t poloidalOrder = 8;
-
-    bool success = true;
-    real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    // len_t xi0_indices[6] = {0, 5, 16, 20, 25, 29};
-    len_t xi01_indices[6] = {0, 5, 16, 20, 25, 29};
-    // real_t xi01s[6] = {-1, -0.9, 0.02, 0.2, 0.8, 1.0};
-    for (len_t ir = 0; ir < nr; ir++) {
-        for (len_t n = 0; n < 3; n++) {
-            real_t xi_star = xi_stars[n];
-            for (len_t j = 0; j < grid->GetNp2(ir); j++) {
-                if (grid->IsNegativePitchTrappedIgnorableCell(ir, j)) {
-                    continue;
-                }
-                // len_t j = xi0_indices[idx_j];
-                for (len_t idx_l = 0; idx_l < 6; idx_l++) {
-                    len_t l = xi01_indices[idx_l];
-                    real_t delta_default =
-                        DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                            ir, xi_star, j, l, grid, grid, poloidalOrder
-                        );
-                    real_t delta_hires = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid, grid, 32
-                    );
-                    if (fabs(delta_default - delta_hires) >
-                        successRelErrorThreshold * (1 + fabs(delta_default))) {
-                        this->PrintError("failed (j=%ld, l=%ld)", j, l);
-                        this->PrintError("delta_default = %.8g", delta_default);
-                        this->PrintError("delta_hires = %.8g", delta_hires);
-
-                        success = false;
-                    }
-                }
+    namespace K = DREAM::KnockOnUtilities;
+    namespace Q = K::Quadrature;
+    for (real_t epsilon : {0.05,0.3}) {
+        auto grid = KnockOnTest::ToroidalGrid(epsilon,{-1,1});
+        auto *radial = grid->GetRadialGrid();
+        Q::OrbitGeometry geometry(radial->GetFluxSurfaceAverager(),0);
+        const real_t T = std::sqrt(geometry.GetBetaMax());
+        const Q::GaussLegendreRule theta(8), pitch(4), fineTheta(16), finePitch(8);
+        const KnockOnTest::SurfaceReference volume(radial,0,8192);
+        struct Case { const char *name; Q::Interval primary, secondary; real_t chi; };
+        const Case cases[] = {
+            {"negative passing",{-0.95,-0.85},{-1,-0.8},0.55},
+            {"both trapped",{0.1*T,0.4*T},{0.1*T,0.8*T},0.55},
+            {"crossing separatrix",{0.9*T,1.1*T},{0.8*T,1.2*T},0.55},
+            {"crossing zero",{-0.1*T,0.1*T},{0,0.5*T},0},
+            {"near perpendicular",{0.8,1},{-0.08,0.07},0},
+            {"near forward",{0.8,1},{0.8,1},0.9999}
+        };
+        for (const auto& c : cases) {
+            const real_t a = K::EvaluatePitchCellNumerator(0,c.chi,c.primary,c.secondary,radial,geometry,theta,pitch);
+            const real_t b = K::EvaluatePitchCellNumerator(0,c.chi,c.primary,c.secondary,radial,geometry,fineTheta,finePitch);
+            const real_t H = volume.Volume(c.primary.lower,c.primary.upper);
+            const real_t error = std::abs(a-b)*(c.secondary.upper-c.secondary.lower)/H;
+            // This is resolution consistency, not the independent accuracy
+            // oracle: raw poloidal and cell-volume tests below supply that.
+            if (!(H>0) || !std::isfinite(error) || a<0 || b<0 || error>0.005) {
+                PrintError("Cell quadrature: %s epsilon=%g error=%g",c.name,epsilon,error);
+                return false;
             }
         }
     }
-    delete grid;
-    return success;
+    return true;
 }
 
 // check the conservation property that sum_j dxi_j * D_j == 1 for all combinations of pitches on
@@ -381,25 +315,9 @@ bool KnockOn::_checkLocalContributionConservationProperty(
 }
 
 bool KnockOn::CheckLocalContributionConservationProperty() {
-    real_t successRelErrorThreshold = 10 * std::numeric_limits<real_t>::epsilon();
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 60;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
-    bool success =
-        _checkLocalContributionConservationProperty(grid, grid, successRelErrorThreshold);
-    delete grid;
-    return success;
+    auto grid = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(8));
+    return _checkLocalContributionConservationProperty(grid.get(),grid.get(),
+        10*std::numeric_limits<real_t>::epsilon());
 }
 
 // Return true if the delta matrix satisfies the exact analytic normalization property:
@@ -410,14 +328,17 @@ bool KnockOn::_checkDeltaConservationProperty(
     real_t successRelErrorThreshold
 ) {
     const auto *rg = grid_knockon->GetRadialGrid();
+    namespace Q = DREAM::KnockOnUtilities::Quadrature;
+    const Q::GaussLegendreRule theta(8), pitch(4);
     for (len_t ir=0; ir<rg->GetNr(); ++ir) {
+        Q::OrbitGeometry geometry(rg->GetFluxSurfaceAverager(),ir);
         const auto *mg=grid_knockon->GetMomentumGrid(ir);
         std::vector<real_t> column(mg->GetNp2());
         for (real_t chi : {0.0,0.5,1.0})
             for (len_t l=0; l<grid_primary->GetNp2(ir); ++l) {
                 const bool isVoid=grid_primary->GetVpOverP2AtZero(ir)[l]==0;
                 const real_t rawNorm=DREAM::KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir,chi,l,grid_knockon,grid_primary,column.data(),8,4
+                    ir,chi,l,grid_knockon,grid_primary,column.data(),geometry,theta,pitch
                 );
                 real_t mass=0;
                 for (len_t j=0; j<column.size(); ++j) {
@@ -443,25 +364,8 @@ bool KnockOn::_checkDeltaConservationProperty(
 // the accuracy expected from the chosen quadrature resolution, for all
 // cells that it is expected to hold (e.g. not in the negative-trapped region).
 bool KnockOn::CheckDeltaConservationProperty() {
-    // Conservation is enforced on each completed non-void column.
-    real_t successRelErrorThreshold = 1e-12;
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 61;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
-    bool success = _checkDeltaConservationProperty(grid, grid, successRelErrorThreshold);
-    delete grid;
-    return success;
+    auto grid = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(9));
+    return _checkDeltaConservationProperty(grid.get(),grid.get(),1e-12);
 }
 
 // The Delta function in our formulation of the knock-on operator satisfies
@@ -471,52 +375,16 @@ bool KnockOn::CheckDeltaConservationProperty() {
 // the accuracy expected from the chosen quadrature resolution, for all
 // cells that it is expected to hold (e.g. not in the negative-trapped region).
 bool KnockOn::CheckDeltaConservationPropertyConstantB() {
-    // Conservation is enforced on each completed non-void column.
-    real_t successRelErrorThreshold = 1e-12;
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 60;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    real_t B0 = 1.0;
-
-    DREAM::FVM::Grid *grid = InitializeGridRCylPXi(nr, np, nxi, B0, pMin, pMax);
-
-    bool success = _checkDeltaConservationProperty(grid, grid, successRelErrorThreshold);
-    delete grid;
-    return success;
+    KnockOnTest::OwnedGrid grid(InitializeGridRCylPXi(1,1,7,1,0,2));
+    return _checkDeltaConservationProperty(grid.get(),grid.get(),1e-12);
 }
 
 // Like CheckDeltaConservationProperty, but when secondary and primary
 // electrons live on different grids.
 bool KnockOn::CheckDeltaConservationPropertyDifferentGrids() {
-    // Conservation is enforced on each completed non-void column.
-    real_t successRelErrorThreshold = 1e-12;
-
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 60;
-    len_t nxi1 = 60;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid_knockon =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    DREAM::FVM::Grid *grid_primary =
-        InitializeGridGeneralRPXi(nr, np, nxi1, ntheta_interp, nrProfiles, pMin, pMax);
-
-    bool success =
-        _checkDeltaConservationProperty(grid_knockon, grid_primary, successRelErrorThreshold);
-    delete grid_knockon;
-    delete grid_primary;
-    return success;
+    auto target = KnockOnTest::ToroidalGrid(0.05,{-1,-0.8,-0.5,-0.2,0.1,0.4,0.75,1});
+    auto primary = KnockOnTest::ToroidalGrid(0.05,KnockOnTest::UniformPitchFaces(9));
+    return _checkDeltaConservationProperty(target.get(),primary.get(),1e-12);
 }
 
 // In cylindrical geometry (constant B), the orbit-averaged delta function
@@ -527,9 +395,9 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
     namespace K=DREAM::KnockOnUtilities;
     // For chi=1 in a cylinder the exact cell integral is the interval overlap.
     // Unlike, odd/even grids test the primary cell average, not a centre sample.
-    for (const auto sizes : {std::pair<len_t,len_t>{13,18},{18,13}}) {
-        std::unique_ptr<DREAM::FVM::Grid> target(InitializeGridRCylPXi(1,2,sizes.first,1,0,2));
-        std::unique_ptr<DREAM::FVM::Grid> primary(InitializeGridRCylPXi(1,2,sizes.second,1,0,2));
+    for (const auto &sizes : {std::pair<len_t,len_t>{5,8},{8,5}}) {
+        KnockOnTest::OwnedGrid target(InitializeGridRCylPXi(1,1,sizes.first,1,0,2));
+        KnockOnTest::OwnedGrid primary(InitializeGridRCylPXi(1,1,sizes.second,1,0,2));
         const auto *s=target->GetMomentumGrid(0), *p=primary->GetMomentumGrid(0);
         for (len_t order : {len_t(1),len_t(4)})
             for (len_t l=0; l<p->GetNp2(); ++l)
@@ -563,20 +431,11 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
     real_t successRelErrorThreshold = 1e-3;
     bool success = true;
 
-    len_t nr = 5;
-    len_t np = 4;
-    len_t nxi = 30;
-
-    len_t ntheta_interp = 100;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 2;
-
-    DREAM::FVM::Grid *grid =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-    DREAM::FVM::RadialGrid *rg = grid->GetRadialGrid();
-    DREAM::FVM::FluxSurfaceAverager *fsa = rg->GetFluxSurfaceAverager();
+    auto owned = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(12),1,2,0,2);
+    auto *grid = owned.get();
+    const len_t nr = grid->GetNr();
+    auto *rg = grid->GetRadialGrid();
+    auto *fsa = rg->GetFluxSurfaceAverager();
 
     len_t idx_p = 1;
     real_t xi01 = 1;
@@ -611,7 +470,6 @@ bool KnockOn::CheckAgreementWithOldRPTerm() {
             }
         }
     }
-    delete grid;
     return success;
 }
 
@@ -739,22 +597,8 @@ bool KnockOn::_checkMollerSConservationProperty(
 // Test conservation property of the "Møller S matrix"
 // when knock-on and runaway grids are the same.
 bool KnockOn::CheckMollerSConservationProperty() {
-    len_t nr = 2;
-    len_t np = 50;
-    len_t nxi = 2;
-
-    len_t ntheta_interp = 50;
-    len_t nrProfiles = 8;
-
-    real_t pMin = 0;
-    real_t pMax = 4;
-
-    DREAM::FVM::Grid *grid =
-        InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
-
-    bool success = _checkMollerSConservationProperty(grid, grid);
-    delete grid;
-    return success;
+    KnockOnTest::OwnedGrid grid(InitializeGridRCylPXi(1,12,1,1,0,4));
+    return _checkMollerSConservationProperty(grid.get(),grid.get());
 }
 
 /**
@@ -762,152 +606,98 @@ bool KnockOn::CheckMollerSConservationProperty() {
  * elementary gyro-cone probability. It uses neither contact cuts nor the
  * production local-delta/metric helpers. Check raw values before normalization.
  */
-bool KnockOn::CheckPoloidalNumerators() {
+bool KnockOn::CheckPoloidalNumerators(bool extended) {
     namespace K = DREAM::KnockOnUtilities;
     namespace Q = K::Quadrature;
-    // Pole sources on faces, including +/-1, must belong to exactly one
-    // outgoing cell in cylindrical geometry.
     for (real_t u : {-1.0,1.0})
         for (real_t chi : {-1.0,-0.5,0.0,0.5,1.0}) {
             real_t sum=0;
             for (len_t j=0; j<4; ++j) {
                 real_t ratio;
-                sum+=0.5*K::AnalyticDelta::EvaluateLocalContribution(
-                    -1+0.5*j,-0.5+0.5*j,u,1,chi,0,ratio
-                );
+                sum += 0.5*K::AnalyticDelta::EvaluateLocalContribution(
+                    -1+0.5*j,-0.5+0.5*j,u,1,chi,0,ratio);
             }
             if (sum!=1) return false;
         }
-    std::unique_ptr<DREAM::FVM::Grid> grid(InitializeGridGeneralRPXi(2,2,12,100,8));
-    auto *rg=grid->GetRadialGrid();
-    auto *fsa=rg->GetFluxSurfaceAverager();
-    const Q::GaussLegendreRule rule(8);
-    for (len_t ir=0; ir<grid->GetNr(); ++ir) {
-        Q::OrbitGeometry geometry(fsa,ir);
-        const real_t T=std::sqrt(geometry.GetBetaMax());
-        for (real_t u : {0.6*T,T*(1-1e-4),T*(1+1e-4),(1+T)/2,1.0}) {
-            const auto bounds=geometry.GetOrbitBounds(u);
-            auto reference=[&](real_t lo, real_t hi, real_t chi, len_t n) {
-                real_t result=0;
-                const real_t Bmin=fsa->GetBmin(ir,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
-                for (len_t k=0; k<n; ++k) {
-                    const real_t t=(k+0.5)/n;
-                    const real_t theta=bounds.lower+(bounds.upper-bounds.lower)*std::pow(std::sin(M_PI*t/2),2);
-                    const real_t weight=(bounds.upper-bounds.lower)*M_PI/2*std::sin(M_PI*t)/n;
-                    real_t B,J,R,nabla;
-                    fsa->GeometricQuantitiesAtTheta(ir,theta,B,J,R,nabla,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
-                    const real_t b=std::max(1.0,B/Bmin), beta=1-1/b;
-                    if (beta>=u*u) continue;
-                    const real_t eta=std::sqrt((u*u-beta)/(1-beta));
-                    auto local=[&](real_t v) { return std::copysign(std::sqrt(std::max(0.0,(v*v-beta)/(1-beta))),v); };
-                    const real_t a=chi*eta, d=std::sqrt(std::max(0.0,(1-eta*eta)*(1-chi*chi)));
-                    real_t probability;
-                    if (d==0) probability=local(lo)<a && a<=local(hi) ? 1 : 0;
-                    else {
-                        auto angle=[](real_t x) { return std::acos(std::max(-1.0,std::min(1.0,x))); };
-                        probability=(angle((local(lo)-a)/d)-angle((local(hi)-a)/d))/M_PI;
-                    }
-                    result+=weight*4*M_PI*M_PI*J*b*u/eta*probability/(hi-lo);
-                }
-                return result;
+    for (real_t epsilon : {0.05,0.3}) {
+        auto grid = KnockOnTest::ToroidalGrid(epsilon,{-1,1});
+        auto *radial = grid->GetRadialGrid();
+        Q::OrbitGeometry geometry(radial->GetFluxSurfaceAverager(),0);
+        const real_t T = std::sqrt(geometry.GetBetaMax());
+        const Q::GaussLegendreRule rule(8);
+        struct Case { const char *name; real_t u, lo, hi, chi; };
+        std::vector<Case> cases;
+        if (extended) {
+            for (real_t u : {0.6*T,T*(1-1e-4),T*(1+1e-4),(1+T)/2,1.0})
+                for (real_t chi : {0.1,0.55,0.9999})
+                    for (const auto cell : {Q::Interval{-1,1},Q::Interval{0.15,0.85}})
+                        cases.push_back({"extended",u,cell.lower,cell.upper,chi});
+        } else {
+            cases = {
+                {"trapped",0.6*T,0.15,0.85,0.55},
+                {"below separatrix",T*(1-1e-4),0.15,0.85,0.1},
+                {"above separatrix",T*(1+1e-4),0.15,0.85,0.55},
+                {"passing full measure",(1+T)/2,-1,1,0.9999},
+                {"narrow outgoing support",0.9,0.855,0.86,0.55},
+                {"pole",1,0.15,0.85,0.55},
+                {"near perpendicular",0.9,-0.1,0.1,0}
             };
-            const real_t volume=2*reference(-1,1,0.55,32768);
-            for (real_t chi : {0.1,0.55,0.9999})
-                for (const auto cell : {Q::Interval{-1,1},Q::Interval{0.15,0.85}}) {
-                    const real_t ref=reference(cell.lower,cell.upper,chi,32768);
-                    const real_t check=reference(cell.lower,cell.upper,chi,16384);
-                    const real_t value=K::EvaluateOrbitNumerator(ir,chi,u,cell.lower,cell.upper,rg,geometry,rule);
-                    const real_t scale=(cell.upper-cell.lower)/volume;
-                    if (!std::isfinite(value) || value<0 || std::abs(ref-check)*scale>2e-4
-                        || std::abs(value-ref)*scale>1e-3) {
-                        PrintError("Raw orbit: ir=%ld u=%.16g chi=%.8g value=%.8g reference=%.8g",(long)ir,u,chi,value,ref);
-                        return false;
-                    }
-                }
+        }
+        const len_t n = extended ? 32768 : 8192;
+        using Reference = KnockOnTest::OrbitReference;
+        std::map<real_t,std::unique_ptr<Reference>> fine, coarse;
+        for (const auto& c : cases) {
+            if (!fine.count(c.u)) {
+                fine[c.u] = std::make_unique<Reference>(radial,0,c.u,n);
+                coarse[c.u] = std::make_unique<Reference>(radial,0,c.u,n/2);
+            }
+            const real_t ref = fine[c.u]->Cell(c.lo,c.hi,c.chi);
+            const real_t check = coarse[c.u]->Cell(c.lo,c.hi,c.chi);
+            const real_t H = fine[c.u]->Volume();
+            const real_t value = K::EvaluateOrbitNumerator(0,c.chi,c.u,c.lo,c.hi,radial,geometry,rule);
+            const real_t scale = (c.hi-c.lo)/H;
+            if (!(H>0) || !std::isfinite(value) || value<0
+                || std::abs(ref-check)*scale>2e-4 || std::abs(value-ref)*scale>1e-3) {
+                PrintError("Raw orbit: %s eps=%g u=%.16g chi=%g error=%g reference convergence=%g",
+                    c.name,epsilon,c.u,c.chi,(value-ref)*scale,(ref-check)*scale);
+                return false;
+            }
         }
     }
     return true;
 }
 
-namespace {
-// Grid deliberately does not own its radial grid. These fixtures own both.
-struct PitchGridDeleter {
-    void operator()(DREAM::FVM::Grid *grid) const {
-        auto *rg=grid->GetRadialGrid();
-        delete grid;
-        delete rg;
-    }
-};
-using OwnedPitchGrid=std::unique_ptr<DREAM::FVM::Grid,PitchGridDeleter>;
-
-// A circular surface at r/R0=epsilon with independently chosen pitch faces.
-// The generator owns the profile descriptor; its constant arrays live statically.
-DREAM::FVM::Grid *PitchTestGrid(real_t epsilon, const std::vector<real_t>& faces) {
-    using namespace DREAM::FVM;
-    static const real_t r[]={0,1}, one[]={1,1}, zero[]={0,0};
-    auto *profiles=new AnalyticBRadialGridGenerator::shape_profiles{
-        2,2,2,2,2, one,r,zero,r,one,r,zero,r,zero,r
-    };
-    auto *generator=new AnalyticBRadialGridGenerator(1,epsilon-0.01,epsilon+0.01,1,128,profiles);
-    auto *rg=new RadialGrid(generator);
-    auto *mg=new PXiGrid::PXiMomentumGrid(new PXiGrid::MomentumGridGenerator(
-        new PXiGrid::PUniformGridGenerator(2,0,2),
-        new PXiGrid::XiCustomGridGenerator(faces.data(),faces.size()-1)
-    ),0,rg);
-    auto *grid=new Grid(rg,mg);
-    grid->Rebuild(0);
-    return grid;
-}
-}
-
-bool KnockOn::CheckPitchCellAverages() {
+bool KnockOn::CheckPitchCellAverages(bool extended) {
     namespace K=DREAM::KnockOnUtilities;
     namespace Q=K::Quadrature;
-    // No sign symmetry or shared faces: the negative boundary row and its
-    // receiving positive row have different widths; one cell crosses zero.
-    const std::vector<real_t> sf={-1,-.82,-.55,-.2,.12,.43,.72,.86,1};
-    const std::vector<real_t> pf={-1,-.79,-.51,-.11,.17,.57,.83,1};
+    // The default faces have no sign symmetry: negative/positive boundary
+    // rows have different widths, and one primary cell crosses zero.
+    const std::vector<real_t> sf = extended ? KnockOnTest::UniformPitchFaces(40)
+        : std::vector<real_t>{-1,-.82,-.55,-.2,.12,.43,.72,.86,1};
+    const std::vector<real_t> pf = extended ? KnockOnTest::UniformPitchFaces(31)
+        : std::vector<real_t>{-1,-.79,-.51,-.11,.17,.57,.83,1};
+    const Q::GaussLegendreRule theta(8), pitch(4);
     for (real_t epsilon : {0.05,0.3}) {
-        OwnedPitchGrid target(PitchTestGrid(epsilon,sf));
-        OwnedPitchGrid primary(PitchTestGrid(epsilon,pf));
+        auto target = KnockOnTest::ToroidalGrid(epsilon,sf);
+        auto primary = KnockOnTest::ToroidalGrid(epsilon,pf);
         auto *rg=primary->GetRadialGrid();
         auto *fsa=rg->GetFluxSurfaceAverager();
         Q::OrbitGeometry geometry(fsa,0);
         const real_t T=std::sqrt(geometry.GetBetaMax());
-        const real_t Bmin=fsa->GetBmin(0,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
-        // Independent continuum cell volume: integrate in theta AFTER changing
-        // u to local pitch eta. The singular u/eta metric cancels du exactly.
-        // No production contacts, orbit integrals, or stored Vp enter this reference.
-        auto volume=[&](real_t lo,real_t hi,len_t n=32768) {
-            if (hi<=lo) return real_t(0);
-            real_t result=0;
-            for (len_t k=0; k<n; ++k) {
-                const real_t theta=2*M_PI*(k+0.5)/n;
-                real_t B,J,R,nabla;
-                fsa->GeometricQuantitiesAtTheta(0,theta,B,J,R,nabla,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION);
-                const real_t beta=std::max(real_t(0),1-Bmin/B);
-                auto eta=[&](real_t u) {
-                    return std::copysign(std::sqrt(std::max(real_t(0),(u*u-beta)/(1-beta))),u);
-                };
-                real_t length=0;
-                // Negative passing, positive trapped (both orbit signs), positive passing.
-                for (const auto part : {Q::Interval{-1,-T},{0,T},{T,1}}) {
-                    const real_t a=std::max(lo,part.lower), b=std::min(hi,part.upper);
-                    if (b>a) length+=(eta(b)-eta(a))*(part.lower==0 ? 2 : 1);
-                }
-                result+=4*M_PI*M_PI*J*length*(2*M_PI/n);
-            }
-            return result;
-        };
+        // Geometry is independent of the primary/secondary intervals. Cache
+        // each reference node grid once, including a separate convergence grid.
+        const len_t n = extended ? 65536 : 16384;
+        const KnockOnTest::SurfaceReference reference(rg,0,n), coarse(rg,0,n/2);
+        auto volume = [&](real_t lo, real_t hi) { return reference.Volume(lo,hi); };
         std::vector<real_t> column(sf.size()-1);
         for (len_t l=0; l+1<pf.size(); ++l) {
             if (primary->GetVpOverP2AtZero(0)[l]==0) continue;
             const real_t H=volume(pf[l],pf[l+1]);
-            if (!(H>0) || std::abs(volume(pf[l],pf[l+1],16384)/H-1)>1e-4) return false;
+            if (!(H>0) || std::abs(coarse.Volume(pf[l],pf[l+1])/H-1)>1e-4) return false;
             const real_t Hgrid=(pf[l+1]-pf[l])*primary->GetVpOverP2AtZero(0)[l];
             for (real_t chi : {0.0,0.55,1.0}) {
                 const real_t norm=K::SetDeltaMatrixColumnOnGrid(
-                    0,chi,l,target.get(),primary.get(),column.data(),8,4
+                    0,chi,l,target.get(),primary.get(),column.data(),geometry,theta,pitch
                 );
                 if (!std::isfinite(norm) || std::abs(norm*Hgrid/H-1)>0.005) {
                     PrintError("Raw pitch volume: eps=%g l=%ld chi=%g Hquad/H=%g",epsilon,(long)l,chi,norm*Hgrid/H);
@@ -933,4 +723,16 @@ bool KnockOn::CheckPitchCellAverages() {
         }
     }
     return true;
+}
+
+
+// Called only by the explicitly built extended executable, never by Run().
+bool KnockOn::RunExtended() {
+    bool success = CheckPoloidalNumerators(true);
+    success = CheckPitchCellAverages(true) && success;
+    auto target = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(40));
+    auto primary = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(31));
+    success = _checkDeltaConservationProperty(target.get(),primary.get(),1e-12) && success;
+    if (success) PrintOK("Extended raw quadrature, cell-volume/overlap and unlike-grid checks passed.");
+    return success;
 }
