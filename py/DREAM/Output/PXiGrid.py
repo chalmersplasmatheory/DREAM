@@ -7,7 +7,10 @@ from .MomentumGrid import MomentumGrid
 
 
 class PXiGrid(MomentumGrid):
-    
+    P1_NAME = 'p'
+    P2_NAME = 'xi'
+    P1_TEX_NAME = r'$p$'
+    P2_TEX_NAME = r'$\xi$'
 
     def __init__(self, name, rgrid, data):
         """
@@ -18,36 +21,33 @@ class PXiGrid(MomentumGrid):
         data:  Momentum grid data.
         """
         super(PXiGrid, self).__init__(name=name, rgrid=rgrid, data=data)
+        self.p  = self.p1
+        self.xi = self.p2
+        self.p_f = self.p1_f
+        self.xi_f = self.p2_f
+        self.dp = self.dp1
+        self.dxi = self.dp2
 
-        self.p1name = 'p'
-        self.p2name = 'xi'
+        def ppar(p, xi):
+            return p * xi
+        def pperp(p, xi):
+            sinSq = 1-xi**2
+            sinSq[sinSq<0] = 0
+            return p * np.sqrt(sinSq)
 
-        self.p  = data['p1']
-        self.xi = data['p2']
-        self.xi_f = data['p2_f']
-        self.dp = data['dp1']
-        self.dxi = data['dp2']
+        self._P, self._XI = np.meshgrid(self.p[:], self.xi[:])
+        self._PPAR = ppar(self._P, self._XI)
+        self._PPERP = pperp(self._P, self._XI)
+        self._GAMMA = np.sqrt(self._P**2 + 1)
 
-        self.P, self.XI = np.meshgrid(self.p[:], self.xi[:])
-        self.PPAR = self.P*self.XI
-        self.PPERP = self.P*np.sqrt(1-self.XI**2)
-        self.GAMMA = np.sqrt(self.P**2 + 1)
+        # flux grid corners grid, for use with e.g. pcolormesh
+        self._P_f, self._XI_f = np.meshgrid(self.p_f[:], self.xi_f[:])
+        self._PPAR_f = ppar(self._P_f, self._XI_f)
+        self._PPERP_f = pperp(self._P_f, self._XI_f)
 
-
-    def getGamma(self):
-        """
-        Returns a meshgrid representing the relativistic factor on this
-        2D momentum grid.
-        """
-        return self.GAMMA
-
-
-    def getVpar(self):
-        """
-        Returns a meshgrid representing the parallel velocity on this
-        2D momentum grid.
-        """
-        return scipy.constants.c * (self.PPAR/self.GAMMA)
+        # phase-space weights in various representations
+        self._VprimeCylindrical = self.Vprime_VpVol * self._PPERP / self._P**2
+        self._VprimeSpherical = np.copy(self.Vprime_VpVol)
 
     def getBounceAveragedVpar(self):
         """
@@ -66,6 +66,7 @@ class PXiGrid(MomentumGrid):
         xi = self.xi[:]
         xi_f = self.xi_f[:]
         xi0TrappedBoundary = self.rgrid.xi0TrappedBoundary[:]
+        v = c * p / np.sqrt(1+p**2)
 
         # Calculate bounce averaged v||
         for ir in range(0, self.rgrid.r.size):
@@ -83,13 +84,6 @@ class PXiGrid(MomentumGrid):
                     xi0Average = xi[j]
 
                 if xi0Average != 0:
-                    for i in range(0, p.size):
-                        v = c * p[i] / np.sqrt(1+p[i]**2)
-                        integrand[ir,j,i] =  2*np.pi * p[i]**2 * v * xi0Average / Vprime_VpVol[ir,j,i]
+                    integrand[ir,j,:] =  2*np.pi * p**2 * v * xi0Average / Vprime_VpVol[ir,j,:]
 
         return integrand
-
-
-
-
-
