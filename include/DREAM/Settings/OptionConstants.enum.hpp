@@ -470,3 +470,28 @@ enum eqterm_NBI_gaussian_profile {
     EQTERM_NBI_GAUSSIAN_PROFILE_ITER=2,
     EQTERM_NBI_GAUSSIAN_PROFILE_CUSTOM=3
 };
+
+/////////////////////////////////////
+///
+/// QUASILINEAR DIFFUSION OPTIONS
+///
+/////////////////////////////////////
+// Type of wave spectrum for quasilinear diffusion
+enum wave_spectrum_type {
+    WAVE_SPECTRUM_UNIFORM=1,      // Uniform grid in (k, theta_k)
+    WAVE_SPECTRUM_GAUSSIAN=2,     // Gaussian spectrum
+    WAVE_SPECTRUM_CUSTOM=3        // Custom spectrum from file
+};
+
+// Quasilinear diffusion mode
+enum ql_diffusion_mode {
+    QL_DIFFUSION_MODE_NEGLECT=1,  // Disable quasilinear diffusion
+    QL_DIFFUSION_MODE_INCLUDE=2   // Enable quasilinear diffusion
+};
+
+// Harmonic selection for wave-particle resonance
+enum ql_harmonic_mode {
+    QL_HARMONIC_N_MINUS_1=1,      // Normal Doppler resonance (n=-1)
+    QL_HARMONIC_N_PLUS_1=2,       // Anomalous Doppler resonance (n=+1)
+    QL_HARMONIC_BOTH=3            // Both harmonics
+};
