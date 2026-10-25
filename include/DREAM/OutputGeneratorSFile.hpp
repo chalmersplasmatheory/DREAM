@@ -13,6 +13,8 @@ namespace DREAM {
 
 		virtual void SaveCodeInfo(const std::string&) override;
 		virtual void SaveGrids(const std::string&, bool) override;
+		virtual void SaveGridBoltzmann(const std::string&) override;
+		virtual void SaveGridBoltzmannDeltaKernel(const std::string&, const MollerDeltaAngleKernel*) override;
 		virtual void SaveIonMetaData(const std::string&) override;
 		virtual void SaveOtherQuantities(const std::string&) override;
 		virtual void SaveSettings(const std::string&) override;
@@ -25,8 +27,8 @@ namespace DREAM {
         void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
         void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 	public:
-		OutputGeneratorSFile(EquationSystem*, const std::string&, bool savesettings=true);
-		OutputGeneratorSFile(EquationSystem*, SFile*, bool savesettings=true);
+		OutputGeneratorSFile(EquationSystem*, const std::string&, struct OutputGenerator::static_qtys *staticQuantities=nullptr, bool savesettings=true);
+		OutputGeneratorSFile(EquationSystem*, SFile*, struct OutputGenerator::static_qtys *staticQuantities=nullptr, bool savesettings=true);
         virtual ~OutputGeneratorSFile();
 
         SFile *GetSFile() { return this->sf; }

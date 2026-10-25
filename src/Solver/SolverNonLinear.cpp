@@ -662,7 +662,7 @@ void SolverNonLinear::SaveDebugInfoAfter(
                 outname += suffix;
             outname += ".h5";
 
-            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname, true);
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname, nullptr, true);
             outgen->SaveCurrent();
             delete outgen;
         }

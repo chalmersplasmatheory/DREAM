@@ -26,6 +26,8 @@ using namespace DREAM;
  */
 Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     const real_t t0 = 0;
+	struct OutputGenerator::static_qtys *staticQuantities = new OutputGenerator::static_qtys();
+
     // Construct grids
     enum OptionConstants::momentumgrid_type ht_type, re_type;
     FVM::Grid *scalarGrid  = ConstructScalarGrid();
@@ -52,7 +54,7 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     // Construct equation system
     EquationSystem *eqsys = ConstructEquationSystem(
         s, scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid,
-        adas, nist, amjuel
+        adas, nist, amjuel, staticQuantities
     );
 
     // Set up simulation
@@ -62,7 +64,7 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     sim->SetAMJUEL(amjuel);
     sim->SetEquationSystem(eqsys);
 
-    LoadOutput(s, sim);
+    LoadOutput(s, sim, staticQuantities);
 
 	IO::Init(sim);
 
@@ -127,11 +129,14 @@ AMJUEL *SimulationGenerator::LoadAMJUEL(Settings*){
 /**
  * Load output settings.
  */
-void SimulationGenerator::LoadOutput(Settings *s, Simulation *sim) {
+void SimulationGenerator::LoadOutput(
+	Settings *s, Simulation *sim,
+	OutputGenerator::static_qtys *staticQuantities
+) {
     std::string filename = s->GetString("output/filename");
 
     sim->SetOutputGenerator(new OutputGeneratorSFile(
-        sim->GetEquationSystem(), filename
+        sim->GetEquationSystem(), filename, staticQuantities
     ));
 }
 
