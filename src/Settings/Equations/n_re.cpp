@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
+#include "DREAM/Equations/Fluid/MollerProductionRateTerm.hpp"
 #include "DREAM/Equations/Fluid/LCFSLossRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
@@ -36,6 +37,9 @@ void SimulationGenerator::DefineOptions_n_re(
 ) {
     s->DefineSetting(MODULENAME "/avalanche", "Model to use for secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
+    s->DefineSetting(MODULENAME "/boltzmann/poloidal", "Gauss order per poloidal contact panel", (int_t)8);
+    s->DefineSetting(MODULENAME "/boltzmann/pitch", "Gauss order per primary-pitch contact panel", (int_t)4);
+    s->DefineSetting(MODULENAME "/boltzmann/nxi", "Number of tabulated scattering cosines", (int_t)80);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
     s->DefineSetting(MODULENAME "/negative_re", "When in kinetic mode, properly account for runaways in both positive and negative pitch directions.", (bool)false);
@@ -155,6 +159,24 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
+
+    auto ava_mode = (OptionConstants::eqterm_avalanche_mode)
+    s->GetInteger("eqsys/n_re/avalanche");
+
+    if (eqsys->HasRunawayGrid() &&
+        ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON
+    ) {
+        // add the electrons created due to runaway-runaway knock-ons
+        const real_t sourceSign = -1.0;
+        const len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+        const MollerKernelHandler *kh = eqsys->GetMollerKernelHandler();
+        Op_n_tot->AddTerm(new MollerProductionRateTerm(
+            fluidGrid, runawayGrid, runawayGrid,
+            eqsys->GetUnknownHandler(), id_f_re,
+            kh->EnergyReRe(), sourceSign
+        ));
+        desc_sources += " + internal avalanche";
+    }
 
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(

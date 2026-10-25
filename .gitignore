@@ -39,4 +39,5 @@ tools/cache
 *.synctex.gz
 venv
 .venv
+*.synctex.gz
 

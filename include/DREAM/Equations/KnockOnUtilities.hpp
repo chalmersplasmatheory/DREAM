@@ -21,6 +21,7 @@
 #include <cmath>
 
 #include "DREAM/Constants.hpp"
+#include "DREAM/Equations/KnockOnQuadrature.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -129,7 +130,6 @@ real_t EvaluateLocalContribution(
 // ============================================================================
 // Orbit-averaging routines based on a RadialGrid for local-geometry evaluation
 // ============================================================================
-enum orbit_integration_method { MIDPOINT_RULE, ADAPTIVE_TRAPEZOID, ADAPTIVE_GSL };
 
 /**
  * Evaluate local geometric quantities and return true if this poloidal location
@@ -146,6 +146,33 @@ real_t OrbitDeltaIntegrand(
     const FVM::RadialGrid *rg
 );
 
+// Unnormalized primary-volume-weighted orbit numerator. Its theta integral
+// equals (Vp1/p1^2)*delta_j before trapped-sign/cell corrections. The existing
+// integrand already divides by the outgoing cell width; do not divide again.
+// This explicit-pitch interface introduces no grid-centre substitution.
+real_t OrbitNumeratorIntegrand(
+    real_t theta, len_t ir, real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t xi_star,
+    const FVM::RadialGrid *rg
+);
+
+// Integrate the raw numerator using prepared geometry/rule. When mirror=true,
+// both scattering signs share each evaluation of the geometric quantities.
+real_t EvaluateOrbitNumerator(
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2,
+    const FVM::RadialGrid *rg, Quadrature::OrbitGeometry& geometry,
+    const Quadrature::GaussLegendreRule& rule, bool mirror=false
+);
+
+// Continuum integral of the unnormalized numerator over represented primary
+// pitch. Includes trapped signs, but no native void-column or boundary-row
+// transfer. The secondary interval is averaged, the primary interval integrated.
+real_t EvaluatePitchCellNumerator(
+    len_t ir, real_t xi_star, Quadrature::Interval primary, Quadrature::Interval secondary,
+    const FVM::RadialGrid *rg, Quadrature::OrbitGeometry& geometry,
+    const Quadrature::GaussLegendreRule& poloidalRule,
+    const Quadrature::GaussLegendreRule& pitchRule
+);
+
 /**
  * Fundamental gyro-, bounce-, and FVM-averaged kinematic delta function.
  *
@@ -154,8 +181,8 @@ real_t OrbitDeltaIntegrand(
  * explicitly account for co- and counter-moving trapped contributions.
  */
 real_t EvaluateOrbitAveragedDelta(
-    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
-    real_t theta2, const FVM::RadialGrid *rg, len_t n_points_integral, orbit_integration_method quad
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1,
+    const FVM::RadialGrid *rg, len_t poloidalOrder
 );
 
 /**
@@ -165,35 +192,36 @@ real_t EvaluateOrbitAveragedDelta(
  * for trapped regions in xi0 and/or xi01.
  */
 real_t EvaluateOrbitAveragedDeltaWithTrappingCorrection(
-    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1, real_t theta1,
-    real_t theta2, const FVM::RadialGrid *rg, len_t n_points, orbit_integration_method quad
+    len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1,
+    const FVM::RadialGrid *rg, len_t poloidalOrder
 );
 
 // ============================================================================
 // Grid-aware helpers for constructing matrix elements in equation terms
 // ============================================================================
 
-// Sets theta1, theta2 to the tightest conservative bound guaranteed to capture all non-zero
-// contributions to the orbit average.
-void EstimateBoundingTheta(
-    len_t ir, len_t j, len_t l, real_t &theta1, real_t &theta2, const FVM::Grid *grid_knockon,
-    const FVM::Grid *grid_primary
-);
-
 /**
- * Set a single pitch matrix element \delta_{jl} on a DREAM grid.
- * This wraps EvaluateOrbitAveragedDeltaWithTrappingCorrection.
+ * Unnormalized cell-averaged matrix element A_jl/Hgrid_l on a DREAM grid.
+ * This is a diagnostic; complete columns are normalized by the helper below.
  */
 real_t EvaluateDeltaMatrixElementOnGrid(
     len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
-    const FVM::Grid *grid_primary, len_t n_points_integral, orbit_integration_method quad
+    const FVM::Grid *grid_primary, len_t poloidalOrder, len_t pitchOrder=4
 );
 
 // Set a full column {j} of pitch matrix elements \delta_{jl} on a DREAM grid,
 // applying the exact conservation constraint \sum_j dxi_j delta_{jl} == 1.
+// Returns Hquad/Hgrid before normalization (not generally unity).
 real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
-    real_t *deltaCol, len_t n_points_integral, orbit_integration_method quad = MIDPOINT_RULE
+    real_t *deltaCol, len_t poloidalOrder, len_t pitchOrder=4
+);
+
+// Reuse one geometry per radius and both Gauss rules per table build.
+real_t SetDeltaMatrixColumnOnGrid(
+    len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
+    real_t *deltaCol, Quadrature::OrbitGeometry& geometry, const Quadrature::GaussLegendreRule& rule,
+    const Quadrature::GaussLegendreRule& pitchRule
 );
 
 // Set a single momentum matrix element S_{ik} on a DREAM grid.

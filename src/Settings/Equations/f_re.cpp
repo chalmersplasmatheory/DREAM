@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
+#include "DREAM/Equations/Kinetic/MollerBoltzmannOperator.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/IO.hpp"
@@ -118,14 +119,33 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
 
     rsth->AddToOperators(Op_nRE, Op_nTot, Op_ni, Op_nREn);
 
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) {
+        if (eqsys->GetRunawayGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI) {
+            throw NotImplementedException("f_re: Boltzmann knock-on only implemented for p-xi grid.");
+        }
+        const MollerKernelHandler *kh = eqsys->GetMollerKernelHandler();
+        constexpr real_t sourceSign = -1.0;
+        oqty_terms->knock_on_general_re_re = new MollerBoltzmannOperator(
+            runawayGrid, runawayGrid, eqsys->GetUnknownHandler(),
+            id_f_re, kh->EnergyReRe(), kh->AngleReRe(), sourceSign
+        );
+        Op_nTot->AddTerm(oqty_terms->knock_on_general_re_re);
+    }
+
     if (!Op_nRE->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_re, Op_nRE);
+    else delete Op_nRE;
     if (!Op_nTot->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_tot, Op_nTot);
+    else delete Op_nTot;
     if (!Op_ni->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_i, Op_ni);
+    else delete Op_ni;
     if (Op_nREn != nullptr && !Op_nREn->IsEmpty())
         eqsys->SetOperator(id_f_re, id_n_re_neg, Op_nREn);
+    else delete Op_nREn;
 
     // Add kinetic-kinetic boundary condition if necessary...
     if (eqsys->HasHotTailGrid()) {

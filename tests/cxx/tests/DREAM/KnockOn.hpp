@@ -12,6 +12,8 @@ class KnockOn : public UnitTest {
 
     bool CheckDeltaMirrorProperties();
     bool CheckDeltaQuadratureConvergence();
+    bool CheckPoloidalNumerators(bool extended=false);
+    bool CheckPitchCellAverages(bool extended=false);
     bool CheckLocalContributionConservationProperty();
     bool CheckDeltaConservationProperty();
     bool CheckDeltaConservationPropertyConstantB();
@@ -25,6 +27,7 @@ class KnockOn : public UnitTest {
     bool CheckMollerSConservationProperty();
 
     virtual bool Run(bool) override;
+    bool RunExtended();
 
    private:
     bool _checkLocalContributionConservationProperty(
