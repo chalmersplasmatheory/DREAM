@@ -95,7 +95,6 @@ namespace DREAM {
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
-        static void DefineOptions_Ions_abl(Settings *s);
         static void DefineOptions_j_bs(Settings*);
         static void DefineOptions_j_ohm(Settings*);
         static void DefineOptions_j_tot(Settings*);
@@ -156,7 +155,6 @@ namespace DREAM {
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_Ions_abl(EquationSystem*, Settings*, ADAS*, AMJUEL*);
         static void ConstructEquation_Ion_Ni(EquationSystem*, Settings*);
         static void ConstructEquation_T_i(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_i_trivial(EquationSystem*, Settings*);

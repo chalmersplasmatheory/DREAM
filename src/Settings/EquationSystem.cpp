@@ -204,7 +204,6 @@ void SimulationGenerator::ConstructEquations(
 
 
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
-		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
 		ConstructEquation_n_abl(eqsys, s);
 		ConstructEquation_T_abl(eqsys, s, adas, nist, amjuel, oqty_terms);
 	}

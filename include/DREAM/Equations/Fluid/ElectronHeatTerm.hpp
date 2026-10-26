@@ -9,7 +9,6 @@
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
-#include "DREAM/Equations/Fluid/IonisationHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"

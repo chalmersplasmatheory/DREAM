@@ -307,7 +307,6 @@ MOLECULAR_REACTIONS = [
         "reactants": [("RE", -1, 1), ("D2", 1, 1)],
         "products": [("RE", -1, 1), ("D", 1, 2), ("e", -1, 1)],
         "classification": "RUNAWAY",
-        # H atom used as proxy (as in IonBalance)
         "data_type": "RIEKE",
         "data": {"M2": H_rieke_M2, "C": H_rieke_C, "factor": 1},
         "temperature_input": {"kind": "none"},
@@ -448,18 +447,6 @@ MOLECULAR_REACTIONS = [
         "data_type": "UNIQUE_FORMULA_5",
         "data": {},
         "temperature_input": {"kind": "electron"},
-        "density_input": {"kind": "none"}
-    },
-
-    {
-        "name": "HeD+_runaway",
-        "reactants": [("RE", -1, 1), ("HeD", 1, 1)],
-        "products": [("RE", -1, 1), ("He", 1, 1), ("D", 1, 1), ("e", -1, 1)],
-        "classification": "RUNAWAY",
-        # Not included in IonBalance, set to zero for now
-        "data_type": "RUNAWAY_CROSS_SECTION",
-        "data": HeDp_runaway_cross_section,
-        "temperature_input": {"kind": "none"},
         "density_input": {"kind": "none"}
     },
 
