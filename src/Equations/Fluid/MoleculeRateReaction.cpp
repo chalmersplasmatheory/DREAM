@@ -9,6 +9,7 @@
  * involving molecular species. .
 */
 
+#include <utility>
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Equations/Fluid/MoleculeRateReaction.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -287,9 +288,66 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
 
 
 
+/**
+ * Build the linearised operator for this term .
+ */
 void MoleculeRateReaction::SetCSMatrixElements(
-      FVM::Matrix*, real_t*, const len_t, const len_t, const len_t
-  ) { //TODO: implement this function if needed
+      FVM::Matrix *mat, real_t *rhs, const len_t iIon, const len_t Z0, const len_t rOffset
+  ) {
+    const len_t nr = this->grid->GetNr();
+    const std::string name = ions->GetName(iIon);
+
+    for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) {
+        const MolecularReaction& reaction = moleculeReactions[rateIndex];
+
+        // Net number of particles produced in this equation.
+        real_t net = 0;
+
+        //check if this ion is part of the products, if so, the rate should be positive
+        for (len_t j = 0; j < reaction.nProducts; j++) {
+            const auto& p = reaction.products[j];
+
+            if (name == p.name && p.Z0 == (int_t)Z0)
+                net += p.coefficient;
+        }
+
+        //check if this ion is part of the reactants, if so, the rate should be negative
+        for (len_t j = 0; j < reaction.nReactants; j++) {
+            const auto& r = reaction.reactants[j];
+
+            if (name == r.name && r.Z0 == (int_t)Z0)
+                net -= r.coefficient;
+        }
+
+        if (net == 0)
+            continue;
+
+        len_t idA, idB, offsetA, offsetB;
+        GetReactantDensity(reaction.reactants[0], idA, offsetA);
+        GetReactantDensity(reaction.reactants[1], idB, offsetB);
+
+        // Let A be the implicit (matrix) density: an ion, preferably this row's own species
+        const auto& rB = reaction.reactants[1];
+        const bool BisSelf = (name == rB.name && rB.Z0 == (int_t)Z0);
+        if (idB == id_ions && (idA != id_ions || BisSelf)) {
+            std::swap(idA, idB);
+            std::swap(offsetA, offsetB);
+        }
+
+        const real_t *dA = unknowns->GetUnknownData(idA);
+        const real_t *dB = unknowns->GetUnknownData(idB);
+
+        for (len_t ir = 0; ir < nr; ir++) {
+            const real_t nB = dB[offsetB + ir];
+
+            // S = net * K * nA * nB  ->  matrix element net*K*nB in column nA
+            if (idA == id_ions)
+                mat->SetElement(rOffset + ir, offsetA + ir, net * Rate[rateIndex][ir] * nB);
+            // No ion reactant: the whole term is a known source
+            else if (rhs != nullptr)
+                rhs[rOffset + ir] += net * Rate[rateIndex][ir] * dA[offsetA + ir] * nB;
+        }
+    }
   }
 
 void MoleculeRateReaction::SetCSVectorElements(
