@@ -33,6 +33,8 @@ doc/sphinx/build
 petsc_matrix
 petsc_matrix.info
 src/Atomics/adasdata.cpp
+src/MolecularRateData.cpp
+src/Equations/Fluid/RateData.cpp
 tools/cache
 *.CDF
 *.cdf
