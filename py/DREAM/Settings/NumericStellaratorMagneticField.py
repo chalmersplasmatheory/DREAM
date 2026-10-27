@@ -108,12 +108,12 @@ class NumericStellaratorMagneticField(NumericalMagneticField):
         self.g_tt = np.array(self.eq.compute('g_tt', grid=self.grid)['g_tt'], dtype=np.float64)
         self.g_tp = np.array(self.eq.compute('g_tz', grid=self.grid)['g_tz'], dtype=np.float64)
         isAxis = np.where(self.grid.nodes[:,0] == 0)
-        for i in isAxis:
-            self.g_tt[i] = self.g_tt[i+self.ntheta]
-            self.g_tp[i] = self.g_tp[i+self.ntheta]
         isNotAxis = np.where(self.grid.nodes[:,0] != 0)
         self.g_tt[isNotAxis] = self.g_tt[isNotAxis] / self.Jacobian[isNotAxis]**2
         self.g_tp[isNotAxis] = self.g_tp[isNotAxis] / self.Jacobian[isNotAxis]**2
+        for i in isAxis:
+            self.g_tt[i] = self.g_tt[i+self.ntheta]
+            self.g_tp[i] = self.g_tp[i+self.ntheta]
 
         self.lambda_t = np.array(self.eq.compute('lambda_t', grid=self.grid)['lambda_t'] + iota*self.eq.compute('nu_t', grid=self.grid)['nu_t'], dtype=np.float64)
         self.lambda_p = np.array(self.eq.compute('lambda_z', grid=self.grid)['lambda_z'] + iota*self.eq.compute('nu_z', grid=self.grid)['nu_z'], dtype=np.float64)
