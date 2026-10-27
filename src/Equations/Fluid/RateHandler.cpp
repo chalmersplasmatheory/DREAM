@@ -22,8 +22,9 @@ using namespace DREAM;
 */
 RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions, 
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled, 
-    const std::vector<std::string>& enabledReactionNames
-) :  grid(grid), ions(ions), adas(adas), unknowns(unknowns) {
+    const std::vector<std::string>& enabledReactionNames,
+    const std::unordered_map<std::string, UserMolecularRate>& userRates
+) :  grid(grid), ions(ions), adas(adas), userRates(userRates), unknowns(unknowns) {
 
     this->unknowns  = unknowns;
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -260,11 +261,24 @@ void RateHandler::AddMolecularReactionRates( const std::vector<std::string>& ena
 }
 
 /**
- * Helper method to get a molecular rate by name.
+ * Helper method to get a molecular rate by name. A user-supplied
+ * rate (from the settings) takes precedence over the pre-calculated
+ * table in MolecularRateData.cpp.
  */
 MolecularRateInterpolator *RateHandler::GetMolecularRateByName(
       const char *rateName
 ) const {
+    auto it = userRates.find(rateName);
+    if (it != userRates.end()) {
+        const UserMolecularRate& r = it->second;
+        molecular_rate rate = {
+            rateName, r.logn.size(), r.logT.size(),
+            r.logn.data(), r.logT.data(), r.coeff.data()
+        };
+        printf("RateHandler: Using user-supplied rate for '%s'.\n", rateName);
+        return new MolecularRateInterpolator(&rate);
+    }
+
     for (len_t i = 0; i < molecular_rate_n; i++) {
         //Pick up the correct rate in MolecularRateData.cpp by the correct name
         if (std::string(molecular_rate_table[i].name) == rateName) 

@@ -67,6 +67,7 @@ class Ions(UnknownQuantity):
 
         self.reactions_enabled = False
         self.enabled_reaction_names = []
+        self.user_rates = {}
         self.typeTn = IONS_T_N_NEGLECT
 
     def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT,
@@ -355,6 +356,44 @@ class Ions(UnknownQuantity):
                       n=0,
                       r=self.r,
                   )
+
+    def setReactionRate(self, name, rate, T = None, n=None):
+        """
+        Replace the pre-calculated rate of a molecular reaction with
+        user-supplied data.
+
+        :param str name:  Name of the reaction (as in MolecularReactionData.py).
+        :param T:         Temperature grid [eV], strictly increasing.
+                          If not given, the rate is independent of temperature.
+        :param rate:      Rate coefficient <sigma v> [m^3/s], shape (nT,) if
+                          n is None, otherwise shape (nT, nn).
+        :param n:         Density grid [m^-3], strictly increasing.
+                          If not given, the rate is independent of density.
+        """
+        names = [r["name"] for r in reaction_data.MOLECULAR_REACTIONS]
+        if name not in names:
+            raise EquationException(f"Unknown molecular reaction '{name}'.")
+
+        
+        rate = np.asarray(rate, dtype=float)
+
+        if T is None:
+            T = np.array([1e-2, 1e5])
+            rate = np.stack((rate, rate))              
+        if n is None:
+            n = np.array([1e14, 1e22])
+            rate = np.stack((rate, rate), axis=-1)      
+        T = np.asarray(T, dtype=float)
+        n = np.asarray(n, dtype=float)
+
+        if rate.shape != (T.size, n.size):
+            raise EquationException(f"Rate '{name}': 'rate' must have shape (nT, nn) = ({T.size}, {n.size}), but has shape {rate.shape}.")
+        if T.size < 2 or np.any(np.diff(T) <= 0) or np.any(np.diff(n) <= 0):
+            raise EquationException(f"Rate '{name}': 'T' and 'n' must be strictly increasing with at least two points.")
+        if np.any(T <= 0) or np.any(n <= 0) or np.any(rate <= 0):
+            raise EquationException(f"Rate '{name}': 'T', 'n' and 'rate' must be positive (interpolation is done in log10).")
+
+        self.user_rates[name] = {'n': n, 'T': T, 'rate': rate}
 
 
 
@@ -978,6 +1017,20 @@ class Ions(UnknownQuantity):
                 name for name in names.split(";") if name
             ]
 
+            if "user_rates" in reactions:
+                ur = reactions["user_rates"]
+                on, oT, ok = 0, 0, 0
+                for i, name in enumerate(ur["names"].split(";")[:-1]):
+                    nn, nT = int(ur["nn"][i]), int(ur["nT"][i])
+                    self.user_rates[name] = {
+                        'n': ur["n"][on:on+nn],
+                        'T': ur["T"][oT:oT+nT],
+                        'rate': ur["rate"][ok:ok+nT*nn].reshape((nT, nn))
+                    }
+                    on += nn
+                    oT += nT
+                    ok += nT*nn
+
         self.verifySettings()
 
 
@@ -1233,6 +1286,16 @@ class Ions(UnknownQuantity):
         data["reactions"] = {
         "enabled": int(self.reactions_enabled),
         "names": ";".join(self.enabled_reaction_names),
+            }
+
+        if self.user_rates:
+            data["reactions"]["user_rates"] = {
+                "names": "".join(f"{name};" for name in self.user_rates),
+                "nn": [r['n'].size for r in self.user_rates.values()],
+                "nT": [r['T'].size for r in self.user_rates.values()],
+                "n": np.concatenate([r['n'] for r in self.user_rates.values()]),
+                "T": np.concatenate([r['T'] for r in self.user_rates.values()]),
+                "rate": np.concatenate([r['rate'].flatten() for r in self.user_rates.values()]),
             }
 
         return data

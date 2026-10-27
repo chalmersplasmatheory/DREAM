@@ -22,6 +22,7 @@
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 
 
+#include <cmath>
 #include <iostream>
 
 using namespace DREAM;
@@ -67,6 +68,12 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
 
     s->DefineSetting(MODULENAME "/reactions/enabled", "Enable selected molecular reactions", (int_t)0);
     s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
+    s->DefineSetting(MODULENAME "/reactions/user_rates/names", "Names of molecular rates replaced by user-supplied tables", (const string)"");
+    s->DefineSetting(MODULENAME "/reactions/user_rates/nn", "Number of density points in each user-supplied rate table", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/user_rates/nT", "Number of temperature points in each user-supplied rate table", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/user_rates/n", "Density grids of the user-supplied rate tables [m^-3]", 1, dims, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/user_rates/T", "Temperature grids of the user-supplied rate tables [eV]", 1, dims, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/user_rates/rate", "User-supplied rate coefficients [m^3/s]", 1, dims, (real_t*)nullptr);
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonR(MODULENAME, s, "initialTi");
     DefineDataIonR(MODULENAME, s, "initialTn");
@@ -272,8 +279,32 @@ void SimulationGenerator::ConstructEquation_Ions(
     const vector<string> reactionNames =
         s->GetStringList(MODULENAME "/reactions/names");
 
+    const vector<string> userRateNames = s->GetStringList(MODULENAME "/reactions/user_rates/names");
+    len_t nUserRates, nUser_n, nUser_T, nUser_rate;
+    const int_t *user_nn = s->GetIntegerArray(MODULENAME "/reactions/user_rates/nn", 1, &nUserRates);
+    const int_t *user_nT = s->GetIntegerArray(MODULENAME "/reactions/user_rates/nT", 1, &nUserRates);
+    const real_t *user_n = s->GetRealArray(MODULENAME "/reactions/user_rates/n", 1, &nUser_n);
+    const real_t *user_T = s->GetRealArray(MODULENAME "/reactions/user_rates/T", 1, &nUser_T);
+    const real_t *user_rate = s->GetRealArray(MODULENAME "/reactions/user_rates/rate", 1, &nUser_rate);
+
+    unordered_map<string, UserMolecularRate> userRates;
+    len_t offn = 0, offT = 0, offk = 0;
+    for (len_t i = 0; i < userRateNames.size(); i++) {
+        UserMolecularRate& r = userRates[userRateNames[i]];
+        for (int_t j = 0; j < user_nn[i]; j++)
+            r.logn.push_back(log10(user_n[offn+j]));
+        for (int_t j = 0; j < user_nT[i]; j++)
+            r.logT.push_back(log10(user_T[offT+j]));
+        for (int_t j = 0; j < user_nn[i]*user_nT[i]; j++)
+            r.coeff.push_back(log10(user_rate[offk+j]));
+
+        offn += user_nn[i];
+        offT += user_nT[i];
+        offk += user_nn[i]*user_nT[i];
+    }
+
     RateHandler *ratehandler = new RateHandler(
-        fluidGrid ,ih, adas, eqsys->GetUnknownHandler(),reactionsEnabled, reactionNames
+        fluidGrid ,ih, adas, eqsys->GetUnknownHandler(),reactionsEnabled, reactionNames, userRates
     );
     eqsys->SetRateHandler(ratehandler);
 

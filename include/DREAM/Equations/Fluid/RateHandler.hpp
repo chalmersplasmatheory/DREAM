@@ -46,6 +46,14 @@ struct MolecularReaction {
     MolecularInput densityInput;
 };
 
+//Hold a user-supplied molecular rate table (given in the settings),
+//which replaces the pre-calculated table with the same name.
+struct UserMolecularRate {
+    std::vector<real_t> logn;
+    std::vector<real_t> logT;
+    std::vector<real_t> coeff;
+};
+
 
 class RateHandler {
 private:
@@ -59,6 +67,7 @@ private:
 
     std::unordered_map<std::string, ChargeStateRateSet> chargeStateRates;
     std::vector<MolecularReaction> molecularReactions;
+    std::unordered_map<std::string, UserMolecularRate> userRates;
 
     MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
         
@@ -69,7 +78,7 @@ private:
     FVM::UnknownQuantityHandler *unknowns;
 
 public:
-    RateHandler(FVM::Grid *grid, IonHandler *ions, ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled, const std::vector<std::string>& enabledReactionNames);
+    RateHandler(FVM::Grid *grid, IonHandler *ions, ADAS *adas, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled, const std::vector<std::string>& enabledReactionNames, const std::unordered_map<std::string, UserMolecularRate>& userRates);
     ~RateHandler();
 
     const std::vector<MolecularReaction>& GetMolecularReactions() const {
