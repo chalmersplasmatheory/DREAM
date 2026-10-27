@@ -120,11 +120,11 @@ def build_rate_table(reaction, n_grid, T_grid):
                     v = adas_eval(raw["filename"], raw["Z0"], T,n)
 
                 elif dtype == "UNIQUE_FORMULA_1":
-                    #From IonBalance
+                    # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
                     v = 7e-17*np.sqrt(T)*np.exp(-2/T)  
 
                 elif dtype == "UNIQUE_FORMULA_2":
-                    #From IonBalance
+                   # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
                     Tfit = min(T, 30.0)
                     v = (
                         1.3e-14 * Tfit**(-0.6) * np.exp(-4.0/Tfit)
@@ -132,6 +132,7 @@ def build_rate_table(reaction, n_grid, T_grid):
                     )
 
                 elif dtype == "UNIQUE_FORMULA_3":
+                    # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
                     Tfit = min(T, 30.0)
                     v = (
                         3e-15 * Tfit**0.2 * np.exp(-10.0/Tfit)
@@ -139,12 +140,14 @@ def build_rate_table(reaction, n_grid, T_grid):
                     )
 
                 elif dtype == "UNIQUE_FORMULA_4":
+                    # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
                     Tfit = np.clip(T, 0.5, 100.0)
                     v = 1e-6 * np.exp(
                         1.5*np.log(Tfit) - 28.079956019889512
                     )
 
                 elif dtype == "UNIQUE_FORMULA_5":
+                    # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
                     T_use = min(max(T, 0.5), 100)
                     v = 1e-9*np.exp(-T/1.5) *1e-6 #cm^3/s -> m^3/s
 
@@ -182,7 +185,6 @@ def build_rate_table(reaction, n_grid, T_grid):
                     values.append(np.log10(v))
                 else:
                     values.append(-300)
-                    #print(f"WARNING: Molecular rate '{reaction['name']}' evaluated to a negative value at n={n:.3e}, T={T:.3e}. Using -300.0 instead.")
 
       return values
 def cpp_input(selector):
