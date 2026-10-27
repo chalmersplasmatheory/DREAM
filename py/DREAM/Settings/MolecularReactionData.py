@@ -1,4 +1,4 @@
-from .data_coeff import *
+from .MolecularReactionDataCoefficients import *
 
 
 # Reactants/products: (name, charge, number of particles)
@@ -67,10 +67,10 @@ MOLECULAR_REACTIONS = [
         "reactants": [("Ar", 1, 1), ("D", 0, 1)],
         "products": [("Ar", 0, 1), ("D", 1, 1)],
         "classification": "CHARGE_EXCHANGE",
-        "data_type": "ADAS",
-        "data": {"filename": Ar_D_cx_adas_file, "Z0": 1},
-        "temperature_input": {"kind": "electron"},
-        "density_input": {"kind": "electron"}
+        "data_type": "APPROXIMATION",
+        "data": {"constant": Ar_D_cx_constant_1, "denominator": A_D},
+        "temperature_input": {"kind": "species", "name": "D", "charge": 0},
+        "density_input": {"kind": "none"}
     },
 
     {
@@ -78,10 +78,10 @@ MOLECULAR_REACTIONS = [
         "reactants": [("Ar", 2, 1), ("D", 0, 1)],
         "products": [("Ar", 1, 1), ("D", 1, 1)],
         "classification": "CHARGE_EXCHANGE",
-        "data_type": "ADAS",
-        "data": {"filename": Ar_D_cx_adas_file, "Z0": 2},
-        "temperature_input": {"kind": "electron"},
-        "density_input": {"kind": "electron"}
+        "data_type": "APPROXIMATION",
+        "data": {"constant": Ar_D_cx_constant_2, "denominator": A_D},
+        "temperature_input": {"kind": "species", "name": "D", "charge": 0},
+        "density_input": {"kind": "none"}
     },
 
     {
@@ -89,10 +89,10 @@ MOLECULAR_REACTIONS = [
         "reactants": [("Ar", 3, 1), ("D", 0, 1)],
         "products": [("Ar", 2, 1), ("D", 1, 1)],
         "classification": "CHARGE_EXCHANGE",
-        "data_type": "ADAS",
-        "data": {"filename": Ar_D_cx_adas_file, "Z0": 3},
-        "temperature_input": {"kind": "electron"},
-        "density_input": {"kind": "electron"}
+        "data_type": "APPROXIMATION",
+        "data": {"constant": Ar_D_cx_constant_3, "denominator": A_D},
+        "temperature_input": {"kind": "species", "name": "D", "charge": 0},
+        "density_input": {"kind": "none"}
     },
 
     {
@@ -100,10 +100,10 @@ MOLECULAR_REACTIONS = [
         "reactants": [("Ar", 4, 1), ("D", 0, 1)],
         "products": [("Ar", 3, 1), ("D", 1, 1)],
         "classification": "CHARGE_EXCHANGE",
-        "data_type": "ADAS",
-        "data": {"filename": Ar_D_cx_adas_file, "Z0": 4},
-        "temperature_input": {"kind": "electron"},
-        "density_input": {"kind": "electron"}
+        "data_type": "APPROXIMATION",
+        "data": {"constant": Ar_D_cx_constant_4, "denominator": A_D},
+        "temperature_input": {"kind": "species", "name": "D", "charge": 0},
+        "density_input": {"kind": "none"}
     },
 
     {

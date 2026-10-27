@@ -153,7 +153,7 @@ void MoleculeRateReaction::DeallocateRateCoefficients() {
 * Rebuild the rate coefficients.
 */
 void MoleculeRateReaction::Rebuild(
-    const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns
+    const real_t, const real_t, FVM::UnknownQuantityHandler*
 ) {
     const len_t Nr = this->grid->GetNr();
      
