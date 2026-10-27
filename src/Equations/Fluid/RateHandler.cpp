@@ -44,7 +44,6 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
     if (reactionsEnabled){
         AddMolecularReactionRates(enabledReactionNames);
     }
-    //TODO: Add and set rates to runaway ionizationfluid equation 
   }
 
 /**
@@ -85,7 +84,7 @@ void RateHandler::AddAtomicChargeStateRates() {
         rates.plt = new ADASChargeStateRate(name + "_PLT", adas->GetPLT(Z));
         rates.prb = new ADASChargeStateRate(name + "_PRB", adas->GetPRB(Z));
         rates.ccd = new ADASChargeStateRate(name + "_CCD", adas->GetCCD(Z));
-        chargeStateRates[name] = rates; //TODO: Handler if it does not exist
+        chargeStateRates[name] = rates; 
     } 
 }
 
