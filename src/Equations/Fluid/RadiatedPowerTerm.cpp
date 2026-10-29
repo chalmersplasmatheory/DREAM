@@ -103,10 +103,10 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
         // Molecular radiation and binding-energy changes are neglected here.
         if (ionHandler->IsMolecule(iz))
             continue;
-        ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
-        ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
-        ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
-        ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
+        ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
+        ADASRateInterpolator *PRB_interper = rateHandler->GetPRB(iz);
+        ADASRateInterpolator *ACD_interper = rateHandler->GetACD(iz);
+        ADASRateInterpolator *SCD_interper = rateHandler->GetSCD(iz);
         real_t dWi = 0;
         real_t Li = 0;
         real_t Bi = 0;
@@ -227,10 +227,10 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
             // Molecular radiation and binding-energy changes are neglected here.
             if (ionHandler->IsMolecule(iz))
                 continue;
-            ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
-            ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
-            ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
-            ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
+            ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
+            ADASRateInterpolator *PRB_interper = rateHandler->GetPRB(iz);
+            ADASRateInterpolator *ACD_interper = rateHandler->GetACD(iz);
+            ADASRateInterpolator *SCD_interper = rateHandler->GetSCD(iz);
             
             real_t dWi = 0;
             real_t Li = 0;
@@ -305,10 +305,10 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
             // Molecular radiation and binding-energy changes are neglected here.
             if (ionHandler->IsMolecule(iz))
                 continue;
-            ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
-            ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
-            ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
-            ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
+            ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
+            ADASRateInterpolator *PRB_interper = rateHandler->GetPRB(iz);
+            ADASRateInterpolator *ACD_interper = rateHandler->GetACD(iz);
+            ADASRateInterpolator *SCD_interper = rateHandler->GetSCD(iz);
 
             real_t dWi = 0;
             real_t dLi = 0;
@@ -369,10 +369,10 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
             // Molecular radiation and binding-energy changes are neglected here.
             if (ionHandler->IsMolecule(iz))
                 continue;
-            ChargeStateRate *PLT_interper = rateHandler->GetPLT(iz);
-            ChargeStateRate *PRB_interper = rateHandler->GetPRB(iz);
-            ChargeStateRate *ACD_interper = rateHandler->GetACD(iz);
-            ChargeStateRate *SCD_interper = rateHandler->GetSCD(iz);
+            ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
+            ADASRateInterpolator *PRB_interper = rateHandler->GetPRB(iz);
+            ADASRateInterpolator *ACD_interper = rateHandler->GetACD(iz);
+            ADASRateInterpolator *SCD_interper = rateHandler->GetSCD(iz);
             
             real_t dWi = 0;
             real_t dLi = 0;

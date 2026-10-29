@@ -8,22 +8,12 @@
 #include "FVM/config.h"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/ADAS.hpp"
-#include "DREAM/Equations/Fluid/ChargeStateRate.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
 #include "DREAM/MolecularRateInterpolator.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include <vector>
 
 namespace DREAM {
-
-//Struct to hold the charge state rates for a given species
-struct ChargeStateRateSet {
-    ChargeStateRate *acd = nullptr;
-    ChargeStateRate *scd = nullptr;
-    ChargeStateRate *plt = nullptr;
-    ChargeStateRate *prb = nullptr;
-    ChargeStateRate *ccd = nullptr;
-};
 
 //Struct to hold the molecular reaction rates for a given pair of species
 //This is to connect the rate with the MolecularReaction struct.
@@ -65,14 +55,12 @@ private:
 
     len_t id_ions, id_n_cold, id_Ni, id_T_cold, id_Wi;
 
-    std::unordered_map<std::string, ChargeStateRateSet> chargeStateRates;
     std::vector<MolecularReaction> molecularReactions;
     std::unordered_map<std::string, UserMolecularRate> userRates;
 
     MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
-        
-    void AddMolecularChargeStateRates();
-    void AddAtomicChargeStateRates();
+    len_t GetADASZ(const len_t iz) const;
+
     void AddMolecularReactionRates( const std::vector<std::string>& enabledReactionNames);
 
     FVM::UnknownQuantityHandler *unknowns;
@@ -85,11 +73,11 @@ public:
     return molecularReactions;
     }
 
-    ChargeStateRate *GetACD(const len_t iz) const;
-    ChargeStateRate *GetSCD(const len_t iz) const;
-    ChargeStateRate *GetPLT(const len_t iz) const;
-    ChargeStateRate *GetPRB(const len_t iz) const;
-    ChargeStateRate *GetCCD(const len_t iz) const;
+    ADASRateInterpolator *GetACD(const len_t iz) const;
+    ADASRateInterpolator *GetSCD(const len_t iz) const;
+    ADASRateInterpolator *GetPLT(const len_t iz) const;
+    ADASRateInterpolator *GetPRB(const len_t iz) const;
+    ADASRateInterpolator *GetCCD(const len_t iz) const;
 
 
     real_t ResolveDensity(const MolecularInput& input, const len_t ir);

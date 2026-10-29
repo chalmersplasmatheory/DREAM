@@ -70,6 +70,7 @@ len_t MoleculeRateReaction::FindRelevantMolecularReactions() {
             case MolecularReactionProcess::DISSOCIATION:
             case MolecularReactionProcess::DISSOCIATION_MULTIPLE:
             case MolecularReactionProcess::RECOMBINATION:
+            case MolecularReactionProcess::IONIZATION:
                 moleculeReactions.push_back(reaction);
                 break;
             case MolecularReactionProcess::IONIZATION_RUNAWAY:
@@ -77,7 +78,6 @@ len_t MoleculeRateReaction::FindRelevantMolecularReactions() {
                     moleculeReactions.push_back(reaction);
                 break;
             default:
-                // IONIZATION:               in IonRateEquation (D2 SCD)
                 // CHARGE_EXCHANGE_RESONANT: no net particle change
                 break;
         }

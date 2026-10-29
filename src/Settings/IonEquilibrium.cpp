@@ -18,8 +18,8 @@ void SimulationGenerator::EvaluateChargeStateRates(
 	RateHandler *rateHandler, const len_t iz, const len_t Z, const real_t n, const real_t T,
 	real_t *I, real_t *R
 ) {
-	ChargeStateRate *acd = rateHandler->GetACD(iz);
-	ChargeStateRate *scd = rateHandler->GetSCD(iz);
+	ADASRateInterpolator *acd = rateHandler->GetACD(iz);
+	ADASRateInterpolator *scd = rateHandler->GetSCD(iz);
 
 	for (len_t j = 0; j < Z+1; j++) {
 		I[j] = scd->Eval(j, n, T);

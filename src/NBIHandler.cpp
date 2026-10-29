@@ -394,7 +394,7 @@ void NBIHandler::ComputeMeanFreePath(
     real_t Ti_beam_input
 ) {
     real_t Z0_b = 0; // Neutral beam, so Z0 = 0
-    ChargeStateRate* scd = rateHandler->GetSCD(ions->GetIonIndex("D"));
+    ADASRateInterpolator* scd = rateHandler->GetSCD(ions->GetIonIndex("D"));
     dI_e_dTe = scd->Eval_deriv_T(Z0_b, ncold, Tcold);
 
     real_t dI_e_dne = scd->Eval_deriv_n(Z0_b, ncold, Tcold);
@@ -417,7 +417,7 @@ void NBIHandler::ComputeMeanFreePath(
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /(1.5 * niZ_tot * Constants::ec);
 
         // Calculate total CX rate
-        ChargeStateRate* ccd = rateHandler->GetCCD(iz);
+        ADASRateInterpolator* ccd = rateHandler->GetCCD(iz);
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             real_t niZ = ions->GetIonDensity(ir, iz, Z0);
 
@@ -431,7 +431,7 @@ void NBIHandler::ComputeMeanFreePath(
     for (len_t iz = 0; iz < nZ; iz++) {
         len_t Zmax = ions->GetZ(iz);
 
-        ChargeStateRate* ccd = rateHandler->GetCCD(iz);
+        ADASRateInterpolator* ccd = rateHandler->GetCCD(iz);
         real_t niZ_tot = 0.0;
         for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
             niZ_tot += ions->GetIonDensity(ir, iz, Z0);
