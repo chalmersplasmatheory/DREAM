@@ -4,15 +4,15 @@
 # Compute total power by integrating Green×f over momentum space for each time step
 #
 '''
-# 前置条件：使用 dream_green_processor.py 完成分时间步的辐射数据处理
+# Prerequisite: run dream_green_processor.py first to produce per-timestep radiation data
 
-# 基础计算
+# Basic calculation
 python dream_se_power.py /data/results/dir
 
-# 设置绘图时间范围
+# Set the plot time range
 python dream_se_power.py /data/path --t-min 0.5 --t-max 2.0
 
-# 波注入标记
+# Mark wave injection intervals
 python dream_se_power.py /data/path --wave-intervals "3.4,3.5;3.6,3.7;3.8,3.9"
 '''
 

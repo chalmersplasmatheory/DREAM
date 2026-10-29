@@ -95,22 +95,16 @@ void WaveParticleCoupling::calculate_den(
     // Denominator D(ω) and numerical derivative ∂D/∂ω
     // D(ω) = [(1+Ey²)·S - 2·Ey·T + Ez²·P] · ω²
     // where S = (R+L)/2, T = (R-L)/2 in Stix notation
-    // Here expanded directly:
+    // Polarization (Ey, Ez) is FROZEN at omega: only the Stix parameters are
+    // differentiated (paper convention, eq. (12)).
     auto D_func = [&](real_t w) -> real_t {
         real_t w2 = w * w;
-        real_t Ey_w = (omega_ce / w * omegape2 / (w2 - omegace2)
-                      - omega_ci / w * omegapi2 / (w2 - omegaci2))
-                    / (1.0 - omegape2 / (w2 - omegace2)
-                           - omegapi2 / (w2 - omegaci2)
-                           - k * k * cc * cc / w2);
-        real_t Ez_w = -kpar * cc / w
-                    / (1.0 - omegape2 / w2 - omegapi2 / w2
-                           - kperp * kperp * cc * cc / w2)
-                    * kperp * cc / w;
+        real_t S_w = 1.0 - omegape2 / (w2 - omegace2) - omegapi2 / (w2 - omegaci2);
+        real_t T_w = omega_ce / w * omegape2 / (w2 - omegace2)
+                   - omega_ci / w * omegapi2 / (w2 - omegaci2);
+        real_t P_w = 1.0 - omegape2 / w2 - omegapi2 / w2;
 
-        return ((1.0 + Ey_w * Ey_w) * (1.0 - omegape2 / (w2 - omegace2) - omegapi2 / (w2 - omegaci2))
-              - 2.0 * Ey_w * (omega_ce / w * omegape2 / (w2 - omegace2) - omega_ci / w * omegapi2 / (w2 - omegaci2))
-              + Ez_w * Ez_w * (1.0 - omegape2 / w2) - omegapi2 / w2) * w2;
+        return ((1.0 + Ey * Ey) * S_w - 2.0 * Ey * T_w + Ez * Ez * P_w) * w2;
     };
 
     real_t D_omega = D_func(omega);
@@ -203,8 +197,8 @@ real_t WaveParticleCoupling::calculateCouplingStrength(
     if (denom < 1e-10) denom = 1e-10;
 
     // Prefactor: e²/(4π m_e² c²)
-    static constexpr real_t prefactor = e_charge * e_charge
-                                      / (4.0 * M_PI * m_electron * m_electron * c * c);
+    static constexpr real_t prefactor = M_PI * e_charge * e_charge
+                                      / (m_electron * m_electron * c * c);
 
     return prefactor * psi_norm_sq / denom;
 }
@@ -253,8 +247,8 @@ void WaveParticleCoupling::calculateBracketAndDen(
     real_t denom = std::abs(v_g - v_parallel * std::cos(theta_k));
     if (denom < 1e-10) denom = 1e-10;
 
-    static constexpr real_t prefactor = e_charge * e_charge
-                                      / (4.0 * M_PI * m_electron * m_electron * c * c);
+    static constexpr real_t prefactor = M_PI * e_charge * e_charge
+                                      / (m_electron * m_electron * c * c);
 
     bracket = prefactor * psi_norm_sq / denom;
 }

@@ -55,3 +55,4 @@ logs/
 examples/*/outputs/
 
 .mimocode
+deprecated

@@ -184,6 +184,7 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
     if (spectrum) {
         len_t numModes = spectrum->getNumModes();
         bool amplitude_changed = false;
+        real_t prev_amp = spectrum->getAmplitude(0);
         
         for (len_t m = 0; m < numModes; m++) {
             real_t old_amp = spectrum->getAmplitude(m);
@@ -194,8 +195,12 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         }
         
         if (amplitude_changed) {
-            std::cerr << "Wave amplitude updated at t=" << t 
-                      << " s: A = " << effective_amplitude << std::endl;
+            // Report only the first update and wave on/off transitions
+            // (quiet during ramp steps to avoid one line per time step)
+            bool crossed = (prev_amp > 1e-30) != (effective_amplitude > 1e-30);
+            if (!first_rebuild_done || crossed)
+                std::cerr << "Wave amplitude updated at t=" << t 
+                          << " s: A = " << effective_amplitude << std::endl;
             operator_cached = false;  // Force recalculation
         }
     }
@@ -241,13 +246,16 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
     }
     
     // Calculate or load diffusion coefficients for each radial point (only if not cached)
+    bool recalc_happened = false;
     if (!operator_cached) {
         // Use REVERSE resonance solving method for grid-independent results
         for (len_t ir = 0; ir < nr; ir++) {
             calculateDiffusionCoefficientsReverse(ir);
         }
         
-        std::cerr << "✓ Quasi-linear diffusion operator computed on-the-fly (REVERSE method)" << std::endl;
+        if (!first_rebuild_done)
+            std::cerr << "✓ Quasi-linear diffusion operator computed on-the-fly (REVERSE method)" << std::endl;
+        recalc_happened = true;
     }
     
     // Mark operator as cached - no need to recalculate in future time steps
@@ -320,9 +328,14 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
             }
         }
         
-        // ===== VALIDATION: Check if diffusion coefficients are non-zero (only on first rebuild, first radial point) =====
-        // NOTE: This must be done AFTER filling the FVM matrices
-        if (!first_rebuild_done && ir == 0) {
+        // ===== VALIDATION: Print diffusion coefficient stats after recalculation =====
+        // NOTE: This must be done AFTER filling the FVM matrices.
+        // Print only when the operator was recalculated AND the wave on/off state
+        // changed (or on the very first build), instead of one block per time step.
+        bool wave_on_now = (spectrum ? spectrum->getAmplitude(0) : 0.0) > 1e-30;
+        bool state_changed = (validation_state == -1) || ((validation_state == 1) != wave_on_now);
+        if (ir == 0 && recalc_happened && state_changed) {
+            validation_state = wave_on_now ? 1 : 0;
             auto *mg = grid->GetMomentumGrid(ir);
             const len_t np1 = mg->GetNp1();
             const len_t np2 = mg->GetNp2();
@@ -331,28 +344,33 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
             real_t sum_D11 = 0.0, sum_D22 = 0.0, sum_D12 = 0.0;
             len_t count_nonzero_D11 = 0, count_nonzero_D22 = 0, count_nonzero_D12 = 0;
             
+            // D11: p-face grid (np1+1) × np2 — read directly from cache
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1 + 1; i++) {
-                    real_t val = std::abs(D11(ir, i, j));
+                    real_t val = std::abs(D_pp_cache[ir*(np1+1)*np2 + i*np2 + j]);
                     if (val > max_D11) max_D11 = val;
                     sum_D11 += val;
                     if (val > 1e-30) count_nonzero_D11++;
                 }
             }
             
+            // D22: xi-face grid np1 × (np2+1) — read directly from cache
             for (len_t j = 0; j < np2 + 1; j++) {
                 for (len_t i = 0; i < np1; i++) {
-                    real_t val = std::abs(D22(ir, i, j));
+                    real_t val = std::abs(D_xixi_cache[ir*np1*(np2+1) + i*(np2+1) + j]);
                     if (val > max_D22) max_D22 = val;
                     sum_D22 += val;
                     if (val > 1e-30) count_nonzero_D22++;
-                    
-                    if (j < np2) {
-                        val = std::abs(D12(ir, i, j));
-                        if (val > max_D12) max_D12 = val;
-                        sum_D12 += val;
-                        if (val > 1e-30) count_nonzero_D12++;
-                    }
+                }
+            }
+            
+            // D12 p-face: (np1+1) × np2 — independent loop, includes boundary i=np1
+            for (len_t j = 0; j < np2; j++) {
+                for (len_t i = 0; i < np1 + 1; i++) {
+                    real_t val = std::abs(D_pxi_pface_cache[ir*(np1+1)*np2 + i*np2 + j]);
+                    if (val > max_D12) max_D12 = val;
+                    sum_D12 += val;
+                    if (val > 1e-30) count_nonzero_D12++;
                 }
             }
             
@@ -362,7 +380,7 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
             std::cerr << "D22 (ξ-ξ): max=" << max_D22 << ", sum=" << sum_D22 
                       << ", nonzero=" << count_nonzero_D22 << "/" << (np1*(np2+1)) << std::endl;
             std::cerr << "D12 (p-ξ): max=" << max_D12 << ", sum=" << sum_D12 
-                      << ", nonzero=" << count_nonzero_D12 << "/" << (np1*np2) << std::endl;
+                      << ", nonzero=" << count_nonzero_D12 << "/" << ((np1+1)*np2) << std::endl;
             
             if (max_D11 < 1e-30 && max_D22 < 1e-30 && max_D12 < 1e-30) {
                 std::cerr << "WARNING: All diffusion coefficients are essentially zero!" << std::endl;
@@ -437,9 +455,10 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
     const len_t numModes = spectrum->getNumModes();
     const len_t numHarmonics = harmonicModes.size();
     
-    // Display progress
-    std::cerr << "  Assembling diffusion operator (REVERSE method) at r=" << ir+1 << "/" << grid->GetNr() 
-              << " (" << numModes << " modes × " << numHarmonics << " harmonics)..." << std::endl;
+    // Display progress (first assembly only; recalculations are silent)
+    if (!first_rebuild_done)
+        std::cerr << "  Assembling diffusion operator (REVERSE method) at r=" << ir+1 << "/" << grid->GetNr() 
+                  << " (" << numModes << " modes × " << numHarmonics << " harmonics)..." << std::endl;
     
     // Initialize caches to zero
     for (len_t i = 0; i < (np1 + 1) * np2; i++) {
@@ -467,7 +486,7 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
     real_t cos_theta_min = std::cos(spectrum->getKtheta(0));
     real_t cos_theta_max = std::cos(spectrum->getKtheta(num_k * (num_ktheta - 1)));
     real_t dcos_theta = num_ktheta > 1 ? std::abs(cos_theta_max - cos_theta_min) / num_ktheta : 1.0;
-    real_t cell_area = dk * dcos_theta;   // ∫ dk d(cos θ_k) per mode
+    real_t cell_area = 2.0 * M_PI * dk * dcos_theta;   // int d^3k = 2*pi*k^2*dk*dcos(theta) per mode
     
     // Loop over all wave modes
     for (len_t m = 0; m < numModes; m++) {
@@ -479,8 +498,8 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
         
         mode_count++;
         
-        // Display progress every 25%
-        if (mode_count % (numModes / 4) == 0 || m == numModes - 1) {
+        // Display progress every 25% (first assembly only)
+        if (!first_rebuild_done && (mode_count % (numModes / 4) == 0 || m == numModes - 1)) {
             int percent = static_cast<int>(mode_count * 100.0 / numModes);
             std::cerr << "    Mode progress: " << percent << "% (" << mode_count << "/" << numModes << ")" << std::endl;
         }
@@ -530,12 +549,6 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
                 // Process each resonant momentum
                 for (real_t p_res : resonant_ps) {
                     total_resonance_points++;
-                    
-                    // DEBUG: Print first few resonant points
-                    if (total_resonance_points <= 3 && ir == 0) {
-                        // std::cerr << "DEBUG reverse resonance: mode=" << m << ", n=" << n 
-                        //           << ", xi=" << xi << ", p_res=" << p_res << std::endl;
-                    }
                     
                     // Find which grid cell contains p_res
                     // p grid is from 0 to np1 (f1 flux faces)
@@ -591,11 +604,13 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
                         bracket, den
                     );
                     
-                    // Wave electric field energy: |E_k|² = amplitude × m_e c² / (ε₀ × den)
+                    // Wave electric field energy (paper convention):
+                    // |E_kx|^2 = 4 * E_k * m_e c^2 / (eps0 * D), amplitude = E_k,
+                    // and D = den (dielectric derivative with frozen polarization)
                     static constexpr real_t m_e = 9.1094e-31;
                     static constexpr real_t c = 2.99792458e8;
                     static constexpr real_t eps0 = 8.854187817e-12;
-                    real_t E_k_sq = amplitude * m_e * c * c / (eps0 * den);
+                    real_t E_k_sq = 4.0 * amplitude * m_e * c * c / (eps0 * den);
                     
                     // Full contribution: bracket × |E_k|² × k² × Δcosθ × weight
                     real_t contrib = bracket * E_k_sq * k * k * cell_area * weight_sum;
@@ -637,7 +652,8 @@ void QuasilinearDiffusionTerm::calculateDiffusionCoefficientsReverse(len_t ir) {
         }
     }
     
-    std::cerr << "  Total resonance points found: " << total_resonance_points << std::endl;
+    if (!first_rebuild_done)
+        std::cerr << "  Total resonance points found: " << total_resonance_points << std::endl;
     
     // Save current amplitudes for change detection (same as in calculateDiffusionCoefficients)
     if (!last_amplitudes || num_modes_tracked != numModes) {

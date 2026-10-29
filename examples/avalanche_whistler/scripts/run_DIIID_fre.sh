@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=DREAM_whistler_sim   # 作业名称，便于在队列中识别
+#SBATCH --job-name=DREAM_whistler_sim   # Job name for queue identification
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --nodes=1
@@ -17,42 +17,103 @@ cd /data/zhzhou/DREAM/examples/avalanche_whistler/scripts
 #   --Np-hot 100 --Np-re 200 --Nxi 40 --tMax 2.5 --Nt 2500 --output ../outputs/dreicer_with_fre_output.h5 --source on 
 
 
+
+# Quasilinear whistler simulation
+# The recipe (settings), a plain-text parameter summary
+# (quasilinear_whistler_params.txt) and the results (output) are all saved
+# automatically to $PLOT_DIR: generate_with_fre_whistler.py writes them next
+# to --output, and the result is $DATA_DIR as given by --output.
+#
+# ════════════════════════════════════════════════════════════════════════
+# Parameter quick reference
+# ════════════════════════════════════════════════════════════════════════
+# (A) Quick command-line parameters — just edit the values in the call
+#     below; no need to touch the Python script:
+#
+#   [Wave injection] (the most important ones)
+#     --amplitude              Wave amplitude (diffusion coefficient D ∝ A²)
+#     --start-inject-time      Wave injection start time (s)
+#     --inject-cycle-duration  ON+OFF injection cycle (s, 50% duty cycle)
+#     --ramp-time              Ramp-up time of each ON cycle (s)
+#
+#   [Wave spectrum]
+#     --k-min / --k-max        Wavenumber range (m^-1)
+#     --ktheta-min / --ktheta-max   Propagation angle range (rad; obtuse = backward)
+#     --num-k / --num-ktheta   Spectral discretization (number of modes = product)
+#
+#   [Plasma / geometry]
+#     --E electric field (V/m)   --n density (m^-3)   --T temperature (eV)
+#     --B0 magnetic field (T)    --a minor radius (m) --R major radius (m)
+#
+#   [Grid / time]
+#     --Np-hot / --Np-re / --Nxi   Momentum and pitch grid points
+#     --tMax / --Nt                Simulation time (s) / number of time steps
+#
+#   [Other]
+#     --source on|off          Kinetic avalanche source switch
+#     --output                 Output h5 path (recipe is saved next to it)
+#
+# (B) Hard-coded values that require editing generate_with_fre_whistler.py
+#     (search for "HARDCODED" in the script to locate them):
+#
+#     - pMax_hot=1 / pMax_re=50      Momentum grid limits (m_e c)
+#     - k_main=54.58 / ktheta_main=2.42   Central wavenumber / propagation angle
+#                                        (quadre_wave_params)
+#     - harmonic_mode='both'         Harmonic set n ∈ {-2..+2}
+#     - use_simple_dispersion=False  Full PDRK dispersion (True = simplified debug)
+#     - pCutAvalanche=2.0            Avalanche cutoff momentum
+#     - nr=1 and custom radial grid r_f   Number of radial points
+#     - setNumberOfSaveSteps(Nt//10) Number of saved output frames
+#     - Collision model / solver / boundary conditions / synchrotron switch, etc.
+#
+#     NOTE: k_main/ktheta_main in quadre_wave_params are documentation only
+#     (never read by the settings API). The wave frequency (476 MHz) and
+#     k_par = -41 m^-1 are NOT inputs either: k_par = k*cos(theta_k) is derived
+#     per mode in C++, and the frequency follows from the whistler dispersion
+#     relation evaluated at (k, theta_k) together with B0 and n_e.
+# ════════════════════════════════════════════════════════════════════════
+
 # ── Select output file to analyze ────────────────────────────────────────
-PLOT_DIR="../figures_w_0.1_1.67_E0.05_t2.5_noavalanche_s1_i0.2"
+PLOT_DIR="../figures_wk40_A4_t3_s2_i0.2_T1000"
 DATA_DIR="${PLOT_DIR}/quasilinear_whistler_output.h5"
 # Create plot directory if it doesn't exist
 if [ ! -d "$PLOT_DIR" ]; then
     mkdir -p "$PLOT_DIR"
     echo "Created directory: $PLOT_DIR"
 fi
-# Quasilinear whistler simulation
+
 python generate_with_fre_whistler.py \
-    --amplitude 1e6 --a 0.1 --R 1.67 \
-    --tMax 2.5 --Nt 5000 --source off \
+    --amplitude 1e4 --a 0.02 --R 1.67 --T 1000 \
+    --tMax 3.0 --Nt 3000 --source off \
     --output $DATA_DIR \
-    --start-inject-time 1 --inject-cycle-duration 0.2 --ramp-time 0.02 \
-    --k-min 51.61 --k-max 59.55 \
-    --ktheta-min 2.38 --ktheta-max 2.47 --Nxi 80
+    --start-inject-time 2.0 --inject-cycle-duration 0.2 --ramp-time 0.02 \
+    --k-min 45 --k-max 60 \
+    --ktheta-min 2.3 --ktheta-max 2.5 --Nxi 80 --num-k 40 --Np-hot 50 --Np-re 100
 
 
 
 
-# 基本分析（逃逸电子密度和增长率）
-python analyze_dreicer.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR
+# ── Post-processing (consolidated plotting) ──────────────────────────────
+# Distribution functions: p-xi log(f) (batch plots over a time range/interval)
+# + 1D spectra + zoomed view. Times are in seconds and map to the nearest
+# stored time step.
+python plot_f.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR \
+    --species f_re \
+    --t-min 1.0 --t-max 3.0 --dt 0.01 \
+    --time_series 1.5,2.1 \
+    --figures all
 
-# 绘制分布函数
-python plot_dreicer_dist.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR
+python plot_f.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR \
+    --species f_hot --figures contour,spectra
 
-# 绘制时间演化
-python plot_f_time_evolution.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR --time_series 1.0,1.5
+# Runaway density, growth rate, normalized growth rate vs Rosenbluth 2*(E/Ec-1)
+python plot_nre.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR
 
-# 绘制动量空间分布 (p_perp vs p_parallel) - f_hot
-python plot_p_perp_parallel.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR
 
-# 绘制动量空间分布 (p_perp vs p_parallel) - f_re（逃逸电子）
-python plot_fre_p_perp_parallel.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR
+# Quasilinear diffusion coefficients + injected wave energy density
+# (W_peak and W(t) along the injection envelope; saves CSV + plot)
+python plot_ql_diffusion_coefficients.py --data_dir $PLOT_DIR --plot_dir $PLOT_DIR \
+    --output_file quasilinear_whistler_output.h5
 
-# 综合可视化
-python visual.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR
-
-python plot_logf_px_contour.py --data_dir $DATA_DIR --plot_dir $PLOT_DIR 
+# Multi-run E/Ec scan (list several output files):
+# python plot_nre.py --data_dir out_E1.0.h5 out_E1.5.h5 out_E2.0.h5 --plot_dir $PLOT_DIR

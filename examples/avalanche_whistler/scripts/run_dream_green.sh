@@ -10,13 +10,13 @@
 
 mkdir -p logs
 
-# === 修改这里的路径 ===
-DREAM_OUTPUT='/data/zhzhou/DREAM/examples/avalanche_whistler/figures_w_0.1_1.67_E0.05_t2.5_noavalanche_s1_i0.2/quasilinear_whistler_output.h5'
+# === Edit the paths here ===
+DREAM_OUTPUT='/data/zhzhou/DREAM/examples/avalanche_whistler/figures_wk40A7_0.1_1.67_t2.5_avalanche_s1_i0.2/quasilinear_whistler_output.h5'
 GREEN_FILE='/data/zhzhou/QUADRE_series/SOFT_workspace/SOFT2/examples/GreenDream/data/green.mat'
-RESULTS_DIR='/data/zhzhou/DREAM/examples/avalanche_whistler/figures_w_0.1_1.67_E0.05_t2.5_noavalanche_s1_i0.2/green_results'
+RESULTS_DIR='/data/zhzhou/DREAM/examples/avalanche_whistler/figures_wk40A7_0.1_1.67_t2.5_avalanche_s1_i0.2/green_results'
 SCRIPTS_DIR='/data/zhzhou/DREAM/examples/avalanche_whistler/scripts'
 
-# === 参数 ===
+# === Parameters ===
 RADIAL_INDEX=0
 DT=0.01
 T_MIN=0.5

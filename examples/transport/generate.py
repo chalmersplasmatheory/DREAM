@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 
-sys.path.append('../../py/')
+sys.path.append('/data/zhzhou/DREAM/py/')
 
 from DREAM.DREAMSettings import DREAMSettings
 from DREAM.DREAMOutput import DREAMOutput
@@ -174,6 +174,7 @@ if run_init:
 ######################################
 do=DREAMOutput(f'out_1init.h5')
 conductivity=do.other.fluid.conductivity.getData()
+do.close() 
 jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
 efield=jTot*jprof/conductivity[-1,:]
 ds.eqsys.E_field.setPrescribedData(efield=efield, radius=radialgrid)

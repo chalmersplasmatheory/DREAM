@@ -13,6 +13,7 @@
 #
 
 import argparse
+import os
 import numpy as np
 import sys
 
@@ -97,7 +98,7 @@ else:
 ds.eqsys.n_re.setCompton(Runaways.COMPTON_MODE_NEGLECT)
 ds.eqsys.n_re.setTritium(Runaways.TRITIUM_MODE_NEGLECT)
 
-# Collision settings (参考2kineticN)
+# Collision settings (reference case: 2kineticN)
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 ds.collisions.collfreq_mode       = Collisions.COLLFREQ_MODE_FULL
 ds.collisions.collfreq_type       = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED 
@@ -152,7 +153,8 @@ ds.solver.preconditioner.setEnabled(True)  # Enable preconditioner for better co
 ds.solver.setVerbose(True)  # Enable verbose output to see what's happening
 
 # Include quantities needed for analysis
-ds.other.include('fluid', 'nu_s', 'nu_D', 'lnLambda')
+ds.other.include('fluid', 'nu_s', 'nu_D', 'lnLambda',
+                 'runaway/Dpp', 'runaway/Dpx', 'runaway/Dxp', 'runaway/Dxx')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)
@@ -162,11 +164,16 @@ ds.timestep.setNt(Nt)
 ds.output.setTiming(stdout=True, file=True)
 ds.output.setFilename(args.output)
 
-# Save settings to HDF5 file
-ds.save('dreicer_with_fre_settings.h5')
+# Save settings: keep the local copy, and save a copy next to the output file
+# so every run directory contains its own recipe (saved before the run starts,
+# so it survives even if the simulation crashes).
+settings_file = 'dreicer_with_fre_settings.h5'
+ds.save(settings_file)
+settings_file_run = os.path.join(os.path.dirname(args.output) or '.', 'dreicer_with_fre_settings.h5')
+ds.save(settings_file_run)
 
 # Run the simulation
-print("Settings saved to dreicer_with_fre_settings.h5")
+print(f"Settings saved to {settings_file} and {settings_file_run}")
 print("Running simulation...")
 print(f"Parameters: E={E} V/m, n={n:.2e} m^-3, T={T} eV, a={a} m, R={R} m, B0={B0} T")
 print(f"Grid: Np_hot={Np_hot}, Np_re={Np_re}, Nxi={Nxi}, tMax={tMax}, Nt={Nt}")
@@ -174,4 +181,4 @@ do = runiface(ds, args.output, quiet=False)
 
 print("Dreicer validation simulation with f_re completed.")
 print(f"Output saved to {args.output}")
-print("Settings saved to dreicer_with_fre_settings.h5")
+print(f"Settings saved to {settings_file} and {settings_file_run}")

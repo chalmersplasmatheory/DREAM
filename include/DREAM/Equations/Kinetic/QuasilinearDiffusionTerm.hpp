@@ -51,6 +51,9 @@ namespace DREAM {
         // Track wave amplitudes to detect changes
         real_t *last_amplitudes;  // [numModes] - stores amplitudes from last calculation
         len_t num_modes_tracked;
+
+        // Rate-limited validation printing: report only on wave on/off transitions
+        int validation_state = -1;  // -1 = never printed, 0 = wave off, 1 = wave on
         
         // Time-dependent amplitude control (periodic injection)
         real_t start_inject_time;        // Time to start injection (-1 = immediate)
