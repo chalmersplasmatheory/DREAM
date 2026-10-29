@@ -120,6 +120,7 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
         len_t ii = index_i*nr + ir;
         len_t jj = index_j*nr + ir;
         real_t val1 = 0, val2 = 0;
+        //If separate neutrals is enabled, then the jacobian contributions depends on whether the derivative is with respect to the total ion density or the individual charge state densities.
         if( (isIon_i && !separateNeutrals && derivId==id_Ni) || (!isIon_i && derivId==id_ncold) )
             val1 += vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
         if( (isIon_j && !separateNeutrals && derivId==id_Ni) || (!isIon_j && derivId==id_ncold) )
@@ -141,7 +142,7 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
                 len_t indZ = ionHandler->GetIndex(index_i, Z0);
                 real_t value = vecOverNZ2 * Z0*Z0;
                 if (separateNeutrals)
-                    value += dvec_dni; // must be differentiated with respect ni instead of only Ni
+                    value += dvec_dni; //must be differentiated with respect ni instead of only Ni
                 jac->SetElement(ii, indZ*nr + ir, value);
             }
         } else if(!isIon_i && derivId == id_ncold)
