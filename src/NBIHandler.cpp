@@ -404,6 +404,9 @@ void NBIHandler::ComputeMeanFreePath(
 
     // Loop over all atomic species
     for (len_t iz = 0; iz < nZ; iz++) {
+        // Molecules have no ADAS charge-exchange data
+        if (ions->IsMolecule(iz))
+            continue;
         len_t Zmax = ions->GetZ(iz);
 
         real_t niZ_tot = 0.0;
@@ -429,6 +432,9 @@ void NBIHandler::ComputeMeanFreePath(
 
     // Do the same calculation for the derivatives where the total_CX is needed
     for (len_t iz = 0; iz < nZ; iz++) {
+        // Molecules have no ADAS charge-exchange data
+        if (ions->IsMolecule(iz))
+            continue;
         len_t Zmax = ions->GetZ(iz);
 
         ADASRateInterpolator* ccd = rateHandler->GetCCD(iz);
