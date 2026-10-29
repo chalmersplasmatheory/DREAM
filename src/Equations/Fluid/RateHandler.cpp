@@ -1,14 +1,13 @@
 /**
  * Implementation of the RateHandler class.
  * This class is responsible for managing and providing access to various rate coefficients
- * used in the fluid equations, including atomic and molecular charge-state rates,
+ * used in the fluid equations, including ADAS charge-state rates for atomic species,
  * as well as molecular reaction rates.
  */
 
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "FVM/FVMException.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
-#include "DREAM/MoleculeHandler.hpp"
 #include "DREAM/MolecularRateData.hpp"
 #include "DREAM/MolecularRateInterpolator.hpp"
 #include <algorithm>
@@ -38,9 +37,6 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
         id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
     
     
-    AddAtomicChargeStateRates();
-    AddMolecularChargeStateRates();
-      
     if (reactionsEnabled){
         AddMolecularReactionRates(enabledReactionNames);
     }
@@ -50,14 +46,6 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
  * Destructor.
  */
 RateHandler::~RateHandler() {
-    for (auto it = chargeStateRates.begin(); it != chargeStateRates.end(); it++) {
-        delete it->second.acd;
-        delete it->second.scd;
-        delete it->second.plt;
-        delete it->second.prb;
-        delete it->second.ccd;
-      }
-
       for (auto it = molecularReactions.begin(); it != molecularReactions.end(); it++) {
           delete it->rate;
       }
@@ -65,117 +53,30 @@ RateHandler::~RateHandler() {
 
 
 /**
-* Add charge-state rates for atomic species.
-*/
-void RateHandler::AddAtomicChargeStateRates() {
-    for (len_t iIon = 0; iIon <ions->GetNZ(); iIon++){
-        const std::string& name = ions->GetName(iIon);
-        //check if not a molecule
-        if (MoleculeHandler().IsMolecule(name))
-            continue;
-        const len_t Z = ions->GetZ(iIon);
-
-        if (!adas->HasElement(Z))
-              continue;
-
-        ChargeStateRateSet rates;
-        rates.acd = new ADASChargeStateRate(name + "_ACD", adas->GetACD(Z));
-        rates.scd = new ADASChargeStateRate(name + "_SCD", adas->GetSCD(Z));
-        rates.plt = new ADASChargeStateRate(name + "_PLT", adas->GetPLT(Z));
-        rates.prb = new ADASChargeStateRate(name + "_PRB", adas->GetPRB(Z));
-        rates.ccd = new ADASChargeStateRate(name + "_CCD", adas->GetCCD(Z));
-        chargeStateRates[name] = rates; 
-    } 
+ * Get the atomic number used to look up the ADAS rates of ion species 'iz'.
+ * Molecules are not in ADAS, they get their rates from MoleculeRateReaction.
+ */
+len_t RateHandler::GetADASZ(const len_t iz) const {
+    if (ions->IsMolecule(iz))
+        throw FVM::FVMException(
+            "RateHandler: No ADAS rates available for molecule '%s'.",
+            ions->GetName(iz).c_str()
+        );
+    return ions->GetZ(iz);
 }
 
 /**
- * Add charge-state rates for molecular species. 
- * Currently separate from the adas and only for D2
+ * Getters for the ADAS rates of ion species 'iz'.
  */
-void RateHandler::AddMolecularChargeStateRates() {
-      MoleculeHandler molecules;
+ADASRateInterpolator *RateHandler::GetACD(const len_t iz) const {return adas->GetACD(GetADASZ(iz));}
 
-    for (len_t iIon = 0; iIon < ions->GetNZ(); iIon++) {
-        const std::string& name = ions->GetName(iIon);
-        if (!molecules.IsMolecule(name))
-            continue;
-        ChargeStateRateSet rates;
-        if (name == "D2") {
-            rates.acd = new ZeroChargeStateRate("D2_ACD_zero");
-            rates.scd = new MolecularTableChargeStateRate(
-                "D2_SCD_AMJUEL_2.2.9",
-                0,
-                GetMolecularRateByName("D_2_ionization"));
-          } else {
-            rates.acd = new ZeroChargeStateRate("zero_ACD"); //this needs to be generalized
-            rates.scd = new ZeroChargeStateRate("zero_SCD"); //this needs to be generalized
-            }
-            
-        chargeStateRates[name] = rates;
-      }
-}
+ADASRateInterpolator *RateHandler::GetSCD(const len_t iz) const {return adas->GetSCD(GetADASZ(iz));}
 
+ADASRateInterpolator *RateHandler::GetPLT(const len_t iz) const {return adas->GetPLT(GetADASZ(iz));}
 
-/**
- * Get the ACD (recombination) charge-state rate for a given species.
- */
-ChargeStateRate *RateHandler::GetACD(const len_t iz) const {
-    const std::string& name = ions->GetName(iz);
-    auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end() || it->second.acd == nullptr)
-        throw FVM::FVMException(
-            "RateHandler: No ACD-like charge-state rate available for '%s'.",
-            name.c_str()
-        );
-    return it->second.acd;
-}
+ADASRateInterpolator *RateHandler::GetPRB(const len_t iz) const {return adas->GetPRB(GetADASZ(iz));}
 
-
-/**
- * Get the SCD (ionization) charge-state rate for a given species.
- */
-ChargeStateRate *RateHandler::GetSCD(const len_t iz) const {
-    const std::string& name = ions->GetName(iz);
-    auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end() || it->second.scd == nullptr)
-        throw FVM::FVMException(
-            "RateHandler: No SCD-like charge-state rate available for '%s'.",
-            name.c_str()
-        );
-      return it->second.scd;
-}
-
-ChargeStateRate *RateHandler::GetPLT(const len_t iz) const {
-    const std::string& name = ions->GetName(iz);
-    auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end() || it->second.plt == nullptr)
-        throw FVM::FVMException(
-            "RateHandler: No PLT-like charge-state rate available for '%s'.",
-            name.c_str()
-        );
-      return it->second.plt;
-}
-
-ChargeStateRate *RateHandler::GetPRB(const len_t iz) const {
-    const std::string& name = ions->GetName(iz);
-    auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end() || it->second.prb == nullptr)
-        throw FVM::FVMException(
-            "RateHandler: No PRB-like charge-state rate available for '%s'.",
-            name.c_str()
-        );
-      return it->second.prb;
-}
-ChargeStateRate *RateHandler::GetCCD(const len_t iz) const {
-    const std::string& name = ions->GetName(iz);
-    auto it = chargeStateRates.find(name);
-    if (it == chargeStateRates.end() || it->second.ccd == nullptr)
-        throw FVM::FVMException(
-            "RateHandler: No charge-exchange coefficient available for '%s'.",
-            name.c_str()
-        );
-    return it->second.ccd;
-}
+ADASRateInterpolator *RateHandler::GetCCD(const len_t iz) const {return adas->GetCCD(GetADASZ(iz));}
 
 /*
  * Add molecular reaction rates for all defined molecular rate pairs.
