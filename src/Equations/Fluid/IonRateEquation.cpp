@@ -75,12 +75,12 @@ void IonRateEquation::AllocateRateCoefficients() {
     this->PartialNIon = new real_t*[(Zion+1)];
     this->PartialTIon = new real_t*[(Zion+1)];
 
-    this->Rec[0]         = new real_t[Nr*(Zion+1)];
-    this->PartialNRec[0] = new real_t[Nr*(Zion+1)];
-    this->PartialTRec[0] = new real_t[Nr*(Zion+1)];
-    this->Ion[0]         = new real_t[Nr*(Zion+1)];
-    this->PartialNIon[0] = new real_t[Nr*(Zion+1)];
-    this->PartialTIon[0] = new real_t[Nr*(Zion+1)];
+    this->Rec[0]         = new real_t[Nr*(Zion+1)]();
+    this->PartialNRec[0] = new real_t[Nr*(Zion+1)]();
+    this->PartialTRec[0] = new real_t[Nr*(Zion+1)]();
+    this->Ion[0]         = new real_t[Nr*(Zion+1)]();
+    this->PartialNIon[0] = new real_t[Nr*(Zion+1)]();
+    this->PartialTIon[0] = new real_t[Nr*(Zion+1)]();
 
     for (len_t i = 1; i <= Zion; i++) {
         this->Rec[i]         = this->Rec[i-1] + Nr;
@@ -97,10 +97,10 @@ void IonRateEquation::AllocateRateCoefficients() {
     this->posRecTerm = new real_t*[(Zion+1)];
     this->negRecTerm = new real_t*[(Zion+1)];
     
-    this->posIonizTerm[0] = new real_t[Nr*(Zion+1)];
-    this->negIonizTerm[0] = new real_t[Nr*(Zion+1)];
-    this->posRecTerm[0] = new real_t[Nr*(Zion+1)];
-    this->negRecTerm[0] = new real_t[Nr*(Zion+1)];
+    this->posIonizTerm[0] = new real_t[Nr*(Zion+1)]();
+    this->negIonizTerm[0] = new real_t[Nr*(Zion+1)]();
+    this->posRecTerm[0] = new real_t[Nr*(Zion+1)]();
+    this->negRecTerm[0] = new real_t[Nr*(Zion+1)]();
     
     for (len_t i = 1; i <= Zion; i++) {
     	this->posIonizTerm[i] = this->posIonizTerm[i-1] + Nr;
@@ -161,9 +161,13 @@ void IonRateEquation::Rebuild(
 
     real_t *T = unknowns->GetUnknownData(id_T_cold);
     real_t *n = unknowns->GetUnknownData(id_n_cold);
-    
-    ChargeStateRate *acd = this->ratehandler->GetACD(this->iIon); 
-    ChargeStateRate *scd = this->ratehandler->GetSCD(this->iIon);
+
+    // Molecules are not in ADAS, they get their rates from MoleculeRateReaction
+    if (ions->IsMolecule(this->iIon))
+        return;
+
+    ADASRateInterpolator *acd = this->ratehandler->GetACD(this->iIon); 
+    ADASRateInterpolator *scd = this->ratehandler->GetSCD(this->iIon);
 
     real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());
     // Iterate over charge state (0 ... Z)
