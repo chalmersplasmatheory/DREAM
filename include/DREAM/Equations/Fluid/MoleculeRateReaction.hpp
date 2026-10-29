@@ -20,7 +20,7 @@ namespace DREAM {
         bool separateNeutrals;
         len_t id_ions, id_n_cold, id_n_re, id_n_tot, id_T_cold, id_Wi, id_Ni, id_Wn;
         bool includeFluidREIonization; // include IONIZATION_RUNAWAY reactions (ionization = FLUID_RE)
-        real_t reionizScale;           // scale factor for runaway ionization (ions/reioniz_scale)
+        real_t reionizScale;
         real_t **Rate = nullptr;
         real_t **Rate_N = nullptr;
         real_t **Rate_T = nullptr;
@@ -40,17 +40,16 @@ namespace DREAM {
         void DeallocateRateCoefficients();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 2 * moleculeReactions.size(); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override
             {
                 return ions->GetNzs() + 2*ions->GetNZ() + 3;
             }
 
-        //virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
-         virtual bool SetCSJacobianBlock(
-      const len_t, const len_t, FVM::Matrix*, const real_t*,
-      const len_t iIon, const len_t Z0, const len_t rOffset
+        virtual bool SetCSJacobianBlock(
+            const len_t, const len_t, FVM::Matrix*, const real_t*,
+            const len_t iIon, const len_t Z0, const len_t rOffset
         ) override;
 
         virtual void SetCSMatrixElements(
@@ -61,11 +60,7 @@ namespace DREAM {
             real_t*, const real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) override;
 
-
-        //virtual void SetMatrixElement(const len_t, const len_t, const real_t) override;
-        //virtual void SetJacobianElement(const len_t, const len_t, const real_t) override;
     };
 }
 
-    
-    #endif /** _DREAM_EQUATION_MOLECULE_RATE_REACTION_HPP */
+#endif/*_DREAM_EQUATION_MOLECULE_RATE_REACTION_HPP*/

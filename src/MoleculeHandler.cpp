@@ -1,5 +1,5 @@
 /**
- * Implementation of the object which helps map molecule densities to molecule names and charges. 
+ * Implementation of the object which helps map molecule densities to molecule names and charges.
  */
 
 #include <vector>
@@ -14,10 +14,10 @@ using namespace DREAM;
 
 
 struct molecule_data {
-      const char *name;
-      real_t mass;
-      len_t Z_heavy;
-  };
+    const char *name;
+    real_t mass;
+    len_t Z_heavy;
+};
 // in kg
 static const molecule_data moleculeTable[] = {
     {"H2",  2 * Constants::mH, 1},
@@ -30,27 +30,27 @@ static const molecule_data moleculeTable[] = {
 };
 
 static const len_t nMolecules =
-      sizeof(moleculeTable) / sizeof(moleculeTable[0]);
+    sizeof(moleculeTable) / sizeof(moleculeTable[0]);
 
 bool MoleculeHandler::IsMolecule(const std::string& name) const {
-      for (len_t i = 0; i < nMolecules; i++)
-          if (name == moleculeTable[i].name){
-              return true;
-          }
-      return false;
-  }
+    for (len_t i = 0; i < nMolecules; i++)
+        if (name == moleculeTable[i].name){
+            return true;
+        }
+    return false;
+}
 
 
 real_t MoleculeHandler::GetMass(const std::string& name) const {
     for (len_t i = 0; i < nMolecules; i++)
-          if (name == moleculeTable[i].name)
-              return moleculeTable[i].mass;
+        if (name == moleculeTable[i].name)
+            return moleculeTable[i].mass;
 
     throw FVM::FVMException(
-          "MoleculeHandler: No molecule named '%s' has been defined.",
-          name.c_str()
-      );
-  }
+        "MoleculeHandler: No molecule named '%s' has been defined.",
+        name.c_str()
+    );
+}
 
 
 len_t MoleculeHandler::GetHeavyZ(const std::string& name) const {

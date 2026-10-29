@@ -5,7 +5,7 @@
 
 namespace DREAM {
 
-    //Type of molecular reaction process.
+    // Type of molecular reaction process.
     enum class MolecularReactionProcess {
         CHARGE_EXCHANGE,
         CHARGE_EXCHANGE_RESONANT,
@@ -16,8 +16,8 @@ namespace DREAM {
         DISSOCIATION_MULTIPLE,
         DISSOCIATION_RUNAWAY,
     };
-    
-    //Type of molecular input for a reaction rate.
+
+    // Type of molecular input for a reaction rate.
     enum class MolecularInputKind {
         NONE,
         ELECTRON,
@@ -26,8 +26,8 @@ namespace DREAM {
         NEUTRAL
     };
 
-    //Structure describing a molecular input for a reaction rate.
-    //It happens that the input depends on both the reactants
+    // Structure describing a molecular input for a reaction rate.
+    // It happens that the input depends on both the reactants
     struct MolecularInput {
         MolecularInputKind kind;
 
@@ -38,15 +38,15 @@ namespace DREAM {
         int_t charge2;
     };
 
-    //Structure desribing a species involved in a molecular reaction.
-    // Name, charge state and number nr of particles for the species. 
+    // Structure describing a species involved in a molecular reaction.
+    // Name, charge state and number nr of particles for the species.
     struct MolecularReactionSpecies {
-          const char *name;
-          int_t Z0;
-          len_t coefficient;
-      };
+        const char *name;
+        int_t Z0;
+        len_t coefficient;
+    };
 
-    //Structure describing a molecular reaction.
+    // Structure describing a molecular reaction.
     struct MolecularReactionDefinition {
         const char *rateName;
 
@@ -68,6 +68,6 @@ namespace DREAM {
     // Array of molecular reaction definitions stored in RateData.cpp.
     extern const MolecularReactionDefinition molecularReactionDefinitions[];
 
-  }
+}
 
-  #endif /* _DREAM_RATE_DATA_HPP */
+#endif/*_DREAM_RATE_DATA_HPP*/

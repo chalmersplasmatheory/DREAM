@@ -1,12 +1,7 @@
 /**
- * Implementation of a charge-exchange rate reaction,
- * of the form:
- *
- * A+ + B -> A + B+
- * 
- * This class in very similar to the IonRateEquation class, 
- * but is specifically designed to handle charge-exchange reactions 
- * involving molecular species. .
+ * Implementation of the MoleculeRateReaction class.
+ * This class implements the molecular reaction rates for a given ion species and charge state.
+ * The rates are obtained from the RateHandler, which manages the ADAS rates and molecular reaction rates.
 */
 
 #include <utility>
@@ -29,16 +24,16 @@ MoleculeRateReaction::MoleculeRateReaction(
     RateHandler *ratehandler, bool includeFluidREIonization, real_t reionizScale
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), ratehandler(ratehandler),
     includeFluidREIonization(includeFluidREIonization), reionizScale(reionizScale) {
-    
+
     SetName("MoleculeRateReaction");
 
     this->unknowns  = unknowns;
 
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-	this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_n_re   = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
-	this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
-	this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_Ni = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     separateNeutrals = unknowns->HasUnknown(OptionConstants::UQTY_WN_ENER);
@@ -136,15 +131,15 @@ MoleculeRateReaction::~MoleculeRateReaction() {
 void MoleculeRateReaction::DeallocateRateCoefficients() {
 
     if (this->Rate != nullptr) {
-      delete [] this->Rate[0];
-      delete [] this->Rate;
+        delete [] this->Rate[0];
+        delete [] this->Rate;
     }
     if (this->Rate_N != nullptr) {
-      delete [] this->Rate_N[0];
-      delete [] this->Rate_N;
+        delete [] this->Rate_N[0];
+        delete [] this->Rate_N;
     }
     if (this->Rate_T != nullptr) {
-      delete [] this->Rate_T[0];
+        delete [] this->Rate_T[0];
         delete [] this->Rate_T;
     }
 }
@@ -156,17 +151,16 @@ void MoleculeRateReaction::Rebuild(
     const real_t, const real_t, FVM::UnknownQuantityHandler*
 ) {
     const len_t Nr = this->grid->GetNr();
-     
+
     for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) {
         const MolecularReaction& reaction = moleculeReactions[rateIndex];
-      
+
         // Runaway ionization is rescaled by ions/reioniz_scale
         const real_t scale = (reaction.process == MolecularReactionProcess::IONIZATION_RUNAWAY) ? reionizScale : 1.0;
 
         for (len_t ir = 0; ir < Nr; ir++) {
             real_t density, temperature;
-            //Is it a problem that I dont send in the unknowns here and that they are called in ratehandler?
-            //Either way maybe its better to send in them for understanding?
+            // The density and temperature inputs are taken from the unknowns by the RateHandler
             density = ratehandler->ResolveDensity(reaction.densityInput, ir);
             temperature = ratehandler->ResolveTemperature(reaction.temperatureInput, ir);
             Rate[rateIndex][ir]   = scale * reaction.rate->Eval(density, temperature);
@@ -182,8 +176,8 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
     const len_t /*uqtyId*/, const len_t derivId,
     FVM::Matrix *jac, const real_t *x,
     const len_t iIon, const len_t Z0, const len_t rOffset
-  ) {
-      // This term depends on ion densities, n_cold and T_cold.
+) {
+    // This term depends on ion densities, n_cold and T_cold.
     if (!HasJacobianContribution(derivId))
         return false;
 
@@ -198,21 +192,21 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
         // whose equation we are currently building.
         real_t net = 0;
 
-        //check if this ion is part of the products, if so, the rate should be positive
+        // check if this ion is part of the products, if so, the rate should be positive
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const auto& p = reaction.products[j];
 
             if (name == p.name && p.Z0 == (int_t)Z0)
                 net += p.coefficient;
-          }
+        }
 
-          //check if this ion is part of the reactants, if so, the rate should be negative
+        // check if this ion is part of the reactants, if so, the rate should be negative
         for (len_t j = 0; j < reaction.nReactants; j++) {
             const auto& r = reaction.reactants[j];
 
             if (name == r.name && r.Z0 == (int_t)Z0)
-                net -= r.coefficient; //coefient is how many of them so if there is 2 produced...
-          }
+                net -= r.coefficient; // coefficient is how many of them so if there is 2 produced...
+        }
 
         if (net == 0)
             continue;
@@ -229,7 +223,7 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
 
             const real_t nA = dA[offsetA + ir];
             const real_t nB = dB[offsetB + ir];
-            //Dependance on the species densities, nA and nB.
+            // Dependence on the species densities, nA and nB.
             // dS/dnA  →  column n_cold (electron), n_re (runaway) or n_i (ion)
             if (derivId == idA)
                 jac->SetElement(row, offsetA + ir, net * Rate[rateIndex][ir] * nB);
@@ -237,20 +231,20 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
             // dS/dnB
             if (derivId == idB)
                 jac->SetElement(row, offsetB + ir, net * Rate[rateIndex][ir] * nA);
-            
-                //If the input value depends on the electron density, then set the jacobian element for the electron density.
+
+            // If the input value depends on the electron density, then set the jacobian element for the electron density.
             if (derivId == id_n_cold && reaction.densityInput.kind == MolecularInputKind::ELECTRON) {
                 jac->SetElement(row, ir, net * Rate_N[rateIndex][ir] * nA * nB);
             }
-            //If the input value depends on the electron temperature, then set the jacobian element for the electron temperature.
+            // If the input value depends on the electron temperature, then set the jacobian element for the electron temperature.
             if (derivId == id_T_cold && reaction.temperatureInput.kind == MolecularInputKind::ELECTRON) {
                 // The rate coefficient K depends on T_cold.
                 jac->SetElement(row, ir, net * Rate_T[rateIndex][ir] * nA * nB);
-            } 
-            //If the input temperature depends on the species temperature, then set the jacobian element for the species temperature.
+            }
+            // If the input temperature depends on the species temperature, then set the jacobian element for the species temperature.
             if (Tin.kind == MolecularInputKind::SPECIES) {
                 const len_t iz      = ions->GetIonIndex(Tin.name1);
-                const bool neutral  = (Tin.charge1 == 0); //check if the input temperature is for a neutral species
+                const bool neutral  = (Tin.charge1 == 0); // check if the input temperature is for a neutral species
                 const len_t energyId = (separateNeutrals && neutral) ? id_Wn : id_Wi;
 
                 // Same density as RateHandler::ResolveSpeciesTemperature
@@ -281,9 +275,9 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
 
 
         }
-          contributes = true;
+        contributes = true;
     }
-      return contributes;
+    return contributes;
 }
 
 
@@ -292,8 +286,8 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
  * Build the linearised operator for this term .
  */
 void MoleculeRateReaction::SetCSMatrixElements(
-      FVM::Matrix *mat, real_t *rhs, const len_t iIon, const len_t Z0, const len_t rOffset
-  ) {
+    FVM::Matrix *mat, real_t *rhs, const len_t iIon, const len_t Z0, const len_t rOffset
+) {
     const len_t nr = this->grid->GetNr();
     const std::string name = ions->GetName(iIon);
 
@@ -303,7 +297,7 @@ void MoleculeRateReaction::SetCSMatrixElements(
         // Net number of particles produced in this equation.
         real_t net = 0;
 
-        //check if this ion is part of the products, if so, the rate should be positive
+        // check if this ion is part of the products, if so, the rate should be positive
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const auto& p = reaction.products[j];
 
@@ -311,7 +305,7 @@ void MoleculeRateReaction::SetCSMatrixElements(
                 net += p.coefficient;
         }
 
-        //check if this ion is part of the reactants, if so, the rate should be negative
+        // check if this ion is part of the reactants, if so, the rate should be negative
         for (len_t j = 0; j < reaction.nReactants; j++) {
             const auto& r = reaction.reactants[j];
 
@@ -348,22 +342,22 @@ void MoleculeRateReaction::SetCSMatrixElements(
                 rhs[rOffset + ir] += net * Rate[rateIndex][ir] * dA[offsetA + ir] * nB;
         }
     }
-  }
+}
 
 void MoleculeRateReaction::SetCSVectorElements(
-      real_t *vec, const real_t *x, const len_t iIon, const len_t Z0, const len_t rOffset
-  ) {
+    real_t *vec, const real_t *x, const len_t iIon, const len_t Z0, const len_t rOffset
+) {
     const len_t nr = this->grid->GetNr();
     const std::string name = ions->GetName(iIon);
 
-    for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) { //go though all CS reactions and find the ones that are charge exchange
+    for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) {
         const MolecularReaction& reaction = moleculeReactions[rateIndex];
 
-        // Net number of particles produced in this equation. Check if we should add 
+        // Net number of particles produced in this equation. Check if we should add
         // or remove density for this species and charge state.
         real_t net = 0;
 
-        //check if this ion is part of the products, if so, the rate should be positive
+        // check if this ion is part of the products, if so, the rate should be positive
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const auto& p = reaction.products[j];
 
@@ -371,7 +365,7 @@ void MoleculeRateReaction::SetCSVectorElements(
                 net += p.coefficient;
         }
 
-        //check if this ion is part of the reactants, if so, the rate should be negative
+        // check if this ion is part of the reactants, if so, the rate should be negative
         for (len_t j = 0; j < reaction.nReactants; j++) {
             const auto& r = reaction.reactants[j];
 
@@ -381,7 +375,7 @@ void MoleculeRateReaction::SetCSVectorElements(
 
         if (net == 0)
             continue;
-            
+
         len_t idA, idB, offsetA, offsetB;
         GetReactantDensity(reaction.reactants[0], idA, offsetA);
         GetReactantDensity(reaction.reactants[1], idB, offsetB);
@@ -395,5 +389,5 @@ void MoleculeRateReaction::SetCSVectorElements(
 
             vec[rOffset + ir] += net * R;
         }
-      }
-  }
+    }
+}

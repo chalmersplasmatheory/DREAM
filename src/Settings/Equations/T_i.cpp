@@ -63,9 +63,9 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
 			for(len_t ir=0; ir<nr; ir++) {
 				const len_t it = iz*nr + ir;
 				real_t n = Ni_init[it];
-                //If we want to separate the neutrals, 
-                //we need to sum over all other charge states to get the 
-                //total density of the species (remove neutral density).
+				// If we want to separate the neutrals,
+				// we need to sum over all other charge states to get the
+				// total density of the species (remove neutral density).
 				if (separateNeutrals) {
 					n = 0;
 					for (len_t Z0=1; Z0<=eqsys->GetIonHandler()->GetZ(iz); Z0++) {
@@ -191,11 +191,11 @@ void SimulationGenerator::ConstructEquation_T_n(
     FVM::Operator *Op_Wn = new FVM::Operator(fluidGrid);
 
     for (len_t iz = 0; iz < nSpecies; iz++) {
-       Op_Wn->AddTerm(
-          new IonSpeciesTransientTerm(
-              fluidGrid, iz, id_Wn, -1.0
-          )
-      );
+        Op_Wn->AddTerm(
+            new IonSpeciesTransientTerm(
+                fluidGrid, iz, id_Wn, -1.0
+            )
+        );
         for (len_t jz = iz + 1; jz < nSpecies; jz++) {
             Op_Wn->AddTerm(
                 new NeutralCollisionalEnergyTransferTerm(
@@ -204,15 +204,15 @@ void SimulationGenerator::ConstructEquation_T_n(
             );
         }
         Op_Wn->AddTerm(
-              new ExotermicEnergyTransferTerm(
-                  fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler()
-              )
-          );
-  }
+            new ExotermicEnergyTransferTerm(
+                fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler()
+            )
+        );
+    }
 
     eqsys->SetOperator(id_Wn, id_Wn, Op_Wn, "dW_n/dt = neutral thermal terms");
 
-     // Load the initial neutral temperature, in eV.
+    // Load the initial neutral temperature, in eV.
     real_t *Tn_data = LoadDataIonR("eqsys/n_i", fluidGrid->GetRadialGrid(),s, nSpecies,"initialTn");
 
     if (Tn_data == nullptr) {
@@ -225,7 +225,7 @@ void SimulationGenerator::ConstructEquation_T_n(
     const len_t id_ions = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
 
-  // Keep the temperatures alive until the initializer runs.
+    // Keep the temperatures alive until the initializer runs.
     const std::vector<real_t> Tn_init(Tn_data, Tn_data + nSpecies * nr);
     delete [] Tn_data;
 
@@ -235,7 +235,7 @@ void SimulationGenerator::ConstructEquation_T_n(
     initializeNeutralEnergy =
     [Tn_init, id_ions, ions, nSpecies, nr](
         FVM::UnknownQuantityHandler *unknowns,
-          real_t *Wn
+        real_t *Wn
     ) {
         const real_t *initialDensities =
             unknowns->GetUnknownInitialData(id_ions);
@@ -249,15 +249,15 @@ void SimulationGenerator::ConstructEquation_T_n(
 
                 const real_t neutralDensity = initialDensities[densityIndex];
 
-                Wn[energyIndex] =1.5 * Constants::ec * neutralDensity * Tn_init[energyIndex];
-              }
-          }
-      };
+                Wn[energyIndex] = 1.5 * Constants::ec * neutralDensity * Tn_init[energyIndex];
+            }
+        }
+    };
 
-  eqsys->initializer->AddRule(
-      id_Wn,
-      EqsysInitializer::INITRULE_EVAL_FUNCTION,
-      initializeNeutralEnergy,
-      id_ions
-  );
-  }
+    eqsys->initializer->AddRule(
+        id_Wn,
+        EqsysInitializer::INITRULE_EVAL_FUNCTION,
+        initializeNeutralEnergy,
+        id_ions
+    );
+}

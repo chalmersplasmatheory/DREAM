@@ -270,15 +270,17 @@ void SimulationGenerator::ConstructEquation_Ions(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);    
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);
     eqsys->SetIonHandler(ih);
 
     const bool reactionsEnabled =
-      s->GetInteger(MODULENAME "/reactions/enabled") != 0;
+        s->GetInteger(MODULENAME "/reactions/enabled") != 0;
 
     const vector<string> reactionNames =
         s->GetStringList(MODULENAME "/reactions/names");
 
+
+    // Convert the flat arrays of user-supplied rates into a map of UserMolecularRate objects
     const vector<string> userRateNames = s->GetStringList(MODULENAME "/reactions/user_rates/names");
     len_t nUserRates, nUser_n, nUser_T, nUser_rate;
     const int_t *user_nn = s->GetIntegerArray(MODULENAME "/reactions/user_rates/nn", 1, &nUserRates);
@@ -310,7 +312,7 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     // Initialize ion equations
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
-    
+
 
     OptionConstants::eqterm_ionization_mode ionization_mode =
         (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
@@ -367,11 +369,11 @@ void SimulationGenerator::ConstructEquation_Ions(
 					oqty_terms->ni_rates.push_back(ire);
                 }
                 if (reactionsEnabled) {
-                        eqn->AddTerm(new MoleculeRateReaction(
-                            fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),ratehandler,
-                            includeFluidREIonization, reionizScale
-                        ));
-                    }
+                    eqn->AddTerm(new MoleculeRateReaction(
+                        fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),ratehandler,
+                        includeFluidREIonization, reionizScale
+                    ));
+                }
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid
                         if(Op_kiniz == nullptr)
@@ -423,10 +425,6 @@ void SimulationGenerator::ConstructEquation_Ions(
                 );
         }
     }
-    //something like this
-    //if (molecularRates->GetNReactions() > 0)
-    //  eqn->AddTerm(new MolecularRateEquation(fluidGrid, ih, molecularRates, id_ni));
-
 
     // Set equation description
     string desc;

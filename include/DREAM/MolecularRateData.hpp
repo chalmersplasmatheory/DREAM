@@ -4,7 +4,7 @@
 #include "FVM/config.h"
 
 namespace DREAM {
-    //Struct to hold the rate for a given molecular reaction
+    // Struct to hold the rate for a given molecular reaction
     struct molecular_rate {
         const char *name;
 
@@ -20,4 +20,4 @@ namespace DREAM {
     extern struct molecular_rate molecular_rate_table[];
 }
 
-#endif /* _DREAM__MOLECULARRATEDATA_HPP */
+#endif/*_DREAM__MOLECULARRATEDATA_HPP*/

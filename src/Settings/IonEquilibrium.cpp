@@ -65,13 +65,6 @@ void SimulationGenerator::EvaluateIonEquilibrium(
 	const real_t *nfree0, const real_t *Ni, const real_t *T,
 	len_t Nr, vector<real_t*>& ni
 ) {
-    // The atomic charge-state-chain solver does not solve a molecular network.
-    for (len_t iSpecies : equil_indices)
-        if (ih->IsMolecule(iSpecies))
-            throw SettingsException(
-                "Molecular equilibrium initialization is not implemented for '%s'.",
-                ih->GetName(iSpecies).c_str()
-            );
 
 	len_t Nequil = equil_indices.size();
 	vector<len_t> Z(Nequil);

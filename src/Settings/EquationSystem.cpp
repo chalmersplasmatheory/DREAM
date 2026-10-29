@@ -198,8 +198,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, nist, amjuel, oqty_terms);
 
-    if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn")
-            == OptionConstants::UQTY_T_N_INCLUDE)
+    if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn") == OptionConstants::UQTY_T_N_INCLUDE)
         ConstructEquation_T_n(eqsys, s, oqty_terms);
 
 
@@ -387,8 +386,7 @@ void SimulationGenerator::ConstructUnknowns(
     } else if (bootstrap_mode != OptionConstants::EQTERM_BOOTSTRAP_MODE_NEGLECT) {
         DEFU_FLD_N(NI_DENS, GetNumberOfIonSpecies(s));
     }
-    if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn")
-            == OptionConstants::UQTY_T_N_INCLUDE) {
+    if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn")== OptionConstants::UQTY_T_N_INCLUDE) {
         const len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WN_ENER, nIonSpecies);
     }

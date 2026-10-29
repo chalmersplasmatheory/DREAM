@@ -17,12 +17,12 @@ ExotermicEnergyTransferTerm::ExotermicEnergyTransferTerm(
 
     SetName("ExotermicEnergyTransferTerm");
     mi = ions->GetIonSpeciesMass(iz);
-    
+
     id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
     id_ne = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Te = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    
+
     AddUnknownForJacobian(unknowns, id_ions);
     AddUnknownForJacobian(unknowns, id_Wn);
     AddUnknownForJacobian(unknowns, id_ne);
@@ -33,7 +33,6 @@ ExotermicEnergyTransferTerm::ExotermicEnergyTransferTerm(
 real_t ExotermicEnergyTransferTerm::getExotermicEnergy(
     const MolecularReaction& reaction
 ) const {
-    //I think the easies thing is to have this here?
     struct ExothermicReaction { const char *name; real_t energy; };
     static const ExothermicReaction energies[] = {
         {"D_2_dissociation", 5.0},
@@ -86,7 +85,7 @@ void ExotermicEnergyTransferTerm::SetVectorElements(
         const real_t deltaE = getExotermicEnergy(reaction);
         if (deltaE == 0) /// if to exotermix reaction exist
             continue;
-        len_t multiplicity = 0; //in case of multiple same products
+        len_t multiplicity = 0; // in case of multiple same products
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const auto& product = reaction.products[j];
             if (name == product.name && product.Z0 == 0)

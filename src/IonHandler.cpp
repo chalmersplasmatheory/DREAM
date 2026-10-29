@@ -71,7 +71,7 @@ IonHandler::IonHandler(
     niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     this->ionNames = names;
-    //Check that not more than one species is named the same
+    // Check that not more than one species is named the same
     for(len_t i=0; i<ionNames.size(); i++)
         for(len_t j=i+1; j<ionNames.size(); j++)
             if(ionNames[i] == ionNames[j])
@@ -158,12 +158,11 @@ void IonHandler::Initialize() {
     Ztot   = new real_t[nr];
 
     mi = new real_t[nZ];
-    
 
     for(len_t iz=0; iz<nZ; iz++){
-        if (molecules.IsMolecule(ionNames[iz])) { //check molecule first so that it works with charge states
-          mi[iz] = molecules.GetMass(ionNames[iz]);
-      }
+        if (molecules.IsMolecule(ionNames[iz])) { // check molecule first so that it works with charge states
+            mi[iz] = molecules.GetMass(ionNames[iz]);
+        }
         else if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
             bool isTritium = false, isHydrogen = false;
             for(len_t it=0; it<nTritium; it++)
@@ -234,12 +233,12 @@ const len_t IonHandler::GetIonIndex(const std::string& name) const {
 }
 
 bool IonHandler::HasIon(const std::string& name) const {
-      for (len_t i = 0; i < this->nZ; i++)
-          if (this->ionNames[i] == name)
-              return true;
+    for (len_t i = 0; i < this->nZ; i++)
+        if (this->ionNames[i] == name)
+            return true;
 
-      return false;
-  }
+    return false;
+}
 
 
 // Returns the density of ions which are characterised by 
@@ -352,7 +351,7 @@ const real_t IonHandler::GetNZ0Z0(const len_t ion, const len_t ir) const {
 
 
 /**
- * The inverse of GetIndex(...): takes the ion index (flat charge state index) and 
+ * The inverse of GetIndex(...): takes the ion index (flat charge state index) and
  * returns the corresponding iz and Z0
  */
 void IonHandler::GetIonIndices(len_t nMultiple, len_t &iz_in, len_t &Z0_in){

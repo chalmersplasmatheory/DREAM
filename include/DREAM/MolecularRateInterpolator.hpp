@@ -17,8 +17,8 @@ namespace DREAM {
         const real_t *logn;
         const real_t *logT;
         const real_t *coeff;
-        
-        //only need one pointer
+
+        // only need one pointer
         gsl_interp2d *interp;
         gsl_interp_accel *nacc;
         gsl_interp_accel *Tacc;
@@ -33,4 +33,4 @@ namespace DREAM {
     };
 }
 
-#endif /* _DREAM_MOLECULAR_RATE_INTERPOLATOR_HPP */
+#endif/*_DREAM_MOLECULAR_RATE_INTERPOLATOR_HPP*/

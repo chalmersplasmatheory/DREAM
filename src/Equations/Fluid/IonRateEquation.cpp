@@ -33,7 +33,7 @@ using namespace DREAM;
  */
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon, FVM::UnknownQuantityHandler *unknowns,
-    RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
+    RateHandler *ratehandler, bool addFluidIonization, bool addFluidJacobian, bool isAbl = false
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon),
     ratehandler(ratehandler), addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
@@ -166,7 +166,7 @@ void IonRateEquation::Rebuild(
     if (ions->IsMolecule(this->iIon))
         return;
 
-    ADASRateInterpolator *acd = this->ratehandler->GetACD(this->iIon); 
+    ADASRateInterpolator *acd = this->ratehandler->GetACD(this->iIon);
     ADASRateInterpolator *scd = this->ratehandler->GetSCD(this->iIon);
 
     real_t eps = sqrt(std::numeric_limits<real_t>::epsilon());

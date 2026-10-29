@@ -141,7 +141,7 @@ bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
                 len_t indZ = ionHandler->GetIndex(index_i, Z0);
                 real_t value = vecOverNZ2 * Z0*Z0;
                 if (separateNeutrals)
-                    value += dvec_dni; //must be differentiated with respect ni instead of only Ni
+                    value += dvec_dni; // must be differentiated with respect ni instead of only Ni
                 jac->SetElement(ii, indZ*nr + ir, value);
             }
         } else if(!isIon_i && derivId == id_ncold)

@@ -191,10 +191,10 @@ class Ions(UnknownQuantity):
 
     def enableReactions(self, selection=None):
         """
-        Enable molecular reactions for the ion species. 
-        This will call a method to add all species that are required for the 
-        selected reactions to the list of ions. If selection is None, 
-        all (possible) reactions will be enabled. 
+        Enable molecular reactions for the ion species.
+        This will call a method to add all species that are required for the
+        selected reactions to the list of ions. If selection is None,
+        all (possible) reactions will be enabled.
         Otherwise, only the selected reactions will be enabled."""
 
         reactions = list(reaction_data.MOLECULAR_REACTIONS)
@@ -217,29 +217,29 @@ class Ions(UnknownQuantity):
                     selected.extend(candidates)
                     continue
 
-                
+
                 for request in requests:
-                  # A list preserves repeated reactants.
-                  wanted = sorted(tuple(x) for x in request["reactants"])
-                  matches = []
+                    # A list preserves repeated reactants.
+                    wanted = sorted(tuple(x) for x in request["reactants"])
+                    matches = []
 
-                  for reaction in candidates:
-                      actual = []
+                    for reaction in candidates:
+                        actual = []
 
-                      for name, Z0, coefficient in reaction["reactants"]:
-                          actual.extend([(name, Z0)] * coefficient)
+                        for name, Z0, coefficient in reaction["reactants"]:
+                            actual.extend([(name, Z0)] * coefficient)
 
-                      if sorted(actual) == wanted:
-                          matches.append(reaction)
+                        if sorted(actual) == wanted:
+                            matches.append(reaction)
 
-                  if not matches:
-                      raise EquationException(
-                          f"No reaction matches {request}."
-                      )
+                    if not matches:
+                        raise EquationException(
+                            f"No reaction matches {request}."
+                        )
 
-                  for reaction in matches:
-                      if reaction not in selected:
-                          selected.append(reaction)
+                    for reaction in matches:
+                        if reaction not in selected:
+                            selected.append(reaction)
 
             reactions = selected
 
@@ -250,7 +250,7 @@ class Ions(UnknownQuantity):
         species_names = []
         for ion in self.ions:
             species_names.append(ion.getName())
-        
+
         # Check each reaction.
         for reaction in reactions:
             all_reactants_exist = True
@@ -270,7 +270,7 @@ class Ions(UnknownQuantity):
             # Save the reaction's name if all its reactant species exist.
             if all_reactants_exist:
                 self.enabled_reaction_names.append(reaction["name"])
-                    
+
     def addRequiredSpecies(self, reactions):
         """
         Add all species required by reactions with available reactants.
@@ -288,38 +288,38 @@ class Ions(UnknownQuantity):
         changed = True
 
         while changed:
-              changed = False ##Assume we will not discove somet
+            changed = False ##Assume we will not discove somet
 
-              for reaction in reactions:
-                  all_reactants_exist = True
+            for reaction in reactions:
+                all_reactants_exist = True
 
-                  for name, Z0, coefficient in reaction["reactants"]:
-                      if name in ("e", "RE"):
-                          continue
+                for name, Z0, coefficient in reaction["reactants"]:
+                    if name in ("e", "RE"):
+                        continue
 
-                      if name not in charges: #If the name is not in charges we add it in the next loop, and then we have to go though it again
-                          all_reactants_exist = False
-                          break
+                    if name not in charges: #If the name is not in charges we add it in the next loop, and then we have to go though it again
+                        all_reactants_exist = False
+                        break
 
-                  if not all_reactants_exist:
-                      continue
+                if not all_reactants_exist:
+                    continue
 
-                  for name, Z0, coefficient in reaction["products"]:
-                      if name in ("e", "RE"):
-                          continue
+                for name, Z0, coefficient in reaction["products"]:
+                    if name in ("e", "RE"):
+                        continue
 
-                      if name in charges:
-                          continue
+                    if name in charges:
+                        continue
 
-                      if name not in reaction_data.SPECIES_Z:
-                          raise EquationException(
-                              f"Add species metadata for '{name}' in data.py."
-                          )
+                    if name not in reaction_data.SPECIES_Z:
+                        raise EquationException(
+                            f"Add species metadata for '{name}' in data.py."
+                        )
 
-                      charges[name] = reaction_data.SPECIES_Z[name]
-                      changed = True
+                    charges[name] = reaction_data.SPECIES_Z[name]
+                    changed = True
 
-      # Check charge states before adding species to self.ions.
+        # Check charge states before adding species to self.ions.
         for reaction in reactions:
             all_reactants_exist = True
 
@@ -343,19 +343,19 @@ class Ions(UnknownQuantity):
                 if Z0 < 0 or Z0 > charges[name]:
                     raise EquationException(
                         f"Unsupported charge state {Z0} for '{name}'."
-                      )
+                    )
 
-          # Add the newly discovered species with zero density.
+        # Add the newly discovered species with zero density.
         for name in charges:
             if name not in initial_names:
                 self.addIon(
-                      name=name,
-                      Z=charges[name],
-                      iontype=IONS_DYNAMIC,
-                      Z0=0,
-                      n=0,
-                      r=self.r,
-                  )
+                    name=name,
+                    Z=charges[name],
+                    iontype=IONS_DYNAMIC,
+                    Z0=0,
+                    n=0,
+                    r=self.r,
+                )
 
     def setReactionRate(self, name, rate, T = None, n=None):
         """
@@ -374,15 +374,15 @@ class Ions(UnknownQuantity):
         if name not in names:
             raise EquationException(f"Unknown molecular reaction '{name}'.")
 
-        
+
         rate = np.asarray(rate, dtype=float)
 
         if T is None:
             T = np.array([1e-2, 1e5])
-            rate = np.stack((rate, rate))              
+            rate = np.stack((rate, rate))
         if n is None:
             n = np.array([1e14, 1e22])
-            rate = np.stack((rate, rate), axis=-1)      
+            rate = np.stack((rate, rate), axis=-1)
         T = np.asarray(T, dtype=float)
         n = np.asarray(n, dtype=float)
 
@@ -411,17 +411,16 @@ class Ions(UnknownQuantity):
             else:
                 fn = scipy.interpolate.interp1d(ion.r, ion.n, axis=-1, bounds_error=False, fill_value='extrapolate')
                 fT = scipy.interpolate.interp1d(ion.r, ion.T, axis=-1, bounds_error=False, fill_value='extrapolate')
-                fTn = scipy.interpolate.interp1d(ion.r, ion.Tn, axis=-1, bounds_error=False, fill_value='extrapolate'
-  )
+                fTn = scipy.interpolate.interp1d(ion.r, ion.Tn, axis=-1, bounds_error=False, fill_value='extrapolate')
                 ion.n = fn(r)
                 ion.T = fT(r)
                 ion.Tn = fTn(r)
                 ion.r = r
 
         self.r = r
-        
+
     def setNeutralTemperatureEnabled(self, enabled=True):
-      self.typeTn = (IONS_T_N_INCLUDE if enabled else IONS_T_N_NEGLECT)
+        self.typeTn = (IONS_T_N_INCLUDE if enabled else IONS_T_N_NEGLECT)
 
 
     def getCharges(self):
@@ -794,9 +793,6 @@ class Ions(UnknownQuantity):
             opacity_modes = data['opacity_modes']
         else:
             opacity_modes = self.getOpacityModes()
-            
-        if 'typeTn' in data:
-            self.typeTn = int(scal(data['typeTn']))
 
         charged_diffusion_modes = [ION_CHARGED_DIFFUSION_MODE_NONE]*len(Z)
         neutral_diffusion_modes = [ION_NEUTRAL_DIFFUSION_MODE_NONE]*len(Z)
@@ -1008,9 +1004,7 @@ class Ions(UnknownQuantity):
         if "reactions" in data:
             reactions = data["reactions"]
 
-            self.reactions_enabled = bool(
-                scal(reactions.get("enabled", 0))
-            )
+            self.reactions_enabled = bool(scal(reactions.get("enabled", 0)))
 
             names = reactions.get("names", "")
             self.enabled_reaction_names = [
@@ -1137,8 +1131,7 @@ class Ions(UnknownQuantity):
                 initialTn = np.copy(ion.getNeutralTemperature())
             else:
                 initialTn = np.concatenate(
-                    (initialTn, ion.getNeutralTemperature())
-                )
+                    (initialTn, ion.getNeutralTemperature()))
 
             initialNi.append(ion.getInitialSpeciesDensity())
 

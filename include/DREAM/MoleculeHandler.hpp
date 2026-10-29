@@ -7,17 +7,15 @@
 
 
 namespace DREAM {
+    class MoleculeHandler {
+    public:
+        bool IsMolecule(const std::string&) const;
+        real_t GetMass(const std::string&) const;
+        len_t GetHeavyZ(const std::string&) const;
 
-class MoleculeHandler {
-public:
-    bool IsMolecule(const std::string&) const;
-    real_t GetMass(const std::string&) const;
-    len_t GetHeavyZ(const std::string&) const;
+        MoleculeHandler() = default;
+        ~MoleculeHandler() = default;
+    };
+}
 
-    MoleculeHandler() = default;
-    ~MoleculeHandler() = default;
-
-  };
-} 
-
-#endif // _DREAM_EQUATIONS_MOLECULE_HANDLER_HPP
+#endif/*_DREAM_EQUATIONS_MOLECULE_HANDLER_HPP*/

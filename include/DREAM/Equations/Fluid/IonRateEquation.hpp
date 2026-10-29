@@ -33,7 +33,7 @@ namespace DREAM {
             **negRecTerm;
     public:
         IonRateEquation(
-            FVM::Grid*, IonHandler*, const len_t, 
+            FVM::Grid*, IonHandler*, const len_t,
             FVM::UnknownQuantityHandler*, RateHandler*, bool,bool,bool
         );
         virtual ~IonRateEquation();

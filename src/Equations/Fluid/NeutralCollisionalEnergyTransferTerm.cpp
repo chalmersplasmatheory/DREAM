@@ -1,5 +1,5 @@
 /**
- * Implementation of a neutral collisional energy transfer term. 
+ * Implementation of a neutral collisional energy transfer term.
  * Calculates the energy transfer between two neutral species due to collisions.
  */
 
@@ -15,13 +15,13 @@ using namespace DREAM;
 NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
     FVM::Grid *grid, len_t iz, len_t jz, FVM::UnknownQuantityHandler *unknowns,IonHandler *ions
 ): FVM::EquationTerm(grid), unknowns(unknowns), ions(ions), iz(iz), jz(jz){
-    
+
     SetName("NeutralCollisionalEnergyTransferTerm");
 
     this->mi = ions->GetIonSpeciesMass(iz);
     this->mj = ions->GetIonSpeciesMass(jz);
-    this->id_ions =unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    this->id_Wn =unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
+    this->id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    this->id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
 
     AddUnknownForJacobian(unknowns,id_ions);
     AddUnknownForJacobian(unknowns,id_Wn);
@@ -30,15 +30,15 @@ NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
 /**
  * Gets the parameters of a neutral species at a given radial position.
  */
- void NeutralCollisionalEnergyTransferTerm::GetNeutralParameters(
-      len_t ir,
-      real_t& n,
-      real_t& W,
-      real_t& T
-  ) {
-    const real_t *ni =unknowns->GetUnknownData(id_ions);
-    const real_t *Wn =unknowns->GetUnknownData(id_Wn);
-    const len_t neutralIndex =ions->GetIndex(iz, 0);
+void NeutralCollisionalEnergyTransferTerm::GetNeutralParameters(
+    len_t ir,
+    real_t& n,
+    real_t& W,
+    real_t& T
+) {
+    const real_t *ni = unknowns->GetUnknownData(id_ions);
+    const real_t *Wn = unknowns->GetUnknownData(id_Wn);
+    const len_t neutralIndex = ions->GetIndex(iz, 0);
 
     n = ni[neutralIndex*nr + ir];
     W = Wn[iz*nr + ir];
@@ -46,7 +46,7 @@ NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
         T = W / (1.5 * Constants::ec * n);
     else
         T = 0;
-  }
+}
 
 /**
  * Calculates the momentum scattering radius for a given neutral species. In units of Ångström.
@@ -58,10 +58,10 @@ real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t I
         return 1.54;
 
     else if (name == "D2")
-          return 2.07;
+        return 2.07;
 
     else if (name == "H2")
-        return 2.07;   
+        return 2.07;
 
     else if (name == "He")
         return 1.83;
@@ -70,7 +70,7 @@ real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t I
         return 1.95;
 
     else if (name == "Ar")
-          return 2.39;
+        return 2.39;
     else{
         return 0;
     }
@@ -82,23 +82,23 @@ real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t I
  * and their temperatures.
  */
 real_t NeutralCollisionalEnergyTransferTerm::CalculateNeutralScatteringRate(
-      len_t iz, len_t jz, real_t Ti, real_t Tj, real_t nj
+    len_t iz, len_t jz, real_t Ti, real_t Tj, real_t nj
 ) {
 
     real_t ri = getMomentumScatteringRadius(iz) * 1e-10; // convert to meters
     real_t rj = getMomentumScatteringRadius(jz) * 1e-10; // convert to meters
     const real_t miAMU = ions->GetIonSpeciesMass(iz)/ Constants::mu;
-    const real_t mjAMU =ions->GetIonSpeciesMass(jz)/ Constants::mu;
+    const real_t mjAMU = ions->GetIonSpeciesMass(jz)/ Constants::mu;
 
-    const real_t reducedTemperature =(mjAMU*Ti + miAMU*Tj) / (miAMU + mjAMU);
-    const real_t reducedMass =(miAMU*mjAMU)/ (miAMU + mjAMU);
+    const real_t reducedTemperature = (mjAMU*Ti + miAMU*Tj) / (miAMU + mjAMU);
+    const real_t reducedMass = (miAMU*mjAMU)/ (miAMU + mjAMU);
 
-    const real_t v_ij =std::sqrt(2 * Constants::ec * reducedTemperature/ (reducedMass * Constants::mu));
+    const real_t v_ij = std::sqrt(2 * Constants::ec * reducedTemperature/ (reducedMass * Constants::mu));
     const real_t r_ij = (ri+rj);
     const real_t vNN_inj = 8*std::sqrt(M_PI)/3 * nj *v_ij* r_ij*r_ij;
 
     return vNN_inj;
-  }
+}
 
 /**
  * Sets the elements of the vector based on the neutral collisional energy transfer.
@@ -115,7 +115,7 @@ void NeutralCollisionalEnergyTransferTerm::SetVectorElements(
 
     const real_t mi = ions->GetIonSpeciesMass(iz);
     const real_t mj = ions->GetIonSpeciesMass(jz);
-    
+
     const real_t massFactor = 2 * mi * mj / ((mi + mj) * (mi + mj));
 
     for (len_t ir = 0; ir < nr; ir++) {
@@ -135,24 +135,24 @@ void NeutralCollisionalEnergyTransferTerm::SetVectorElements(
         const real_t nuT_ij = massFactor * nuNN_ij;
 
         // Power density transferred from species j to species i [W/m^3].
-        const real_t Q =1.5 * Constants::ec * ni * nuT_ij * (Tj - Ti);
+        const real_t Q = 1.5 * Constants::ec * ni * nuT_ij * (Tj - Ti);
 
         vec[iz * nr + ir] += Q;
         vec[jz * nr + ir] -= Q;
-    } 
-  }
+    }
+}
 
 /**
- * Sets the elements of the Jacobian matrix based on the neutral 
+ * Sets the elements of the Jacobian matrix based on the neutral
  * collisional energy transfer.
  */
 bool NeutralCollisionalEnergyTransferTerm::SetJacobianBlock(
     const len_t,const len_t derivId,
     FVM::Matrix *jac,
     const real_t*
-  ) {
-    //Only depends on other neutral species and their energy densities.
-    if (derivId != id_Wn && derivId != id_ions) 
+) {
+    // Only depends on other neutral species and their energy densities.
+    if (derivId != id_Wn && derivId != id_ions)
         return false;
 
     const real_t *densities = unknowns->GetUnknownData(id_ions);
@@ -227,7 +227,7 @@ bool NeutralCollisionalEnergyTransferTerm::SetJacobianBlock(
     }
 
     return contributes;
-  }
+}
 
 
 /**
