@@ -2,13 +2,12 @@
  * A test for the IonRateEquation term in DREAM.
  */
 
- //TODO: Update with the new tests
-
 #include <vector>
 #include <string>
 #include "IonRateEquation.hpp"
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 
 
@@ -55,6 +54,9 @@ DREAM::FVM::UnknownQuantityHandler *IonRateEquation::GetUnknownHandler(DREAM::FV
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
+    // Required by the RateHandler
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_NI_DENS, "0", g, N_IONS);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_WI_ENER, "0", g, N_IONS);
 
     // Set initial values
     const len_t N = nZ0*g->GetNr();
@@ -96,6 +98,7 @@ bool IonRateEquation::CheckConservativity() {
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
     ih->Rebuild();
     DREAM::ADAS *adas = new DREAM::ADAS();
+    DREAM::RateHandler *rh = new DREAM::RateHandler(grid, ih, adas, uqh, false, {}, {});
     const len_t Nr = grid->GetNr();
 
     // Set total electron density
@@ -114,11 +117,7 @@ bool IonRateEquation::CheckConservativity() {
     // Construct equation for each ion species
     DREAM::IonRateEquation *ire[N_IONS];
     for (len_t iIon = 0; iIon < N_IONS; iIon++)
-        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, uqh, nullptr, true, true,false);
-
-        //ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh,true, true,false);
-
-
+        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, uqh, rh, true, true,false);
 
     // Check the equation for each ion species
     len_t rOffset = 0;
@@ -140,7 +139,7 @@ bool IonRateEquation::CheckConservativity() {
                 s += v;
                 
                 if (fabs(v) > maxval)
-                    maxval = v;
+                    maxval = fabs(v);
             }
 
             if (fabs(s) >= 100 * maxval * std::numeric_limits<real_t>::epsilon()) {
@@ -165,6 +164,7 @@ BREAK_LOOP:
         delete ire[iIon];
 
     delete [] vec;
+    delete rh;
     delete adas;
     delete ih;
     delete uqh;
