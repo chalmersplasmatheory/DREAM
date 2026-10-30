@@ -32,7 +32,8 @@ namespace DREAM {
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
-        virtual len_t GetNumberOfNonZerosPerRow() const override {return 2;}
+        // Each W_n row couples to the W_n of every other species (one term per pair)
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return ions->GetNZ(); }
     };
 }
 
