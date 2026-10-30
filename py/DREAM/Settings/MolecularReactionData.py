@@ -6,6 +6,20 @@ from .MolecularReactionDataCoefficients import *
 # Input selectors describe coefficient depandancies.
 # kind="relative" with two species means their arithmetic-mean temperature
 # Temperatures: eV; densities: m^-3.
+
+# Charge Z of every species appearing in the reactions (summed nuclear
+# charges for molecules). Used by Ions.enableReactions() to add missing
+# product species, and is the Z to give to addIon().
+SPECIES_Z = {
+    "D":   1,
+    "D2":  2,
+    "D3":  3,
+    "He":  2,
+    "HeD": 3,
+    "Ar":  18,
+    "ArD": 19,
+}
+
 MOLECULAR_REACTIONS = [
     {
         "name": "Ar_Ar+_charge_exchange",
