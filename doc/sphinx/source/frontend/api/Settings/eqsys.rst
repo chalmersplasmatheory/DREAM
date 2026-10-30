@@ -20,6 +20,7 @@ of the equation system. The following unknown quantities are available in any
    eqsys/efield
    eqsys/distribution
    eqsys/ions
+   eqsys/molecular_reactions
    eqsys/j_ohm
    eqsys/j_bs
    eqsys/n_cold

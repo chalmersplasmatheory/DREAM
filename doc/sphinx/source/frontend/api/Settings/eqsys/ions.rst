@@ -231,6 +231,145 @@ density profiles and evolve them using the ion rate equations:
    least one ion species with the non-scalar radial/time grid.
 
 
+.. _ds-eqsys-ions-molecules:
+
+Molecules
+---------
+In addition to atoms, DREAM can evolve the densities of molecules and molecular
+ions, such as :math:`\mathrm{D}_2`, :math:`\mathrm{D}_2^+`,
+:math:`\mathrm{D}_3^+`, :math:`\mathrm{ArD}^+` and :math:`\mathrm{HeD}^+`.
+Molecules are added with ``addIon()`` in the same way as atomic species, with
+two differences:
+
+- The ``name`` must be one of the names in the table below. DREAM uses the name
+  to recognize the species as a molecule, to look up its mass, and to match it
+  to the species in the
+  :ref:`list of molecular reactions<ds-eqsys-molecular-reactions>`.
+- The charge ``Z`` is the *sum of the nuclear charges* of the molecule, e.g.
+  ``Z=2`` for :math:`\mathrm{D}_2`, ``Z=3`` for :math:`\mathrm{D}_3` and
+  ``Z=19`` for :math:`\mathrm{ArD}`. As for atoms, DREAM evolves all
+  :math:`Z+1` charge states :math:`Z_0 = 0, 1, \ldots, Z`, where :math:`Z_0` is
+  the net charge of the molecule (e.g. :math:`Z_0=1` for
+  :math:`\mathrm{D}_2^+`).
+
+The following species appear in the molecular reactions:
+
+.. molecularspecieslist::
+
+Atomic species (e.g. ``D``, ``He`` and ``Ar``) must also use these names for
+the molecular reactions to find them. Molecules should be added as
+``IONS_DYNAMIC`` species, and cannot be initialized in coronal equilibrium.
+
+Example
+^^^^^^^
+The following example adds neutral and singly ionized molecular deuterium,
+together with atomic deuterium which is formed when the molecules break up:
+
+.. code-block:: python
+
+   import numpy as np
+   import DREAM.Settings.Equations.IonSpecies as Ions
+
+   ds = DREAMSettings()
+   ...
+   r = np.array([0.0])
+
+   # D2 (Z = 1 + 1 = 2): densities of the charge states Z0 = 0, 1, 2
+   nD2 = np.zeros((3, r.size))
+   nD2[0,:] = 1e19     # D2
+   nD2[1,:] = 1e18     # D2+
+
+   ds.eqsys.n_i.addIon(name='D2', Z=2, iontype=Ions.IONS_DYNAMIC, n=nD2, r=r, T=1)
+   ds.eqsys.n_i.addIon(name='D',  Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=1e18, T=1)
+
+Molecular reactions
+^^^^^^^^^^^^^^^^^^^
+The reactions between molecules, atoms and electrons are enabled with the
+``enableReactions()`` method. All available reactions, together with their
+names and classifications, are listed on the page
+:ref:`Molecular reactions<ds-eqsys-molecular-reactions>`.
+
+Calling ``enableReactions()`` without arguments enables every reaction for
+which all possible reactant species have been added to the simulation:
+
+.. code-block:: python
+
+   ds.eqsys.n_i.enableReactions()
+
+To enable only some reactions, pass a dictionary where each key is a reaction
+classification. The value is either ``'all'``, which enables all reactions of
+that classification, or a list of reactant selections. A reactant selection
+lists the reactants as ``(name, Z0)`` pairs, where the cold electrons are
+denoted ``('e', -1)``. All reactions of the classification with exactly these
+reactants are enabled, so that for example selecting
+:math:`\mathrm{e}^- + \mathrm{D}_2` under ``DISSOCIATION`` enables both
+dissociation branches:
+
+.. code-block:: python
+
+   ds.eqsys.n_i.enableReactions({
+       'IONIZATION': 'all',
+       'DISSOCIATION': [
+           {'reactants': [('e', -1), ('D2', 0)]},   # e + D2  -> e + 2D,  e + D2 -> D + D+
+           {'reactants': [('e', -1), ('D2', 1)]},   # e + D2+ -> D + D+
+       ],
+       'CHARGE_EXCHANGE': [
+           {'reactants': [('D2', 1), ('D', 0)]},    # D2+ + D -> D2 + D+
+       ],
+   })
+
+   # Names of the reactions which were enabled
+   print(ds.eqsys.n_i.enabled_reaction_names)
+
+.. note::
+
+   A reaction is only enabled if all its reactant species have been added to
+   the simulation. Product species which have not been added are added automatically as
+   ``IONS_DYNAMIC`` species with zero density.
+
+.. note::
+
+   Reactions classified as ``RUNAWAY`` (ionization of molecules by runaway
+   electrons) are only included when the ionization mode is set to
+   ``IONIZATION_MODE_FLUID_RE`` (see `Ionization models`_).
+
+User-defined reaction rates
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The built-in rate coefficient :math:`\langle\sigma v\rangle` of a reaction can
+be replaced with user-supplied data using ``setReactionRate()``. The reaction
+is identified by its name, as listed on the
+:ref:`Molecular reactions<ds-eqsys-molecular-reactions>` page. The rate is
+given in :math:`\mathrm{m}^3/\mathrm{s}` and may be
+
+- a constant (``rate`` scalar),
+- a function of temperature :math:`T` in eV (``rate`` with shape ``(nT,)``),
+- a function of temperature and density :math:`n` in
+  :math:`\mathrm{m}^{-3}` (``rate`` with shape ``(nT, nn)``).
+
+DREAM interpolates linearly in :math:`\log_{10} n`, :math:`\log_{10} T` and
+:math:`\log_{10}\langle\sigma v\rangle`, so the grids and the rate must be
+strictly positive, and the grids must be strictly increasing.
+
+.. code-block:: python
+
+   T = np.logspace(-1, 3, 50)     # Temperature grid [eV]
+   n = np.logspace(17, 21, 20)    # Density grid [m^-3]
+   TT, nn = np.meshgrid(T, n, indexing='ij')
+
+   # Constant rate
+   ds.eqsys.n_i.setReactionRate('D_2+_D_charge_exchange', rate=1e-15)
+
+   # Temperature-dependent rate
+   ds.eqsys.n_i.setReactionRate('D_3+_dissociation', T=T, rate=1e-14*np.exp(-3/T))
+
+   # Temperature- and density-dependent rate
+   ds.eqsys.n_i.setReactionRate('D_2_dissociation', T=T, n=n, rate=1e-14*np.exp(-10/TT)*(1 + nn/1e20))
+
+.. note::
+
+   ``setReactionRate()`` only replaces the rate of a reaction. The reaction
+   must also be enabled with ``enableReactions()``.
+
 
 Ion temperature
 ---------------
@@ -297,6 +436,22 @@ All ion and electron initial temperatures are taken to be uniform in radius.
    ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e21)
 
    ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+
+
+.. _ds-eqsys-ions-neutral-temperature:
+
+Neutral temperature
+^^^^^^^^^^^^^^^^^^^
+By default, all charge states of an ion species share the same temperature
+:math:`T_i`, including the neutral state. It is also possible to evolve a
+separate temperature for the neutral charge state of each species, enabled
+with ``setNeutralTemperatureEnabled()`` and initialized with the ``Tn``
+argument to ``addIon()``.
+
+.. todo::
+
+   Document the neutral temperature model (the neutral heat ``W_n``) once all
+   its terms have been implemented.
 
 
 Start from coronal equilibrium
