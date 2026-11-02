@@ -323,6 +323,15 @@ void SimulationGenerator::ConstructEquation_Ions(
                                  || (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC);
     if(includeKineticIonization && !(eqsys->HasHotTailGrid()||eqsys->HasRunawayGrid()))
         throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
+    // Molecules have no kinetic ionization cross sections
+    if (includeKineticIonization)
+        for (len_t iZ = 0; iZ < nZ; iZ++)
+            if (ih->IsMolecule(iZ))
+                throw SettingsException(
+                    "ions: Kinetic ionization is not supported for molecular species ('%s'). "
+                    "Use fluid or fluid_re ionization instead.",
+                    ih->GetName(iZ).c_str()
+                );
     bool collfreqModeIsFull = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")
         == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
     bool addFluidIonization = true; // previously: = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
