@@ -109,7 +109,7 @@ def build_rate_table(reaction, n_grid, T_grid):
                     v = runaway_cross_section_eval(sigma)
 
                 elif dtype == "TEMPERATURE_EQUATION":
-                    v = temperature_equation_eval(T,factor=raw)
+                    v = temperature_equation_eval(T,factor=raw) if T <= 1.2 else 0.0
 
                 elif dtype == "APPROXIMATION":
                         constant = raw["constant"]
@@ -220,7 +220,7 @@ def cpp_input(selector):
 
 def compile_molecular_rates(outputfile, inttype="len_t", realtype="real_t"):
       n_grid = np.logspace(14, 22, 50)   # m^-3
-      T_grid = np.logspace(0, 4, 80)     # eV
+      T_grid = np.logspace(-2, 4, 80)     # eV
 
       logn = np.log10(n_grid)
       logT = np.log10(T_grid)
