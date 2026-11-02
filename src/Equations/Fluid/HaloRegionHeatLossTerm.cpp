@@ -37,6 +37,9 @@ HaloRegionHeatLossTerm::HaloRegionHeatLossTerm(
         this-> Z = ions->GetZ(iZ);  
                                      
     }
+
+    // locate the main ion index
+    iZMain = ions->GetMainSpeciesIndex();	
 }
 
 /**
@@ -163,7 +166,7 @@ void HaloRegionHeatLossTerm::SetWeights() {
     real_t *W_i = unknowns->GetUnknownData(id_W_i); 
 
     for (len_t ir = 0; ir < nr; ir++) {
-	   	real_t T_i = 2. / 3. * W_i[ir] / N_i[ir]; 
+	   	real_t T_i = 2. / 3. * W_i[nr * iZMain + ir] / N_i[nr * iZMain + ir]; 
         real_t T_e = T_cold[ir] * Constants::ec; 
         real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->grid->GetRadialGrid(),jtot);
     	real_t qR0 = this->grid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
@@ -195,7 +198,7 @@ void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
     auto calculateWeight = [&](len_t ir, real_t qR0, real_t coeff) {
 
 
-        return - StepFunction(ir) * coeff / (m_i * N_i[ir] * N_i[ir] * sqrt((T_e + gamma * 2. / 3. * W_i[ir] / N_i[ir]) / m_i)) / (2 * M_PI * qR0);
+        return - StepFunction(ir) * coeff / (m_i * N_i[nr * iZMain + ir] * N_i[nr * iZMain + ir] * sqrt((T_e + gamma * 2. / 3. * W_i[nr * iZMain + ir] / N_i[nr * iZMain + ir]) / m_i)) / (2 * M_PI * qR0);
     };
 
     real_t coeff = (derivId == id_T_cold) ? (2. / 3.) : (4. / 9. * kappa * gamma);
@@ -204,9 +207,9 @@ void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
         for (len_t ir = 0; ir < nr; ir++) {
             real_t qR0 = calculateQ(ir);
             if (derivId == id_N_i) {
-                this->diffWeights[i_ion * nr + ir] = calculateWeight(ir, qR0, coeff * W_i[ir]);
+                this->diffWeights[i_ion * nr + ir] = calculateWeight(ir, qR0, coeff * W_i[nr * iZMain + ir]);
             } else if (derivId == id_T_cold) {
-                this->diffWeights[ir] = - calculateWeight(ir, qR0, coeff * W_i[ir]);
+                this->diffWeights[ir] = - calculateWeight(ir, qR0, coeff * W_i[nr * iZMain + ir]);
             } else if (derivId == id_W_i){
                 this->diffWeights[i_ion * nr + ir] = - calculateWeight(ir, qR0, coeff);
             }

@@ -24,6 +24,7 @@ namespace DREAM {
         len_t *ZOffsets=nullptr;
         len_t *izsList;
         len_t *Z0sList;
+        int_t mainIndex;
 
         static const len_t nIonMass = 40;
         static const real_t atomicMassInMu[nIonMass];
@@ -92,7 +93,7 @@ namespace DREAM {
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
 		const real_t GetTotalIonMassDensity(len_t ir) const;
         const real_t GetTritiumDensity(len_t ir) const;
-		const int_t GetMainSpeciesIndex() const;
+		const int_t GetMainSpeciesIndex() const { return this->mainIndex; }
 
         // DERIVED QUANTITY GETTERS
         const real_t* GetFreePlusBoundElectronDensity() const 
