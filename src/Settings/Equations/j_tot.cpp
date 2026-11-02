@@ -327,6 +327,12 @@ void SimulationGenerator::ConstructEquation_Ip(
 ) {
     const len_t id_I_p   = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+	const len_t id_Ni    = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+
+	len_t id_Wi;
+    const bool includeIonTemperatures = eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_WI_ENER);
+    if (includeIonTemperatures)
+        id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -349,10 +355,21 @@ void SimulationGenerator::ConstructEquation_Ip(
     eqsys->SetOperator(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
     eqsys->SetOperator(id_I_p, id_j_tot, eqn_Ip2);
 
-    eqsys->initializer->AddRule(
-        id_I_p,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        id_j_tot
-    );
+    if (includeIonTemperatures)
+		eqsys->initializer->AddRule(
+			id_I_p,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			id_j_tot,
+			id_Ni,
+			id_Wi
+		);
+	else
+		eqsys->initializer->AddRule(
+			id_I_p,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			id_j_tot,
+			id_Ni
+		);
 }
