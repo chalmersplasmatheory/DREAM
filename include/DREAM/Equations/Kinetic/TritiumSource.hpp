@@ -25,7 +25,10 @@ namespace DREAM {
         len_t indT;
         
         SourceMode sourceMode;
-	RunawayFluid *REFluid;
+	    RunawayFluid *REFluid;
+
+        bool has_fhot = false;
+        bool has_fre = false;
 	
     protected:
         static real_t integrand(real_t, void * );

@@ -361,29 +361,23 @@ void AdvectionTerm::ResetCoefficients() {
         const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
         const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++)
-                this->fr[ir][j*np1 + i]  = 0;
+        len_t N = np1*np2;
+        for (len_t idx = 0; idx < N; idx++)
+                this->fr[ir][idx]  = 0;
     }
 
     for (len_t ir = 0; ir < nr; ir++) {
         const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
         const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++){
-            for (len_t i = 0; i < np1+1; i++)
-                this->f1[ir][j*(np1+1) + i]  = 0;
+        len_t N = (np1+1)*np2;
+        for (len_t idx = 0; idx < N; idx++)
+                this->f1[ir][idx]  = 0;
+        for (len_t j = 0; j < np2; j++)        
             this->f1pSqAtZero[ir][j] = 0;
-        }
-    }
-
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-
-        for (len_t j = 0; j < np2+1; j++)
-            for (len_t i = 0; i < np1; i++)
-                this->f2[ir][j*np1 + i]  = 0;
+        N = np1*(np2+1);
+        for (len_t idx = 0; idx < N; idx++)
+            this->f2[ir][idx]  = 0;
     }
 }
 
@@ -402,24 +396,28 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
             const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
             const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
-            for (len_t j = 0; j < np2; j++)
-                for (len_t i = 0; i < np1; i++)
-                    this->dfr[ir+n*(nr+1)][j*np1 + i] = 0;
+            len_t irn = ir+n*(nr+1);
+            len_t N = np2*np1;
+            for (len_t idx = 0; idx<N; idx++) 
+                this->dfr[irn][idx] = 0;
         }
 
         for (len_t ir = 0; ir < nr; ir++) {
             const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
             const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-            for (len_t j = 0; j < np2; j++){
-                for (len_t i = 0; i < np1+1; i++)
-                    this->df1[ir+n*nr][j*(np1+1) + i] = 0;
-                this->df1pSqAtZero[ir+n*nr][j] = 0;
-            }
+            len_t irn = ir + n*nr;
 
-            for (len_t j = 0; j < np2+1; j++)
-                for (len_t i = 0; i < np1; i++)
-                    this->df2[ir+n*nr][j*np1 + i] = 0;
+            len_t N = np2*(np1+1);
+            for (len_t idx = 0; idx<N; idx++) 
+                this->df1[irn][idx] = 0;
+
+            N = (np2+1)*np1;
+            for (len_t idx = 0; idx<N; idx++) 
+                this->df2[irn][idx] = 0;
+
+            for (len_t j = 0; j < np2; j++)
+                this->df1pSqAtZero[irn][j] = 0;
         }
     }
 }
@@ -478,15 +476,21 @@ void AdvectionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobia
         ResetJacobianColumn();
         SetVectorElements(JacobianColumn, x, dfr+n*(nr+1),
                             df1+n*nr, df2+n*nr, df1pSqAtZero+n*nr, set_mode);
-        len_t offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
-                continue;
-            for (len_t j = 0; j < n2[ir]; j++)
-                for (len_t i = 0; i < n1[ir]; i++)
-                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+diagonalOffset, JacobianColumn[offset + n1[ir]*j + i]);
-            offset += n1[ir]*n2[ir];
+
+    len_t offset = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t m = n1[ir]*n2[ir];
+        if ((ir == 0 && diagonalOffset == -1) || ir + diagonalOffset >= nr) {
+            offset += m;
+            continue;
         }
+        const len_t col = n*nr + ir + diagonalOffset;
+        jac->SetColumn(
+            offset, col, m, JacobianColumn + offset
+        );
+
+        offset += m;
+    }
 }
 
 
@@ -494,14 +498,9 @@ void AdvectionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobia
  * Sets the jacobian helper vector to zero
  */
 void AdvectionTerm::ResetJacobianColumn(){
-    len_t offset = 0; 
-    for(len_t ir=0; ir<nr; ir++){
-        for (len_t j = 0; j < n2[ir]; j++) 
-            for (len_t i = 0; i < n1[ir]; i++) 
-                JacobianColumn[offset + n1[ir]*j + i] = 0;
-
-        offset += n1[ir]*n2[ir];
-    }
+    const len_t N = grid->GetNCells();
+    for(len_t i=0; i<N; i++)
+        JacobianColumn[i] = 0;
 }
 
 /**
@@ -512,9 +511,11 @@ void AdvectionTerm::ResetJacobianColumn(){
  */
 void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
     jacobian_interp_mode set = NO_JACOBIAN;
+    mat->BeginBufferedSet(ADD_VALUES, (PetscInt)this->GetNumberOfNonZerosPerRow());
     #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
     #   include "AdvectionTerm.set.cpp"
     #undef f
+    mat->EndBufferedSet();
 }
 
 

@@ -32,7 +32,7 @@ jobs:
       #  run: python -m pip install --upgrade pip setuptools wheel
 
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
 
       - name: Create build directory
         run: mkdir $GITHUB_WORKSPACE/build
@@ -104,5 +104,7 @@ jobs:
       #    tests/physics/runtests.py all
       - name: Test
         working-directory: ${{ github.workspace }}
+        env:
+          UCX_TLS: self,sm,tcp
         run: ./testDREAM.sh
 

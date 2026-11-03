@@ -20,22 +20,41 @@ using namespace DREAM;
 FluidSourceTerm::FluidSourceTerm(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u
 ) : EquationTerm(kineticGrid), unknowns(u) {
-    sourceVec = new real_t[kineticGrid->GetNCells()];
+    GridRebuilt();
 }
 
 /**
  * Destructor
  */
 FluidSourceTerm::~FluidSourceTerm(){
-    delete [] sourceVec;
+    Deallocate();
+}
+
+void FluidSourceTerm::Deallocate(){
+    if (sourceVec != nullptr){
+        delete [] sourceVec;
+        sourceVec = nullptr;
+    }
+    if (tmpVec != nullptr){
+        delete [] tmpVec;
+        tmpVec = nullptr;
+    }
+
 }
 
 /**
  *  Reallocate when grid is rebuilt
  */
 bool FluidSourceTerm::GridRebuilt(){
-    delete [] sourceVec;
+    Deallocate();
     sourceVec = new real_t[this->grid->GetNCells()];
+    len_t n_max = 0;
+    for(len_t ir=0; ir<nr; ir++){
+        len_t N = n1[ir]*n2[ir];
+        if (N>n_max)
+            n_max = N;
+    }    
+    tmpVec = new real_t[n_max];
     return true;    
 }
 
@@ -74,14 +93,11 @@ void FluidSourceTerm::NormalizeSourceToConstant(const real_t c, real_t *normFact
  */
 void FluidSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
     len_t offset = 0;
-    for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<n1[ir]; i++)
-            for(len_t j=0; j<n2[ir]; j++){
-                len_t ind = offset + n1[ir]*j + i;
-                mat->SetElement(ind, ir, sourceVec[ind]);
-            }
-        offset += n1[ir]*n2[ir];
-    }        
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t m = n1[ir]*n2[ir];
+        mat->SetColumn(offset, ir, m, sourceVec + offset);
+        offset += m;
+    }
 }
 
 /**
@@ -90,12 +106,12 @@ void FluidSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
 void FluidSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<n1[ir]; i++)
-            for(len_t j=0; j<n2[ir]; j++){
-                len_t ind = offset + n1[ir]*j + i;
-                vec[ind] += sourceVec[ind]*x[ir];
-            }
-        offset += n1[ir]*n2[ir];
+        const len_t N = n1[ir] * n2[ir];
+        const len_t nmin = offset;
+        const len_t nmax = offset + N;
+        for(len_t ind=nmin; ind<nmax; ind++)
+            vec[ind] += sourceVec[ind]*x[ir];
+        offset += N;
     }
 }
 
@@ -115,12 +131,14 @@ bool FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, 
 
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i=0; i<n1[ir]; i++)
-            for(len_t j=0; j<n2[ir]; j++){
-                real_t dS = GetSourceFunctionJacobian(ir,i,j,derivId);
-                jac->SetElement(offset + n1[ir]*j + i, ir, dS*x[ir]);
+        for(len_t j=0; j<n2[ir]; j++){
+            for(len_t i=0; i<n1[ir]; i++){
+                tmpVec[n1[ir]*j + i] = x[ir] * GetSourceFunctionJacobian(ir,i,j,derivId);
             }
-        offset += n1[ir]*n2[ir];
+        }
+        const len_t m = n1[ir] * n2[ir]; 
+        jac->SetColumn(offset, ir, m, tmpVec);
+        offset += m;
     }
 
     return contributes;

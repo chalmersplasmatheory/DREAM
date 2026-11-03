@@ -147,14 +147,14 @@ class XiGrid:
         if self.type == TYPE_BIUNIFORM:
             self.xisep  = data['xisep']
             if 'nxisep' in data:
-                self.nxisep = int(data['nxisep'])
+                self.nxisep = int(scal(data['nxisep']))
             elif 'nxisep_frac' in data:
                 self.nxisep_frac = float(scal(data['nxisep_frac']))
         
         elif self.type == TYPE_BIUNIFORM_THETA:
             self.thetasep  = data['xisep']
             if 'nxisep' in data:
-                self.nthetasep = int(data['nxisep'])
+                self.nthetasep = int(scal(data['nxisep']))
             elif 'nxisep_frac' in data:
                 self.nthetasep_frac = float(scal(data['nxisep_frac']))
         elif self.type == TYPE_CUSTOM:
