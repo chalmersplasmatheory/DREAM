@@ -372,8 +372,8 @@ the `QuasilinearDiffusionTerm` constructor runs (the constructor captures
 
 ## Results
 Quasilinear Diffusion Resonance Region and coefficients:
-![alt text](media/ql_diffusion_coefficients.png)
+![alt text](doc/ql_diffusion_coefficients.png)
 Runaway electron distribution f_re after wave injection:
-![alt text](media/f_re_t2.050.png)
+![alt text](doc/f_re_t2.050.png)
 Synchrotron radiation intensity
-![alt text](media/synchrotron_total_power_vs_time_wave.png)
+![alt text](doc/synchrotron_total_power_vs_time_wave.png)
