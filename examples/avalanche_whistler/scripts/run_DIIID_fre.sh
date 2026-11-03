@@ -29,33 +29,33 @@ cd /data/zhzhou/DREAM/examples/avalanche_whistler/scripts
 # ════════════════════════════════════════════════════════════════════════
 # (A) Quick command-line parameters — just edit the values in the call
 #     below; no need to touch the Python script:
-#
+
 #   [Wave injection] (the most important ones)
 #     --amplitude              Wave amplitude (diffusion coefficient D ∝ A²)
 #     --start-inject-time      Wave injection start time (s)
 #     --inject-cycle-duration  ON+OFF injection cycle (s, 50% duty cycle)
 #     --ramp-time              Ramp-up time of each ON cycle (s)
-#
+
 #   [Wave spectrum]
 #     --k-min / --k-max        Wavenumber range (m^-1)
 #     --ktheta-min / --ktheta-max   Propagation angle range (rad; obtuse = backward)
 #     --num-k / --num-ktheta   Spectral discretization (number of modes = product)
-#
+
 #   [Plasma / geometry]
 #     --E electric field (V/m)   --n density (m^-3)   --T temperature (eV)
 #     --B0 magnetic field (T)    --a minor radius (m) --R major radius (m)
-#
+
 #   [Grid / time]
 #     --Np-hot / --Np-re / --Nxi   Momentum and pitch grid points
 #     --tMax / --Nt                Simulation time (s) / number of time steps
-#
+
 #   [Other]
 #     --source on|off          Kinetic avalanche source switch
 #     --output                 Output h5 path (recipe is saved next to it)
-#
+
 # (B) Hard-coded values that require editing generate_with_fre_whistler.py
 #     (search for "HARDCODED" in the script to locate them):
-#
+
 #     - pMax_hot=1 / pMax_re=50      Momentum grid limits (m_e c)
 #     - k_main=54.58 / ktheta_main=2.42   Central wavenumber / propagation angle
 #                                        (quadre_wave_params)
@@ -65,7 +65,7 @@ cd /data/zhzhou/DREAM/examples/avalanche_whistler/scripts
 #     - nr=1 and custom radial grid r_f   Number of radial points
 #     - setNumberOfSaveSteps(Nt//10) Number of saved output frames
 #     - Collision model / solver / boundary conditions / synchrotron switch, etc.
-#
+
 #     NOTE: k_main/ktheta_main in quadre_wave_params are documentation only
 #     (never read by the settings API). The wave frequency (476 MHz) and
 #     k_par = -41 m^-1 are NOT inputs either: k_par = k*cos(theta_k) is derived
@@ -83,8 +83,8 @@ if [ ! -d "$PLOT_DIR" ]; then
 fi
 
 python generate_with_fre_whistler.py \
-    --amplitude 1e4 --a 0.02 --R 1.67 --T 1000 \
-    --tMax 3.0 --Nt 3000 --source off \
+    --amplitude 1e4 --a 0.02 --R 1.67 --T 100 \
+    --tMax 2.5 --Nt 2500 --source off \
     --output $DATA_DIR \
     --start-inject-time 2.0 --inject-cycle-duration 0.2 --ramp-time 0.02 \
     --k-min 45 --k-max 60 \

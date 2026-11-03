@@ -201,27 +201,11 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
             if (!first_rebuild_done || crossed)
                 std::cerr << "Wave amplitude updated at t=" << t 
                           << " s: A = " << effective_amplitude << std::endl;
-            operator_cached = false;  // Force recalculation
+            // NOTE: no operator re-assembly here. The diffusion operator is
+            // LINEAR in the wave amplitude (E_k^2 ~ amplitude), so the cached
+            // operator is assembled once at a reference amplitude and scaled
+            // by amp_scale when filling the FVM matrices below.
         }
-    }
-    
-    // Check if wave spectrum amplitude has changed (legacy check for external updates)
-    bool amplitude_changed_external = false;
-    if (spectrum && operator_cached) {
-        len_t numModes = spectrum->getNumK() * spectrum->getNumKtheta();
-        for (len_t m = 0; m < numModes; m++) {
-            real_t current_amp = spectrum->getAmplitude(m);
-            if (std::abs(current_amp - last_amplitudes[m]) > 1e-30) {
-                amplitude_changed_external = true;
-                break;
-            }
-        }
-    }
-    
-    // If amplitude changed (either periodic or external), invalidate cache
-    if (amplitude_changed_external) {
-        std::cerr << "Wave amplitude changed externally, recalculating diffusion coefficients..." << std::endl;
-        operator_cached = false;
     }
     
     const len_t nr = grid->GetNr();
@@ -245,21 +229,43 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         nr_cached = nr;
     }
     
-    // Calculate or load diffusion coefficients for each radial point (only if not cached)
-    bool recalc_happened = false;
+    // Calculate or load diffusion coefficients for each radial point (only if not cached).
+    // The operator is assembled ONCE at a fixed reference amplitude (linear in A),
+    // then scaled per time step by amp_scale = A(t)/A_ref.
     if (!operator_cached) {
+        real_t A_ref = (base_amplitude > 0) ? base_amplitude : 1.0;
+        // Temporarily set the spectrum to the reference amplitude for assembly
+        if (spectrum) {
+            len_t numModes = spectrum->getNumModes();
+            for (len_t m = 0; m < numModes; m++)
+                spectrum->setAmplitude(m, A_ref);
+        }
+
         // Use REVERSE resonance solving method for grid-independent results
         for (len_t ir = 0; ir < nr; ir++) {
             calculateDiffusionCoefficientsReverse(ir);
         }
-        
+
+        // Restore the physical amplitude on the spectrum
+        if (spectrum) {
+            len_t numModes = spectrum->getNumModes();
+            for (len_t m = 0; m < numModes; m++)
+                spectrum->setAmplitude(m, effective_amplitude);
+        }
+        operator_ref_amplitude = A_ref;
+
         if (!first_rebuild_done)
             std::cerr << "✓ Quasi-linear diffusion operator computed on-the-fly (REVERSE method)" << std::endl;
-        recalc_happened = true;
     }
     
     // Mark operator as cached - no need to recalculate in future time steps
     operator_cached = true;
+
+    // Scale factor from the cached (reference-amplitude) operator to the
+    // current amplitude: D is exactly linear in the wave amplitude.
+    real_t amp_scale = (operator_ref_amplitude > 0)
+                       ? effective_amplitude / operator_ref_amplitude
+                       : 0.0;
     
     // Fill FVM diffusion matrices
     // Similar to SynchrotronTerm pattern but using calculated D coefficients
@@ -273,7 +279,7 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         // D11 = D_pp (p-p diffusion at f1 grid points)
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1 + 1; i++) {
-                real_t D_pp_val = getD_pp(ir, i, j);
+                real_t D_pp_val = amp_scale * getD_pp(ir, i, j);
                 
                 // Final safety check before filling FVM matrix
                 if (std::isnan(D_pp_val) || std::isinf(D_pp_val)) {
@@ -289,7 +295,7 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         // D22 = D_ξξ (ξ-ξ diffusion at f2 grid points)
         for (len_t j = 0; j < np2 + 1; j++) {
             for (len_t i = 0; i < np1; i++) {
-                real_t D_xixi_val = getD_xixi(ir, i, j);
+                real_t D_xixi_val = amp_scale * getD_xixi(ir, i, j);
                 
                 // Final safety check
                 if (std::isnan(D_xixi_val) || std::isinf(D_xixi_val)) {
@@ -305,7 +311,7 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         // D12 = D_pξ at p-face (same grid as D11: (np1+1) × np2)
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1 + 1; i++) {
-                real_t val = D_pxi_pface_cache[ir * (np1 + 1) * np2 + i * np2 + j];
+                real_t val = amp_scale * D_pxi_pface_cache[ir * (np1 + 1) * np2 + i * np2 + j];
                 if (std::isnan(val) || std::isinf(val)) {
                     std::cerr << "FATAL: NaN/Inf in D12 (p-face) at ir=" << ir
                              << ", i=" << i << ", j=" << j << std::endl;
@@ -318,7 +324,7 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         // D21 = D_pξ at ξ-face (same grid as D22: np1 × (np2+1))
         for (len_t j = 0; j < np2 + 1; j++) {
             for (len_t i = 0; i < np1; i++) {
-                real_t val = D_pxi_xface_cache[ir * np1 * (np2 + 1) + i * (np2 + 1) + j];
+                real_t val = amp_scale * D_pxi_xface_cache[ir * np1 * (np2 + 1) + i * (np2 + 1) + j];
                 if (std::isnan(val) || std::isinf(val)) {
                     std::cerr << "FATAL: NaN/Inf in D21 (ξ-face) at ir=" << ir
                              << ", i=" << i << ", j=" << j << std::endl;
@@ -328,13 +334,14 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
             }
         }
         
-        // ===== VALIDATION: Print diffusion coefficient stats after recalculation =====
+        // ===== VALIDATION: Print diffusion coefficient stats =====
         // NOTE: This must be done AFTER filling the FVM matrices.
-        // Print only when the operator was recalculated AND the wave on/off state
-        // changed (or on the very first build), instead of one block per time step.
+        // Print only on wave on/off transitions (or the very first build).
+        // Caches hold the reference-amplitude operator; stats are scaled to
+        // the current amplitude.
         bool wave_on_now = (spectrum ? spectrum->getAmplitude(0) : 0.0) > 1e-30;
         bool state_changed = (validation_state == -1) || ((validation_state == 1) != wave_on_now);
-        if (ir == 0 && recalc_happened && state_changed) {
+        if (ir == 0 && state_changed) {
             validation_state = wave_on_now ? 1 : 0;
             auto *mg = grid->GetMomentumGrid(ir);
             const len_t np1 = mg->GetNp1();
@@ -375,14 +382,14 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
             }
             
             std::cerr << "\n=== QUASILINEAR DIFFUSION VALIDATION (r=1/" << grid->GetNr() << ") ===" << std::endl;
-            std::cerr << "D11 (p-p): max=" << max_D11 << ", sum=" << sum_D11 
+            std::cerr << "D11 (p-p): max=" << max_D11 * amp_scale << ", sum=" << sum_D11 * amp_scale
                       << ", nonzero=" << count_nonzero_D11 << "/" << ((np1+1)*np2) << std::endl;
-            std::cerr << "D22 (ξ-ξ): max=" << max_D22 << ", sum=" << sum_D22 
+            std::cerr << "D22 (ξ-ξ): max=" << max_D22 * amp_scale << ", sum=" << sum_D22 * amp_scale
                       << ", nonzero=" << count_nonzero_D22 << "/" << (np1*(np2+1)) << std::endl;
-            std::cerr << "D12 (p-ξ): max=" << max_D12 << ", sum=" << sum_D12 
+            std::cerr << "D12 (p-ξ): max=" << max_D12 * amp_scale << ", sum=" << sum_D12 * amp_scale
                       << ", nonzero=" << count_nonzero_D12 << "/" << ((np1+1)*np2) << std::endl;
             
-            if (max_D11 < 1e-30 && max_D22 < 1e-30 && max_D12 < 1e-30) {
+            if (amp_scale * max_D11 < 1e-30 && amp_scale * max_D22 < 1e-30 && amp_scale * max_D12 < 1e-30) {
                 std::cerr << "WARNING: All diffusion coefficients are essentially zero!" << std::endl;
                 std::cerr << "  Possible causes:" << std::endl;
                 std::cerr << "  1. Wave amplitude is too small" << std::endl;

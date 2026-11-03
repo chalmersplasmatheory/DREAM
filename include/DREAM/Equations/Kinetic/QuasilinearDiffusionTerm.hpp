@@ -54,6 +54,10 @@ namespace DREAM {
 
         // Rate-limited validation printing: report only on wave on/off transitions
         int validation_state = -1;  // -1 = never printed, 0 = wave off, 1 = wave on
+
+        // Reference amplitude used in the cached operator assembly.
+        // The operator is linear in the wave amplitude: D(t) = D_ref * A(t)/A_ref.
+        real_t operator_ref_amplitude = 0;
         
         // Time-dependent amplitude control (periodic injection)
         real_t start_inject_time;        // Time to start injection (-1 = immediate)
