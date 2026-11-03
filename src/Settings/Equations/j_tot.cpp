@@ -327,7 +327,6 @@ void SimulationGenerator::ConstructEquation_Ip(
 ) {
     const len_t id_I_p   = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
-	const len_t 
 
 	len_t id_Wi, id_Ni;
 	const bool includeIons = eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_NI_DENS);
