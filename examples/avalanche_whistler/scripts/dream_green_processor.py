@@ -19,6 +19,7 @@ import numpy as np
 import h5py
 import matplotlib.pyplot as plt
 import os
+import glob
 import sys
 from scipy.interpolate import RegularGridInterpolator
 from pathlib import Path
@@ -251,6 +252,27 @@ def _generate_plot(green_func, distribution, green_p, green_xi, result, time_val
     return plot_file
 
 
+def clean_previous_results(output_dir):
+    """Remove per-timestep files left by a previous run in the same directory.
+
+    The output file index (0000, 0001, ...) restarts on every run, so leftover
+    files from a run with a different time selection are not overwritten and
+    would later be mixed into the power calculation.
+    """
+    removed = 0
+    patterns = [
+        (os.path.join(output_dir, "data"), "green_times_f_timestep_*.h5"),
+        (os.path.join(output_dir, "plots"), "green_times_f_t_*.png"),
+    ]
+    for directory, pattern in patterns:
+        for filename in glob.glob(os.path.join(directory, pattern)):
+            os.remove(filename)
+            removed += 1
+
+    if removed:
+        print(f"Removed {removed} file(s) from a previous run in: {output_dir}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="DREAM-SOFT Green function batch processor")
     parser.add_argument("dream_h5_path", help="Path to DREAM output HDF5 file")
@@ -262,6 +284,9 @@ def main():
     parser.add_argument("--t-min", type=float, default=None, help="Minimum time to process")
     parser.add_argument("--t-max", type=float, default=None, help="Maximum time to process")
     parser.add_argument("--no-plot", action="store_true", help="Skip plot generation (save HDF5 only)")
+    parser.add_argument("--no-clean", action="store_true",
+                        help="Keep per-timestep files from a previous run in output_dir "
+                             "(default: remove them)")
 
     args = parser.parse_args()
 
@@ -312,6 +337,11 @@ def main():
         time_array = time_array[:args.max_steps]
         f_all = f_all[:args.max_steps]
         print(f"Limited to first {args.max_steps} time steps")
+
+    # Remove files from a previous run only after the inputs loaded, so a bad
+    # path does not wipe earlier results.
+    if not args.no_clean:
+        clean_previous_results(args.output_dir)
 
     print(f"\nStarting batch processing of {len(time_array)} time steps...")
     successful_steps = 0

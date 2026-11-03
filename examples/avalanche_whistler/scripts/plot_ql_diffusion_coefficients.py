@@ -293,15 +293,24 @@ def plot_diffusion_snapshot(data, t_idx, plot_dir, output_prefix='ql_diffusion')
 
     fig, axes = plt.subplots(2, 2, figsize=(16, 14))
 
+    # Dxx/Dpx span ~20 decades and are essentially zero where no resonance
+    # exists; clamping the log colour scale at 1e-5 keeps the plot readable
+    # (values below the floor are drawn with the lowest colour).
     panels = [
-        (axes[0, 0], np.abs(Dpp), 'viridis', r'$D_{pp}$ Distribution', r'$D_{pp}$'),
-        (axes[0, 1], np.abs(Dxx), 'plasma', r'$D_{\xi\xi}$ Distribution', r'$D_{\xi\xi}$'),
-        (axes[1, 0], np.abs(Dpx), 'inferno', r'$D_{p\xi}$ Distribution', r'$D_{p\xi}$'),
+        (axes[0, 0], np.abs(Dpp), 'viridis', r'$D_{pp}$ Distribution', r'$D_{pp}$', None),
+        (axes[0, 1], np.abs(Dxx), 'plasma', r'$D_{\xi\xi}$ Distribution', r'$D_{\xi\xi}$', 1e-5),
+        (axes[1, 0], np.abs(Dpx), 'inferno', r'$D_{p\xi}$ Distribution', r'$D_{p\xi}$', 1e-5),
     ]
-    for ax, D_plot, cmap, title, label in panels:
+    for ax, D_plot, cmap, title, label, vmin in panels:
         D_plot = np.where(D_plot > 0, D_plot, 1e-30)
+        vmax = np.max(D_plot)
+        if vmin is None:
+            vmin = np.min(D_plot)
+        else:
+            # Guard against an all-zero / pre-injection snapshot
+            vmax = max(vmax, vmin * 10.0)
         im = ax.pcolormesh(p, xi, D_plot, cmap=cmap,
-                           norm=LogNorm(vmin=np.min(D_plot), vmax=np.max(D_plot)),
+                           norm=LogNorm(vmin=vmin, vmax=vmax),
                            shading='nearest')
         ax.set_xlabel('p (momentum)', fontsize=12)
         ax.set_ylabel(r'$\xi$ (pitch angle cosine)', fontsize=12)
@@ -321,6 +330,11 @@ def plot_diffusion_snapshot(data, t_idx, plot_dir, output_prefix='ql_diffusion')
     cbar = plt.colorbar(im4, ax=ax4)
     cbar.set_label('Correlation Coefficient')
     ax4.grid(True, alpha=0.3)
+
+    # Flip the pitch-angle axis on every panel: xi = -1 at the top, +1 at the
+    # bottom (more intuitive for the trapped/passing structure of f(p, xi)).
+    for ax in axes.flat:
+        ax.invert_yaxis()
 
     fig.suptitle(f'Net diffusion coefficients (runaway grid) at t = {t_val:.4f} s '
                  f'(during wave injection)', fontsize=15)

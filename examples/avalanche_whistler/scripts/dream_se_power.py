@@ -25,6 +25,10 @@ from pathlib import Path
 import argparse
 
 
+# NumPy >= 2.0 renamed trapz -> trapezoid; support both.
+_trapz = getattr(np, "trapezoid", np.trapz)
+
+
 def calculate_total_power_from_hdf5(hdf5_file):
     """
     Calculate total synchrotron power from HDF5 file containing Green×f result
@@ -40,8 +44,8 @@ def calculate_total_power_from_hdf5(hdf5_file):
 
         # Total power = 2π ∫∫ G·f·p² dp dξ
         integrand = result * p_grid[:, np.newaxis]**2
-        integral_over_xi = np.trapz(integrand, x=xi_grid, axis=1)
-        total_power = 2 * np.pi * np.trapz(integral_over_xi, x=p_grid)
+        integral_over_xi = _trapz(integrand, x=xi_grid, axis=1)
+        total_power = 2 * np.pi * _trapz(integral_over_xi, x=p_grid)
 
         return time_val, total_power
 
@@ -51,7 +55,7 @@ def process_all_timesteps(results_dir):
     Process all timestep files and calculate total power for each
 
     Returns:
-    tuple: (times, powers) arrays
+    tuple: (times, powers) arrays, sorted by time with duplicate times removed
     """
     data_dir = os.path.join(results_dir, "data")
     hdf5_files = sorted(glob.glob(os.path.join(data_dir, "green_times_f_timestep_*.h5")))
@@ -74,7 +78,37 @@ def process_all_timesteps(results_dir):
             print(f"Error processing {hdf5_file}: {e}")
             continue
 
-    return np.array(times), np.array(powers)
+    times = np.asarray(times)
+    powers = np.asarray(powers)
+    if times.size == 0:
+        return times, powers
+
+    # The file index restarts at 0000 on every processor run, so a results
+    # directory that was reused can contain frames from several runs with
+    # overlapping times.  Sort by the time stored in the file (not by file
+    # name): otherwise the curve jumps backwards in time and matplotlib draws
+    # a spurious straight line between the jump points.
+    order = np.argsort(times, kind="stable")
+    times = times[order]
+    powers = powers[order]
+
+    # Drop duplicate times (keep the first one, i.e. the lowest file index,
+    # which belongs to the most recent processor run).
+    keep = np.ones(times.size, dtype=bool)
+    keep[1:] = np.diff(times) > 1e-9
+    if not keep.all():
+        n_dup = int((~keep).sum())
+        print(f"\nWarning: {n_dup} duplicate time step(s) found in {data_dir}.")
+        print("         This usually means dream_green_processor.py was run more than")
+        print("         once into the same directory. Duplicates are dropped (the file")
+        print("         with the lowest index is kept); re-run the processor to clean")
+        print("         the stale frames.")
+        times = times[keep]
+        powers = powers[keep]
+
+    print(f"Using {times.size} unique time steps: "
+          f"t = [{times[0]:.4f}, {times[-1]:.4f}]")
+    return times, powers
 
 
 def parse_wave_intervals(intervals_str):
