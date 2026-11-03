@@ -123,7 +123,8 @@ class FluidQuantity(UnknownQuantity):
         ax.set_xlabel(r'$r/a$ (m)')
 
         # Create the animation
-        ani = animation.FuncAnimation(fig, update_ani, frames=self.time.size,
+        nframes = int(self.time.size)
+        ani = animation.FuncAnimation(fig, update_ani, frames=nframes,
             interval=speed, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
             fargs=(self, ax, line, txt, keeplines, tfac, tunits[idx], keep))
 
@@ -749,6 +750,8 @@ class FluidQuantity(UnknownQuantity):
             # Time selection
             if t is None:
                 tsel = slice(None)
+            elif isinstance(t, int):
+                tsel = slice(t,t+1,1)
             else:
                 tsel = t
 
@@ -760,7 +763,7 @@ class FluidQuantity(UnknownQuantity):
             elif arr.ndim != 2:
                 raise ValueError(f"Expected data with ndim 1 or 2, got shape {arr.shape}")
 
-            arr = arr[tsel]
+            arr = arr[tsel,:]
             nt_sel, nr = arr.shape
 
             # Pull equilibrium geometry.

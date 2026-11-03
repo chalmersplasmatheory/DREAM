@@ -69,7 +69,7 @@ class OtherQuantities:
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
         'runaway/nu_par_f1', 'runaway/nu_par_f2',
-        'runaway/S_ava', 'runaway/S_compton', 
+        'runaway/S_ava', 'runaway/S_compton', 'runaway/S_tritium', 
         'runaway/synchrotron_f1', 'runaway/synchrotron_f2', 'runaway/bremsstrahlung_f1', 
         'scalar',
         'scalar/ablationDrift',

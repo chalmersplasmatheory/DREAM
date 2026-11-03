@@ -40,7 +40,8 @@
 
             for (len_t i = 0; i < np1; i++) {
                 real_t S;
-
+                const len_t ij = j*np1 + i;
+                const real_t vp_ij = Vp[ij];
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
@@ -51,13 +52,16 @@
                 // diffusion coefficients should must be negative to get the correct
                 // sign on the diffusion term, which is why we use abs(Drr) here. 
                 // This should however probably be reworked in a better way...
-                if(!isNegativeTrappedRadial && ( abs(Drr(ir, i, j, drr)) || abs(Drr(ir+1, i, j, drr)) ) ){
+
+                if(!isNegativeTrappedRadial) {
+                    const real_t drr_i = Drr(ir, i, j, drr);
+                    const real_t drr_o = Drr(ir+1, i, j, drr);
                     #define X(K,V) f((K),i,j,(V))
                     // Phi^(r)_{k-1/2}
-                    if (ir > 0) {
+                    if (drr_i && ir > 0) {
                         // XXX: Here, we explicitly assume that the momentum grids are
                         // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
-                        S = Drr(ir, i, j, drr)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
+                        S = drr_i*Vp_fr[ij] / (dr[ir]*dr_f[ir-1]*vp_ij);
                         if(set==JACOBIAN_SET_LOWER)
                             S *= 1 - deltaRadialFlux[ir];
                         else if(set==JACOBIAN_SET_CENTER)
@@ -71,10 +75,10 @@
                     }
 
                     // Phi^(r)_{k+1/2}
-                    if (ir < nr-1) {
+                    if (drr_o && ir < nr-1) {
                         // XXX: Here, we explicitly assume that the momentum grids are
                         // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
-                        S = Drr(ir+1, i, j, drr)*Vp_fr1[j*np1+i] / (dr[ir]*dr_f[ir]*Vp[j*np1+i]);
+                        S = drr_o * Vp_fr1[ij] / (dr[ir]*dr_f[ir]*vp_ij);
 
                         if(set==JACOBIAN_SET_LOWER)
                             S = 0;
@@ -97,14 +101,14 @@
                 /////////////////////////
                 // Phi^(1)_{i-1/2,j}
                 if (i > 0) {
-                    S = D11(ir, i, j, d11)*Vp_f1[j*(np1+1)+i] / (dp1[i]*dp1_f[i-1]*Vp[j*np1+i]);
+                    S = D11(ir, i, j, d11)*Vp_f1[ij + j] / (dp1[i]*dp1_f[i-1]*vp_ij);
                     X(i-1, j, -S);
                     X(i, j,   +S);
                 }
 
                 // Phi^(1)_{i+1/2,j}
                 if (i < np1-1) {
-                    S = D11(ir, i+1, j, d11)*Vp_f1[j*(np1+1)+i+1] / (dp1[i]*dp1_f[i]*Vp[j*np1+i]);
+                    S = D11(ir, i+1, j, d11)*Vp_f1[ij + j + 1] / (dp1[i]*dp1_f[i]*vp_ij);
                     X(i+1, j, -S);
                     X(i,   j, +S);
                 }
@@ -114,14 +118,14 @@
                 /////////////////////////
                 // Phi^(2)_{i-1/2,j}
                 if (j > 0) {
-                    S = D22(ir, i, j, d22)*Vp_f2[j*np1+i] / (dp2[j]*dp2_f[j-1]*Vp[j*np1+i]);
+                    S = D22(ir, i, j, d22)*Vp_f2[ij] / (dp2[j]*dp2_f[j-1]*vp_ij);
                     X(i, j,   +S);
                     X(i, j-1, -S);
                 }
 
                 // Phi^(2)_{i+1/2,j}
                 if (j < np2-1) {
-                    S = D22(ir, i, j+1, d22)*Vp_f2[(j+1)*np1+i] / (dp2[j]*dp2_f[j]*Vp[j*np1+i]);
+                    S = D22(ir, i, j+1, d22)*Vp_f2[ij + np1 ] / (dp2[j]*dp2_f[j]*vp_ij);
                     X(i, j+1, -S);
                     X(i, j,   +S);
                 }
@@ -129,18 +133,20 @@
                 /////////////////////////
                 // MOMENTUM 1/2
                 /////////////////////////
+                const real_t d12_i = D12(ir, i, j, d12);
                 // Phi^(1)_{i-1/2,j}
-                if (D12(ir, i, j, d12) && i > 0 && (j > 0 && j < np2-1)) {
-                    S = D12(ir, i, j, d12)*Vp_f1[j*(np1+1)+i] / (dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
+                if (d12_i && i > 0 && (j > 0 && j < np2-1)) {
+                    S = d12_i * Vp_f1[ij + j] / (dp1[i]*(dp2_f[j]+dp2_f[j-1])*vp_ij);
                     X(i,   j+1, +S);
                     X(i-1, j+1, +S);
                     X(i,   j-1, -S);
                     X(i-1, j-1, -S);
                 }
 
+                const real_t d12_o = D12(ir, i+1, j, d12);
                 // Phi^(1)_{i+1/2,j}
-                if (D12(ir,i+1,j, d12) && i < np1-1 && (j > 0 && j < np2-1)) {
-                    S = D12(ir,i+1,j, d12)*Vp_f1[j*(np1+1)+i+1]/(dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
+                if (d12_o && i < np1-1 && (j > 0 && j < np2-1)) {
+                    S = d12_o * Vp_f1[ij + j + 1]/(dp1[i]*(dp2_f[j]+dp2_f[j-1])*vp_ij);
                     X(i+1, j+1, -S);
                     X(i,   j+1, -S);
                     X(i+1, j-1, +S);
@@ -150,18 +156,20 @@
                 /////////////////////////
                 // MOMENTUM 2/1
                 /////////////////////////
+                const real_t d21_i = D21(ir, i, j, d21);
                 // Phi^(2)_{i,j-1/2}
-                if (D21(ir,i,j,d21) && j > 0 && (i > 0 && i < np1-1)) {
-                    S = D21(ir,i,j,d21)*Vp_f2[j*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
+                if (d21_i && j > 0 && (i > 0 && i < np1-1)) {
+                    S = d21_i * Vp_f2[ij] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*vp_ij);
                     X(i+1, j-1, +S);
                     X(i+1, j,   +S);
                     X(i-1, j-1, -S);
                     X(i-1, j,   -S);
                 }
 
+                const real_t d21_o = D21(ir, i, j+1, d21);
                 // Phi^(2)_{i,j+1/2}
-                if (D21(ir,i,j+1,d21) && j < np2-1 && (i > 0 && i < np1-1)) {
-                    S = D21(ir,i,j+1,d21)*Vp_f2[(j+1)*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
+                if (d21_o && j < np2-1 && (i > 0 && i < np1-1)) {
+                    S = d21_o * Vp_f2[ij + np1] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*vp_ij);
                     X(i+1, j+1, -S);
                     X(i+1, j,   -S);
                     X(i-1, j+1, +S);

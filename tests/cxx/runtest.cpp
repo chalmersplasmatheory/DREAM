@@ -30,6 +30,7 @@
 #include "tests/FVM/Grid.hpp"
 #include "tests/FVM/Interpolator1D.hpp"
 #include "tests/FVM/Interpolator3D.hpp"
+#include "tests/FVM/Matrix.hpp"
 #include "tests/FVM/PXiExternalKineticKinetic.hpp"
 
 using namespace std;
@@ -54,6 +55,7 @@ void init() {
     add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));
     add_test(new DREAMTESTS::FVM::Interpolator1D("fvm/interpolator1d"));
     add_test(new DREAMTESTS::FVM::Interpolator3D("fvm/interpolator3d"));
+    add_test(new DREAMTESTS::FVM::Matrix("fvm/matrix"));
     add_test(new DREAMTESTS::FVM::PXiExternalKineticKinetic("fvm/boundaryflux/2kinetic"));
 }
 

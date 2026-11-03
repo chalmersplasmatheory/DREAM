@@ -27,6 +27,9 @@ namespace DREAM {
         len_t limit;
         gsl_integration_workspace * wp;
         gsl_integration_workspace * wpOut;
+
+        bool has_fhot = false;
+        bool has_fre = false;
         
     protected:
         static real_t integrand(real_t, void * );
