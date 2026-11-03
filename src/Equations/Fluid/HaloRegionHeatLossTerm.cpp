@@ -203,16 +203,14 @@ void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
 
     real_t coeff = (derivId == id_T_cold) ? (2. / 3.) : (4. / 9. * kappa * gamma);
     
-    for (len_t i_ion = 0; i_ion <= nMultiples; i_ion++) {
-        for (len_t ir = 0; ir < nr; ir++) {
-            real_t qR0 = calculateQ(ir);
-            if (derivId == id_N_i) {
-                this->diffWeights[i_ion * nr + ir] = calculateWeight(ir, qR0, coeff * W_i[nr * iZMain + ir]);
-            } else if (derivId == id_T_cold) {
-                this->diffWeights[ir] = - calculateWeight(ir, qR0, coeff * W_i[nr * iZMain + ir]);
-            } else if (derivId == id_W_i){
-                this->diffWeights[i_ion * nr + ir] = - calculateWeight(ir, qR0, coeff);
-            }
+    for (len_t ir = 0; ir < nr; ir++) {
+        real_t qR0 = calculateQ(ir);
+        if (derivId == id_N_i) {
+            this->diffWeights[iZMain * nr + ir] = calculateWeight(ir, qR0, coeff * W_i[nr * iZMain + ir]);
+        } else if (derivId == id_W_i){
+            this->diffWeights[iZMain * nr + ir] = - calculateWeight(ir, qR0, coeff);
+        } else if (derivId == id_T_cold) {
+            this->diffWeights[ir] = - calculateWeight(ir, qR0, coeff * W_i[nr * iZMain + ir]);
         }
     }
 }
