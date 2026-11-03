@@ -336,13 +336,19 @@ void QuasilinearDiffusionTerm::Rebuild(const real_t t, const real_t /*dt*/, FVM:
         
         // ===== VALIDATION: Print diffusion coefficient stats =====
         // NOTE: This must be done AFTER filling the FVM matrices.
-        // Print only on wave on/off transitions (or the very first build).
+        // Print only when the wave amplitude is actually non-zero. If no waves
+        // are injected (A = 0) the operator is identically zero by construction,
+        // so the "all coefficients are zero" warning is meaningless — e.g. at
+        // startup when injection has not begun yet (--start-inject-time).
+        // Stats are printed once at the "off -> on" transition.
         // Caches hold the reference-amplitude operator; stats are scaled to
         // the current amplitude.
         bool wave_on_now = (spectrum ? spectrum->getAmplitude(0) : 0.0) > 1e-30;
         bool state_changed = (validation_state == -1) || ((validation_state == 1) != wave_on_now);
         if (ir == 0 && state_changed) {
             validation_state = wave_on_now ? 1 : 0;
+        }
+        if (ir == 0 && state_changed && wave_on_now) {
             auto *mg = grid->GetMomentumGrid(ir);
             const len_t np1 = mg->GetNp1();
             const len_t np2 = mg->GetNp2();
