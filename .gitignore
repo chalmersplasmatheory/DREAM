@@ -50,6 +50,7 @@ reasonix.toml
 logs/
 *.png
 !media/*.png
+!examples/*/doc/*.png
 !doc/**/*.png
 
 examples/*/outputs/
