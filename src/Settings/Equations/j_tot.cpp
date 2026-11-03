@@ -327,9 +327,12 @@ void SimulationGenerator::ConstructEquation_Ip(
 ) {
     const len_t id_I_p   = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
-	const len_t id_Ni    = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+	const len_t 
 
-	len_t id_Wi;
+	len_t id_Wi, id_Ni;
+	const bool includeIons = eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_NI_DENS);
+    if (includeIons)
+		id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     const bool includeIonTemperatures = eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_WI_ENER);
     if (includeIonTemperatures)
         id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
@@ -355,21 +358,31 @@ void SimulationGenerator::ConstructEquation_Ip(
     eqsys->SetOperator(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
     eqsys->SetOperator(id_I_p, id_j_tot, eqn_Ip2);
 
-    if (includeIonTemperatures)
+	if (includeIons){
+		if (includeIonTemperatures ){
+			eqsys->initializer->AddRule(
+				id_I_p,
+				EqsysInitializer::INITRULE_EVAL_EQUATION,
+				nullptr,
+				id_j_tot,
+				id_Ni,
+				id_Wi
+			);
+		} else {
+			eqsys->initializer->AddRule(
+				id_I_p,
+				EqsysInitializer::INITRULE_EVAL_EQUATION,
+				nullptr,
+				id_j_tot,
+				id_Ni
+			);
+		}
+	} else {
 		eqsys->initializer->AddRule(
 			id_I_p,
 			EqsysInitializer::INITRULE_EVAL_EQUATION,
 			nullptr,
-			id_j_tot,
-			id_Ni,
-			id_Wi
+			id_j_tot
 		);
-	else
-		eqsys->initializer->AddRule(
-			id_I_p,
-			EqsysInitializer::INITRULE_EVAL_EQUATION,
-			nullptr,
-			id_j_tot,
-			id_Ni
-		);
+	}
 }
