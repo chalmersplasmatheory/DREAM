@@ -77,6 +77,20 @@ When in doubt, contributors are encouraged to prioritize clarity, follow the loc
 
 ---
 
+### Use of artificial intelligence (AI)
+
+Use of various forms of AI for DREAM development is acceptable. Ensure that your
+tool follows the guidelines outlined in this document. Also, please be mindful
+about the fact that pull request reviewers are humans, so that they should be
+kept as small as possible. Larger pull requests are best discussed first with
+the DREAM Development Council, for example via a GitHub issue.
+
+We employ AI reviews in order to improve the quality of code reviews for DREAM.
+Copilot reviews will be requested by an eligible reviewer as a first step in
+the review process, and you do not have to provide AI reviews yourself.
+
+---
+
 ### C++ language usage
 
 - The codebase intentionally uses a **C-leaning subset of C++**.
@@ -84,6 +98,18 @@ When in doubt, contributors are encouraged to prioritize clarity, follow the loc
 - Use STL containers (`std::vector`, `std::map`, etc.) where appropriate, but be mindful of their cost in performance-critical sections.
 - Prefer explicit loops and indexing over algorithm abstractions in hot paths.
 - Use modern C++ features sparingly and only when they improve clarity or safety without obscuring intent.
+
+---
+
+### Use of fundamental data types
+
+The use of fundamental C++ data types such as ``float``, ``double``, and
+``int``, etc., is strongly discouraged. Instead, use one of the following DREAM
+data types:
+
+- ``real_t``: a 64-bit floating-point type; use for all floating point numbers.
+- ``len_t``: an unsigned 64-bit integer; used primarily for indices, counters, and sizes.
+- ``int_t``: a signed 64-bit integer; used for integers which can be negative, such as identifiers or option constants.
 
 ---
 
@@ -145,6 +171,7 @@ Source files typically follow this structure:
 - Prefer explicit runtime checks and informative error messages.
 - Fail fast when encountering invalid states or inconsistent input.
 - Error messages should provide enough context to diagnose scientific or numerical issues.
+- Use of the ``throw`` keyword is encouraged. It is recommended to throw objects of type ``FVMException`` in files under ``fvm``, and of type ``DREAMException`` in other files, or more specialized (including new) exception objects derived from these.
 
 ---
 
