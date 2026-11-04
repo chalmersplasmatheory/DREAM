@@ -50,7 +50,8 @@ namespace DREAM {
         IonHandler *ions;
         ADAS *adas;
         bool separateNeutrals;
-        len_t id_Wn;
+        bool hasIonHeat;          // true if W_i (and hence N_i) exist
+        len_t id_Wn, id_Nn;
 
         len_t id_ions, id_n_cold, id_Ni, id_T_cold, id_Wi;
 
@@ -82,6 +83,10 @@ namespace DREAM {
         ADASRateInterpolator *GetPLT(const len_t iz) const;
         ADASRateInterpolator *GetPRB(const len_t iz) const;
         ADASRateInterpolator *GetCCD(const len_t iz) const;
+
+        // ADAS ionization rate by atomic number, for a species that is not part of
+        // the plasma (e.g. the neutral beam)
+        ADASRateInterpolator *GetSCDByZ(const len_t Z) const { return adas->GetSCD(Z); }
 
 
         real_t ResolveDensity(const MolecularInput& input, const len_t ir);
