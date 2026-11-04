@@ -480,7 +480,7 @@ void DiffusionTerm::SaveCoefficientsSFile(SFile *sf) {
     if (this->d21 != nullptr)
         sf->WriteMultiArray("D21", this->d21[0], 3, dims);
     if (this->d22 != nullptr)
-        sf->WriteMultiArray("D22", this->d21[0], 3, dims);
+        sf->WriteMultiArray("D22", this->d22[0], 3, dims);
 
     dims[0]=nr; dims[1]=n2; dims[2]=n1+1;
     if (this->d12 != nullptr)
