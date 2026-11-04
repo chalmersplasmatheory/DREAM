@@ -11,11 +11,12 @@ namespace DREAM {
     private:
         const len_t Z;
         const len_t iz;
+        const len_t Z0min;  // lowest charge state included in the sum (1 to leave out the neutrals)
         IonHandler *ionHandler;
         real_t scaleFactor;
     public:
-        NetIonDensityFromIonChargeStatesTerm(FVM::Grid *g, const len_t Z, const len_t iz, IonHandler *ionHandler, real_t scaleFactor=1.0) 
-            : FVM::EquationTerm(g), Z(Z), iz(iz), ionHandler(ionHandler), scaleFactor(scaleFactor){}
+        NetIonDensityFromIonChargeStatesTerm(FVM::Grid *g, const len_t Z, const len_t iz, IonHandler *ionHandler, real_t scaleFactor=1.0, const len_t Z0min=0)
+            : FVM::EquationTerm(g), Z(Z), iz(iz), Z0min(Z0min), ionHandler(ionHandler), scaleFactor(scaleFactor){}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return this->ionHandler->GetNzs(); }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return this->ionHandler->GetNzs(); }
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
@@ -26,14 +27,14 @@ namespace DREAM {
             return (uqtyId==derivId);
         }
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t *) override {
-            for(len_t Z0=0; Z0<=Z; Z0++){
+            for(len_t Z0=Z0min; Z0<=Z; Z0++){
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for(len_t ir=0; ir<nr; ir++)
                     mat->SetElement(iz*nr+ir, indZ*nr+ir, scaleFactor);
             }
         }
         virtual void SetVectorElements(real_t *vec, const real_t *ni) override {
-            for(len_t Z0=0; Z0<=Z; Z0++){
+            for(len_t Z0=Z0min; Z0<=Z; Z0++){
                 len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for(len_t ir=0; ir<nr; ir++)
                     vec[iz*nr+ir] += scaleFactor*ni[indZ*nr+ir];

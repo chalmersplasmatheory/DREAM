@@ -18,7 +18,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         RateHandler *ratehandler;
         bool separateNeutrals;
-        len_t id_ions, id_n_cold, id_n_re, id_n_tot, id_T_cold, id_Wi, id_Ni, id_Wn;
+        len_t id_ions, id_n_cold, id_n_re, id_n_tot, id_T_cold, id_Wi, id_Ni, id_Wn, id_Nn;
         bool includeFluidREIonization; // include IONIZATION_RUNAWAY reactions (ionization = FLUID_RE)
         real_t reionizScale;
         real_t **Rate = nullptr;
