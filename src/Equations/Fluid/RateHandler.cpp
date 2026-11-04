@@ -28,13 +28,24 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
     this->unknowns  = unknowns;
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    this->id_Ni  = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-    separateNeutrals = unknowns->HasUnknown(OptionConstants::UQTY_WN_ENER);
 
-    if (separateNeutrals)
+    // W_i and N_i only exist when the ion heat equation is included
+    hasIonHeat = unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER);
+    if (hasIonHeat) {
+        this->id_Ni = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+        this->id_Wi = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
+    } else {
+        throw FVM::FVMException(
+            "RateHandler: Molecular reactions require the ion heat equation (T_i) to be included."
+        );
+    }
+
+    separateNeutrals = unknowns->HasUnknown(OptionConstants::UQTY_WN_ENER);
+    if (separateNeutrals) {
         id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
+        id_Nn = unknowns->GetUnknownID(OptionConstants::UQTY_NN_DENS);
+    }
 
 
     if (reactionsEnabled){
@@ -254,24 +265,12 @@ real_t RateHandler::ResolveSpeciesTemperature(
 
     real_t n, W;
 
-    // If we dont separate the neutrals we just use the ion density and energy to calculate the temperature
-    if (!separateNeutrals) {
+    if (separateNeutrals && charge == 0) {
+        n = unknowns->GetUnknownData(id_Nn)[offset];
+        W = unknowns->GetUnknownData(id_Wn)[offset];
+    } else {
         n = unknowns->GetUnknownData(id_Ni)[offset];
         W = unknowns->GetUnknownData(id_Wi)[offset];
-    } else {
-        // If we do separate the neutrals, we need to consider the neutral density and energy
-        const real_t *densities = unknowns->GetUnknownData(id_ions);
-
-        if (charge == 0) {
-            n = densities[ions->GetIndex(species, 0) * nr + ir];
-            W = unknowns->GetUnknownData(id_Wn)[offset];
-        } else {
-            n = 0;
-            for (len_t z = 1; z <= ions->GetZ(species); z++)
-                n += densities[ions->GetIndex(species, z) * nr + ir];
-
-            W = unknowns->GetUnknownData(id_Wi)[offset];
-        }
     }
 
     // Temperature is undefined for an absent population.

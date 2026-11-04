@@ -4,7 +4,6 @@
  * The rates are obtained from the RateHandler, which manages the ADAS rates and molecular reaction rates.
 */
 
-#include <utility>
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "DREAM/Equations/Fluid/MoleculeRateReaction.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -37,8 +36,10 @@ MoleculeRateReaction::MoleculeRateReaction(
     this->id_Wi     = unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_Ni = unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     separateNeutrals = unknowns->HasUnknown(OptionConstants::UQTY_WN_ENER);
-    if (separateNeutrals)
+    if (separateNeutrals) {
         id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
+        id_Nn = unknowns->GetUnknownID(OptionConstants::UQTY_NN_DENS);
+    }
 
     AddUnknownForJacobian(unknowns, id_ions);
     AddUnknownForJacobian(unknowns, id_n_cold);
@@ -46,8 +47,10 @@ MoleculeRateReaction::MoleculeRateReaction(
     AddUnknownForJacobian(unknowns, id_T_cold);
     AddUnknownForJacobian(unknowns, id_Ni);
     AddUnknownForJacobian(unknowns, id_Wi);
-    if (separateNeutrals)
+    if (separateNeutrals) {
         AddUnknownForJacobian(unknowns, id_Wn);
+        AddUnknownForJacobian(unknowns, id_Nn);
+    }
 
     const len_t allocationSize = FindRelevantMolecularReactions();
     AllocateRateCoefficients(allocationSize);
@@ -244,18 +247,11 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
             // If the input temperature depends on the species temperature, then set the jacobian element for the species temperature.
             if (Tin.kind == MolecularInputKind::SPECIES) {
                 const len_t iz      = ions->GetIonIndex(Tin.name1);
-                const bool neutral  = (Tin.charge1 == 0); // check if the input temperature is for a neutral species
-                const len_t energyId = (separateNeutrals && neutral) ? id_Wn : id_Wi;
 
-                // Same density as RateHandler::ResolveSpeciesTemperature
-                const len_t firstZ = neutral ? 0 : 1;
-                const len_t lastZ  = neutral ? 0 : ions->GetZ(iz);
-                real_t n = 0;
-                if (!separateNeutrals)
-                    n = unknowns->GetUnknownData(id_Ni)[iz*nr + ir];
-                else
-                    for (len_t Z = firstZ; Z <= lastZ; Z++)
-                        n += x[ions->GetIndex(iz, Z)*nr + ir];
+                const bool neutral = separateNeutrals && Tin.charge1 == 0;
+                const len_t energyId  = neutral ? id_Wn : id_Wi;
+                const len_t densityId = neutral ? id_Nn : id_Ni;
+                const real_t n = unknowns->GetUnknownData(densityId)[iz*nr + ir];
 
                 if (n > 0) {
                     const real_t T = ratehandler->ResolveTemperature(Tin, ir);
@@ -264,12 +260,9 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
                     if (derivId == energyId)
                         jac->SetElement(row, iz*nr + ir, net * Rate_T[rateIndex][ir] * nA * nB / (1.5*Constants::ec*n));
 
-                    // dS/dn
-                    if (!separateNeutrals && derivId == id_Ni)
+                    // dS/dN
+                    if (derivId == densityId)
                         jac->SetElement(row, iz*nr + ir, -(net * Rate_T[rateIndex][ir] * nA * nB) * T / n);
-                    else if (separateNeutrals && derivId == id_ions)
-                        for (len_t Z = firstZ; Z <= lastZ; Z++)
-                            jac->SetElement(row, ions->GetIndex(iz, Z)*nr + ir, -(net * Rate_T[rateIndex][ir] * nA * nB) * T / n);
                 }
             }
 
@@ -320,26 +313,27 @@ void MoleculeRateReaction::SetCSMatrixElements(
         GetReactantDensity(reaction.reactants[0], idA, offsetA);
         GetReactantDensity(reaction.reactants[1], idB, offsetB);
 
-        // Let A be the implicit (matrix) density: an ion, preferably this row's own species
-        const auto& rB = reaction.reactants[1];
-        const bool BisSelf = (name == rB.name && rB.Z0 == (int_t)Z0);
-        if (idB == id_ions && (idA != id_ions || BisSelf)) {
-            std::swap(idA, idB);
-            std::swap(offsetA, offsetB);
-        }
-
         const real_t *dA = unknowns->GetUnknownData(idA);
         const real_t *dB = unknowns->GetUnknownData(idB);
 
         for (len_t ir = 0; ir < nr; ir++) {
+            // Pick ONE implicit reactant per reaction and radius, the same for every
+            // row, so that all equations see the same rate (conserves nuclei).
+            // It must be an ion; if both are ions, take the scarcer one (positivity).
+            const real_t nA = dA[offsetA + ir];
             const real_t nB = dB[offsetB + ir];
+            const bool useB = (idB == id_ions) && (idA != id_ions || nB < nA);
 
-            // S = net * K * nA * nB  ->  matrix element net*K*nB in column nA
-            if (idA == id_ions)
-                mat->SetElement(rOffset + ir, offsetA + ir, net * Rate[rateIndex][ir] * nB);
+            const bool   implicitIon = useB || (idA == id_ions);
+            const len_t  col   = useB ? offsetB + ir : offsetA + ir;
+            const real_t nExpl = useB ? nA : nB;
+
+            // S = net * K * n_impl * n_expl  ->  matrix element net*K*n_expl in column n_impl
+            if (implicitIon)
+                mat->SetElement(rOffset + ir, col, net * Rate[rateIndex][ir] * nExpl);
             // No ion reactant: the whole term is a known source
             else if (rhs != nullptr)
-                rhs[rOffset + ir] += net * Rate[rateIndex][ir] * dA[offsetA + ir] * nB;
+                rhs[rOffset + ir] += net * Rate[rateIndex][ir] * nA * nB;
         }
     }
 }
