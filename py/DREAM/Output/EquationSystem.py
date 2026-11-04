@@ -53,6 +53,7 @@ class EquationSystem:
         'W_cold':       Temperature,
         'W_i':          IonThermalEnergy,
         'W_n':          NeutralThermalEnergy,
+        'N_n':          IonSpeciesFluidQuantity,
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
     }

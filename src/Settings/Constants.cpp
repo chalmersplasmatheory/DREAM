@@ -32,7 +32,7 @@ DEF_UQTY(N_HOT,           "n_hot",        "Hot electron density [m^-3]");
 DEF_UQTY(N_RE,            "n_re",         "Runaway electron density <n> [m^-3]");
 DEF_UQTY(N_RE_NEG,        "n_re_neg",     "Runaway electron density in negative direction <n> [m^-3]");
 DEF_UQTY(N_TOT,           "n_tot",        "Total electron density [m^-3]");
-DEF_UQTY(NI_DENS,         "N_i",          "Total ion density of each species [m^-3]");
+DEF_UQTY(NI_DENS,         "N_i",          "Ion density of each species, all charge states (only Z0>0 with separate neutrals) [m^-3]");
 DEF_UQTY(POL_FLUX,        "psi_p",        "Poloidal magnetic flux normalized to major radius R0 [Vs/m]");
 DEF_UQTY(PSI_EDGE,        "psi_edge",     "Poloidal magnetic flux at plasma edge (r=rmax) normalized to major radius R0 [Vs/m]");
 DEF_UQTY(Q_HOT,           "q_hot",        "Hot out going heat flux density in all directions [J/(s m^2)]");
@@ -48,6 +48,7 @@ DEF_UQTY(V_P,             "v_p",          "Pellet shard velocities (Cartesian) [
 DEF_UQTY(W_ABL,           "W_abl",        "Flux surface averaged ablated but not equilibrated electron energy density (3n_abl T_abl/2) [J/m^3]");
 DEF_UQTY(W_COLD,          "W_cold",       "Cold electron energy density (3nT/2) [J/m^3]");
 DEF_UQTY(WN_ENER,         "W_n",          "Neutral thermal energy density [J/m^3]");
+DEF_UQTY(NN_DENS,         "N_n",          "Neutral density of each species [m^-3]");
 DEF_UQTY(W_HOT,           "W_hot",        "Hot electron energy density [J/m^3]");
 DEF_UQTY(WI_ENER,         "W_i",          "Total ion energy density (3N_iT_i/2) of each species [J/m^3]");
 DEF_UQTY(X_P,             "x_p",          "Pellet shard coordinates (Cartesian) [m]");

@@ -371,7 +371,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     }
 
     // ADD COLLISIONAL ENERGY TRANSFER WITH ION SPECIES
-    const bool separateNeutrals = s->GetInteger("eqsys/n_i/typeTn") == OptionConstants::UQTY_T_N_INCLUDE;
     OptionConstants::uqty_T_i_eqn Ti_type =
         (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi");
     if(Ti_type == OptionConstants::UQTY_T_I_INCLUDE) {
@@ -385,7 +384,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
                     fluidGrid,
                     0, false,
                     iz, true,
-                    unknowns, lnLambda, ionHandler, -1.0, separateNeutrals)
+                    unknowns, lnLambda, ionHandler, -1.0)
                 );
         }
         eqsys->SetOperator(id_T_cold, id_Wi, oqty_terms->T_cold_ion_coll);

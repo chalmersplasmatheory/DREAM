@@ -198,8 +198,10 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, nist, amjuel, oqty_terms);
 
-    if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn") == OptionConstants::UQTY_T_N_INCLUDE)
+    if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn") == OptionConstants::UQTY_T_N_INCLUDE) {
         ConstructEquation_T_n(eqsys, s, oqty_terms);
+        ConstructEquation_Ion_Nn(eqsys, s);
+    }
 
 
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
@@ -387,8 +389,13 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_FLD_N(NI_DENS, GetNumberOfIonSpecies(s));
     }
     if ((OptionConstants::uqty_T_n_eqn)s->GetInteger("eqsys/n_i/typeTn")== OptionConstants::UQTY_T_N_INCLUDE) {
+        // The neutrals are separated from the ions in W_i, so the ion heat equation is needed
+        if ((OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") != OptionConstants::UQTY_T_I_INCLUDE)
+            throw SettingsException("A separate neutral temperature (T_n) requires the ion temperature (T_i) to be included.");
+
         const len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WN_ENER, nIonSpecies);
+        DEFU_FLD_N(NN_DENS, nIonSpecies);
     }
 
     // Fluid helper quantities

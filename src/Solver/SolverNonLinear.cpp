@@ -454,6 +454,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, len_t itera
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
 	if(unknowns->HasUnknown(OptionConstants::UQTY_WN_ENER))
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_NN_DENS))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NN_DENS));
 	if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
 

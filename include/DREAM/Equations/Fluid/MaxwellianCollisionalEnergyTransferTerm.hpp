@@ -13,7 +13,6 @@ namespace DREAM{
         real_t constPreFactor;
         const len_t index_i, index_j;
         bool isIon_i, isIon_j, isEI;
-        bool separateNeutrals;
         FVM::UnknownQuantityHandler *unknowns;
         CoulombLogarithm *lnLambda;
         IonHandler *ionHandler;
@@ -32,8 +31,7 @@ namespace DREAM{
             FVM::Grid *g, 
             const len_t index_i, bool isIon_i,
             const len_t index_j, bool isIon_j, 
-            FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler,
-            real_t scaleFactor=1.0, bool separateNeutrals=false
+            FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler, real_t scaleFactor=1.0
         );
         ~MaxwellianCollisionalEnergyTransferTerm() {delete lnLambda_settings;}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 0; }
