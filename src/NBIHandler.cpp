@@ -394,7 +394,9 @@ void NBIHandler::ComputeMeanFreePath(
     real_t Ti_beam_input
 ) {
     real_t Z0_b = 0; // Neutral beam, so Z0 = 0
-    ADASRateInterpolator* scd = rateHandler->GetSCD(ions->GetIonIndex("D"));
+    // The beam is deuterium (Z = 1)
+    const len_t Z_beam = 1;
+    ADASRateInterpolator* scd = rateHandler->GetSCDByZ(Z_beam);
     dI_e_dTe = scd->Eval_deriv_T(Z0_b, ncold, Tcold);
 
     real_t dI_e_dne = scd->Eval_deriv_n(Z0_b, ncold, Tcold);
