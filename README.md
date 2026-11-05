@@ -129,10 +129,11 @@ DREAM development is overseen by the DREAM Developer Council which consists of
 
 - [Mathias Hoppe](https://www.kth.se/profile/mhop?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
 - [Ida Ekmark](https://ft.nephy.chalmers.se/?p=people&id=61), Chalmers University of Technology, Gothenburg, Sweden
-- [Lorenzo Votta](https://www.kth.se/profile/votta?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
 - [Linn Ekman](https://www.kth.se/profile/linnekm?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
-- [Oskar Vallhagen](https://ft.nephy.chalmers.se/?p=people&id=16), Chalmers University of Technology, Gothenburg, Sweden
+- [Lorenzo Votta](https://www.kth.se/profile/votta?l=en), KTH Royal Institute of Technology, Stockholm, Sweden
 - [Peter Halldestam](https://www.ipp.mpg.de/person/140267/5497846), Max Planck Institute for Plasma Physics, Garching-bei-München, Germany
+- [Oskar Vallhagen](https://ft.nephy.chalmers.se/?p=people&id=16), Chalmers University of Technology, Gothenburg, Sweden (retired since December 2025)
+- Ola Embreus, Sweden
 
 The code was originally developed within the
 [Plasma Theory group at Chalmers](https://ft.nephy.chalmers.se/) but is now
