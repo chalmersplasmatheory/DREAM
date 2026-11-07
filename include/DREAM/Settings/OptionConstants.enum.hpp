@@ -82,7 +82,8 @@ enum adas_interp_type {
 enum radialgrid_type {
     RADIALGRID_TYPE_CYLINDRICAL=1,
     RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2,
-    RADIALGRID_TYPE_NUMERICAL=3
+    RADIALGRID_TYPE_NUMERICAL=3,
+    RADIALGRID_TYPE_NUMERICAL_STELLARATOR=4
 };
 
 // Type of momentum grid
@@ -439,11 +440,12 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
 enum eqterm_bootstrap_mode {
     EQTERM_BOOTSTRAP_MODE_NEGLECT = 1,
     EQTERM_BOOTSTRAP_MODE_REDL = 2,
+    EQTERM_BOOTSTRAP_MODE_REDL_STELLARATOR = 3,
 };
 
-enum eqterm_bootstrap_init_mode {
-    EQTERM_BOOTSTRAP_INIT_MODE_OHMIC = 1, 
-    EQTERM_BOOTSTRAP_INIT_MODE_TOTAL = 2
+enum eqterm_bootstrap_init_mode { 
+    EQTERM_BOOTSTRAP_INIT_MODE_TOTAL = 1,
+    EQTERM_BOOTSTRAP_INIT_MODE_OHMIC = 2
 };
 
 enum eqterm_lcfs_loss_mode {                        // Loss term

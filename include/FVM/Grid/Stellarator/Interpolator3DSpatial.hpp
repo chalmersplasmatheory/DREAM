@@ -1,0 +1,72 @@
+#ifndef _DREAM_FVM_INTERPOLATOR_3D_SPATIAL_HPP 
+#define _DREAM_FVM_INTERPOLATOR_3D_SPATIAL_HPP
+
+#include <gsl/gsl_interp.h>
+#include "FVM/FVMException.hpp"
+#include "FVM/config.h"
+
+namespace DREAM::FVM {
+    class Interpolator3DSpatial {
+    public:
+        enum interp_method {
+            INTERP_NEAREST,
+            INTERP_LINEAR,
+            INTERP_LOGARITHMIC
+        };
+
+    private:
+        len_t nx1, nx2, nx3;
+
+        const real_t *x1, *x2, *x3;
+        const real_t *y;
+        real_t *logy=nullptr;
+
+        enum interp_method method;
+
+        bool ownsArrays = true;
+
+        gsl_interp_accel *acc1, *acc2, *acc3;
+
+        len_t _find_x(const real_t, const len_t, const real_t*, gsl_interp_accel*);
+        len_t _find_x1(const real_t x) { return _find_x(x, this->nx1, this->x1, this->acc1); }
+        len_t _find_x2(const real_t x) { return _find_x(x, this->nx2, this->x2, this->acc2); }
+        len_t _find_x3(const real_t x) { return _find_x(x, this->nx3, this->x3, this->acc3); }
+        real_t _eval_nearest(const real_t, const real_t, const real_t);
+        real_t _eval_logarithmic(const real_t, const real_t, const real_t);
+        real_t _eval_linear(const real_t, const real_t, const real_t);
+
+    public:
+        Interpolator3DSpatial(
+            const len_t, const len_t, const len_t,
+            const real_t*, const real_t*, const real_t*,
+            const real_t*, 
+            enum interp_method meth=INTERP_LINEAR,
+            bool ownsArrays=false
+        );
+        ~Interpolator3DSpatial();
+        
+        const real_t *Eval(
+            const len_t, const len_t, const len_t,
+            const real_t*, const real_t*, const real_t*,
+            real_t *out=nullptr
+        );
+
+        const real_t *GetX1(){ return this->x1; }
+        const real_t *GetX2(){ return this->x2; }
+        const real_t *GetX3(){ return this->x3; }
+        const len_t GetNx1(){ return this->nx1; }
+        const len_t GetNx2(){ return this->nx2; }
+        const len_t GetNx3(){ return this->nx3; }
+    };
+
+    class Interpolator3DSpatialException : public FVMException {
+    public:
+        template<typename ... Args>
+        Interpolator3DSpatialException(const std::string& msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("Interpolator3DSpatial");
+        }
+    };
+}
+
+#endif/*_DREAM_FVM_INTERPOLATOR_3D_HPP*/
