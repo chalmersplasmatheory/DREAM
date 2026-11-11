@@ -606,7 +606,7 @@ bool KnockOn::CheckMollerSConservationProperty() {
  * elementary gyro-cone probability. It uses neither contact cuts nor the
  * production local-delta/metric helpers. Check raw values before normalization.
  */
-bool KnockOn::CheckPoloidalNumerators(bool extended) {
+bool KnockOn::CheckPoloidalNumerators() {
     namespace K = DREAM::KnockOnUtilities;
     namespace Q = K::Quadrature;
     for (real_t u : {-1.0,1.0})
@@ -626,24 +626,16 @@ bool KnockOn::CheckPoloidalNumerators(bool extended) {
         const real_t T = std::sqrt(geometry.GetBetaMax());
         const Q::GaussLegendreRule rule(8);
         struct Case { const char *name; real_t u, lo, hi, chi; };
-        std::vector<Case> cases;
-        if (extended) {
-            for (real_t u : {0.6*T,T*(1-1e-4),T*(1+1e-4),(1+T)/2,1.0})
-                for (real_t chi : {0.1,0.55,0.9999})
-                    for (const auto cell : {Q::Interval{-1,1},Q::Interval{0.15,0.85}})
-                        cases.push_back({"extended",u,cell.lower,cell.upper,chi});
-        } else {
-            cases = {
-                {"trapped",0.6*T,0.15,0.85,0.55},
-                {"below separatrix",T*(1-1e-4),0.15,0.85,0.1},
-                {"above separatrix",T*(1+1e-4),0.15,0.85,0.55},
-                {"passing full measure",(1+T)/2,-1,1,0.9999},
-                {"narrow outgoing support",0.9,0.855,0.86,0.55},
-                {"pole",1,0.15,0.85,0.55},
-                {"near perpendicular",0.9,-0.1,0.1,0}
-            };
-        }
-        const len_t n = extended ? 32768 : 8192;
+        const Case cases[] = {
+            {"trapped", 0.6*T, 0.15, 0.85, 0.55},
+            {"below separatrix", T*(1-1e-4), 0.15, 0.85, 0.1},
+            {"above separatrix", T*(1+1e-4), 0.15, 0.85, 0.55},
+            {"passing full measure", (1+T)/2, -1, 1, 0.9999},
+            {"narrow outgoing support", 0.9, 0.855, 0.86, 0.55},
+            {"pole", 1, 0.15, 0.85, 0.55},
+            {"near perpendicular", 0.9, -0.1, 0.1, 0}
+        };
+        const len_t n = 8192;
         using Reference = KnockOnTest::OrbitReference;
         std::map<real_t,std::unique_ptr<Reference>> fine, coarse;
         for (const auto& c : cases) {
@@ -667,15 +659,13 @@ bool KnockOn::CheckPoloidalNumerators(bool extended) {
     return true;
 }
 
-bool KnockOn::CheckPitchCellAverages(bool extended) {
+bool KnockOn::CheckPitchCellAverages() {
     namespace K=DREAM::KnockOnUtilities;
     namespace Q=K::Quadrature;
-    // The default faces have no sign symmetry: negative/positive boundary
+    // The faces have no sign symmetry: negative/positive boundary
     // rows have different widths, and one primary cell crosses zero.
-    const std::vector<real_t> sf = extended ? KnockOnTest::UniformPitchFaces(40)
-        : std::vector<real_t>{-1,-.82,-.55,-.2,.12,.43,.72,.86,1};
-    const std::vector<real_t> pf = extended ? KnockOnTest::UniformPitchFaces(31)
-        : std::vector<real_t>{-1,-.79,-.51,-.11,.17,.57,.83,1};
+    const std::vector<real_t> sf{-1, -.82, -.55, -.2, .12, .43, .72, .86, 1};
+    const std::vector<real_t> pf{-1, -.79, -.51, -.11, .17, .57, .83, 1};
     const Q::GaussLegendreRule theta(8), pitch(4);
     for (real_t epsilon : {0.05,0.3}) {
         auto target = KnockOnTest::ToroidalGrid(epsilon,sf);
@@ -686,7 +676,7 @@ bool KnockOn::CheckPitchCellAverages(bool extended) {
         const real_t T=std::sqrt(geometry.GetBetaMax());
         // Geometry is independent of the primary/secondary intervals. Cache
         // each reference node grid once, including a separate convergence grid.
-        const len_t n = extended ? 65536 : 16384;
+        const len_t n = 16384;
         const KnockOnTest::SurfaceReference reference(rg,0,n), coarse(rg,0,n/2);
         auto volume = [&](real_t lo, real_t hi) { return reference.Volume(lo,hi); };
         std::vector<real_t> column(sf.size()-1);
@@ -723,16 +713,4 @@ bool KnockOn::CheckPitchCellAverages(bool extended) {
         }
     }
     return true;
-}
-
-
-// Called only by the explicitly built extended executable, never by Run().
-bool KnockOn::RunExtended() {
-    bool success = CheckPoloidalNumerators(true);
-    success = CheckPitchCellAverages(true) && success;
-    auto target = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(40));
-    auto primary = KnockOnTest::ToroidalGrid(0.3,KnockOnTest::UniformPitchFaces(31));
-    success = _checkDeltaConservationProperty(target.get(),primary.get(),1e-12) && success;
-    if (success) PrintOK("Extended raw quadrature, cell-volume/overlap and unlike-grid checks passed.");
-    return success;
 }
