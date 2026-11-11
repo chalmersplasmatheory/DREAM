@@ -16,6 +16,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.nonlinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/MollerKernelHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/NBIHandler.cpp"
