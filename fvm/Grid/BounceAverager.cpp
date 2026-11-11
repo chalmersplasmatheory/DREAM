@@ -358,15 +358,14 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
         // (unless the cell also contains the trapping boundary, in which 
         //  case it would have been treated by the previous block)
         } else if(xi_f1 < 0 && xi_f2 > 0){
-            // If cell contains xi0=0, take the bounce integrals as 
-            // the xi-average over the cell volume under the assumption that
-            // the integrand varies linearly from its value at the upper cell face
-            // to 0 at xi0=0.
+            // The trapped orbit already includes both directions of motion.
+            // Integrate the linear approximation from zero to the upper face,
+            // then divide by the full pitch cell width.
             fluxGridType = FLUXGRIDTYPE_P2;
             j += 1;
             isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
             xi0 = GetXi0(ir,i,j,fluxGridType);
-            SingularPointCorrection = 0.5;
+            SingularPointCorrection = xi_f2 / (2 * (xi_f2 - xi_f1));
         }
     }
     
