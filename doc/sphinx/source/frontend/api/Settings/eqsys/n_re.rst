@@ -119,10 +119,12 @@ runaway region. This runaway mechanism is commonly known as the *avalanche
 mechanism* and will lead to an exponential growth in the number of runaway
 electrons.
 
-DREAM contains four different models for avalanche generation. The first two
-are fluid models, and the last two the kinetic source term based on a Boltzmann
-collision operator between the runaway population and stationary cold target
-electrons.
+DREAM provides two fluid avalanche growth rates, ``FLUID`` and
+``FLUID_HESSLOW``, and two kinetic knock-on sources. ``KINETIC`` uses the
+Rosenbluth–Putvinski (RP) approximation with infinitely energetic primaries
+aligned with the magnetic field. ``BOLTZMANN_KNOCK_ON`` uses the Møller
+collision gain term for primaries with the energies and pitches resolved
+on the kinetic grids, with stationary cold target electrons.
 
 .. note::
 
@@ -131,8 +133,8 @@ electrons.
    source term are added to the :math:`\xi=1` cell on the runaway grid (if
    :math:`E > 0`, otherwise to the :math:`\xi=-1` cell).
 
-   Similarly, the kinetic source term can be used in fluid simulations and is
-   then integrated to yield the number of fluid runaways produced.
+   Use one of the fluid growth rates for simulations with both kinetic grids
+   disabled.
 
 +---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
 | Option                                | Description                                                                                                     |
@@ -163,31 +165,44 @@ than the minimum effective threshold momentum for runaway generation during the 
 This can be validated *a posteriori* by comparing ``pCutAvalanche`` with the ``fluid.pCrit``
 OtherQuantity after a simulation.
 
-In the table below, we summarize the behavior of the kinetic runaway source depending
-on settings. 
+The kinetic avalanche sources use the following primary populations.
 
-+------------------------+-------------------------------------------------------------------------+----------------------------------------------------------------------------+
-|                        | Only hot-tail grid                                                      | Hot-tail + runaway grid                                                    |
-+========================+=========================================================================+============================================================================+
-| ``KINETIC``            | :math:`S_\mathrm{RP}(n_\mathrm{RE})`                                    | :math:`S_\mathrm{RP}(n_\mathrm{RE})`                                       |
-+------------------------+-------------------------------------------------------------------------+----------------------------------------------------------------------------+
-| ``BOLTZMANN_KNOCK_ON`` | :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + S_\mathrm{RP}(n_\mathrm{RE})` | :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + C_\mathrm{boltz}(f_\mathrm{re})` |
-+------------------------+-------------------------------------------------------------------------+----------------------------------------------------------------------------+
+.. list-table::
+   :header-rows: 1
 
-Here :math:`S_\mathrm{RP}(n_\mathrm{re})` denotes the RP-based contribution from the
-fluid external runaway density :math:`n_\mathrm{re}` (used when runaways are not
-kinetically resolved).
+   * - Mode
+     - Hot-tail grid only
+     - Runaway grid only
+     - Both grids
+   * - ``KINETIC``
+     - :math:`S_\mathrm{RP}(n_\mathrm{re})`
+     - :math:`S_\mathrm{RP}(n_\mathrm{re})`
+     - :math:`S_\mathrm{RP}(n_\mathrm{re})`
+   * - ``BOLTZMANN_KNOCK_ON``
+     - :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + S_\mathrm{RP}(n_\mathrm{re})`
+     - :math:`C_\mathrm{boltz}(f_\mathrm{re})`
+     - :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + C_\mathrm{boltz}(f_\mathrm{re})`
 
-The recommendation way of kinetic avalanche modelling is:
+Here :math:`S_\mathrm{RP}` uses the runaway density as its primary population
+and :math:`C_\mathrm{boltz}` uses the specified kinetic distribution. In
+hot-tail-only Boltzmann mode, the RP contribution accounts for fluid primaries
+above the grid. Their knock-ons on the hot-tail grid use the RP pitch source,
+and DREAM uses a fluid external avalanche rate for knock-ons above the grid.
 
-   With ``KINETIC``: use hottail grid with :math:`p_\mathrm{max}` near the critical momentum
-   to maximize the runaway population inside :math:`n_\mathrm{re}`.
+With ``KINETIC`` and a hot-tail grid, choose its :math:`p_\mathrm{max}` near
+the critical momentum so that most runaways are represented by
+:math:`n_\mathrm{re}`. With ``BOLTZMANN_KNOCK_ON`` and a hot-tail grid alone,
+choose :math:`p_\mathrm{max}` large enough for the RP approximation to be
+appropriate for the external primaries.
 
-   With ``BOLTZMANN_KNOCK_ON``: either use no runaway grid, with :math:`p_\mathrm{max}` on the
-   hot-tail grid sufficiently large that the RP approximation is valid for 
-   the :math:`n_\mathrm{re}` population; or: a runaway grid with :math:`p_\mathrm{max}` large
-   enough that the runaway population beyond the upper momentum boundary is negligible.
-
+To use ``BOLTZMANN_KNOCK_ON`` with the runaway grid alone, disable the
+hot-tail grid and enable an evolved :math:`p,\xi` runaway grid. Use
+``ds.runawaygrid.setPmin(...)`` to set its lower boundary. Place that boundary
+low enough to resolve the secondary electrons that can run away, and choose
+:math:`p_\mathrm{max}` high enough to resolve the primary distribution that
+drives avalanche. Initialize a seed on the runaway grid. DREAM adds the
+gain term to :math:`f_\mathrm{re}` and its momentum integral to the
+:math:`n_\mathrm{re}` equation.
 
 .. warning::
 
@@ -200,15 +215,15 @@ The recommendation way of kinetic avalanche modelling is:
 
 .. warning::
    
-   The Boltzmann avalanche source, ``AVALANCHE_MODE_BOLTZMANN_KNOCK_ON``, only
-   accounts for knock-ons produced by kinetically resolved electrons on the hot-tail
-   and runaway grids. When kinetically resolving runaways, the external runaways, 
-   (present in :math:`n_{\rm re}` but not :math:`f_{\rm re}`) will not contribute.
+   With a runaway grid enabled, the Boltzmann source uses only primaries on
+   the enabled kinetic grids. Choose the upper momentum boundary so that the
+   contribution from external runaways is negligible.
 
 .. note::
 
-   Boltzmann mode also includes primaries from :math:`f_{\rm hot}`, so its
-   source need not vanish when :math:`n_{\rm re}=0`. This is a gain-only model:
+   With the hot-tail grid enabled, Boltzmann mode includes primaries from
+   :math:`f_{\rm hot}`, so its source can be nonzero when
+   :math:`n_{\rm re}=0`. This is a gain-only model:
    it does not include the complementary recoil loss of the incident electron.
    As discussed in the theory notes, the cutoff must therefore also be large
    enough to keep the added bulk energy and momentum negligible. Check this

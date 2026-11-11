@@ -153,9 +153,8 @@ void MollerDeltaAngleKernel::EvaluateXiStarRangeOnGrids(real_t &xiStarMin, real_
     }
 }
 
-// Generate a xi_star grid on which we tabulate the kinematic delta.
-// To get maximum bang for the back we identify its min and max values
-// on the given grids and only sample between those.
+// Tabulate the kinematic delta over the range of xi_star reached by
+// momentum-cell pairs that contribute to the knock-on source.
 void MollerDeltaAngleKernel::BuildXiStarTabulationGrid() {
     EvaluateXiStarRangeOnGrids(xiStarMin, xiStarMax);
     hasActivePairs = std::isfinite(xiStarMin) && std::isfinite(xiStarMax);

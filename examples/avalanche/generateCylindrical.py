@@ -1,7 +1,7 @@
 """Demonstration of AVALANCHE_MODE_BOLTZMANN_KNOCK_ON.
 
 A simple example in a uniform magnetic field with neutral impurities
-and relatively weak electric field.
+and relatively weak electric field. Only the hot-tail grid is enabled.
 
 The resulting growth rate is not fully resolved;
 increased pmax, Np, Nxi and number of time steps will affect the results.
@@ -98,6 +98,8 @@ ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 ds.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
 
+# Use the Møller gain term for hot-tail primaries and the RP approximation
+# for fluid runaways. Exclude secondaries born below p/(m_e*c) = 0.1.
 ds.eqsys.n_re.setAvalanche(
     avalanche=Runaways.AVALANCHE_MODE_BOLTZMANN_KNOCK_ON,
     pCutAvalanche=0.1,

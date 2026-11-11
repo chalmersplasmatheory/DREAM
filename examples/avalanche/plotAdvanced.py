@@ -5,8 +5,10 @@ and, optionally, by `generateToroidal.py`.
 For full plot functionality:
 
 $ python3 generateAdvanced.py
+$ dreami settingsAdvanced1.h5
+$ dreami settingsAdvanced2.h5
+$ dreami settingsAdvanced3.h5
 $ python3 generateToroidal.py
-$ dreami settingsAdvanced.h5
 $ dreami settingsToroidal.h5
 $ python3 plotAdvanced.py
 
@@ -36,7 +38,8 @@ output = Path(__file__).absolute().parent / "outputAdvanced.h5"
 if not output.exists():
     print(
         "Output file has not yet been created: "
-        "run settingsAdvanced.h5 produced by generateAdvanced.py"
+        "run settingsAdvanced1.h5, settingsAdvanced2.h5 and settingsAdvanced3.h5 "
+        "produced by generateAdvanced.py, in that order"
     )
     sys.exit(0)
 

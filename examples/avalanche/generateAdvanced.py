@@ -6,13 +6,13 @@ both hot-tail and runaway grids modelled kinetically.
 The resulting growth rate is not fully resolved;
 increased pmax, Np, Nxi and number of time steps will affect the results.
 
-For stability reasons, the simulation is set up as a 3-stage rocket:
+For stability, run the simulation in three stages:
  - python generateAdvanced.py
  - dreami settingsAdvanced1.h5
  - dreami settingsAdvanced2.h5
  - dreami settingsAdvanced3.h5
-Each simulation load the previous solution's results and build to
-a quasi-steady state growth rate.
+Each restart loads the previous stage's output. The final stage writes
+outputAdvanced.h5 for plotAdvanced.py.
 
 Visualize solutions with plotAdvanced.py
 
@@ -182,6 +182,8 @@ ds.runawaygrid.setEnabled(True)
 ds.eqsys.f_re.setAdvectionInterpolationMethod(FHot.AD_INTERP_TCDF)
 ds.eqsys.f_re.setBoundaryCondition(FHot.BC_F_0)
 
+# Use the Møller gain term for primaries on both kinetic grids.
+# Exclude secondaries born below p/(m_e*c) = 0.1.
 ds.eqsys.n_re.setAvalanche(
     avalanche=Runaways.AVALANCHE_MODE_BOLTZMANN_KNOCK_ON,
     pCutAvalanche=0.1,
