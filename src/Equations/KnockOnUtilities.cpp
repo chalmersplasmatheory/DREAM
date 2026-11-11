@@ -272,190 +272,270 @@ real_t KnockOnUtilities::OrbitNumeratorIntegrand(
 }
 
 namespace {
-namespace Q = KnockOnUtilities::Quadrature;
 
+namespace Quadrature = KnockOnUtilities::Quadrature;
+
+// Outgoing subcell to integrate at one primary-pitch sample. The weight
+// converts its contribution to the stored row and includes multiplicity.
 struct OrbitPiece {
-    Q::Interval cell;
+    Quadrature::Interval cell;
     len_t row;
     real_t weight;
     bool mirror;
 };
 
-// Split before folding so that each piece has one trapped multiplicity.
-// Weights convert a subcell average back to its original row average.
+// Split a fixed-pitch orbit integral before applying trapped multiplicities.
 void AddTrappedPieces(
-    std::vector<OrbitPiece>& pieces, real_t lo, real_t hi, len_t row,
-    real_t u, real_t xiT
+    std::vector<OrbitPiece> &pieces, real_t lo, real_t hi, len_t row,
+    real_t primaryPitch, real_t xiT
 ) {
-    const auto faces=Q::SplitPoints({lo,hi},{-xiT,0,xiT});
-    const bool primaryTrapped=u>=0 && u<xiT;
-    for (len_t i=1; i<faces.size(); ++i) {
-        const real_t a=faces[i-1], b=faces[i];
-        if (a>=-xiT && b<=0) continue;
-        const bool secondaryTrapped=a>=0 && b<=xiT;
-        pieces.push_back({{a,b},row,
-            (b-a)/(hi-lo)*(primaryTrapped && secondaryTrapped ? 2 : 1),
-            primaryTrapped || secondaryTrapped});
+    const auto faces = Quadrature::SplitPoints({lo, hi}, {-xiT, 0, xiT});
+    const bool primaryTrapped = primaryPitch >= 0 && primaryPitch < xiT;
+    for (len_t i = 1; i < faces.size(); ++i) {
+        const real_t lower = faces[i - 1];
+        const real_t upper = faces[i];
+        if (lower >= -xiT && upper <= 0)
+            continue;
+
+        const bool secondaryTrapped = lower >= 0 && upper <= xiT;
+        const int multiplicity = primaryTrapped && secondaryTrapped ? 2 : 1;
+        pieces.push_back({
+            {lower, upper}, row, (upper - lower) / (hi - lo) * multiplicity,
+            primaryTrapped || secondaryTrapped
+        });
     }
 }
 
 // Both trapped signs use the same contacts, metric and geometric quantities.
 real_t CombinedOrbitIntegrand(
-    real_t theta, len_t ir, Q::Interval cell, real_t u, real_t chi,
+    real_t theta, len_t ir, Quadrature::Interval cell, real_t primaryPitch, real_t xiStar,
     bool mirror, const FVM::RadialGrid *rg
 ) {
-    real_t B, J, cutoff;
-    if (!KnockOnUtilities::CheckIfReachableAndSetGeometricQuantities(
-        ir,theta,cell.lower,cell.upper,u,B,J,cutoff,rg->GetFluxSurfaceAverager()
-    )) return 0;
-    real_t ratio;
-    real_t D=KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
-        cell.lower,cell.upper,u,B,chi,cutoff,ratio
+    real_t BOverBmin;
+    real_t jacobian;
+    real_t xi0Cutoff;
+    const bool reachable = KnockOnUtilities::CheckIfReachableAndSetGeometricQuantities(
+        ir, theta, cell.lower, cell.upper, primaryPitch, BOverBmin, jacobian, xi0Cutoff,
+        rg->GetFluxSurfaceAverager()
     );
+    if (!reachable)
+        return 0;
+
+    real_t xi1OverXi01;
+    real_t delta = KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
+        cell.lower, cell.upper, primaryPitch, BOverBmin, xiStar, xi0Cutoff, xi1OverXi01
+    );
+
     if (mirror) {
         real_t unused;
-        D+=KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
-            cell.lower,cell.upper,u,B,-chi,cutoff,unused
+        delta += KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
+            cell.lower, cell.upper, primaryPitch, BOverBmin, -xiStar, xi0Cutoff, unused
         );
     }
-    return 2*M_PI*J*FVM::MomentumGrid::evaluatePXiMetricOverP2(ratio,B)*D;
+
+    return 2 * M_PI * jacobian
+        * FVM::MomentumGrid::evaluatePXiMetricOverP2(xi1OverXi01, BOverBmin) * delta;
 }
 
+/**
+ * Accumulate the poloidal numerators for one primary pitch. Each outgoing
+ * piece has its own panels, with common field levels inverted as a batch.
+ */
 void IntegratePieces(
-    len_t ir, real_t chi, real_t u, const std::vector<OrbitPiece>& pieces,
-    const FVM::RadialGrid *rg, Q::OrbitGeometry& geometry,
-    const Q::GaussLegendreRule& rule, real_t *out
+    len_t ir, real_t xiStar, real_t primaryPitch, const std::vector<OrbitPiece> &pieces,
+    const FVM::RadialGrid *rg, Quadrature::OrbitGeometry &geometry,
+    const Quadrature::GaussLegendreRule &poloidalRule, real_t *numerators
 ) {
-    if (pieces.empty()) return;
+    if (pieces.empty())
+        return;
+
     if (geometry.IsConstantField()) {
-        const real_t h=2*M_PI*rg->GetVpVol(ir);
-        for (const auto& piece : pieces) {
+        const real_t orbitMeasure = 2 * M_PI * rg->GetVpVol(ir);
+        for (const auto &piece : pieces) {
             real_t ratio;
-            real_t D=KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
-                piece.cell.lower,piece.cell.upper,u,1,chi,0,ratio
+            real_t delta = KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
+                piece.cell.lower, piece.cell.upper, primaryPitch, 1, xiStar, 0, ratio
             );
-            if (piece.mirror)
-                D+=KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
-                    piece.cell.lower,piece.cell.upper,u,1,-chi,0,ratio
+            if (piece.mirror) {
+                delta += KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
+                    piece.cell.lower, piece.cell.upper, primaryPitch, 1, -xiStar, 0, ratio
                 );
-            out[piece.row]+=piece.weight*h*D;
+            }
+            numerators[piece.row] += piece.weight * orbitMeasure * delta;
         }
         return;
     }
-    std::vector<Q::Interval> cells;
+
+    std::vector<Quadrature::Interval> cells;
     cells.reserve(pieces.size());
-    for (const auto& piece : pieces) cells.push_back(piece.cell);
-    const auto panels=Q::PoloidalSplitPoints(geometry,u,chi,cells);
-    for (len_t j=0; j<pieces.size(); ++j) {
-        const auto& piece=pieces[j];
-        real_t integral=0;
-        for (len_t k=1; k<panels[j].size(); ++k)
-            for (const auto& point : rule.MappedPoints({panels[j][k-1],panels[j][k]}))
-                integral+=point.weight*CombinedOrbitIntegrand(
-                    point.x,ir,piece.cell,u,chi,piece.mirror,rg
+    for (const auto &piece : pieces) {
+        cells.push_back(piece.cell);
+    }
+
+    const auto panels = Quadrature::PoloidalSplitPoints(geometry, primaryPitch, xiStar, cells);
+    for (len_t j = 0; j < pieces.size(); ++j) {
+        const auto &piece = pieces[j];
+        const auto &cuts = panels[j];
+        real_t integral = 0;
+        for (len_t k = 1; k < cuts.size(); ++k) {
+            const Quadrature::Interval panel{cuts[k - 1], cuts[k]};
+            for (const auto &point : poloidalRule.MappedPoints(panel)) {
+                integral += point.weight * CombinedOrbitIntegrand(
+                    point.x, ir, piece.cell, primaryPitch, xiStar, piece.mirror, rg
                 );
-        if (!std::isfinite(integral) || integral<0)
+            }
+        }
+        if (!std::isfinite(integral) || integral < 0) {
             throw DREAMException(
                 "Knock-on orbit quadrature produced numerator %.17g at ir=%ld, "
                 "u=%.17g, chi=%.17g, cell=[%.17g,%.17g].",
-                integral,(long)ir,u,chi,piece.cell.lower,piece.cell.upper
+                integral, (long)ir, primaryPitch, xiStar, piece.cell.lower, piece.cell.upper
             );
-        out[piece.row]+=piece.weight*integral;
+        }
+        numerators[piece.row] += piece.weight * integral;
     }
 }
 
-// A target piece carries a density per ORIGINAL outgoing row width. This
-// includes a void boundary cell's passing sliver reassigned to a different row.
+// A target piece describes the outgoing geometry before primary-pitch
+// weights and trapped multiplicities are applied. Its width is measured
+// relative to the receiving row, including for reassigned boundary pieces.
 struct TargetPiece {
-    Q::Interval cell;
+    Quadrature::Interval cell;
     len_t row;
-    real_t weight;
+    real_t rowWidthFraction;
     bool trapped;
 };
+
 void AddTargetPieces(
-    std::vector<TargetPiece>& pieces, Q::Interval cell, len_t row,
+    std::vector<TargetPiece> &pieces, Quadrature::Interval cell, len_t row,
     real_t rowWidth, real_t xiT
 ) {
-    const auto cuts=Q::SplitPoints(cell,{-xiT,0,xiT});
-    for (len_t k=1; k<cuts.size(); ++k) {
-        const real_t a=cuts[k-1], b=cuts[k];
-        if (a>=-xiT && b<=0) continue;
-        pieces.push_back({{a,b},row,(b-a)/rowWidth,a>=0 && b<=xiT});
+    const auto cuts = Quadrature::SplitPoints(cell, {-xiT, 0, xiT});
+    for (len_t k = 1; k < cuts.size(); ++k) {
+        const real_t lower = cuts[k - 1];
+        const real_t upper = cuts[k];
+        if (lower >= -xiT && upper <= 0)
+            continue;
+
+        const bool trapped = lower >= 0 && upper <= xiT;
+        pieces.push_back({{lower, upper}, row, (upper - lower) / rowWidth, trapped});
     }
 }
 
+/**
+ * Integrate A_jl over the represented part of the primary cell.
+ * Use an outer partition for each outgoing piece, then evaluate the inner
+ * poloidal integrals together for pieces that share a primary-pitch node.
+ */
 void IntegratePrimaryCell(
-    len_t ir, real_t chi, Q::Interval primary, const std::vector<TargetPiece>& targets,
-    const FVM::RadialGrid *rg, Q::OrbitGeometry& geometry,
-    const Q::GaussLegendreRule& poloidalRule, const Q::GaussLegendreRule& pitchRule,
-    real_t *out
+    len_t ir, real_t xiStar, Quadrature::Interval primary, const std::vector<TargetPiece> &targets,
+    const FVM::RadialGrid *rg, Quadrature::OrbitGeometry &geometry,
+    const Quadrature::GaussLegendreRule &poloidalRule,
+    const Quadrature::GaussLegendreRule &pitchRule, real_t *numerators
 ) {
-    const real_t betaMax=geometry.GetBetaMax(), T=std::sqrt(betaMax);
-    // Each target piece gets its own outer partition. Batch coincident nodes
-    // locally so repeated field levels are still inverted once. No cache
-    // survives this primary column, and no row pays for another row's cuts.
-    std::map<real_t,std::vector<OrbitPiece>> samples;
-    for (const auto& target : targets) {
-        const auto cuts=Q::PrimaryPitchSplitPoints(
-            primary,chi,betaMax,{target.cell.lower,target.cell.upper}
+    const real_t betaMax = geometry.GetBetaMax();
+    const real_t xiT = std::sqrt(betaMax);
+
+    std::map<real_t, std::vector<OrbitPiece>> piecesByPitch;
+    for (const auto &target : targets) {
+        const auto cuts = Quadrature::PrimaryPitchSplitPoints(
+            primary, xiStar, betaMax, {target.cell.lower, target.cell.upper}
         );
-        for (len_t k=1; k<cuts.size(); ++k) {
-            if (cuts[k-1]>=-T && cuts[k]<=0) continue;
-            for (const auto& point : pitchRule.MappedPoints({cuts[k-1],cuts[k]})) {
-                const real_t u=point.x;
-                // A sub-ulp panel can round onto the separatrix itself, whose
-                // pointwise measure is infinite. Such a sample is unresolved
-                // by this field representation; never evaluate that infinity.
-                if (betaMax>0 && (std::abs(u)==T || u*u==betaMax)) continue;
-                const bool trapped=u>=0 && u<T;
-                samples[u].push_back({target.cell,target.row,
-                    point.weight*target.weight*(trapped && target.trapped ? 2 : 1),
-                    trapped || target.trapped});
+        for (len_t k = 1; k < cuts.size(); ++k) {
+            const Quadrature::Interval panel{cuts[k - 1], cuts[k]};
+            // Positive trapped pitch represents both orbit directions.
+            if (panel.lower >= -xiT && panel.upper <= 0)
+                continue;
+
+            for (const auto &point : pitchRule.MappedPoints(panel)) {
+                const real_t primaryPitch = point.x;
+                // A panel near the separatrix can round onto its singular
+                // pointwise orbit measure. Skip such unresolved nodes.
+                if (betaMax > 0 && (std::abs(primaryPitch) == xiT
+                    || primaryPitch * primaryPitch == betaMax)) {
+                    continue;
+                }
+
+                const bool primaryTrapped = primaryPitch >= 0 && primaryPitch < xiT;
+                const int multiplicity = primaryTrapped && target.trapped ? 2 : 1;
+                piecesByPitch[primaryPitch].push_back({
+                    target.cell, target.row, point.weight * target.rowWidthFraction * multiplicity,
+                    primaryTrapped || target.trapped
+                });
             }
         }
     }
-    for (const auto& sample : samples)
-        IntegratePieces(ir,chi,sample.first,sample.second,rg,geometry,poloidalRule,out);
+
+    for (const auto &sample : piecesByPitch) {
+        IntegratePieces(
+            ir, xiStar, sample.first, sample.second, rg, geometry, poloidalRule, numerators
+        );
+    }
 }
 
-// Raw cell numerator divided by DREAM's discrete primary measure Hgrid.
-// It is NOT divided by the pointwise orbit volume at any quadrature node.
+/**
+ * Assemble outgoing rows of the raw cell-averaged kernel A_jl / Hgrid_l.
+ * The discrete primary cell measure Hgrid_l is applied after integration,
+ * so the integrand can carry the full orbit measure near the separatrix.
+ */
 void EvaluateGridRows(
-    len_t ir, real_t chi, len_t l, const FVM::Grid *gridK, const FVM::Grid *gridP,
-    len_t first, len_t last, Q::OrbitGeometry& geometry,
-    const Q::GaussLegendreRule& poloidalRule, const Q::GaussLegendreRule& pitchRule,
+    len_t ir, real_t xiStar, len_t l, const FVM::Grid *gridK, const FVM::Grid *gridP,
+    len_t firstRow, len_t endRow, Quadrature::OrbitGeometry &geometry,
+    const Quadrature::GaussLegendreRule &poloidalRule, const Quadrature::GaussLegendreRule &pitchRule,
     real_t *out
 ) {
-    std::fill(out,out+last-first,0);
-    const auto *mgP=gridP->GetMomentumGrid(ir), *mgK=gridK->GetMomentumGrid(ir);
-    const real_t Vp1=gridP->GetVpOverP2AtZero(ir)[l];
-    // Native void columns stay void, including a negative-passing sliver
-    // belonging to the discarded cell crossing -xiT.
-    if (Vp1==0) return;
-    const real_t Hgrid=mgP->GetDp2(l)*Vp1;
-    if (!(Hgrid>0) || !std::isfinite(Hgrid))
+    const len_t nRows = endRow - firstRow;
+    std::fill(out, out + nRows, 0);
+    const auto *mgP = gridP->GetMomentumGrid(ir);
+    const auto *mgK = gridK->GetMomentumGrid(ir);
+    const real_t primaryMetric = gridP->GetVpOverP2AtZero(ir)[l];
+
+    // A void primary column carries no stored particles, even where its
+    // interval includes passing pitch.
+    if (primaryMetric == 0)
+        return;
+
+    const real_t Hgrid = mgP->GetDp2(l) * primaryMetric;
+    if (!(Hgrid > 0) || !std::isfinite(Hgrid))
         throw DREAMException("Knock-on primary cell has invalid volume.");
-    const real_t T=std::sqrt(geometry.GetBetaMax());
+
+    const real_t xiT = std::sqrt(geometry.GetBetaMax());
     std::vector<TargetPiece> targets;
-    for (len_t j=first; j<last; ++j) {
-        if (gridK->GetVpOverP2AtZero(ir)[j]==0) continue;
-        const real_t lo=mgK->GetP2_f(j), hi=mgK->GetP2_f(j+1), width=mgK->GetDp2(j);
-        AddTargetPieces(targets,{lo,hi},j-first,width,T);
-        if (T>0 && lo<=T && T<hi) {
-            // Restore only the passing part of a native void boundary row.
-            // Divide by the RECEIVING row width; this is essential on unlike
-            // positive/negative pitch grids. Never transfer primary inventory.
-            for (len_t k=0; k<mgK->GetNp2(); ++k)
-                if (mgK->GetP2_f(k)<-T && mgK->GetP2_f(k+1)>-T
-                    && gridK->GetVpOverP2AtZero(ir)[k]==0)
-                    AddTargetPieces(targets,{mgK->GetP2_f(k),-T},j-first,width,T);
+    for (len_t j = firstRow; j < endRow; ++j) {
+        if (gridK->GetVpOverP2AtZero(ir)[j] == 0)
+            continue;
+
+        const real_t lower = mgK->GetP2_f(j);
+        const real_t upper = mgK->GetP2_f(j + 1);
+        const real_t rowWidth = mgK->GetDp2(j);
+        AddTargetPieces(targets, {lower, upper}, j - firstRow, rowWidth, xiT);
+
+        // Fold the passing part of the void row crossing -xiT into the row
+        // crossing +xiT. The receiving width preserves the integrated
+        // outgoing source when those two rows have different widths.
+        if (xiT > 0 && lower <= xiT && xiT < upper) {
+            for (len_t k = 0; k < mgK->GetNp2(); ++k) {
+                if (mgK->GetP2_f(k) < -xiT && mgK->GetP2_f(k + 1) > -xiT
+                    && gridK->GetVpOverP2AtZero(ir)[k] == 0) {
+                    AddTargetPieces(
+                        targets, {mgK->GetP2_f(k), -xiT}, j - firstRow, rowWidth, xiT
+                    );
+                }
+            }
         }
     }
-    IntegratePrimaryCell(ir,chi,{mgP->GetP2_f(l),mgP->GetP2_f(l+1)},targets,
-        gridP->GetRadialGrid(),geometry,poloidalRule,pitchRule,out);
-    for (len_t j=0; j<last-first; ++j) out[j]/=Hgrid;
+
+    const Quadrature::Interval primary{mgP->GetP2_f(l), mgP->GetP2_f(l + 1)};
+    IntegratePrimaryCell(
+        ir, xiStar, primary, targets, gridP->GetRadialGrid(), geometry,
+        poloidalRule, pitchRule, out
+    );
+    for (len_t j = 0; j < nRows; ++j) {
+        out[j] /= Hgrid;
+    }
 }
-} // namespace
+
+}  // namespace
 
 // Explicit-pitch, unnormalized interface: no grid-centre substitution or
 // primary-volume division. Also used by the independent numerical tests.
@@ -515,10 +595,14 @@ real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
     len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
     const FVM::Grid *grid_primary, len_t poloidalOrder, len_t pitchOrder
 ) {
-    Quadrature::OrbitGeometry geometry(grid_primary->GetRadialGrid()->GetFluxSurfaceAverager(),ir);
-    Quadrature::GaussLegendreRule rule(poloidalOrder), pitchRule(pitchOrder);
+    Quadrature::OrbitGeometry geometry(grid_primary->GetRadialGrid()->GetFluxSurfaceAverager(), ir);
+    const Quadrature::GaussLegendreRule poloidalRule(poloidalOrder);
+    const Quadrature::GaussLegendreRule pitchRule(pitchOrder);
     real_t result;
-    EvaluateGridRows(ir,xi_star,l,grid_knockon,grid_primary,j,j+1,geometry,rule,pitchRule,&result);
+    EvaluateGridRows(
+        ir, xi_star, l, grid_knockon, grid_primary, j, j + 1, geometry, poloidalRule, pitchRule,
+        &result
+    );
     return result;
 }
 
@@ -526,29 +610,48 @@ real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
     real_t *deltaCol, len_t poloidalOrder, len_t pitchOrder
 ) {
-    Quadrature::OrbitGeometry geometry(grid_primary->GetRadialGrid()->GetFluxSurfaceAverager(),ir);
-    Quadrature::GaussLegendreRule rule(poloidalOrder), pitchRule(pitchOrder);
-    return SetDeltaMatrixColumnOnGrid(ir,xi_star,l,grid_knockon,grid_primary,deltaCol,geometry,rule,pitchRule);
+    Quadrature::OrbitGeometry geometry(grid_primary->GetRadialGrid()->GetFluxSurfaceAverager(), ir);
+    const Quadrature::GaussLegendreRule poloidalRule(poloidalOrder);
+    const Quadrature::GaussLegendreRule pitchRule(pitchOrder);
+    return SetDeltaMatrixColumnOnGrid(
+        ir, xi_star, l, grid_knockon, grid_primary, deltaCol, geometry, poloidalRule, pitchRule
+    );
 }
 
+/**
+ * Normalize a complete angular column to conserve the outgoing particle
+ * count. Return its width-weighted integral Hquad_l / Hgrid_l so the raw
+ * quadrature measure can be checked independently.
+ */
 real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
-    real_t *deltaCol, Quadrature::OrbitGeometry& geometry, const Quadrature::GaussLegendreRule& rule,
-    const Quadrature::GaussLegendreRule& pitchRule
+    real_t *deltaCol, Quadrature::OrbitGeometry &geometry,
+    const Quadrature::GaussLegendreRule &poloidalRule, const Quadrature::GaussLegendreRule &pitchRule
 ) {
-    const auto *mg=grid_knockon->GetMomentumGrid(ir);
-    const len_t n=mg->GetNp2();
-    EvaluateGridRows(ir,xi_star,l,grid_knockon,grid_primary,0,n,geometry,rule,pitchRule,deltaCol);
-    if (grid_primary->GetVpOverP2AtZero(ir)[l]==0) return 0;
-    real_t norm=0;
-    for (len_t j=0; j<n; ++j) norm+=mg->GetDp2(j)*deltaCol[j];
-    if (!(norm>0) || !std::isfinite(norm))
+    const auto *mg = grid_knockon->GetMomentumGrid(ir);
+    const len_t nRows = mg->GetNp2();
+    EvaluateGridRows(
+        ir, xi_star, l, grid_knockon, grid_primary, 0, nRows, geometry, poloidalRule, pitchRule,
+        deltaCol
+    );
+    if (grid_primary->GetVpOverP2AtZero(ir)[l] == 0)
+        return 0;
+
+    real_t columnIntegral = 0;
+    for (len_t j = 0; j < nRows; ++j) {
+        columnIntegral += mg->GetDp2(j) * deltaCol[j];
+    }
+    if (!(columnIntegral > 0) || !std::isfinite(columnIntegral)) {
         throw DREAMException(
             "Knock-on quadrature expected a positive column at ir=%ld, l=%ld, xi_star=%.16g.",
-            (long)ir,(long)l,xi_star
+            (long)ir, (long)l, xi_star
         );
-    for (len_t j=0; j<n; ++j) deltaCol[j]/=norm;
-    return norm;
+    }
+
+    for (len_t j = 0; j < nRows; ++j) {
+        deltaCol[j] /= columnIntegral;
+    }
+    return columnIntegral;
 }
 
 /**

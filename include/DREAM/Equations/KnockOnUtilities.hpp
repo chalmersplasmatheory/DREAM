@@ -209,19 +209,21 @@ real_t EvaluateDeltaMatrixElementOnGrid(
     const FVM::Grid *grid_primary, len_t poloidalOrder, len_t pitchOrder=4
 );
 
-// Set a full column {j} of pitch matrix elements \delta_{jl} on a DREAM grid,
-// applying the exact conservation constraint \sum_j dxi_j delta_{jl} == 1.
-// Returns Hquad/Hgrid before normalization (not generally unity).
+/**
+ * Set the angular column for primary pitch cell l. Normalize the column
+ * so its outgoing pitch integral is one, and return the raw integral
+ * Hquad_l / Hgrid_l. A void primary cell gives a zero column and integral.
+ */
 real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
     real_t *deltaCol, len_t poloidalOrder, len_t pitchOrder=4
 );
 
-// Reuse one geometry per radius and both Gauss rules per table build.
+// Reuse the prepared geometry and rules across columns on this surface.
 real_t SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
-    real_t *deltaCol, Quadrature::OrbitGeometry& geometry, const Quadrature::GaussLegendreRule& rule,
-    const Quadrature::GaussLegendreRule& pitchRule
+    real_t *deltaCol, Quadrature::OrbitGeometry &geometry,
+    const Quadrature::GaussLegendreRule &poloidalRule, const Quadrature::GaussLegendreRule &pitchRule
 );
 
 // Set a single momentum matrix element S_{ik} on a DREAM grid.

@@ -1,3 +1,12 @@
+/**
+ * Contact-split quadrature for the knock-on pitch kernel.
+ *
+ * The primary pitch and outgoing cell faces are specified at Bmin.
+ * At fixed primary pitch, contacts are expressed as field levels
+ * beta = 1 - Bmin/B and then located on both poloidal branches.
+ * The outer primary-pitch integral is split where those contacts
+ * meet a field extremum or a bounce point. See doc/notes/theory.tex.
+ */
 #include "DREAM/Equations/KnockOnQuadrature.hpp"
 
 #include <algorithm>
@@ -13,447 +22,645 @@
 #include "DREAM/DREAMException.hpp"
 #include "FVM/Grid/FluxSurfaceAverager.hpp"
 
-using namespace DREAM;
-namespace Q = DREAM::KnockOnUtilities::Quadrature;
+namespace DREAM::KnockOnUtilities::Quadrature {
 
 namespace {
-void ValidatePitch(real_t x) {
-    if (!std::isfinite(x) || x < -1 || x > 1)
+
+void ValidatePitch(real_t pitch) {
+    if (!std::isfinite(pitch) || pitch < -1 || pitch > 1)
         throw DREAMException("KnockOnQuadrature: pitch/cosine must be finite and in [-1,1].");
 }
+
 void ValidateBetaMax(real_t betaMax) {
     if (!std::isfinite(betaMax) || betaMax < 0 || betaMax >= 1)
         throw DREAMException("KnockOnQuadrature: betaMax must be finite and in [0,1).");
 }
-void ValidateInterval(Q::Interval x) {
-    if (!std::isfinite(x.lower) || !std::isfinite(x.upper) || x.lower > x.upper
-        || !std::isfinite(x.upper-x.lower))
+
+void ValidateInterval(Interval interval) {
+    if (!std::isfinite(interval.lower) || !std::isfinite(interval.upper)
+        || interval.lower > interval.upper || !std::isfinite(interval.upper - interval.lower)) {
         throw DREAMException("KnockOnQuadrature: invalid integration interval.");
-}
-void SortUnique(std::vector<real_t>& x) {
-    std::sort(x.begin(), x.end());
-    x.erase(std::unique(x.begin(), x.end()), x.end());
-}
+    }
 }
 
-std::vector<real_t> Q::SplitPoints(Interval interval, std::vector<real_t> cuts) {
+void SortUnique(std::vector<real_t> &points) {
+    std::sort(points.begin(), points.end());
+    points.erase(std::unique(points.begin(), points.end()), points.end());
+}
+
+}  // namespace
+
+std::vector<real_t> SplitPoints(Interval interval, std::vector<real_t> cuts) {
     ValidateInterval(interval);
-    for (real_t x : cuts)
+    for (real_t x : cuts) {
         if (!std::isfinite(x))
             throw DREAMException("KnockOnQuadrature: non-finite split point.");
-    cuts.erase(std::remove_if(cuts.begin(), cuts.end(), [&](real_t x) {
+    }
+
+    const auto outside = [&](real_t x) {
         return x <= interval.lower || x >= interval.upper;
-    }), cuts.end());
+    };
+    cuts.erase(std::remove_if(cuts.begin(), cuts.end(), outside), cuts.end());
     cuts.push_back(interval.lower);
     cuts.push_back(interval.upper);
     SortUnique(cuts);
     return cuts;
 }
 
-std::vector<real_t> Q::ContactFieldLevels(
-    real_t u, real_t v, real_t xiStar, real_t betaMax
+/**
+ * Find field levels where the outgoing scattering cone touches one face.
+ * A face can bounce before the primary, in which case its local pitch is
+ * clipped to zero and the contact equation changes.
+ */
+std::vector<real_t> ContactFieldLevels(
+    real_t primaryPitch, real_t secondaryFace, real_t xiStar, real_t betaMax
 ) {
-    ValidatePitch(u); ValidatePitch(v); ValidatePitch(xiStar); ValidateBetaMax(betaMax);
-    // Long-double intermediates protect cancellation near xiStar=1 and u=v.
-    const long double U=u, V=v, c=std::abs((long double)xiStar);
-    const long double u2=U*U, v2=V*V, s2=(1-c)*(1+c);
-    const long double reach=std::min(u2, (long double)betaMax);
+    ValidatePitch(primaryPitch);
+    ValidatePitch(secondaryFace);
+    ValidatePitch(xiStar);
+    ValidateBetaMax(betaMax);
+
+    // Extra precision limits cancellation for nearly collinear scattering
+    // and nearly equal invariant pitches.
+    const long double primary = primaryPitch;
+    const long double face = secondaryFace;
+    const long double cosine = std::abs(static_cast<long double>(xiStar));
+    const long double primarySquared = primary * primary;
+    const long double faceSquared = face * face;
+    const long double sinSquared = (1 - cosine) * (1 + cosine);
+    const long double reachableLevel = std::min(primarySquared, static_cast<long double>(betaMax));
+
     std::vector<real_t> levels;
-    const auto add = [&](long double beta) {
-        const real_t b=static_cast<real_t>(beta);
+    const auto addLevel = [&](long double beta) {
+        const real_t level = static_cast<real_t>(beta);
         // Check again after conversion: rounding can put a root on an endpoint.
-        if (beta>0 && beta<reach && b>0 && b<std::min(u*u,betaMax))
-            levels.push_back(b);
+        if (beta > 0 && beta < reachableLevel
+            && level > 0 && level < std::min(primaryPitch * primaryPitch, betaMax)) {
+            levels.push_back(level);
+        }
     };
-    add(v2); // a secondary face becomes reachable
-    if (c < 1) {
-        const long double X=std::sqrt((1-U)*(1+U));
-        const long double Y=std::sqrt((1-V)*(1+V));
-        for (long double den : {1+c, 1-c}) {
-            const long double beta=1-(X-Y)*(X-Y)/s2-2*X*Y/den;
-            if (beta <= std::min(u2,v2))
-                add(beta);
+
+    // The face bounces at beta = v^2.
+    addLevel(faceSquared);
+
+    // Solve the squared contact equation for reachable faces. Extra roots
+    // only split a smooth panel.
+    if (cosine < 1) {
+        const long double primarySin = std::sqrt((1 - primary) * (1 + primary));
+        const long double faceSin = std::sqrt((1 - face) * (1 + face));
+        const long double difference = primarySin - faceSin;
+        for (long double denominator : {1 + cosine, 1 - cosine}) {
+            const long double beta = 1 - difference * difference / sinSquared
+                - 2 * primarySin * faceSin / denominator;
+            if (beta <= std::min(primarySquared, faceSquared))
+                addLevel(beta);
         }
     }
+
     // Contact with a face clipped to local pitch zero. Compare before dividing
     // to avoid overflow for arbitrarily small nonzero scattering cosine.
-    const long double numerator=u2-s2;
-    if (c>0 && numerator>0 && numerator<c*c*reach && numerator>=c*c*v2)
-        add(numerator/(c*c));
+    const long double numerator = primarySquared - sinSquared;
+    if (cosine > 0 && numerator > 0
+        && numerator < cosine * cosine * reachableLevel
+        && numerator >= cosine * cosine * faceSquared) {
+        addLevel(numerator / (cosine * cosine));
+    }
+
     SortUnique(levels);
     return levels;
 }
 
-std::vector<real_t> Q::PrimaryPitchSplitPoints(
+/**
+ * Find where the poloidal panel boundaries change as the primary pitch varies.
+ */
+std::vector<real_t> PrimaryPitchSplitPoints(
     Interval cell, real_t xiStar, real_t betaMax,
-    const std::vector<real_t>& secondaryFaces
+    const std::vector<real_t> &secondaryFaces
 ) {
-    ValidateInterval(cell); ValidatePitch(cell.lower); ValidatePitch(cell.upper);
-    ValidatePitch(xiStar); ValidateBetaMax(betaMax);
-    const long double c=std::abs((long double)xiStar), s2=(1-c)*(1+c);
-    const long double s=std::sqrt(s2);
-    const real_t T=std::sqrt(betaMax);
-    std::vector<real_t> cuts{-T,0,T};
-    const auto addSquared = [&](long double a2) {
-        if (a2>=0 && a2<=1) {
-            const real_t a=static_cast<real_t>(std::sqrt(a2));
-            cuts.push_back(-a); cuts.push_back(a);
+    ValidateInterval(cell);
+    ValidatePitch(cell.lower);
+    ValidatePitch(cell.upper);
+    ValidatePitch(xiStar);
+    ValidateBetaMax(betaMax);
+
+    const long double cosine = std::abs(static_cast<long double>(xiStar));
+    const long double sinSquared = (1 - cosine) * (1 + cosine);
+    const long double sine = std::sqrt(sinSquared);
+    const real_t xiT = std::sqrt(betaMax);
+    std::vector<real_t> cuts{-xiT, 0, xiT};
+    const auto addSignedCuts = [&](long double pitchSquared) {
+        if (pitchSquared >= 0 && pitchSquared <= 1) {
+            const real_t pitch = static_cast<real_t>(std::sqrt(pitchSquared));
+            cuts.push_back(-pitch);
+            cuts.push_back(pitch);
         }
     };
-    for (real_t v : secondaryFaces) {
-        ValidatePitch(v);
-        const long double V=v, v2=V*V;
-        for (long double beta : {0.L, (long double)betaMax}) {
-            if (v2<beta) continue;
-            const long double t=std::copysign(std::sqrt((v2-beta)/(1-beta)), V);
-            const long double d=s*std::sqrt(std::max(0.L,(1-t)*(1+t)));
-            for (long double eta : {c*t-d,c*t+d})
-                addSquared(beta+(1-beta)*eta*eta);
+
+    for (real_t secondaryFace : secondaryFaces) {
+        ValidatePitch(secondaryFace);
+        const long double face = secondaryFace;
+        const long double faceSquared = face * face;
+
+        // A contact enters or leaves the poloidal domain at a field extremum.
+        for (long double beta : {0.L, static_cast<long double>(betaMax)}) {
+            if (faceSquared < beta)
+                continue;
+
+            const long double localFace = std::copysign(
+                std::sqrt((faceSquared - beta) / (1 - beta)), face
+            );
+            const long double halfWidth = sine * std::sqrt(
+                std::max(0.L, (1 - localFace) * (1 + localFace))
+            );
+            for (long double localPitch : {
+                cosine * localFace - halfWidth, cosine * localFace + halfWidth
+            }) {
+                addSignedCuts(beta + (1 - beta) * localPitch * localPitch);
+            }
         }
-        if (v2<=betaMax) {
-            addSquared(s2+c*c*v2); // contact reaches the secondary-face bounce
-            addSquared(v2);       // primary and secondary bounces coincide
+
+        if (faceSquared <= betaMax) {
+            // Contact at the face bounce, then coincident bounces.
+            addSignedCuts(sinSquared + cosine * cosine * faceSquared);
+            addSignedCuts(faceSquared);
         }
-        const long double numerator=v2-s2;
-        if (c>0 && numerator>=0 && numerator<=c*c*betaMax)
-            addSquared(numerator/(c*c)); // contact reaches the primary bounce
+        const long double numerator = faceSquared - sinSquared;
+        if (cosine > 0 && numerator >= 0 && numerator <= cosine * cosine * betaMax) {
+            // The contact reaches the primary bounce.
+            addSignedCuts(numerator / (cosine * cosine));
+        }
     }
-    return SplitPoints(cell,std::move(cuts));
+
+    return SplitPoints(cell, std::move(cuts));
 }
 
-Q::GaussLegendreRule::GaussLegendreRule(len_t order) {
-    if (order<1)
+/**
+ * Construct a Gauss rule on [0,1] and its sin^2-mapped counterpart.
+ */
+GaussLegendreRule::GaussLegendreRule(len_t order) {
+    if (order < 1)
         throw DREAMException("KnockOnQuadrature: Gauss order must be at least 1.");
+
     std::unique_ptr<gsl_integration_glfixed_table, decltype(&gsl_integration_glfixed_table_free)>
         table(gsl_integration_glfixed_table_alloc(order), &gsl_integration_glfixed_table_free);
     if (!table)
         throw DREAMException("KnockOnQuadrature: cannot allocate Gauss rule.");
-    nodes.resize(order); weights.resize(order);
-    mappedNodes.resize(order); mappedWeights.resize(order);
-    real_t sum=0;
-    for (len_t i=0; i<order; ++i) {
-        if (gsl_integration_glfixed_point(0,1,i,&nodes[i],&weights[i],table.get()) != GSL_SUCCESS)
+
+    nodes.resize(order);
+    weights.resize(order);
+    mappedNodes.resize(order);
+    mappedWeights.resize(order);
+    real_t weightSum = 0;
+    for (len_t i = 0; i < order; ++i) {
+        if (gsl_integration_glfixed_point(0, 1, i, &nodes[i], &weights[i], table.get()) != GSL_SUCCESS)
             throw DREAMException("KnockOnQuadrature: cannot construct Gauss rule.");
-        const real_t t=std::min(nodes[i],1-nodes[i]);
-        const real_t y=std::pow(std::sin(M_PI*t/2),2);
-        mappedNodes[i]=nodes[i]<0.5 ? y : 1-y;
-        mappedWeights[i]=weights[i]*(M_PI/2)*std::sin(M_PI*nodes[i]);
-        sum+=mappedWeights[i];
+
+        // Map from the nearer endpoint to retain accuracy near both ends.
+        const real_t distance = std::min(nodes[i], 1 - nodes[i]);
+        const real_t mappedDistance = std::pow(std::sin(M_PI * distance / 2), 2);
+        mappedNodes[i] = nodes[i] < 0.5 ? mappedDistance : 1 - mappedDistance;
+        mappedWeights[i] = weights[i] * (M_PI / 2) * std::sin(M_PI * nodes[i]);
+        weightSum += mappedWeights[i];
     }
-    for (real_t& w : mappedWeights) w/=sum;
-    if (order%2) mappedNodes[order/2]=0.5;
+
+    // Preserve constants on each panel and make the midpoint exact.
+    for (real_t &weight : mappedWeights) {
+        weight /= weightSum;
+    }
+    if (order % 2)
+        mappedNodes[order / 2] = 0.5;
 }
 
-std::vector<Q::WeightedPoint> Q::GaussLegendreRule::MappedPoints(Interval panel) const {
+std::vector<WeightedPoint> GaussLegendreRule::MappedPoints(Interval panel) const {
     ValidateInterval(panel);
-    std::vector<WeightedPoint> out;
-    const real_t first=std::nextafter(panel.lower,panel.upper);
-    const real_t last=std::nextafter(panel.upper,panel.lower);
-    if (panel.lower==panel.upper || first>=panel.upper) return out;
-    out.reserve(GetOrder());
-    const real_t width=panel.upper-panel.lower;
-    for (len_t i=0; i<GetOrder(); ++i) {
-        const real_t y=mappedNodes[i];
-        const real_t x=y<=0.5 ? panel.lower+width*y : panel.upper-width*(1-y);
-        out.push_back({std::max(first,std::min(last,x)), width*mappedWeights[i]});
+    std::vector<WeightedPoint> points;
+
+    // Keep rounded nodes inside the panel, away from singular endpoints.
+    const real_t firstInterior = std::nextafter(panel.lower, panel.upper);
+    const real_t lastInterior = std::nextafter(panel.upper, panel.lower);
+    if (panel.lower == panel.upper || firstInterior >= panel.upper)
+        return points;
+
+    points.reserve(GetOrder());
+    const real_t width = panel.upper - panel.lower;
+    for (len_t i = 0; i < GetOrder(); ++i) {
+        const real_t node = mappedNodes[i];
+        const real_t x = node <= 0.5 ? panel.lower + width * node
+            : panel.upper - width * (1 - node);
+        points.push_back({std::max(firstInterior, std::min(lastInterior, x)),
+            width * mappedWeights[i]});
     }
-    return out;
+    return points;
 }
 
-struct Q::OrbitGeometry::Implementation {
-    struct Branch { std::vector<real_t> theta, B; };
-    std::function<real_t(real_t)> evaluateB;
-    std::array<Branch,2> branches;
-    FieldExtrema extrema;
-    bool constant=false;
-    real_t betaMax=0;
-    std::unique_ptr<gsl_root_fsolver, decltype(&gsl_root_fsolver_free)>
-        solver{nullptr,&gsl_root_fsolver_free};
+// Each branch is stored in increasing B, from the field minimum outwards.
+struct OrbitGeometry::Implementation {
+    struct Branch {
+        std::vector<real_t> theta;
+        std::vector<real_t> B;
+    };
 
-    real_t Field(real_t theta) const {
-        const real_t B=evaluateB(theta);
-        if (!std::isfinite(B) || B<0)
+    std::function<real_t(real_t)> evaluateB;
+    std::array<Branch, 2> branches;
+    FieldExtrema extrema;
+    bool constant = false;
+    real_t betaMax = 0;
+    std::unique_ptr<gsl_root_fsolver, decltype(&gsl_root_fsolver_free)>
+        solver{nullptr, &gsl_root_fsolver_free};
+
+    real_t EvaluateField(real_t theta) const {
+        const real_t B = evaluateB(theta);
+        if (!std::isfinite(B) || B < 0)
             throw DREAMException("KnockOnQuadrature: invalid magnetic field evaluation.");
         return B;
     }
-    struct RootParameters { Implementation *geometry; real_t target; };
-    static double RootFunction(double theta, void *p) {
-        const auto& params=*static_cast<RootParameters*>(p);
-        return params.geometry->Field(theta)-params.target;
+
+    struct RootParameters {
+        Implementation *geometry;
+        real_t targetField;
+    };
+
+    static double RootFunction(double theta, void *parameters) {
+        const auto &params = *static_cast<RootParameters *>(parameters);
+        return params.geometry->EvaluateField(theta) - params.targetField;
     }
-    real_t Root(Branch& branch, real_t target) {
+
+    real_t InvertBranch(const Branch &branch, real_t targetField) {
         // Levels closer to an extremum than the field evaluation can resolve
         // have that extremum as their only representable field bracket.
-        if (target<=branch.B.front()) return branch.theta.front();
-        if (target>=branch.B.back()) return branch.theta.back();
-        const auto pos=std::lower_bound(branch.B.begin(),branch.B.end(),target);
-        const std::size_t i=std::max<std::size_t>(1,pos-branch.B.begin());
-        real_t a=branch.theta[i-1], b=branch.theta[i];
-        if (a>b) std::swap(a,b);
-        const real_t fa=Field(a)-target, fb=Field(b)-target;
-        if (fa==0) return a;
-        if (fb==0) return b;
-        if ((fa<0)==(fb<0))
+        if (targetField <= branch.B.front())
+            return branch.theta.front();
+        if (targetField >= branch.B.back())
+            return branch.theta.back();
+
+        // Use the samples to locate a bracket, then invert the actual field.
+        const auto sample = std::lower_bound(branch.B.begin(), branch.B.end(), targetField);
+        const std::size_t i = std::max<std::size_t>(1, sample - branch.B.begin());
+        real_t thetaLower = branch.theta[i - 1];
+        real_t thetaUpper = branch.theta[i];
+        if (thetaLower > thetaUpper)
+            std::swap(thetaLower, thetaUpper);
+
+        const real_t fLower = EvaluateField(thetaLower) - targetField;
+        const real_t fUpper = EvaluateField(thetaUpper) - targetField;
+        if (fLower == 0)
+            return thetaLower;
+        if (fUpper == 0)
+            return thetaUpper;
+        if ((fLower < 0) == (fUpper < 0))
             throw DREAMException("KnockOnQuadrature: field level is not bracketed.");
-        RootParameters params{this,target};
+
+        RootParameters params{this, targetField};
         gsl_function function;
-        function.function=&RootFunction; function.params=&params;
-        if (gsl_root_fsolver_set(solver.get(),&function,a,b) != GSL_SUCCESS)
+        function.function = &RootFunction;
+        function.params = &params;
+        if (gsl_root_fsolver_set(solver.get(), &function, thetaLower, thetaUpper) != GSL_SUCCESS)
             throw DREAMException("KnockOnQuadrature: cannot initialize field inversion.");
-        for (len_t iteration=0; iteration<100; ++iteration) {
+
+        for (len_t iteration = 0; iteration < 100; ++iteration) {
             if (gsl_root_fsolver_iterate(solver.get()) != GSL_SUCCESS)
                 throw DREAMException("KnockOnQuadrature: field inversion failed.");
-            a=gsl_root_fsolver_x_lower(solver.get());
-            b=gsl_root_fsolver_x_upper(solver.get());
-            if (gsl_root_test_interval(a,b,1e-11,1e-11)==GSL_SUCCESS)
+            thetaLower = gsl_root_fsolver_x_lower(solver.get());
+            thetaUpper = gsl_root_fsolver_x_upper(solver.get());
+            if (gsl_root_test_interval(thetaLower, thetaUpper, 1e-11, 1e-11) == GSL_SUCCESS)
                 return gsl_root_fsolver_root(solver.get());
         }
         throw DREAMException("KnockOnQuadrature: field inversion did not converge.");
     }
 };
 
-Q::OrbitGeometry::OrbitGeometry(
+OrbitGeometry::OrbitGeometry(
     FieldExtrema extrema, std::function<real_t(real_t)> evaluateB,
-    const std::vector<real_t>& thetaSamples
+    const std::vector<real_t> &thetaSamples
 ) : impl(new Implementation()) {
     if (!evaluateB)
         throw DREAMException("KnockOnQuadrature: magnetic field callback is empty.");
-    impl->evaluateB=std::move(evaluateB);
+    impl->evaluateB = std::move(evaluateB);
     impl->solver.reset(gsl_root_fsolver_alloc(gsl_root_fsolver_brent));
     if (!impl->solver)
         throw DREAMException("KnockOnQuadrature: cannot allocate field root solver.");
-    Reset(extrema,thetaSamples);
+    Reset(extrema, thetaSamples);
 }
 
 namespace {
-Q::FieldExtrema GetExtrema(FVM::FluxSurfaceAverager *fsa, len_t ir) {
-    if (!fsa) throw DREAMException("KnockOnQuadrature: null flux surface averager.");
-    Q::FieldExtrema extrema;
-    extrema.Bmin=fsa->GetBmin(ir,FVM::FLUXGRIDTYPE_DISTRIBUTION,&extrema.thetaMin);
-    extrema.Bmax=fsa->GetBmax(ir,FVM::FLUXGRIDTYPE_DISTRIBUTION,&extrema.thetaMax);
+
+FieldExtrema GetExtrema(FVM::FluxSurfaceAverager *fsa, len_t ir) {
+    if (!fsa)
+        throw DREAMException("KnockOnQuadrature: null flux surface averager.");
+
+    FieldExtrema extrema;
+    extrema.Bmin = fsa->GetBmin(ir, FVM::FLUXGRIDTYPE_DISTRIBUTION, &extrema.thetaMin);
+    extrema.Bmax = fsa->GetBmax(ir, FVM::FLUXGRIDTYPE_DISTRIBUTION, &extrema.thetaMax);
     return extrema;
 }
+
 std::vector<real_t> GetThetaSamples(FVM::FluxSurfaceAverager *fsa) {
-    if (!fsa) throw DREAMException("KnockOnQuadrature: null flux surface averager.");
-    const len_t n=fsa->GetNTheta();
-    if (n==0) return {};
+    if (!fsa)
+        throw DREAMException("KnockOnQuadrature: null flux surface averager.");
+    const len_t nTheta = fsa->GetNTheta();
+    if (nTheta == 0)
+        return {};
     if (!fsa->GetTheta())
         throw DREAMException("KnockOnQuadrature: missing bracket sampling angles.");
-    return {fsa->GetTheta(),fsa->GetTheta()+n};
+    return {fsa->GetTheta(), fsa->GetTheta() + nTheta};
 }
-}
 
-Q::OrbitGeometry::OrbitGeometry(FVM::FluxSurfaceAverager *fsa, len_t ir)
-    : OrbitGeometry(GetExtrema(fsa,ir),[fsa,ir](real_t theta) {
-        return fsa->BAtTheta(ir,theta,FVM::FLUXGRIDTYPE_DISTRIBUTION);
-    },GetThetaSamples(fsa)) {}
+}  // namespace
 
-Q::OrbitGeometry::~OrbitGeometry() = default;
+OrbitGeometry::OrbitGeometry(FVM::FluxSurfaceAverager *fsa, len_t ir)
+    : OrbitGeometry(
+        GetExtrema(fsa, ir),
+        [fsa, ir](real_t theta) {
+            return fsa->BAtTheta(ir, theta, FVM::FLUXGRIDTYPE_DISTRIBUTION);
+        },
+        GetThetaSamples(fsa)
+    ) {}
 
-void Q::OrbitGeometry::Reset(FieldExtrema extrema, const std::vector<real_t>& thetaSamples) {
+OrbitGeometry::~OrbitGeometry() = default;
+
+/**
+ * Prepare the field brackets for the two branches of the current surface.
+ */
+void OrbitGeometry::Reset(FieldExtrema extrema, const std::vector<real_t> &thetaSamples) {
     if (!std::isfinite(extrema.Bmin) || !std::isfinite(extrema.Bmax)
         || !std::isfinite(extrema.thetaMin) || !std::isfinite(extrema.thetaMax)
-        || extrema.Bmin<0 || extrema.Bmax<extrema.Bmin)
+        || extrema.Bmin < 0 || extrema.Bmax < extrema.Bmin) {
         throw DREAMException("KnockOnQuadrature: invalid field extrema.");
-    const real_t tolerance=100*std::numeric_limits<real_t>::epsilon()*(1+extrema.Bmax);
-    const bool constant=extrema.Bmax-extrema.Bmin<=tolerance;
-    if (!constant && extrema.Bmin==0)
+    }
+
+    const real_t tolerance = 100 * std::numeric_limits<real_t>::epsilon() * (1 + extrema.Bmax);
+    const bool constant = extrema.Bmax - extrema.Bmin <= tolerance;
+    if (!constant && extrema.Bmin == 0)
         throw DREAMException("KnockOnQuadrature: varying field requires positive Bmin.");
-    const real_t period=2*M_PI;
-    real_t displacement=std::fmod(extrema.thetaMax-extrema.thetaMin,period);
-    if (displacement<0) displacement+=period;
-    extrema.thetaMin=extrema.thetaMax-displacement;
-    if (!constant && !(displacement>0 && displacement<period))
+
+    // Unwrap the field minimum into [thetaMax - 2*pi, thetaMax].
+    const real_t period = 2 * M_PI;
+    real_t displacement = std::fmod(extrema.thetaMax - extrema.thetaMin, period);
+    if (displacement < 0)
+        displacement += period;
+    extrema.thetaMin = extrema.thetaMax - displacement;
+    if (!constant && !(displacement > 0 && displacement < period))
         throw DREAMException("KnockOnQuadrature: distinct field extrema need distinct angles.");
-    const real_t betaMax=constant ? 0 : (extrema.Bmax-extrema.Bmin)/extrema.Bmax;
+
+    const real_t betaMax = constant ? 0 : (extrema.Bmax - extrema.Bmin) / extrema.Bmax;
     ValidateBetaMax(betaMax);
-    std::array<Implementation::Branch,2> branches;
+
+    std::array<Implementation::Branch, 2> branches;
     if (constant) {
-        impl->extrema=extrema;
-        impl->constant=true;
-        impl->betaMax=0;
-        impl->branches=std::move(branches);
+        impl->extrema = extrema;
+        impl->constant = true;
+        impl->betaMax = 0;
+        impl->branches = std::move(branches);
         return;
     }
 
-    const real_t left=extrema.thetaMax-period, middle=extrema.thetaMin, right=extrema.thetaMax;
-    // Sampling only supplies brackets. A small internal seed covers both
-    // branches even when FSA stores quadrature nodes on only half the surface.
-    std::vector<real_t> samples=thetaSamples;
-    for (len_t i=0; i<=32; ++i) {
-        samples.push_back(left+(middle-left)*i/32);
-        samples.push_back(middle+(right-middle)*i/32);
+    const real_t thetaLeft = extrema.thetaMax - period;
+    const real_t thetaMin = extrema.thetaMin;
+    const real_t thetaRight = extrema.thetaMax;
+
+    // Seed brackets on both branches even when the supplied quadrature
+    // nodes cover only half the surface.
+    std::vector<real_t> samples = thetaSamples;
+    const len_t nBracketIntervals = 32;
+    for (len_t i = 0; i <= nBracketIntervals; ++i) {
+        samples.push_back(thetaLeft + (thetaMin - thetaLeft) * i / nBracketIntervals);
+        samples.push_back(thetaMin + (thetaRight - thetaMin) * i / nBracketIntervals);
     }
-    std::array<std::vector<real_t>,2> angles;
+
+    std::array<std::vector<real_t>, 2> branchAngles;
     for (real_t theta : samples) {
         if (!std::isfinite(theta))
             throw DREAMException("KnockOnQuadrature: non-finite bracket sample.");
-        real_t x=std::fmod(theta-left,period);
-        if (x<0) x+=period;
-        x+=left;
-        if (x>left && x<middle) angles[0].push_back(x);
-        else if (x>middle && x<right) angles[1].push_back(x);
-    }
-    for (len_t side=0; side<2; ++side) {
-        angles[side].push_back(middle);
-        angles[side].push_back(side==0 ? left : right);
-        SortUnique(angles[side]);
-        if (side==0) std::reverse(angles[side].begin(),angles[side].end());
-        auto& branch=branches[side];
-        for (real_t theta : angles[side]) {
-            const real_t B=impl->Field(theta);
-            if (B<extrema.Bmin-tolerance || B>extrema.Bmax+tolerance)
-                throw DREAMException("KnockOnQuadrature: field disagrees with its extrema.");
-            if (!branch.B.empty()) {
-                if (B<branch.B.back()-tolerance)
-                    throw DREAMException("KnockOnQuadrature: expected a monotone magnetic branch.");
-                // Tiny decreases from roundoff must not enter lower_bound.
-                if (B<=branch.B.back()) continue;
-            }
-            branch.theta.push_back(theta); branch.B.push_back(B);
+
+        real_t unwrapped = std::fmod(theta - thetaLeft, period);
+        if (unwrapped < 0)
+            unwrapped += period;
+        unwrapped += thetaLeft;
+
+        if (unwrapped > thetaLeft && unwrapped < thetaMin) {
+            branchAngles[0].push_back(unwrapped);
+        } else if (unwrapped > thetaMin && unwrapped < thetaRight) {
+            branchAngles[1].push_back(unwrapped);
         }
-        if (branch.B.size()<2)
+    }
+
+    for (len_t side = 0; side < 2; ++side) {
+        auto &angles = branchAngles[side];
+        angles.push_back(thetaMin);
+        angles.push_back(side == 0 ? thetaLeft : thetaRight);
+        SortUnique(angles);
+        if (side == 0)
+            std::reverse(angles.begin(), angles.end());
+
+        auto &branch = branches[side];
+        for (real_t theta : angles) {
+            const real_t B = impl->EvaluateField(theta);
+            if (B < extrema.Bmin - tolerance || B > extrema.Bmax + tolerance)
+                throw DREAMException("KnockOnQuadrature: field disagrees with its extrema.");
+
+            if (!branch.B.empty()) {
+                if (B < branch.B.back() - tolerance)
+                    throw DREAMException("KnockOnQuadrature: expected a monotone magnetic branch.");
+                // Skip roundoff plateaus so the field bracket stays ordered.
+                if (B <= branch.B.back())
+                    continue;
+            }
+            branch.theta.push_back(theta);
+            branch.B.push_back(B);
+        }
+        if (branch.B.size() < 2)
             throw DREAMException("KnockOnQuadrature: degenerate magnetic branch.");
     }
-    // Commit only fully prepared brackets, leaving the previous context usable
-    // if validation or field evaluation failed during Reset().
-    impl->extrema=extrema;
-    impl->constant=false;
-    impl->betaMax=betaMax;
-    impl->branches=std::move(branches);
+
+    // Publish the brackets only after both branches have been validated.
+    impl->extrema = extrema;
+    impl->constant = false;
+    impl->betaMax = betaMax;
+    impl->branches = std::move(branches);
 }
 
-bool Q::OrbitGeometry::IsConstantField() const { return impl->constant; }
-real_t Q::OrbitGeometry::GetBetaMax() const { return impl->betaMax; }
-Q::Interval Q::OrbitGeometry::GetAngularDomain() const {
-    return {impl->extrema.thetaMax-2*M_PI,impl->extrema.thetaMax};
+bool OrbitGeometry::IsConstantField() const { return impl->constant; }
+real_t OrbitGeometry::GetBetaMax() const { return impl->betaMax; }
+Interval OrbitGeometry::GetAngularDomain() const {
+    return {impl->extrema.thetaMax - 2 * M_PI, impl->extrema.thetaMax};
 }
 
-Q::Interval Q::OrbitGeometry::InvertBeta(real_t beta) {
-    if (!std::isfinite(beta) || beta<0 || beta>impl->betaMax)
+Interval OrbitGeometry::InvertBeta(real_t beta) {
+    if (!std::isfinite(beta) || beta < 0 || beta > impl->betaMax)
         throw DREAMException("KnockOnQuadrature: field level is outside this surface.");
-    if (impl->constant) return GetAngularDomain();
-    const real_t minimum=impl->extrema.thetaMin;
-    if (beta==0) return {minimum,minimum};
-    if (beta==impl->betaMax) return GetAngularDomain();
-    const real_t target=impl->extrema.Bmin/(1-beta);
-    return {impl->Root(impl->branches[0],target),impl->Root(impl->branches[1],target)};
+    if (impl->constant)
+        return GetAngularDomain();
+
+    const real_t thetaMin = impl->extrema.thetaMin;
+    if (beta == 0)
+        return {thetaMin, thetaMin};
+    if (beta == impl->betaMax)
+        return GetAngularDomain();
+
+    const real_t targetField = impl->extrema.Bmin / (1 - beta);
+    return {
+        impl->InvertBranch(impl->branches[0], targetField),
+        impl->InvertBranch(impl->branches[1], targetField)
+    };
 }
 
-std::vector<Q::FieldLevel> Q::OrbitGeometry::InvertLevels(std::vector<real_t> levels) {
-    for (real_t beta : levels)
-        if (!std::isfinite(beta) || beta<0 || beta>impl->betaMax)
+std::vector<FieldLevel> OrbitGeometry::InvertLevels(std::vector<real_t> levels) {
+    for (real_t beta : levels) {
+        if (!std::isfinite(beta) || beta < 0 || beta > impl->betaMax)
             throw DREAMException("KnockOnQuadrature: field level is outside this surface.");
-    SortUnique(levels);
-    std::vector<FieldLevel> out;
-    out.reserve(levels.size());
-    for (real_t beta : levels) out.push_back({beta,InvertBeta(beta)});
-    return out;
-}
-
-Q::Interval Q::OrbitGeometry::GetOrbitBounds(real_t u) {
-    ValidatePitch(u);
-    if (impl->constant || u*u>=impl->betaMax) return GetAngularDomain();
-    return InvertBeta(u*u);
-}
-
-Q::Interval Q::OrbitGeometry::GetReachableBounds(real_t u, real_t lowerFace, real_t upperFace) {
-    ValidatePitch(u); ValidatePitch(lowerFace); ValidatePitch(upperFace);
-    if (lowerFace>upperFace)
-        throw DREAMException("KnockOnQuadrature: secondary cell faces are reversed.");
-    const real_t reach=std::min(u*u,std::max(lowerFace*lowerFace,upperFace*upperFace));
-    if (impl->constant || reach>=impl->betaMax) return GetAngularDomain();
-    return InvertBeta(reach);
-}
-
-std::vector<std::vector<real_t>> Q::PoloidalSplitPoints(
-    OrbitGeometry& geometry, real_t u, real_t xiStar,
-    const std::vector<Interval>& cells
-) {
-    ValidatePitch(u); ValidatePitch(xiStar);
-    const real_t betaMax=geometry.GetBetaMax(), u2=u*u;
-    const bool constant=geometry.IsConstantField();
-    if (!constant && (u2==betaMax || std::abs(u)==std::sqrt(betaMax)))
-        throw DREAMException("KnockOnQuadrature: pointwise primary pitch is on the separatrix.");
-
-    // Keep each row's contacts separate: applying every column contact to
-    // every row would needlessly increase the number of integrand samples.
-    std::vector<std::vector<real_t>> contacts(cells.size());
-    const real_t orbitLevel=std::min(u2,betaMax);
-    std::vector<real_t> reach(cells.size()), levels{0, betaMax, orbitLevel};
-    for (len_t j=0; j<cells.size(); ++j) {
-        ValidatePitch(cells[j].lower); ValidatePitch(cells[j].upper);
-        ValidateInterval(cells[j]);
-        reach[j]=std::min({u2, betaMax,
-            std::max(cells[j].lower*cells[j].lower,cells[j].upper*cells[j].upper)});
-        levels.push_back(reach[j]);
-        for (real_t face : {cells[j].lower,cells[j].upper}) {
-            const auto candidates=ContactFieldLevels(u,face,xiStar,betaMax);
-            for (real_t beta : candidates)
-                if (beta<reach[j]) contacts[j].push_back(beta);
-        }
-        levels.insert(levels.end(),contacts[j].begin(),contacts[j].end());
     }
 
-    // At a smooth field maximum, betaMax-beta ~ curvature*distance^2/2.
-    // Invert a field drop |u^2-betaMax| to determine the layer width on
-    // each branch directly. This also works for asymmetric/flat maxima.
-    const real_t gap=std::abs(u2-betaMax);
-    const bool nearSeparatrix=!constant && gap>0 && gap<0.1*betaMax;
-    const real_t layerLevel=nearSeparatrix ? betaMax-gap : 0;
-    if (nearSeparatrix) levels.push_back(layerLevel);
-    const auto roots=geometry.InvertLevels(std::move(levels));
-    auto at=[&](real_t beta) {
-        return std::lower_bound(roots.begin(),roots.end(),beta,
-            [](const FieldLevel& level, real_t value) { return level.beta<value; })->roots;
+    SortUnique(levels);
+    std::vector<FieldLevel> roots;
+    roots.reserve(levels.size());
+    for (real_t beta : levels) {
+        roots.push_back({beta, InvertBeta(beta)});
+    }
+    return roots;
+}
+
+Interval OrbitGeometry::GetOrbitBounds(real_t primaryPitch) {
+    ValidatePitch(primaryPitch);
+    if (impl->constant || primaryPitch * primaryPitch >= impl->betaMax)
+        return GetAngularDomain();
+    return InvertBeta(primaryPitch * primaryPitch);
+}
+
+Interval OrbitGeometry::GetReachableBounds(real_t primaryPitch, real_t lowerFace, real_t upperFace) {
+    ValidatePitch(primaryPitch);
+    ValidatePitch(lowerFace);
+    ValidatePitch(upperFace);
+    if (lowerFace > upperFace)
+        throw DREAMException("KnockOnQuadrature: secondary cell faces are reversed.");
+
+    const real_t reachableLevel = std::min(
+        primaryPitch * primaryPitch, std::max(lowerFace * lowerFace, upperFace * upperFace)
+    );
+    if (impl->constant || reachableLevel >= impl->betaMax)
+        return GetAngularDomain();
+    return InvertBeta(reachableLevel);
+}
+
+/**
+ * Build the poloidal panels for each outgoing cell at a given primary pitch.
+ */
+std::vector<std::vector<real_t>> PoloidalSplitPoints(
+    OrbitGeometry &geometry, real_t primaryPitch, real_t xiStar,
+    const std::vector<Interval> &cells
+) {
+    ValidatePitch(primaryPitch);
+    ValidatePitch(xiStar);
+    const real_t betaMax = geometry.GetBetaMax();
+    const real_t primarySquared = primaryPitch * primaryPitch;
+    const bool constant = geometry.IsConstantField();
+    if (!constant && (primarySquared == betaMax || std::abs(primaryPitch) == std::sqrt(betaMax))) {
+        throw DREAMException("KnockOnQuadrature: pointwise primary pitch is on the separatrix.");
+    }
+
+    // Collect contact and reachability levels per cell. Share the field
+    // inversions across cells while keeping their integration cuts separate.
+    std::vector<std::vector<real_t>> contacts(cells.size());
+    const real_t orbitLevel = std::min(primarySquared, betaMax);
+    std::vector<real_t> reachableLevels(cells.size());
+    std::vector<real_t> fieldLevels{0, betaMax, orbitLevel};
+    for (len_t j = 0; j < cells.size(); ++j) {
+        const Interval &cell = cells[j];
+        ValidatePitch(cell.lower);
+        ValidatePitch(cell.upper);
+        ValidateInterval(cell);
+
+        reachableLevels[j] = std::min({
+            primarySquared, betaMax,
+            std::max(cell.lower * cell.lower, cell.upper * cell.upper)
+        });
+        fieldLevels.push_back(reachableLevels[j]);
+        for (real_t face : {cell.lower, cell.upper}) {
+            const auto candidates = ContactFieldLevels(primaryPitch, face, xiStar, betaMax);
+            for (real_t beta : candidates) {
+                if (beta < reachableLevels[j])
+                    contacts[j].push_back(beta);
+            }
+        }
+        fieldLevels.insert(fieldLevels.end(), contacts[j].begin(), contacts[j].end());
+    }
+
+    // Invert a field-level drop |primaryPitch^2 - betaMax| to resolve the
+    // separatrix layer using the actual field on each branch.
+    const real_t gap = std::abs(primarySquared - betaMax);
+    const bool nearSeparatrix = !constant && gap > 0 && gap < 0.1 * betaMax;
+    const real_t layerLevel = nearSeparatrix ? betaMax - gap : 0;
+    if (nearSeparatrix)
+        fieldLevels.push_back(layerLevel);
+
+    const auto roots = geometry.InvertLevels(std::move(fieldLevels));
+    const auto rootsAt = [&](real_t beta) {
+        // Each requested level was included in the batch above.
+        const auto root = std::lower_bound(
+            roots.begin(), roots.end(), beta,
+            [](const FieldLevel &level, real_t value) { return level.beta < value; }
+        );
+        return root->roots;
     };
-    const auto domain=geometry.GetAngularDomain();
-    const real_t minimum=constant ? (domain.lower+domain.upper)/2 : at(0).lower;
-    std::vector<real_t> sharedCuts{minimum};
+
+    // The field minimum and graded separatrix cuts are shared by all cells.
+    const auto domain = geometry.GetAngularDomain();
+    const real_t thetaMin = constant ? (domain.lower + domain.upper) / 2 : rootsAt(0).lower;
+    std::vector<real_t> sharedCuts{thetaMin};
     if (nearSeparatrix) {
-        const auto layer=at(layerLevel);
-        for (bool left : {true,false}) {
-            const real_t endpoint=left ? domain.lower : domain.upper;
-            const real_t width=left ? layer.lower-endpoint : endpoint-layer.upper;
-            const real_t branch=std::abs(minimum-endpoint);
-            // A field level indistinguishable from Bmax has zero width.
-            // Do not loop forever or invent a finite layer in that case.
-            for (real_t d=width; d>0 && d<branch; d*=4)
-                sharedCuts.push_back(left ? endpoint+d : endpoint-d);
+        const auto layer = rootsAt(layerLevel);
+        for (bool leftBranch : {true, false}) {
+            const real_t endpoint = leftBranch ? domain.lower : domain.upper;
+            const real_t width = leftBranch ? layer.lower - endpoint : endpoint - layer.upper;
+            const real_t branchWidth = std::abs(thetaMin - endpoint);
+            // A level indistinguishable from Bmax gives zero width.
+            for (real_t distance = width; distance > 0 && distance < branchWidth; distance *= 4) {
+                sharedCuts.push_back(leftBranch ? endpoint + distance : endpoint - distance);
+            }
         }
     }
 
     std::vector<std::vector<real_t>> panels;
     panels.reserve(cells.size());
-    for (len_t j=0; j<cells.size(); ++j) {
-        auto cuts=sharedCuts;
+    for (len_t j = 0; j < cells.size(); ++j) {
+        auto cuts = sharedCuts;
         for (real_t beta : contacts[j]) {
-            const auto contact=at(beta);
-            cuts.push_back(contact.lower); cuts.push_back(contact.upper);
+            const auto contact = rootsAt(beta);
+            cuts.push_back(contact.lower);
+            cuts.push_back(contact.upper);
         }
+
         // A contact close to a primary bounce puts the inverse-square-root
-        // layer just OUTSIDE the adjacent panel. Its own endpoint map cannot
-        // remove that nearby singularity. Grade distances from the physical
-        // bounce by factors of four before applying the panel map. Only the
-        // affected row is refined; all added angles reuse the existing roots.
-        if (!constant && u2<betaMax) {
-            const auto orbit=at(orbitLevel), bounds=at(reach[j]);
-            cuts.push_back(bounds.lower); cuts.push_back(bounds.upper);
-            const auto originalCuts=cuts;
-            for (bool left : {true,false}) {
-                const real_t endpoint=left ? orbit.lower : orbit.upper;
-                const real_t branch=std::abs(minimum-endpoint);
-                real_t distance=branch;
+        // layer outside the adjacent panel. Grade distances from the bounce
+        // so that the mapped rule resolves this nearby layer.
+        if (!constant && primarySquared < betaMax) {
+            const auto orbit = rootsAt(orbitLevel);
+            const auto reachable = rootsAt(reachableLevels[j]);
+            cuts.push_back(reachable.lower);
+            cuts.push_back(reachable.upper);
+
+            // Measure both branches from the same set of original cuts.
+            const auto originalCuts = cuts;
+            for (bool leftBranch : {true, false}) {
+                const real_t bounce = leftBranch ? orbit.lower : orbit.upper;
+                const real_t branchWidth = std::abs(thetaMin - bounce);
+                real_t nearestCut = branchWidth;
                 for (real_t cut : originalCuts) {
-                    const real_t d=left ? cut-endpoint : endpoint-cut;
-                    if (d>0) distance=std::min(distance,d);
+                    const real_t distance = leftBranch ? cut - bounce : bounce - cut;
+                    if (distance > 0)
+                        nearestCut = std::min(nearestCut, distance);
                 }
-                if (distance<0.1*branch)
-                    for (real_t d=4*distance; d>0 && d<branch; d*=4)
-                        cuts.push_back(left ? endpoint+d : endpoint-d);
+                if (nearestCut < 0.1 * branchWidth) {
+                    for (real_t distance = 4 * nearestCut; distance > 0 && distance < branchWidth;
+                        distance *= 4) {
+                        cuts.push_back(leftBranch ? bounce + distance : bounce - distance);
+                    }
+                }
             }
         }
-        panels.push_back(SplitPoints(at(reach[j]),std::move(cuts)));
+
+        panels.push_back(SplitPoints(rootsAt(reachableLevels[j]), std::move(cuts)));
     }
     return panels;
 }
+
+}  // namespace DREAM::KnockOnUtilities::Quadrature

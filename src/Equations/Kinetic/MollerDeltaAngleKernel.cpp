@@ -196,26 +196,32 @@ void MollerDeltaAngleKernel::AllocateDeltaTables() {
     }
 }
 
-// The real kinematic delta depends on p_i, p1_k only indirectly via xi_star(p, p1),
-// therefore we here tabulate on a grid of xi_star values.
+/**
+ * Tabulate the pitch redistribution as a function of the scattering cosine
+ * xi_star(p, p1), which carries the momentum dependence of the angular kernel.
+ * Each column integrates one primary pitch cell and is normalized over the
+ * outgoing pitch grid. Reuse the rules across the table and the field
+ * brackets across all columns on each flux surface.
+ */
 void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
     if (!hasActivePairs)
         return;
+
     const len_t Nr = gridK->GetNr();
-    const KnockOnUtilities::Quadrature::GaussLegendreRule rule(poloidalOrder), pitchRule(pitchOrder);
+    const KnockOnUtilities::Quadrature::GaussLegendreRule poloidalRule(poloidalOrder);
+    const KnockOnUtilities::Quadrature::GaussLegendreRule pitchRule(pitchOrder);
     for (len_t ir = 0; ir < Nr; ++ir) {
-        KnockOnUtilities::Quadrature::OrbitGeometry geometry(
-            gridP->GetRadialGrid()->GetFluxSurfaceAverager(),ir
-        );
+        auto *fsa = gridP->GetRadialGrid()->GetFluxSurfaceAverager();
+        KnockOnUtilities::Quadrature::OrbitGeometry geometry(fsa, ir);
         const len_t NxiK = gridK->GetNp2(ir);
         const len_t NxiP = gridP->GetNp2(ir);
 
         for (len_t m = 0; m < nXiStarsTabulate; ++m) {
             real_t *slice = deltaTable[ir][m];
             for (len_t l = 0; l < NxiP; ++l) {
-                const len_t offset = l * NxiK;
+                real_t *column = slice + l * NxiK;
                 KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xiStarsTab[m], l, gridK, gridP, slice + offset, geometry, rule, pitchRule
+                    ir, xiStarsTab[m], l, gridK, gridP, column, geometry, poloidalRule, pitchRule
                 );
             }
         }

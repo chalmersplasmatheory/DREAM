@@ -11,44 +11,54 @@ namespace DREAM::FVM { class FluxSurfaceAverager; }
 
 namespace DREAM::KnockOnUtilities::Quadrature {
 
-struct Interval { real_t lower, upper; };
-struct WeightedPoint { real_t x, weight; };
+struct Interval {
+    real_t lower;
+    real_t upper;
+};
 
-// Include the endpoints, discard cuts outside the interval, and remove exact
-// duplicates. Nearby distinct contacts must remain distinct.
+struct WeightedPoint {
+    real_t x;
+    real_t weight;
+};
+
+// Keep both endpoints and all distinct interior cuts. Two nearby contacts
+// can bound a narrow panel with nonzero support.
 std::vector<real_t> SplitPoints(Interval interval, std::vector<real_t> cuts);
 
 /**
- * Candidate contact levels beta=1-Bmin/B for a fixed primary pitch u and
- * secondary face v. Extra roots from squaring only oversplit the integrals.
- * Includes face bounce and clipped-face events; endpoints are supplied by
- * the caller. Returned levels lie strictly in (0,min(u*u,betaMax)).
+ * Candidate contact levels beta = 1 - Bmin/B for a primary pitch u and an
+ * outgoing pitch face. Includes the face bounce and contacts with a face
+ * clipped to zero local pitch. The caller supplies the interval endpoints.
+ * Returned levels lie strictly in (0, min(u*u, betaMax)).
  */
 std::vector<real_t> ContactFieldLevels(
-    real_t u, real_t v, real_t xiStar, real_t betaMax
+    real_t primaryPitch, real_t secondaryFace, real_t xiStar, real_t betaMax
 );
 
 /**
- * Split a primary-pitch interval at contact/extremum, moving-bounce and
- * bounce-coincidence events, as well as -xiT, 0 and xiT. Supply all physical
- * and virtual secondary faces (including those introduced by trapped folding).
- * Both pitch signs are retained: superfluous cuts are harmless.
+ * Split a primary-pitch interval at changes in the poloidal panel boundaries.
+ * These include contacts at field extrema, contacts at bounces, coincident
+ * bounces, and the trapped-pitch boundaries -xiT, 0 and xiT. Supply the
+ * outgoing pitch faces, including any faces introduced by trapped folding.
  */
 std::vector<real_t> PrimaryPitchSplitPoints(
     Interval cell, real_t xiStar, real_t betaMax,
-    const std::vector<real_t>& secondaryFaces
+    const std::vector<real_t> &secondaryFaces
 );
 
 /**
- * A rule is constructed once and reused over many panels. Ordinary Gauss
- * nodes/weights are on [0,1]. MappedPoints uses x=sin^2(pi*t/2), with positive
- * weights normalized to preserve constants on each panel. N=1 is exactly
- * midpoint, including its weight. An interval with no representable interior
- * point returns no nodes; it cannot be sampled away from its singular ends.
+ * Store a Gauss rule on [0,1] and its endpoint-clustered counterpart.
+ * MappedPoints uses x = sin^2(pi*t/2) within each panel and rescales the
+ * weights to preserve constants. Order one gives the midpoint rule.
+ * A panel with no representable interior point yields no nodes.
  */
 class GaussLegendreRule {
-    std::vector<real_t> nodes, weights, mappedNodes, mappedWeights;
-public:
+    std::vector<real_t> nodes;
+    std::vector<real_t> weights;
+    std::vector<real_t> mappedNodes;
+    std::vector<real_t> mappedWeights;
+
+   public:
     explicit GaussLegendreRule(len_t order);
     len_t GetOrder() const { return nodes.size(); }
     real_t GetNode(len_t i) const { return nodes.at(i); }
@@ -56,61 +66,67 @@ public:
     std::vector<WeightedPoint> MappedPoints(Interval panel) const;
 };
 
-struct FieldExtrema { real_t Bmin, Bmax, thetaMin, thetaMax; };
-struct FieldLevel { real_t beta; Interval roots; };
+struct FieldExtrema {
+    real_t Bmin;
+    real_t Bmax;
+    real_t thetaMin;
+    real_t thetaMax;
+};
+
+struct FieldLevel {
+    real_t beta;
+    Interval roots;
+};
 
 /**
- * Prepared geometry for one radius. Uses the existing single-well topology:
- * one monotone branch on either side of Bmin. Angles are unwrapped onto
- * [thetaMax-2*pi,thetaMax]. Both roots are solved independently.
+ * Prepare one flux surface with a monotone branch on either side of Bmin.
+ * Angles are unwrapped onto [thetaMax - 2*pi, thetaMax].
  *
- * Bracket samples accelerate inversion; they are NOT a replacement field
- * interpolant. All root iterations evaluate the original B callback. Rebuild
- * this object, or Reset it with current extrema, after the geometry changes.
- * No cache of floating-point pitch samples is retained between operations.
+ * Bracket samples locate the interval for each root. The root solver
+ * evaluates the original field on each branch. Rebuild this object or
+ * call Reset() with current extrema after the geometry changes.
  */
 class OrbitGeometry {
     struct Implementation;
     std::unique_ptr<Implementation> impl;
-public:
+
+   public:
     OrbitGeometry(FVM::FluxSurfaceAverager *fsa, len_t ir);
     // Also useful for analytic geometry and independent numerical tests.
     OrbitGeometry(
         FieldExtrema extrema, std::function<real_t(real_t)> evaluateB,
-        const std::vector<real_t>& thetaSamples = {}
+        const std::vector<real_t> &thetaSamples = {}
     );
     ~OrbitGeometry();
-    OrbitGeometry(const OrbitGeometry&) = delete;
-    OrbitGeometry& operator=(const OrbitGeometry&) = delete;
+    OrbitGeometry(const OrbitGeometry &) = delete;
+    OrbitGeometry &operator=(const OrbitGeometry &) = delete;
 
-    void Reset(FieldExtrema extrema, const std::vector<real_t>& thetaSamples = {});
+    void Reset(FieldExtrema extrema, const std::vector<real_t> &thetaSamples = {});
     bool IsConstantField() const;
     real_t GetBetaMax() const;
     Interval GetAngularDomain() const;
     Interval InvertBeta(real_t beta);
 
-    // Sort/deduplicate exact repeated levels and solve each only once in this
-    // batch. The returned vector is ordered by beta, not by angle.
+    // Solve each distinct level once and return the roots in order of beta.
     std::vector<FieldLevel> InvertLevels(std::vector<real_t> levels);
 
-    // Physical orbit bounds, with no grid-index substitutions or endpoint
-    // nudges. These do not perform DREAM's trapped-cell folding/remapping.
-    Interval GetOrbitBounds(real_t u);
-    Interval GetReachableBounds(real_t u, real_t lowerFace, real_t upperFace);
+    // Physical bounds of a primary orbit and of its overlap with an outgoing
+    // pitch interval. Grid-aware trapped folding is done by the caller.
+    Interval GetOrbitBounds(real_t primaryPitch);
+    Interval GetReachableBounds(real_t primaryPitch, real_t lowerFace, real_t upperFace);
 };
 
 /**
- * Open-panel boundaries for a batch of outgoing pitch intervals at fixed
- * primary pitch/scattering cosine. Shared field levels are inverted once.
- * Includes contacts, reachability endpoints, Bmin and separatrix layers.
- * The latter use the actual field on each branch, without a curvature model.
- * A point exactly on the separatrix has no finite orbit integral and is
- * rejected; primary cell averaging must sample on either side instead.
+ * Build poloidal panels for several outgoing pitch intervals at fixed
+ * primary pitch and scattering cosine. Panel boundaries follow contacts,
+ * the reachable interval, the field minimum, and separatrix or bounce layers.
+ * Primary-pitch averaging samples on either side of the separatrix, where
+ * the pointwise orbit integral is finite.
  */
 std::vector<std::vector<real_t>> PoloidalSplitPoints(
-    OrbitGeometry& geometry, real_t u, real_t xiStar,
-    const std::vector<Interval>& secondaryCells
+    OrbitGeometry &geometry, real_t primaryPitch, real_t xiStar,
+    const std::vector<Interval> &cells
 );
 
-} // namespace DREAM::KnockOnUtilities::Quadrature
-#endif
+}  // namespace DREAM::KnockOnUtilities::Quadrature
+#endif /*_DREAM_EQUATIONS_KNOCK_ON_QUADRATURE_HPP*/
