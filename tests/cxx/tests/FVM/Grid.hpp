@@ -11,6 +11,7 @@ namespace DREAMTESTS::FVM {
         Grid(const std::string& name) : UnitTest(name) {}
 
         bool CheckGridRCylPXi();
+        bool CheckZeroCrossingPitchCell();
 
         virtual bool Run(bool) override;
     };

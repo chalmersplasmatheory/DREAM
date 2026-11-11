@@ -54,6 +54,9 @@ real_t hIntegrand(real_t theta, void *par){
     if(Bmin)
         BOverBmin = B/Bmin;
 
+    // Integrating the pitch delta cancels xi0/xi in the momentum-space
+    // metric, leaving 2*pi*B/Bmin from the gyrophase integral. The spatial
+    // Jacobian is included here and the toroidal 2*pi in the final result.
     return 2 * M_PI * BOverBmin * Jacobian;
 }
 
