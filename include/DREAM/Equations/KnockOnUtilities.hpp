@@ -18,9 +18,6 @@
 #ifndef _DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP
 #define _DREAM_EQUATIONS_KNOCK_ON_UTILITIES_HPP
 
-#include <cmath>
-
-#include "DREAM/Constants.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -30,83 +27,10 @@ namespace DREAM::KnockOnUtilities {
 // Low-level analytic building blocks (no grid dependence)
 // ============================================================================
 namespace Kinematics {
-// Functions related to relativistic collision kinematics and Møller cross sections.
-
-/**
- * Cosine of the angle between incident electron and knock-on,
- * as function of their respective momenta.
- *   p1: momentum magnitude of the incident electron (assumed to
- *       collide with stationary electron).
- *   p: knock-on momentum magnitude.
- */
-inline real_t EvaluateXiStar(real_t p, real_t p1) {
-    // handle the well-behaved (and common) limit of infinitely energetic incident electron
-    real_t g = sqrt(1 + p * p);
-    if (std::isinf(p1)) {
-        return sqrt((g - 1) / (g + 1));
-    }
-    real_t g1 = sqrt(1 + p1 * p1);
-    return sqrt((g1 + 1) * (g - 1) / ((g1 - 1) * (g + 1)));
-}
-
-/**
- * Møller differential cross section, between collisions (p1, 0) -> (p, p')
- * where p1 is the momentum of the incident particle (on a stationary one),
- * and p is interpreted as the knock-on momentum (when gamma1 > 2*gamma - 1)
- */
-inline real_t EvaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
-    real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
-    real_t g = sqrt(1 + p * p);
-    if (std::isinf(p1)) {
-        return prefactor / ((g - 1) * (g - 1));
-    }
-    real_t g1 = sqrt(1 + p1 * p1);
-    real_t term1 = (g1 - 1) * (g1 - 1);
-    real_t term2 =
-        -(g - 1) * (g1 - g) / (g1 * g1) * (2 * g1 * g1 + 2 * g1 - 1 - (g - 1) * (g1 - g));
-    return prefactor * (term1 + term2) * g1 * g1 /
-           (p1 * p1 * (g - 1) * (g - 1) * (g1 - g) * (g1 - g));
-}
-
-/**
- * Returns the function 'S' obtained by writing the
- * Møller differential cross section Sigma on the form
- *   Sigma = gamma/p * dS/dp = dS/dgamma.
- * Is obtained when exactly integrating the knock-on source
- * over a FVM momentum grid cell (in the knock-on momentum p).
- */
-
-inline real_t EvaluateMollerFlux(real_t p, real_t p1) {
-    real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
-
-    real_t g = sqrt(1 + p * p);
-    if (std::isinf(p1)) {
-        return -prefactor / (g - 1);
-    }
-
-    real_t g1 = sqrt(1 + p1 * p1);
-    real_t term1 = g1 * g1 * (1 / (g1 - g) - 1 / (g - 1));
-    real_t term2 = g;
-    real_t term3 = -(2 * g1 - 1) / (g1 - 1) * log((g - 1) / (g1 - g));
-
-    return prefactor / (p1 * p1) * (term1 + term2 + term3);
-}
-
-/**
- * Returns the maximum momentum considered "knock-on" due to relativistic kinematics.
- * This is the momentum corresponding to half the kinetic energy of the primary electron.
- */
-inline real_t MaximumKnockOnMomentum(real_t p1) {
-    if (std::isinf(p1)) {
-        return std::numeric_limits<real_t>::infinity();
-    }
-    real_t gamma1 = sqrt(1 + p1 * p1);
-    real_t gammaMax = (gamma1 + 1) / 2;
-
-    real_t pMax2 = std::max(0.0, gammaMax * gammaMax - 1);
-    return sqrt(pMax2);
-}
-
+real_t EvaluateXiStar(real_t p, real_t p1);
+real_t EvaluateMollerDifferentialCrossSection(real_t p, real_t p1);
+real_t EvaluateMollerFlux(real_t p, real_t p1);
+real_t MaximumKnockOnMomentum(real_t p1);
 }  // namespace Kinematics
 
 namespace AnalyticDelta {

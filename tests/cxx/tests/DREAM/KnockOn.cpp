@@ -11,6 +11,10 @@
  */
 #include "KnockOn.hpp"
 
+#include <cmath>
+#include <limits>
+#include <vector>
+
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -260,7 +264,8 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
     DREAM::FVM::Grid *grid =
         InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
 
-    const real_t nPointsIntegral = 80;
+    const len_t nPointsIntegral = 80;
+    const len_t nPointsReference = 300;
 
     bool success = true;
     real_t xi_stars[3] = {0.0, 0.5, 1.0};
@@ -283,7 +288,8 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
                             DREAM::KnockOnUtilities::MIDPOINT_RULE
                         );
                     real_t delta_hires = DREAM::KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
-                        ir, xi_star, j, l, grid, grid, 300, DREAM::KnockOnUtilities::MIDPOINT_RULE
+                        ir, xi_star, j, l, grid, grid, nPointsReference,
+                        DREAM::KnockOnUtilities::MIDPOINT_RULE
                     );
                     if (fabs(delta_default - delta_hires) >
                         successRelErrorThreshold * (1 + fabs(delta_default))) {
@@ -301,8 +307,8 @@ bool KnockOn::CheckDeltaQuadratureConvergence() {
     return success;
 }
 
-// check the conservation property that sum_j dxi_j * D_j == 1 for all combinations of pitches on
-// the provided grids, and for a range of poloidal angles theta and values of xi_star.
+// Check that the local averages integrate to sum_j D_j == 1 for the
+// provided grids and a range of poloidal angles and xi_star values.
 bool KnockOn::_checkLocalContributionConservationProperty(
     const DREAM::FVM::Grid *grid_knockon, const DREAM::FVM::Grid *grid_primary,
     real_t successRelErrorThreshold
@@ -421,7 +427,7 @@ bool KnockOn::_checkDeltaConservationProperty(
 ) {
     DREAM::FVM::RadialGrid *rg = grid_knockon->GetRadialGrid();
     real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    const real_t nPointsIntegral = 50;
+    const len_t nPointsIntegral = 50;
 
     bool success = true;
     for (len_t ir = 0; ir < rg->GetNr(); ir++) {
@@ -581,7 +587,7 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
     constexpr real_t eps = 5 * std::numeric_limits<real_t>::epsilon();
     bool success = true;
     real_t xi_stars[3] = {0.0, 0.5, 1.0};
-    const real_t nPointsIntegral = 80;
+    const len_t nPointsIntegral = 80;
 
     for (len_t ir = 0; ir < nr; ir++) {
         DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);

@@ -16,9 +16,11 @@
 
 #include <gsl/gsl_integration.h>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
+#include "DREAM/Constants.hpp"
 #include "DREAM/DREAMException.hpp"
 
 using namespace DREAM;
@@ -46,6 +48,82 @@ constexpr real_t QUAD_ADAPTIVE_ATOL = 1e-4;
 
 }  // anonymous namespace
 
+// Functions related to relativistic collision kinematics and Møller cross sections.
+
+/**
+ * Cosine of the angle between incident electron and knock-on,
+ * as function of their respective momenta.
+ *   p1: momentum magnitude of the incident electron (assumed to
+ *       collide with stationary electron).
+ *   p: knock-on momentum magnitude.
+ */
+real_t KnockOnUtilities::Kinematics::EvaluateXiStar(real_t p, real_t p1) {
+    real_t g = sqrt(1 + p * p);
+    // Handle the limit of an infinitely energetic incident electron.
+    if (std::isinf(p1)) {
+        return sqrt((g - 1) / (g + 1));
+    }
+    real_t g1 = sqrt(1 + p1 * p1);
+    return sqrt((g1 + 1) * (g - 1) / ((g1 - 1) * (g + 1)));
+}
+
+/**
+ * Møller differential cross section, between collisions (p1, 0) -> (p, p')
+ * where p1 is the momentum of the incident particle (on a stationary one),
+ * and p is interpreted as the knock-on momentum (when gamma1 > 2*gamma - 1)
+ */
+real_t KnockOnUtilities::Kinematics::EvaluateMollerDifferentialCrossSection(real_t p, real_t p1) {
+    real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
+    real_t g = sqrt(1 + p * p);
+    if (std::isinf(p1)) {
+        return prefactor / ((g - 1) * (g - 1));
+    }
+    real_t g1 = sqrt(1 + p1 * p1);
+    real_t term1 = (g1 - 1) * (g1 - 1);
+    real_t term2 =
+        -(g - 1) * (g1 - g) / (g1 * g1) * (2 * g1 * g1 + 2 * g1 - 1 - (g - 1) * (g1 - g));
+    return prefactor * (term1 + term2) * g1 * g1 /
+           (p1 * p1 * (g - 1) * (g - 1) * (g1 - g) * (g1 - g));
+}
+
+/**
+ * Returns the function 'S' obtained by writing the
+ * Møller differential cross section Sigma on the form
+ *   Sigma = gamma/p * dS/dp = dS/dgamma.
+ * Is obtained when exactly integrating the knock-on source
+ * over a FVM momentum grid cell (in the knock-on momentum p).
+ */
+real_t KnockOnUtilities::Kinematics::EvaluateMollerFlux(real_t p, real_t p1) {
+    real_t prefactor = 2 * M_PI * Constants::r0 * Constants::r0 * Constants::c;
+
+    real_t g = sqrt(1 + p * p);
+    if (std::isinf(p1)) {
+        return -prefactor / (g - 1);
+    }
+
+    real_t g1 = sqrt(1 + p1 * p1);
+    real_t term1 = g1 * g1 * (1 / (g1 - g) - 1 / (g - 1));
+    real_t term2 = g;
+    real_t term3 = -(2 * g1 - 1) / (g1 - 1) * log((g - 1) / (g1 - g));
+
+    return prefactor / (p1 * p1) * (term1 + term2 + term3);
+}
+
+/**
+ * Returns the maximum momentum considered "knock-on" due to relativistic kinematics.
+ * This is the momentum corresponding to half the kinetic energy of the primary electron.
+ */
+real_t KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(real_t p1) {
+    if (std::isinf(p1)) {
+        return std::numeric_limits<real_t>::infinity();
+    }
+    real_t gamma1 = sqrt(1 + p1 * p1);
+    real_t gammaMax = (gamma1 + 1) / 2;
+
+    real_t pMax2 = std::max(0.0, gammaMax * gammaMax - 1);
+    return sqrt(pMax2);
+}
+
 /**
  * Analytic antiderivative of the gyro-averaged kinematic delta function.
  * Evaluates the variable "F" defined in the theory notes.
@@ -71,7 +149,6 @@ real_t KnockOnUtilities::AnalyticDelta::EvaluateXiIntegral(
     // handle singular (but analytically well-posed) case of
     // EvaluateXiAntiderivative when the denominator is 0
     if (b2 <= RELAXED_EPS) {
-        real_t a = xi_star * xi1;
         return (t1 < a && a <= t2) ? 1.0 : 0.0;
     }
 
@@ -142,7 +219,8 @@ void KnockOnUtilities::AnalyticDelta::ComputeXi1Bounds(
  * delta function at a fixed poloidal location, characterized
  * by its BOverBmin and xi0Cutoff values.
  *
- * In the theory notes, the returned value corresponds to the D_j function.
+ * The pitch integral is D_j in the theory notes. This function returns
+ * D_j divided by the low-field-side cell width xi0_f2 - xi0_f1.
  *
  * Returns 0 if no contribution exists at this theta, and
  * handles the xi01 = +/-1 (CH/RP) limits carefully.
@@ -557,7 +635,7 @@ void KnockOnUtilities::EstimateBoundingTheta(
  * This function is a grid-aware convenience wrapper around
  * EvaluateOrbitAveragedDeltaWithTrappingCorrection().
  *
- * Corresponds to the matrix element Delta_{j l} in the theory notes.
+ * Corresponds to the matrix element delta_{jl} in the theory notes.
  */
 real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
     len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
@@ -653,11 +731,11 @@ real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
  * function on the given FVM grids.
  *
  * For a fixed primary pitch index l (xi01) and xi_star, this routine
- * computes Delta_{j l} for all non-void (i.e. non-zero Vp) secondary
+ * computes delta_{jl} for all non-void (i.e. non-zero Vp) secondary
  * pitch cells j using EvaluateDeltaMatrixElementOnGrid(), and enforces
  * the exact analytic normalization property
  *
- *     sum_{j, Vp_j!=0} Delta_{j l} * dxi0_j = 1,
+ *     sum_{j, Vp_j!=0} delta_{jl} * dxi0_j = 1,
  *
  * whenever a non-zero contribution is physically expected.
  *
@@ -672,7 +750,7 @@ real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
  * is intended to be used by collision operators when assembling the
  * knock-on kernel.
  *
- * Returns the unnormalized column integral sum_j Delta_{j l} * dxi0_j.
+ * Returns the unnormalized column integral sum_j delta_{jl} * dxi0_j.
  */
 real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
     len_t ir, real_t xi_star, len_t l, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary,
