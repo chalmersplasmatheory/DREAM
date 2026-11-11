@@ -720,25 +720,26 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
-	DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
-		real_t *v = qd->StoreEmpty();
-        for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++)
+    DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
+        real_t *v = qd->StoreEmpty();
+        const len_t nCells = hottailGrid->GetNCells();
+        for (len_t idx = 0; idx < nCells; idx++)
             v[idx] = 0;
-		if (this->unknown_equations->at(this->id_f_hot)->HasOperatorAt(this->id_n_re)) {
-			FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re);
-			const real_t *nre = unknowns->GetUnknownData(id_n_re);
-			avaPos->SetVectorElements(v, nre);
 
-			if (this->id_n_re_neg) {
-				FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_hot)->GetOperatorUnsafe(this->id_n_re_neg);
-				const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
-				avaNeg->SetVectorElements(v, nre_neg);
-			}
-            for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
-                v[idx] = -v[idx];
-            }
-		}
-	);
+        auto *equation = this->unknown_equations->at(this->id_f_hot);
+        if (equation->HasOperatorAt(this->id_n_re)) {
+            auto *avaPos = equation->GetOperatorUnsafe(this->id_n_re);
+            avaPos->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re));
+        }
+        if (this->id_n_re_neg && equation->HasOperatorAt(this->id_n_re_neg)) {
+            auto *avaNeg = equation->GetOperatorUnsafe(this->id_n_re_neg);
+            avaNeg->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re_neg));
+        }
+
+        // The avalanche source enters the residual with a minus sign.
+        for (len_t idx = 0; idx < nCells; idx++)
+            v[idx] = -v[idx];
+    );
     
     if (tracked_terms->knock_on_general_hot_hot != nullptr) {
 		DEF_HT("hottail/C_boltz", "Boltzmann knock-on collision integral [s^-1 m^-3]",
@@ -916,23 +917,23 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
     DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
         real_t *v = qd->StoreEmpty();
-        for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++)
+        const len_t nCells = runawayGrid->GetNCells();
+        for (len_t idx = 0; idx < nCells; idx++)
             v[idx] = 0;
-		if (this->unknown_equations->at(this->id_f_re)->HasOperatorAt(this->id_n_re)) {
 
-            FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
-            const real_t *nre = unknowns->GetUnknownData(id_n_re);
-            avaPos->SetVectorElements(v, nre);
-
-            if (this->id_n_re_neg) {
-                FVM::Operator * avaNeg = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re_neg);
-                const real_t *nre_neg = unknowns->GetUnknownData(id_n_re_neg);
-                avaNeg->SetVectorElements(v, nre_neg);
-            }
-            for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++){
-                v[idx] = -v[idx];
-            }
+        auto *equation = this->unknown_equations->at(this->id_f_re);
+        if (equation->HasOperatorAt(this->id_n_re)) {
+            auto *avaPos = equation->GetOperatorUnsafe(this->id_n_re);
+            avaPos->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re));
         }
+        if (this->id_n_re_neg && equation->HasOperatorAt(this->id_n_re_neg)) {
+            auto *avaNeg = equation->GetOperatorUnsafe(this->id_n_re_neg);
+            avaNeg->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re_neg));
+        }
+
+        // The avalanche source enters the residual with a minus sign.
+        for (len_t idx = 0; idx < nCells; idx++)
+            v[idx] = -v[idx];
     );
 
     
