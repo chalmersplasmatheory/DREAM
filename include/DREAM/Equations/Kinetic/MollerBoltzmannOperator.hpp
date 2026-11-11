@@ -36,6 +36,7 @@ class MollerBoltzmannOperator : public FVM::EquationTerm {
 
     // Scratch buffers reused in SetSourceVector().
     real_t *primaryWeights = nullptr;  // size: Np1P*NxiP, layout [k*NxiP + l]
+    real_t *pitchWeights = nullptr;  // size: nXiStars*NxiP
     real_t *Cj = nullptr;  // size: NxiK
 
     void ValidateInputParameters() const;

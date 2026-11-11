@@ -77,9 +77,12 @@ void MollerBoltzmannOperator::AllocateScratchBuffers() {
 
     primaryWeights = new real_t[Np1P * NxiP];
     Cj = new real_t[NxiK];
+    pitchWeights = new real_t[angleKernel->GetPitchScratchSize()];
 }
 
 void MollerBoltzmannOperator::Deallocate() {
+    delete[] pitchWeights;
+    pitchWeights = nullptr;
     if (sourceVector != nullptr) {
         delete[] sourceVector;
         sourceVector = nullptr;
@@ -127,10 +130,9 @@ void MollerBoltzmannOperator::BuildPrimaryWeights(
 /**
  * Assemble the explicit-time Boltzmann source on the knock-on grid from f_primary.
  *
- * Key idea:
- *  - First precompute W_{k l} = dp1_k dxi_l Vp_{k l} f_{k l} for each radius,
- *    then for each outgoing momentum cell i, accumulate C_j by looping over k and
- *    applying the interpolated delta kernel over pitch.
+ * Precompute W_{k l} = dp1_k dxi_l Vp_{k l} f_{k l} for each radius,
+ * then group the primary contributions by angular slice before the dense
+ * pitch contraction for each outgoing momentum i.
  */
 void MollerBoltzmannOperator::SetSourceVector(const real_t *f_primary) {
     len_t offK = 0;
@@ -145,8 +147,6 @@ void MollerBoltzmannOperator::SetSourceVector(const real_t *f_primary) {
         const len_t Np1K = mgK->GetNp1();
         const len_t NxiK = mgK->GetNp2();
         const len_t Np1P = mgP->GetNp1();
-        const len_t NxiP = mgP->GetNp2();
-
         const real_t *VpK = grid->GetVp(ir);
 
         // W_{k,l} = dp1_k * dxi_l * Vp_{k,l} * f_{k,l}
@@ -155,13 +155,8 @@ void MollerBoltzmannOperator::SetSourceVector(const real_t *f_primary) {
             for (len_t j = 0; j < NxiK; ++j) {
                 Cj[j] = 0.0;
             }
-            for (len_t k = 0; k < Np1P; ++k) {
-                const real_t sigma_ik = energyKernel->DifferentialCS(i, k);
-                const real_t *Wkl = primaryWeights + k * NxiP;
-                // for each j (outgoing), let the angleKernel carry out
-                // the pitch integration over l (incident)
-                angleKernel->AccumulatePitch(ir, i, k, Wkl, sigma_ik, Cj);
-            }
+            angleKernel->AccumulatePitchAllPrimaries(ir,i,primaryWeights,
+                energyKernel->DifferentialCS()+i*Np1P,pitchWeights,Cj);
             for (len_t j = 0; j < NxiK; ++j) {
                 const len_t idxK = offK + j * Np1K + i;
                 const real_t Vp = VpK[j * Np1K + i];

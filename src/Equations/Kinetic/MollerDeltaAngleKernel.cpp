@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/KnockOnUtilities.hpp"
@@ -277,66 +278,26 @@ void MollerDeltaAngleKernel::GridRebuilt() {
     BuildXiStarInterp();
 }
 
-/**
- * Select the tabulated delta-kernel slice(s) corresponding to xi_star(p_i,p1_k).
- *
- * Key idea:
- *  - If xi_star lies outside the tabulated range, clamp to the nearest endpoint slice.
- *  - Otherwise return the two neighboring slices and linear interpolation weights.
- *
- * This removes branching in the hot accumulation loop.
- */
-const MollerDeltaAngleKernel::DeltaInterp MollerDeltaAngleKernel::GetDeltaInterp(
-    len_t ir, len_t i, len_t k
+/** Apply the angular kernel to all primary momenta for outgoing cell i. */
+void MollerDeltaAngleKernel::AccumulatePitchAllPrimaries(
+    len_t ir, len_t i, const real_t *W, const real_t *sigma,
+    real_t *scratch, real_t *Cj
 ) const {
-    const len_t NpP = gridP->GetMomentumGrid(ir)->GetNp1();
-    const XiStarInterp &T = xiInterp[ir][i * NpP + k];
-
-    const len_t m0 = T.m0;
-    const real_t w1 = T.w1;
-    const real_t *D0 = deltaTable[ir][m0];
-    const real_t *D1 = deltaTable[ir][m0 + 1];
-    const real_t w0 = 1.0 - w1;
-
-    return {D0, D1, w0, w1};
+    if (!hasActivePairs) return;
+    const len_t npP=gridP->GetNp1(ir);
+    AccumulateMollerPitch(npP,gridP->GetNp2(ir),gridK->GetNp2(ir),
+        nXiStarsTabulate,xiInterp[ir]+i*npP,sigma,W,deltaTable[ir],scratch,Cj);
 }
 
-/**
- * Accumulate the pitch-angle redistribution contribution for fixed (ir,i,k).
- *
- * Computes:
- *   C_j += sigma_ik * Σ_l W_{k l} * delta_{j l}(xi*(p_i,p1_k)),
- * where W_{k l} already includes dp1_k * dxi_l * Vp_{k l} * f_{k l}.
- *
- * Key idea:
- *  - The delta kernel is tabulated on a xi_star grid, and here we interpolate
- *    linearly in that table and apply to the distribution.
- */
+/** Apply the same contraction to a single incident momentum cell. */
 void MollerDeltaAngleKernel::AccumulatePitch(
-    len_t ir, len_t i, len_t k, const real_t *Wkl, real_t sigma_ik, real_t *Cj
+    len_t ir, len_t i, len_t k, const real_t *W, real_t sigma, real_t *Cj
 ) const {
-    if (sigma_ik == 0 || !hasActivePairs) {
-        return;
-    }
-    const auto *mgK = gridK->GetMomentumGrid(ir);
-    const auto *mgP = gridP->GetMomentumGrid(ir);
-
-    const len_t NxiK = mgK->GetNp2();
-    const len_t NxiP = mgP->GetNp2();
-
-    // extract the kinematic delta, interpolated to this momentum (p_i, p1_k)
-    const DeltaInterp I = GetDeltaInterp(ir, i, k);
-    for (len_t l = 0; l < NxiP; ++l) {
-        const real_t W = Wkl[l];
-        if (W == 0) {
-            continue;
-        }
-        const real_t alpha = sigma_ik * W;
-        const real_t *col0 = I.D0 + l * NxiK;
-        const real_t *col1 = I.D1 + l * NxiK;
-        for (len_t j = 0; j < NxiK; ++j) {
-            real_t delta_jl = I.w0 * col0[j] + I.w1 * col1[j];
-            Cj[j] += alpha * delta_jl;
-        }
-    }
+    if (sigma==0 || !hasActivePairs) return;
+    const len_t nxiP=gridP->GetNp2(ir);
+    const auto& t=xiInterp[ir][i*gridP->GetNp1(ir)+k];
+    const XiStarInterp local{0,t.w1};
+    std::vector<real_t> scratch(2*nxiP);
+    AccumulateMollerPitch(1,nxiP,gridK->GetNp2(ir),2,&local,&sigma,W,
+        deltaTable[ir]+t.m0,scratch.data(),Cj);
 }
