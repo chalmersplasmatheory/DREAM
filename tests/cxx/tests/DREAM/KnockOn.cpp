@@ -366,6 +366,31 @@ bool KnockOn::_checkLocalContributionConservationProperty(
 }
 
 bool KnockOn::CheckLocalContributionConservationProperty() {
+    // In constant B a pole primary deposits into exactly one cell, even on a
+    // shared face or at a physical endpoint. Check both primary signs.
+    const real_t faces[] = {-1, -0.5, 0, 0.5, 1};
+    const len_t receivingCell[2][3] = {{1, 0, 0}, {1, 2, 3}};
+    for (len_t sign = 0; sign < 2; sign++) {
+        const real_t xi01 = (sign == 0) ? -1 : 1;
+        for (len_t k = 0; k < 3; k++) {
+            const real_t xiStar = 0.5 * k;
+            for (len_t j = 0; j < 4; j++) {
+                real_t xi1_over_xi01;
+                const real_t average = DREAM::KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
+                    faces[j], faces[j + 1], xi01, 1, xiStar, 0, xi1_over_xi01
+                );
+                const real_t weight = average * (faces[j + 1] - faces[j]);
+                if (weight != (j == receivingCell[sign][k] ? 1 : 0)) {
+                    this->PrintError(
+                        "Incorrect pole weight at xi01=%.3g, xi_star=%.3g, cell %ld: %.8g",
+                        xi01, xiStar, j, weight
+                    );
+                    return false;
+                }
+            }
+        }
+    }
+
     real_t successRelErrorThreshold = 10 * std::numeric_limits<real_t>::epsilon();
 
     len_t nr = 5;

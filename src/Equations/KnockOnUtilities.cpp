@@ -165,15 +165,12 @@ real_t KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
     real_t t2;
     AnalyticDelta::ComputeXiIntegrationBounds(t1, t2, xi0_f1, xi0_f2, BOverBmin, xi0Cutoff);
 
-    // handle the xi01 == 1 case (used in the approximate collision terms--RP and CH)
+    // For a primary at either pitch pole the cone collapses to one outgoing pitch.
     if (fabs(fabs(xi01) - 1.0) < RELAXED_EPS) {
         xi1_over_xi01 = 1.0;
-        // exact solution of z2==1 (since z = xi1 = 1)
-        if (xi01 > 0.0 && !(t1 < xi_star && xi_star < t2)) {
-            return 0.0;
-        }
-        // exact solution of z1==-1 (since z = xi1 = -1)
-        if (xi01 < 0.0 && !(t1 < -xi_star && -xi_star < t2)) {
+        const real_t outgoing = (xi01 > 0) ? xi_star : -xi_star;
+        // Use (t1, t2] to give shared faces one owner. Include the physical lower endpoint.
+        if (!((t1 < outgoing && outgoing <= t2) || (outgoing == -1 && t1 == -1))) {
             return 0.0;
         }
         return 1.0 / (xi0_f2 - xi0_f1);
