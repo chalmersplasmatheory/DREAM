@@ -11,22 +11,29 @@ using namespace DREAM;
 */
 ExotermicEnergyTransferTerm::ExotermicEnergyTransferTerm(
     FVM::Grid *grid, len_t iz, FVM::UnknownQuantityHandler *unknowns,
-    IonHandler *ions, RateHandler *ratehandler
+    IonHandler *ions, RateHandler *ratehandler, bool neutralEquation
 ) : FVM::EquationTerm(grid), unknowns(unknowns), ions(ions),
-    ratehandler(ratehandler), iz(iz) {
+    ratehandler(ratehandler), iz(iz), neutralEquation(neutralEquation) {
 
     SetName("ExotermicEnergyTransferTerm");
     mi = ions->GetIonSpeciesMass(iz);
 
     id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
     id_ne = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Te = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
     AddUnknownForJacobian(unknowns, id_ions);
-    AddUnknownForJacobian(unknowns, id_Wn);
     AddUnknownForJacobian(unknowns, id_ne);
     AddUnknownForJacobian(unknowns, id_Te);
+
+    // W_n only exists with a separate neutral heat equation
+    separateNeutrals = unknowns->HasUnknown(OptionConstants::UQTY_WN_ENER);
+    if (separateNeutrals) {
+        id_Wn = unknowns->GetUnknownID(OptionConstants::UQTY_WN_ENER);
+        id_Nn = unknowns->GetUnknownID(OptionConstants::UQTY_NN_DENS);
+        AddUnknownForJacobian(unknowns, id_Wn);
+        AddUnknownForJacobian(unknowns, id_Nn);
+    }
 }
 
 /** Total released energy [eV], from Table 4 of HollmannModel. */
@@ -72,7 +79,7 @@ real_t ExotermicEnergyTransferTerm::getTotalMassReactionProducts(
     return mass;
 }
 
-/** Add the reaction heating to the neutral energy equation. */
+/** Add the reaction heating to the corresponding heat equation (W_n or W_i). */
 void ExotermicEnergyTransferTerm::SetVectorElements(
     real_t *vec, const real_t*
 ) {
@@ -85,17 +92,31 @@ void ExotermicEnergyTransferTerm::SetVectorElements(
         const real_t deltaE = getExotermicEnergy(reaction);
         if (deltaE == 0) /// if to exotermix reaction exist
             continue;
-        len_t multiplicity = 0; // in case of multiple same products
-        for (len_t j = 0; j < reaction.nProducts; j++) {
-            const auto& product = reaction.products[j];
-            if (name == product.name && product.Z0 == 0)
-                multiplicity += product.coefficient;
-        }
-        if (multiplicity == 0)
-            continue;
+
+        len_t nHeavyProducts = 0;
+        for (len_t j = 0; j < reaction.nProducts; j++)
+            if (std::string(reaction.products[j].name) != "e")
+                nHeavyProducts++;
 
         const real_t M = getTotalMassReactionProducts(reaction);
-        const real_t Tbirth = (M - mi) / M * deltaE;
+        real_t share = 0;
+        for (len_t j = 0; j < reaction.nProducts; j++) {
+            const auto& product = reaction.products[j];
+            if (name != product.name)
+                continue;
+
+            const bool neutral = separateNeutrals && product.Z0 == 0;
+            if (neutral != neutralEquation)
+                continue;
+
+            if (nHeavyProducts == 1)
+                share += 1;
+            else
+                share += (M - product.coefficient * mi) / M;
+        }
+        if (share == 0)
+            continue;
+
         const auto& a = reaction.reactants[0];
         const auto& b = reaction.reactants[1];
         // Locate each reactant in its density unknown.
@@ -139,8 +160,7 @@ void ExotermicEnergyTransferTerm::SetVectorElements(
 
             // K*nA*nB is the number of reaction events per m^3 per second.
             const real_t reactionRate = K * nA * nB;
-            const real_t productionRate = multiplicity * reactionRate;
-            const real_t power = 1.5 * Constants::ec * productionRate * Tbirth;
+            const real_t power = Constants::ec * share * deltaE * reactionRate;
 
             vec[row] += power;
         }
@@ -155,10 +175,8 @@ void ExotermicEnergyTransferTerm::SetVectorElements(
 bool ExotermicEnergyTransferTerm::SetJacobianBlock(
     const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*
 ) {
-    if (derivId != id_ions && derivId != id_ne &&
-        derivId != id_Te && derivId != id_Wn) {
+    if (!HasJacobianContribution(derivId))
         return false;
-    }
 
     const len_t nr = grid->GetNr();
     const real_t *ni = unknowns->GetUnknownData(id_ions);
@@ -170,13 +188,30 @@ bool ExotermicEnergyTransferTerm::SetJacobianBlock(
         const real_t deltaE = getExotermicEnergy(reaction);
         if (deltaE == 0)
             continue;
-        len_t multiplicity = 0;
+
+        // Same share of the released energy as in SetVectorElements
+        len_t nHeavyProducts = 0;
+        for (len_t j = 0; j < reaction.nProducts; j++)
+            if (std::string(reaction.products[j].name) != "e")
+                nHeavyProducts++;
+
+        const real_t M = getTotalMassReactionProducts(reaction);
+        real_t share = 0;
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const auto& product = reaction.products[j];
-            if (name == product.name && product.Z0 == 0)
-                multiplicity += product.coefficient;
+            if (name != product.name)
+                continue;
+
+            const bool neutral = separateNeutrals && product.Z0 == 0;
+            if (neutral != neutralEquation)
+                continue;
+
+            if (nHeavyProducts == 1)
+                share += 1;
+            else
+                share += (M - product.coefficient * mi) / M;
         }
-        if (multiplicity == 0)
+        if (share == 0)
             continue;
 
         // Supported by the current ten-reaction table.
@@ -186,9 +221,7 @@ bool ExotermicEnergyTransferTerm::SetJacobianBlock(
             !(temperature.kind == MolecularInputKind::SPECIES && temperature.charge1 == 0))
             throw std::runtime_error("Exothermic term: unsupported temperature selector.");
 
-        const real_t M = getTotalMassReactionProducts(reaction);
-        const real_t Tbirth = (M - mi) / M * deltaE;
-        const real_t energyPerReaction = 1.5 * Constants::ec * multiplicity * Tbirth;
+        const real_t energyPerReaction = Constants::ec * share * deltaE;
         const auto& a = reaction.reactants[0];
         const auto& b = reaction.reactants[1];
         // Locate each reactant in its density unknown.
@@ -263,23 +296,23 @@ bool ExotermicEnergyTransferTerm::SetJacobianBlock(
                 contributes = true;
             }
 
-            // Dependence of K on a neutral temperature, through Wn and n.
-            if (temperature.kind == MolecularInputKind::SPECIES &&
-                (derivId == id_Wn || derivId == id_ions)) {
+            // Dependence of K on a neutral temperature, through Wn and Nn.
+            if (separateNeutrals && temperature.kind == MolecularInputKind::SPECIES &&
+                (derivId == id_Wn || derivId == id_Nn)) {
                 const len_t species = ions->GetIonIndex(temperature.name1);
-                const len_t col = ions->GetIndex(species, 0) * nr + ir;
-                const real_t n = ni[col];
+                const len_t col = species * nr + ir;
+                const real_t n = unknowns->GetUnknownData(id_Nn)[col];
                 // Match the zero-temperature branch in ResolveSpeciesTemperature.
                 if (n <= 0)
                     continue;
                 const real_t dKdT = reaction.rate->Eval_deriv_T(density, T);
                 const real_t dQdT = energyPerReaction * nA * nB * dKdT;
 
-                // Neutral temperature is Wn/(1.5*ec*n).
+                // Neutral temperature is Wn/(1.5*ec*Nn).
                 if (derivId == id_Wn) {
                     const real_t dTdWn = 1 / (1.5 * Constants::ec * n);
                     const real_t dQdWn = dQdT * dTdWn;
-                    jac->SetElement(row, species * nr + ir, dQdWn);
+                    jac->SetElement(row, col, dQdWn);
                 } else {
                     const real_t dTdn = -T / n;
                     const real_t dQdn = dQdT * dTdn;
