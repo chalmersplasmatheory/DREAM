@@ -747,12 +747,12 @@ void NBIHandler::IonElectronFractions(
     //Derivatives calculation
     real_t F_x = 1 / std::sqrt(3) * std::atan((2 * x - 1) / std::sqrt(3)) +
         M_PI / (6 * std::sqrt(3)) - std::log((1 + x) * (1 + x) / (1 - x + x * x)) / 6;
-    real_t F_x_prime = 2 / (3 + (2 * x - 1) * (2 * x - 1)) - 1 / (3 * (1 + x)) -
+    real_t F_x_prime = 2 / (3 + (2 * x - 1) * (2 * x - 1)) - 1 / (3 * (1 + x)) +
         (2 * x - 1) / (6 * (1 - x + x * x));
     real_t G_x = 2 / (x * x * x) * (x * F_x_prime - 2 * F_x);
 
     dfe_dne = -G_x * x / (2 * ne);
-    dfe_dTe = G_x * x / (3 * Te);
+    dfe_dTe = G_x * x / (2 * Te);
     for (len_t iz = 0; iz < nZ; iz++) {
         dfe_dn_ij[iz] = G_x * x / 3 *
             (ions->GetZ(iz) * ions->GetZ(iz) / (ions->GetIonSpeciesMass(iz) / m_u) /
