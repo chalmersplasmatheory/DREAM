@@ -1,0 +1,138 @@
+#ifndef _DREAM_EQUATIONS_KINETIC_QUASILINEARDIFFUSIONTERM_HPP
+#define _DREAM_EQUATIONS_KINETIC_QUASILINEARDIFFUSIONTERM_HPP
+
+#include "DREAM/Constants.hpp"
+#include "DREAM/Equations/Kinetic/ResonanceSolver.hpp"
+#include "DREAM/Equations/Kinetic/WaveParticleCoupling.hpp"
+#include "DREAM/Equations/Kinetic/WhistlerDispersion.hpp"
+#include "DREAM/Settings/WaveSpectrum.hpp"
+#include "FVM/Equation/DiffusionTerm.hpp"
+#include <vector>
+
+namespace DREAM {
+    /**
+     * Quasi-linear diffusion term from wave-particle interactions.
+     * 
+     * Implements the diffusion operator:
+     *   C[f] = ∂/∂p (D_pp ∂f/∂p + D_pξ ∂f/∂ξ)
+     *        + 1/p² ∂/∂ξ (D_pξ p² ∂f/∂p + D_ξξ p² ∂f/∂ξ)
+     * 
+     * where diffusion coefficients are:
+     *   D_pp  = Σ_{n,k} |Ψ_{n,k}|²
+     *   D_pξ  = Σ_{n,k} |Ψ_{n,k}|² · (k_∥ v_⊥ / ω)
+     *   D_ξξ  = Σ_{n,k} |Ψ_{n,k}|² · (k_∥ v_⊥ / ω)²
+     * 
+     * The sum is over all wave modes and harmonic numbers at resonance.
+     */
+    class QuasilinearDiffusionTerm : public FVM::DiffusionTerm {
+    private:
+        // Traditional components (for on-the-fly computation)
+        WaveSpectrum *spectrum;
+        WhistlerDispersion *dispersion;
+        ResonanceSolver *resonanceSolver;
+        WaveParticleCoupling *coupling;
+        
+        std::vector<int> harmonicModes;  // List of n values
+        
+        // Cached dispersion relation results (omega for each mode)
+        real_t *omega_cache;  // [numModes]
+        bool dispersion_cached;
+        
+        // Cached diffusion coefficients (for performance)
+        real_t *D_pp_cache;        // [nr][np1+1][np2]  — p-face (D11)
+        real_t *D_pxi_pface_cache; // [nr][np1+1][np2]  — p-face (D12)
+        real_t *D_pxi_xface_cache; // [nr][np1][np2+1]  — ξ-face (D21)
+        real_t *D_xixi_cache;      // [nr][np1][np2+1]  — ξ-face (D22)
+        
+        len_t nr_cached, np1_cached, np2_cached;
+        bool first_rebuild_done;  // Flag: true after first Rebuild() call
+        bool operator_cached;     // Flag: true if diffusion operator matrices are cached
+        
+        // Track wave amplitudes to detect changes
+        real_t *last_amplitudes;  // [numModes] - stores amplitudes from last calculation
+        len_t num_modes_tracked;
+
+        // Rate-limited validation printing: report only on wave on/off transitions
+        int validation_state = -1;  // -1 = never printed, 0 = wave off, 1 = wave on
+
+        // Reference amplitude used in the cached operator assembly.
+        // The operator is linear in the wave amplitude: D(t) = D_ref * A(t)/A_ref.
+        real_t operator_ref_amplitude = 0;
+        
+        // Time-dependent amplitude control (periodic injection)
+        real_t start_inject_time;        // Time to start injection (-1 = immediate)
+        real_t inject_cycle_duration;    // Cycle duration (0 = continuous)
+        real_t ramp_time;               // Ramp-up duration at start of each ON cycle (0 = immediate)
+        real_t base_amplitude;           // Base amplitude when injection is ON
+        
+    public:
+        /**
+         * Constructor (traditional on-the-fly computation)
+         */
+        QuasilinearDiffusionTerm(
+            FVM::Grid *grid,
+            WaveSpectrum *spectrum,
+            WhistlerDispersion *dispersion,
+            ResonanceSolver *resonanceSolver,
+            WaveParticleCoupling *coupling,
+            const std::vector<int> &harmonicModes,
+            real_t start_inject_time = -1.0,
+            real_t inject_cycle_duration = 0.0,
+            real_t ramp_time = 0.0
+        );
+        
+        ~QuasilinearDiffusionTerm();
+        
+        /**
+         * Rebuild diffusion coefficients
+         */
+        void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqh) override;
+        
+
+    private:
+        /**
+         * Pre-calculate and cache dispersion relation for all modes
+         */
+        void precalculateDispersion();
+        
+        /**
+         * Calculate diffusion coefficients using REVERSE resonance solving method.
+         * This is the primary method currently in use.
+         * 
+         * Instead of iterating over grid points and checking if they resonate,
+         * this method:
+         * 1. For each wave mode (k, theta_k, n), solves for exact resonant p given xi
+         * 2. Finds which grid cells contain the resonant point
+         * 3. Distributes contribution to surrounding grid points using triangular weights
+         * 
+         * This ensures grid-independent results and captures resonance even when
+         * the exact resonant point falls between grid nodes.
+         */
+        void calculateDiffusionCoefficientsReverse(len_t ir);
+        
+        /**
+         * Get cached diffusion coefficient D_pp at grid point
+         */
+        real_t getD_pp(len_t ir, len_t i, len_t j) const;
+        
+        /**
+         * Get cached diffusion coefficient D_pξ at grid point
+         */
+        real_t getD_pxi(len_t ir, len_t i, len_t j) const;
+        
+        /**
+         * Get cached diffusion coefficient D_ξξ at grid point
+         */
+        real_t getD_xixi(len_t ir, len_t i, len_t j) const;
+        
+    private:
+        /**
+         * Calculate effective wave amplitude at time t based on periodic injection schedule
+         * @param t  Current simulation time
+         * @return   Effective amplitude (0 or base_amplitude)
+         */
+        real_t calculateEffectiveAmplitude(real_t t) const;
+    };
+}
+
+#endif /* _DREAM_EQUATIONS_KINETIC_QUASILINEARDIFFUSIONTERM_HPP */
