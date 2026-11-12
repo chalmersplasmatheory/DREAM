@@ -1,6 +1,7 @@
 /**
  * Implementation of the MoleculeRateReaction class.
- * This class implements the molecular reaction rates for a given ion species and charge state.
+ * This class implements the molecular reaction rates for a given ion species and charge state, conserving 
+ * the particle balance. 
  * The rates are obtained from the RateHandler, which manages the ADAS rates and molecular reaction rates.
 */
 
