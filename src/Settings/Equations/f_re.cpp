@@ -150,6 +150,8 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
         if (inittype != OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
             RunawayFluid *REFluid = eqsys->GetREFluid();
 			real_t *E_init = LoadDataR(MODULENAME, runawayGrid->GetRadialGrid(), s, "E_init");
+
+			eqsys->ResetInitialValue(id_f_re);
             
             eqsys->initializer->AddRule(
                 id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
