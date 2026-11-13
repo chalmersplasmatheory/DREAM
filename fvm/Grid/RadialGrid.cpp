@@ -126,7 +126,26 @@ real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridTy
     return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,F, par, Flist);
 }
 
-
+namespace {
+// Trapping requires poloidal variation on at least one flux surface.
+// Comparing extrema from different radii would also count a purely radial
+// variation of B, even when every surface has Bmin == Bmax.
+bool checkIfInhomogeneousB(
+    const real_t *Bmin, const real_t *Bmin_f, const real_t *Bmax, const real_t *Bmax_f, len_t nr
+) {
+    const auto variesOnSurface = [](real_t bmin, real_t bmax) {
+        const real_t tol = 100 * std::numeric_limits<real_t>::epsilon() * (1 + bmax);
+        return bmax - bmin > tol;
+    };
+    for (len_t ir = 0; ir < nr; ir++)
+        if (variesOnSurface(Bmin[ir], Bmax[ir]))
+            return true;
+    for (len_t ir = 0; ir <= nr; ir++)
+        if (variesOnSurface(Bmin_f[ir], Bmax_f[ir]))
+            return true;
+    return false;
+}
+}  // namespace
 
 /**
  * Sets magnetic field quantities that have been
@@ -148,7 +167,8 @@ void RadialGrid::SetMagneticExtremumData(
     this->Bmax_f         = Bmax_f;
     this->xi0TrappedBoundary = xi0TrappedBoundary;
     this->xi0TrappedBoundary_f = xi0TrappedBoundary_f;
-    
+    this->hasTrapped = checkIfInhomogeneousB(Bmin, Bmin_f, Bmax, Bmax_f, this->nr);
+
     fluxSurfaceAverager->SetReferenceMagneticFieldData(
         theta_Bmin, theta_Bmin_f,
         theta_Bmax, theta_Bmax_f
@@ -265,7 +285,7 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
         real_t Bmin = GetBmin(ir);
         real_t Bmax = GetBmax(ir);
         real_t BminOverBmax;
-        if(Bmin==Bmax) // handles B(theta) = 0 case
+        if(!HasTrapped() || Bmin == Bmax) // also handles a local B=0 surface
             BminOverBmax = 1; 
         else
             BminOverBmax = Bmin/Bmax;
