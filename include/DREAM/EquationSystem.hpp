@@ -199,6 +199,8 @@ namespace DREAM {
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
+		void ResetInitialValue(const len_t);
+		void ResetInitialValue(const std::string&);
 
         void SetInitializerFile(const std::string& n, const int_t tidx=-1) {
             this->initializerFile = n;

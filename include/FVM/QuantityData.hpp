@@ -78,6 +78,8 @@ namespace DREAM::FVM {
         real_t *StoreEmpty();
 		void RestoreValue();
 
+		void ResetInitialValue();
+
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
 		void SaveSFileCurrent(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
 

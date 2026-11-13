@@ -63,6 +63,8 @@ namespace DREAM::FVM {
 
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
+		void ResetInitialValue(const std::string&);
+		void ResetInitialValue(const len_t);
 
         UnknownQuantity *operator[](const len_t i) { return GetUnknown(i); }
     };
