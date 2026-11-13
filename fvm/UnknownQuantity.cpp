@@ -55,3 +55,10 @@ void UnknownQuantity::SetInitialValue(const real_t *val, const real_t t0) {
     this->data->SetInitialValue(val, t0);
 }
 
+/**
+ * Reset the initial value of the specified unknown quantity.
+ */
+void UnknownQuantity::ResetInitialValue() {
+	this->data->ResetInitialValue();
+}
+

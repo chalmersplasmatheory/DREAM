@@ -224,6 +224,12 @@ void EquationSystem::SetInitialValue(const std::string& name, const real_t *val,
 void EquationSystem::SetInitialValue(const len_t id, const real_t *val, const real_t t0) {
     this->unknowns.SetInitialValue(id, val, t0);
 }
+void EquationSystem::ResetInitialValue(const std::string& name) {
+	this->ResetInitialValue(this->unknowns.GetUnknownID(name));
+}
+void EquationSystem::ResetInitialValue(const len_t id) {
+	this->unknowns.ResetInitialValue(id);
+}
 
 /**
  * Set the equation solver for this system.

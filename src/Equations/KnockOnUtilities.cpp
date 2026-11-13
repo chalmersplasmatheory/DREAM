@@ -125,8 +125,9 @@ real_t KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(real_t p1) {
 real_t KnockOnUtilities::AnalyticDelta::EvaluateXiAntiderivative(
     real_t y, real_t xi1, real_t xi_star
 ) {
-    const real_t argument=(y-xi1*xi_star)
-        /sqrt((1-xi1)*(1+xi1)*(1-xi_star)*(1+xi_star));
+    real_t a = xi_star * xi1;
+    real_t b2 = (1 - xi_star * xi_star) * (1 - xi1 * xi1);
+    const real_t argument = (y - a) / sqrt(b2);
     // Contacts sampled from either side can round the argument a few ulps
     // outside [-1,1]. Use the exact saturated antiderivative at those edges.
     return asin(std::clamp(argument,real_t(-1),real_t(1))) / M_PI;
