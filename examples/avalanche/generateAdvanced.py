@@ -1,4 +1,4 @@
-"""Demonstration of AVALANCHE_MODE_BOLTZMANN_KNOCK_ON.
+"""Demonstration of AVALANCHE_MODE_BOLTZMANN.
 
 A more advanced example in toroidal magnetic field and with
 both hot-tail and runaway grids modelled kinetically.
@@ -185,7 +185,7 @@ ds.eqsys.f_re.setBoundaryCondition(FHot.BC_F_0)
 # Use the Møller gain term for primaries on both kinetic grids.
 # Exclude secondaries born below p/(m_e*c) = 0.1.
 ds.eqsys.n_re.setAvalanche(
-    avalanche=Runaways.AVALANCHE_MODE_BOLTZMANN_KNOCK_ON,
+    avalanche=Runaways.AVALANCHE_MODE_BOLTZMANN,
     pCutAvalanche=0.1,
 )
 # ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_SIMPLE)

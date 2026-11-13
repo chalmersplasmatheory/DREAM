@@ -1,4 +1,5 @@
 # Settings for the runaway electron density
+import warnings
 
 import numpy as np
 from scipy.integrate import quad
@@ -25,8 +26,8 @@ COLLQTY_ECEFF_MODE_FULL = 4
 AVALANCHE_MODE_NEGLECT = 1
 AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
-AVALANCHE_MODE_KINETIC = 4
-AVALANCHE_MODE_BOLTZMANN_KNOCK_ON = 5
+AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI = 4
+AVALANCHE_MODE_BOLTZMANN = 5
 
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
@@ -67,6 +68,23 @@ HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 LCFS_LOSS_MODE_DISABLED = 1
 LCFS_LOSS_MODE_FLUID = 2
 LCFS_LOSS_MODE_KINETIC = 3
+
+_DEPRECATED_AVALANCHE_MODES = {
+    "AVALANCHE_MODE_KINETIC": "AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI",
+    "AVALANCHE_MODE_BOLTZMANN_KNOCK_ON": "AVALANCHE_MODE_BOLTZMANN",
+}
+
+def __getattr__(name):
+    replacement = _DEPRECATED_AVALANCHE_MODES.get(name)
+    if replacement is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    warnings.warn(
+        f"{name} is deprecated. Use {replacement} instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return globals()[replacement]
 
 
 def GammafluxProfil(E, C1, C2, C3):
@@ -487,8 +505,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'hottail'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
-        if self.avalanche in (AVALANCHE_MODE_KINETIC, AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) and self.pCutAvalanche == 0:
-            raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
+        if self.avalanche in (AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI, AVALANCHE_MODE_BOLTZMANN) and self.pCutAvalanche == 0:
+            raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using ROSENBLUTH_PUTVINSKI avalanche.")
         if type(self.tritium) != int:
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected integer.")
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:

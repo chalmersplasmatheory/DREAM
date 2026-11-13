@@ -120,9 +120,9 @@ mechanism* and will lead to an exponential growth in the number of runaway
 electrons.
 
 DREAM provides two fluid avalanche growth rates, ``FLUID`` and
-``FLUID_HESSLOW``, and two kinetic knock-on sources. ``KINETIC`` uses the
+``FLUID_HESSLOW``, and two kinetic knock-on sources. ``ROSENBLUTH_PUTVINSKI`` uses the
 Rosenbluth–Putvinski (RP) approximation with infinitely energetic primaries
-aligned with the magnetic field. ``BOLTZMANN_KNOCK_ON`` uses the Møller
+aligned with the magnetic field. ``BOLTZMANN`` uses the Møller
 collision gain term for primaries with the energies and pitches resolved
 on the kinetic grids, with stationary cold target electrons.
 
@@ -136,19 +136,19 @@ on the kinetic grids, with stationary cold target electrons.
    Use one of the fluid growth rates for simulations with both kinetic grids
    disabled.
 
-+---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
-| Option                                | Description                                                                                                     |
-+=======================================+=================================================================================================================+
-| ``AVALANCHE_MODE_NEGLECT``            | Do **not** include avalanche generation in the simulation.                                                      |
-+---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_FLUID``              | Modified ``HESSLOW`` model                                                                                      |
-+---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_FLUID_HESSLOW``      | Implements Eq (14) in `Hesslow NF (2019) <https://doi.org/10.1088/1741-4326/ab26c2>`_                           |
-+---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_KINETIC``            | Kinetic source term derived by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03>`_ |
-+---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
-| ``AVALANCHE_MODE_BOLTZMANN_KNOCK_ON`` | Kinetic source term described in `Embreus JPP (2018) <https://doi.org/10.1017/S002237781700099X>`_              |
-+---------------------------------------+-----------------------------------------------------------------------------------------------------------------+
++-----------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| Option                                  | Description                                                                                                     |
++=========================================+=================================================================================================================+
+| ``AVALANCHE_MODE_NEGLECT``              | Do **not** include avalanche generation in the simulation.                                                      |
++-----------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID``                | Modified ``HESSLOW`` model                                                                                      |
++-----------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID_HESSLOW``        | Implements Eq (14) in `Hesslow NF (2019) <https://doi.org/10.1088/1741-4326/ab26c2>`_                           |
++-----------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI`` | Kinetic source term derived by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03>`_ |
++-----------------------------------------+-----------------------------------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_BOLTZMANN``            | Kinetic source term described in `Embreus JPP (2018) <https://doi.org/10.1017/S002237781700099X>`_              |
++-----------------------------------------+-----------------------------------------------------------------------------------------------------------------+
 
 
 The ``FLUID`` model modifies the ``FLUID_HESSLOW`` model by replacing the denominator 
@@ -156,7 +156,7 @@ The ``FLUID`` model modifies the ``FLUID_HESSLOW`` model by replacing the denomi
 :math:`\sqrt{4\bar\nu_s+\bar\nu_s\bar\nu_D}`, which increases the accuracy for 
 nearly neutral plasmas dominated by hydrogen collisions.
 
-The kinetic models ``KINETIC`` and ``BOLTZMANN_KNOCK_ON`` require the ``pCutAvalanche`` 
+The kinetic models ``ROSENBLUTH_PUTVINSKI`` and ``BOLTZMANN`` require the ``pCutAvalanche``
 setting to be specified, which introduces a model cutoff below which no knock-ons will 
 be created. 
 This is required since the knock-on gain rate diverges in the limit :math:`p \to 0`. 
@@ -174,11 +174,11 @@ The kinetic avalanche sources use the following primary populations.
      - Hot-tail grid only
      - Runaway grid only
      - Both grids
-   * - ``KINETIC``
+   * - ``ROSENBLUTH_PUTVINSKI``
      - :math:`S_\mathrm{RP}(n_\mathrm{re})`
      - :math:`S_\mathrm{RP}(n_\mathrm{re})`
      - :math:`S_\mathrm{RP}(n_\mathrm{re})`
-   * - ``BOLTZMANN_KNOCK_ON``
+   * - ``BOLTZMANN``
      - :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + S_\mathrm{RP}(n_\mathrm{re})`
      - :math:`C_\mathrm{boltz}(f_\mathrm{re})`
      - :math:`C_\mathrm{boltz}(f_\mathrm{hot}) + C_\mathrm{boltz}(f_\mathrm{re})`
@@ -189,13 +189,13 @@ hot-tail-only Boltzmann mode, the RP contribution accounts for fluid primaries
 above the grid. Their knock-ons on the hot-tail grid use the RP pitch source,
 and DREAM uses a fluid external avalanche rate for knock-ons above the grid.
 
-With ``KINETIC`` and a hot-tail grid, choose its :math:`p_\mathrm{max}` near
+With ``ROSENBLUTH_PUTVINSKI`` and a hot-tail grid, choose its :math:`p_\mathrm{max}` near
 the critical momentum so that most runaways are represented by
-:math:`n_\mathrm{re}`. With ``BOLTZMANN_KNOCK_ON`` and a hot-tail grid alone,
+:math:`n_\mathrm{re}`. With ``BOLTZMANN`` and a hot-tail grid alone,
 choose :math:`p_\mathrm{max}` large enough for the RP approximation to be
 appropriate for the external primaries.
 
-To use ``BOLTZMANN_KNOCK_ON`` with the runaway grid alone, disable the
+To use ``BOLTZMANN`` with the runaway grid alone, disable the
 hot-tail grid and enable an evolved :math:`p,\xi` runaway grid. Use
 ``ds.runawaygrid.setPmin(...)`` to set its lower boundary. Place that boundary
 low enough to resolve the secondary electrons that can run away, and choose
@@ -206,7 +206,7 @@ gain term to :math:`f_\mathrm{re}` and its momentum integral to the
 
 .. warning::
 
-   The kinetic avalanche source, ``AVALANCHE_MODE_KINETIC``, makes explicit use
+   The RP avalanche source, ``AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI``, makes explicit use
    of the runaway density :math:`n_{\rm re}`. Hence, it is not possible to model
    avalanche generation in simulations where the hot-tail grid is intended to
    contain all, or a significant fraction of, the runaway electrons. If the
@@ -255,7 +255,7 @@ The following example illustrates how to enable the kinetic runaway source term:
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.05)
+   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI, pCutAvalanche=0.05)
 
 Kinetic knock-on theory
 ***********************
@@ -323,7 +323,7 @@ is the bounce- and cell averaged kinematic delta function.
 We dare the curious reader to venture into the theory documentation ``docs/notes``
 to find the answers that you seek.
 
-The Rosenbluth-Putvinski approximation of mode ``KINETIC`` is obtained by setting
+The Rosenbluth-Putvinski approximation of mode ``ROSENBLUTH_PUTVINSKI`` is obtained by setting
 :math:`\delta_j = \delta_j(\xi^\star_i(\infty),\,1)` and :math:`S_i = S_i(\infty)`,
 effectively assuming that the incident electrons are infinitely energetic and have
 zero pitch angle, in which case the operator takes the form 
@@ -348,7 +348,7 @@ mapped Gauss--Legendre quadrature. Configure their resolution with
 in poloidal angle and primary pitch, respectively; both must be integers >=1.
 ``nxi`` is the requested number of tabulated scattering cosines and must be
 an integer >=2. These are the defaults, also used when loading settings files
-without the new group. The controls affect only ``BOLTZMANN_KNOCK_ON``.
+without the new group. The controls affect only ``BOLTZMANN``.
 
 At order one, each contact panel uses its midpoint. This is a faster way to
 initialize exploratory simulations, with less accurate angular redistribution

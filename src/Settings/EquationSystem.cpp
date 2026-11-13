@@ -180,7 +180,7 @@ void SimulationGenerator::ConstructEquations(
     eqsys->SetPostProcessor(postProcessor);
 
     OptionConstants::eqterm_avalanche_mode ava_mode = (OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) {
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN) {
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         const int_t nXiStars = s->GetInteger("eqsys/n_re/boltzmann/nxi");
         const int_t poloidalOrder = s->GetInteger("eqsys/n_re/boltzmann/poloidal");

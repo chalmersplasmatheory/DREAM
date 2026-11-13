@@ -164,7 +164,7 @@ void SimulationGenerator::ConstructEquation_n_re(
     s->GetInteger("eqsys/n_re/avalanche");
 
     if (eqsys->HasRunawayGrid() &&
-        ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON
+        ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN
     ) {
         // add the electrons created due to runaway-runaway knock-ons
         const real_t sourceSign = -1.0;

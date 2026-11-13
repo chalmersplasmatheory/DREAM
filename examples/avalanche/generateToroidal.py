@@ -1,4 +1,4 @@
-"""Demonstration of AVALANCHE_MODE_BOLTZMANN_KNOCK_ON.
+"""Demonstration of AVALANCHE_MODE_BOLTZMANN.
 
 A toroidal magnetic field with trapping and a kinetic hot-tail grid.
 The runaway population above the grid is modelled as a fluid.
@@ -129,7 +129,7 @@ ds.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
 # Use the Møller gain term for hot-tail primaries and the RP approximation
 # for fluid runaways. Exclude secondaries born below p/(m_e*c) = 0.1.
 ds.eqsys.n_re.setAvalanche(
-    avalanche=Runaways.AVALANCHE_MODE_BOLTZMANN_KNOCK_ON,
+    avalanche=Runaways.AVALANCHE_MODE_BOLTZMANN,
     pCutAvalanche=0.1,
 )
 # ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_SIMPLE)

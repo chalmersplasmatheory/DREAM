@@ -132,8 +132,8 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
     // - Boltzmann knock-on operator contributes in the (f_hot, n_tot) block (explicit in f_primary).
     // - If no runaway grid exists, approximate external runaway primaries via RP and couple through (f_hot, n_re).
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    bool include_boltz_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON ;
-    bool include_RP_source = (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) || (include_boltz_source && !eqsys->HasRunawayGrid());
+    bool include_boltz_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN ;
+    bool include_RP_source = (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI) || (include_boltz_source && !eqsys->HasRunawayGrid());
     if(include_RP_source){
         if (eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException(
@@ -340,8 +340,8 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     
     // Add contribution from kinetic avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    bool include_boltz_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON ;
-    bool include_RP_source = (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) || (include_boltz_source && !eqsys->HasRunawayGrid());
+    bool include_boltz_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN;
+    bool include_RP_source = (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI) || (include_boltz_source && !eqsys->HasRunawayGrid());
     if(include_RP_source) {
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");

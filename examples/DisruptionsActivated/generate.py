@@ -331,7 +331,7 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
             ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_FLUID_HESSLOW)
         # ...and kinetic avalanche for superthermal and kinetic...
         else:
-            ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_KINETIC, pCutAvalanche = 0.01)
+            ds1.eqsys.n_re.setAvalanche(RunawayElectrons.AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI, pCutAvalanche = 0.01)
 
         # Fluid Dreicer must be disabled whenever a
         # distribution function is evolved

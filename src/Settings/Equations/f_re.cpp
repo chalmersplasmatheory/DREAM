@@ -121,7 +121,7 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
 
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN_KNOCK_ON) {
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN) {
         if (eqsys->GetRunawayGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI) {
             throw NotImplementedException("f_re: Boltzmann knock-on only implemented for p-xi grid.");
         }
