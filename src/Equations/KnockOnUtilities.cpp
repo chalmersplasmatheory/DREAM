@@ -131,7 +131,9 @@ real_t KnockOnUtilities::Kinematics::MaximumKnockOnMomentum(real_t p1) {
 real_t KnockOnUtilities::AnalyticDelta::EvaluateXiAntiderivative(
     real_t y, real_t xi1, real_t xi_star
 ) {
-    return asin((y - xi1 * xi_star) / sqrt((1 - xi1 * xi1) * (1 - xi_star * xi_star))) / M_PI;
+    real_t a = xi_star * xi1;
+    real_t b2 = (1 - xi_star * xi_star) * (1 - xi1 * xi1);
+    return asin((y - a) / sqrt(b2)) / M_PI;
 }
 
 /**
