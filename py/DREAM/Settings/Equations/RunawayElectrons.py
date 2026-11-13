@@ -1,4 +1,5 @@
 # Settings for the runaway electron density
+import warnings
 
 import numpy as np
 from scipy.integrate import quad
@@ -25,7 +26,8 @@ COLLQTY_ECEFF_MODE_FULL = 4
 AVALANCHE_MODE_NEGLECT = 1
 AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
-AVALANCHE_MODE_KINETIC = 4
+AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI = 4
+AVALANCHE_MODE_BOLTZMANN = 5
 
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
@@ -67,6 +69,23 @@ LCFS_LOSS_MODE_DISABLED = 1
 LCFS_LOSS_MODE_FLUID = 2
 LCFS_LOSS_MODE_KINETIC = 3
 
+_DEPRECATED_AVALANCHE_MODES = {
+    "AVALANCHE_MODE_KINETIC": "AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI",
+    "AVALANCHE_MODE_BOLTZMANN_KNOCK_ON": "AVALANCHE_MODE_BOLTZMANN",
+}
+
+def __getattr__(name):
+    replacement = _DEPRECATED_AVALANCHE_MODES.get(name)
+    if replacement is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    warnings.warn(
+        f"{name} is deprecated. Use {replacement} instead.",
+        FutureWarning,
+        stacklevel=2,
+    )
+    return globals()[replacement]
+
 
 def GammafluxProfil(E, C1, C2, C3):
     mc2 = 0.51099895000e6
@@ -87,6 +106,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.dreicer   = dreicer
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
+        self.setBoltzmannQuadrature()
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
@@ -169,6 +189,27 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         psi_edge_t0 = psi_high_t0 + slope_psi * (r_edge_psi - r_high_psi)
 
         return psi_edge_t0
+
+
+    @staticmethod
+    def _quadratureInteger(name, value, minimum):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)) or value < minimum:
+            raise EquationException(f"n_re: Boltzmann {name} must be an integer >= {minimum}.")
+        return int(value)
+
+
+    def setBoltzmannQuadrature(self, poloidal=8, pitch=4, nxi=80):
+        """Set Gauss orders per contact panel and scattering-cosine table size.
+
+        ``poloidal`` and ``pitch`` must be >=1; ``nxi`` must be >=2.
+        Increasing these resolves angular quadrature/interpolation, while
+        momentum and pitch distribution resolution are controlled by the grids.
+        """
+        # Validate all arguments before changing any setting.
+        values = {name: self._quadratureInteger(name, value, minimum)
+                  for name, value, minimum in (("poloidal", poloidal, 1),
+                                               ("pitch", pitch, 1), ("nxi", nxi, 2))}
+        self.boltzmann = values
 
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
@@ -337,6 +378,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Set all options from a dictionary.
         """
         self.avalanche = int(scal(data['avalanche']))
+        # Older settings files have no quadrature group. Restore defaults even
+        # when loading into an object previously configured at another order.
+        boltzmann = data.get('boltzmann', {})
+        self.setBoltzmannQuadrature(**{name: scal(boltzmann.get(name, default))
+            for name, default in (("poloidal", 8), ("pitch", 4), ("nxi", 80))})
 
         if 'pCutAvalanche' in data:
             self.pCutAvalanche = data['pCutAvalanche']
@@ -400,6 +446,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche,
+            'boltzmann': dict(self.boltzmann),
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
@@ -445,6 +492,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Verify that the settings of this unknown are correctly set.
         """
+        for name, minimum in (("poloidal", 1), ("pitch", 1), ("nxi", 2)):
+            self._quadratureInteger(name, self.boltzmann[name], minimum)
+
         if type(self.avalanche) != int:
             raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected integer.")
         if type(self.dreicer) != int:
@@ -455,8 +505,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'hottail'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
-        if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
-            raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
+        if self.avalanche in (AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI, AVALANCHE_MODE_BOLTZMANN) and self.pCutAvalanche == 0:
+            raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using ROSENBLUTH_PUTVINSKI avalanche.")
         if type(self.tritium) != int:
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected integer.")
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:

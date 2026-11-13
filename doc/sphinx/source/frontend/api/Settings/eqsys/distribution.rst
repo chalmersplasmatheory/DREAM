@@ -897,7 +897,7 @@ Rosenbluth-Putvinski source term
 (`Rosenbluth and Putvinski 1997 <https://doi.org/10.1088/0029-5515/37/10/I03>`_).
 This source term is however enabled on the :ref:`n_re <ds-eqsys-n_re>` settings
 object using the ``setAvalanche()`` method with the option
-``RunawayElectrons.AVALANCHE_MODE_KINETIC``.
+``RunawayElectrons.AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI``.
 
 Since the source term diverges in the origin, creating an infinite number of knock-ons,
 a cutoff parameter ``pCutAvalanche`` is introduced, defined as the minimum momentum
@@ -919,7 +919,7 @@ Kinetic avalanche runaways can be included in the simulation thusly:
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.1)
+   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI, pCutAvalanche=0.1)
 
 This will add the Rosenbluth-Putvinski source term to all kinetic equations
 in the simulation.
