@@ -9,6 +9,8 @@ namespace DREAM {
 
     private:
         real_t *sourceVec = nullptr;
+        real_t *tmpVec = nullptr;  // scratch for setting jacobian columns
+        void Deallocate();
     protected:
         FVM::UnknownQuantityHandler *unknowns;
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) = 0;

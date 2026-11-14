@@ -16,6 +16,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
+#include "DREAM/Equations/Fluid/KiramovBoundaryHeatTransport.hpp"
 
 
 using namespace DREAM;
@@ -332,7 +333,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportAdvectiveBC *abc=nullptr;
             ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-                bc, tt, oprtr, path, grid
+                bc, tt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -368,7 +369,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
             ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-                bc, dt, oprtr, path, grid
+                bc, dt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -418,7 +419,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
             ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-                bc, dt, oprtr, path, grid
+                bc, dt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -458,7 +459,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 			// Add boundary condition...
 			TransportDiffusiveBC *dbc =
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-					bc, hrr, oprtr, path, grid
+					bc, hrr, oprtr, path, grid, heat
 				);
 
 			// Store B.C. for OtherQuantityHandler
@@ -476,7 +477,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 
 			TransportDiffusiveBC *dbc =
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-					bc, rrr, oprtr, path, grid
+					bc, rrr, oprtr, path, grid, heat
 				);
 
 			// Store B.C. for OtherQuantityHandler
@@ -505,7 +506,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
 		TransportAdvectiveBC *abc =
 			ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-				bc, tt, oprtr, path, grid
+				bc, tt, oprtr, path, grid, heat
             );
 
         // Store B.C. for OtherQuantityHandler
@@ -533,7 +534,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         // Add boundary condition...
         TransportDiffusiveBC *dbc =
 			ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-				bc, tt_drr, oprtr, path, grid
+				bc, tt_drr, oprtr, path, grid, heat
 			);
 
         // Store B.C. for OtherQuantityHandler
@@ -544,7 +545,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             // Add boundary condition...
 			TransportAdvectiveBC *abc =
 				ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
-					bc, tt_ar, oprtr, path, grid
+					bc, tt_ar, oprtr, path, grid, heat
                 );
 
 			// Store B.C. for OtherQuantityHandler
@@ -592,7 +593,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 			// Add boundary condition
 			TransportDiffusiveBC *dbc =
 				ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
-					bc, fct, oprtr, path, grid
+					bc, fct, oprtr, path, grid, heat
 				);
 
 			// Store B.C. for OtherQuantityHandler
@@ -605,6 +606,15 @@ bool SimulationGenerator::ConstructTransportTerm(
 			);
 		}
 	}
+
+    if (heat && hasNonTrivialTransport && bc==OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV){
+
+        TransportAdvectiveBC * t = new KiramovBoundaryHeatTransportBC(grid, eqsys->GetUnknownHandler(), eqsys->GetIonHandler());
+        oprtr->AddBoundaryCondition(t);  
+
+        if (advective_bc != nullptr)
+            *advective_bc = t;  
+    }
             
     return hasNonTrivialTransport;
 }
@@ -614,7 +624,7 @@ template<class T1, class T2>
 T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
     enum OptionConstants::eqterm_transport_bc bc,
     T2 *transpTerm, FVM::Operator *oprtr, const string &path,
-    FVM::Grid *grid
+    FVM::Grid *grid, bool heat
 ) {
     T1 *t = nullptr;
     switch (bc) {
@@ -631,6 +641,16 @@ T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
             t = new T1(grid, transpTerm, T1::TRANSPORT_BC_DF_CONST);
             oprtr->AddBoundaryCondition(t);
             break;
+            
+        case OptionConstants::EQTERM_TRANSPORT_BC_KIRAMOV:
+            if (!heat)
+                throw SettingsException(
+                    "%s: Boundary condition 'KIRAMOV' is not supported for this transport term.",
+                    path.c_str()
+                );
+            else
+                // BC is added later...
+                break;
 
         default:
             throw SettingsException(

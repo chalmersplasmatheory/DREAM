@@ -23,7 +23,6 @@ ComptonSource::ComptonSource(
     pLower(pLower), scaleFactor(scaleFactor), sourceMode(sm), REFluid(REFluid)
 {
     SetName("ComptonSource");
-    this->id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->id_Eterm = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->id_ntot = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     
@@ -36,6 +35,10 @@ ComptonSource::ComptonSource(
     len_t offset = 0;
     this->photonFlux = this->comptonPhotonFlux->Eval(0)[0];
     
+    if (this->unknowns->HasUnknown(OptionConstants::UQTY_F_HOT))
+        this->has_fhot = true;
+    if (this->unknowns->HasUnknown(OptionConstants::UQTY_F_RE))
+        this->has_fre = true;
     
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i=0; i<n1[ir]; i++){
@@ -170,10 +173,12 @@ real_t ComptonSource::GetSourceFunction(len_t ir, len_t i, len_t j){
     struct intparams paramsOut = {this->limit, this->wpOut, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
     if(sourceMode == SOURCE_MODE_FLUID){
         real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
-        if (pc == std::numeric_limits<real_t>::infinity())
-            return 0.;
-        if (pc < pLower)
+        if (has_fhot || has_fre)
             pc = pLower;
+        else {
+            if (pc == std::numeric_limits<real_t>::infinity())
+                return 0.;
+        }  
         return scaleFactor * this->photonFlux * EvaluateTotalComptonNumber(pc, &params, &paramsOut);
     }
     
@@ -190,9 +195,7 @@ real_t ComptonSource::GetSourceFunction(len_t ir, len_t i, len_t j){
  * Returns the source function at (ir,i,j) differentiated with respect to the unknown x_derivId at (ir,i,j)
  */
 real_t ComptonSource::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
-    if(derivId==id_ntot) 
-        return GetSourceFunction(ir,i,j);
-    else if(sourceMode == SOURCE_MODE_FLUID){
+    if(sourceMode == SOURCE_MODE_FLUID){
         if(derivId==id_Eterm) {
             struct intparams params = {this->limit, this->wp, this->integratedComptonSpectrum, this->C1, this->C2, this->C3};
             real_t pc = REFluid->GetEffectiveCriticalRunawayMomentum(ir);
@@ -214,6 +217,8 @@ real_t ComptonSource::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, cons
         else
             return 0;
     } 
+    else if(derivId==id_ntot)
+        return GetSourceFunction(ir,i,j);
     else
         return 0;
 }

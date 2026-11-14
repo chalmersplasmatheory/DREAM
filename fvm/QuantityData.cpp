@@ -517,3 +517,21 @@ void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
         delete [] init;
 }
 
+/**
+ * Reset the initial value of this quantity.
+ */
+void QuantityData::ResetInitialValue() {
+    bool hasValue = this->HasInitialValue();
+
+	if (!hasValue)
+		return;
+	
+	if (this->GetNumberOfSavedSteps() > 1)
+		throw FVMException("QuantityData: Cannot reset initial value since more than one time step has been saved.");
+
+	this->store.clear();
+	this->times.clear();
+
+	this->nOldSaved = 0;
+}
+
