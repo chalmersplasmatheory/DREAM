@@ -223,8 +223,8 @@ namespace DREAM {
 		static void ConstructEquation_T_hot(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
 		static void ConstructEquation_T_hot_inner(const std::string&, EquationSystem*, Settings*);
         static void ConstructEquation_W_hot_inner(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_W_hot_moment(EquationSystem*, Settings*);
-		static void ConstructEquation_W_hot_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_W_hot_moment(const std::string&, EquationSystem*, Settings*);
+		static void ConstructEquation_W_hot_selfconsistent(const std::string&, EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
                 
         static void ConstructEquation_q_hot(EquationSystem*, Settings*);
 
@@ -300,11 +300,11 @@ namespace DREAM {
         static len_t GetNumberOfIonSpecies(Settings*);
 
 		// Helper routines for fetching f_hot settings
-		static std::string _get_f_hot_subgroup(Settings*, const std::string&);
-		static bool _get_f_hot_bool(Settings*, const std::string&);
-		static int_t _get_f_hot_int(Settings*, const std::string&);
-		static real_t _get_f_hot_real(Settings*, const std::string&);
-		static real_t *_get_f_hot_data_r(Settings*, const std::string&, FVM::RadialGrid*);
+		static std::string _get_f_hot_subgroup(Settings*, const std::string&, enum OptionConstants::uqty_distribution_mode m=OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
+		static bool _get_f_hot_bool(Settings*, const std::string&, enum OptionConstants::uqty_distribution_mode m=OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
+		static int_t _get_f_hot_int(Settings*, const std::string&, enum OptionConstants::uqty_distribution_mode m=OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
+		static real_t _get_f_hot_real(Settings*, const std::string&, enum OptionConstants::uqty_distribution_mode m=OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
+		static real_t *_get_f_hot_data_r(Settings*, const std::string&, FVM::RadialGrid*, enum OptionConstants::uqty_distribution_mode m=OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);

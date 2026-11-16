@@ -113,14 +113,16 @@ void SimulationGenerator::ConstructEquation_j_hot_ohmic(
 	eqsys->SetOperator(id_j_hot, id_j_hot, Op_j, "j_hot = sigma*E");
 	eqsys->SetOperator(id_j_hot, id_E_field, Op_E);
 
-	eqsys->initializer->AddRule(
-		id_j_hot,
-		EqsysInitializer::INITRULE_EVAL_EQUATION,
-		nullptr,
-		// Dependencies
-		id_E_field,
-		EqsysInitializer::RUNAWAY_FLUID
-	);
+	if (!eqsys->IsAssigningToAlternativeEquation(id_j_hot)) {
+		eqsys->initializer->AddRule(
+			id_j_hot,
+			EqsysInitializer::INITRULE_EVAL_EQUATION,
+			nullptr,
+			// Dependencies
+			id_E_field,
+			EqsysInitializer::RUNAWAY_FLUID
+		);
+	}
 }
 
 /**
@@ -199,15 +201,17 @@ void SimulationGenerator::ConstructEquation_j_hot_moment(
             eqsys->SetOperator(id_j_hot, id_f_hot, Op1, desc);
 
             // Set initialization method
-            eqsys->initializer->AddRule(
-                id_j_hot,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                // Dependencies
-                id_f_hot,
-                EqsysInitializer::RUNAWAY_FLUID,
-                id_E_field
-            );
+			if (!eqsys->IsAssigningToAlternativeEquation(id_j_hot)) {
+				eqsys->initializer->AddRule(
+					id_j_hot,
+					EqsysInitializer::INITRULE_EVAL_EQUATION,
+					nullptr,
+					// Dependencies
+					id_f_hot,
+					EqsysInitializer::RUNAWAY_FLUID,
+					id_E_field
+				);
+			}
         }
 
     // Otherwise, we set it to zero...
@@ -216,10 +220,12 @@ void SimulationGenerator::ConstructEquation_j_hot_moment(
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
         eqsys->SetOperator(id_j_hot, id_j_hot, eqn, "zero");
         // Set initialization method
-        eqsys->initializer->AddRule(
-            id_j_hot,
-            EqsysInitializer::INITRULE_EVAL_EQUATION
-        );
+		if (!eqsys->IsAssigningToAlternativeEquation(id_j_hot)) {
+			eqsys->initializer->AddRule(
+				id_j_hot,
+				EqsysInitializer::INITRULE_EVAL_EQUATION
+			);
+		}
     }
 
 }

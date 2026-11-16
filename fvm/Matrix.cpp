@@ -356,6 +356,26 @@ void Matrix::ResetOffset() {
     this->colOffset = 0;
 }
 
+
+bool Matrix::ShouldSkipRow(const PetscInt irow) const {
+	if (this->localRowMask != nullptr) {
+		len_t ir = this->rowOffset+irow;
+		if (ir >= this->iMinRM && ir < this->iMaxRM) {
+			// If the mask is 'true', we should set the matrix element,
+			// but only if the not modifier (localRowMaskNot) is 'false'.
+			// Otherwise, we require the mask to be 'false' to set the
+			// matrix element.
+			//
+			// Hence, if 'localRowMask' and 'localRowMaskNot' are equal,
+			// we DO NOT set the element.
+			if (this->localRowMask[irow] == this->localRowMaskNot)
+				return true;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Sets one element in the matrix.
  *
@@ -369,20 +389,8 @@ void Matrix::SetElement(
     const PetscScalar v, InsertMode insert_mode
 ) {
     if (v == 0) return;
-	else if (this->localRowMask != nullptr) {
-		len_t ir = this->rowOffset+irow;
-		if (ir >= this->iMinRM && ir < this->iMaxRM) {
-			// If the mask is 'true', we should set the matrix element,
-			// but only if the not modifier (localRowMaskNot) is 'false'.
-			// Otherwise, we require the mask to be 'false' to set the
-			// matrix element.
-			//
-			// Hence, if 'localRowMask' and 'localRowMaskNot' are equal,
-			// we DO NOT set the element.
-			if (this->localRowMask[irow] == this->localRowMaskNot)
-				return;
-		}
-	}
+	else if (this->ShouldSkipRow(irow))
+		return;
 
     const PetscInt row = rowOffset + irow;
     const PetscInt col = colOffset + icol;
@@ -427,8 +435,9 @@ void Matrix::SetColumn(
     PetscInt nnz = 0;
     for (PetscInt r = 0; r < m; ++r) {
         const PetscScalar v = vals[r];
-        if (v == 0)
+        if (v == 0 || this->ShouldSkipRow(firstLocalRow + r))
             continue;
+
         tmpRows[nnz] = r0 + r;
         tmpVals[nnz] = v;
         ++nnz;
@@ -568,8 +577,9 @@ void Matrix::ZeroRows(const PetscInt n, const PetscInt i[]) {
  * v: The constant value that the diagonal will take 
  */
 void Matrix::SetDiagonalConstant(const PetscInt n, const PetscInt i[], const PetscReal v) {
-    for(PetscInt it=0; it<n; it++)
-        MatSetValue(this->petsc_mat, this->rowOffset+i[it], this->colOffset+i[it], v, INSERT_VALUES);
+    for (PetscInt it=0; it<n; it++)
+		if (!this->ShouldSkipRow(i[it]))
+			MatSetValue(this->petsc_mat, this->rowOffset+i[it], this->colOffset+i[it], v, INSERT_VALUES);
 }
 
 

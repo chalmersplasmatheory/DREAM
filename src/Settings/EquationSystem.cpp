@@ -212,7 +212,7 @@ void SimulationGenerator::ConstructEquations(
         if(hottailGrid != nullptr){
 			// T_hot is defined, the equation for W_hot will already be set up
 			if (!eqsys->HasUnknown(OptionConstants::UQTY_T_HOT))
-				ConstructEquation_W_hot_moment(eqsys,s);
+				ConstructEquation_W_hot_moment("eqsys/T_hot",eqsys,s);
 
         	ConstructEquation_q_hot(eqsys,s);
         }

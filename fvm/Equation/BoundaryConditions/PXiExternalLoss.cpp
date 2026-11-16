@@ -228,7 +228,7 @@ void PXiExternalLoss::__SetElements(
 				// (we also enforce that 'f' is positive, to avoid spurious numerical
 				// oscillations from causing negative fluxes)
                 if (Ap != nullptr) {
-                    real_t delta1 = (Ap[j*(np+1) + np]>0 && f_data[j*np+(np-1)]>0); 
+                    real_t delta1 = (Ap[j*(np+1) + np]>0 && f_data[offset+j*np+(np-1)]>0); 
                     // Phi_{N_p+1/2}  -- f_{N_p+1} = 0
                     f(idx1, idx2, delta1*Ap[j*(np+1) + np] * Vd);
                 }

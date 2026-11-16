@@ -16,7 +16,7 @@ UnknownQuantityEquation::UnknownQuantityEquation(
 	EquationTriggerCondition *condition
 ) :uqtyId(uqtyId), uqty(uqty), condition(condition), description(desc) {
 	
-	if (condition == nullptr) {
+	if (condition != nullptr && this->eqn_cache == nullptr) {
 		const len_t N = uqty->NumberOfElements();
 		this->eqn_cache = new real_t[N];
 		this->nElements = N;
@@ -69,7 +69,12 @@ void UnknownQuantityEquation::Evaluate(
 
 	// Evaluate alternative equation
 	if (this->condition != nullptr) {
-		for (auto it = this->equations.begin(); it != this->equations.end(); it++) {
+		// Reset alternative equation cache
+		const len_t N = uqty->NumberOfElements();
+		for (len_t i = 0; i < N; i++)
+			this->eqn_cache[i] = 0;
+
+		for (auto it = this->equations_alt.begin(); it != this->equations_alt.end(); it++) {
 			FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
 			
 			// This equation will be used later to "solve" for
@@ -328,7 +333,7 @@ void UnknownQuantityEquation::SetTriggerCondition(
 ) {
 	this->condition = condition;
 
-	if (condition == nullptr) {
+	if (condition != nullptr && this->eqn_cache == nullptr) {
 		const len_t N = uqty->NumberOfElements();
 		this->eqn_cache = new real_t[N];
 		this->nElements = N;

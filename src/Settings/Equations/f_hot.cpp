@@ -103,8 +103,19 @@ void SimulationGenerator::ConstructEquation_f_hot(
 	enum OptionConstants::eqn_trigger_type switchtype =
 		(enum OptionConstants::eqn_trigger_type)s->GetInteger(MODULENAME "/switch/condition");
 	
+	enum OptionConstants::uqty_distribution_mode main_mode =
+		(enum OptionConstants::uqty_distribution_mode)
+			s->GetInteger(MODULENAME "/mode");
+
 	// Set alternative equation?
 	if (switchtype != OptionConstants::EQN_TRIGGER_TYPE_NONE) {
+		enum OptionConstants::uqty_distribution_mode alt_mode =
+			(enum OptionConstants::uqty_distribution_mode)
+				s->GetInteger(MODULENAME "/switch/equation/mode");
+
+		if (alt_mode == main_mode && alt_mode == OptionConstants::UQTY_DISTRIBUTION_MODE_MAXWELLIAN)
+			throw SettingsException("f_hot: Main and alternative equations cannot both be Maxwellian.");
+
 		eqsys->SetAssignToAlternativeEquation(id_f_hot, true);
 
 		ConstructEquation_f_hot_inner(MODULENAME "/switch/equation", eqsys, s, oqty_terms);
@@ -116,7 +127,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
 		eqsys->SetTriggerCondition(id_f_hot, trig);
 
 		eqsys->SetAssignToAlternativeEquation(id_f_hot, false);
-	}
+	} else if (main_mode == OptionConstants::UQTY_DISTRIBUTION_MODE_MAXWELLIAN)
+		throw SettingsException("f_hot: Cannot use a purely Maxwellian mode without an alternative equation.");
 }
 
 void SimulationGenerator::ConstructEquation_f_hot_inner(
@@ -528,30 +540,64 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
  * '/eqsys/f_hot/switch/equation', depending on whether it is set for the
  * main or alternative equations.
  */
-std::string SimulationGenerator::_get_f_hot_subgroup(Settings *s, const std::string& name) {
+std::string SimulationGenerator::_get_f_hot_subgroup(
+	Settings *s, const std::string& name,
+	enum OptionConstants::uqty_distribution_mode dist_mode
+) {
 	enum OptionConstants::eqn_trigger_type switchtype =
 		(enum OptionConstants::eqn_trigger_type)s->GetInteger("eqsys/f_hot/switch/condition");
 	
+	const std::string maineq = "eqsys/f_hot/" + name;
+	const std::string alteq = "eqsys/f_hot/switch/equation/" + name;
+	
 	// Main equation?
 	if (switchtype == OptionConstants::EQN_TRIGGER_TYPE_NONE)
-		return "eqsys/f_hot/" + name;
-	else
-		return "eqsys/f_hot/switch/equation/" + name;
+		return maineq;
+	else {
+		enum OptionConstants::uqty_distribution_mode main_mode =
+			(enum OptionConstants::uqty_distribution_mode)s->GetInteger("eqsys/f_hot/mode");
+		enum OptionConstants::uqty_distribution_mode alt_mode =
+			(enum OptionConstants::uqty_distribution_mode)s->GetInteger("eqsys/f_hot/switch/equation/mode");
+
+		// Main and alternative equations are assumed to use
+		// different distribution modes.
+		if (dist_mode == main_mode)
+			return maineq;
+		else if (dist_mode == alt_mode)
+			return alteq;
+		else
+			throw SettingsException(
+				"f_hot: Requested distribution mode (%d) does not match either main (%d) or alternative (%d) equation.",
+				dist_mode, main_mode, alt_mode
+			);
+	}
 }
-bool SimulationGenerator::_get_f_hot_bool(Settings *s, const std::string& name) {
-	const std::string &path = _get_f_hot_subgroup(s, name);
+bool SimulationGenerator::_get_f_hot_bool(
+	Settings *s, const std::string& name,
+	enum OptionConstants::uqty_distribution_mode dist_mode
+) {
+	const std::string &path = _get_f_hot_subgroup(s, name, dist_mode);
 	return s->GetBool(path);
 }
-int_t SimulationGenerator::_get_f_hot_int(Settings *s, const std::string& name) {
-	const std::string &path = _get_f_hot_subgroup(s, name);
+int_t SimulationGenerator::_get_f_hot_int(
+	Settings *s, const std::string& name,
+	enum OptionConstants::uqty_distribution_mode dist_mode
+) {
+	const std::string &path = _get_f_hot_subgroup(s, name, dist_mode);
 	return s->GetInteger(path);
 }
-real_t SimulationGenerator::_get_f_hot_real(Settings *s, const std::string& name) {
-	const std::string &path = _get_f_hot_subgroup(s, name);
+real_t SimulationGenerator::_get_f_hot_real(
+	Settings *s, const std::string& name,
+	enum OptionConstants::uqty_distribution_mode dist_mode
+) {
+	const std::string &path = _get_f_hot_subgroup(s, name, dist_mode);
 	return s->GetReal(path);
 }
-real_t *SimulationGenerator::_get_f_hot_data_r(Settings *s, const std::string& name, FVM::RadialGrid *rgrid) {
-	std::string path = _get_f_hot_subgroup(s, "");
+real_t *SimulationGenerator::_get_f_hot_data_r(
+	Settings *s, const std::string& name, FVM::RadialGrid *rgrid,
+	enum OptionConstants::uqty_distribution_mode dist_mode
+) {
+	std::string path = _get_f_hot_subgroup(s, "", dist_mode);
 	// Remove trailing '/'
 	path.pop_back();
 	return LoadDataR(path, rgrid, s, name);

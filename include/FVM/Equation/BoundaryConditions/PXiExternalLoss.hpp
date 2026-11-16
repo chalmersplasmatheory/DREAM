@@ -53,7 +53,7 @@ namespace DREAM::FVM::BC {
         FVM::Grid *distributionGrid=nullptr;
 
         len_t fId;
-		const real_t *f_data;
+		const real_t *f_data=nullptr;
 
 		const bool *trigger_mask = nullptr;
 		bool isAlternativeEquation = false;

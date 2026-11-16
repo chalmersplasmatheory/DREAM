@@ -276,23 +276,23 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
     bool includeNBI = false;
-    if (s->HasSetting(MODULENAME "/NBI/enabled"))
-        includeNBI = s->GetBool(MODULENAME "/NBI/enabled");
+    if (s->HasSetting(modulename + "/NBI/enabled"))
+        includeNBI = s->GetBool(modulename + "/NBI/enabled");
 
     if (includeNBI) {
-        real_t s_max = s->GetReal(MODULENAME "/NBI/s_max");
-        real_t r_beam = s->GetReal(MODULENAME "/NBI/r_beam");
-        real_t Ti_beam = s->GetReal(MODULENAME "/NBI/Ti_beam");
-        real_t m_i_beam = s->GetReal(MODULENAME "/NBI/m_i_beam");
-        real_t R0 = s->GetReal(MODULENAME "/NBI/R0");
-        int_t n_beam_radius = s->GetInteger(MODULENAME "/NBI/n_beam_radius");
-        int_t n_beam_theta = s->GetInteger(MODULENAME "/NBI/n_beam_theta");
-        int_t n_beam_s = s->GetInteger(MODULENAME "/NBI/n_beam_s");
+        real_t s_max = s->GetReal(modulename + "/NBI/s_max");
+        real_t r_beam = s->GetReal(modulename + "/NBI/r_beam");
+        real_t Ti_beam = s->GetReal(modulename + "/NBI/Ti_beam");
+        real_t m_i_beam = s->GetReal(modulename + "/NBI/m_i_beam");
+        real_t R0 = s->GetReal(modulename + "/NBI/R0");
+        int_t n_beam_radius = s->GetInteger(modulename + "/NBI/n_beam_radius");
+        int_t n_beam_theta = s->GetInteger(modulename + "/NBI/n_beam_theta");
+        int_t n_beam_s = s->GetInteger(modulename + "/NBI/n_beam_s");
         len_t dims[1];
-        const real_t *P0 = s->GetRealArray(MODULENAME "/NBI/P0", 1, dims);
-        const real_t *n = s->GetRealArray(MODULENAME "/NBI/n", 1, dims);
-        const real_t *energy_fractions = s->GetRealArray(MODULENAME "/NBI/energy_fractions", 1, dims);
-        int_t gaussian_profile = s->GetInteger(MODULENAME "/NBI/gaussian_profile");
+        const real_t *P0 = s->GetRealArray(modulename + "/NBI/P0", 1, dims);
+        const real_t *n = s->GetRealArray(modulename + "/NBI/n", 1, dims);
+        const real_t *energy_fractions = s->GetRealArray(modulename + "/NBI/energy_fractions", 1, dims);
+        int_t gaussian_profile = s->GetInteger(modulename + "/NBI/gaussian_profile");
 
         // Load time-dependent j_B data
         FVM::Interpolator1D *j_B_profile = LoadDataT(

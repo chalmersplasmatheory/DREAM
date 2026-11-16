@@ -77,7 +77,8 @@ void SimulationGenerator::ConstructEquation_n_hot_inner(
 			eqn->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_hot));
 			eqsys->SetOperator(id_n_hot, id_n_hot, eqn, "dn_hot/dt = 0");
 
-			real_t *n0 = _get_f_hot_data_r(s, "n0", fluidGrid->GetRadialGrid());
+			//real_t *n0 = _get_f_hot_data_r(s, "n0", fluidGrid->GetRadialGrid(), OptionConstants::UQTY_DISTRIBUTION_MODE_MAXWELLIAN);
+			real_t *n0 = LoadDataR(f_hot_modname, fluidGrid->GetRadialGrid(), s, "n0");
 			eqsys->SetInitialValue(id_n_hot, n0);
 			delete [] n0;
 		} else {

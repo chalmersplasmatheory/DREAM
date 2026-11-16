@@ -128,7 +128,7 @@ void SimulationGenerator::ConstructEquation_T_hot_inner(
 		eqsys->SetOperator(id_T_hot, id_T_hot, Op2);
 
 		// Set initial value for 'T_hot'
-		real_t *T0 = _get_f_hot_data_r(s, "T0", fluidGrid->GetRadialGrid());
+		real_t *T0 = _get_f_hot_data_r(s, "T0", fluidGrid->GetRadialGrid(), OptionConstants::UQTY_DISTRIBUTION_MODE_MAXWELLIAN);
 		eqsys->SetInitialValue(id_T_hot, T0);
 		delete [] T0;
 	}
@@ -147,11 +147,11 @@ void SimulationGenerator::ConstructEquation_W_hot_inner(
 	
 	switch (type) {
 		case OptionConstants::UQTY_T_HOT_MOMENT:
-			ConstructEquation_W_hot_moment(eqsys, s);
+			ConstructEquation_W_hot_moment(modulename, eqsys, s);
 			break;
 
 		case OptionConstants::UQTY_T_HOT_SELF_CONSISTENT:
-			ConstructEquation_W_hot_selfconsistent(eqsys, s, adas, nist, amjuel, oqty_terms);
+			ConstructEquation_W_hot_selfconsistent(modulename, eqsys, s, adas, nist, amjuel, oqty_terms);
 			break;
 
 		default:
@@ -167,7 +167,8 @@ void SimulationGenerator::ConstructEquation_W_hot_inner(
  * Construct the equation for the self-consistent hot electron energy density.
  */
 void SimulationGenerator::ConstructEquation_W_hot_selfconsistent(
-	EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
+	const std::string &modulename, EquationSystem *eqsys,
+	Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
 	struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
 	const len_t id_T_hot = eqsys->GetUnknownID(OptionConstants::UQTY_T_HOT);
@@ -180,7 +181,7 @@ void SimulationGenerator::ConstructEquation_W_hot_selfconsistent(
 	// to 'W_hot', whereas for the cold particles it is assigned to 'T_cold'
 	// (and not 'W_cold').
 	ConstructEquation_T_cold_selfconsistent(
-		MODULENAME, eqsys, s, adas, nist, amjuel, &oqty_terms->T_hot,
+		modulename, eqsys, s, adas, nist, amjuel, &oqty_terms->T_hot,
 		id_W_hot, id_T_hot,
 		id_W_hot, id_n_hot, id_j_hot,
 		true	// <-- "is for T_hot"
@@ -217,7 +218,7 @@ void SimulationGenerator::ConstructEquation_W_hot_selfconsistent(
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_W_hot_moment(
-    EquationSystem *eqsys, Settings* s
+    const std::string &modulename, EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();

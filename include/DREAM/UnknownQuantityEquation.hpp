@@ -65,6 +65,8 @@ namespace DREAM {
 		EquationTriggerCondition *GetTriggerCondition() { return this->condition; }
 		bool HasOperatorAt(const len_t i) const { return (this->equations.find(i) != this->equations.end()); }
 
+		real_t *GetEqnCache() { return this->eqn_cache; }
+
 		void CheckTriggerCondition(const real_t, FVM::UnknownQuantityHandler*);
 		bool HasAlternativeEquation() const { return (this->condition != nullptr); }
 		bool HasTransientTerm() const;
