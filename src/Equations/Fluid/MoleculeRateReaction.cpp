@@ -287,11 +287,9 @@ void MoleculeRateReaction::SetCSMatrixElements(
 
     for (len_t rateIndex = 0; rateIndex < moleculeReactions.size(); rateIndex++) {
         const MolecularReaction& reaction = moleculeReactions[rateIndex];
-
-        // Net number of particles produced in this equation.
         real_t net = 0;
 
-        // check if this ion is part of the products, if so, the rate should be positive
+        // Products
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const auto& p = reaction.products[j];
 

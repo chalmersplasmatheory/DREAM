@@ -7,7 +7,6 @@
 #include "DREAM/NBIHandler.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/NeutralCollisionalEnergyTransferTerm.hpp"
-#include "DREAM/Equations/Fluid/ExotermicEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/ReactionEnergyTransferTerm.hpp"
 
 /**
@@ -139,14 +138,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         const bool reactionsEnabled = s->GetInteger(MODULENAME "/reactions/enabled") != 0;
         const bool separateNeutrals = s->GetInteger(MODULENAME "/typeTn") == OptionConstants::UQTY_T_N_INCLUDE;
 
-         // Energy released in exothermic reactions
-        if (reactionsEnabled)
-            Op_Wij->AddTerm(
-                new ExotermicEnergyTransferTerm(
-                    fluidGrid, iz, unknowns, ionHandler, eqsys->GetRateHandler(), false
-                )
-            );
-        // Thermal energy carried by the particles in reactions between species
+        // Thermal and released energy of the particles in reactions between species
         if (reactionsEnabled || separateNeutrals)
             Op_Wij->AddTerm(
                 new ReactionEnergyTransferTerm(
@@ -195,8 +187,6 @@ void SimulationGenerator::ConstructEquation_T_n(
     // Same reactions as in the ion density equation (see ions.cpp)
     const bool includeFluidREIonization = (OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization")
         == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE;
-    const bool reactionsEnabled = s->GetInteger(MODULENAME "/reactions/enabled") != 0;
-
 
     for (len_t iz = 0; iz < nSpecies; iz++) {
         Op_Wn->AddTerm(
@@ -211,15 +201,7 @@ void SimulationGenerator::ConstructEquation_T_n(
                 )
             );
         }
-        // Energy released in exothermic reactions
-        if (reactionsEnabled){
-        Op_Wn->AddTerm(
-            new ExotermicEnergyTransferTerm(
-                fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler(), true
-            )
-        );
-        }
-        // Thermal energy carried by the particles in reactions between species
+        // Thermal and released energy of the particles in reactions between species
         Op_Wn->AddTerm(
             new ReactionEnergyTransferTerm(
                 fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler(),
