@@ -758,16 +758,62 @@ void SPIHandler::Rebuild(real_t dt, real_t t){
 
 /**
  * Deposition rate according to NGS formula from Parks TSDW presentation 2017
+ *
+ * For a single Maxwellian population, the rate is
+ *
+ *   Ypdot = -C * T^(5/3) * n^(1/3) = -C * q^(1/3) * T^(7/6),
+ *
+ * with q = n*T^(3/2) the (unnormalized) Maxwellian heat flux. When a
+ * separate hot Maxwellian population (T_hot, n_hot) is present, the heat
+ * fluxes of the two populations are added, and T is replaced by the
+ * density-weighted mean temperature (consistent with the effective energy
+ * used in the KINETIC_NGS mode):
+ *
+ *   q    = n_cold*T_cold^(3/2) + n_hot*T_hot^(3/2),
+ *   Teff = (n_cold*T_cold + n_hot*T_hot) / (n_cold + n_hot).
+ *
+ * This reduces exactly to the single-population formula when n_hot = 0.
  */
 void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
         if(YpPrevious[ip]>0 && irp[ip]<nr){
-            Ypdot[ip] = -NGSConstantFactor[ip]*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
-			if (this->hasThot)
-				Ypdot[ip] = -NGSConstantFactor[ip]*pow(Thot[irp[ip]], 5.0/3.0)*cbrt(nhot[irp[ip]]);
+            const len_t ir = irp[ip];
+			if (this->hasThot) {
+				real_t q, Teff, N;
+				NGSTwoPopulationParameters(ir, q, Teff, N);
+				if (q > 0 && Teff > 0)
+					Ypdot[ip] = -NGSConstantFactor[ip]*cbrt(q)*pow(Teff, 7.0/6.0);
+				else
+					Ypdot[ip] = 0;
+			} else
+				Ypdot[ip] = -NGSConstantFactor[ip]*pow(Tcold[ir],5.0/3.0)*cbrt(ncold[ir]);
         }else
             Ypdot[ip]=0;
     }
+}
+
+/**
+ * Evaluate the combined (unnormalized) heat flux 'q', the density-weighted
+ * effective temperature 'Teff' and total Maxwellian electron density 'N'
+ * used in the two-population NGS ablation rate.
+ */
+void SPIHandler::NGSTwoPopulationParameters(
+	const len_t ir, real_t &q, real_t &Teff, real_t &N
+) {
+	const real_t nc = ncold[ir], Tc = Tcold[ir];
+	const real_t nh = nhot[ir],  Th = Thot[ir];
+
+	q = nc*Tc*sqrt(Tc) + nh*Th*sqrt(Th);
+	N = nc + nh;
+
+	// NOTE: We use the density-weighted mean temperature here, which is
+	// consistent with the effective energy used in the KINETIC_NGS mode. This
+	// is not exactly the same as the effective temperature used in the original
+	// NGS formula, which is based on the heat fluxes of the two populations.
+	// However, it is a reasonable approximation, and it avoids having to calculate
+	// the effective temperature from the heat fluxes, which would require
+	// additional calculations and storage.
+	Teff = (N > 0 ? (nc*Tc + nh*Th) / N : 0);
 }
 
 
@@ -1033,6 +1079,44 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t 
  */
 bool SPIHandler::setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
     bool jacIsSet=false;
+
+	// Two Maxwellian populations (cold + hot)
+	if (this->hasThot) {
+		const bool isCold = (derivId == id_Tcold || derivId == id_ncold);
+		const bool isT    = (derivId == id_Tcold || derivId == id_Thot);
+		if (!isCold && derivId != id_Thot && derivId != id_nhot)
+			return false;
+
+		for (len_t ip = 0; ip < nShard; ip++) {
+			if (irp[ip] >= nr)
+				continue;
+
+			jacIsSet = true;
+			const len_t ir = irp[ip];
+
+			real_t q, Teff, N;
+			NGSTwoPopulationParameters(ir, q, Teff, N);
+			if (Ypdot[ip] == 0 || q <= 0 || Teff <= 0 || N <= 0)
+				continue;
+
+			// Parameters of the population we differentiate with respect to
+			const real_t n = isCold ? ncold[ir] : nhot[ir];
+			const real_t T = isCold ? Tcold[ir] : Thot[ir];
+
+			// d(ln Ypdot)/dx = 1/3 * d(ln q)/dx + 7/6 * d(ln Teff)/dx
+			real_t dlnY;
+			if (isT)
+				dlnY = 0.5*n*sqrt(T)/q + 7.0/6.0 * n/(N*Teff);
+			else
+				dlnY = T*sqrt(T)/(3.0*q) + 7.0/6.0 * (T-Teff)/(N*Teff);
+
+			jac->SetElement(ip, ir, scaleFactor*dlnY*Ypdot[ip]);
+		}
+
+		return jacIsSet;
+	}
+
+	// Single (cold) Maxwellian population
     if(derivId==id_Tcold){
         for(len_t ip=0;ip<nShard;ip++){
             if(irp[ip]<nr){

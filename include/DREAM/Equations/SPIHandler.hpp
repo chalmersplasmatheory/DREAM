@@ -140,6 +140,7 @@ namespace DREAM{
         real_t t_old=-1;
 
         void CalculateYpdotNGSParksTSDW();
+        void NGSTwoPopulationParameters(const len_t, real_t&, real_t&, real_t&);
         void CalculateYpdotNGSParksTSDWKinetic();
         real_t CalculateBFieldDampingJOREK(len_t ir);
         void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();

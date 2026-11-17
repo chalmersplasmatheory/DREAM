@@ -25,7 +25,7 @@ namespace DREAM {
         ~SPIAblationTerm(){}
         
         virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 3; }   /* One each for Tcold, ncold and rp */
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 5; }   /* One each for Tcold, ncold, Thot, nhot, and rp */
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;

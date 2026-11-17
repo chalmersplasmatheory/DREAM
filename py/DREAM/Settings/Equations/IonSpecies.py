@@ -949,7 +949,7 @@ class IonSpecies:
 
             # Scalar (assume density constant in spacetime)
             #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-            if np.isscalar(n):
+            if np.ndim(n) == 0 or n.size == 1:
                 self.source_t = np.array([0])
                 self.source_n = np.zeros((self.Z+1,1,1))
                 self.source_n[Z0,:,0] = n
@@ -969,11 +969,11 @@ class IonSpecies:
                     raise EquationException(f"ion_species: '{self.name}': Full ion charge state density source prescribed, but no time coordinates given.")
 
                 if self.Z+1 != n.shape[0] or t.size != n.shape[1]:
-                    raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}x{n.shape[2]}. Expected {self.Z+1}x{t.size}x{r.size}")
+                    raise EquationException(f"ion_species: '{self.name}': Invalid dimensions of prescribed source density: {n.shape[0]}x{n.shape[1]}. Expected {self.Z+1}x{t.size}")
 
                 self.source_t = t
                 self.source_n = np.zeros((self.Z+1, t.size, 1))
-                self.source_n[:,0] = n
+                self.source_n[:,:,0] = n
             else:
                 raise EquationException(f"ion_species: '{self.name}': Unrecognized shape of prescribed source density: {n.shape}.")
 
@@ -986,7 +986,7 @@ class IonSpecies:
                 n = np.array(n)
 
             # Scalar (assume density constant in spacetime)
-            if np.isscalar(n):
+            if n.ndim == 0 or n.size == 1:
                 self.source_t = np.array([0])
                 self.source_n = np.zeros((self.Z+1, 1, 1))
                 self.source_n[Z0,:] = n

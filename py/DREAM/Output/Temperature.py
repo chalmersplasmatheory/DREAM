@@ -46,7 +46,7 @@ class Temperature(FluidQuantity):
             labels.append(o[pl:])
 
         if integrate and ('energyloss_'+self.name) in self.output.other.scalar.keys():
-            o = self.output.other.scalar.energyloss_T_cold
+            o = self.output.other.scalar[f'energyloss_{self.name}']
             ax = o.plot(ax=ax, show=show)
             labels.append(o.name)
 
