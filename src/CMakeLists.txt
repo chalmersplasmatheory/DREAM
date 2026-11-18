@@ -100,7 +100,6 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KiramovBoundaryHeatTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NeutralCollisionalEnergyTransferTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ExotermicEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ReactionEnergyTransferTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIElectronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NBIIonTerm.cpp"

@@ -226,7 +226,10 @@ def compile_molecular_rates(outputfile, inttype="len_t", realtype="real_t"):
       logT = np.log10(T_grid)
 
       body = ""
-      table = (f"const {inttype} molecular_rate_n = {len(data.MOLECULAR_REACTIONS)};\n"f"struct molecular_rate molecular_rate_table[{len(data.MOLECULAR_REACTIONS)}] ={{\n"
+      # Reaction rates and molecular line-radiation rates share the same table
+      rates = data.MOLECULAR_REACTIONS + data.MOLECULAR_LINE_RADIATION
+
+      table = (f"const {inttype} molecular_rate_n = {len(rates)};\n"f"struct molecular_rate molecular_rate_table[{len(rates)}] ={{\n"
       )
 
       body += f"const {inttype} molecular_rate_nn = {len(n_grid)};\n"
@@ -234,7 +237,7 @@ def compile_molecular_rates(outputfile, inttype="len_t", realtype="real_t"):
       body += cpp_array(realtype, "molecular_rate_logn", logn)
       body += cpp_array(realtype, "molecular_rate_logT", logT)
 
-      for reaction in data.MOLECULAR_REACTIONS:
+      for reaction in rates:
           name = reaction["name"]
           cname = name.replace("+", "p").replace("-", "m").replace(".", "_")
 
@@ -333,7 +336,11 @@ def compile_rate_data(outputfile):
             entries += f"        {len(reactants)}, {reactants_name},\n"
             entries += f"        {len(products)}, {products_name},\n"
             entries += (f"        {cpp_input(reaction['temperature_input'])},\n")
-            entries += (f"        {cpp_input(reaction['density_input'])}\n")
+            entries += (f"        {cpp_input(reaction['density_input'])},\n")
+            # Released energy [eV]
+            entries += f"        {reaction['energy_released']},\n"
+            # Franck-Condon energy [eV] (0 if not given)
+            entries += f"        {reaction.get('franck_condon', 0.0)}\n"
             entries += "    },\n"
 
         body += "const MolecularReactionDefinition molecularReactionDefinitions[] = {\n"
@@ -341,6 +348,15 @@ def compile_rate_data(outputfile):
         body += "};\n\n"
         body += "const len_t molecularReactionDefinitionCount =\n"
         body += "    sizeof(molecularReactionDefinitions) / sizeof(molecularReactionDefinitions[0]);\n\n"
+
+        # Molecular line radiation (molecular counterpart of ADAS PLT)
+        body += "const MolecularLineRadiationDefinition molecularLineRadiationDefinitions[] = {\n"
+        for radiation in data.MOLECULAR_LINE_RADIATION:
+            species, Z0 = radiation["species"]
+            body += f'    {{"{radiation["name"]}", "{species}", {Z0}}},\n'
+        body += "};\n\n"
+        body += "const len_t molecularLineRadiationDefinitionCount =\n"
+        body += "    sizeof(molecularLineRadiationDefinitions) / sizeof(molecularLineRadiationDefinitions[0]);\n\n"
         body += "} // namespace DREAM\n"
 
         pathlib.Path(outputfile).parent.mkdir(parents=True, exist_ok=True)

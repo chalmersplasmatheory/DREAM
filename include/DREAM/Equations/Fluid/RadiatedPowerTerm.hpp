@@ -32,9 +32,10 @@ namespace DREAM {
         bool includePRB = true;
 
         real_t GetAtomicIonTerm(len_t ir) const;
+        real_t GetMolecularElectronEnergyLoss(const MolecularReaction&, const real_t Te) const;
 
-		real_t *Prad;
-		real_t *Pion;
+		real_t *Prad;   // radiation
+		real_t *Pion;   // energy spent on ionization/recombination and molecular reactions
 
     protected:
         virtual len_t GetNumberOfWeightsElements() override 

@@ -50,6 +50,7 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
 
     if (reactionsEnabled){
         AddMolecularReactionRates(enabledReactionNames);
+        AddMolecularLineRadiation();
     }
 }
 
@@ -60,6 +61,8 @@ RateHandler::~RateHandler() {
     for (auto it = molecularReactions.begin(); it != molecularReactions.end(); it++) {
         delete it->rate;
     }
+    for (auto& radiation : molecularLineRadiation)
+        delete radiation.rate;
 }
 
 
@@ -160,6 +163,16 @@ void RateHandler::AddMolecularReactionRates(const std::vector<std::string>& enab
         reaction.products = def.products;
         reaction.temperatureInput = def.temperatureInput;
         reaction.densityInput = def.densityInput;
+        reaction.energyReleased = def.energyReleased;
+        reaction.franckCondonEnergy = def.franckCondonEnergy;
+
+        reaction.electronsConsumed = 0;
+        for (len_t j = 0; j < def.nReactants; j++)
+            if (std::string(def.reactants[j].name) == "e")
+                reaction.electronsConsumed += (int_t)def.reactants[j].coefficient;
+        for (len_t j = 0; j < def.nProducts; j++)
+            if (std::string(def.products[j].name) == "e")
+                reaction.electronsConsumed -= (int_t)def.products[j].coefficient;
         reaction.rate = GetMolecularRateByName(def.rateName);
 
         molecularReactions.push_back(reaction);
@@ -169,6 +182,27 @@ void RateHandler::AddMolecularReactionRates(const std::vector<std::string>& enab
         "RateHandler: Added %zu molecular reactions.\n",
         molecularReactions.size());
 
+}
+
+/**
+ * Add the line radiation (molecular counterpart of PLT) of every molecular
+ * species in the simulation that has a line-radiation rate in RateData.cpp.
+ */
+void RateHandler::AddMolecularLineRadiation() {
+    for (len_t k = 0; k < molecularLineRadiationDefinitionCount; k++) {
+        const auto& def = molecularLineRadiationDefinitions[k];
+        if (!ions->HasIon(def.species))
+            continue;
+
+        const len_t iz = ions->GetIonIndex(def.species);
+        if (def.Z0 < 0 || (len_t)def.Z0 > ions->GetZ(iz))
+            throw FVM::FVMException(
+                "RateHandler: Line radiation '%s' references invalid charge state Z0=%d for species '%s'.",
+                def.rateName, def.Z0, def.species
+            );
+
+        molecularLineRadiation.push_back({iz, (len_t)def.Z0, GetMolecularRateByName(def.rateName)});
+    }
 }
 
 /**

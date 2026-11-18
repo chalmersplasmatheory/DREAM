@@ -33,6 +33,21 @@ namespace DREAM {
         MolecularInput temperatureInput;
         /// The input for the density
         MolecularInput densityInput;
+        /// Energy released by the reaction [eV] (see RateData.hpp)
+        real_t energyReleased;
+        /// Franck-Condon energy [eV] (see RateData.hpp)
+        real_t franckCondonEnergy;
+        /// Number of cold electrons consumed: electrons among the reactants minus
+        /// electrons among the products (e.g. 1 for recombination, -1 for ionization)
+        int_t electronsConsumed;
+    };
+
+    // Line radiation of one molecular charge state (molecular counterpart of PLT):
+    // P_rad = n_e * n_i(iz, Z0) * rate(n_e, T_e), rate in eV m^3/s.
+    struct MolecularLineRadiation {
+        len_t iz;
+        len_t Z0;
+        MolecularRateInterpolator *rate;
     };
 
     // Hold a user-supplied molecular rate table (given in the settings),
@@ -58,10 +73,14 @@ namespace DREAM {
         std::vector<MolecularReaction> molecularReactions;
         std::unordered_map<std::string, UserMolecularRate> userRates;
 
+        // Line radiation of the molecular species in the simulation
+        std::vector<MolecularLineRadiation> molecularLineRadiation;
+
         MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
         len_t GetADASZ(const len_t iz) const;
 
         void AddMolecularReactionRates(const std::vector<std::string>& enabledReactionNames);
+        void AddMolecularLineRadiation();
 
         FVM::UnknownQuantityHandler *unknowns;
 
@@ -83,6 +102,10 @@ namespace DREAM {
         ADASRateInterpolator *GetPLT(const len_t iz) const;
         ADASRateInterpolator *GetPRB(const len_t iz) const;
         ADASRateInterpolator *GetCCD(const len_t iz) const;
+
+        const std::vector<MolecularLineRadiation>& GetMolecularLineRadiation() const {
+            return molecularLineRadiation;
+        }
 
         // ADAS ionization rate by atomic number, for a species that is not part of
         // the plasma (e.g. the neutral beam)

@@ -1,4 +1,6 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
+#include <algorithm>
+#include <string>
 
 
 /**
@@ -100,7 +102,7 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
 	}
 
     for(len_t iz = 0; iz<nZ; iz++){
-        // Molecular radiation and binding-energy changes are neglected here.
+        // Molecules are added separately below (molecular reactions).
         if (ionHandler->IsMolecule(iz))
             continue;
         ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
@@ -175,6 +177,49 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     }
 
     /**
+     * Molecules, written as for the atoms above (L = L_line + energy per reaction):
+     *  - line radiation (molecular counterpart of PLT), e.g. AMJUEL H.10 2.2.h2r
+     *    for D2 (see MOLECULAR_LINE_RADIATION). D2+ and D3+ have none,
+     *  - energy per electron-impact reaction event (see GetMolecularElectronEnergyLoss).
+     */
+    for (const auto& radiation : rateHandler->GetMolecularLineRadiation()) {
+        len_t indZ = ionHandler->GetIndex(radiation.iz, radiation.Z0);
+        for (len_t i = 0; i < NCells; i++) {
+            real_t Li = Constants::ec * radiation.rate->Eval(n_cold[i], T_cold[i]);   // W m^3
+            real_t nij = n_i[indZ*NCells + i];
+            real_t s = (ionScaleFactor != nullptr ? ionScaleFactor[indZ] : 1);
+
+            weights[i] += s * nij * Li;
+            Prad[i] += s * n_cold[i] * nij * Li;
+        }
+    }
+    for (const auto& reaction : rateHandler->GetMolecularReactions()) {
+        // Only electron-impact reactions cost the cold electrons energy.
+        // b is the heavy reactant (the one that is not the electron).
+        const bool firstIsElectron = std::string(reaction.reactants[0].name) == "e";
+        const bool secondIsElectron = std::string(reaction.reactants[1].name) == "e";
+        if (!firstIsElectron && !secondIsElectron)
+            continue;
+        const auto& b = firstIsElectron ? reaction.reactants[1] : reaction.reactants[0];
+
+        len_t indZ = ionHandler->GetIndex(ionHandler->GetIonIndex(b.name), b.Z0);
+        for (len_t i = 0; i < NCells; i++) {
+            real_t dW = Constants::ec * GetMolecularElectronEnergyLoss(reaction, T_cold[i]);   // J
+            if (dW == 0)
+                continue;
+
+            // Electron-impact rates depend on the electron temperature (and density)
+            real_t density = rateHandler->ResolveDensity(reaction.densityInput, i);
+            real_t K = reaction.rate->Eval(density, T_cold[i]);   // m^3/s
+            real_t nij = n_i[indZ*NCells + i];
+            real_t s = (ionScaleFactor != nullptr ? ionScaleFactor[indZ] : 1);
+
+            weights[i] += s * nij * dW * K;
+            Pion[i] += s * n_cold[i] * nij * dW * K;
+        }
+    }
+
+    /**
      * If neglecting the recombination radiation, explicitly add the
      * bremsstrahlung loss which is otherwise included in 'PRB'.
      * Using the R J Gould, The Astrophysical Journal 238 (1980)
@@ -209,6 +254,31 @@ real_t RadiatedPowerTerm::GetAtomicIonTerm(len_t ir
     return ionTerm;
 }
 
+/**
+ * Energy [eV] that the cold electrons lose per electron-impact molecular reaction:
+ *  - the missing potential energy (-Delta E, if endothermic), which is stored as
+ *    potential energy in the products,
+ *  - the Franck-Condon energy E_FC, when the electron breaks a molecule apart.
+ *    It becomes kinetic energy of the fragments (ReactionEnergyTransferTerm),
+ *  - the thermal energy 1.5*Te of every electron that is consumed (recombination),
+ *    which goes to the heavy particles in ReactionEnergyTransferTerm.
+ * E.g. e + D2 -> e + 2D: 4.56 + 5.38 eV; e + D3+ -> D2 + D: 1.5*Te.
+ * Electrons produced by ionization get their energy from the ionizing electron,
+ * so nothing is added for them.
+ */
+real_t RadiatedPowerTerm::GetMolecularElectronEnergyLoss(
+    const MolecularReaction& reaction, const real_t Te
+) const {
+    if (std::string(reaction.reactants[0].name) != "e" &&
+        std::string(reaction.reactants[1].name) != "e")
+        return 0;
+
+    real_t dW = std::max(-reaction.energyReleased, 0.0) + reaction.franckCondonEnergy;
+    if (reaction.electronsConsumed > 0)
+        dW += reaction.electronsConsumed * 1.5 * Te;
+    return dW;
+}
+
 void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t indZs){
     this->SetDiffWeights(derivId, indZs, nullptr);
 }
@@ -224,7 +294,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     
     if(derivId == id_ni){
         for(len_t iz = 0; iz<nZ; iz++){
-            // Molecular radiation and binding-energy changes are neglected here.
+            // Molecules are added separately below (molecular reactions).
             if (ionHandler->IsMolecule(iz))
                 continue;
             ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
@@ -302,7 +372,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         }
     } else if(derivId == id_ncold){
         for(len_t iz = 0; iz<nZ; iz++){
-            // Molecular radiation and binding-energy changes are neglected here.
+            // Molecules are added separately below (molecular reactions).
             if (ionHandler->IsMolecule(iz))
                 continue;
             ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
@@ -366,7 +436,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
                 diffWeights[i] += bremsPrefactor*sqrt(T_cold[i])*bremsRel2*T_cold[i]/Constants::mc2inEV;
     } else if (derivId == id_Tcold){
         for(len_t iz = 0; iz<nZ; iz++){
-            // Molecular radiation and binding-energy changes are neglected here.
+            // Molecules are added separately below (molecular reactions).
             if (ionHandler->IsMolecule(iz))
                 continue;
             ADASRateInterpolator *PLT_interper = rateHandler->GetPLT(iz);
@@ -436,5 +506,52 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
             }
         }
     }
-}
 
+    // Molecules (see SetWeights): line radiation
+    for (const auto& radiation : rateHandler->GetMolecularLineRadiation()) {
+        len_t indZ = ionHandler->GetIndex(radiation.iz, radiation.Z0);
+        for (len_t i = 0; i < NCells; i++) {
+            real_t nij = n_i[indZ*NCells + i];
+            real_t s = (ionScaleFactor != nullptr ? ionScaleFactor[indZ] : 1);
+
+            if (derivId == id_ni)
+                diffWeights[NCells*indZ + i] += s * Constants::ec * radiation.rate->Eval(n_cold[i], T_cold[i]);
+            else if (derivId == id_ncold)
+                diffWeights[i] += s * nij * Constants::ec * radiation.rate->Eval_deriv_n(n_cold[i], T_cold[i]);
+            else if (derivId == id_Tcold)
+                diffWeights[i] += s * nij * Constants::ec * radiation.rate->Eval_deriv_T(n_cold[i], T_cold[i]);
+        }
+    }
+
+    // Molecules: energy per electron-impact reaction event
+    for (const auto& reaction : rateHandler->GetMolecularReactions()) {
+        // Electron-impact reactions only; b is the heavy reactant (as in SetWeights)
+        const bool firstIsElectron = std::string(reaction.reactants[0].name) == "e";
+        const bool secondIsElectron = std::string(reaction.reactants[1].name) == "e";
+        if (!firstIsElectron && !secondIsElectron)
+            continue;
+        const auto& b = firstIsElectron ? reaction.reactants[1] : reaction.reactants[0];
+
+        // d(dW)/dTe [J/eV]: only the thermal energy of consumed electrons depends on Te
+        real_t dWdT = (reaction.electronsConsumed > 0 ? Constants::ec * reaction.electronsConsumed * 1.5 : 0);
+
+        len_t indZ = ionHandler->GetIndex(ionHandler->GetIonIndex(b.name), b.Z0);
+        for (len_t i = 0; i < NCells; i++) {
+            real_t dW = Constants::ec * GetMolecularElectronEnergyLoss(reaction, T_cold[i]);
+            if (dW == 0)
+                continue;
+
+            real_t nij = n_i[indZ*NCells + i];
+            real_t s = (ionScaleFactor != nullptr ? ionScaleFactor[indZ] : 1);
+            real_t density = rateHandler->ResolveDensity(reaction.densityInput, i);
+            real_t K = reaction.rate->Eval(density, T_cold[i]);
+
+            if (derivId == id_ni)
+                diffWeights[NCells*indZ + i] += s * dW * K;
+            else if (derivId == id_ncold && reaction.densityInput.kind == MolecularInputKind::ELECTRON)
+                diffWeights[i] += s * nij * dW * reaction.rate->Eval_deriv_n(density, T_cold[i]);
+            else if (derivId == id_Tcold)
+                diffWeights[i] += s * nij * (dW * reaction.rate->Eval_deriv_T(density, T_cold[i]) + dWdT * K);
+        }
+    }
+}

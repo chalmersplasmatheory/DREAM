@@ -61,12 +61,29 @@ namespace DREAM {
         MolecularInput temperatureInput;
         MolecularInput densityInput;
 
+        // Energy released by the reaction [eV], sum E(reactants) - sum E(products)
+        real_t energyReleased;
+
+        // Franck-Condon energy [eV]: kinetic energy that the fragments get when an
+        // electron breaks a molecule apart. The electron pays it on top of -energyReleased.
+        real_t franckCondonEnergy;
     };
 
     // Number of molecular reactions defined in the molecularReactionDefinitions array.
     extern const len_t molecularReactionDefinitionCount;
     // Array of molecular reaction definitions stored in RateData.cpp.
     extern const MolecularReactionDefinition molecularReactionDefinitions[];
+
+    // Line radiation of a molecular species (charge state Z0): the molecular
+    // counterpart of ADAS PLT. P_rad = n_e * n(species, Z0) * L(n_e, T_e).
+    struct MolecularLineRadiationDefinition {
+        const char *rateName;   // name of the rate table L [eV m^3/s]
+        const char *species;
+        int_t Z0;
+    };
+
+    extern const len_t molecularLineRadiationDefinitionCount;
+    extern const MolecularLineRadiationDefinition molecularLineRadiationDefinitions[];
 
 }
 
