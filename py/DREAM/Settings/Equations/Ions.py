@@ -1276,12 +1276,13 @@ class Ions(UnknownQuantity):
             'x': initialNi
         }
 
-        data["reactions"] = {
-        "enabled": int(self.reactions_enabled),
-        "names": ";".join(self.enabled_reaction_names),
+        if self.reactions_enabled:
+            data["reactions"] = {
+                "enabled": 1,
+                "names": ";".join(self.enabled_reaction_names) + ";",
             }
 
-        if self.user_rates:
+        if self.reactions_enabled and self.user_rates:
             data["reactions"]["user_rates"] = {
                 "names": "".join(f"{name};" for name in self.user_rates),
                 "nn": [r['n'].size for r in self.user_rates.values()],
