@@ -48,7 +48,7 @@ class EquationTrigger:
         return (self.condition != TYPE_NONE)
 
 
-    def setCondition(self, condition, trigger_time=None):
+    def setCondition(self, condition, trigger_time=None, ncold_over_nhot=None):
         """
         Set the condition to use for triggering an equation switch.
         """
@@ -60,7 +60,7 @@ class EquationTrigger:
         if condition == TYPE_TIME:
             self.trigger_time = trigger_time
         elif condition == TYPE_COLD_ELECTRON_RISE:
-            pass
+            self.sensitivity = ncold_over_nhot
 
 
     def setTimeTrigger(self, time):
