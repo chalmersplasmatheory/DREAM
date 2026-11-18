@@ -32,7 +32,7 @@ def cpp_array(realtype, name, values):
 def amjuel_eval(coeff, n, T, nT=9, nn=9):
       n_eval = min(max(n, 1e14), 1e22)
       logn = np.log(n_eval * 1e-14)   # n / 1e14 = n[m^-3] / (1e8 cm^-3)
-      logT = np.log(np.clip(T, 1.0, 1e4))
+      logT = np.log(np.clip(T, 0.1, 1e4))
 
       s = 0.0
       pT = 1.0
