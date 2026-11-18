@@ -306,7 +306,8 @@ void SimulationGenerator::ConstructEquation_Ions(
     }
 
     RateHandler *ratehandler = new RateHandler(
-        fluidGrid ,ih, adas, eqsys->GetUnknownHandler(),reactionsEnabled, reactionNames, userRates
+        fluidGrid, ih, adas, amjuel, opacity_mode, s->GetReal(MODULENAME "/reioniz_scale"),
+        eqsys->GetUnknownHandler(), reactionsEnabled, reactionNames, userRates
     );
     eqsys->SetRateHandler(ratehandler);
 
@@ -380,7 +381,7 @@ void SimulationGenerator::ConstructEquation_Ions(
                 if (reactionsEnabled) {
                     eqn->AddTerm(new MoleculeRateReaction(
                         fluidGrid, ih, iZ, eqsys->GetUnknownHandler(),ratehandler,
-                        includeFluidREIonization, reionizScale
+                        includeFluidREIonization
                     ));
                 }
                 if(includeKineticIonization){

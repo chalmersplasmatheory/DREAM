@@ -16,6 +16,7 @@ namespace DREAM { class Solver; class Simulation; class EquationSystem; }
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/Equations/SPIHandler.hpp"
 #include "DREAM/Equations/BootstrapCurrent.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/MatrixInverter.hpp"
@@ -72,6 +73,7 @@ namespace DREAM {
 
         SPIHandler *SPI;
         BootstrapCurrent *bootstrap=nullptr;
+        RateHandler *rateHandler=nullptr;
 
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
@@ -124,6 +126,8 @@ namespace DREAM {
 
         virtual void SetIonHandler(IonHandler *ih)
             {this->ionHandler = ih;}
+        virtual void SetRateHandler(RateHandler *rh)
+            {this->rateHandler = rh;}
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
 

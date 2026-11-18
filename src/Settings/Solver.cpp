@@ -94,6 +94,7 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     solver->SetBootstrap(eqsys->GetBootstrap());
 
     solver->SetIonHandler(eqsys->GetIonHandler());
+    solver->SetRateHandler(eqsys->GetRateHandler());
 
     solver->SetConvergenceChecker(LoadToleranceSettings(
         MODULENAME, s, eqns, u, solver->GetNonTrivials()

@@ -8,6 +8,7 @@
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/NeutralCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/ReactionEnergyTransferTerm.hpp"
+#include "DREAM/Equations/Fluid/NeutralIonizationEnergyTransferTerm.hpp"
 
 /**
  * Implementation of equations governing the evolution of the
@@ -107,6 +108,8 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         oqty_terms->T_i_Qij[iz].resize(nZ, nullptr);
     oqty_terms->T_i_Qie.resize(nZ, nullptr);
 
+    len_t nTypes;
+    const int_t *ionTypes = s->GetIntegerArray(MODULENAME "/types", 1, &nTypes);
 
     for(len_t iz=0; iz<nZ; iz++){
         Op_Wij->AddTerm(
@@ -133,15 +136,22 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         Op_Wie->AddTerm(Qie);
         oqty_terms->T_i_Qie[iz] = Qie;
 
-        const bool includeFluidREIonization = (OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization")
-        == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE;
+        const bool includeFluidREIonization = (OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization") == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE;
         const bool reactionsEnabled = s->GetInteger(MODULENAME "/reactions/enabled") != 0;
         const bool separateNeutrals = s->GetInteger(MODULENAME "/typeTn") == OptionConstants::UQTY_T_N_INCLUDE;
 
-        // Thermal and released energy of the particles in reactions between species
-        if (reactionsEnabled || separateNeutrals)
+        // Added/removed energy though molecular reactions to W_i.
+        if (reactionsEnabled)
             Op_Wij->AddTerm(
                 new ReactionEnergyTransferTerm(
+                    fluidGrid, iz, unknowns, ionHandler, eqsys->GetRateHandler(),
+                    false, includeFluidREIonization
+                )
+            );
+        // Add/remove energy to W_i from from W_n.
+        if (separateNeutrals && !ionHandler->IsMolecule(iz) && ionTypes[iz] != OptionConstants::ION_DATA_PRESCRIBED)
+            Op_Wij->AddTerm(
+                new NeutralIonizationEnergyTransferTerm(
                     fluidGrid, iz, unknowns, ionHandler, eqsys->GetRateHandler(),
                     false, includeFluidREIonization
                 )
@@ -187,6 +197,9 @@ void SimulationGenerator::ConstructEquation_T_n(
     // Same reactions as in the ion density equation (see ions.cpp)
     const bool includeFluidREIonization = (OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization")
         == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE;
+    const bool reactionsEnabled = s->GetInteger(MODULENAME "/reactions/enabled") != 0;
+    len_t nTypes;
+    const int_t *ionTypes = s->GetIntegerArray(MODULENAME "/types", 1, &nTypes);
 
     for (len_t iz = 0; iz < nSpecies; iz++) {
         Op_Wn->AddTerm(
@@ -201,13 +214,22 @@ void SimulationGenerator::ConstructEquation_T_n(
                 )
             );
         }
-        // Thermal and released energy of the particles in reactions between species
-        Op_Wn->AddTerm(
-            new ReactionEnergyTransferTerm(
-                fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler(),
-                true, includeFluidREIonization
-            )
-        );
+        // Added/removed energy though molecular reactions to W_n.
+        if (reactionsEnabled)
+            Op_Wn->AddTerm(
+                new ReactionEnergyTransferTerm(
+                    fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler(),
+                    true, includeFluidREIonization
+                )
+            );
+        // Add/remove energy to W_n from from W_i.
+        if (!ions->IsMolecule(iz) && ionTypes[iz] != OptionConstants::ION_DATA_PRESCRIBED)
+            Op_Wn->AddTerm(
+                new NeutralIonizationEnergyTransferTerm(
+                    fluidGrid, iz, unknowns, ions, eqsys->GetRateHandler(),
+                    true, includeFluidREIonization
+                )
+            );
     }
 
     eqsys->SetOperator(id_Wn, id_Wn, Op_Wn, "dW_n/dt = neutral thermal terms");

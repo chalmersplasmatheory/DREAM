@@ -278,6 +278,9 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     this->ionHandler->Rebuild();
     // Rebuild ionHandler, collision handlers and RunawayFluid
 
+    if (this->rateHandler != nullptr)
+        this->rateHandler->Rebuild();
+
     solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
