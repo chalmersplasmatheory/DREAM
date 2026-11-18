@@ -1,5 +1,7 @@
+
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/DREAMException.hpp"
 
 /**
  * Implementation of an equation terms which represents the rate of energy transfer (in SI)
@@ -84,6 +86,10 @@ void MaxwellianCollisionalEnergyTransferTerm::SetVectorElements(real_t *vec, con
         real_t niWj = ni*Wj;
         if(ni==0 || nj==0 || niWj==njWi)
             continue;
+		else if (ni < 0)
+			throw DREAMException("MaxwellianCollisionalEnergyTransferTerm: species '%s' has negative density.", isIon_i ? ionHandler->GetName(index_i).c_str() : "electrons");
+		else if (nj < 0)
+			throw DREAMException("MaxwellianCollisionalEnergyTransferTerm: species '%s' has negative density.", isIon_j ? ionHandler->GetName(index_j).c_str() : "electrons");
         real_t pre = sqrt(ni*nj)*nZ2_i*nZ2_j;
         real_t up = niWj - njWi;
         real_t down = mj*njWi + mi*niWj;

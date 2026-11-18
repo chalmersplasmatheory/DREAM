@@ -184,7 +184,7 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
-        self.T = self.setTemperature(T)
+        self.setTemperature(T)
 
         # Initialize diffusion
         self.setChargedDiffusion(
@@ -255,7 +255,7 @@ class IonSpecies:
         elif T.shape[1] != np.size(self.r):
              raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
                 .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))
-        return T
+        self.T = T
 
 
 

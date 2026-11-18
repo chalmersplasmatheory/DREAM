@@ -390,3 +390,13 @@ void UnknownQuantityHandler::SetInitialValue(
     this->unknowns[id]->SetInitialValue(val, t0);
 }
 
+/**
+ * Reset the initial value of the specified quantity.
+ */
+void UnknownQuantityHandler::ResetInitialValue(const string& name) {
+	this->ResetInitialValue(GetUnknownID(name));
+}
+void UnknownQuantityHandler::ResetInitialValue(const len_t id) {
+	this->unknowns[id]->ResetInitialValue();
+}
+
