@@ -83,10 +83,11 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
         if (net == 0)
             continue;
 
-        for (len_t ir = 0; ir < nr; ir++)
+        for (len_t ir = 0; ir < nr; ir++) {
             bool added = ratehandler->SetReactionRateJacobian(k, derivId, jac, rOffset + ir, ir, net);
             if (added)
                 contributes = true;
+        }
     }
     return contributes;
 }
