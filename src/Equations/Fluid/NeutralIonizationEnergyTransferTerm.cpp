@@ -45,9 +45,10 @@ NeutralIonizationEnergyTransferTerm::NeutralIonizationEnergyTransferTerm(
     this->reIonizationRate = 0;
 
     if (includeFluidREIonization){
+        real_t reionizScale = ratehandler->GetReionizScale();
         const real_t p0 = 20.0;
         const len_t tableIndex = IonKineticIonizationTerm::GetTableIndex(ions->GetZ(iz));
-         const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndex].params + Z0 * IonKineticIonizationTerm::nParamsForFit;
+         const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndex].params;
         reIonizationRate = reionizScale * Constants::c * p0 / sqrt(1 + p0*p0)
         * IonKineticIonizationTerm::EvaluateIonizationCrossSection(p0, params);
     }

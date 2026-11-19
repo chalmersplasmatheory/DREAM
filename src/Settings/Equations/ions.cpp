@@ -306,7 +306,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     }
 
     RateHandler *ratehandler = new RateHandler(
-        fluidGrid, ih, adas, amjuel, opacity_mode, s->GetReal(MODULENAME "/reioniz_scale"),
+        fluidGrid, ih, adas, s->GetReal(MODULENAME "/reioniz_scale"),
         eqsys->GetUnknownHandler(), reactionsEnabled, reactionNames, userRates
     );
     eqsys->SetRateHandler(ratehandler);

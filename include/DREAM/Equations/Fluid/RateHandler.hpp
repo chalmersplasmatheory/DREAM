@@ -6,8 +6,11 @@
 #include <memory>
 #include <unordered_map>
 #include "FVM/config.h"
+#include "FVM/Matrix.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/ADAS.hpp"
+#include "DREAM/AMJUEL.hpp"
 #include "DREAM/Equations/Fluid/RateData.hpp"
 #include "DREAM/MolecularRateInterpolator.hpp"
 #include "DREAM/Settings/Settings.hpp"
@@ -40,6 +43,10 @@ namespace DREAM {
         /// Number of cold electrons consumed: electrons among the reactants minus
         /// electrons among the products (e.g. 1 for recombination, -1 for ionization)
         int_t electronsConsumed;
+        /// Unknown and offset of the two reactant densities (n_cold, n_re or n_i),
+        /// so that the density of reactant j is GetUnknownData(reactantId[j])[reactantOffset[j] + ir]
+        len_t reactantId[2];
+        len_t reactantOffset[2];
     };
 
     // Line radiation of one molecular charge state (molecular counterpart of PLT):
@@ -65,15 +72,18 @@ namespace DREAM {
         IonHandler *ions;
         ADAS *adas;
         bool separateNeutrals;
-        bool hasIonHeat;          // true if W_i (and hence N_i) exist
+        bool hasIonHeat;        
         len_t id_Wn, id_Nn;
+        len_t id_ions, id_n_cold, id_n_re, id_Ni, id_T_cold, id_Wi;
+        real_t reionizScale;
 
-        len_t id_ions, id_n_cold, id_Ni, id_T_cold, id_Wi;
+        real_t *Rate = nullptr;
+        real_t *Rate_N = nullptr;
+        real_t *Rate_T = nullptr;
+        real_t *ReactionRate = nullptr;
 
         std::vector<MolecularReaction> molecularReactions;
         std::unordered_map<std::string, UserMolecularRate> userRates;
-
-        // Line radiation of the molecular species in the simulation
         std::vector<MolecularLineRadiation> molecularLineRadiation;
 
         MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
@@ -86,22 +96,38 @@ namespace DREAM {
 
     public:
         RateHandler(
-            FVM::Grid *grid, IonHandler *ions, ADAS *adas,
+            FVM::Grid *grid, IonHandler *ions, ADAS *adas, real_t reionizScale,
             FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled,
             const std::vector<std::string>& enabledReactionNames,
             const std::unordered_map<std::string, UserMolecularRate>& userRates
         );
         ~RateHandler();
 
-        const std::vector<MolecularReaction>& GetMolecularReactions() const {
-            return molecularReactions;
-        }
+        void Rebuild();
+
+        const std::vector<MolecularReaction>& GetMolecularReactions() const {return molecularReactions;}
+
+
+        const real_t *GetRateCoefficient(const len_t k) const { return Rate + k*grid->GetNr(); }
+        const real_t *GetReactionRate(const len_t k) const { return ReactionRate + k*grid->GetNr(); }
+
+
+        bool SetReactionRateJacobian(
+            const len_t k, const len_t derivId, FVM::Matrix *jac,
+            const len_t row, const len_t ir, const real_t factor
+        );
+        bool SetSpeciesTemperatureJacobian(
+            const len_t derivId, FVM::Matrix *jac, const len_t row, const len_t ir,
+            const len_t species, const int_t Z0, const real_t dQdT
+        );
 
         ADASRateInterpolator *GetACD(const len_t iz) const;
         ADASRateInterpolator *GetSCD(const len_t iz) const;
         ADASRateInterpolator *GetPLT(const len_t iz) const;
         ADASRateInterpolator *GetPRB(const len_t iz) const;
         ADASRateInterpolator *GetCCD(const len_t iz) const;
+
+        real_t GetReionizScale() const { return reionizScale; }
 
         const std::vector<MolecularLineRadiation>& GetMolecularLineRadiation() const {
             return molecularLineRadiation;
