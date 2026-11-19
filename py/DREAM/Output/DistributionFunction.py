@@ -66,30 +66,30 @@ class DistributionFunction(KineticQuantity):
     # INTEGRALS OF THE DISTRIBUTION FUNCTION
     #########################################
 
-    def currentDensity(self, t=None, r=None):
+    def currentDensity(self, t=None, r=None, cumulative=False):
         """
         Calculates the current density carried by the electrons of
         this distribution function.
         """
         Vpar = self.momentumgrid.getBounceAveragedVpar()
-        return self.moment(Vpar, t=t, r=r) * scipy.constants.e
+        return self.moment(Vpar, t=t, r=r, cumulative=cumulative) * scipy.constants.e
 
 
-    def density(self, t=None, r=None):
+    def density(self, t=None, r=None, cumulative=False):
         """
         Calculates the total density of this distribution function.
         """
-        return self.moment(1, t=t, r=r)
+        return self.moment(1, t=t, r=r, cumulative=cumulative)
 
 
-    def kineticEnergy(self, t=None, r=None):
+    def kineticEnergy(self, t=None, r=None, cumulative=False):
         """
         Calculates the kinetic energy contained in the distribution function.
         (energy in Joule).
         """
         gamma1 = self.momentumgrid.getGamma()-1
         mc2    = scipy.constants.m_e * scipy.constants.c**2
-        return self.moment(gamma1, t=t, r=r) * mc2
+        return self.moment(gamma1, t=t, r=r, cumulative=cumulative) * mc2
 
 
     def plasmaCurrent(self, t=None):

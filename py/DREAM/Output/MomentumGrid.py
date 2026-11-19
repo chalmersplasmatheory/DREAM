@@ -53,6 +53,20 @@ class MomentumGrid:
 
         return (data * self.Vprime * self.DR * self.DP1 * self.DP2).sum(axes)
 
+    def integrate3DCumulative(self, data, axes=(-3,-2,-1)):
+        """
+        Evaluate a numerical cumulative volume integral of the given data
+        on this grid. The integral is only evaluated cumulatively over 
+        the final axis in axes.
+            
+        data: Data to numerically integrate.
+        axes: Axes to integrate over.
+        """
+        if len(axes) != 3:
+            raise OutputException("Invalid 'axes' parameter provided to 'integrate3DCumulative()'.")
+    
+        partial_integrand = (data * self.Vprime * self.DR * self.DP1 * self.DP2).sum(axis = axes[:-1], keepdims = True)
+        return partial_integrand.cumsum(axis = axes[-1]).squeeze(axis = axes[:-1])
 
     def integrate2D(self, data, axes=(-2,-1)):
         """
@@ -65,6 +79,21 @@ class MomentumGrid:
         if len(axes) != 2:
             raise OutputException("Invalid 'axes' parameter provided to 'integrate2D()'.")
         return (data * self.Vprime_VpVol * self.DP1 * self.DP2).sum(axes)
+
+    def integrate2DCumulative(self, data, axes=(-2,-1)):
+        """
+        Evaluate a numerical cumulative momentum integral of the given
+        data on this grid. The integral is only evaluated cumulatively
+        over the final axis in axes.
+    
+        data: Data to numerically integrate.
+        axes: Axes to integrate over.
+        """
+        if len(axes) != 2:
+            raise OutputException("Invalid 'axes' parameter provided to 'integrate2DCumulative()'.")
+        
+        partial_integrand = (data * self.Vprime_VpVol * self.DP1 * self.DP2).sum(axis = axes[0], keepdims = True)
+        return partial_integrand.cumsum(axis = axes[-1]).squeeze(axis = axes[0])
 
 
     def getGamma(self):
