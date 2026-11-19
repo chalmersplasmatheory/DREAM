@@ -4,6 +4,7 @@
  * builds a correspondingly shaped radial grid.
  */
 #include <algorithm>
+#include <vector>
 #include <gsl/gsl_interp.h>
 #include <gsl/gsl_spline2d.h>
 #include "FVM/Grid/NumericBRadialGridGenerator.hpp"
@@ -456,23 +457,39 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     rGrid->Initialize(r, r_f, dr, dr_f);
 
     // Construct splines for input data
-    this->spline_psi  = gsl_spline_alloc(gsl_interp_steffen, this->npsi);
+    this->spline_psi = gsl_spline_alloc(gsl_interp_steffen, npsi);
+    gsl_spline_init(this->spline_psi, input_r, psi, npsi);
 
-    const gsl_interp2d_type *splineType = gsl_interp2d_bicubic; //or ..._bilinear
-    this->spline_R    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    this->spline_Z    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    this->spline_BR   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    this->spline_BZ   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    this->spline_Bphi = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
-    this->spline_B    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    // Matching the values at 0 and 2*pi alone leaves independent endpoint
+    // slopes in the bicubic spline. Pad with up to eight neighbouring knots
+    // on each side to move the natural boundary conditions away from the join.
+    const len_t padding = std::min<len_t>(8, ntheta - 1);
+    const len_t firstWrapped = ntheta - 1 - padding;
+    const len_t paddedCount = ntheta + 2 * padding;
+    std::vector<real_t> paddedTheta(paddedCount);
+    for (len_t j = 0; j < padding; j++) {
+        paddedTheta[j] = theta[firstWrapped + j] - 2 * M_PI;
+        paddedTheta[padding + ntheta + j] = theta[j + 1] + 2 * M_PI;
+    }
+    std::copy_n(theta, ntheta, paddedTheta.begin() + padding);
 
-    gsl_spline_init(this->spline_psi,    this->input_r, this->psi,   this->npsi);
-    gsl_spline2d_init(this->spline_R,    this->input_r, this->theta, this->R, this->npsi, this->ntheta);
-    gsl_spline2d_init(this->spline_Z,    this->input_r, this->theta, this->Z, this->npsi, this->ntheta);
-    gsl_spline2d_init(this->spline_BR,   this->input_r, this->theta, this->dataBR, this->npsi, this->ntheta);
-    gsl_spline2d_init(this->spline_BZ,   this->input_r, this->theta, this->dataBZ, this->npsi, this->ntheta);
-    gsl_spline2d_init(this->spline_Bphi, this->input_r, this->theta, this->dataBphi, this->npsi, this->ntheta);
-    gsl_spline2d_init(this->spline_B,    this->input_r, this->theta, this->dataB, this->npsi, this->ntheta);
+    // GSL copies the input table into each spline, so reuse the padding buffer.
+    std::vector<real_t> paddedData(paddedCount * npsi);
+    const auto makeSpline = [&](const real_t *data) {
+        std::copy_n(data + firstWrapped * npsi, padding * npsi, paddedData.begin());
+        std::copy_n(data, ntheta * npsi, paddedData.begin() + padding * npsi);
+        std::copy_n(data + npsi, padding * npsi, paddedData.begin() + (padding + ntheta) * npsi);
+
+        auto *spline = gsl_spline2d_alloc(gsl_interp2d_bicubic, npsi, paddedCount);
+        gsl_spline2d_init(spline, input_r, paddedTheta.data(), paddedData.data(), npsi, paddedCount);
+        return spline;
+    };
+    this->spline_R    = makeSpline(this->R);
+    this->spline_Z    = makeSpline(this->Z);
+    this->spline_BR   = makeSpline(this->dataBR);
+    this->spline_BZ   = makeSpline(this->dataBZ);
+    this->spline_Bphi = makeSpline(this->dataBphi);
+    this->spline_B    = makeSpline(this->dataB);
 
 	// Reference quantities
 	for (len_t i = 0; i < GetNr(); i++) {
