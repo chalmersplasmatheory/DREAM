@@ -17,13 +17,20 @@ IonNeutralAdvectionDiffusionTerm<T>::~IonNeutralAdvectionDiffusionTerm(){}
 template<class T>
 bool IonNeutralAdvectionDiffusionTerm<T>::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *f,
-    const len_t /*iIon*/, const len_t Z0, const len_t rOffset
+    const len_t iIon, const len_t Z0, const len_t rOffset
 ){
     bool contributes = false;
-    
-    if(!this->HasJacobianContribution(derivId) || Z0>0)
+    if(Z0>0)
         return contributes;
         
+    if(uqtyId == derivId){
+        contributes = true;
+        this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
+    }
+    
+    if(!this->HasJacobianContribution(derivId))
+        return contributes;
+
     len_t rowOffset0 = jac->GetRowOffset();
     len_t colOffset0 = jac->GetColOffset();
     jac->SetOffset(rowOffset0+rOffset,colOffset0);
