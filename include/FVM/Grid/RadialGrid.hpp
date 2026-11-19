@@ -29,9 +29,7 @@ namespace DREAM::FVM {
             real_t BminOverBmax = params->BminOverBmax;
             real_t x = params->x;
 			real_t arg = 1 - x * BminOverBmax * BOverBmin;
-			if (arg < 0)
-				throw FVMException("RadialGrid: arg is negative.");
-            return sqrt(arg);
+            return sqrt(arg > 0 ? arg : 0);
         }
 
         static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){
