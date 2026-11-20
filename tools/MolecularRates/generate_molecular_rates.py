@@ -10,7 +10,6 @@ from scipy.special import gamma as gamma_function
 from scipy.optimize import brentq
 import sys
 from functools import lru_cache
-import json
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "py"))
 from DREAM.Settings import MolecularReactionData as data
 
@@ -190,31 +189,16 @@ def build_rate_table(reaction, n_grid, T_grid):
 def cpp_input(selector):
       kind = selector["kind"]
 
+      # The species index (iz1, iz2) is set in RateHandler from the Python settings
       if kind in ("none", "electron"):
-          return (
-              "{MolecularInputKind::"
-              + kind.upper()
-              + ", nullptr, 0, nullptr, 0}"
-          )
+          return "{MolecularInputKind::" + kind.upper() + ", 0, 0, 0, 0}"
 
       if kind == "species":
-          return (
-              "{MolecularInputKind::SPECIES, "
-              + json.dumps(selector["name"])
-              + f', {selector["charge"]}, nullptr, 0'
-              + "}"
-          )
+          return f'{{MolecularInputKind::SPECIES, {selector["charge"]}, 0, 0, 0}}'
 
       if kind == "relative":
           a, b = selector["species"]
-          return (
-              "{MolecularInputKind::RELATIVE, "
-              + json.dumps(a["name"])
-              + f', {a["charge"]}, '
-              + json.dumps(b["name"])
-              + f', {b["charge"]}'
-              + "}"
-          )
+          return f'{{MolecularInputKind::RELATIVE, {a["charge"]}, {b["charge"]}, 0, 0}}'
 
       raise ValueError(f"Unknown input kind: {kind}")
 
@@ -278,8 +262,9 @@ def cpp_identifier(name):
 
 
 def cpp_species(spec):
+        # The species index is set in RateHandler from the Python settings
         name, Z0, coefficient = spec
-        return f'{{"{name}", {Z0}, {coefficient}}}'
+        return f'{{{Z0}, {coefficient}}}'
 
 
 def cpp_process(classification):
@@ -353,7 +338,7 @@ def compile_rate_data(outputfile):
         body += "const MolecularLineRadiationDefinition molecularLineRadiationDefinitions[] = {\n"
         for radiation in data.MOLECULAR_LINE_RADIATION:
             species, Z0 = radiation["species"]
-            body += f'    {{"{radiation["name"]}", "{species}", {Z0}}},\n'
+            body += f'    {{"{radiation["name"]}", {Z0}}},\n'
         body += "};\n\n"
         body += "const len_t molecularLineRadiationDefinitionCount =\n"
         body += "    sizeof(molecularLineRadiationDefinitions) / sizeof(molecularLineRadiationDefinitions[0]);\n\n"
