@@ -22,6 +22,18 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
+try:
+    from IMASEq import IMASEq
+    HAS_IMAS = True
+except ModuleNotFoundError:
+    HAS_IMAS = False
+
+try:
+    from OMASEq import OMASEq
+    HAS_OMAS = True
+except ModuleNotFoundError:
+    HAS_OMAS = False
+
 
 EQTYPE_NONE = 0
 EQTYPE_LUKE = 1
@@ -63,7 +75,7 @@ class EqView(QtWidgets.QMainWindow):
                 params['cocos'] = args.cocos
             if args.override_psilim:
                 params['override_psilim'] = args.override_psilim
-            self.load(args.eq, params=params)
+            self.load(args.eq, params=params, with_omas=args.with_omas)
 
 
     def bindEvents(self):
@@ -106,6 +118,9 @@ class EqView(QtWidgets.QMainWindow):
         parser.add_argument('-c', '--cocos', help="COCOS number (1-8 or 11-18).", type=int)
         parser.add_argument('-o', '--override-psilim', help="Override poloidal flux value at LCFS.", nargs='?', default=None, const=2e-4, type=float)
 
+        if HAS_OMAS:
+            parser.add_argument('--with-omas', help="Load the equilibrium file using OMAS.", action='store_true')
+
         return parser.parse_args()
 
 
@@ -124,17 +139,52 @@ class EqView(QtWidgets.QMainWindow):
             retry, oldparams = self.special_load(filename, oldparams=oldparams)
 
 
-    def load(self, filename, params={}):
+    def load(self, filename, params={}, with_omas=False):
         """
         Load the named equilibrium file.
         """
-        if h5py.is_hdf5(filename):
-            try:
-                self.load_LUKE(filename)
-            except Exception as ex:
-                traceback.print_exception(ex)
-                QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n{ex}')
-                return False
+        if filename[:5] == 'imas:':
+            if with_omas:
+                if not HAS_OMAS:
+                    QMessageBox.critical(self, 'OMAS not loaded', 'An IMAS URI was specified and OMAS was requested, but the OMAS Python module is not loaded.')
+                    return False
+
+                try:
+                    self.load_OMAS(filename, **params)
+                except Exception as ex:
+                    traceback.print_exception(ex)
+                    QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n{ex}')
+                    return False
+            else:
+                if not HAS_IMAS:
+                    QMessageBox.critical(self, 'IMAS not loaded', 'An IMAS URI was specified, but the IMAS Python module is not loaded.')
+                    return False
+
+                try:
+                    self.load_IMAS(filename, **params)
+                except Exception as ex:
+                    traceback.print_exception(ex)
+                    QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n{ex}')
+                    return False
+        elif h5py.is_hdf5(filename):
+            if with_omas:
+                if not HAS_OMAS:
+                    QMessageBox.critical(self, 'OMAS not loaded', 'An IMAS URI was specified and OMAS was requested, but the OMAS Python module is not loaded.')
+                    return False
+
+                try:
+                    self.load_OMAS(filename, **params)
+                except Exception as ex:
+                    traceback.print_exception(ex)
+                    QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n{ex}')
+                    return False
+            else:
+                try:
+                    self.load_LUKE(filename)
+                except Exception as ex:
+                    traceback.print_exception(ex)
+                    QMessageBox.critical(self, 'Error loading equilibrium', f'An error was encountered when loading the equilibrium.\n\n{ex}')
+                    return False
         else:
             try:
                 self.load_EQDSK(filename, **params)
@@ -151,6 +201,26 @@ class EqView(QtWidgets.QMainWindow):
         self.ui.menuQuantities.setEnabled(True)
 
         return False
+
+
+    def load_IMAS(self, filename, **params):
+        """
+        Load an EQDSK equilibrium from IMAS.
+        """
+        self.equil = IMASEq(filename, **params)
+        self.equil_type = EQTYPE_EQDSK
+
+        self._load_EQDSK_internal()
+
+
+    def load_OMAS(self, filename, **params):
+        """
+        Load an EQDSK equilibrium using OMAS.
+        """
+        self.equil = OMASEq(filename, **params)
+        self.equil_type = EQTYPE_EQDSK
+
+        self._load_EQDSK_internal()
 
 
     def load_LUKE(self, filename):
@@ -180,6 +250,10 @@ class EqView(QtWidgets.QMainWindow):
         self.equil_params = params
         self.equil_type = EQTYPE_EQDSK
 
+        self._load_EQDSK_internal()
+
+
+    def _load_EQDSK_internal(self):
         self.ui.lblMagneticAxis.setText(f'({self.equil.opoint[0]:.3f}, {self.equil.opoint[1]:.3f})')
         self.ui.lblMinorRadius.setText(f'{np.amax(self.equil.lcfs_R)-self.equil.opoint[0]:.3f} m')
         self.ui.lblB0.setText(f'{self.equil.f_psi(0)/self.equil.R0:.3f} T')
