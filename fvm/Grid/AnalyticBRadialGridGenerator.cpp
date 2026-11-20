@@ -382,7 +382,7 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
 }
 
 /**
- * Interpolates the input chaping profile at a single radius r, and extrapolates using 
+ * Interpolates the input shaping profile at a single radius r, and extrapolates using 
  * the maximum and minimum r for which the profile is defined. This is useful for the 
  * GetRThetaPhiFromCartesian() and GetGradRCartesian() functions used for e.g. the SPI
  * module in DREAM, as these functions must be able to handle coordinates outside the plasma
