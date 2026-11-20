@@ -40,7 +40,7 @@ Below is a list of equation terms implemented in DREAM (it aims at being
 complete, but is updated manually and may as such be only partial).
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    equations/fluid
    equations/kinetic
