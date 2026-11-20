@@ -296,13 +296,14 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
 
 /**
  * Determines the 'main ion species' assuming it is the one with minimum charge.
+ * Molecules are skipped, since their Z is the sum of the nuclear charges.
  */
-// TODO this will need to be redone since Z can be the same for molecyles
-
 const int_t IonHandler::GetMainSpeciesIndex() const {
 	int_t minIndex = -1;
 	len_t minZ = std::numeric_limits<len_t>::max();
     for (int_t i = 0; i < (int_t)this->GetNZ(); i++) {
+        if (IsMolecule(i))
+            continue;
         len_t currentZ = this->GetZ(i); 
         if (currentZ < minZ) {        
             minZ = currentZ;          

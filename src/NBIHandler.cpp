@@ -751,7 +751,7 @@ void NBIHandler::IonElectronFractions(
         (2 * x - 1) / (6 * (1 - x + x * x));
     real_t G_x = 2 / (x * x * x) * (x * F_x_prime - 2 * F_x);
 
-    dfe_dne = -G_x * x / (2 * ne);
+    dfe_dne = -G_x * x / (3 * ne);
     dfe_dTe = G_x * x / (2 * Te);
     for (len_t iz = 0; iz < nZ; iz++) {
         dfe_dn_ij[iz] = G_x * x / 3 *

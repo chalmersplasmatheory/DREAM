@@ -40,11 +40,7 @@ real_t MolecularRateInterpolator::Eval(real_t n, real_t T) const {
         this->Tacc
     );
 
-    real_t value = std::pow(10.0, logValue);
-    if (value < 0)
-        return 0;
-
-    return value;
+    return std::pow(10.0, logValue);
 }
 
 real_t MolecularRateInterpolator::Eval_deriv_n(const real_t n, const real_t T) const {

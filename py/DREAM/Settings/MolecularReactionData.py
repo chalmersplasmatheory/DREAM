@@ -3,7 +3,7 @@ from .MolecularReactionDataCoefficients import *
 
 # Reactants/products: (name, charge, number of particles)
 #
-# Input selectors describe coefficient depandancies.
+# Input selectors describe coefficient dependencies.
 # kind="relative" with two species means their arithmetic-mean temperature
 # Temperatures: eV; densities: m^-3.
 
@@ -21,7 +21,6 @@ SPECIES_Z = {
 
 # Default mass [kg] of the molecules (Ions.addMolecule())
 MOLECULE_MASS = {
-    "H2":  2 * 1.67262192369e-27,
     "D2":  2 * 3.3435837724e-27,
     "T2":  2 * 5.00826765e-27,
     "D3":  3 * 3.3435837724e-27,

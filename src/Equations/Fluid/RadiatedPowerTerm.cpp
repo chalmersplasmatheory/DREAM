@@ -1,6 +1,5 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include <algorithm>
-#include <string>
 
 
 /**
@@ -193,7 +192,8 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
             Prad[i] += s * n_cold[i] * nij * Li;
         }
     }
-    for (const auto& reaction : rateHandler->GetMolecularReactions()) {
+    for (len_t k = 0; k < rateHandler->GetMolecularReactions().size(); k++) {
+        const MolecularReaction& reaction = rateHandler->GetMolecularReactions()[k];
         // Only electron-impact reactions cost the cold electrons energy.
         // b is the index of the heavy reactant (the one that is not the electron).
         const bool firstIsElectron = reaction.reactantIz[0] == ionHandler->GetNZ();
@@ -202,20 +202,19 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
             continue;
         const len_t b = firstIsElectron ? 1 : 0;
 
+        // Same rate coefficient as in the ion density and heavy-particle energy equations
+        const real_t *K = rateHandler->GetRateCoefficient(k);   // m^3/s
         len_t indZ = ionHandler->GetIndex(reaction.reactantIz[b], reaction.reactants[b].Z0);
         for (len_t i = 0; i < NCells; i++) {
             real_t dW = Constants::ec * GetMolecularElectronEnergyLoss(reaction, T_cold[i]);   // J
             if (dW == 0)
                 continue;
 
-            // Electron-impact rates depend on the electron temperature (and density)
-            real_t density = rateHandler->ResolveDensity(reaction.densityInput, i);
-            real_t K = reaction.rate->Eval(density, T_cold[i]);   // m^3/s
             real_t nij = n_i[indZ*NCells + i];
             real_t s = (ionScaleFactor != nullptr ? ionScaleFactor[indZ] : 1);
 
-            weights[i] += s * nij * dW * K;
-            Pion[i] += s * n_cold[i] * nij * dW * K;
+            weights[i] += s * nij * dW * K[i];
+            Pion[i] += s * n_cold[i] * nij * dW * K[i];
         }
     }
 
@@ -524,7 +523,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     }
 
     // Molecules: energy per electron-impact reaction event
-    for (const auto& reaction : rateHandler->GetMolecularReactions()) {
+    for (len_t k = 0; k < rateHandler->GetMolecularReactions().size(); k++) {
+        const MolecularReaction& reaction = rateHandler->GetMolecularReactions()[k];
         // Electron-impact reactions only; b is the heavy reactant (as in SetWeights)
         const bool firstIsElectron = reaction.reactantIz[0] == ionHandler->GetNZ();
         const bool secondIsElectron = reaction.reactantIz[1] == ionHandler->GetNZ();
@@ -535,6 +535,12 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
         // d(dW)/dTe [J/eV]: only the thermal energy of consumed electrons depends on Te
         real_t dWdT = (reaction.electronsConsumed > 0 ? Constants::ec * reaction.electronsConsumed * 1.5 : 0);
 
+        // Rate coefficient and its derivatives, from RateHandler
+        const real_t *K   = rateHandler->GetRateCoefficient(k);
+        const real_t *K_n = rateHandler->GetRateCoefficient_n(k);
+        const real_t *K_T = rateHandler->GetRateCoefficient_T(k);
+        const bool dependsOnTe = (reaction.temperatureInput.kind == MolecularInputKind::ELECTRON);
+
         len_t indZ = ionHandler->GetIndex(reaction.reactantIz[b], reaction.reactants[b].Z0);
         for (len_t i = 0; i < NCells; i++) {
             real_t dW = Constants::ec * GetMolecularElectronEnergyLoss(reaction, T_cold[i]);
@@ -543,15 +549,13 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
 
             real_t nij = n_i[indZ*NCells + i];
             real_t s = (ionScaleFactor != nullptr ? ionScaleFactor[indZ] : 1);
-            real_t density = rateHandler->ResolveDensity(reaction.densityInput, i);
-            real_t K = reaction.rate->Eval(density, T_cold[i]);
 
             if (derivId == id_ni)
-                diffWeights[NCells*indZ + i] += s * dW * K;
+                diffWeights[NCells*indZ + i] += s * dW * K[i];
             else if (derivId == id_ncold && reaction.densityInput.kind == MolecularInputKind::ELECTRON)
-                diffWeights[i] += s * nij * dW * reaction.rate->Eval_deriv_n(density, T_cold[i]);
+                diffWeights[i] += s * nij * dW * K_n[i];
             else if (derivId == id_Tcold)
-                diffWeights[i] += s * nij * (dW * reaction.rate->Eval_deriv_T(density, T_cold[i]) + dWdT * K);
+                diffWeights[i] += s * nij * ((dependsOnTe ? dW * K_T[i] : 0) + dWdT * K[i]);
         }
     }
 }

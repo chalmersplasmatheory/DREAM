@@ -6,9 +6,8 @@
 #include "DREAM/Equations/Fluid/NeutralIonizationEnergyTransferTerm.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
-#include "DREAM/Equations/Fluid/IonKineticIonizationTerm.hpp"
+#include "DREAM/Equations/Fluid/IonFluidRunawayIonizationTerm.hpp"
 #include <cmath>
-#include <limits>
 
 using namespace DREAM;
 
@@ -45,10 +44,11 @@ NeutralIonizationEnergyTransferTerm::NeutralIonizationEnergyTransferTerm(
     this->reIonizationRate = 0;
 
     if (includeFluidREIonization){
+        // Runaways assumed mono-energetic with p = 20 m_e c (as in IonFluidRunawayIonizationTerm)
         real_t reionizScale = ratehandler->GetReionizScale();
-        const real_t p0 = 20.0;
+        const real_t p0 = IonFluidRunawayIonizationTerm::CHARACTERISTIC_RUNAWAY_MOMENTUM;
         const len_t tableIndex = IonKineticIonizationTerm::GetTableIndex(ions->GetZ(iz));
-         const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndex].params;
+        const real_t *params = IonKineticIonizationTerm::kinetic_rate_table[tableIndex].params;
         reIonizationRate = reionizScale * Constants::c * p0 / sqrt(1 + p0*p0)
         * IonKineticIonizationTerm::EvaluateIonizationCrossSection(p0, params);
     }

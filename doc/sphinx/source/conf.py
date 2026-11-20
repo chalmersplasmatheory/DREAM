@@ -40,7 +40,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'guzzle_sphinx_theme',
     'sphinx.ext.todo',
-    'otherquantitylist'
+    'otherquantitylist',
+    'molecularreactionlist'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

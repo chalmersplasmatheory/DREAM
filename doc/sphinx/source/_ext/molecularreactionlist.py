@@ -2,7 +2,7 @@
 #
 # Builds a table of the reactions defined in
 # py/DREAM/Settings/MolecularReactionData.py, and of the species in
-# SPECIES_Z, so that the documentation
+# SPECIES_Z and MOLECULE_MASS, so that the documentation
 # always matches the reactions available in the Python interface.
 #
 # Usage:
@@ -114,7 +114,7 @@ class MolecularSpeciesList(ListTable, Directive):
         """
         Generate the list of species appearing in the molecular reactions.
         """
-        col_widths = [1, 1, 1]
+        col_widths = [1, 1, 1, 1]
         header_rows = 1
         stub_columns = 0
 
@@ -123,17 +123,18 @@ class MolecularSpeciesList(ListTable, Directive):
         table_data.append([
             nodes.paragraph(text='Name'),
             nodes.paragraph(text='Z'),
-            nodes.paragraph(text='Type')
+            nodes.paragraph(text='Type'),
+            nodes.paragraph(text='Mass [kg]')
         ])
 
         # Add rows to table
         for name, Z in MolecularReactionData.SPECIES_Z.items():
-            # Count the atoms in the name (D2 -> 2, ArD -> 2, He -> 1)
-            nAtoms = sum(int(n) if n else 1 for _, n in re.findall(r'([A-Z][a-z]?)(\d*)', name))
+            isMolecule = name in MolecularReactionData.MOLECULE_MASS
             table_data.append([
                 nodes.paragraph('', '', nodes.literal(text=name)),
                 nodes.paragraph(text=str(Z)),
-                nodes.paragraph(text='Molecule' if nAtoms > 1 else 'Atom')
+                nodes.paragraph(text='Molecule' if isMolecule else 'Atom'),
+                nodes.paragraph(text='{:.4e}'.format(MolecularReactionData.MOLECULE_MASS[name]) if isMolecule else '-')
             ])
 
         # Construct the table node

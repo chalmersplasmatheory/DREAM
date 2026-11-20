@@ -311,7 +311,7 @@ class Ions(UnknownQuantity):
         changed = True
 
         while changed:
-            changed = False ##Assume we will not discove somet
+            changed = False 
 
             for reaction in reactions:
                 all_reactants_exist = True
@@ -336,7 +336,7 @@ class Ions(UnknownQuantity):
 
                     if name not in reaction_data.SPECIES_Z:
                         raise EquationException(
-                            f"Add species metadata for '{name}' in data.py."
+                            f"Add the charge Z of species '{name}' to SPECIES_Z in MolecularReactionData.py."
                         )
 
                     charges[name] = reaction_data.SPECIES_Z[name]
@@ -448,6 +448,13 @@ class Ions(UnknownQuantity):
         self.r = r
 
     def setNeutralTemperatureEnabled(self, enabled=True):
+        """
+        Enable/disable a separate temperature for the neutral charge state of
+        each ion species (unknowns ``N_n`` and ``W_n``). Requires the ion
+        temperature to be evolved.
+
+        :param bool enabled: If ``True``, evolve the neutral temperature.
+        """
         self.typeTn = (IONS_T_N_INCLUDE if enabled else IONS_T_N_NEGLECT)
 
 
@@ -1046,9 +1053,9 @@ class Ions(UnknownQuantity):
 
             self.reactions_enabled = bool(scal(reactions.get("enabled", 0)))
 
-            names = reactions.get("names", "")
+            reaction_names = reactions.get("names", "")
             self.enabled_reaction_names = [
-                name for name in names.split(";") if name
+                name for name in reaction_names.split(";") if name
             ]
 
             if "user_rates" in reactions:
@@ -1329,12 +1336,12 @@ class Ions(UnknownQuantity):
             # MolecularReactionData.py. Species are found by their kind.
             species = [ion.kind for ion in self.ions]
             electrons = {"e": -1, "RE": -2}
-            names, reactant_species, product_species, temperature_species = [], [], [], []
+            reaction_names, reactant_species, product_species, temperature_species = [], [], [], []
             for reaction in reaction_data.MOLECULAR_REACTIONS:
                 if reaction["name"] not in self.enabled_reaction_names:
                     continue
 
-                names.append(reaction["name"])
+                reaction_names.append(reaction["name"])
                 for name, Z0, coefficient in reaction["reactants"]:
                     reactant_species.append(electrons[name] if name in electrons else species.index(name))
                 for name, Z0, coefficient in reaction["products"]:
@@ -1355,7 +1362,7 @@ class Ions(UnknownQuantity):
 
             data["reactions"] = {
                 "enabled": 1,
-                "names": "".join(f"{name};" for name in names),
+                "names": "".join(f"{name};" for name in reaction_names),
                 "reactant_species": reactant_species,
                 "product_species": product_species,
                 "temperature_species": temperature_species,

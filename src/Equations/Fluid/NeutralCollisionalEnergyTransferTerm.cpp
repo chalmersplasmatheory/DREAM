@@ -28,27 +28,6 @@ NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
 }
 
 /**
- * Gets the parameters of a neutral species at a given radial position.
- */
-void NeutralCollisionalEnergyTransferTerm::GetNeutralParameters(
-    len_t ir,
-    real_t& n,
-    real_t& W,
-    real_t& T
-) {
-    const real_t *ni = unknowns->GetUnknownData(id_ions);
-    const real_t *Wn = unknowns->GetUnknownData(id_Wn);
-    const len_t neutralIndex = ions->GetIndex(iz, 0);
-
-    n = ni[neutralIndex*nr + ir];
-    W = Wn[iz*nr + ir];
-    if (n > 0)
-        T = W / (1.5 * Constants::ec * n);
-    else
-        T = 0;
-}
-
-/**
  * Calculates the momentum scattering radius for a given neutral species. In units of Ångström.
  */
 real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t IZ){
@@ -112,9 +91,6 @@ void NeutralCollisionalEnergyTransferTerm::SetVectorElements(
 
     const len_t neutralIndexI = ions->GetIndex(iz, 0);
     const len_t neutralIndexJ = ions->GetIndex(jz, 0);
-
-    const real_t mi = ions->GetIonSpeciesMass(iz);
-    const real_t mj = ions->GetIonSpeciesMass(jz);
 
     const real_t massFactor = 2 * mi * mj / ((mi + mj) * (mi + mj));
 

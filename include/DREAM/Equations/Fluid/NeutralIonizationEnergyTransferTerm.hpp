@@ -31,7 +31,8 @@ namespace DREAM {
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 0; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 2; }
+        // Jacobian columns per row: n_i (Z0=0 and Z0=1), n_cold, T_cold, n_re, W_n, N_n, W_i, N_i
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 9; }
     };
 }
 

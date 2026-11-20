@@ -30,9 +30,6 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
 ) :  grid(grid), ions(ions), adas(adas), reionizScale(reionizScale),
      userRates(userRates), unknowns(unknowns) {
 
-
-
-    this->unknowns  = unknowns;
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_n_re   = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
@@ -383,7 +380,7 @@ real_t RateHandler::ResolveDensity(
         return unknowns->GetUnknownData(id_n_cold)[ir];
     }
     else {
-        throw std::runtime_error("Invalid density selector");
+        throw FVM::FVMException("RateHandler: Invalid density input for molecular rate.");
     }
 }
 /**
@@ -414,7 +411,7 @@ real_t RateHandler::ResolveTemperature(
         return 0.5 * (T1 + T2);
     }
 
-    throw std::runtime_error("Invalid temperature selector");
+    throw FVM::FVMException("RateHandler: Invalid temperature input for molecular rate.");
 }
 
 

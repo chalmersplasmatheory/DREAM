@@ -36,7 +36,7 @@ D2_D2p_cx_constant     = 2e-16      # D2 + D2+
 # D2+ + Ar2+ -> 2D+ + Ar+, sigma [cm^2]
 D2p_Ar2p_diss_constant = 8e-16  
 
-# D2+ + He+ -> D+ + HeD+, sigma [cm^2]
+# He + He+ resonant charge exchange, sigma [1e-15 cm^2] = polyval(He_cx, T_rel [eV])
 He_cx = [0.000010223544846, -0.000522605724574, 0.009776154924154, -0.083792078906232, 1.274856562305827]  
 
 # D + He+ rate, ln<sigma v [cm^3/s]> = polyval(D_He_cx, ln T)
@@ -58,12 +58,12 @@ Ar_D_cx_constant_4 = 2.1e-15#Can 1985
 
 
 
-############################################################################## FIX
-# Foster F. Rieke 1983 J. Phys. A 1972 "Ionization Cross Sections of Gaseous Atoms and Molecules for High-Energy Electrons and Positrons"
-# https://journals.aps.org/pra/pdf/10.1103/PhysRevA.6.1507
-# Constants for Rieke & Prepejchal fit (dimensionless)
 ##############################################################################
-# (F.F. Rieke and W. Prepejchal, Phys. Rev. A 6 1507 (1972), https://doi.org/10.1103/PhysRevA.6.1507)
+# Constants for the Rieke & Prepejchal fit (dimensionless):
+# F.F. Rieke and W. Prepejchal, "Ionization Cross Sections of Gaseous Atoms and
+# Molecules for High-Energy Electrons and Positrons", Phys. Rev. A 6, 1507 (1972),
+# https://doi.org/10.1103/PhysRevA.6.1507
+##############################################################################
 D2_rieke_M2 = 0.695
 D2_rieke_C  = 8.115
 Ar_rieke_M2 = 4.22      # neutral Ar used as proxy for ArD+

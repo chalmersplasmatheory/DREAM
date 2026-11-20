@@ -122,13 +122,20 @@ A reaction entry has the following form:
        "data_type": "AMJUEL_POLYNOMIAL",                     # How the rate is evaluated
        "data": {...},                                       # Coefficients for 'data_type'
        "temperature_input": {"kind": "electron"},            # Temperature used in the rate [eV]
-       "density_input": {"kind": "electron"}                 # Density used in the rate [m^-3]
+       "density_input": {"kind": "electron"},                # Density used in the rate [m^-3]
+       "energy_released": -15.47,                            # Delta E [eV] = sum E(reactants) - sum E(products)
+       "franck_condon": 0.0                                  # Optional [eV], default 0
    }
+
+``energy_released`` is required and is computed from the potential energies
+listed at the top of ``MolecularReactionData.py`` (negative for endothermic
+reactions). ``franck_condon`` is the kinetic energy that the fragments get
+when an electron breaks a molecule apart. It is paid by the electron, on top
+of :math:`-\Delta E`, and given to the heavy products.
 
 .. note::
 
    If a reaction involves a species which is not yet used by any reaction, its
    charge ``Z`` must be added to ``SPECIES_Z`` in
-   ``MolecularReactionData.py``. If the species is a molecule, it must also be
-   added to the table in ``src/MoleculeHandler.cpp``, which gives its mass and
-   the charge of its heaviest nucleus.
+   ``MolecularReactionData.py``. If the species is a molecule, its mass (in kg)
+   must also be added to ``MOLECULE_MASS`` in the same file.

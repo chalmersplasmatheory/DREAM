@@ -108,6 +108,8 @@ namespace DREAM {
 
 
         const real_t *GetRateCoefficient(const len_t k) const { return Rate + k*grid->GetNr(); }
+        const real_t *GetRateCoefficient_n(const len_t k) const { return Rate_N + k*grid->GetNr(); }
+        const real_t *GetRateCoefficient_T(const len_t k) const { return Rate_T + k*grid->GetNr(); }
         const real_t *GetReactionRate(const len_t k) const { return ReactionRate + k*grid->GetNr(); }
 
 

@@ -238,27 +238,45 @@ Molecules
 In addition to atoms, DREAM can evolve the densities of molecules and molecular
 ions, such as :math:`\mathrm{D}_2`, :math:`\mathrm{D}_2^+`,
 :math:`\mathrm{D}_3^+`, :math:`\mathrm{ArD}^+` and :math:`\mathrm{HeD}^+`.
-Molecules are added with ``addIon()`` in the same way as atomic species, with
-two differences:
+Molecules are added with ``addMolecule()``, which takes the same arguments as
+``addIon()`` and in addition stores the mass of the molecule:
 
-- The ``name`` must be one of the names in the table below. DREAM uses the name
-  to recognize the species as a molecule, to look up its mass, and to match it
-  to the species in the
-  :ref:`list of molecular reactions<ds-eqsys-molecular-reactions>`.
+.. code-block:: python
+
+   ds.eqsys.n_i.addMolecule(name, kind=None, Z=None, mass=None, **kwargs)
+
+- The ``name`` is the name of the species in the simulation (and in the output).
+- The ``kind`` must be one of the names in the table below, so that the
+  molecule can be matched to the species in the
+  :ref:`list of molecular reactions<ds-eqsys-molecular-reactions>`. If it is
+  not given, it is the same as ``name``.
 - The charge ``Z`` is the *sum of the nuclear charges* of the molecule, e.g.
   ``Z=2`` for :math:`\mathrm{D}_2`, ``Z=3`` for :math:`\mathrm{D}_3` and
   ``Z=19`` for :math:`\mathrm{ArD}`. As for atoms, DREAM evolves all
   :math:`Z+1` charge states :math:`Z_0 = 0, 1, \ldots, Z`, where :math:`Z_0` is
   the net charge of the molecule (e.g. :math:`Z_0=1` for
-  :math:`\mathrm{D}_2^+`).
+  :math:`\mathrm{D}_2^+`). If ``Z`` is not given, it is taken from
+  ``SPECIES_Z`` in ``py/DREAM/Settings/MolecularReactionData.py`` for the
+  given ``kind``.
+- The ``mass`` (in kg) is the mass of the molecule. If it is not given, it is
+  taken from ``MOLECULE_MASS`` in the same file.
+- All other arguments (``iontype``, ``n``, ``r``, ``T``, ...) are passed on
+  to ``addIon()``.
+
+A species is treated as a molecule in DREAM if it has a non-zero mass, i.e. if
+it was added with ``addMolecule()``. Adding a molecule from the table below
+with ``addIon()`` gives an error.
 
 The following species appear in the molecular reactions:
 
 .. molecularspecieslist::
 
-Atomic species (e.g. ``D``, ``He`` and ``Ar``) must also use these names for
-the molecular reactions to find them. Molecules should be added as
-``IONS_DYNAMIC`` species, and cannot be initialized in coronal equilibrium.
+Atomic species (e.g. ``D``, ``He`` and ``Ar``) are added with ``addIon()``,
+and their ``name`` must be one of these names for the molecular reactions to
+find them. Each kind should only be added once, since the reactions only act on
+the first species of each kind.
+Molecules should be added as ``IONS_DYNAMIC`` species, and cannot be
+initialized in coronal equilibrium.
 
 Example
 ^^^^^^^
@@ -279,7 +297,7 @@ together with atomic deuterium which is formed when the molecules break up:
    nD2[0,:] = 1e19     # D2
    nD2[1,:] = 1e18     # D2+
 
-   ds.eqsys.n_i.addIon(name='D2', Z=2, iontype=Ions.IONS_DYNAMIC, n=nD2, r=r, T=1)
+   ds.eqsys.n_i.addMolecule(name='D2', iontype=Ions.IONS_DYNAMIC, n=nD2, r=r, T=1)
    ds.eqsys.n_i.addIon(name='D',  Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=1e18, T=1)
 
 Molecular reactions
@@ -310,8 +328,8 @@ dissociation branches:
    ds.eqsys.n_i.enableReactions({
        'IONIZATION': 'all',
        'DISSOCIATION': [
-           {'reactants': [('e', -1), ('D2', 0)]},   # e + D2  -> e + 2D,  e + D2 -> D + D+
-           {'reactants': [('e', -1), ('D2', 1)]},   # e + D2+ -> D + D+
+           {'reactants': [('e', -1), ('D2', 0)]},   # e + D2  -> e + 2D,       e + D2  -> 2e + D + D+
+           {'reactants': [('e', -1), ('D2', 1)]},   # e + D2+ -> e + D + D+,   e + D2+ -> 2e + 2D+
        ],
        'CHARGE_EXCHANGE': [
            {'reactants': [('D2', 1), ('D', 0)]},    # D2+ + D -> D2 + D+
@@ -446,12 +464,71 @@ By default, all charge states of an ion species share the same temperature
 :math:`T_i`, including the neutral state. It is also possible to evolve a
 separate temperature for the neutral charge state of each species, enabled
 with ``setNeutralTemperatureEnabled()`` and initialized with the ``Tn``
-argument to ``addIon()``.
+argument to ``addIon()`` (or ``addMolecule()``). The ion temperature must then
+also be evolved (which is the case when ``T`` is given to ``addIon()``), since
+energy is moved between the neutral and ion heat.
 
-.. todo::
+.. code-block:: python
 
-   Document the neutral temperature model (the neutral heat ``W_n``) once all
-   its terms have been implemented.
+   ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, n=n0, r=r, T=1, Tn=0.03)
+   ds.eqsys.n_i.setNeutralTemperatureEnabled(True)
+
+For each species :math:`i`, two new unknowns are then evolved: the neutral
+density :math:`N_{n,i} = n_i^{(0)}` (``N_n``, in m\ :sup:`-3`) and the neutral
+heat :math:`W_{n,i}` (``W_n``, in J/m\ :sup:`3`). The neutral temperature
+(in eV) is
+
+.. math::
+
+   T_{n,i} = \frac{W_{n,i}}{\tfrac{3}{2} e N_{n,i}},
+
+where :math:`e` converts eV to J. The ion density ``N_i`` and ion heat
+``W_i`` then only contain the charged states :math:`Z_0 \geq 1`. The neutral
+heat evolves as
+
+.. math::
+
+   \frac{\partial W_{n,i}}{\partial t} = \sum_{j\neq i} Q_{n,ij}
+   + Q_{\mathrm{react},i} + Q_{\mathrm{iz},i},
+
+with the terms
+
+- :math:`Q_{n,ij}`: elastic (hard-sphere) collisions between the neutrals of
+  species :math:`i` and :math:`j`,
+
+  .. math::
+
+     Q_{n,ij} = \tfrac{3}{2} e\, N_{n,i}\, \nu_{T,ij} \left(T_{n,j} - T_{n,i}\right),
+     \qquad
+     \nu_{T,ij} = \frac{2 m_i m_j}{(m_i+m_j)^2}\,\frac{8\sqrt{\pi}}{3} N_{n,j} v_{ij} r_{ij}^2,
+
+  where :math:`r_{ij}` is the sum of the hard-sphere radii and
+  :math:`v_{ij} = \sqrt{2 e T_{ij}/\mu_{ij}}` is the thermal speed of the
+  reduced mass :math:`\mu_{ij}` at the mass-weighted temperature
+  :math:`T_{ij} = (m_j T_{n,i} + m_i T_{n,j})/(m_i+m_j)`. The energy is
+  exchanged pairwise, so it is conserved among the neutrals.
+- :math:`Q_{\mathrm{react},i}`: thermal and released energy carried by the
+  neutral reactants and products of the
+  :ref:`molecular reactions<ds-eqsys-molecular-reactions>` (if enabled). The
+  same term is added to ``W_i`` for the charged reactants and products.
+- :math:`Q_{\mathrm{iz},i}`: thermal energy carried between ``W_n`` and
+  ``W_i`` by ionization (:math:`Z_0 = 0 \to 1`) and recombination
+  (:math:`Z_0 = 1 \to 0`) of atoms, using the ADAS rates :math:`I` and
+  :math:`R` (and runaway ionization in ``IONIZATION_MODE_FLUID_RE``),
+
+  .. math::
+
+     Q_{\mathrm{iz},i} = -\tfrac{3}{2} e \left( I\, n_e\, n_i^{(0)} T_{n,i}
+     - R\, n_e\, n_i^{(1)} T_i \right),
+
+  with the opposite sign in the ``W_i`` equation.
+
+.. warning::
+
+   The neutral temperature is not yet compatible with a prescribed ``T_cold``.
+   ``W_i`` is then held constant, so the energy that ``W_n`` exchanges with the
+   ions is not conserved. DREAM prints a warning in this case. Use a
+   self-consistent ``T_cold`` together with ``setNeutralTemperatureEnabled()``.
 
 
 Start from coronal equilibrium

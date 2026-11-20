@@ -24,17 +24,17 @@ namespace DREAM {
 
             len_t nr;
 
+            real_t preFactor;
+
+        public:
             /**
              * The ionisation cross-section scales logarithmically with the runaway momentum p, 
              * and thus only weakly depends on p at relevant energies. This motivates the 
              * assumption of f_re ~ delta(p - p*) in approximating the runaway electron impact ionisation.
              * To this end, the characteristic momentum of 20 mc is used.
              */
-            const real_t CHARACTERISTIC_RUNAWAY_MOMENTUM = 20.0;
+            static constexpr real_t CHARACTERISTIC_RUNAWAY_MOMENTUM = 20.0;
 
-            real_t preFactor;
-
-        public:
             IonFluidRunawayIonizationTerm(
                 FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, const len_t, real_t
             );

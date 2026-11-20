@@ -1,23 +1,13 @@
 
 #!/usr/bin/env python3
 
-import argparse
 import datetime
 import pathlib
 import numpy as np
-from math import factorial
-from scipy.special import gamma as gamma_function
-from scipy.optimize import brentq
 import sys
-from functools import lru_cache
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "py"))
 from DREAM.Settings import MolecularReactionData as data
 
-# Make DREAM/tools/ADAS available to import.
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
-
-from ADAS.data import parse_adas
-from ADAS.rates import ADASRate
 
 
 
@@ -49,30 +39,6 @@ def temperature_equation_eval(T, factor):
           -1.3e-8 + 1.42e-8*T**(-0.48)
       ) * factor * 1e-6
 
-@lru_cache(maxsize=None)
-def load_adas_rate(filename):
-    path = pathlib.Path(__file__).resolve().parent / filename
-
-    Z, logn, logT, coefficients = parse_adas(path.read_text())
-
-      # Standard ADAS filenames begin with ccd, scd, acd, etc.
-    rate_type = path.name[:3].lower()
-
-    return ADASRate(
-          name=rate_type,
-          x=coefficients,
-          n=logn,
-          T=logT,
-          Z=Z,
-          species=path.stem,
-          shiftup=rate_type in ("acd", "ccd", "prb")
-      )
-
-     
-def adas_eval(filename, Z0, T, n):
-     rate = load_adas_rate(filename)
-     return rate.eval(Z0,n,T)
-
 def constant_eval(value, n, T):
       return value
      
@@ -100,9 +66,6 @@ def build_rate_table(reaction, n_grid, T_grid):
                 if dtype == "CONSTANT":
                     v = constant_eval(raw, n, T)
 
-                elif dtype == "RUNAWAY_CROSS_SECTION":
-                    v = runaway_cross_section_eval(raw)
-
                 elif dtype == "RIEKE":
                     sigma = raw["factor"] * rieke_cross_section(20.0, raw["M2"], raw["C"])
                     v = runaway_cross_section_eval(sigma)
@@ -114,9 +77,6 @@ def build_rate_table(reaction, n_grid, T_grid):
                         constant = raw["constant"]
                         denominator = raw["denominator"]
                         v = constant * (T/denominator)**(0.5)
-
-                elif dtype == "ADAS":
-                    v = adas_eval(raw["filename"], raw["Z0"], T,n)
 
                 elif dtype == "UNIQUE_FORMULA_1":
                     # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
@@ -148,7 +108,7 @@ def build_rate_table(reaction, n_grid, T_grid):
                 elif dtype == "UNIQUE_FORMULA_5":
                     # Model: E.M. Hollmann et al., Nucl. Fusion 59 106014 (2019), https://doi.org/10.1088/1741-4326/ab32b2
                     T_use = min(max(T, 0.5), 100)
-                    v = 1e-9*np.exp(-T/1.5) *1e-6 #cm^3/s -> m^3/s
+                    v = 1e-9*np.exp(-T_use/1.5) *1e-6 #cm^3/s -> m^3/s
 
                 elif dtype == "POLYFIT":
                     # T must represent the relative temperature:

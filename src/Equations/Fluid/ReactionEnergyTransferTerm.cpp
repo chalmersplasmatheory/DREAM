@@ -8,7 +8,6 @@
 #include "DREAM/Equations/Fluid/ReactionEnergyTransferTerm.hpp"
 #include "DREAM/Constants.hpp"
 #include <algorithm>
-#include <string>
 
 using namespace DREAM;
 

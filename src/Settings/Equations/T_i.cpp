@@ -1,11 +1,11 @@
 #include "DREAM/Equations/Fluid/IonSpeciesIdentityTerm.hpp"
 #include "DREAM/Equations/Fluid/IonSpeciesTransientTerm.hpp"
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "DREAM/Equations/Fluid/NBIIonTerm.hpp"
 #include "DREAM/NBIHandler.hpp"
-#include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/NeutralCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/ReactionEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/NeutralIonizationEnergyTransferTerm.hpp"
@@ -33,9 +33,15 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
      * also evolve the ion heat W_i. Otherwise set it to constant.
      */
     enum OptionConstants::uqty_T_cold_eqn TcoldType = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
-    if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED)
+    if(TcoldType==OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED){
+        // W_i is then constant, so the energy that W_n exchanges with the ions is lost
+        if (s->GetInteger(MODULENAME "/typeTn") == OptionConstants::UQTY_T_N_INCLUDE)
+            DREAM::IO::PrintWarning(
+                "T_i: A separate neutral temperature is not yet compatible with a prescribed "
+                "T_cold. W_i is held constant, so the energy exchanged between W_n and W_i is not conserved."
+            );
         ConstructEquation_T_i_trivial(eqsys, s);
-    else if (TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
+    } else if (TcoldType == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
         ConstructEquation_T_i_selfconsistent(eqsys, s, oqty_terms);
     else 
         throw SettingsException(
@@ -59,7 +65,6 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
 		for(len_t it=0; it<eqsys->GetIonHandler()->GetNZ()*eqsys->GetFluidGrid()->GetNr(); it++)
 			Ti[it] = Ti_init[it] * 1.5*Constants::ec*Ni_init[it];
 	};
-    //eqsys->SetInitialValue(eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER), Ti_init);
 	len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
 	eqsys->initializer->AddRule(
 		id_Wi,
@@ -73,10 +78,10 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
  * Set a trivial equation W_i = constant for all ion species
  */
 void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, Settings* /*s*/){
-    const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
+    const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     FVM::Operator *Op = new FVM::Operator(eqsys->GetFluidGrid());
     for(len_t iz=0; iz<eqsys->GetIonHandler()->GetNZ(); iz++)
-        Op->AddTerm( 
+        Op->AddTerm(
             new IonSpeciesTransientTerm(eqsys->GetFluidGrid(), iz, id_Wi)
         );
     eqsys->SetOperator(id_Wi, id_Wi, Op, "dW_i/dt = 0");
@@ -140,7 +145,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         const bool reactionsEnabled = s->GetInteger(MODULENAME "/reactions/enabled") != 0;
         const bool separateNeutrals = s->GetInteger(MODULENAME "/typeTn") == OptionConstants::UQTY_T_N_INCLUDE;
 
-        // Added/removed energy though molecular reactions to W_i.
+        // Added/removed energy through molecular reactions to W_i.
         if (reactionsEnabled)
             Op_Wij->AddTerm(
                 new ReactionEnergyTransferTerm(
@@ -148,7 +153,7 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
                     false, includeFluidREIonization
                 )
             );
-        // Add/remove energy to W_i from from W_n.
+        // Add/remove energy to W_i from W_n.
         if (separateNeutrals && !ionHandler->IsMolecule(iz) && ionTypes[iz] != OptionConstants::ION_DATA_PRESCRIBED)
             Op_Wij->AddTerm(
                 new NeutralIonizationEnergyTransferTerm(
@@ -214,7 +219,7 @@ void SimulationGenerator::ConstructEquation_T_n(
                 )
             );
         }
-        // Added/removed energy though molecular reactions to W_n.
+        // Added/removed energy through molecular reactions to W_n.
         if (reactionsEnabled)
             Op_Wn->AddTerm(
                 new ReactionEnergyTransferTerm(
@@ -222,7 +227,7 @@ void SimulationGenerator::ConstructEquation_T_n(
                     true, includeFluidREIonization
                 )
             );
-        // Add/remove energy to W_n from from W_i.
+        // Add/remove energy to W_n from W_i.
         if (!ions->IsMolecule(iz) && ionTypes[iz] != OptionConstants::ION_DATA_PRESCRIBED)
             Op_Wn->AddTerm(
                 new NeutralIonizationEnergyTransferTerm(
@@ -235,13 +240,7 @@ void SimulationGenerator::ConstructEquation_T_n(
     eqsys->SetOperator(id_Wn, id_Wn, Op_Wn, "dW_n/dt = neutral thermal terms");
 
     // Load the initial neutral temperature, in eV.
-    real_t *Tn_data = LoadDataIonR("eqsys/n_i", fluidGrid->GetRadialGrid(),s, nSpecies,"initialTn");
-
-    if (Tn_data == nullptr) {
-        throw SettingsException(
-            "No initial neutral temperature loaded."
-        );
-    }
+    real_t *Tn_data = LoadDataIonR(MODULENAME, fluidGrid->GetRadialGrid(), s, nSpecies, "initialTn");
 
     const len_t nr = fluidGrid->GetNr();
     const len_t id_Nn = eqsys->GetUnknownID(OptionConstants::UQTY_NN_DENS);

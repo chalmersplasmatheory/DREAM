@@ -22,8 +22,7 @@ namespace DREAM {
         NONE,
         ELECTRON,
         SPECIES,
-        RELATIVE,
-        NEUTRAL
+        RELATIVE
     };
 
     // Structure describing a molecular input for a reaction rate.
