@@ -91,7 +91,7 @@ void IonChargedAdvectionDiffusionTerm<T>::SetCSMatrixElements(
     SetCoeffs(Z0); 
     len_t rowOffset0 = mat->GetRowOffset();
     len_t colOffset0 = mat->GetColOffset();
-    mat->SetOffset(rowOffset0+rOffset,colOffset0);
+    mat->SetOffset(rowOffset0+rOffset,colOffset0+rOffset);
     this->T::SetMatrixElements(mat,rhs);
     mat->SetOffset(rowOffset0,colOffset0);
 }

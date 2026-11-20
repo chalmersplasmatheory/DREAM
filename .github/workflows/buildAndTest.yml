@@ -35,12 +35,12 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Create build directory
-        run: mkdir $GITHUB_WORKSPACE/build
+        run: mkdir -p $GITHUB_WORKSPACE/build
 
       # Install dependencies
       - name: Install Ubuntu packages
         working-directory: ${{ github.workspace }}
-        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev
+        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev patchelf cmake
 
       # Set up Python
       #- name: Setup Python 3
@@ -55,9 +55,11 @@ jobs:
       
       # Install Python packages
       - name: Install Python packages
+        env:
+          PETSC_CONFIGURE_OPTIONS: --with-fc=0 --with-mpi=0
         run: |
           pip3 install setuptools==75.5.0
-          pip3 install h5py matplotlib kiwisolver==1.2.0 numpy scipy packaging
+          pip3 install h5py matplotlib numpy scipy packaging
           pip3 install --no-build-isolation petsc
           pip3 show petsc
           echo "PETSC_DIR=$(pip3 show petsc | grep Location | cut -d' ' -f2)/petsc" >> $GITHUB_ENV

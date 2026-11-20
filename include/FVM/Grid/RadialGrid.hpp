@@ -28,7 +28,8 @@ namespace DREAM::FVM {
             struct EPF_params *params = (struct EPF_params *) par;
             real_t BminOverBmax = params->BminOverBmax;
             real_t x = params->x;
-            return sqrt(1 - x * BminOverBmax * BOverBmin );
+			real_t arg = 1 - x * BminOverBmax * BOverBmin;
+            return sqrt(arg > 0 ? arg : 0);
         }
 
         static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){

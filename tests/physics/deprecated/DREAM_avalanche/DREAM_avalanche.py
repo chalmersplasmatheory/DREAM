@@ -110,7 +110,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
     ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
-    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.01)
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI, pCutAvalanche=0.01)
     ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_SIMPLE)
     ds.eqsys.n_re.setInitialProfile(density=1) # arbitrary initial value for n_re to seed the avalanche
     ds.eqsys.f_hot.enableIonJacobian(False)

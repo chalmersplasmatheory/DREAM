@@ -12,6 +12,7 @@ namespace DREAMTESTS::FVM {
 
         bool CheckGridRCylPXi();
         bool CheckZeroCrossingPitchCell();
+        bool CheckDeeplyTrappedVolume();
 
         virtual bool Run(bool) override;
     };
