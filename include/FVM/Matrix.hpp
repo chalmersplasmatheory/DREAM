@@ -26,6 +26,10 @@ namespace DREAM::FVM {
             PetscInt m, n;
             PetscInt nz, *nnz;
 
+			len_t iMinRM, iMaxRM;
+			bool localRowMaskNot = false;
+			const bool *localRowMask = nullptr;
+
             PetscInt rowOffset=0, colOffset=0;
 
             std::vector<PetscInt> tmpRows;
@@ -45,6 +49,7 @@ namespace DREAM::FVM {
                 const PetscInt, const PetscInt,
                 const PetscInt, const PetscInt* nnzl=nullptr
             );
+			bool ShouldSkipRow(const PetscInt row) const;
 
         public:
             enum view_format {
@@ -154,8 +159,9 @@ namespace DREAM::FVM {
             void View(enum view_format vf=ASCII_MATLAB, const std::string& filename="petsc_matrix");
             void Zero(bool nzKeep = true);
 			void ZeroRows(const PetscInt, const PetscInt[]);
-			void ZeroRowsColumns(const PetscInt, const PetscInt[]);
 			void SetDiagonalConstant(const PetscInt, const PetscInt[], const PetscReal);
+			void SetLocalRowMask(const bool*, const len_t, const len_t, bool);
+			void ResetLocalRowMask();
 
             void PrintInfo();
 

@@ -15,11 +15,11 @@ from .. Settings.MomentumGrid import TYPE_PXI
 
 class KineticQuantity(UnknownQuantity):
 
-    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list()):
+    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super(KineticQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super(KineticQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
         self.momentumgrid = momentumgrid
 

@@ -18,6 +18,28 @@ using namespace std;
 
 
 /**
+ * Generate an unknown quantity handler.
+ */
+DREAM::FVM::UnknownQuantityHandler *BoundaryFlux::GetUnknownHandler(
+	DREAM::FVM::Grid *g
+) {
+    DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
+
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
+
+	real_t *temp = new real_t[g->GetNCells()];
+	for (len_t i = 0; i < g->GetNCells(); i++)
+		temp[i] = 1;
+
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_F_HOT, temp);
+
+    delete [] temp;
+    
+    return uqh;
+}
+
+
+/**
  * Check that the flux out of a P/XI grid, into a fluid
  * grid, is consistent.
  */
@@ -27,6 +49,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
 
     DREAM::FVM::Grid *kineticGrid = this->InitializeGridRCylPXi(nr, np, nxi);
     DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
+	DREAM::FVM::UnknownQuantityHandler *uqh = this->GetUnknownHandler(kineticGrid);
 
     // Only advection term
     const char advCoeffs[4][10] = {"Fr", "F1", "F2", "Fr,F1,F2"};
@@ -34,7 +57,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
     eqn->AddTerm(new FVM::GeneralAdvectionTerm(kineticGrid));
 
     for (len_t i = 0; i < 4; i++) {
-        eqn->RebuildTerms(i, 0, nullptr);
+        eqn->RebuildTerms(i, 0, uqh);
 
         success = success && CheckPXiToFluid(eqn, advCoeffs[i], kineticGrid, fluidGrid);
     }
@@ -47,7 +70,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
     eqn->AddTerm(new FVM::GeneralDiffusionTerm(kineticGrid));
 
     for (len_t i = 0; i < 6; i++) {
-        eqn->RebuildTerms(i, 0, nullptr);
+        eqn->RebuildTerms(i, 0, uqh);
 
         success = success && CheckPXiToFluid(eqn, diffCoeffs[i], kineticGrid, fluidGrid);
     }
@@ -58,7 +81,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
     // Combined advection & diffusion
     eqn->AddTerm(new FVM::GeneralAdvectionTerm(kineticGrid));
     // 100 = guaranteed set all coefficients non-zero
-    eqn->RebuildTerms(100, 0, nullptr);
+    eqn->RebuildTerms(100, 0, uqh);
     success = success && CheckPXiToFluid(eqn, "all coefficients", kineticGrid, fluidGrid);
 
     delete eqn;
@@ -80,6 +103,8 @@ bool BoundaryFlux::CheckPXiToFluid(
         M = fluidGrid->GetNCells(),
         N = kineticGrid->GetNCells();
 
+	DREAM::FVM::UnknownQuantityHandler *uqh = this->GetUnknownHandler(kineticGrid);
+
     DREAM::DensityFromBoundaryFluxPXI *dens =
         new DREAM::DensityFromBoundaryFluxPXI(fluidGrid, kineticGrid, eqn);
 
@@ -99,8 +124,8 @@ bool BoundaryFlux::CheckPXiToFluid(
     DREAM::FVM::Matrix *lossMat =
         new DREAM::FVM::Matrix(N, N, kineticGrid->GetMomentumGrid(0)->GetNp2());
 
-    dens->Rebuild(0, 0, nullptr);
-    loss->Rebuild(0, nullptr);
+    dens->Rebuild(0, 0, uqh);
+    loss->Rebuild(0, uqh);
 
     // Construct matrices
     dens->SetMatrixElements(densMat, nullptr);

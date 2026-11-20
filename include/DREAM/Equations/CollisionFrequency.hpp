@@ -136,9 +136,13 @@ namespace DREAM {
         const real_t* GetTColdPartialContribution(FVM::fluxGridType)const;
         const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
     public:
-        CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
+        CollisionFrequency(
+			FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+			CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
+			enum OptionConstants::momentumgrid_type mgtype,
+			struct collqty_settings *cqset,
+			const len_t id_T, const len_t id_n
+		);
         virtual ~CollisionFrequency();
 
         void RebuildRadialTerms();

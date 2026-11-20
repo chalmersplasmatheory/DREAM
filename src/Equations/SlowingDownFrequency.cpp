@@ -70,10 +70,14 @@ const real_t SlowingDownFrequency::BREMS_INTEGRAL_I[BREMS_INTEGRAL_N] = {0.00000
 /**
  * Constructor
  */
-SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
-                : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
+SlowingDownFrequency::SlowingDownFrequency(
+	FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+	CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
+	enum OptionConstants::momentumgrid_type mgtype,
+	struct collqty_settings *cqset,
+	const len_t id_T, const len_t id_n
+) : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset,id_T,id_n) {
+
     hasIonTerm = false;
     gsl_ad_w = gsl_integration_workspace_alloc(1000);
     bremsSpline = gsl_spline_alloc(gsl_interp_steffen, BREMS_INTEGRAL_N);
@@ -167,11 +171,11 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         if(p==0)
             return 0;
-        real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+        real_t *T = unknowns->GetUnknownData(id_T);
         real_t gamma = sqrt(1+p*p);
         real_t gamma2 = gamma*gamma;
         real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
-        real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        real_t Theta = T[ir] / Constants::mc2inEV;
         
         real_t M = gamma2 * evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
         M +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
@@ -243,12 +247,12 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
  */
 real_t SlowingDownFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
     if ( (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && p){
-        real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
+        real_t T = unknowns->GetUnknownData(id_T)[ir];
         real_t p2 = p*p;
         real_t gamma = sqrt(1+p2);
         real_t gamma2 = gamma*gamma;
         real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
-        real_t Theta = T_cold / Constants::mc2inEV;
+        real_t Theta = T / Constants::mc2inEV;
         real_t Theta2 = Theta*Theta;
         real_t DDTheta = 1/Constants::mc2inEV;
         real_t expTerm = exp( -gammaMinusOne/Theta );
@@ -295,8 +299,8 @@ real_t SlowingDownFrequency::evaluatePreFactorAtP(real_t p,OptionConstants::coll
  * constPreFactor instead of evaluatePreFactorAtP.
  */
 real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
-    real_t *ncold = unknowns->GetUnknownData(id_ncold);    
-    real_t ntarget = ncold[ir];
+    real_t *n = unknowns->GetUnknownData(id_n);    
+    real_t ntarget = n[ir];
     if (isNonScreened)
         ntarget += ionHandler->GetBoundElectronDensity(ir);
 
@@ -330,8 +334,8 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
     for(len_t i = 0; i<nr*nMultiples; i++)
         dP3nuS[i] = 0;
 
-    // Set partial n_cold 
-    if(derivId == id_ncold)
+    // Set partial ne 
+    if(derivId == id_n)
         for(len_t ir=0; ir<nr; ir++){
             real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
             dP3nuS[ir] = preFactor * lnLee0 * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
@@ -339,7 +343,7 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
     else if(derivId == id_ni)    
         for(len_t ir=0; ir<nr; ir++){
             real_t electronTerm = preFactor*evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
-            real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+            real_t ntarget = unknowns->GetUnknownData(id_n)[ir];
             if (isNonScreened)
                 ntarget += ionHandler->GetBoundElectronDensity(ir);
             for(len_t iz=0; iz<nZ; iz++)
@@ -360,14 +364,14 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
                         dP3nuS[indZ*nr + ir] += preFactor * evaluateStoppingTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
                     }
         }
-    else if(derivId == id_Tcold) 
+    else if(derivId == id_T) 
         for(len_t ir=0; ir<nr; ir++){
-            real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+            real_t ntarget = unknowns->GetUnknownData(id_n)[ir];
             if (isNonScreened)
                 ntarget += ionHandler->GetBoundElectronDensity(ir);
            
             real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
-            real_t dLnLee0 = lnLambdaEE->evaluatePartialAtP(ir,0,id_Tcold,0);
+            real_t dLnLee0 = lnLambdaEE->evaluatePartialAtP(ir,0,id_T,0);
             dP3nuS[ir] = preFactor * ntarget * (lnLee0 * evaluateDDTElectronTermAtP(ir,0,collQtySettings->collfreq_mode)
                                                 + dLnLee0 * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode));
         }

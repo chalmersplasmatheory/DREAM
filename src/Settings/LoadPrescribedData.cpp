@@ -481,6 +481,17 @@ real_t *SimulationGenerator::LoadDataR(
             );
     }
 
+	// GSL requires x values to be strictly increasing, so check
+	// that here so that we can throw a more understandable error
+	// message if necessary...
+	if (nr_inp > 0)
+		for (len_t ir = 0; ir < nr_inp-1; ir++)
+			if (r[ir] >= r[ir+1])
+				throw SettingsException(
+					"%s/%s: The radial grid points of this input profile must be strictly increasing.",
+					modname.c_str(), name.c_str()
+				);
+
     // Interpolate given profile to computational grid
     if (nr_inp == 0)
         return nullptr;

@@ -25,6 +25,9 @@ void UnknownQuantity::SaveSFile(SFile *sf, const string& path, bool saveMeta) {
 
     sf->WriteAttribute_string(var, "description", this->description);
     sf->WriteAttribute_string(var, "equation", this->description_eqn);
+
+	if (!this->description_eqn_alt.empty())
+		sf->WriteAttribute_string(var, "equation_alt", this->description_eqn_alt);
 }
 
 /**
@@ -42,6 +45,9 @@ void UnknownQuantity::SaveSFileCurrent(SFile *sf, const string& path, bool saveM
 
     sf->WriteAttribute_string(var, "description", this->description);
     sf->WriteAttribute_string(var, "equation", this->description_eqn);
+
+	if (!this->description_eqn_alt.empty())
+		sf->WriteAttribute_string(var, "equation_alt", this->description_eqn_alt);
 }
 
 /**

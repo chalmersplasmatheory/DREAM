@@ -39,6 +39,24 @@ void AdvectionDiffusionTerm::Add(DiffusionTerm *d) {
 }
 
 /**
+ * Returns a string which contains the name of every term
+ * included in this operator.
+ */
+std::string AdvectionDiffusionTerm::GetNames() const {
+	std::string names;
+
+	for (auto it : advectionterms)
+		names += it->GetName() + ", ";
+	for (auto it : diffusionterms)
+		names += it->GetName() + ", ";
+	
+	if (names.empty())
+		return names;
+	else
+		return names.substr(0, names.length()-2);
+}
+
+/**
  * Returns the number of non-zero elements per row
  * inserted by this term into a linear operator matrix.
  */

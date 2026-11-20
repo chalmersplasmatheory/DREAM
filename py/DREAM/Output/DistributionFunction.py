@@ -15,11 +15,11 @@ from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 class DistributionFunction(KineticQuantity):
     
 
-    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list()):
+    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super(DistributionFunction, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=momentumgrid)
+        super(DistributionFunction, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=momentumgrid, triggerinfo=triggerinfo)
 
 
     def __str__(self):

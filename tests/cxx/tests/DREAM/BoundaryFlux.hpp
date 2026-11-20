@@ -17,6 +17,7 @@ namespace DREAMTESTS::_DREAM {
             const DREAM::FVM::Operator*, const std::string&,
             DREAM::FVM::Grid*, DREAM::FVM::Grid*
         );
+		DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*);
         virtual bool Run(bool) override;
 
         bool VerifyVectorsAreOpposite(

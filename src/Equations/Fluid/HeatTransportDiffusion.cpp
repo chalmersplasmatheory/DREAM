@@ -1,9 +1,9 @@
 /**
  * Implementation of a heat diffusion operator taking the form
  *
- *   d/dr ( V'*D*n_cold * d/dr (T_cold) )
+ *   d/dr ( V'*D*n * dT/dr )
  *
- * This operator should be applied to 'T_cold'.
+ * This operator should be applied to 'T_cold' (or 'T_hot').
  */
 
 #include "DREAM/Constants.hpp"
@@ -20,15 +20,16 @@ using namespace DREAM;
  */
 HeatTransportDiffusion::HeatTransportDiffusion(
     FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
-    FVM::Interpolator1D *D, FVM::UnknownQuantityHandler *unknowns
+    FVM::Interpolator1D *D, FVM::UnknownQuantityHandler *unknowns,
+	const len_t id_n
 ) : FVM::DiffusionTerm(grid), mgtype(mgtype), coeffD(D) {
 
     SetName("HeatTransportDiffusion");
 
     this->unknowns = unknowns;
-    this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    this->id_n = id_n;
     
-    AddUnknownForJacobian(unknowns, this->id_n_cold);
+    AddUnknownForJacobian(unknowns, this->id_n);
 
     AllocateDiffCoeff();
 }
@@ -71,20 +72,20 @@ void HeatTransportDiffusion::Rebuild(
     const real_t *D = this->coeffD->Eval(t);
     const len_t nr = this->grid->GetNr();
 
-    const real_t *ncold = unknowns->GetUnknownData(this->id_n_cold);
+    const real_t *n = unknowns->GetUnknownData(this->id_n);
 
     for (len_t ir = 0; ir < nr+1; ir++) {
-        real_t n=0;
+        real_t na=0;
         if(ir<nr)
-            n += deltaRadialFlux[ir] * ncold[ir];
+            na += deltaRadialFlux[ir] * n[ir];
         if(ir>0)
-            n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
+            na += (1-deltaRadialFlux[ir]) * n[ir-1];
 
         // Factor ec (=elementary charge) to convert from
         // eV to joule
         this->dD[ir] = 1.5 * Constants::ec * D[ir];
         
-        Drr(ir, 0, 0) += 1.5 * Constants::ec * D[ir] * n;
+        Drr(ir, 0, 0) += 1.5 * Constants::ec * D[ir] * na;
     }
 }
 
@@ -98,7 +99,7 @@ void HeatTransportDiffusion::Rebuild(
 void HeatTransportDiffusion::SetPartialDiffusionTerm(
     len_t derivId, len_t
 ) {
-    if (derivId != this->id_n_cold)
+    if (derivId != this->id_n)
         return;
 
     ResetDifferentiationCoefficients();

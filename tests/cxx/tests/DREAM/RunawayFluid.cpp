@@ -284,10 +284,13 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
 
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency *nuS  = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cqPc);
-    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cqPc);
+	const len_t id_Tcold = unknowns->GetUnknownID(DREAM::OptionConstants::UQTY_T_COLD);
+	const len_t id_ncold = unknowns->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);
+
+    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EE,id_Tcold,id_ncold);
+    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EI,id_Tcold,id_ncold);
+    DREAM::SlowingDownFrequency *nuS  = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cqPc,id_Tcold,id_ncold);
+    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cqPc,id_Tcold,id_ncold);
 
     DREAM::AnalyticDistributionRE::dist_mode re_dist_mode = (eceff_mode==DREAM::OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
             DREAM::AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : DREAM::AnalyticDistributionRE::RE_PITCH_DIST_FULL;
@@ -300,7 +303,7 @@ DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
     real_t integratedComptonSpectrum = 5.8844190260298, C1_Compton = 1.2, C2_Compton = 0.8, C3_Compton = 0.;
     bool extrapolateDreicer = true;
     DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
-        grid, unknowns, nuS, nuD,lnLEE, extrapolateDreicer, lnLEI, ionHandler, distRE, cqPc, cqEc,
+        grid, unknowns, nuS, nuD,lnLEE, nullptr, extrapolateDreicer, lnLEI, ionHandler, distRE, cqPc, cqEc,
         DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
         eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
         DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, comptonFlux_i,

@@ -8,11 +8,11 @@ from .OutputException import OutputException
 class RunawayElectronDensity(FluidQuantity):
     
 
-    def __init__(self, name, data, grid, output, attr=list()):
+    def __init__(self, name, data, grid, output, attr=list(), triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, grid=grid, output=output, attr=attr)
+        super().__init__(name=name, data=data, grid=grid, output=output, attr=attr, triggerinfo=triggerinfo)
 
 
     def plotRates(self, r=None, t=None, ax=None, show=True):

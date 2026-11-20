@@ -15,6 +15,8 @@ namespace DREAM::FVM {
         std::string description;
         // Description of equation used to solve for this quantity
         std::string description_eqn;
+		// Alternative equation description
+		std::string description_eqn_alt;
         // Pointer to grid on which the quantity is defined
         Grid *grid;
         // (Solution) data handler
@@ -46,6 +48,7 @@ namespace DREAM::FVM {
         Grid *GetGrid() { return this->grid; }
         const std::string& GetDescription() const { return this->description; }
         const std::string& GetEquationDescription() const { return this->description_eqn; }
+		const std::string& GetEquationDescriptionAlt() const { return this->description_eqn_alt; }
         const std::string& GetName() const { return this->name; }
 		len_t GetNumberOfSavedSteps() const { return this->data->GetNumberOfSavedSteps(); }
 
@@ -59,6 +62,7 @@ namespace DREAM::FVM {
         void RollbackSaveStep() { data->RollbackSaveStep(); }
         void SaveStep(const real_t t, bool trueSave) { data->SaveStep(t, trueSave); }
         void SetEquationDescription(const std::string& d) { this->description_eqn = d; }
+		void SetEquationDescriptionAlt(const std::string& d) { this->description_eqn_alt = d; }
         void Store(Vec& v, const len_t offs, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
         void Store(const real_t *v, const len_t offs=0, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
 		void RestoreValue() { data->RestoreValue(); }
