@@ -152,6 +152,25 @@ class Ions(UnknownQuantity):
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
 
 
+    def addMolecule(self, name, Z=None, mass=None, **kwargs):
+        """
+        Adds a new molecular species to the plasma. Z and mass default to the
+        values in MolecularReactionData.py. All other arguments are passed on
+        to addIon().
+
+        :param str name:   Name of the molecule (as in the molecular reactions).
+        :param int Z:      Summed nuclear charges.
+        :param float mass: Mass of the molecule [kg].
+        """
+        if Z is None:
+            Z = reaction_data.SPECIES_Z[name]
+        if mass is None:
+            mass = reaction_data.MOLECULE_MASS[name]
+
+        self.addIon(name=name, Z=Z, **kwargs)
+        self.ions[-1].molecule_mass = mass
+
+
     def addIonSource(self, species, dNdt=None, t=None, Z0=0, source_type=ION_SOURCE_PRESCRIBED, r =None):
         """
         Add a source term for the specified ion species.
@@ -347,7 +366,12 @@ class Ions(UnknownQuantity):
 
         # Add the newly discovered species with zero density.
         for name in charges:
-            if name not in initial_names:
+            if name in initial_names:
+                continue
+
+            if name in reaction_data.MOLECULE_MASS:
+                self.addMolecule(name=name, iontype=IONS_DYNAMIC, Z0=0, n=0, r=self.r)
+            else:
                 self.addIon(
                     name=name,
                     Z=charges[name],
@@ -779,6 +803,11 @@ class Ions(UnknownQuantity):
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
 
+        if 'molecule_masses' in data and len(data['molecule_masses']) == len(Z):
+            molecule_masses = data['molecule_masses']
+        else:
+            molecule_masses = [0]*len(Z)
+
         if 'isotopes' in data and len(data['isotopes']) == len(Z):
             isotopes = data['isotopes']
         else:
@@ -979,6 +1008,7 @@ class Ions(UnknownQuantity):
                 neutral_advection_mode=neutral_advection_modes[i], neutral_prescribed_advection = npa,
                 rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
                 T=T, Tn = Tn,n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
+            self.ions[-1].molecule_mass = molecule_masses[i]
 
             # Load ion source
             if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
@@ -1053,6 +1083,7 @@ class Ions(UnknownQuantity):
         charged_prescribed_advection = None
         neutral_prescribed_advection = None
         names   = ""
+        molecule_masses = []
         init_equil = []
         initialNi = []
 
@@ -1063,6 +1094,9 @@ class Ions(UnknownQuantity):
 
         for ion in self.ions:
             names += '{};'.format(ion.getName())
+            molecule_masses.append(ion.molecule_mass)
+            if ion.molecule_mass == 0 and ion.getName() in reaction_data.MOLECULE_MASS:
+                raise EquationException(f"ions: '{ion.getName()}' is a molecule. Add it with addMolecule().")
 
             if ion.tritium:
                 tritiumnames += '{};'.format(ion.getName())
@@ -1166,6 +1200,7 @@ class Ions(UnknownQuantity):
 
         data = {
             'names': names,
+            'molecule_masses': molecule_masses,
             'Z': Z,
             'isotopes':isotopes,
             'SPIMolarFraction':SPIMolarFraction,
@@ -1277,9 +1312,22 @@ class Ions(UnknownQuantity):
         }
 
         if self.reactions_enabled:
+            species = [ion.getName() for ion in self.ions]
+            names, reactant_species, product_species = [], [], []
+            for reaction in reaction_data.MOLECULAR_REACTIONS:
+                if reaction["name"] not in self.enabled_reaction_names:
+                    continue
+                names.append(reaction["name"])
+                for name, Z0, coefficient in reaction["reactants"]:
+                    reactant_species.append(-1 if name in ("e", "RE") else species.index(name))
+                for name, Z0, coefficient in reaction["products"]:
+                    product_species.append(-1 if name in ("e", "RE") else species.index(name))
+
             data["reactions"] = {
                 "enabled": 1,
-                "names": ";".join(self.enabled_reaction_names) + ";",
+                "names": "".join(f"{name};" for name in names),
+                "reactant_species": reactant_species,
+                "product_species": product_species,
             }
 
         if self.reactions_enabled and self.user_rates:

@@ -18,7 +18,6 @@ namespace DREAM {
 
         std::vector<len_t> reactions;
         std::vector<real_t> share;
-        std::string iIonName;
         real_t iIonMass;
 
         real_t *Energy = nullptr;

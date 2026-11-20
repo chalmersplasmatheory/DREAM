@@ -38,7 +38,6 @@ ReactionEnergyTransferTerm::ReactionEnergyTransferTerm(
         AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_NN_DENS));
     }
 
-    this->iIonName = ions->GetName(iz);
     this->iIonMass = ions->GetIonSpeciesMass(iz);
 
     const std::vector<MolecularReaction>& allReactions = ratehandler->GetMolecularReactions();
@@ -60,7 +59,7 @@ ReactionEnergyTransferTerm::ReactionEnergyTransferTerm(
             const MolecularReactionSpecies &p = reaction.products[j];
             if (std::string(p.name) == "e" || std::string(p.name) == "RE")
                 continue;
-            M += p.coefficient * ions->GetIonSpeciesMass(ions->GetIonIndex(p.name));
+            M += p.coefficient * ions->GetIonSpeciesMass(reaction.productIz[j]);
             nHeavyProducts++;
         }
 
@@ -68,7 +67,7 @@ ReactionEnergyTransferTerm::ReactionEnergyTransferTerm(
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const MolecularReactionSpecies &p = reaction.products[j];
             const bool neutral = separateNeutrals && p.Z0 == 0;
-            if (this->iIonName != p.name || neutral != neutralEquation)
+            if (reaction.productIz[j] != iz || neutral != neutralEquation)
                 continue;
 
             if (nHeavyProducts == 1)
@@ -81,7 +80,7 @@ ReactionEnergyTransferTerm::ReactionEnergyTransferTerm(
         for (len_t j = 0; j < reaction.nReactants; j++) {
             const MolecularReactionSpecies &r = reaction.reactants[j];
             const bool neutral = separateNeutrals && r.Z0 == 0;
-            if (this->iIonName != r.name || neutral != neutralEquation)
+            if (reaction.reactantIz[j] == iz && neutral == neutralEquation)
                 reactant = true;
         }
 
@@ -136,10 +135,10 @@ void ReactionEnergyTransferTerm::Rebuild(
                 if (std::string(r.name) == "e" || std::string(r.name) == "RE")
                     continue;
 
-                const real_t T = ratehandler->ResolveSpeciesTemperature(ions->GetIonIndex(r.name), r.Z0, ir);
+                const real_t T = ratehandler->ResolveSpeciesTemperature(reaction.reactantIz[j], r.Z0, ir);
                 const bool neutral = separateNeutrals && r.Z0 == 0;
                 E += share[i] * 1.5 * ec * r.coefficient * T;
-                if (this->iIonName == r.name && neutral == neutralEquation)
+                if (reaction.reactantIz[j] == iz && neutral == neutralEquation)
                     E -= 1.5 * ec * r.coefficient * T;
             }
             Energy[i*nr + ir] = E;
@@ -202,11 +201,11 @@ bool ReactionEnergyTransferTerm::SetJacobianBlock(
 
                 const bool neutral = separateNeutrals && r.Z0 == 0;
                 real_t dEdT = share[i] * 1.5 * ec * r.coefficient;
-                if (this->iIonName == r.name && neutral == neutralEquation)
+                if (reaction.reactantIz[j] == iz && neutral == neutralEquation)
                     dEdT = dEdT - 1.5 * ec * r.coefficient;
 
                 added = ratehandler->SetSpeciesTemperatureJacobian(
-                    derivId, jac, row, ir, ions->GetIonIndex(r.name), r.Z0, R[ir] * dEdT
+                    derivId, jac, row, ir, reaction.reactantIz[j], r.Z0, R[ir] * dEdT
                 );
                 if (added)
                     contributes = true;

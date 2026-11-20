@@ -34,8 +34,6 @@ MoleculeRateReaction::MoleculeRateReaction(
         AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_NN_DENS));
     }
 
-    this->iIonName = ions->GetName(iIon);
-
     // Sort ion relevant reactions for this iIon
     const std::vector<MolecularReaction>& allReactions = ratehandler->GetMolecularReactions();
     for (len_t k = 0; k < allReactions.size(); k++) {
@@ -48,10 +46,10 @@ MoleculeRateReaction::MoleculeRateReaction(
 
         bool involved = false;
         for (len_t j = 0; j < reaction.nReactants; j++)
-            if (iIonName == reaction.reactants[j].name)
+            if (reaction.reactantIz[j] == iIon)
                 involved = true;
         for (len_t j = 0; j < reaction.nProducts; j++)
-            if (iIonName == reaction.products[j].name)
+            if (reaction.productIz[j] == iIon)
                 involved = true;
 
         if (involved)
@@ -75,10 +73,10 @@ bool MoleculeRateReaction::SetCSJacobianBlock(
         // Check if more than one reactant is the unknown with respect to which we are differentiating.
         real_t net = 0;
         for (len_t j = 0; j < reaction.nProducts; j++)
-            if (iIonName == reaction.products[j].name && reaction.products[j].Z0 == (int_t)Z0)
+            if (reaction.productIz[j] == iIon && reaction.products[j].Z0 == (int_t)Z0)
                 net += reaction.products[j].coefficient;
         for (len_t j = 0; j < reaction.nReactants; j++)
-            if (iIonName == reaction.reactants[j].name && reaction.reactants[j].Z0 == (int_t)Z0)
+            if (reaction.reactantIz[j] == iIon && reaction.reactants[j].Z0 == (int_t)Z0)
                 net -= reaction.reactants[j].coefficient;
         if (net == 0)
             continue;
@@ -103,10 +101,10 @@ void MoleculeRateReaction::SetCSMatrixElements(
 
         real_t net = 0;
         for (len_t j = 0; j < reaction.nProducts; j++)
-            if (iIonName == reaction.products[j].name && reaction.products[j].Z0 == (int_t)Z0)
+            if (reaction.productIz[j] == iIon && reaction.products[j].Z0 == (int_t)Z0)
                 net += reaction.products[j].coefficient;
         for (len_t j = 0; j < reaction.nReactants; j++)
-            if (iIonName == reaction.reactants[j].name && reaction.reactants[j].Z0 == (int_t)Z0)
+            if (reaction.reactantIz[j] == iIon && reaction.reactants[j].Z0 == (int_t)Z0)
                 net -= reaction.reactants[j].coefficient;
         if (net == 0)
             continue;
@@ -141,10 +139,10 @@ void MoleculeRateReaction::SetCSVectorElements(
 
         real_t net = 0;
         for (len_t j = 0; j < reaction.nProducts; j++)
-            if (iIonName == reaction.products[j].name && reaction.products[j].Z0 == (int_t)Z0)
+            if (reaction.productIz[j] == iIon && reaction.products[j].Z0 == (int_t)Z0)
                 net += reaction.products[j].coefficient;
         for (len_t j = 0; j < reaction.nReactants; j++)
-            if (iIonName == reaction.reactants[j].name && reaction.reactants[j].Z0 == (int_t)Z0)
+            if (reaction.reactantIz[j] == iIon && reaction.reactants[j].Z0 == (int_t)Z0)
                 net -= reaction.reactants[j].coefficient;
         if (net == 0)
             continue;

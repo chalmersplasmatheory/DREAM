@@ -24,7 +24,8 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
     ADAS *adas,
     real_t reionizScale, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled,
     const std::vector<std::string>& enabledReactionNames,
-    const std::unordered_map<std::string, UserMolecularRate>& userRates
+    const std::unordered_map<std::string, UserMolecularRate>& userRates,
+    const std::vector<int_t>& reactantSpecies, const std::vector<int_t>& productSpecies
 ) :  grid(grid), ions(ions), adas(adas), reionizScale(reionizScale),
      userRates(userRates), unknowns(unknowns) {
 
@@ -54,7 +55,7 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
 
 
     if (reactionsEnabled){
-        AddMolecularReactionRates(enabledReactionNames);
+        AddMolecularReactionRates(enabledReactionNames, reactantSpecies, productSpecies);
         AddMolecularLineRadiation();
     }
 
@@ -230,8 +231,14 @@ bool RateHandler::SetSpeciesTemperatureJacobian(
 
 /*
  * Add molecular reaction rates for all defined molecular rate pairs.
+ * Python gives the species index of every reactant and product (-1 for
+ * "e" and "RE"), in the order of the definitions.
  */
-void RateHandler::AddMolecularReactionRates(const std::vector<std::string>& enabledReactionNames) {
+void RateHandler::AddMolecularReactionRates(
+    const std::vector<std::string>& enabledReactionNames,
+    const std::vector<int_t>& reactantSpecies, const std::vector<int_t>& productSpecies
+) {
+    len_t ir = 0, ip = 0;   // position in reactantSpecies and productSpecies
 
     for (len_t i = 0; i < molecularReactionDefinitionCount; i++) {
         const MolecularReactionDefinition& def = molecularReactionDefinitions[i];
@@ -242,52 +249,6 @@ void RateHandler::AddMolecularReactionRates(const std::vector<std::string>& enab
             enabledReactionNames.end(),
             std::string(def.rateName)) == enabledReactionNames.end())
             continue;
-
-        bool allReactantsExist = true;
-
-        for (len_t j = 0; j < def.nReactants; j++) {
-            const MolecularReactionSpecies& r = def.reactants[j];
-
-            // We dont care if it has an electron or runaway electron
-            if (std::string(r.name) == "e" || std::string(r.name) == "RE")
-                continue;
-
-            // If not all reactants exist (existence is handled by python)
-            if (!ions->HasIon(r.name)) {
-                allReactantsExist = false;
-                break;
-            }
-
-            // Check if the charge state is valid for the reactant
-            const len_t iIon = ions->GetIonIndex(r.name);
-            if (r.Z0 < 0 || (len_t)r.Z0 > ions->GetZ(iIon)) {
-                allReactantsExist = false;
-                break;
-            }
-        }
-
-        if (!allReactantsExist)
-            continue;
-
-        for (len_t j = 0; j < def.nProducts; j++) {
-            const MolecularReactionSpecies& p = def.products[j];
-
-            if (std::string(p.name) == "e" || std::string(p.name) == "RE")
-                continue;
-
-            if (!ions->HasIon(p.name))
-                throw FVM::FVMException(
-                    "RateHandler: Molecular reaction '%s' is enabled, but product species '%s' is not defined.",
-                    def.rateName, p.name
-                );
-
-            const len_t iIon = ions->GetIonIndex(p.name);
-            if (p.Z0 < 0 || (len_t)p.Z0 > ions->GetZ(iIon))
-                throw FVM::FVMException(
-                    "RateHandler: Molecular reaction '%s' references invalid charge state Z0=%d for product species '%s'.",
-                    def.rateName, p.Z0, p.name
-                );
-        }
 
         // Add the reaction to the list of molecular reactions.
         MolecularReaction reaction;
@@ -317,6 +278,13 @@ void RateHandler::AddMolecularReactionRates(const std::vector<std::string>& enab
                 "RateHandler: Molecular reaction '%s' must have exactly two reactants.",
                 def.rateName
             );
+
+        // Species index of each reactant and product
+        for (len_t j = 0; j < 2; j++, ir++)
+            reaction.reactantIz[j] = (reactantSpecies[ir] < 0) ? ions->GetNZ() +1: reactantSpecies[ir];
+        for (len_t j = 0; j < def.nProducts; j++, ip++)
+            reaction.productIz.push_back((productSpecies[ip] < 0) ? ions->GetNZ()+1 : productSpecies[ip]);
+
         for (len_t j = 0; j < 2; j++) {
             const MolecularReactionSpecies& r = def.reactants[j];
             reaction.reactantOffset[j] = 0;
@@ -326,7 +294,7 @@ void RateHandler::AddMolecularReactionRates(const std::vector<std::string>& enab
                 reaction.reactantId[j] = id_n_re;
             else {
                 reaction.reactantId[j] = id_ions;
-                reaction.reactantOffset[j] = ions->GetIndex(ions->GetIonIndex(r.name), r.Z0) * grid->GetNr();
+                reaction.reactantOffset[j] = ions->GetIndex(reaction.reactantIz[j], r.Z0) * grid->GetNr();
             }
         }
 

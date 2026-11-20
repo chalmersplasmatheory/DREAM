@@ -18,7 +18,6 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "DREAM/Equations/Fluid/IonSourceTerm.hpp"
-#include "DREAM/MoleculeHandler.hpp"
 #include "DREAM/Equations/Fluid/RateHandler.hpp"
 
 
@@ -41,6 +40,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     const len_t dims[1] = {0};
 
     s->DefineSetting(MODULENAME "/names", "Names of each ion species", (const string)"");
+    s->DefineSetting(MODULENAME "/molecule_masses", "Mass of each ion species that is a molecule [kg] (0 for atoms)", 1, dims, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/isotopes", "List of atomic mass numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
@@ -68,6 +68,8 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
 
     s->DefineSetting(MODULENAME "/reactions/enabled", "Enable selected molecular reactions", (int_t)0);
     s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
+    s->DefineSetting(MODULENAME "/reactions/reactant_species", "Species index of each reactant of each reaction (-1 for e, RE)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/product_species", "Species index of each product of each reaction (-1 for e, RE)", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/reactions/user_rates/names", "Names of molecular rates replaced by user-supplied tables", (const string)"");
     s->DefineSetting(MODULENAME "/reactions/user_rates/nn", "Number of density points in each user-supplied rate table", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/reactions/user_rates/nT", "Number of temperature points in each user-supplied rate table", 1, dims, (int_t*)nullptr);
@@ -269,8 +271,11 @@ void SimulationGenerator::ConstructEquation_Ions(
     MultiInterpolator1D *prescribed_densities = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
+    len_t nMoleculeMasses;
+    const real_t *moleculeMassArray = s->GetRealArray(MODULENAME "/molecule_masses", 1, &nMoleculeMasses);
+    const vector<real_t> moleculeMasses(moleculeMassArray, moleculeMassArray + nMoleculeMasses);
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames);
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames, moleculeMasses);
     eqsys->SetIonHandler(ih);
 
     const bool reactionsEnabled =
@@ -278,6 +283,13 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     const vector<string> reactionNames =
         s->GetStringList(MODULENAME "/reactions/names");
+
+    // Species index of the reactants and products of the reactions (from Python)
+    len_t nReactant, nProduct;
+    const int_t *reactantArray = s->GetIntegerArray(MODULENAME "/reactions/reactant_species", 1, &nReactant);
+    const int_t *productArray = s->GetIntegerArray(MODULENAME "/reactions/product_species", 1, &nProduct);
+    const vector<int_t> reactantSpecies(reactantArray, reactantArray + nReactant);
+    const vector<int_t> productSpecies(productArray, productArray + nProduct);
 
 
     // Convert the flat arrays of user-supplied rates into a map of UserMolecularRate objects
@@ -307,7 +319,8 @@ void SimulationGenerator::ConstructEquation_Ions(
 
     RateHandler *ratehandler = new RateHandler(
         fluidGrid, ih, adas, s->GetReal(MODULENAME "/reioniz_scale"),
-        eqsys->GetUnknownHandler(), reactionsEnabled, reactionNames, userRates
+        eqsys->GetUnknownHandler(), reactionsEnabled, reactionNames, userRates,
+        reactantSpecies, productSpecies
     );
     eqsys->SetRateHandler(ratehandler);
 
@@ -421,7 +434,7 @@ void SimulationGenerator::ConstructEquation_Ions(
                     }
                 }
                 // Molecules get their RE ionization from MoleculeRateReaction
-                else if (includeFluidREIonization && !MoleculeHandler().IsMolecule(ih->GetName(iZ))) {
+                else if (includeFluidREIonization && !ih->IsMolecule(iZ)) {
                     IonFluidRunawayIonizationTerm *ifrit = new IonFluidRunawayIonizationTerm(fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, reionizScale);
                     oqty_terms->n_re_kin_rates.push_back(ifrit);
                     eqn->AddTerm(ifrit);

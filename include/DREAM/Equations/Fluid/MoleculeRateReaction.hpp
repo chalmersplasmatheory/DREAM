@@ -15,7 +15,6 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         RateHandler *ratehandler;
         len_t id_ions;
-        std::string iIonName;
         std::vector<len_t> reactions;
 
     public:

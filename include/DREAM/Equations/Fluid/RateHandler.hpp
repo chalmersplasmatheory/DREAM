@@ -47,6 +47,9 @@ namespace DREAM {
         /// so that the density of reactant j is GetUnknownData(reactantId[j])[reactantOffset[j] + ir]
         len_t reactantId[2];
         len_t reactantOffset[2];
+        /// Ion species index of each reactant and product (GetNZ() for "e" and "RE")
+        len_t reactantIz[2];
+        std::vector<len_t> productIz;
     };
 
     // Line radiation of one molecular charge state (molecular counterpart of PLT):
@@ -89,7 +92,10 @@ namespace DREAM {
         MolecularRateInterpolator *GetMolecularRateByName(const char *rateName) const;
         len_t GetADASZ(const len_t iz) const;
 
-        void AddMolecularReactionRates(const std::vector<std::string>& enabledReactionNames);
+        void AddMolecularReactionRates(
+            const std::vector<std::string>& enabledReactionNames,
+            const std::vector<int_t>& reactantSpecies, const std::vector<int_t>& productSpecies
+        );
         void AddMolecularLineRadiation();
 
         FVM::UnknownQuantityHandler *unknowns;
@@ -99,7 +105,9 @@ namespace DREAM {
             FVM::Grid *grid, IonHandler *ions, ADAS *adas, real_t reionizScale,
             FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled,
             const std::vector<std::string>& enabledReactionNames,
-            const std::unordered_map<std::string, UserMolecularRate>& userRates
+            const std::unordered_map<std::string, UserMolecularRate>& userRates,
+            const std::vector<int_t>& reactantSpecies = {},
+            const std::vector<int_t>& productSpecies = {}
         );
         ~RateHandler();
 

@@ -97,7 +97,7 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     vector<string> names(N_IONS);
     len_t *Z = new len_t[N_IONS];// The ion charge numbers must be provided to the IONHandler as a dynamically allocated array to avoid memory issues
     for (len_t i = 0; i < N_IONS; i++){
-        names[i] = "";
+        names[i] = "ion" + std::to_string(i); 
         Z[i]=Z_IONS[i];
     }
 

@@ -54,7 +54,7 @@ DREAM::FVM::UnknownQuantityHandler *IonRateEquation::GetUnknownHandler(DREAM::FV
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
-    // Required by the RateHandler
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_NI_DENS, "0", g, N_IONS);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_WI_ENER, "0", g, N_IONS);
 
@@ -98,7 +98,9 @@ bool IonRateEquation::CheckConservativity() {
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
     ih->Rebuild();
     DREAM::ADAS *adas = new DREAM::ADAS();
-    DREAM::RateHandler *rh = new DREAM::RateHandler(grid, ih, adas, uqh, false, {}, {});
+    DREAM::RateHandler *rh = new DREAM::RateHandler(
+        grid, ih, adas, 1.0, uqh, false, {}, {}
+    );
     const len_t Nr = grid->GetNr();
 
     // Set total electron density

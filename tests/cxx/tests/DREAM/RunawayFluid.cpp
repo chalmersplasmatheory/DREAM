@@ -220,7 +220,7 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
     vector<string> tritiumNames(0), hydrogenNames(0);
     vector<string> names(N_IONS);
     for (len_t i = 0; i < N_IONS; i++)
-        names[i] = "";//ION_NAMES[i];
+        names[i] = "ion" + std::to_string(i); 
 
     return new DREAM::IonHandler(
         g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames, hydrogenNames

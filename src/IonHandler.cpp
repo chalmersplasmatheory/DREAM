@@ -11,7 +11,6 @@
 #include <string>
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Constants.hpp"
-#include "DREAM/MoleculeHandler.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -56,10 +55,12 @@ const real_t IonHandler::atomicMassInMu[nIonMass] =
  * names:   List of strings defining the names by which each ion species
  *          will be referred (must have 'NZ' elements).
  * tritium: List of names of the tritium ion species.
+ * moleculeMasses: Mass of each molecule [kg] (0 for atoms; default: no molecules).
  */
 IonHandler::IonHandler(
     FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
-    vector<string>& names, vector<string>& tritium, vector<string>& hydrogen
+    vector<string>& names, vector<string>& tritium, vector<string>& hydrogen,
+    const vector<real_t>& moleculeMasses
 ) {
     rGrid = rg;
     unknowns = u;
@@ -76,6 +77,8 @@ IonHandler::IonHandler(
         for(len_t j=i+1; j<ionNames.size(); j++)
             if(ionNames[i] == ionNames[j])
                 throw FVM::FVMException("Ion species '%s' has been defined more than once.", ionNames[i].c_str());
+
+    this->moleculeMasses = moleculeMasses.empty() ? vector<real_t>(NZ, 0) : moleculeMasses;
 
     this->tritiumNames = tritium;
     this->nTritium = tritium.size();
@@ -126,7 +129,6 @@ IonHandler::~IonHandler(){
  * for where different ion species start in the ion array.
  */
 void IonHandler::Initialize() {
-    MoleculeHandler molecules;
     DeallocateAll();
     nzs = 0;
     for (len_t it=0; it<nZ; it++)
@@ -160,8 +162,8 @@ void IonHandler::Initialize() {
     mi = new real_t[nZ];
 
     for(len_t iz=0; iz<nZ; iz++){
-        if (molecules.IsMolecule(ionNames[iz])) { // check molecule first so that it works with charge states
-            mi[iz] = molecules.GetMass(ionNames[iz]);
+        if (IsMolecule(iz)) { // check molecule first so that it works with charge states
+            mi[iz] = moleculeMasses[iz];
         }
         else if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
             bool isTritium = false, isHydrogen = false;
@@ -454,11 +456,6 @@ real_t *IonHandler::evaluateZ0_Z() {
 real_t IonHandler::evaluateZ0_Z(len_t ir) {
     return nZ0_Z[ir]/ntot[ir];
 }
-
-bool IonHandler::IsMolecule(const len_t iZ) const {
-    return MoleculeHandler().IsMolecule(this->ionNames[iZ]);
-}
-
 
 void IonHandler::DeallocateAll(){
     if(ZOffsets == nullptr)
