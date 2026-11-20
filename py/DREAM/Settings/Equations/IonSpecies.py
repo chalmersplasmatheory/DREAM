@@ -103,6 +103,7 @@ class IonSpecies:
         self.settings = settings
         self.name     = name
         self.molecule_mass = 0  # [kg], set by Ions.addMolecule() (0 for atoms)
+        self.kind     = name    # name in the molecular reactions, set by Ions.addMolecule()
         self.Z        = int(Z)
         self.isotope  = int(isotope)
         self.ttype    = None

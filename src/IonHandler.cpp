@@ -60,7 +60,7 @@ const real_t IonHandler::atomicMassInMu[nIonMass] =
 IonHandler::IonHandler(
     FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
     vector<string>& names, vector<string>& tritium, vector<string>& hydrogen,
-    const vector<real_t>& moleculeMasses
+    const real_t *moleculeMasses
 ) {
     rGrid = rg;
     unknowns = u;
@@ -78,7 +78,9 @@ IonHandler::IonHandler(
             if(ionNames[i] == ionNames[j])
                 throw FVM::FVMException("Ion species '%s' has been defined more than once.", ionNames[i].c_str());
 
-    this->moleculeMasses = moleculeMasses.empty() ? vector<real_t>(NZ, 0) : moleculeMasses;
+    this->moleculeMasses = new real_t[NZ];
+    for (len_t i = 0; i < NZ; i++)
+        this->moleculeMasses[i] = (moleculeMasses == nullptr) ? 0 : moleculeMasses[i];
 
     this->tritiumNames = tritium;
     this->nTritium = tritium.size();
@@ -121,6 +123,7 @@ IonHandler::~IonHandler(){
     DeallocateAll();
     delete [] tritiumIndices;
 	delete [] hydrogenIndices;
+    delete [] moleculeMasses;
 }
 
 
@@ -221,25 +224,6 @@ void IonHandler::Rebuild(){
         if(Ztot[ir]<1.0)
             Ztot[ir] = 1.0;
     }
-}
-/**
- * Returns the index of the ion species with the given name.
- * Throws an exception if no such species has been defined.
- */
-const len_t IonHandler::GetIonIndex(const std::string& name) const {
-    for (len_t i = 0; i < this->nZ; i++)
-        if (this->ionNames[i] == name)
-            return i;
-
-    throw FVM::FVMException("IonHandler::GetIonIndex: No ion species with name '%s' has been defined.", name.c_str());
-}
-
-bool IonHandler::HasIon(const std::string& name) const {
-    for (len_t i = 0; i < this->nZ; i++)
-        if (this->ionNames[i] == name)
-            return true;
-
-    return false;
 }
 
 

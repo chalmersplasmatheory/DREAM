@@ -17,8 +17,7 @@
 #include <vector>
 
 namespace DREAM {
-    // Struct to hold the molecular reaction rates for a given pair of species
-    // This is to connect the rate with the MolecularReaction struct.
+
     struct MolecularReaction {
         /// Name of the reaction
         const char *rateName;
@@ -32,36 +31,25 @@ namespace DREAM {
         const MolecularReactionSpecies *products;
 
         MolecularRateInterpolator *rate;
-        /// The input for the temperature
         MolecularInput temperatureInput;
-        /// The input for the density
         MolecularInput densityInput;
-        /// Energy released by the reaction [eV] (see RateData.hpp)
         real_t energyReleased;
-        /// Franck-Condon energy [eV] (see RateData.hpp)
         real_t franckCondonEnergy;
-        /// Number of cold electrons consumed: electrons among the reactants minus
-        /// electrons among the products (e.g. 1 for recombination, -1 for ionization)
         int_t electronsConsumed;
-        /// Unknown and offset of the two reactant densities (n_cold, n_re or n_i),
-        /// so that the density of reactant j is GetUnknownData(reactantId[j])[reactantOffset[j] + ir]
+    
         len_t reactantId[2];
         len_t reactantOffset[2];
-        /// Ion species index of each reactant and product (GetNZ() for "e" and "RE")
         len_t reactantIz[2];
-        std::vector<len_t> productIz;
+        len_t *productIz;     // nProducts elements
     };
 
     // Line radiation of one molecular charge state (molecular counterpart of PLT):
-    // P_rad = n_e * n_i(iz, Z0) * rate(n_e, T_e), rate in eV m^3/s.
     struct MolecularLineRadiation {
         len_t iz;
         len_t Z0;
         MolecularRateInterpolator *rate;
     };
 
-    // Hold a user-supplied molecular rate table (given in the settings),
-    // which replaces the pre-calculated table with the same name.
     struct UserMolecularRate {
         std::vector<real_t> logn;
         std::vector<real_t> logT;
@@ -94,9 +82,10 @@ namespace DREAM {
 
         void AddMolecularReactionRates(
             const std::vector<std::string>& enabledReactionNames,
-            const std::vector<int_t>& reactantSpecies, const std::vector<int_t>& productSpecies
+            const int_t *reactantSpecies, const int_t *productSpecies,
+            const int_t *temperatureSpecies
         );
-        void AddMolecularLineRadiation();
+        void AddMolecularLineRadiation(const int_t *lineRadiationSpecies);
 
         FVM::UnknownQuantityHandler *unknowns;
 
@@ -106,8 +95,10 @@ namespace DREAM {
             FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled,
             const std::vector<std::string>& enabledReactionNames,
             const std::unordered_map<std::string, UserMolecularRate>& userRates,
-            const std::vector<int_t>& reactantSpecies = {},
-            const std::vector<int_t>& productSpecies = {}
+            const int_t *reactantSpecies = nullptr,
+            const int_t *productSpecies = nullptr,
+            const int_t *temperatureSpecies = nullptr,
+            const int_t *lineRadiationSpecies = nullptr
         );
         ~RateHandler();
 

@@ -152,23 +152,27 @@ class Ions(UnknownQuantity):
             self.tNeutralPrescribedAdvection = ion.getTNeutralPrescribedAdvection()
 
 
-    def addMolecule(self, name, Z=None, mass=None, **kwargs):
+    def addMolecule(self, name, kind=None, Z=None, mass=None, **kwargs):
         """
         Adds a new molecular species to the plasma. Z and mass default to the
         values in MolecularReactionData.py. All other arguments are passed on
         to addIon().
 
-        :param str name:   Name of the molecule (as in the molecular reactions).
+        :param str name:   Name of the molecular species.
+        :param str kind:   Kind of the molecular species (as in the molecular reactions). Default: name.
         :param int Z:      Summed nuclear charges.
         :param float mass: Mass of the molecule [kg].
         """
+        if kind is None:
+            kind = name
         if Z is None:
-            Z = reaction_data.SPECIES_Z[name]
+            Z = reaction_data.SPECIES_Z[kind]
         if mass is None:
-            mass = reaction_data.MOLECULE_MASS[name]
+            mass = reaction_data.MOLECULE_MASS[kind]
 
         self.addIon(name=name, Z=Z, **kwargs)
         self.ions[-1].molecule_mass = mass
+        self.ions[-1].kind = kind
 
 
     def addIonSource(self, species, dNdt=None, t=None, Z0=0, source_type=ION_SOURCE_PRESCRIBED, r =None):
@@ -268,7 +272,7 @@ class Ions(UnknownQuantity):
         self.enabled_reaction_names = []
         species_names = []
         for ion in self.ions:
-            species_names.append(ion.getName())
+            species_names.append(ion.kind)
 
         # Check each reaction.
         for reaction in reactions:
@@ -298,7 +302,7 @@ class Ions(UnknownQuantity):
         initial_names = set()
 
         for ion in self.ions:
-            name = ion.getName()
+            name = ion.kind
             Z = ion.getZ()
 
             charges[name] = Z
@@ -808,6 +812,11 @@ class Ions(UnknownQuantity):
         else:
             molecule_masses = [0]*len(Z)
 
+        if 'kinds' in data and len(data['kinds'].split(';')[:-1]) == len(Z):
+            kinds = data['kinds'].split(';')[:-1]
+        else:
+            kinds = names
+
         if 'isotopes' in data and len(data['isotopes']) == len(Z):
             isotopes = data['isotopes']
         else:
@@ -1009,6 +1018,7 @@ class Ions(UnknownQuantity):
                 rNeutralPrescribedAdvection=rnpa, tNeutralPrescribedAdvection = tnpa,
                 T=T, Tn = Tn,n=dens, r=r, t=t, tritium=tritium, hydrogen=hydrogen, init_equil=init_equil)
             self.ions[-1].molecule_mass = molecule_masses[i]
+            self.ions[-1].kind = kinds[i]
 
             # Load ion source
             if ion_source_types is not None and ion_source_types[i] == ION_SOURCE_PRESCRIBED:
@@ -1083,6 +1093,7 @@ class Ions(UnknownQuantity):
         charged_prescribed_advection = None
         neutral_prescribed_advection = None
         names   = ""
+        kinds   = ""
         molecule_masses = []
         init_equil = []
         initialNi = []
@@ -1094,8 +1105,9 @@ class Ions(UnknownQuantity):
 
         for ion in self.ions:
             names += '{};'.format(ion.getName())
+            kinds += '{};'.format(ion.kind)
             molecule_masses.append(ion.molecule_mass)
-            if ion.molecule_mass == 0 and ion.getName() in reaction_data.MOLECULE_MASS:
+            if ion.molecule_mass == 0 and ion.kind in reaction_data.MOLECULE_MASS:
                 raise EquationException(f"ions: '{ion.getName()}' is a molecule. Add it with addMolecule().")
 
             if ion.tritium:
@@ -1201,6 +1213,7 @@ class Ions(UnknownQuantity):
         data = {
             'names': names,
             'molecule_masses': molecule_masses,
+            'kinds': kinds,
             'Z': Z,
             'isotopes':isotopes,
             'SPIMolarFraction':SPIMolarFraction,
@@ -1312,22 +1325,41 @@ class Ions(UnknownQuantity):
         }
 
         if self.reactions_enabled:
-            species = [ion.getName() for ion in self.ions]
-            names, reactant_species, product_species = [], [], []
+            # Species indices (-1 for "e", -2 for "RE"), in the same order as in
+            # MolecularReactionData.py. Species are found by their kind.
+            species = [ion.kind for ion in self.ions]
+            electrons = {"e": -1, "RE": -2}
+            names, reactant_species, product_species, temperature_species = [], [], [], []
             for reaction in reaction_data.MOLECULAR_REACTIONS:
                 if reaction["name"] not in self.enabled_reaction_names:
                     continue
+
                 names.append(reaction["name"])
                 for name, Z0, coefficient in reaction["reactants"]:
-                    reactant_species.append(-1 if name in ("e", "RE") else species.index(name))
+                    reactant_species.append(electrons[name] if name in electrons else species.index(name))
                 for name, Z0, coefficient in reaction["products"]:
-                    product_species.append(-1 if name in ("e", "RE") else species.index(name))
+                    product_species.append(electrons[name] if name in electrons else species.index(name))
+
+                T = reaction["temperature_input"]
+                if T["kind"] == "species":
+                    temperature_species += [species.index(T["name"]), -1]
+                elif T["kind"] == "relative":
+                    temperature_species += [species.index(s["name"]) for s in T["species"]]
+                else:
+                    temperature_species += [-1, -1]
+
+            line_radiation_species = []
+            for radiation in reaction_data.MOLECULAR_LINE_RADIATION:
+                kind, Z0 = radiation["species"]
+                line_radiation_species.append(species.index(kind) if kind in species else -1)
 
             data["reactions"] = {
                 "enabled": 1,
                 "names": "".join(f"{name};" for name in names),
                 "reactant_species": reactant_species,
                 "product_species": product_species,
+                "temperature_species": temperature_species,
+                "line_radiation_species": line_radiation_species,
             }
 
         if self.reactions_enabled and self.user_rates:

@@ -68,8 +68,11 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
 
     s->DefineSetting(MODULENAME "/reactions/enabled", "Enable selected molecular reactions", (int_t)0);
     s->DefineSetting(MODULENAME "/reactions/names", "Names of enabled molecular reactions", (const string)"");
-    s->DefineSetting(MODULENAME "/reactions/reactant_species", "Species index of each reactant of each reaction (-1 for e, RE)", 1, dims, (int_t*)nullptr);
-    s->DefineSetting(MODULENAME "/reactions/product_species", "Species index of each product of each reaction (-1 for e, RE)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/kinds", "Kind of each ion species, as in the molecular reactions (only used by Python)", (const string)"");
+    s->DefineSetting(MODULENAME "/reactions/reactant_species", "Species index of each reactant of each reaction (-1 for e, -2 for RE)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/product_species", "Species index of each product of each reaction (-1 for e, -2 for RE)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/temperature_species", "Species index of the two temperature inputs of each reaction (-1 if not a species temperature)", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/reactions/line_radiation_species", "Species index of each molecular line radiation (-1 if not in the simulation)", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/reactions/user_rates/names", "Names of molecular rates replaced by user-supplied tables", (const string)"");
     s->DefineSetting(MODULENAME "/reactions/user_rates/nn", "Number of density points in each user-supplied rate table", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/reactions/user_rates/nT", "Number of temperature points in each user-supplied rate table", 1, dims, (int_t*)nullptr);
@@ -272,8 +275,7 @@ void SimulationGenerator::ConstructEquation_Ions(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
     len_t nMoleculeMasses;
-    const real_t *moleculeMassArray = s->GetRealArray(MODULENAME "/molecule_masses", 1, &nMoleculeMasses);
-    const vector<real_t> moleculeMasses(moleculeMassArray, moleculeMassArray + nMoleculeMasses);
+    const real_t *moleculeMasses = s->GetRealArray(MODULENAME "/molecule_masses", 1, &nMoleculeMasses);
 
     IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames, moleculeMasses);
     eqsys->SetIonHandler(ih);
@@ -285,11 +287,11 @@ void SimulationGenerator::ConstructEquation_Ions(
         s->GetStringList(MODULENAME "/reactions/names");
 
     // Species index of the reactants and products of the reactions (from Python)
-    len_t nReactant, nProduct;
-    const int_t *reactantArray = s->GetIntegerArray(MODULENAME "/reactions/reactant_species", 1, &nReactant);
-    const int_t *productArray = s->GetIntegerArray(MODULENAME "/reactions/product_species", 1, &nProduct);
-    const vector<int_t> reactantSpecies(reactantArray, reactantArray + nReactant);
-    const vector<int_t> productSpecies(productArray, productArray + nProduct);
+    len_t nReactant, nProduct, nTemperature, nLineRadiation;
+    const int_t *reactantSpecies = s->GetIntegerArray(MODULENAME "/reactions/reactant_species", 1, &nReactant);
+    const int_t *productSpecies = s->GetIntegerArray(MODULENAME "/reactions/product_species", 1, &nProduct);
+    const int_t *temperatureSpecies = s->GetIntegerArray(MODULENAME "/reactions/temperature_species", 1, &nTemperature);
+    const int_t *lineRadiationSpecies = s->GetIntegerArray(MODULENAME "/reactions/line_radiation_species", 1, &nLineRadiation);
 
 
     // Convert the flat arrays of user-supplied rates into a map of UserMolecularRate objects
@@ -320,7 +322,7 @@ void SimulationGenerator::ConstructEquation_Ions(
     RateHandler *ratehandler = new RateHandler(
         fluidGrid, ih, adas, s->GetReal(MODULENAME "/reioniz_scale"),
         eqsys->GetUnknownHandler(), reactionsEnabled, reactionNames, userRates,
-        reactantSpecies, productSpecies
+        reactantSpecies, productSpecies, temperatureSpecies, lineRadiationSpecies
     );
     eqsys->SetRateHandler(ratehandler);
 

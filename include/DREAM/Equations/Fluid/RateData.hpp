@@ -30,18 +30,13 @@ namespace DREAM {
     // It happens that the input depends on both the reactants
     struct MolecularInput {
         MolecularInputKind kind;
-
-        const char *name1;
         int_t charge1;
-
-        const char *name2;
         int_t charge2;
+        len_t iz1, iz2;     // species index, set in RateHandler from the Python settings
     };
 
     // Structure describing a species involved in a molecular reaction.
-    // Name, charge state and number nr of particles for the species.
     struct MolecularReactionSpecies {
-        const char *name;
         int_t Z0;
         len_t coefficient;
     };
@@ -78,7 +73,6 @@ namespace DREAM {
     // counterpart of ADAS PLT. P_rad = n_e * n(species, Z0) * L(n_e, T_e).
     struct MolecularLineRadiationDefinition {
         const char *rateName;   // name of the rate table L [eV m^3/s]
-        const char *species;
         int_t Z0;
     };
 

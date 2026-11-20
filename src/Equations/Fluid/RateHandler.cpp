@@ -25,7 +25,8 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
     real_t reionizScale, FVM::UnknownQuantityHandler *unknowns, bool reactionsEnabled,
     const std::vector<std::string>& enabledReactionNames,
     const std::unordered_map<std::string, UserMolecularRate>& userRates,
-    const std::vector<int_t>& reactantSpecies, const std::vector<int_t>& productSpecies
+    const int_t *reactantSpecies, const int_t *productSpecies,
+    const int_t *temperatureSpecies, const int_t *lineRadiationSpecies
 ) :  grid(grid), ions(ions), adas(adas), reionizScale(reionizScale),
      userRates(userRates), unknowns(unknowns) {
 
@@ -55,8 +56,8 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
 
 
     if (reactionsEnabled){
-        AddMolecularReactionRates(enabledReactionNames, reactantSpecies, productSpecies);
-        AddMolecularLineRadiation();
+        AddMolecularReactionRates(enabledReactionNames, reactantSpecies, productSpecies, temperatureSpecies);
+        AddMolecularLineRadiation(lineRadiationSpecies);
     }
 
     const len_t n = molecularReactions.size() * grid->GetNr();
@@ -72,6 +73,7 @@ RateHandler::RateHandler(FVM::Grid *grid, IonHandler *ions,
 RateHandler::~RateHandler() {
     for (auto it = molecularReactions.begin(); it != molecularReactions.end(); it++) {
         delete it->rate;
+        delete [] it->productIz;
     }
     for (auto& radiation : molecularLineRadiation)
         delete radiation.rate;
@@ -177,20 +179,20 @@ bool RateHandler::SetReactionRateJacobian(
     }
     else if (Tin.kind == MolecularInputKind::SPECIES) {
         added = SetSpeciesTemperatureJacobian(
-            derivId, jac, row, ir, ions->GetIonIndex(Tin.name1), Tin.charge1, dRdT
+            derivId, jac, row, ir, Tin.iz1, Tin.charge1, dRdT
         );
         if (added)
             contributes = true;
     }
     else if (Tin.kind == MolecularInputKind::RELATIVE) {
         added = SetSpeciesTemperatureJacobian(
-            derivId, jac, row, ir, ions->GetIonIndex(Tin.name1), Tin.charge1, 0.5*dRdT
+            derivId, jac, row, ir, Tin.iz1, Tin.charge1, 0.5*dRdT
         );
         if (added)
             contributes = true;
 
         added = SetSpeciesTemperatureJacobian(
-            derivId, jac, row, ir, ions->GetIonIndex(Tin.name2), Tin.charge2, 0.5*dRdT
+            derivId, jac, row, ir, Tin.iz2, Tin.charge2, 0.5*dRdT
         );
         if (added)
             contributes = true;
@@ -236,9 +238,10 @@ bool RateHandler::SetSpeciesTemperatureJacobian(
  */
 void RateHandler::AddMolecularReactionRates(
     const std::vector<std::string>& enabledReactionNames,
-    const std::vector<int_t>& reactantSpecies, const std::vector<int_t>& productSpecies
+    const int_t *reactantSpecies, const int_t *productSpecies,
+    const int_t *temperatureSpecies
 ) {
-    len_t ir = 0, ip = 0;   // position in reactantSpecies and productSpecies
+    len_t ir = 0, ip = 0, it = 0;   // position in reactantSpecies, productSpecies and temperatureSpecies
 
     for (len_t i = 0; i < molecularReactionDefinitionCount; i++) {
         const MolecularReactionDefinition& def = molecularReactionDefinitions[i];
@@ -263,38 +266,44 @@ void RateHandler::AddMolecularReactionRates(
         reaction.energyReleased = def.energyReleased;
         reaction.franckCondonEnergy = def.franckCondonEnergy;
 
-        reaction.electronsConsumed = 0;
-        for (len_t j = 0; j < def.nReactants; j++)
-            if (std::string(def.reactants[j].name) == "e")
-                reaction.electronsConsumed += (int_t)def.reactants[j].coefficient;
-        for (len_t j = 0; j < def.nProducts; j++)
-            if (std::string(def.products[j].name) == "e")
-                reaction.electronsConsumed -= (int_t)def.products[j].coefficient;
         reaction.rate = GetMolecularRateByName(def.rateName);
 
-        // Where the two reactant densities are stored
+        
         if (def.nReactants != 2)
             throw FVM::FVMException(
                 "RateHandler: Molecular reaction '%s' must have exactly two reactants.",
                 def.rateName
             );
-
-        // Species index of each reactant and product
+        //Copy iz of reactants, products and temperture species.
+        const len_t iz_e = ions->GetNZ(), iz_RE = ions->GetNZ() + 1;
         for (len_t j = 0; j < 2; j++, ir++)
-            reaction.reactantIz[j] = (reactantSpecies[ir] < 0) ? ions->GetNZ() +1: reactantSpecies[ir];
+            reaction.reactantIz[j] = (reactantSpecies[ir] == -1) ? iz_e : (reactantSpecies[ir] == -2) ? iz_RE : reactantSpecies[ir];
+        reaction.productIz = new len_t[def.nProducts];
         for (len_t j = 0; j < def.nProducts; j++, ip++)
-            reaction.productIz.push_back((productSpecies[ip] < 0) ? ions->GetNZ()+1 : productSpecies[ip]);
+            reaction.productIz[j] = (productSpecies[ip] == -1) ? iz_e : (productSpecies[ip] == -2) ? iz_RE : productSpecies[ip];
+
+        // Species index of the temperature input (-1 if it is not a species temperature)
+        reaction.temperatureInput.iz1 = (temperatureSpecies[it] < 0) ? iz_e : temperatureSpecies[it];
+        reaction.temperatureInput.iz2 = (temperatureSpecies[it+1] < 0) ? iz_e : temperatureSpecies[it+1];
+        it += 2;
+
+        reaction.electronsConsumed = 0;
+        for (len_t j = 0; j < def.nReactants; j++)
+            if (reaction.reactantIz[j] == iz_e)
+                reaction.electronsConsumed += (int_t)def.reactants[j].coefficient;
+        for (len_t j = 0; j < def.nProducts; j++)
+            if (reaction.productIz[j] == iz_e)
+                reaction.electronsConsumed -= (int_t)def.products[j].coefficient;
 
         for (len_t j = 0; j < 2; j++) {
-            const MolecularReactionSpecies& r = def.reactants[j];
             reaction.reactantOffset[j] = 0;
-            if (std::string(r.name) == "e")
+            if (reaction.reactantIz[j] == iz_e)
                 reaction.reactantId[j] = id_n_cold;
-            else if (std::string(r.name) == "RE")
+            else if (reaction.reactantIz[j] == iz_RE)
                 reaction.reactantId[j] = id_n_re;
             else {
                 reaction.reactantId[j] = id_ions;
-                reaction.reactantOffset[j] = ions->GetIndex(reaction.reactantIz[j], r.Z0) * grid->GetNr();
+                reaction.reactantOffset[j] = ions->GetIndex(reaction.reactantIz[j], def.reactants[j].Z0) * grid->GetNr();
             }
         }
 
@@ -311,17 +320,17 @@ void RateHandler::AddMolecularReactionRates(
  * Add the line radiation (molecular counterpart of PLT) of every molecular
  * species in the simulation that has a line-radiation rate in RateData.cpp.
  */
-void RateHandler::AddMolecularLineRadiation() {
+void RateHandler::AddMolecularLineRadiation(const int_t *lineRadiationSpecies) {
     for (len_t k = 0; k < molecularLineRadiationDefinitionCount; k++) {
         const auto& def = molecularLineRadiationDefinitions[k];
-        if (!ions->HasIon(def.species))
+        if (lineRadiationSpecies[k] < 0)
             continue;
 
-        const len_t iz = ions->GetIonIndex(def.species);
+        const len_t iz = lineRadiationSpecies[k];
         if (def.Z0 < 0 || (len_t)def.Z0 > ions->GetZ(iz))
             throw FVM::FVMException(
                 "RateHandler: Line radiation '%s' references invalid charge state Z0=%d for species '%s'.",
-                def.rateName, def.Z0, def.species
+                def.rateName, def.Z0, ions->GetName(iz).c_str()
             );
 
         molecularLineRadiation.push_back({iz, (len_t)def.Z0, GetMolecularRateByName(def.rateName)});
@@ -395,12 +404,12 @@ real_t RateHandler::ResolveTemperature(
     }
     // Rate depends on a specific species temperature
     if (input.kind == MolecularInputKind::SPECIES) {
-        return ResolveSpeciesTemperature(ions->GetIonIndex(input.name1), input.charge1, ir);
+        return ResolveSpeciesTemperature(input.iz1, input.charge1, ir);
     }
     // Rate depends on the average temperature of two species
     if (input.kind == MolecularInputKind::RELATIVE) {
-        const real_t T1 = ResolveSpeciesTemperature(ions->GetIonIndex(input.name1), input.charge1, ir);
-        const real_t T2 = ResolveSpeciesTemperature(ions->GetIonIndex(input.name2), input.charge2, ir);
+        const real_t T1 = ResolveSpeciesTemperature(input.iz1, input.charge1, ir);
+        const real_t T2 = ResolveSpeciesTemperature(input.iz2, input.charge2, ir);
 
         return 0.5 * (T1 + T2);
     }

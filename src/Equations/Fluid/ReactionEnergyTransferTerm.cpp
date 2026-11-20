@@ -57,7 +57,8 @@ ReactionEnergyTransferTerm::ReactionEnergyTransferTerm(
         len_t nHeavyProducts = 0;
         for (len_t j = 0; j < reaction.nProducts; j++) {
             const MolecularReactionSpecies &p = reaction.products[j];
-            if (std::string(p.name) == "e" || std::string(p.name) == "RE")
+            // Skip "e" and "RE" (index GetNZ() and GetNZ()+1)
+            if (reaction.productIz[j] >= ions->GetNZ())
                 continue;
             M += p.coefficient * ions->GetIonSpeciesMass(reaction.productIz[j]);
             nHeavyProducts++;
@@ -117,7 +118,7 @@ void ReactionEnergyTransferTerm::Rebuild(
         // electron pays an endothermic reaction.
         bool electronImpact = false;
         for (len_t j = 0; j < reaction.nReactants; j++)
-            if (std::string(reaction.reactants[j].name) == "e" || std::string(reaction.reactants[j].name) == "RE")
+            if (reaction.reactantIz[j] >= ions->GetNZ())
                 electronImpact = true;
         real_t Ereleased = reaction.energyReleased;
         if (electronImpact)
@@ -132,7 +133,7 @@ void ReactionEnergyTransferTerm::Rebuild(
             // and taken from the reactants of this species
             for (len_t j = 0; j < reaction.nReactants; j++) {
                 const MolecularReactionSpecies &r = reaction.reactants[j];
-                if (std::string(r.name) == "e" || std::string(r.name) == "RE")
+                if (reaction.reactantIz[j] >= ions->GetNZ())
                     continue;
 
                 const real_t T = ratehandler->ResolveSpeciesTemperature(reaction.reactantIz[j], r.Z0, ir);
@@ -196,7 +197,7 @@ bool ReactionEnergyTransferTerm::SetJacobianBlock(
             }
             for (len_t j = 0; j < reaction.nReactants; j++) {
                 const MolecularReactionSpecies &r = reaction.reactants[j];
-                if (std::string(r.name) == "e" || std::string(r.name) == "RE")
+                if (reaction.reactantIz[j] >= ions->GetNZ())
                     continue;
 
                 const bool neutral = separateNeutrals && r.Z0 == 0;

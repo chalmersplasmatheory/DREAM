@@ -29,7 +29,7 @@ namespace DREAM {
         static const real_t atomicMassInMu[nIonMass];
 
         std::vector<std::string> ionNames;
-        std::vector<real_t> moleculeMasses;   // mass of each molecule [kg] (0 for atoms)
+        real_t *moleculeMasses;   // mass of each molecule [kg] (0 for atoms)
         std::vector<std::string> tritiumNames, hydrogenNames;
         len_t nTritium=0, nHydrogen=0;
         len_t *tritiumIndices, *hydrogenIndices;
@@ -61,7 +61,7 @@ namespace DREAM {
 			const len_t *Z, len_t NZ, std::vector<std::string>& ionNames,
 			std::vector<std::string>& tritiumNames,
 			std::vector<std::string>& hydrogenNames,
-			const std::vector<real_t>& moleculeMasses = {}
+			const real_t *moleculeMasses = nullptr
 		);
         virtual ~IonHandler();
 
@@ -78,8 +78,6 @@ namespace DREAM {
         const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
         void GetIonIndices(len_t, len_t&, len_t&);
 
-        const len_t GetIonIndex(const std::string& name) const;
-        bool HasIon(const std::string& name) const;
         bool IsMolecule(const len_t iZ) const { return moleculeMasses[iZ] > 0; }
 
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }

@@ -195,14 +195,14 @@ void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     }
     for (const auto& reaction : rateHandler->GetMolecularReactions()) {
         // Only electron-impact reactions cost the cold electrons energy.
-        // b is the heavy reactant (the one that is not the electron).
-        const bool firstIsElectron = std::string(reaction.reactants[0].name) == "e";
-        const bool secondIsElectron = std::string(reaction.reactants[1].name) == "e";
+        // b is the index of the heavy reactant (the one that is not the electron).
+        const bool firstIsElectron = reaction.reactantIz[0] == ionHandler->GetNZ();
+        const bool secondIsElectron = reaction.reactantIz[1] == ionHandler->GetNZ();
         if (!firstIsElectron && !secondIsElectron)
             continue;
-        const auto& b = firstIsElectron ? reaction.reactants[1] : reaction.reactants[0];
+        const len_t b = firstIsElectron ? 1 : 0;
 
-        len_t indZ = ionHandler->GetIndex(ionHandler->GetIonIndex(b.name), b.Z0);
+        len_t indZ = ionHandler->GetIndex(reaction.reactantIz[b], reaction.reactants[b].Z0);
         for (len_t i = 0; i < NCells; i++) {
             real_t dW = Constants::ec * GetMolecularElectronEnergyLoss(reaction, T_cold[i]);   // J
             if (dW == 0)
@@ -269,8 +269,8 @@ real_t RadiatedPowerTerm::GetAtomicIonTerm(len_t ir
 real_t RadiatedPowerTerm::GetMolecularElectronEnergyLoss(
     const MolecularReaction& reaction, const real_t Te
 ) const {
-    if (std::string(reaction.reactants[0].name) != "e" &&
-        std::string(reaction.reactants[1].name) != "e")
+    if (reaction.reactantIz[0] != ionHandler->GetNZ() &&
+        reaction.reactantIz[1] != ionHandler->GetNZ())
         return 0;
 
     real_t dW = std::max(-reaction.energyReleased, 0.0) + reaction.franckCondonEnergy;
@@ -526,16 +526,16 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *ionSc
     // Molecules: energy per electron-impact reaction event
     for (const auto& reaction : rateHandler->GetMolecularReactions()) {
         // Electron-impact reactions only; b is the heavy reactant (as in SetWeights)
-        const bool firstIsElectron = std::string(reaction.reactants[0].name) == "e";
-        const bool secondIsElectron = std::string(reaction.reactants[1].name) == "e";
+        const bool firstIsElectron = reaction.reactantIz[0] == ionHandler->GetNZ();
+        const bool secondIsElectron = reaction.reactantIz[1] == ionHandler->GetNZ();
         if (!firstIsElectron && !secondIsElectron)
             continue;
-        const auto& b = firstIsElectron ? reaction.reactants[1] : reaction.reactants[0];
+        const len_t b = firstIsElectron ? 1 : 0;
 
         // d(dW)/dTe [J/eV]: only the thermal energy of consumed electrons depends on Te
         real_t dWdT = (reaction.electronsConsumed > 0 ? Constants::ec * reaction.electronsConsumed * 1.5 : 0);
 
-        len_t indZ = ionHandler->GetIndex(ionHandler->GetIonIndex(b.name), b.Z0);
+        len_t indZ = ionHandler->GetIndex(reaction.reactantIz[b], reaction.reactants[b].Z0);
         for (len_t i = 0; i < NCells; i++) {
             real_t dW = Constants::ec * GetMolecularElectronEnergyLoss(reaction, T_cold[i]);
             if (dW == 0)
