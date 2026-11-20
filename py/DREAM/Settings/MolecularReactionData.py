@@ -19,6 +19,17 @@ SPECIES_Z = {
     "ArD": 19,
 }
 
+# Default mass [kg] of the molecules (Ions.addMolecule())
+MOLECULE_MASS = {
+    "H2":  2 * 1.67262192369e-27,
+    "D2":  2 * 3.3435837724e-27,
+    "T2":  2 * 5.00826765e-27,
+    "D3":  3 * 3.3435837724e-27,
+    "ArD": 6.97e-26,
+    "HeD": 9.99e-27,
+    "DT":  8.35e-27,
+}
+
 # Delta E is computed from the potential energy E of each species, relative to
 # neutral atoms:
 #   D 0,  
