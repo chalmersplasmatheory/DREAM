@@ -21,6 +21,7 @@
  * appropriate structs in the output file.
  */
 
+#include <algorithm>
 #include <map>
 #include "DREAM/Equations/Kinetic/ExternalKineticBoundary.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
@@ -918,6 +919,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
     DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
         real_t *v = qd->StoreEmpty();
+        std::fill_n(v, this->runawayGrid->GetNCells(), 0);
 
         FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
         const real_t *nre = unknowns->GetUnknownData(id_n_re);
