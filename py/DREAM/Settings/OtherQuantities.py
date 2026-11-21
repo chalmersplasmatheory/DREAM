@@ -16,6 +16,8 @@ class OtherQuantities:
         'fluid/Eceff',
         'fluid/GammaAva',
         'fluid/gammaCompton', 'fluid/gammaDreicer', 'fluid/gammaTritium', 'fluid/gammaHottail',
+        'fluid/gammaExternal', 'fluid/gammaExternalOut', 'fluid/gammaExternalIn',
+        'fluid/gammaExternalPos', 'fluid/gammaExternalNeg', 'fluid/gammaFhot',
         'fluid/Lambda_hypres',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',
         'fluid/nusnuDatPstar',

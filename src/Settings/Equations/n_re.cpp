@@ -3,7 +3,12 @@
  * of runaway electrons).
  */
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <limits>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/Kinetic/ExternalKineticBoundary.hpp"
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
@@ -101,8 +106,11 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     std::string desc_sources = ""; 
 
-    // Add flux from hot tail grid
-    if (hottailGrid) {
+    // ConstructEquation_n_external() adds the flux in the hot-tail-only
+    // two-way case, together with the two external inventories.
+    if (hottailGrid)
+        desc_sources += " [flux from f_hot]";
+    if (hottailGrid && !s->GetBool("eqsys/f_hot/external_kinetic_boundary")) {
         FVM::Operator *Op_nRE_fHot = new FVM::Operator(fluidGrid);
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
@@ -142,7 +150,6 @@ void SimulationGenerator::ConstructEquation_n_re(
 
 			Op_nRE_fHot->AddBoundaryCondition(xloss);
 		}
-        desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 
@@ -220,7 +227,7 @@ void SimulationGenerator::ConstructEquation_n_re(
     enum OptionConstants::uqty_f_re_inittype inittype =
         (enum OptionConstants::uqty_f_re_inittype)s->GetInteger("eqsys/f_re/inittype");
     
-    if (inittype == OptionConstants::UQTY_F_RE_INIT_PRESCRIBED){
+    if (runawayGrid && inittype == OptionConstants::UQTY_F_RE_INIT_PRESCRIBED) {
         for (len_t ir = 0; ir < fluidGrid->GetRadialGrid()->GetNr(); ir++) 
             if (n_re_init[ir] > 0.) {
                 DREAM::IO::PrintWarning(
@@ -266,6 +273,82 @@ void SimulationGenerator::ConstructEquation_n_re(
         eqsys->SetInitialValue(id_n_re, n_re_init);
     }
     delete [] n_re_init;
+}
+
+/**
+ * Evolve each external pitch inventory with its share of the boundary flux.
+ * With a runaway grid this exchange is internal to n_re. Otherwise, n_re
+ * counts the electrons above the hot-tail grid and receives the net flux.
+ */
+void SimulationGenerator::ConstructEquation_n_external(
+    EquationSystem *eqsys, struct OtherQuantityHandler::eqn_terms *oqty_terms
+) {
+    auto *fluid = eqsys->GetFluidGrid();
+    auto *runaway = eqsys->GetRunawayGrid();
+    auto *outer = runaway ? runaway : eqsys->GetHotTailGrid();
+    auto *unknowns = eqsys->GetUnknownHandler();
+    const len_t idNRe = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const len_t idF = eqsys->GetUnknownID(runaway ? OptionConstants::UQTY_F_RE : OptionConstants::UQTY_F_HOT);
+    const len_t idPositive = eqsys->GetUnknownID(OptionConstants::UQTY_N_EXTERNAL_POS);
+    const len_t idNegative = eqsys->GetUnknownID(OptionConstants::UQTY_N_EXTERNAL_NEG);
+    const std::array<len_t, 2> ids = {idPositive, idNegative};
+    const auto *kinetic = eqsys->GetOperator(idF, idF);
+
+    for (len_t pole = 0; pole < ids.size(); ++pole) {
+        const len_t id = ids[pole];
+        const bool positive = pole == ExternalKineticBoundary::POSITIVE;
+        auto *transient = new FVM::Operator(fluid);
+        transient->AddTerm(new FVM::TransientTerm(fluid, id));
+        eqsys->SetOperator(id, id, transient, positive
+            ? "Positive-pitch external particle balance" : "Negative-pitch external particle balance");
+
+        const auto side = positive ? ExternalKineticBoundary::POSITIVE_DENSITY
+            : ExternalKineticBoundary::NEGATIVE_DENSITY;
+        auto *boundary = new ExternalKineticBoundary(fluid, outer, kinetic, idF, ids, unknowns, side);
+        auto *flux = new FVM::Operator(fluid);
+        flux->AddBoundaryCondition(boundary);
+        eqsys->SetOperator(id, idF, flux);
+        if (positive)
+            oqty_terms->external_kinetic_boundary = boundary;
+    }
+
+    if (!runaway) {
+        auto *flux = new FVM::Operator(fluid);
+        flux->AddBoundaryCondition(new ExternalKineticBoundary(
+            fluid, outer, kinetic, idF, ids, unknowns, ExternalKineticBoundary::DENSITY
+        ));
+        eqsys->SetOperator(idNRe, idF, flux);
+    }
+
+    // Signed restarts load both inventories from the output. A legacy
+    // restart or fresh input assigns untagged external electrons to +xi.
+    eqsys->initializer->AddRule(idNegative, EqsysInitializer::INITRULE_EVAL_FUNCTION,
+        [nr=fluid->GetNr()](FVM::UnknownQuantityHandler*, real_t *initial) {
+            std::fill_n(initial, nr, 0);
+        });
+    auto initializePositive = [runaway, idF, idNRe, idNegative, nr=fluid->GetNr()]
+        (FVM::UnknownQuantityHandler *u, real_t *initial) {
+            const auto *density = u->GetUnknownData(idNRe);
+            const auto *negative = u->GetUnknownData(idNegative);
+            const auto *f = runaway ? u->GetUnknownData(idF) : nullptr;
+            for (len_t ir = 0, offset = 0; ir < nr; ++ir) {
+                const real_t resolved = runaway ? runaway->IntegralMomentumAtRadius(ir, f+offset) : 0;
+                const real_t positive = density[ir] - resolved - negative[ir];
+                const real_t roundoff = 64 * std::numeric_limits<real_t>::epsilon()
+                    * std::max(std::abs(density[ir]), std::abs(resolved));
+                if (!std::isfinite(positive) || positive < -roundoff)
+                    throw SettingsException("The initial n_re must cover the resolved f_re and external inventories.");
+                initial[ir] = std::max(real_t(0), positive);
+                if (runaway)
+                    offset += runaway->GetMomentumGrid(ir)->GetNCells();
+            }
+        };
+    if (runaway)
+        eqsys->initializer->AddRule(idPositive, EqsysInitializer::INITRULE_EVAL_FUNCTION,
+            initializePositive, idNRe, idNegative, idF);
+    else
+        eqsys->initializer->AddRule(idPositive, EqsysInitializer::INITRULE_EVAL_FUNCTION,
+            initializePositive, idNRe, idNegative);
 }
 
 void SimulationGenerator::ConstructEquation_n_re_neg(

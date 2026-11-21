@@ -31,6 +31,8 @@ DEF_UQTY(N_COLD,          "n_cold",       "Cold electron density [m^-3]");
 DEF_UQTY(N_HOT,           "n_hot",        "Hot electron density [m^-3]");
 DEF_UQTY(N_RE,            "n_re",         "Runaway electron density <n> [m^-3]");
 DEF_UQTY(N_RE_NEG,        "n_re_neg",     "Runaway electron density in negative direction <n> [m^-3]");
+DEF_UQTY(N_EXTERNAL_POS,  "n_external_pos", "External electron density in positive passing direction [m^-3]");
+DEF_UQTY(N_EXTERNAL_NEG,  "n_external_neg", "External electron density in negative passing direction [m^-3]");
 DEF_UQTY(N_TOT,           "n_tot",        "Total electron density [m^-3]");
 DEF_UQTY(NI_DENS,         "N_i",          "Total ion density of each species [m^-3]");
 DEF_UQTY(POL_FLUX,        "psi_p",        "Poloidal magnetic flux normalized to major radius R0 [Vs/m]");

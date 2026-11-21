@@ -310,7 +310,9 @@ void ExternalKineticBoundary::AddDistributionJacobian(
             columns[2*j+1] = columns[2*j]+1;
         }
         for (const auto &face : faces) {
-            const real_t fraction = side == NEGATIVE_DENSITY ? face.fraction[NEGATIVE] : 1;
+            const real_t fraction =
+                (IncludesPole(POSITIVE) ? face.fraction[POSITIVE] : 0)
+                + (IncludesPole(NEGATIVE) ? face.fraction[NEGATIVE] : 0);
             const real_t factor = face.flux > 0 ? -face.weight*fraction : 0;
             for (const auto &[column, derivative] : face.derivative)
                 values[column] += factor*derivative;

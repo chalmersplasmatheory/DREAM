@@ -29,6 +29,8 @@ namespace DREAM {
             *UQTY_N_HOT,           *UQTY_N_HOT_DESC,
             *UQTY_N_RE,            *UQTY_N_RE_DESC,
             *UQTY_N_RE_NEG,        *UQTY_N_RE_NEG_DESC,
+            *UQTY_N_EXTERNAL_POS,  *UQTY_N_EXTERNAL_POS_DESC,
+            *UQTY_N_EXTERNAL_NEG,  *UQTY_N_EXTERNAL_NEG_DESC,
             *UQTY_N_TOT,           *UQTY_N_TOT_DESC,
             *UQTY_NI_DENS,         *UQTY_NI_DENS_DESC,
             *UQTY_POL_FLUX,        *UQTY_POL_FLUX_DESC,

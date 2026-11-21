@@ -109,7 +109,8 @@ void ConvergenceChecker::DefineAbsoluteTolerances() {
  */
 real_t ConvergenceChecker::GetDefaultAbsTol(const string &name) {
     real_t abstol_nre = 1e-10; // roughly the minimum re density that can convert the full current in ITER
-    if (name == OptionConstants::UQTY_N_RE)
+    if (name == OptionConstants::UQTY_N_RE || name == OptionConstants::UQTY_N_EXTERNAL_POS
+        || name == OptionConstants::UQTY_N_EXTERNAL_NEG)
         return abstol_nre;
     else if ( name == OptionConstants::UQTY_J_RE)
         return Constants::ec*Constants::c*abstol_nre;

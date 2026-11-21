@@ -276,6 +276,49 @@ The following example shows how to use the ``BC_PHI_CONST``:
    ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST)
 
 
+Two-way external kinetic boundary
+---------------------------------
+Use ``setExternalKineticBoundary()`` to exchange particles with an external
+density at :math:`p_{\rm max}`. Enable it on ``f_re`` when the runaway grid is
+present, or on ``f_hot`` in a hot-tail-only simulation.
+
+.. code-block:: python
+
+   import DREAM.Settings.Solver as Solver
+
+   ds.solver.setType(Solver.NONLINEAR)
+   ds.eqsys.f_re.setExternalKineticBoundary()  # Runaway-only or hot-tail plus runaway
+
+For a hot-tail-only setup, call ``ds.eqsys.f_hot.setExternalKineticBoundary()``.
+The setting defaults to disabled. Passing ``False`` activates the boundary
+previously selected with ``setBoundaryCondition()``.
+
+The solver stores the external densities as ``n_external_pos`` and
+``n_external_neg``. Passing particles are tagged by their pitch sign as they
+leave the grid, and the trapped contribution is divided equally between the
+inventories. The return flux is estimated from the previous accepted kinetic
+distribution at the boundary with the current transport coefficients and is
+limited by the inventory for each pitch sign. Each population contributes a
+current at the speed of light in its stored direction. With a runaway grid,
+``n_re`` includes both the resolved distribution and the external inventory.
+With only the hot-tail grid, ``n_re`` equals the external inventory. Fresh
+inputs and older restart files assign any untagged external population to the
+positive direction.
+
+The boundary requires the non-linear solver and a numerical :math:`(p,\xi)`
+distribution with at least two momentum cells. This implementation handles
+momentum-boundary exchange. Runaway generation, fluid runaway radial
+transport, frozen-current runaway transport, and LCFS losses require additional signed particle accounting and
+must be disabled when using this setting.
+
+Add ``fluid/gammaExternal`` for the net outward rate and
+``fluid/gammaExternalOut`` and ``fluid/gammaExternalIn`` for the two gross rates.
+``fluid/gammaExternalPos`` and ``fluid/gammaExternalNeg`` give the net outward
+rates for each pitch sign. The ``examples/external-kinetic-boundary`` example
+plots these particle budgets and the resolved distribution during a field
+reversal.
+
+
 Initialization
 **************
 An initial condition is required when solving the Fokker-Planck equation and in

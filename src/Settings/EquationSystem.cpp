@@ -1,4 +1,5 @@
 
+#include <utility>
 #include <vector>
 #include <string>
 #include "DREAM/EquationSystem.hpp"
@@ -46,6 +47,52 @@ void SimulationGenerator::DefineOptions_Initializer(Settings *s) {
 }
 
 /**
+ * Validate the outer momentum boundary even when settings were written by
+ * a frontend other than Python.
+ */
+static void ValidateExternalKineticBoundary(
+    Settings *s, FVM::Grid *hottail, FVM::Grid *runaway,
+    OptionConstants::momentumgrid_type htType, OptionConstants::momentumgrid_type reType
+) {
+    const bool hot = s->GetBool("eqsys/f_hot/external_kinetic_boundary");
+    const bool re = s->GetBool("eqsys/f_re/external_kinetic_boundary");
+    if (!hot && !re)
+        return;
+    if ((hot && (!hottail || runaway)) || (re && !runaway))
+        throw SettingsException(
+            "Enable the external kinetic boundary on the outermost active grid: "
+            "f_re when the runaway grid is enabled, otherwise f_hot."
+        );
+
+    const char *mode = re ? "eqsys/f_re/mode" : "eqsys/f_hot/mode";
+    if ((re ? reType : htType) != OptionConstants::MOMENTUMGRID_TYPE_PXI
+        || s->GetInteger(mode) != OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL)
+        throw SettingsException("The external kinetic boundary requires a numerical p/xi distribution.");
+    if (s->GetInteger("solver/type") != OptionConstants::SOLVER_TYPE_NONLINEAR)
+        throw SettingsException("The external kinetic boundary requires the nonlinear solver.");
+
+    // The external inventories are driven by the momentum flux. These terms
+    // can also change n_re without assigning that change to the two poles.
+    const std::pair<const char*, int_t> disabled[] = {
+        {"eqsys/n_re/avalanche", OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT},
+        {"eqsys/n_re/dreicer", OptionConstants::EQTERM_DREICER_MODE_NONE},
+        {"eqsys/n_re/compton/mode", OptionConstants::EQTERM_COMPTON_MODE_NEGLECT},
+        {"eqsys/n_re/tritium", OptionConstants::EQTERM_TRITIUM_MODE_NEGLECT},
+        {"eqsys/n_re/hottail", OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED},
+        {"eqsys/n_re/lcfs_loss", OptionConstants::EQTERM_LCFS_LOSS_MODE_DISABLED},
+        {"eqsys/n_re/transport/type", OptionConstants::EQTERM_TRANSPORT_NONE},
+        {"eqsys/n_re/transport/frozen_current_mode", OptionConstants::EQTERM_FROZEN_CURRENT_MODE_DISABLED}
+    };
+    for (auto [key, value] : disabled)
+        if (s->GetInteger(key) != value)
+            throw SettingsException(
+                "The external kinetic boundary requires '%s' to be disabled until it supports signed external densities.", key
+            );
+    if (re && s->GetInteger("eqsys/f_re/transport/frozen_current_mode") != OptionConstants::EQTERM_FROZEN_CURRENT_MODE_DISABLED)
+        throw SettingsException("The external kinetic boundary requires frozen-current runaway transport to be disabled.");
+}
+
+/**
  * Construct an equation system, based on the specification
  * in the given 'Settings' object.
  *
@@ -68,6 +115,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
     ADAS *adas, NIST *nist, AMJUEL *amjuel
 ) {
+    ValidateExternalKineticBoundary(s, hottailGrid, runawayGrid, ht_type, re_type);
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid, s);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
@@ -230,6 +278,8 @@ void SimulationGenerator::ConstructEquations(
     // AFTER the calls to 'ConstructEquation_f_hot()' and
     // 'ConstructEquation_f_re()'.
     ConstructEquation_n_re(eqsys, s, oqty_terms, transport_fre);
+    if (eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_N_EXTERNAL_POS))
+        ConstructEquation_n_external(eqsys, oqty_terms);
 
     ConstructEquation_psi_p(eqsys, s);
     ConstructEquation_psi_edge(eqsys, s);
@@ -351,6 +401,10 @@ void SimulationGenerator::ConstructUnknowns(
 
     if (s->GetBool("eqsys/n_re/negative_re"))
         DEFU_FLD(N_RE_NEG);
+    if (s->GetBool("eqsys/f_hot/external_kinetic_boundary") || s->GetBool("eqsys/f_re/external_kinetic_boundary")) {
+        DEFU_FLD(N_EXTERNAL_POS);
+        DEFU_FLD(N_EXTERNAL_NEG);
+    }
 
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){

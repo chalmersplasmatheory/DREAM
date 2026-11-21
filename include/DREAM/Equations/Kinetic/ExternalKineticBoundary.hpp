@@ -17,7 +17,7 @@ namespace DREAM {
  */
 class ExternalKineticBoundary : public FVM::BC::PXiAdvectionDiffusionBoundaryCondition {
 public:
-    enum Side { KINETIC, DENSITY, NEGATIVE_DENSITY };
+    enum Side { KINETIC, DENSITY, NEGATIVE_DENSITY, POSITIVE_DENSITY };
     enum Pole { POSITIVE, NEGATIVE, BOTH };
 
     ExternalKineticBoundary(
@@ -93,7 +93,10 @@ private:
     Reservoir LimitInflow(real_t density, real_t rate) const;
     real_t AppliedFlux(const Face&, const Reservoirs&) const;
     void AddDistributionJacobian(len_t ir, len_t offset, const std::vector<Face>&, FVM::Matrix*) const;
-    bool IncludesPole(len_t pole) const { return side != NEGATIVE_DENSITY || pole == NEGATIVE; }
+    bool IncludesPole(len_t pole) const {
+        return (side != POSITIVE_DENSITY || pole == POSITIVE)
+            && (side != NEGATIVE_DENSITY || pole == NEGATIVE);
+    }
     len_t Row(len_t ir, len_t offset, len_t j) const;
     real_t Scale(const Face&) const;
 };

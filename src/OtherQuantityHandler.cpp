@@ -22,6 +22,7 @@
  */
 
 #include <map>
+#include "DREAM/Equations/Kinetic/ExternalKineticBoundary.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
@@ -343,7 +344,29 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     }
 
-	if (tracked_terms->n_re_f_hot_flux != nullptr) {
+    if (tracked_terms->external_kinetic_boundary) {
+        DEF_FL("fluid/gammaExternal", "Net electron flux out of the outer kinetic grid [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaExternalOut", "Outward electron flux at the outer kinetic boundary [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(nullptr, qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaExternalIn", "Inward electron flux at the outer kinetic boundary [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(nullptr, nullptr, qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaExternalPos", "Net outward flux of the positive external population [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty(), nullptr, nullptr, ExternalKineticBoundary::POSITIVE);
+        );
+        DEF_FL("fluid/gammaExternalNeg", "Net outward flux of the negative external population [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty(), nullptr, nullptr, ExternalKineticBoundary::NEGATIVE);
+        );
+    }
+
+    if (tracked_terms->external_kinetic_boundary && !runawayGrid) {
+        DEF_FL("fluid/gammaFhot", "Net electron flux from f_hot to n_re [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty());
+        );
+    } else if (tracked_terms->n_re_f_hot_flux != nullptr) {
 		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to n_re [s^-1 m^-3]",
 			const real_t *f_hot = this->unknowns->GetUnknownData(this->id_f_hot);
 			real_t *v = qd->StoreEmpty();

@@ -98,6 +98,7 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
     const len_t idF = unknowns.InsertUnknown("f_test", "Test distribution", kineticGrid);
     const len_t idP = unknowns.InsertUnknown("n_external_pos", "Positive inventory", fluidGrid);
     const len_t idN = unknowns.InsertUnknown("n_external_neg", "Negative inventory", fluidGrid);
+    const len_t idT = unknowns.InsertUnknown("n_external", "Total inventory", fluidGrid);
     const len_t idA = unknowns.InsertUnknown("a_test", "Advection amplitude", fluidGrid);
     const len_t idD = unknowns.InsertUnknown("d_test", "Diffusion amplitude", fluidGrid);
     std::vector<real_t> f(cells), positive(nr, 5), negative(nr, 2), a(nr, 1), d(nr, 1);
@@ -114,6 +115,7 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
     unknowns.SetInitialValue(idF, f.data());
     unknowns.SetInitialValue(idP, positive.data());
     unknowns.SetInitialValue(idN, negative.data());
+    unknowns.SetInitialValue(idT, nullptr);
     unknowns.SetInitialValue(idA, a.data());
     unknowns.SetInitialValue(idD, d.data());
     unknowns.SaveStep(0, false);
@@ -123,18 +125,20 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
     const std::array poles{idP, idN};
     Boundary kinetic(kineticGrid, kineticGrid, &op, idF, poles, &unknowns);
     Boundary fluid(fluidGrid, kineticGrid, &op, idF, poles, &unknowns, Boundary::DENSITY);
-    Boundary tagged(fluidGrid, kineticGrid, &op, idF, poles, &unknowns, Boundary::NEGATIVE_DENSITY);
+    Boundary negativeSide(fluidGrid, kineticGrid, &op, idF, poles, &unknowns, Boundary::NEGATIVE_DENSITY);
+    Boundary positiveSide(fluidGrid, kineticGrid, &op, idF, poles, &unknowns, Boundary::POSITIVE_DENSITY);
     const real_t dt = 0.3;
     auto rebuild = [&]() {
         op.RebuildTerms(dt, dt, &unknowns);
         kinetic.Rebuild(dt, &unknowns);
         fluid.Rebuild(dt, &unknowns);
-        tagged.Rebuild(dt, &unknowns);
+        negativeSide.Rebuild(dt, &unknowns);
+        positiveSide.Rebuild(dt, &unknowns);
     };
     rebuild();
     std::vector<real_t> rate(nr);
     kinetic.GetRequestedInflow(rate.data());
-    std::vector<real_t> k(cells), balance(nr), negativeBalance(nr), integral(nr), net(nr), out(nr), in(nr);
+    std::vector<real_t> k(cells), balance(nr), positiveBalance(nr), negativeBalance(nr), integral(nr), net(nr), out(nr), in(nr);
     std::array inward{std::vector<real_t>(nr), std::vector<real_t>(nr)};
     auto requested = inward, netByPole = inward;
     for (auto pole : {Boundary::POSITIVE, Boundary::NEGATIVE}) {
@@ -143,7 +147,8 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
     }
     kinetic.AddToVectorElements(k.data(), f.data());
     fluid.AddToVectorElements(balance.data(), f.data());
-    tagged.AddToVectorElements(negativeBalance.data(), f.data());
+    negativeSide.AddToVectorElements(negativeBalance.data(), f.data());
+    positiveSide.AddToVectorElements(positiveBalance.data(), f.data());
     kineticGrid->IntegralMomentum(k.data(), integral.data());
     kinetic.GetFlux(net.data(), out.data(), in.data());
     for (len_t ir = 0; ir < nr; ++ir) {
@@ -151,6 +156,7 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
         if (std::abs(integral[ir]+balance[ir]) > 1e-12*scale
             || std::abs(net[ir]-integral[ir]) > 1e-12*scale
             || std::abs(net[ir]-netByPole[0][ir]-netByPole[1][ir]) > 1e-12*scale
+            || std::abs(positiveBalance[ir]+netByPole[0][ir]) > 1e-12*scale
             || std::abs(negativeBalance[ir]+netByPole[1][ir]) > 1e-12*scale
             || std::abs(in[ir]-inward[0][ir]-inward[1][ir]) > 1e-12*scale) {
             PrintError("The total and tagged external balances must use the kinetic flux.");
@@ -170,13 +176,14 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
     // Allocate each block uniformly, as in the solver.
     FVM::BlockMatrix jac;
     const len_t kineticBlock = jac.CreateSubEquation(cells, 1+kinetic.GetNumberOfNonZerosPerRow_jac(), idF);
-    const len_t fluidBlock = jac.CreateSubEquation(nr, 1+fluid.GetNumberOfNonZerosPerRow_jac(), idP);
-    const len_t taggedBlock = jac.CreateSubEquation(nr, 1+tagged.GetNumberOfNonZerosPerRow_jac(), idN);
+    const len_t positiveBlock = jac.CreateSubEquation(nr, 1+positiveSide.GetNumberOfNonZerosPerRow_jac(), idP);
+    const len_t negativeBlock = jac.CreateSubEquation(nr, 1+negativeSide.GetNumberOfNonZerosPerRow_jac(), idN);
+    const len_t totalBlock = jac.CreateSubEquation(nr, 1+fluid.GetNumberOfNonZerosPerRow_jac(), idT);
     const len_t advectionBlock = jac.CreateSubEquation(nr, 1, idA);
     const len_t diffusionBlock = jac.CreateSubEquation(nr, 1, idD);
     const std::array blocks{
-        std::pair{idF, kineticBlock}, std::pair{idP, fluidBlock}, std::pair{idN, taggedBlock},
-        std::pair{idA, advectionBlock}, std::pair{idD, diffusionBlock}
+        std::pair{idF, kineticBlock}, std::pair{idP, positiveBlock}, std::pair{idN, negativeBlock},
+        std::pair{idT, totalBlock}, std::pair{idA, advectionBlock}, std::pair{idD, diffusionBlock}
     };
     jac.ConstructSystem();
 
@@ -184,10 +191,12 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
         for (const auto &[id, block] : blocks) {
             jac.SelectSubEquation(kineticBlock, block);
             kinetic.AddToJacobianBlock(idF, id, &jac, f.data());
-            jac.SelectSubEquation(fluidBlock, block);
-            fluid.AddToJacobianBlock(idF, id, &jac, f.data());
-            jac.SelectSubEquation(taggedBlock, block);
-            tagged.AddToJacobianBlock(idF, id, &jac, f.data());
+            jac.SelectSubEquation(positiveBlock, block);
+            positiveSide.AddToJacobianBlock(idP, id, &jac, f.data());
+            jac.SelectSubEquation(negativeBlock, block);
+            negativeSide.AddToJacobianBlock(idN, id, &jac, f.data());
+            jac.SelectSubEquation(totalBlock, block);
+            fluid.AddToJacobianBlock(idT, id, &jac, f.data());
         }
         jac.Assemble();
     };
@@ -295,8 +304,9 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
     auto residual = [&](std::vector<real_t>& values) {
         const real_t *distribution = unknowns.GetUnknownData(idF);
         kinetic.AddToVectorElements(values.data(), distribution);
-        fluid.AddToVectorElements(values.data()+cells, distribution);
-        tagged.AddToVectorElements(values.data()+cells+nr, distribution);
+        positiveSide.AddToVectorElements(values.data()+cells, distribution);
+        negativeSide.AddToVectorElements(values.data()+cells+nr, distribution);
+        fluid.AddToVectorElements(values.data()+cells+2*nr, distribution);
     };
     for (const auto &[id, block] : blocks) {
         const len_t columns = unknowns.GetUnknown(id)->NumberOfElements();
@@ -304,7 +314,7 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
         auto *x = unknowns.GetUnknownData(id);
         for (len_t col = 0; col < columns; ++col) {
             const real_t original = x[col], h = 1e-5*std::max(real_t(1), std::abs(original));
-            std::vector<real_t> plus(cells+2*nr), minus(cells+2*nr);
+            std::vector<real_t> plus(cells+3*nr), minus(cells+3*nr);
             x[col] = original+h;
             rebuild();
             residual(plus);
@@ -313,7 +323,7 @@ bool ExternalBoundary::CheckGrid(FVM::Grid *kineticGrid, FVM::Grid *fluidGrid) {
             residual(minus);
             x[col] = original;
             rebuild();
-            for (len_t row = 0; row < cells+2*nr; ++row) {
+            for (len_t row = 0; row < cells+3*nr; ++row) {
                 const real_t actual = jac.GetElement(row, columnOffset+col);
                 const real_t numerical = (plus[row]-minus[row])/(2*h);
                 if (std::abs(actual-numerical) > 2e-7*std::max({real_t(1), std::abs(actual), std::abs(numerical)})) {
