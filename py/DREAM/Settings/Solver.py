@@ -17,6 +17,7 @@ LINEAR_SOLVER_MUMPS   = 2
 LINEAR_SOLVER_MKL     = 3
 LINEAR_SOLVER_SUPERLU = 4
 LINEAR_SOLVER_GMRES   = 5
+LINEAR_SOLVER_MKL_SCHUR = 6
 
 
 class Solver:
@@ -337,10 +338,14 @@ class Solver:
         Verifies the settings for the linear solver (which is used
         by both the 'LINEAR_IMPLICIT' and 'NONLINEAR' solvers).
         """
-        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL, LINEAR_SOLVER_SUPERLU, LINEAR_SOLVER_GMRES]
+        solv = [
+            LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL,
+            LINEAR_SOLVER_SUPERLU, LINEAR_SOLVER_GMRES, LINEAR_SOLVER_MKL_SCHUR
+        ]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
         elif self.backupsolver is not None and (self.backupsolver not in solv and self.backupsolver != BACKUP_SOLVER_NONE):
             raise DREAMException("Solver: Unrecognized backup linear solver type: {}.".format(self.backupsolver))
 
-
+        if self.type == LINEAR_IMPLICIT and self.linsolv == LINEAR_SOLVER_MKL_SCHUR:
+            raise DREAMException("Solver: PARDISO Schur requires the nonlinear solver.")

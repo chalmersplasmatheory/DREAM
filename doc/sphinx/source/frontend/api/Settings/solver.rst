@@ -237,6 +237,28 @@ use of four different LU factorization algorithms, namely
 +---------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 
+PARDISO Schur factorization
+***************************
+For mixed kinetic and fluid systems, the MKL solver can factor the system
+using a Schur complement over the fluid unknowns. The kinetic blocks
+(``f_hot`` and ``f_re`` when evolved) are eliminated, and PETSc uses the dense
+fluid complement to recover the full correction.
+
+Select the Schur solver in the Python settings:
+
+.. code-block:: python
+
+   import DREAM.Settings.Solver as Solver
+
+   ds.solver.setType(Solver.NONLINEAR)
+   ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MKL_SCHUR)
+
+This mode requires the nonlinear solver, a single MPI rank, and PETSc with
+MKL PARDISO support. The system must have at least one evolved kinetic unknown
+and one fluid unknown. The complement is dense, so its storage grows with
+the square of the number of fluid rows. DREAM uses its usual backup solver
+handling when the factorization or solve reports an error.
+
 Backup linear solver
 --------------------
 Some linear solvers are less robust than others. The less robust solvers however

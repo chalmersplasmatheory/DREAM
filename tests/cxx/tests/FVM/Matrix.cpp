@@ -14,6 +14,10 @@
 #include "FVM/Matrix.hpp"
 #include "Matrix.hpp"
 
+#ifdef PETSC_HAVE_MKL_PARDISO
+#include "FVM/Solvers/MIMKL.hpp"
+#endif
+
 #ifdef PETSC_HAVE_SUPERLU
 #include <cfenv>
 #include "FVM/Solvers/MISuperLU.hpp"
@@ -421,6 +425,53 @@ static bool CheckSuperLUFailure() {
 }
 #endif
 
+#ifdef PETSC_HAVE_MKL_PARDISO
+/**
+ * Recover a known solution with non-contiguous Schur rows, including after
+ * changing the sparsity pattern on the same solver instance.
+ */
+static bool CheckPardisoSchur() {
+    constexpr PetscInt n = 4;
+    DREAM::FVM::Matrix matrix(n, n, n);
+    for (PetscInt i = 0; i < n; i++) {
+        matrix.SetElement(i, i, 5);
+        matrix.SetElement(i, (i+1)%n, -1);
+    }
+
+    Vec solution, rhs, expected;
+    MatCreateVecs(matrix.mat(), &solution, &rhs);
+    VecDuplicate(solution, &expected);
+    const PetscInt rows[] = {0, 1, 2, 3};
+    const PetscScalar values[] = {1, -2, 3, 4};
+    VecSetValues(expected, n, rows, values, INSERT_VALUES);
+    VecAssemblyBegin(expected);
+    VecAssemblyEnd(expected);
+
+    DREAM::FVM::MIMKL inverter(n, false, {1, 3});
+    bool success = true;
+    for (const bool changePattern : {false, true}) {
+        if (changePattern)
+            matrix.SetElement(3, 1, 2);
+        matrix.Assemble();
+        MatMult(matrix.mat(), expected, rhs);
+        inverter.Invert(&matrix, &rhs, &solution);
+        if (inverter.GetReturnCode() != 0) {
+            success = false;
+            break;
+        }
+        VecAXPY(solution, -1, expected);
+        PetscReal error;
+        VecNorm(solution, NORM_INFINITY, &error);
+        success = success && error < 100 * PETSC_MACHINE_EPSILON;
+    }
+
+    VecDestroy(&expected);
+    VecDestroy(&rhs);
+    VecDestroy(&solution);
+    return success;
+}
+#endif
+
 /**
  * Run all Matrix tests.
  * Returns 'true' if all tests passed. 'false' otherwise.
@@ -462,6 +513,15 @@ bool Matrix::Run(bool) {
     else {
         success = false;
         this->PrintError("SuperLU did not report the singular factorization or failed to recover.");
+    }
+#endif
+
+#ifdef PETSC_HAVE_MKL_PARDISO
+    if (CheckPardisoSchur())
+        this->PrintOK("PARDISO Schur recovers the full solution across a sparsity change.");
+    else {
+        success = false;
+        this->PrintError("PARDISO Schur failed to recover the full solution.");
     }
 #endif
 
