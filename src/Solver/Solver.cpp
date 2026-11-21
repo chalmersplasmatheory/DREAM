@@ -3,7 +3,8 @@
  */
 
 #include <iostream>
-
+#include <limits>
+#include <utility>
 #include <vector>
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
@@ -17,6 +18,7 @@
 #include "FVM/Solvers/MIGMRES.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #ifdef PETSC_HAVE_MKL_PARDISO
+#   include "DREAM/Solver/SolverNonLinear.hpp"
 #   include "FVM/Solvers/MIMKL.hpp"
 #endif
 #include "FVM/Solvers/MIMUMPS.hpp"
@@ -435,9 +437,39 @@ FVM::MatrixInverter *Solver::ConstructLinearSolver(const len_t N, enum OptionCon
        return new FVM::MIGMRES(N, nontrivial_unknowns, unknowns, nullptr, nullptr);
     } else if (ls == OptionConstants::LINEAR_SOLVER_LU)
         return new FVM::MILU(N);
-    else if (ls == OptionConstants::LINEAR_SOLVER_MKL) {
+    else if (ls == OptionConstants::LINEAR_SOLVER_MKL || ls == OptionConstants::LINEAR_SOLVER_MKL_SCHUR) {
 #ifdef PETSC_HAVE_MKL_PARDISO
-        return new FVM::MIMKL(N);
+        if (ls == OptionConstants::LINEAR_SOLVER_MKL)
+            return new FVM::MIMKL(N);
+        if (dynamic_cast<SolverNonLinear*>(this) == nullptr)
+            throw SolverException("PARDISO Schur requires the nonlinear solver.");
+
+        if (N > static_cast<len_t>(std::numeric_limits<PetscInt>::max()))
+            throw SolverException("The PARDISO Schur matrix exceeds the PETSc index range.");
+
+        // The matrix is laid out in non-trivial unknown order, including
+        // the number of elements in each unknown.
+        std::vector<PetscInt> fluidIndices;
+        len_t offset = 0;
+        for (const len_t id : this->nontrivial_unknowns) {
+            auto *unknown = this->unknowns->GetUnknown(id);
+            const len_t count = unknown->NumberOfElements();
+            if (count > N - offset)
+                throw SolverException("The PARDISO Schur partition exceeds the matrix size.");
+
+            const auto& name = unknown->GetName();
+            if (name != OptionConstants::UQTY_F_HOT && name != OptionConstants::UQTY_F_RE) {
+                for (len_t i = 0; i < count; i++)
+                    fluidIndices.push_back(static_cast<PetscInt>(offset + i));
+            }
+            offset += count;
+        }
+        if (offset != N || fluidIndices.empty() || fluidIndices.size() == N)
+            throw SolverException("PARDISO Schur requires both kinetic and fluid unknowns.");
+
+        PetscPrintf(PETSC_COMM_WORLD, "PARDISO Schur enabled with %" PetscInt_FMT " fluid rows\n",
+            static_cast<PetscInt>(fluidIndices.size()));
+        return new FVM::MIMKL(N, false, std::move(fluidIndices));
 #else
         throw SolverException(
             "Your version of PETSc does not include support for Intel MKL PARDISO. "

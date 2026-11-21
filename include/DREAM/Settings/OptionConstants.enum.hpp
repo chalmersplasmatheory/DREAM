@@ -136,7 +136,8 @@ enum linear_solver {
     LINEAR_SOLVER_MUMPS=2,
     LINEAR_SOLVER_MKL=3,
     LINEAR_SOLVER_SUPERLU=4,
-    LINEAR_SOLVER_GMRES=5
+    LINEAR_SOLVER_GMRES=5,
+    LINEAR_SOLVER_MKL_SCHUR=6
 };
 
 /////////////////////////////////////
