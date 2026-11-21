@@ -28,6 +28,7 @@ MIMKL::MIMKL(const len_t n, bool verbose) {
  * Destructor.
  */
 MIMKL::~MIMKL() {
+    KSPDestroy(&this->ksp);
 }
 
 /**
