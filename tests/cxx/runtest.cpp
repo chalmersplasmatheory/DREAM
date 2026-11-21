@@ -18,6 +18,7 @@
 
 // Tests
 #include "tests/DREAM/BoundaryFlux.hpp"
+#include "tests/DREAM/ExternalBoundary.hpp"
 #include "tests/DREAM/IonRateEquation.hpp"
 #include "tests/DREAM/RunawayFluid.hpp"
 #include "tests/DREAM/AvalancheSourceRP.hpp"
@@ -44,6 +45,7 @@ void add_test(UnitTest *t) {
 void init() {
     add_test(new DREAMTESTS::_DREAM::AvalancheSourceRP("dream/avalanche"));
     add_test(new DREAMTESTS::_DREAM::BoundaryFlux("dream/boundaryflux"));
+    add_test(new DREAMTESTS::_DREAM::ExternalBoundary("dream/externalboundary"));
     add_test(new DREAMTESTS::_DREAM::IonRateEquation("dream/ionrateequation"));
     add_test(new DREAMTESTS::_DREAM::MeanExcitationEnergy("dream/meanexcitationenergy"));
     add_test(new DREAMTESTS::_DREAM::RunawayFluid("dream/runawayfluid"));
