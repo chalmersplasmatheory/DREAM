@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <limits>
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include "gsl/gsl_integration.h"
