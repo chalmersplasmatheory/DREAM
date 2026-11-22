@@ -127,8 +127,15 @@ bool MollerBoltzmannOperator::Run(bool) {
         this->PrintError("Test failed: Chiu–Harvey pole weights or production.");
     }
 
+    if (CheckBO_RosenbluthPutvinskiGain())
+        this->PrintOK("Boltzmann RP uses partial primary cells, signed poles, and conservative particle bookkeeping.");
+    else {
+        success = false;
+        this->PrintError("Test failed: Boltzmann RP primary density or source.");
+    }
+
     if (CheckBO_SharedExternalGain())
-        this->PrintOK("The shared external gain closes the kinetic and fluid birth balance.");
+        this->PrintOK("All Boltzmann models share the external gain and close the grid/fluid birth balance.");
     else {
         success = false;
         this->PrintError("Test failed: shared external gain or particle balance.");
@@ -250,6 +257,126 @@ bool MollerBoltzmannOperator::CheckBO_ChiuHarveyGain() {
     return true;
 }
 
+bool MollerBoltzmannOperator::CheckBO_RosenbluthPutvinskiGain() {
+    using RP = DREAM::RosenbluthPutvinskiBoltzmann;
+    using RPTerm = DREAM::RosenbluthPutvinskiBoltzmannTerm;
+    auto fluid = KnockOnTest::OwnedGrid(InitializeFluidGrid(1, 1));
+    auto hot = KnockOnTest::OwnedGrid(InitializeGridRCylPXi(1, 4, 10, 1, 0, 2));
+    auto runaway = KnockOnTest::OwnedGrid(InitializeGridRCylPXi(1, 4, 12, 1, 2, 6));
+    constexpr real_t pCutoff = 0.3;
+    constexpr real_t nTot[] = {2e19};
+    const auto close = [](real_t a, real_t b) {
+        return std::isfinite(a) && std::isfinite(b)
+            && std::abs(a-b) <= 1e-12 * std::max(std::abs(a), std::abs(b));
+    };
+    // RP spectrum independently integrated in gamma, with finite and
+    // infinite upper boundaries.
+    const auto integrated = [](real_t lower, real_t upper) {
+        const auto invEnergy = [](real_t p) {
+            return std::isinf(p) ? 0 : (std::sqrt(1+p*p)+1)/(p*p);
+        };
+        return 2 * M_PI * DREAM::Constants::r0 * DREAM::Constants::r0 * DREAM::Constants::c
+            * (invEnergy(lower) - invEnergy(upper));
+    };
+    for (bool twoGrids : {false, true}) {
+        const real_t pRe = twoGrids ? 2.25 : 0.625;
+        const real_t pMax = twoGrids ? 6 : 2;
+        const real_t hotDensity = 100, reDensity = 40, externalDensity = 30;
+        const real_t nRe[] = {externalDensity + (twoGrids ? reDensity : 0)};
+        const real_t electric[] = {-1};
+        len_t idN, idE, idF;
+        std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> u(
+            BuildUQH_Minimal(fluid.get(), hot.get(), idN, idE, idF));
+        const len_t idNRe = u->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, "0", fluid.get());
+        u->SetInitialValue(idNRe, nRe);
+        u->SetInitialValue(idE, electric);
+        const auto beam = [](const DREAM::FVM::Grid *grid, len_t j, len_t k, real_t density) {
+            const auto *mg = grid->GetMomentumGrid(0);
+            const len_t index = j*mg->GetNp1() + k;
+            std::vector<real_t> f(grid->GetNCells(), 0);
+            f[index] = density * grid->GetVpVol(0)
+                / (grid->GetVp(0)[index] * mg->GetDp1(k) * mg->GetDp2(j));
+            return f;
+        };
+        auto fHot = beam(hot.get(), 9, 1, hotDensity);
+        // Also seed a below-threshold hot cell to ensure it never contributes.
+        fHot[0] = 1e8;
+        u->SetInitialValue(idF, fHot.data());
+        if (twoGrids) {
+            const len_t idFRe = u->InsertUnknown(DREAM::OptionConstants::UQTY_F_RE, "0", runaway.get());
+            auto fRe = beam(runaway.get(), 0, 0, reDensity);
+            u->SetInitialValue(idFRe, fRe.data());
+        }
+        RP source(hot.get(), twoGrids ? runaway.get() : nullptr, u.get(), pCutoff, pRe, 4, true);
+        RPTerm hotTerm(hot.get(), u.get(), &source, RP::HOTTAIL, 1);
+        RPTerm reDensityTerm(fluid.get(), u.get(), &source, RP::RUNAWAY_DENSITY, 1);
+        RPTerm totalTerm(fluid.get(), u.get(), &source, RP::ALL, 1);
+        hotTerm.Rebuild(1, 1, u.get());
+
+        const real_t nResolved = 0.75 * (twoGrids ? reDensity : hotDensity);
+        if (!close(source.GetResolvedDensity(!twoGrids)[0], nResolved)
+            || source.GetResolvedDensity(twoGrids)[0] != 0
+            || !close(source.GetExternalDensity()[0], externalDensity))
+            return false;
+
+        std::vector<real_t> fromResolved(hot->GetNCells()), fromExternal(hot->GetNCells());
+        hotTerm.SetResolvedSource(fromResolved.data(), nTot);
+        hotTerm.SetExternalSource(fromExternal.data(), nTot);
+        const real_t onGrid = integrated(pCutoff, 2);
+        if (!close(hot->IntegralMomentumAtRadius(0, fromResolved.data()), nTot[0]*nResolved*onGrid)
+            || !close(hot->IntegralMomentumAtRadius(0, fromExternal.data()), nTot[0]*externalDensity*onGrid))
+            return false;
+        const auto *mg = hot->GetMomentumGrid(0);
+        for (len_t j = 0; j < mg->GetNp2(); ++j) {
+            for (len_t i = 0; i < mg->GetNp1(); ++i) {
+                const len_t index = j*mg->GetNp1()+i;
+                // External primaries stay at the positive pole even for E<0.
+                if (j < mg->GetNp2()/2 && fromExternal[index] != 0)
+                    return false;
+                if ((j >= mg->GetNp2()/2) == twoGrids && fromResolved[index] != 0)
+                    return false;
+            }
+        }
+
+        real_t nPrimary = 0, reBirths = 0, allBirths = 0;
+        hotTerm.GetPrimaryDensity(&nPrimary);
+        reDensityTerm.SetVectorElements(&reBirths, nTot);
+        totalTerm.SetVectorElements(&allBirths, nTot);
+        const real_t coefficient = nTot[0] * (nResolved + externalDensity);
+        const real_t infinity = std::numeric_limits<real_t>::infinity();
+        if (!close(nPrimary, nResolved + externalDensity)
+            || !close(reBirths, coefficient * integrated(2, infinity))
+            || !close(allBirths, coefficient * integrated(pCutoff, infinity)))
+            return false;
+        if (twoGrids) {
+            RPTerm reTerm(runaway.get(), u.get(), &source, RP::RUNAWAY, 1);
+            std::vector<real_t> gain(runaway->GetNCells());
+            reTerm.SetVectorElements(gain.data(), nTot);
+            if (!close(runaway->IntegralMomentumAtRadius(0, gain.data()), coefficient * integrated(2, pMax)))
+                return false;
+        }
+        // A current-step change in n_re must not masquerade as a new
+        // external population while the kinetic moment is still lagged.
+        const real_t currentNRe[] = {nRe[0] + 10};
+        u->Store(idNRe, currentNRe);
+        source.GridRebuilt();
+        hotTerm.Rebuild(1, 1, u.get());
+        hotTerm.GetPrimaryDensity(&nPrimary);
+        if (!close(nPrimary, nResolved + externalDensity))
+            return false;
+
+        if (twoGrids) {
+            const real_t lowNRe[] = {reDensity - 1};
+            SetPreviousUnknownData(u.get(), idNRe, lowNRe, 1);
+            SetPreviousUnknownData(u.get(), idF, fHot.data(), 1);
+            hotTerm.Rebuild(2, 1, u.get());
+            if (source.GetExternalDensity()[0] != 0 || !close(source.GetRawExternalDensity()[0], -1))
+                return false;
+        }
+    }
+    return true;
+}
+
 /**
  * Check the common infinite-energy component independently of the resolved
  * model. Cover both geometries and all supported kinetic-grid layouts.
@@ -297,65 +424,85 @@ bool MollerBoltzmannOperator::CheckBO_SharedExternalGain() {
                     nRe[ir] += r->IntegralMomentumAtRadius(ir, fRe.data() + ir*r->GetMomentumGrid(0)->GetNCells());
             }
             unknowns.SetInitialValue(idNRe, nRe);
-            DREAM::MollerKernelHandler kernels(h, r, &unknowns, pCutoff, 3, 4, 2);
-            auto *source = kernels.GetRP();
-            RPTerm all(fluid.get(), &unknowns, source, RP::ALL, 1);
-            RPTerm density(fluid.get(), &unknowns, source, RP::RUNAWAY_DENSITY, 1);
-            all.Rebuild(1, 1, &unknowns);
-            real_t raw[2], external[2], above[2], allBirths[2] = {}, reBirths[2] = {};
-            all.GetRawExternalDensity(raw);
-            all.GetExternalDensity(external);
-            all.GetAboveGridProduction(above, nTot);
-            all.SetVectorElements(allBirths, nTot);
-            density.SetVectorElements(reBirths, nTot);
-            for (len_t ir = 0; ir < 2; ++ir) {
-                if (!close(raw[ir], rawExternal[ir])
-                    || !close(external[ir], std::max(real_t(0), rawExternal[ir])))
-                    return false;
-            }
+            std::array<std::vector<real_t>, 2> referenceExternal;
 
-            real_t kineticBirths[2] = {}, runawayBirths[2] = {};
-            for (len_t target = 0; target < 2; ++target) {
-                auto *grid = target == 0 ? h : r;
-                if (!grid)
-                    continue;
-                RPTerm term(grid, &unknowns, source, target == 0 ? RP::HOTTAIL : RP::RUNAWAY, 1);
-                std::vector<real_t> gain(grid->GetNCells());
-                term.SetVectorElements(gain.data(), nTot);
-                for (len_t ir = 0, offset = 0; ir < 2; ++ir) {
-                    const real_t integral = grid->IntegralMomentumAtRadius(ir, gain.data() + offset);
-                    kineticBirths[ir] += integral;
-                    if (target == 1)
-                        runawayBirths[ir] = integral;
-                    // The negative raw inventory at radius 1 contributes no gain.
-                    if (ir == 1 && integral != 0)
+            for (auto model : {OC::BOLTZMANN_MODEL_FULL_MOLLER, OC::BOLTZMANN_MODEL_CHIU_HARVEY,
+                               OC::BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI}) {
+                const bool resolvedRP = model == OC::BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI;
+                DREAM::MollerKernelHandler kernels(
+                    h, r, &unknowns, pCutoff, 3, 4, 2, model, resolvedRP ? 0.625 : 0
+                );
+                auto *source = kernels.GetRP();
+                RPTerm all(fluid.get(), &unknowns, source, RP::ALL, 1);
+                RPTerm density(fluid.get(), &unknowns, source, RP::RUNAWAY_DENSITY, 1);
+                all.Rebuild(1, 1, &unknowns);
+                real_t raw[2], external[2], primary[2], above[2], allBirths[2] = {}, reBirths[2] = {};
+                all.GetRawExternalDensity(raw);
+                all.GetExternalDensity(external);
+                all.GetPrimaryDensity(primary);
+                all.GetAboveGridProduction(above, nTot);
+                all.SetVectorElements(allBirths, nTot);
+                density.SetVectorElements(reBirths, nTot);
+                for (len_t ir = 0; ir < 2; ++ir) {
+                    if (!close(raw[ir], rawExternal[ir])
+                        || !close(external[ir], std::max(real_t(0), rawExternal[ir]))
+                        || (!resolvedRP && !close(primary[ir], external[ir])))
                         return false;
-                    offset += grid->GetMomentumGrid(ir)->GetNCells();
                 }
-            }
-            for (len_t ir = 0; ir < 2; ++ir) {
-                if (!close(kineticBirths[ir] + above[ir], allBirths[ir])
-                    || !close(runawayBirths[ir] + above[ir], reBirths[ir]))
-                    return false;
-            }
 
-            // Newton iterates must not mix current n_re/f_re with lagged
-            // primaries, even when a grid rebuild invalidates the cache.
-            const real_t currentNRe[] = {nRe[0]+100, nRe[1]+100};
-            unknowns.Store(idNRe, currentNRe);
-            if (r) {
-                std::vector<real_t> currentF(fRe.size(), 30);
-                unknowns.Store(idFRe, currentF.data());
+                real_t kineticBirths[2] = {}, runawayBirths[2] = {};
+                for (len_t target = 0; target < 2; ++target) {
+                    auto *grid = target == 0 ? h : r;
+                    if (!grid)
+                        continue;
+                    RPTerm term(grid, &unknowns, source, target == 0 ? RP::HOTTAIL : RP::RUNAWAY, 1);
+                    std::vector<real_t> gain(grid->GetNCells()), resolved(gain.size()), offGrid(gain.size());
+                    term.SetVectorElements(gain.data(), nTot);
+                    term.SetResolvedSource(resolved.data(), nTot);
+                    term.SetExternalSource(offGrid.data(), nTot);
+                    if (model == OC::BOLTZMANN_MODEL_FULL_MOLLER)
+                        referenceExternal[target] = offGrid;
+                    for (len_t cell = 0; cell < gain.size(); ++cell) {
+                        if (!close(gain[cell], resolved[cell] + offGrid[cell])
+                            || !close(offGrid[cell], referenceExternal[target][cell])
+                            || (!resolvedRP && resolved[cell] != 0))
+                            return false;
+                    }
+                    for (len_t ir = 0, offset = 0; ir < 2; ++ir) {
+                        const real_t integral = grid->IntegralMomentumAtRadius(ir, gain.data() + offset);
+                        kineticBirths[ir] += integral;
+                        if (target == 1)
+                            runawayBirths[ir] = integral;
+                        // The negative raw inventory at radius 1 contributes no gain.
+                        if (ir == 1 && grid->IntegralMomentumAtRadius(ir, offGrid.data() + offset) != 0)
+                            return false;
+                        offset += grid->GetMomentumGrid(ir)->GetNCells();
+                    }
+                }
+                for (len_t ir = 0; ir < 2; ++ir) {
+                    if (!close(kineticBirths[ir] + above[ir], allBirths[ir])
+                        || !close(runawayBirths[ir] + above[ir], reBirths[ir]))
+                        return false;
+                }
+
+                // Newton iterates must not mix current n_re/f_re with lagged
+                // primaries, even when a grid rebuild invalidates the cache.
+                const real_t currentNRe[] = {nRe[0]+100, nRe[1]+100};
+                unknowns.Store(idNRe, currentNRe);
+                if (r) {
+                    std::vector<real_t> currentF(fRe.size(), 30);
+                    unknowns.Store(idFRe, currentF.data());
+                }
+                kernels.GridRebuilt();
+                all.Rebuild(1, 1, &unknowns);
+                all.GetRawExternalDensity(raw);
+                for (len_t ir = 0; ir < 2; ++ir)
+                    if (!close(raw[ir], rawExternal[ir]))
+                        return false;
+                unknowns.Store(idNRe, nRe);
+                if (r)
+                    unknowns.Store(idFRe, fRe.data());
             }
-            kernels.GridRebuilt();
-            all.Rebuild(1, 1, &unknowns);
-            all.GetRawExternalDensity(raw);
-            for (len_t ir = 0; ir < 2; ++ir)
-                if (!close(raw[ir], rawExternal[ir]))
-                    return false;
-            unknowns.Store(idNRe, nRe);
-            if (r)
-                unknowns.Store(idFRe, fRe.data());
         }
     }
     return true;

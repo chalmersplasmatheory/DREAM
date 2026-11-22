@@ -401,6 +401,13 @@ void OtherQuantityHandler::DefineQuantities() {
 	DEF_FL("fluid/pStar", "Effective critical momentum in Hesslow theory", qd->Store(this->REFluid->GetPStar()););
 	DEF_FL("fluid/nusnuDatPStar", "Slowing-down times deflection frequency for electrons, evaluated at pStar", qd->Store(this->REFluid->GetNusNuDatPStar()););
     if (tracked_terms->rp_hot || tracked_terms->rp_re) {
+        const auto *rp = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+        if (rp->IncludesResolvedPrimaries()) {
+            DEF_FL("fluid/n_ava_primary", "Total previous-step primary density used by Boltzmann RP [m^-3]",
+                const auto *term = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+                term->GetPrimaryDensity(qd->StoreEmpty());
+            );
+        }
         DEF_FL("fluid/n_ava_external", "Previous-step off-grid primary density used by the Boltzmann gain [m^-3]",
             const auto *term = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
             term->GetExternalDensity(qd->StoreEmpty());

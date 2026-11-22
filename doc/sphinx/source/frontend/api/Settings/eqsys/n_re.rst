@@ -385,6 +385,34 @@ same poloidal quadrature and scattering-cosine interpolation. There is no
 primary-pitch quadrature in its angular table.
 
 
+Rosenbluth--Putvinski gain
+**************************
+
+Within Boltzmann avalanche mode, use the infinite-energy limit for the
+secondary momentum spectrum and scattering cosine:
+
+.. code-block:: python
+
+   from DREAM.Settings.Equations.RunawayElectrons import BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI
+
+   ds.eqsys.n_re.setBoltzmannModel(BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI)
+   ds.eqsys.n_re.setAvalanchePrimaryThreshold(0.8)
+
+Set a finite positive primary threshold, ``p_re``, in units of
+:math:`m_e c`. There is no default. Resolved incident electrons contribute
+above this threshold, including a fraction of a cell when the threshold
+cuts through it. Each counted electron contributes to the full
+infinite-energy spectrum. The outgoing cutoff is still ``pCutAvalanche``.
+
+The resolved primary density uses the Chiu--Harvey passing/trapped pole split.
+It is added to the common off-grid source described below. The threshold
+applies only to resolved primaries; it is neither required nor used by the
+full Møller and Chiu--Harvey models.
+
+RP uses the poloidal order and evaluates each outgoing momentum cell's
+scattering cosine directly, so it has no primary-pitch quadrature or
+scattering-cosine interpolation.
+
 .. _ds-eqsys-n_re-boltzmann-external:
 
 Common off-grid population
@@ -398,14 +426,16 @@ for primaries above the outermost kinetic grid. Its density is
    n_{\mathrm{ext}} = \max\!\left(0, n_{\mathrm{re}}^{\mathrm{prev}}
       - \int f_{\mathrm{re}}^{\mathrm{prev}}\,\mathrm{d}^3p\right),
 
-with the integral omitted when the runaway grid is disabled. Both quantities
-use the previous integration step.
+with the integral omitted when the runaway grid is disabled. The full
+runaway-grid inventory is subtracted, including electrons below the RP
+primary threshold. Both quantities use the previous integration step.
 The target density ``n_tot`` is evaluated at the current step.
 
 The entire off-grid population contributes at :math:`\xi_{01}=+1`,
 independently of the electric field. This is a fixed forward-beam closure;
-changing the sign of the field does not rotate that population. At least one
-kinetic p-xi grid is required, and an enabled runaway grid must evolve its distribution.
+changing the sign of the field does not rotate that population. Resolved
+CH and RP primaries retain their two-pole split. At least one kinetic
+p-xi grid is required, and an enabled runaway grid must evolve its distribution.
 
 The common spectrum supplies births on both kinetic grids and above the
 outermost momentum face. Births on the runaway grid and beyond it enter
@@ -428,14 +458,18 @@ For every Boltzmann model, the optional kinetic quantities are:
   and off-grid primaries.
 * ``hottail/C_boltz_external`` and ``runaway/C_boltz_external``: the part
   produced by off-grid primaries alone. Subtract it from ``C_boltz`` to
-  recover the resolved-primary gain.
+  recover the resolved-primary gain, including in RP mode.
 * ``S_ava``: retained as an alias for ``C_boltz_external`` in Boltzmann mode.
   Its legacy RP meaning is unchanged outside Boltzmann mode.
 
 The fluid quantities ``n_ava_external`` and ``n_ava_external_raw`` record
 the previous-step off-grid density used by the source and its value before
-the nonnegative floor, respectively. ``gammaAvaAboveGrid`` is the direct
-birth rate above the outermost kinetic face, excluding boundary flux.
+the nonnegative floor, respectively. ``n_ava_primary`` is available in RP
+mode only and includes its admitted resolved primaries. These are source
+weights, not current-time population histories. ``gammaAvaAboveGrid`` is
+the direct birth rate above the outermost kinetic face, excluding boundary
+flux. For RP it includes both admitted resolved and off-grid parents;
+for full Møller and CH, only off-grid parents can produce such births.
 
 
 Dreicer

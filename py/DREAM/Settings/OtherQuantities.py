@@ -23,7 +23,7 @@ class OtherQuantities:
         'fluid/pStar',
         'fluid/qR0',
         'fluid/radiation',
-        'fluid/runawayRate', 'fluid/n_ava_external',
+        'fluid/runawayRate', 'fluid/n_ava_primary', 'fluid/n_ava_external',
         'fluid/n_ava_external_raw', 'fluid/gammaAvaAboveGrid',
         'fluid/Tcold_ohmic',
         'fluid/Tcold_fhot_coll',

@@ -58,8 +58,8 @@ class MollerKernelHandler {
     MollerKernelHandler(
         const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
         FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder, len_t pitchOrder,
-        OptionConstants::boltzmann_model model = OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER
+        len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model,
+        real_t pRe = 0
     );
     ~MollerKernelHandler();
 

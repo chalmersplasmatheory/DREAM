@@ -46,24 +46,28 @@ MollerKernelHandler::Bundle MollerKernelHandler::MakeBundle(
 MollerKernelHandler::MollerKernelHandler(
     const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
     FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
-    len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model
+    len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model, real_t pRe
 )
     : pCutoff(pCutoff),
       nXiStars(nXiStars),
       poloidalOrder(poloidalOrder),
       pitchOrder(pitchOrder) {
-    ValidateParams(pCutoff, nXiStars, poloidalOrder, pitchOrder);
+    const bool resolvedRP = model == OptionConstants::BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI;
+    if (!resolvedRP)
+        ValidateParams(pCutoff, nXiStars, poloidalOrder, pitchOrder);
 
     timeKeeper = std::make_unique<FVM::TimeKeeper>("MøllerKernels");
     timerTot = timeKeeper->AddTimer("total", "Total Boltzmann initialization");
     timeKeeper->StartTimer(timerTot);
 
+    // Every model uses this spectrum for off-grid primaries. Only RP adds
+    // resolved primary moments and needs a second (negative) pole table.
     rp = std::make_unique<RosenbluthPutvinskiBoltzmann>(
-        hottailGrid, runawayGrid, unknowns, pCutoff, poloidalOrder
+        hottailGrid, runawayGrid, unknowns, pCutoff, pRe, poloidalOrder, resolvedRP
     );
 
     // Build kernels for each target and primary grid pair that exists.
-    if (hottailGrid != nullptr) {
+    if (!resolvedRP && hottailGrid != nullptr) {
         hot_hot = MakeBundle(
             hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
         );
@@ -73,7 +77,7 @@ MollerKernelHandler::MollerKernelHandler(
             );
         }
     }
-    if (runawayGrid != nullptr) {
+    if (!resolvedRP && runawayGrid != nullptr) {
         re_re = MakeBundle(
             runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
         );

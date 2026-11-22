@@ -1,4 +1,5 @@
 
+#include <cmath>
 #include <vector>
 #include <string>
 #include "DREAM/EquationSystem.hpp"
@@ -196,22 +197,34 @@ void SimulationGenerator::ConstructEquations(
 
         const real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         const int_t poloidalOrder = s->GetInteger("eqsys/n_re/boltzmann/poloidal");
-        const int_t nXiStars = s->GetInteger("eqsys/n_re/boltzmann/nxi");
-        const int_t pitchOrder = s->GetInteger("eqsys/n_re/boltzmann/pitch");
-        // Validate signed settings before conversion to the unsigned len_t.
         if (poloidalOrder < 1)
             throw SettingsException("Boltzmann quadrature requires poloidal>=1.");
-        if (nXiStars < 2 || pitchOrder < 1)
-            throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
 
         const int_t model = s->GetInteger("eqsys/n_re/boltzmann/model");
         if (model != OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER
-            && model != OptionConstants::BOLTZMANN_MODEL_CHIU_HARVEY)
+            && model != OptionConstants::BOLTZMANN_MODEL_CHIU_HARVEY
+            && model != OptionConstants::BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI)
             throw SettingsException("Invalid Boltzmann model (eqsys/n_re/boltzmann/model).");
+
+        real_t pRe = 0;
+        int_t nXiStars = 0, pitchOrder = 0;
+        if (model == OptionConstants::BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI) {
+            pRe = s->GetReal("eqsys/n_re/boltzmann/p_re");
+            if (!std::isfinite(pRe) || pRe <= 0)
+                throw SettingsException(
+                    "Boltzmann RP requires setAvalanchePrimaryThreshold(p_re) with finite p_re > 0."
+                );
+        } else {
+            nXiStars = s->GetInteger("eqsys/n_re/boltzmann/nxi");
+            pitchOrder = s->GetInteger("eqsys/n_re/boltzmann/pitch");
+            // Validate signed settings before conversion to the unsigned len_t.
+            if (nXiStars < 2 || pitchOrder < 1)
+                throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
+        }
 
         eqsys->SetMollerKernelHandler(new MollerKernelHandler(
             hottailGrid, runawayGrid, unknowns, pCutoff, nXiStars, poloidalOrder, pitchOrder,
-            static_cast<OptionConstants::boltzmann_model>(model)
+            static_cast<OptionConstants::boltzmann_model>(model), pRe
         ));
     }
 

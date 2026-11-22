@@ -296,7 +296,8 @@ enum eqterm_avalanche_mode {                        // Avalanche generation is..
 
 enum boltzmann_model {
     BOLTZMANN_MODEL_FULL_MOLLER = 1,
-    BOLTZMANN_MODEL_CHIU_HARVEY = 2
+    BOLTZMANN_MODEL_CHIU_HARVEY = 2,
+    BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI = 3
 };
 
 enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...
