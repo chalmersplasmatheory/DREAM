@@ -107,9 +107,9 @@ void TimeKeeper::PrintTimings(bool printTitle, const int_t normalizeto) {
             real_t ms = s/1000;
 
             if (ms > 1000)
-                printf("  %-*s  %3.4f s", maxlen+1, (tm->longname+":").c_str(), ms/1000);
+                printf("  %-*s  %3.4f s\n", maxlen+1, (tm->longname+":").c_str(), ms/1000);
             else
-                printf("  %-*s  %3.4f ms", maxlen+1, (tm->longname+":").c_str(), ms);
+                printf("  %-*s  %3.4f ms\n", maxlen+1, (tm->longname+":").c_str(), ms);
         }
     }
 
