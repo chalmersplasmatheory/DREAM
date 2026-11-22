@@ -141,6 +141,13 @@ bool KnockOn::Run(bool) {
         this->PrintError("Knock-on test failed: pole column normalization or face ownership.");
     }
 
+    if (CheckPoleContributionNearZero())
+        this->PrintOK("Narrow pitch intervals near zero retain the pole source in a constant field.");
+    else {
+        success = false;
+        this->PrintError("Knock-on test failed: a narrow pitch interval lost its pole source.");
+    }
+
     if (CheckMollerFluxIntegration())
         this->PrintOK("The Møller cross section correctly integrates to the Møller flux.");
     else {
@@ -435,7 +442,8 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
 // grid the two columns must reflect, including zero and the endpoints.
 bool KnockOn::CheckPoleColumnsOnPitchFaces() {
     namespace K = DREAM::KnockOnUtilities;
-    auto grid = KnockOnTest::OwnedGrid(InitializeGridRCylPXi(1, 1, 20, 1, 0, 2));
+    // With 16 cells the faces are exactly symmetric even with FMA.
+    auto grid = KnockOnTest::OwnedGrid(InitializeGridRCylPXi(1, 1, 16, 1, 0, 2));
     K::Quadrature::OrbitGeometry geometry(grid->GetRadialGrid()->GetFluxSurfaceAverager(), 0);
     const K::Quadrature::GaussLegendreRule rule(8);
     const auto *mg = grid->GetMomentumGrid(0);
@@ -458,6 +466,18 @@ bool KnockOn::CheckPoleColumnsOnPitchFaces() {
             return false;
     }
     return true;
+}
+
+// Reproduce the offset of the nominal zero face on a 20-cell uniform
+// grid when evaluating the face position with a fused multiply-add.
+bool KnockOn::CheckPoleContributionNearZero() {
+    namespace K = DREAM::KnockOnUtilities;
+    const real_t face = std::ldexp(real_t(1), -54);
+    const real_t chi = std::numeric_limits<real_t>::min();
+    real_t pitchRatio;
+    const real_t plus = K::AnalyticDelta::EvaluateLocalContribution(0, face, +1, 1, chi, 0, pitchRatio);
+    const real_t minus = K::AnalyticDelta::EvaluateLocalContribution(-face, 0, -1, 1, chi, 0, pitchRatio);
+    return face * plus == 1 && face * minus == 1;
 }
 
 // Compares the new implementation of the collision kernel with the previous

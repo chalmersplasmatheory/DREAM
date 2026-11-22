@@ -21,6 +21,7 @@ class KnockOn : public UnitTest {
     bool CheckAgreementWithOldRPTerm();
     bool CheckCylindricalDeltaCalculation();
     bool CheckPoleColumnsOnPitchFaces();
+    bool CheckPoleContributionNearZero();
     bool CheckMollerFluxIntegration();
     bool CheckMollerDifferentialConvergesToInfiniteLimit();
     bool CheckMollerFluxConvergesToInfiniteLimit();
