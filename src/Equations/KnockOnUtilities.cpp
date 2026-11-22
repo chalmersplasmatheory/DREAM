@@ -177,6 +177,14 @@ real_t KnockOnUtilities::AnalyticDelta::EvaluateXiIntegral(
 void KnockOnUtilities::AnalyticDelta::ComputeXiIntegrationBounds(
     real_t &t1, real_t &t2, real_t xi0_f1, real_t xi0_f2, real_t BOverBmin, real_t xi0Cutoff
 ) {
+    // At B = Bmin, local and invariant pitch coincide. Preserve faces
+    // near zero so even a narrow interval can receive a pole source.
+    if (BOverBmin == 1) {
+        t1 = xi0_f1;
+        t2 = xi0_f2;
+        return;
+    }
+
     // Clamp local pitch to zero where xi0 cannot reach this theta
     if (-RELAXED_EPS <= xi0_f1 && xi0_f1 <= xi0Cutoff) {
         t1 = 0;
