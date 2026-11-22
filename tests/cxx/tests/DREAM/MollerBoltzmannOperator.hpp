@@ -21,6 +21,7 @@ class MollerBoltzmannOperator : public UnitTest {
     bool CheckBO_NonNegativity(const Fixture&);
     bool CheckBO_RadiusLocality(const Fixture&);
     bool CheckBO_IsotropicZeroCurrentAndReflection();
+    bool CheckBO_SharedExternalGain();
 };
 } // namespace DREAMTESTS::_DREAM
 #endif

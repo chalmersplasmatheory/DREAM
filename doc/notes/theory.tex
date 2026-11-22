@@ -850,6 +850,26 @@ directions of motion. Void primary rows carry zero weight. Thus
 $W_k^++W_k^-$ is the same discrete momentum marginal as for full M\o ller
 scattering. The finite-energy momentum kernel and $\chi(p,p_1)$ are shared.
 
+\paragraph{Common off-grid gain.}
+Separate the choice of resolved-primary model from the off-grid closure:
+\begin{equation}
+ C = C_{\rm resolved}^{\rm M\o ller} + C_{\rm ext}^{\rm RP}, \qquad
+ n_{\rm ext}=\max\!\left(0,n_{\rm re}^{\rm prev}
+     - \frac{1}{V'}\int V'_{\rm re} f_{\rm re}^{\rm prev}\,dp\,d\xi_0\right).
+\end{equation}
+Omit the integral if there is no runaway grid. It always contains the
+\emph{full} runaway-grid density. Both primary inventories use the same
+previous integration step and the target density $n_{\rm tot}$ remains
+implicit. The entire $n_{\rm ext}$ belongs to the positive pole, independent
+of the electric field.
+
+The integral of this spectrum over the hot grid, the runaway grid, and
+above the outermost face is partitioned between the kinetic and fluid
+equations. Since $n_{\rm re}$ already includes $f_{\rm re}$, its birth
+term contains the latter two regions. The particle balance contains all
+three. This is a gain-only closure: off-grid slowing down and inward
+boundary flux require a separate model and are not implied by it.
+
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
 We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim S \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
 \begin{align}

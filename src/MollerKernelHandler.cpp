@@ -1,11 +1,12 @@
 /**
- * Owns and updates the Møller kernels shared by the kinetic source and
- * fluid production terms.
+ * Owns the finite-energy kernels and the shared infinite-energy spectrum
+ * used by the kinetic gain and fluid production terms.
  */
 #include "DREAM/MollerKernelHandler.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
 #include "DREAM/Equations/Kinetic/MollerEnergyKernel.hpp"
+#include "DREAM/Equations/RosenbluthPutvinskiBoltzmann.hpp"
 #include "FVM/TimeKeeper.hpp"
 
 using namespace DREAM;
@@ -43,7 +44,8 @@ MollerKernelHandler::Bundle MollerKernelHandler::MakeBundle(
 }
 
 MollerKernelHandler::MollerKernelHandler(
-    const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid, real_t pCutoff, len_t nXiStars,
+    const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
+    FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
     len_t poloidalOrder, len_t pitchOrder
 )
     : pCutoff(pCutoff),
@@ -56,10 +58,15 @@ MollerKernelHandler::MollerKernelHandler(
     timerTot = timeKeeper->AddTimer("total", "Total Boltzmann initialization");
     timeKeeper->StartTimer(timerTot);
 
+    rp = std::make_unique<RosenbluthPutvinskiBoltzmann>(
+        hottailGrid, runawayGrid, unknowns, pCutoff, poloidalOrder
+    );
+
     // Build kernels for each target and primary grid pair that exists.
     if (hottailGrid != nullptr) {
-        hot_hot =
-            MakeBundle(hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder);
+        hot_hot = MakeBundle(
+            hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+        );
         if (runawayGrid != nullptr) {
             hot_re = MakeBundle(
                 hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
@@ -67,8 +74,9 @@ MollerKernelHandler::MollerKernelHandler(
         }
     }
     if (runawayGrid != nullptr) {
-        re_re =
-            MakeBundle(runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder);
+        re_re = MakeBundle(
+            runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+        );
     }
     timeKeeper->StopTimer(timerTot);
 }
@@ -105,6 +113,7 @@ const MollerKernelHandler::Bundle &MollerKernelHandler::ReRe() const {
 
 void MollerKernelHandler::GridRebuilt() {
     timeKeeper->StartTimer(timerTot);
+    rp->GridRebuilt();
     if (hot_hot.energy) hot_hot.energy->GridRebuilt();
     if (hot_hot.angle) hot_hot.angle->GridRebuilt();
     if (hot_re.energy) hot_re.energy->GridRebuilt();

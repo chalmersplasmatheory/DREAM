@@ -33,8 +33,9 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     //  - fluid mode, use analytical growth rate formula,
     //  - kinetic mode, add those knockons which are created for p>pMax 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(mod + "/avalanche");
-    bool include_boltz_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN;
-    bool include_RP_source = (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI) || (include_boltz_source && runawayGrid==nullptr);
+    // Boltzmann models attach their shared infinite-energy gain separately.
+    // Keep the matched external closure below exclusive to legacy RP.
+    const bool include_RP_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI;
     // Add avalanche growth rate
     if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
         rsth->AddSourceTerm(eqnSign + "n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );

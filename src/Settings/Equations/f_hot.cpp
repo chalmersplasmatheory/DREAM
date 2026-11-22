@@ -130,11 +130,11 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
 
     // Kinetic avalanche source for f_hot.
     // - Boltzmann knock-on operator contributes in the (f_hot, n_tot) block (explicit in f_primary).
-    // - If no runaway grid exists, approximate external runaway primaries via RP and couple through (f_hot, n_re).
+    // - The shared RP spectrum accounts for off-grid primaries in every Boltzmann model.
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     const auto *kh = eqsys->GetMollerKernelHandler();
-    const bool include_RP_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI
-        || (kh && !eqsys->HasRunawayGrid());
+    auto *rp = kh ? kh->GetRP() : nullptr;
+    const bool include_RP_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI;
     if(include_RP_source){
         if (eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException(
@@ -148,6 +148,12 @@ void SimulationGenerator::ConstructEquation_f_hot_kineq(
             new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, sourceSign);
         Op_ava->AddTerm(oqty_terms->f_hot_knock_on_RP);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
+    }
+    if (rp) {
+        auto *unknowns = eqsys->GetUnknownHandler();
+        oqty_terms->rp_hot = new RosenbluthPutvinskiBoltzmannTerm(
+            hottailGrid, unknowns, rp, RosenbluthPutvinskiBoltzmann::HOTTAIL, sourceSign);
+        Op_ntot->AddTerm(oqty_terms->rp_hot);
     }
     if (kh && kh->HasHotHot()) {
         // Boltzmann knock-ons on the hottail grid from resolved primaries.
@@ -338,8 +344,8 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     // Add contribution from kinetic avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     const auto *kh = eqsys->GetMollerKernelHandler();
-    const bool include_RP_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI
-        || (kh && !eqsys->HasRunawayGrid());
+    auto *rp = kh ? kh->GetRP() : nullptr;
+    const bool include_RP_source = ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI;
     if(include_RP_source) {
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
@@ -350,6 +356,13 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
             new TotalElectronDensityFromKineticAvalancheRP(fluidGrid, pCutoff, pMax, unknowns, -1.0)
         );
         desc += " - internal avalanche";
+    }
+    if (rp) {
+        // All births from the common RP component, including above-grid
+        // births, participate in the cold-population particle balance.
+        Op_Ntot->AddTerm(new RosenbluthPutvinskiBoltzmannTerm(
+            fluidGrid, unknowns, rp, RosenbluthPutvinskiBoltzmann::ALL, -1.0));
+        desc += " - infinite-energy knock-on births";
     }
     if (kh && kh->HasHotHot()) {
         const real_t sourceSign = -1.0;

@@ -187,6 +187,13 @@ void SimulationGenerator::ConstructEquations(
             || (runawayGrid && re_type != OptionConstants::MOMENTUMGRID_TYPE_PXI))
             throw SettingsException("Boltzmann avalanche requires p-xi kinetic grids.");
 
+        if (runawayGrid && s->GetInteger("eqsys/f_re/mode") == OptionConstants::UQTY_DISTRIBUTION_MODE_PRESCRIBED) {
+            throw SettingsException(
+                "Boltzmann external density requires an evolved runaway distribution "
+                "when a runaway grid is enabled."
+            );
+        }
+
         const real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         const int_t poloidalOrder = s->GetInteger("eqsys/n_re/boltzmann/poloidal");
         const int_t nXiStars = s->GetInteger("eqsys/n_re/boltzmann/nxi");
@@ -198,7 +205,7 @@ void SimulationGenerator::ConstructEquations(
             throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
 
         eqsys->SetMollerKernelHandler(new MollerKernelHandler(
-            hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+            hottailGrid, runawayGrid, unknowns, pCutoff, nXiStars, poloidalOrder, pitchOrder
         ));
     }
 

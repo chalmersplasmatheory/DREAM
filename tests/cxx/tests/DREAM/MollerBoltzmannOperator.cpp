@@ -6,9 +6,12 @@
 #include <memory>
 
 #include "DREAM/Equations/Kinetic/MollerBoltzmannOperator.hpp"
+#include "DREAM/Constants.hpp"
+#include "DREAM/MollerKernelHandler.hpp"
 #include "DREAM/Equations/Fluid/MollerProductionRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
 #include "DREAM/Equations/Kinetic/MollerEnergyKernel.hpp"
+#include "DREAM/Equations/RosenbluthPutvinskiBoltzmann.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
@@ -117,7 +120,125 @@ bool MollerBoltzmannOperator::Run(bool) {
         this->PrintError("Test failed: assembled isotropic current/reflection.");
     }
 
+    if (CheckBO_SharedExternalGain())
+        this->PrintOK("The shared external gain closes the kinetic and fluid birth balance.");
+    else {
+        success = false;
+        this->PrintError("Test failed: shared external gain or particle balance.");
+    }
+
     return success;
+}
+
+/**
+ * Check the common infinite-energy component independently of the resolved
+ * model. Cover both geometries and all supported kinetic-grid layouts.
+ */
+bool MollerBoltzmannOperator::CheckBO_SharedExternalGain() {
+    using RP = DREAM::RosenbluthPutvinskiBoltzmann;
+    using RPTerm = DREAM::RosenbluthPutvinskiBoltzmannTerm;
+    using OC = DREAM::OptionConstants;
+    constexpr real_t pCutoff = 0.3;
+    constexpr real_t nTot[] = {2e19, 3e19};
+    constexpr real_t rawExternal[] = {7, -0.25};
+    const auto close = [](real_t a, real_t b) {
+        return std::isfinite(a) && std::isfinite(b)
+            && std::abs(a-b) <= 2e-12 * std::max({real_t(1), std::abs(a), std::abs(b)});
+    };
+
+    for (bool toroidal : {false, true}) {
+        auto fluid = KnockOnTest::OwnedGrid(InitializeFluidGrid(2, 1));
+        const auto faces = KnockOnTest::UniformPitchFaces(10);
+        auto hot = toroidal ? KnockOnTest::ToroidalGrid(0.3, faces, 2, 4, 0, 2)
+            : KnockOnTest::OwnedGrid(InitializeGridRCylPXi(2, 4, 10, 1, 0, 2));
+        auto runaway = toroidal ? KnockOnTest::ToroidalGrid(0.3, faces, 2, 4, 2, 6)
+            : KnockOnTest::OwnedGrid(InitializeGridRCylPXi(2, 4, 10, 1, 2, 6));
+
+        // Hot only, runaway only, and two adjoining kinetic grids.
+        for (len_t layout = 0; layout < 3; ++layout) {
+            auto *h = layout == 1 ? nullptr : hot.get();
+            auto *r = layout == 0 ? nullptr : runaway.get();
+            DREAM::FVM::UnknownQuantityHandler unknowns;
+            const len_t idNRe = unknowns.InsertUnknown(OC::UQTY_N_RE, "0", fluid.get());
+            std::vector<real_t> fHot(hot->GetNCells(), 2), fRe(runaway->GetNCells(), 3);
+            len_t idFHot = 0, idFRe = 0;
+            if (h) {
+                idFHot = unknowns.InsertUnknown(OC::UQTY_F_HOT, "0", h);
+                unknowns.SetInitialValue(idFHot, fHot.data());
+            }
+            if (r) {
+                idFRe = unknowns.InsertUnknown(OC::UQTY_F_RE, "0", r);
+                unknowns.SetInitialValue(idFRe, fRe.data());
+            }
+            real_t nRe[2];
+            for (len_t ir = 0; ir < 2; ++ir) {
+                nRe[ir] = rawExternal[ir];
+                if (r)
+                    nRe[ir] += r->IntegralMomentumAtRadius(ir, fRe.data() + ir*r->GetMomentumGrid(0)->GetNCells());
+            }
+            unknowns.SetInitialValue(idNRe, nRe);
+            DREAM::MollerKernelHandler kernels(h, r, &unknowns, pCutoff, 3, 4, 2);
+            auto *source = kernels.GetRP();
+            RPTerm all(fluid.get(), &unknowns, source, RP::ALL, 1);
+            RPTerm density(fluid.get(), &unknowns, source, RP::RUNAWAY_DENSITY, 1);
+            all.Rebuild(1, 1, &unknowns);
+            real_t raw[2], external[2], above[2], allBirths[2] = {}, reBirths[2] = {};
+            all.GetRawExternalDensity(raw);
+            all.GetExternalDensity(external);
+            all.GetAboveGridProduction(above, nTot);
+            all.SetVectorElements(allBirths, nTot);
+            density.SetVectorElements(reBirths, nTot);
+            for (len_t ir = 0; ir < 2; ++ir) {
+                if (!close(raw[ir], rawExternal[ir])
+                    || !close(external[ir], std::max(real_t(0), rawExternal[ir])))
+                    return false;
+            }
+
+            real_t kineticBirths[2] = {}, runawayBirths[2] = {};
+            for (len_t target = 0; target < 2; ++target) {
+                auto *grid = target == 0 ? h : r;
+                if (!grid)
+                    continue;
+                RPTerm term(grid, &unknowns, source, target == 0 ? RP::HOTTAIL : RP::RUNAWAY, 1);
+                std::vector<real_t> gain(grid->GetNCells());
+                term.SetVectorElements(gain.data(), nTot);
+                for (len_t ir = 0, offset = 0; ir < 2; ++ir) {
+                    const real_t integral = grid->IntegralMomentumAtRadius(ir, gain.data() + offset);
+                    kineticBirths[ir] += integral;
+                    if (target == 1)
+                        runawayBirths[ir] = integral;
+                    // The negative raw inventory at radius 1 contributes no gain.
+                    if (ir == 1 && integral != 0)
+                        return false;
+                    offset += grid->GetMomentumGrid(ir)->GetNCells();
+                }
+            }
+            for (len_t ir = 0; ir < 2; ++ir) {
+                if (!close(kineticBirths[ir] + above[ir], allBirths[ir])
+                    || !close(runawayBirths[ir] + above[ir], reBirths[ir]))
+                    return false;
+            }
+
+            // Newton iterates must not mix current n_re/f_re with lagged
+            // primaries, even when a grid rebuild invalidates the cache.
+            const real_t currentNRe[] = {nRe[0]+100, nRe[1]+100};
+            unknowns.Store(idNRe, currentNRe);
+            if (r) {
+                std::vector<real_t> currentF(fRe.size(), 30);
+                unknowns.Store(idFRe, currentF.data());
+            }
+            kernels.GridRebuilt();
+            all.Rebuild(1, 1, &unknowns);
+            all.GetRawExternalDensity(raw);
+            for (len_t ir = 0; ir < 2; ++ir)
+                if (!close(raw[ir], rawExternal[ir]))
+                    return false;
+            unknowns.Store(idNRe, nRe);
+            if (r)
+                unknowns.Store(idFRe, fRe.data());
+        }
+    }
+    return true;
 }
 
 bool MollerBoltzmannOperator::CheckBO_IsotropicZeroCurrentAndReflection() {

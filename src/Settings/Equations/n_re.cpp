@@ -161,6 +161,15 @@ void SimulationGenerator::ConstructEquation_n_re(
     desc_sources += rsth->GetDescription();
 
     const auto *kh = eqsys->GetMollerKernelHandler();
+    auto *rp = kh ? kh->GetRP() : nullptr;
+    if (rp) {
+        // n_re includes f_re: count births on that grid as well as beyond
+        // the outermost face. Hot-grid births enter n_re only through flux.
+        auto *unknowns = eqsys->GetUnknownHandler();
+        Op_n_tot->AddTerm(new RosenbluthPutvinskiBoltzmannTerm(
+            fluidGrid, unknowns, rp, RosenbluthPutvinskiBoltzmann::RUNAWAY_DENSITY, -1.0));
+        desc_sources += " + infinite-energy births";
+    }
     if (kh && kh->HasReRe()) {
         // add the electrons created due to runaway-runaway knock-ons
         const real_t sourceSign = -1.0;
