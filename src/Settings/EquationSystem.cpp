@@ -179,6 +179,29 @@ void SimulationGenerator::ConstructEquations(
     PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns, pThreshold, pMode);
     eqsys->SetPostProcessor(postProcessor);
 
+    OptionConstants::eqterm_avalanche_mode ava_mode = (OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_BOLTZMANN) {
+        if (!hottailGrid && !runawayGrid)
+            throw SettingsException("Boltzmann avalanche requires a kinetic p-xi grid.");
+        if ((hottailGrid && ht_type != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            || (runawayGrid && re_type != OptionConstants::MOMENTUMGRID_TYPE_PXI))
+            throw SettingsException("Boltzmann avalanche requires p-xi kinetic grids.");
+
+        const real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        const int_t poloidalOrder = s->GetInteger("eqsys/n_re/boltzmann/poloidal");
+        const int_t nXiStars = s->GetInteger("eqsys/n_re/boltzmann/nxi");
+        const int_t pitchOrder = s->GetInteger("eqsys/n_re/boltzmann/pitch");
+        // Validate signed settings before conversion to the unsigned len_t.
+        if (poloidalOrder < 1)
+            throw SettingsException("Boltzmann quadrature requires poloidal>=1.");
+        if (nXiStars < 2 || pitchOrder < 1)
+            throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
+
+        eqsys->SetMollerKernelHandler(new MollerKernelHandler(
+            hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+        ));
+    }
+
     // Hot-tail quantities
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s, oqty_terms);
