@@ -327,7 +327,7 @@ zero pitch angle, in which case the operator takes the form
 Boltzmann angular resolution
 ****************************
 
-The Boltzmann mode integrates over the primary pitch cell with a constant
+The full Møller model integrates over the primary pitch cell with a constant
 primary distribution in each stored cell. It retains the analytic outgoing
 pitch-cell integral and the representative momentum used for
 :math:`\xi^\star`. Both numerical angular integrals use contact splits and
@@ -356,6 +356,34 @@ and trapped pieces. This preserves the kinetic/fluid production identity and
 positive source terms, but exact total production alone does not establish
 accuracy of the angular shape. The native discrete primary-cell volumes
 continue to determine particle inventory.
+
+Boltzmann gain model
+********************
+
+The default is the full Møller gain (``BOLTZMANN_MODEL_FULL_MOLLER``).
+To use the finite-energy Chiu--Harvey approximation in Boltzmann avalanche
+mode, select
+
+.. code-block:: python
+
+   from DREAM.Settings.Equations.RunawayElectrons import BOLTZMANN_MODEL_CHIU_HARVEY
+
+   ds.eqsys.n_re.setBoltzmannModel(BOLTZMANN_MODEL_CHIU_HARVEY)
+
+The source replaces the incident pitch distribution at each momentum and
+radius by two field-aligned populations. Positive and negative passing
+primaries are assigned to :math:`\xi_{01}=+1` and :math:`\xi_{01}=-1`,
+respectively. The represented trapped population is split equally between
+the two poles. A cell containing more than one orbit type is split using
+their orbit measures, with the total weight fixed by the stored cell volume.
+The signs come from the primary distribution, independently of the electric
+field. The kinetic distribution still evolves on its original grid.
+
+The finite-energy Møller cross section and outgoing cutoff use the same
+treatment as the full Møller gain. Chiu--Harvey uses the
+same poloidal quadrature and scattering-cosine interpolation. There is no
+primary-pitch quadrature in its angular table.
+
 
 .. _ds-eqsys-n_re-boltzmann-external:
 

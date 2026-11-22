@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/config.h"
 
 class SFile;
@@ -47,7 +48,7 @@ class MollerKernelHandler {
     );
     static Bundle MakeBundle(
         const FVM::Grid *target, const FVM::Grid *primary, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder, len_t pitchOrder
+        len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model
     );
 
     std::unique_ptr<FVM::TimeKeeper> timeKeeper;
@@ -57,7 +58,8 @@ class MollerKernelHandler {
     MollerKernelHandler(
         const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
         FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder, len_t pitchOrder
+        len_t poloidalOrder, len_t pitchOrder,
+        OptionConstants::boltzmann_model model = OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER
     );
     ~MollerKernelHandler();
 

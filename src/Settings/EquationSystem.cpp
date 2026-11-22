@@ -204,8 +204,14 @@ void SimulationGenerator::ConstructEquations(
         if (nXiStars < 2 || pitchOrder < 1)
             throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
 
+        const int_t model = s->GetInteger("eqsys/n_re/boltzmann/model");
+        if (model != OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER
+            && model != OptionConstants::BOLTZMANN_MODEL_CHIU_HARVEY)
+            throw SettingsException("Invalid Boltzmann model (eqsys/n_re/boltzmann/model).");
+
         eqsys->SetMollerKernelHandler(new MollerKernelHandler(
-            hottailGrid, runawayGrid, unknowns, pCutoff, nXiStars, poloidalOrder, pitchOrder
+            hottailGrid, runawayGrid, unknowns, pCutoff, nXiStars, poloidalOrder, pitchOrder,
+            static_cast<OptionConstants::boltzmann_model>(model)
         ));
     }
 

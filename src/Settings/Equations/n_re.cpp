@@ -40,6 +40,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/boltzmann/poloidal", "Gauss order per poloidal contact panel", (int_t)8);
     s->DefineSetting(MODULENAME "/boltzmann/pitch", "Gauss order per primary-pitch contact panel", (int_t)4);
     s->DefineSetting(MODULENAME "/boltzmann/nxi", "Number of tabulated scattering cosines", (int_t)80);
+    s->DefineSetting(MODULENAME "/boltzmann/model", "Model for the Boltzmann gain", (int_t)OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
     s->DefineSetting(MODULENAME "/negative_re", "When in kinetic mode, properly account for runaways in both positive and negative pitch directions.", (bool)false);

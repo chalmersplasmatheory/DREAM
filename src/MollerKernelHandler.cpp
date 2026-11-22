@@ -33,12 +33,12 @@ void MollerKernelHandler::ValidateParams(
 
 MollerKernelHandler::Bundle MollerKernelHandler::MakeBundle(
     const FVM::Grid *target, const FVM::Grid *primary, real_t pCutoff, len_t nXiStars,
-    len_t poloidalOrder, len_t pitchOrder
+    len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model
 ) {
     return {
         std::make_unique<MollerEnergyKernel>(target, primary, pCutoff),
         std::make_unique<MollerDeltaAngleKernel>(
-            target, primary, pCutoff, nXiStars, poloidalOrder, pitchOrder
+            target, primary, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
         )
     };
 }
@@ -46,7 +46,7 @@ MollerKernelHandler::Bundle MollerKernelHandler::MakeBundle(
 MollerKernelHandler::MollerKernelHandler(
     const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
     FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
-    len_t poloidalOrder, len_t pitchOrder
+    len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model
 )
     : pCutoff(pCutoff),
       nXiStars(nXiStars),
@@ -65,17 +65,17 @@ MollerKernelHandler::MollerKernelHandler(
     // Build kernels for each target and primary grid pair that exists.
     if (hottailGrid != nullptr) {
         hot_hot = MakeBundle(
-            hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+            hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
         );
         if (runawayGrid != nullptr) {
             hot_re = MakeBundle(
-                hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+                hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
             );
         }
     }
     if (runawayGrid != nullptr) {
         re_re = MakeBundle(
-            runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+            runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
         );
     }
     timeKeeper->StopTimer(timerTot);

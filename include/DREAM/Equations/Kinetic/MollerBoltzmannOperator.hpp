@@ -1,6 +1,8 @@
 #ifndef _DREAM_EQUATIONS_MOLLER_BOLTZMANN_OPERATOR_HPP
 #define _DREAM_EQUATIONS_MOLLER_BOLTZMANN_OPERATOR_HPP
 
+#include <vector>
+
 #include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
 #include "DREAM/Equations/Kinetic/MollerEnergyKernel.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
@@ -38,6 +40,9 @@ class MollerBoltzmannOperator : public FVM::EquationTerm {
     real_t *primaryWeights = nullptr;  // [k * nPrimaryColumns + l]
     real_t *pitchWeights = nullptr;  // [m * nPrimaryColumns + l]
     real_t *Cj = nullptr;  // size: NxiK
+
+    // Fraction of a stored primary pitch cell assigned to the +1 pole.
+    std::vector<real_t> positivePoleFraction; // [ir * NxiP + l]
 
     void ValidateInputParameters() const;
     void ValidateGridAssumptions() const;

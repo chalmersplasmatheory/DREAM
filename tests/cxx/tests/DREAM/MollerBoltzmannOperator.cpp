@@ -120,6 +120,13 @@ bool MollerBoltzmannOperator::Run(bool) {
         this->PrintError("Test failed: assembled isotropic current/reflection.");
     }
 
+    if (CheckBO_ChiuHarveyGain())
+        this->PrintOK("Chiu–Harvey gain splits the two primary poles and preserves production.");
+    else {
+        success = false;
+        this->PrintError("Test failed: Chiu–Harvey pole weights or production.");
+    }
+
     if (CheckBO_SharedExternalGain())
         this->PrintOK("The shared external gain closes the kinetic and fluid birth balance.");
     else {
@@ -128,6 +135,119 @@ bool MollerBoltzmannOperator::Run(bool) {
     }
 
     return success;
+}
+
+bool MollerBoltzmannOperator::CheckBO_ChiuHarveyGain() {
+    constexpr real_t pCutoff = 0.1;
+    constexpr real_t tolerance = 1e-12;
+    const std::vector<real_t> faces = {-1, -0.9, -0.6, -0.1, 0, 0.3, 0.6, 0.8, 0.9, 1};
+    for (bool toroidal : {false, true}) {
+        auto primary = toroidal
+            ? KnockOnTest::ToroidalGrid(0.3, faces, 2, 8, 0, 6)
+            : KnockOnTest::OwnedGrid(InitializeGridRCylPXi(2, 8, 9, 1, 0, 6));
+        auto target = toroidal
+            ? KnockOnTest::ToroidalGrid(0.3, KnockOnTest::UniformPitchFaces(20), 2, 7, 0, 3)
+            : KnockOnTest::OwnedGrid(InitializeGridRCylPXi(2, 7, 20, 1, 0, 3));
+        len_t idN, idE, idF;
+        std::unique_ptr<DREAM::FVM::UnknownQuantityHandler> unknowns(
+            BuildUQH_Minimal(target.get(), primary.get(), idN, idE, idF));
+        DREAM::MollerEnergyKernel energy(target.get(), primary.get(), pCutoff);
+        DREAM::MollerDeltaAngleKernel angle(
+            target.get(), primary.get(), pCutoff, 12, 8, 4,
+            DREAM::OptionConstants::BOLTZMANN_MODEL_CHIU_HARVEY
+        );
+        DREAM::MollerBoltzmannOperator source(
+            target.get(), primary.get(), unknowns.get(), idF, &energy, &angle
+        );
+
+        const auto *mgP = primary->GetMomentumGrid(0);
+        const auto *mgK = target->GetMomentumGrid(0);
+        const len_t np = mgP->GetNp1();
+        const len_t nxi = mgP->GetNp2();
+        std::vector<real_t> f(primary->GetNCells(), 0);
+        std::vector<real_t> positive, negative, trapped, mixed;
+        const auto evaluate = [&](len_t pitch, real_t time, std::vector<real_t> &gain) {
+            std::fill(f.begin(), f.end(), 0);
+            for (len_t ir = 0; ir < primary->GetNr(); ++ir) {
+                const len_t offset = ir * mgP->GetNCells() + pitch*np;
+                for (len_t k = 0; k < np; ++k)
+                    f[offset + k] = 1 / (mgP->GetDp2(pitch) * primary->GetVp(ir, k, pitch));
+            }
+            SetPreviousUnknownData(unknowns.get(), idF, f.data(), time);
+            source.Rebuild(time+1, 1, unknowns.get());
+            ApplyTerm(source, target.get(), 1, gain);
+        };
+        evaluate(nxi-1, 0, positive);
+        angle.GridRebuilt();
+        source.GridRebuilt();
+        evaluate(0, 1, negative);
+        // A fully trapped toroidal cell or the cylinder's zero-straddling cell.
+        evaluate(toroidal ? 5 : nxi/2, 2, trapped);
+        if (toroidal)
+            evaluate(6, 3, mixed);
+
+        for (len_t ir = 0; ir < target->GetNr(); ++ir) {
+            const len_t base = ir * mgK->GetNCells();
+            real_t rate = 0;
+            for (len_t k = 0; k < np; ++k)
+                rate += mgP->GetDp1(k) * energy.TotalCS(k) / target->GetVpVol(ir);
+            if (!(rate > 0))
+                return false;
+            for (const auto *gain : {&positive, &negative, &trapped, &mixed}) {
+                if (gain->empty())
+                    continue;
+                const real_t integral = target->IntegralMomentumAtRadius(ir, gain->data()+base);
+                if (!std::isfinite(integral) || std::abs(integral/rate - 1) > tolerance)
+                    return false;
+            }
+
+            const auto *rg = primary->GetRadialGrid();
+            const real_t xiT = rg->GetXi0TrappedBoundary(ir);
+            real_t mixedFraction = 0;
+            if (toroidal) {
+                // The test grid has a cell [.6,.8] straddling +xiT.
+                // Get each subinterval's independent native orbit volume.
+                if (!(0.6 < xiT && xiT < 0.8))
+                    return false;
+                auto *fsa = rg->GetFluxSurfaceAverager();
+                const auto volume = [&](real_t lo, real_t hi) {
+                    return (hi - lo) * fsa->EvaluateCellAveragedBounceIntegralOverP2(
+                        ir, lo, hi, DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,
+                        DREAM::FVM::RadialGrid::BA_FUNC_UNITY, nullptr, DREAM::FVM::RadialGrid::BA_PARAM_UNITY
+                    );
+                };
+                const real_t trappedVolume = volume(0.6, xiT);
+                const real_t passingVolume = volume(xiT, 0.8);
+                mixedFraction = 0.5 + 0.5 * passingVolume/(passingVolume+trappedVolume);
+            }
+            for (len_t j = 0; j < mgK->GetNp2(); ++j) {
+                for (len_t i = 0; i < mgK->GetNp1(); ++i) {
+                    const len_t q = base + j * mgK->GetNp1() + i;
+                    const real_t a = positive[q], b = negative[q];
+                    const real_t scale = std::max(a, b);
+                    if (!(std::isfinite(a) && std::isfinite(b) && a >= 0 && b >= 0))
+                        return false;
+                    if (std::abs(trapped[q] - 0.5*(a+b)) > tolerance*scale)
+                        return false;
+                    if (mgK->GetP2_f(j+1) <= -xiT && a != 0)
+                        return false;
+                    if (mgK->GetP2_f(j) >= xiT && b != 0)
+                        return false;
+                    if (toroidal) {
+                        if (std::abs(mixed[q] - (mixedFraction*a + (1-mixedFraction)*b)) > tolerance*scale)
+                            return false;
+                        if (target->GetVp(ir, i, j) == 0 && (a != 0 || b != 0))
+                            return false;
+                    } else {
+                        const len_t mirror = base + (mgK->GetNp2()-1-j) * mgK->GetNp1() + i;
+                        if (std::abs(a-negative[mirror]) > tolerance*std::max(a, negative[mirror]))
+                            return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
 }
 
 /**

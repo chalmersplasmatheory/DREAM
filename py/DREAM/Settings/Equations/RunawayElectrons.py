@@ -29,6 +29,9 @@ AVALANCHE_MODE_FLUID_HESSLOW = 3
 AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI = 4
 AVALANCHE_MODE_BOLTZMANN = 5
 
+BOLTZMANN_MODEL_FULL_MOLLER = 1
+BOLTZMANN_MODEL_CHIU_HARVEY = 2
+
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
 COMPTON_MODE_KINETIC = 3 
@@ -107,6 +110,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
         self.setBoltzmannQuadrature()
+        self.setBoltzmannModel(BOLTZMANN_MODEL_FULL_MOLLER)
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
@@ -210,6 +214,21 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                   for name, value, minimum in (("poloidal", poloidal, 1),
                                                ("pitch", pitch, 1), ("nxi", nxi, 2))}
         self.boltzmann = values
+
+
+    def setBoltzmannModel(self, model):
+        """Select the full Møller or Chiu–Harvey resolved-primary gain.
+
+        Every model uses the same positive-pole, infinite-energy gain for
+        off-grid primaries. This closure does not describe their slowing down.
+        """
+        if (isinstance(model, (bool, np.bool_)) or not isinstance(model, (int, np.integer))
+            or model not in (BOLTZMANN_MODEL_FULL_MOLLER, BOLTZMANN_MODEL_CHIU_HARVEY)):
+            raise EquationException(
+                "n_re: Boltzmann model must be BOLTZMANN_MODEL_FULL_MOLLER "
+                "or BOLTZMANN_MODEL_CHIU_HARVEY."
+            )
+        self.boltzmann_model = int(model)
 
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
@@ -383,6 +402,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         boltzmann = data.get('boltzmann', {})
         self.setBoltzmannQuadrature(**{name: scal(boltzmann.get(name, default))
             for name, default in (("poloidal", 8), ("pitch", 4), ("nxi", 80))})
+        self.setBoltzmannModel(scal(boltzmann.get('model', BOLTZMANN_MODEL_FULL_MOLLER)))
 
         if 'pCutAvalanche' in data:
             self.pCutAvalanche = data['pCutAvalanche']
@@ -446,7 +466,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche,
-            'boltzmann': dict(self.boltzmann),
+            'boltzmann': dict(self.boltzmann, model=self.boltzmann_model),
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
@@ -492,6 +512,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Verify that the settings of this unknown are correctly set.
         """
+        self.setBoltzmannModel(self.boltzmann_model)
         for name, minimum in (("poloidal", 1), ("pitch", 1), ("nxi", 2)):
             self._quadratureInteger(name, self.boltzmann[name], minimum)
 
