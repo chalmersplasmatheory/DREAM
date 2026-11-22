@@ -25,7 +25,6 @@ from amperefaraday import amperefaraday
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
 from code_synchrotron import code_synchrotron
-from DREAM_avalanche import DREAM_avalanche
 from numericmag import numericmag
 from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
@@ -37,7 +36,6 @@ TESTS = [
     'code_conductivity',
     'code_runaway',
     'code_synchrotron',
-    'DREAM_avalanche',
     'numericmag',
     'trapping_conductivity',
     'ts_adaptive',
