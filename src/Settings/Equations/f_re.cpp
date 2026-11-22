@@ -120,6 +120,13 @@ void SimulationGenerator::ConstructEquation_f_re_kineq(
     rsth->AddToOperators(Op_nRE, Op_nTot, Op_ni, Op_nREn);
 
     const auto *kh = eqsys->GetMollerKernelHandler();
+    auto *rp = kh ? kh->GetRP() : nullptr;
+    if (rp) {
+        auto *unknowns = eqsys->GetUnknownHandler();
+        oqty_terms->rp_re = new RosenbluthPutvinskiBoltzmannTerm(
+            runawayGrid, unknowns, rp, RosenbluthPutvinskiBoltzmann::RUNAWAY, -1.0);
+        Op_nTot->AddTerm(oqty_terms->rp_re);
+    }
     if (kh && kh->HasReRe()) {
         constexpr real_t sourceSign = -1.0;
         oqty_terms->knock_on_general_re_re = new MollerBoltzmannOperator(

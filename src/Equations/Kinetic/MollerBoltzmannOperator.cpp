@@ -1,5 +1,6 @@
 #include "DREAM/Equations/Kinetic/MollerBoltzmannOperator.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -32,6 +33,8 @@ MollerBoltzmannOperator::MollerBoltzmannOperator(
 
     AllocateSourceVector();
     AllocateScratchBuffers();
+    if (angleKernel->UsesChiuHarvey())
+        KnockOnUtilities::BuildPrimaryPoleFractions(gridPrimary, positivePoleFraction);
 }
 
 MollerBoltzmannOperator::~MollerBoltzmannOperator() { Deallocate(); }
@@ -117,6 +120,27 @@ void MollerBoltzmannOperator::BuildPrimaryWeights(
     const real_t *dxi1 = mgP->GetDp2();
     const real_t *VpP = gridPrimary->GetVp(ir);
 
+    if (angleKernel->UsesChiuHarvey()) {
+        std::fill(W_k_l, W_k_l + 2 * Np1P, 0);
+        for (len_t l = 0; l < NxiP; ++l) {
+            if (gridPrimary->GetVpOverP2AtZero(ir)[l] == 0)
+                continue;
+            const real_t positiveWidth = dxi1[l] * positivePoleFraction[ir * NxiP + l];
+            const real_t negativeWidth = dxi1[l] - positiveWidth;
+            const len_t base = l * Np1P;
+            for (len_t k = 0; k < Np1P; ++k) {
+                const real_t density = VpP[base + k] * f_primary_ir[base + k];
+                W_k_l[2*k] += positiveWidth * density;
+                W_k_l[2*k+1] += negativeWidth * density;
+            }
+        }
+        for (len_t k = 0; k < Np1P; ++k) {
+            W_k_l[2*k] *= dp1[k];
+            W_k_l[2*k+1] *= dp1[k];
+        }
+        return;
+    }
+
     for (len_t l = 0; l < NxiP; ++l) {
         const real_t dxi = dxi1[l];
         const len_t base_lk = l * Np1P;
@@ -131,8 +155,8 @@ void MollerBoltzmannOperator::BuildPrimaryWeights(
  * Assemble the explicit-time Boltzmann source on the knock-on grid from f_primary.
  *
  * Precompute W_{k l} = dp1_k dxi_l Vp_{k l} f_{k l} for each radius,
- * then group the primary contributions by angular slice before the dense
- * pitch contraction for each outgoing momentum i.
+ * or their two signed pitch sums for Chiu–Harvey. Group the resulting
+ * weights by angular slice before the contraction for each outgoing cell.
  */
 void MollerBoltzmannOperator::SetSourceVector(const real_t *f_primary) {
     len_t offK = 0;
@@ -241,6 +265,8 @@ bool MollerBoltzmannOperator::GridRebuilt() {
     // Reallocate operator-owned storage sized to new grid.
     AllocateSourceVector();
     AllocateScratchBuffers();
+    if (angleKernel->UsesChiuHarvey())
+        KnockOnUtilities::BuildPrimaryPoleFractions(gridPrimary, positivePoleFraction);
 
     return true;
 }

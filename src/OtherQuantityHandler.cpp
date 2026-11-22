@@ -21,6 +21,7 @@
  * appropriate structs in the output file.
  */
 
+#include <algorithm>
 #include <map>
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/OtherQuantity.hpp"
@@ -399,6 +400,27 @@ void OtherQuantityHandler::DefineQuantities() {
     }
 	DEF_FL("fluid/pStar", "Effective critical momentum in Hesslow theory", qd->Store(this->REFluid->GetPStar()););
 	DEF_FL("fluid/nusnuDatPStar", "Slowing-down times deflection frequency for electrons, evaluated at pStar", qd->Store(this->REFluid->GetNusNuDatPStar()););
+    if (tracked_terms->rp_hot || tracked_terms->rp_re) {
+        const auto *rp = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+        if (rp->IncludesResolvedPrimaries()) {
+            DEF_FL("fluid/n_ava_primary", "Total previous-step primary density used by Boltzmann RP [m^-3]",
+                const auto *term = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+                term->GetPrimaryDensity(qd->StoreEmpty());
+            );
+        }
+        DEF_FL("fluid/n_ava_external", "Previous-step off-grid primary density used by the Boltzmann gain [m^-3]",
+            const auto *term = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+            term->GetExternalDensity(qd->StoreEmpty());
+        );
+        DEF_FL("fluid/n_ava_external_raw", "Previous-step n_re minus the full f_re density, before the source floor [m^-3]",
+            const auto *term = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+            term->GetRawExternalDensity(qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaAvaAboveGrid", "Direct Boltzmann births above the outermost kinetic face, excluding boundary flux [s^-1 m^-3]",
+            const auto *term = tracked_terms->rp_hot ? tracked_terms->rp_hot : tracked_terms->rp_re;
+            term->GetAboveGridProduction(qd->StoreEmpty(), unknowns->GetUnknownData(id_ntot));
+        );
+    }
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt [s^-1 m^-3]", qd->Store(this->postProcessor->GetRunawayRate()););
     DEF_FL("fluid/qR0", "Safety factor multiplied by major radius R0 [m]",
         real_t *vec = qd->StoreEmpty();
@@ -720,18 +742,20 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
-    DEF_HT("hottail/S_ava", "Rosenbluth-Putvinski avalanche source term",
+    DEF_HT("hottail/S_ava", "Legacy RP source; alias for C_boltz_external in Boltzmann mode [s^-1 m^-3]",
         real_t *v = qd->StoreEmpty();
         const len_t nCells = hottailGrid->GetNCells();
         for (len_t idx = 0; idx < nCells; idx++)
             v[idx] = 0;
 
         auto *equation = this->unknown_equations->at(this->id_f_hot);
-        if (equation->HasOperatorAt(this->id_n_re)) {
+        if (tracked_terms->rp_hot) {
+            tracked_terms->rp_hot->SetExternalSource(v, unknowns->GetUnknownData(id_ntot));
+        } else if (equation->HasOperatorAt(this->id_n_re)) {
             auto *avaPos = equation->GetOperatorUnsafe(this->id_n_re);
             avaPos->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re));
         }
-        if (this->id_n_re_neg && equation->HasOperatorAt(this->id_n_re_neg)) {
+        if (!tracked_terms->rp_hot && this->id_n_re_neg && equation->HasOperatorAt(this->id_n_re_neg)) {
             auto *avaNeg = equation->GetOperatorUnsafe(this->id_n_re_neg);
             avaNeg->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re_neg));
         }
@@ -741,14 +765,23 @@ void OtherQuantityHandler::DefineQuantities() {
             v[idx] = -v[idx];
     );
     
-    if (tracked_terms->knock_on_general_hot_hot != nullptr) {
-		DEF_HT("hottail/C_boltz", "Boltzmann knock-on collision integral [s^-1 m^-3]",
+    if (tracked_terms->rp_hot) {
+        DEF_HT("hottail/C_boltz_external", "Boltzmann gain from off-grid primaries [s^-1 m^-3]",
+            real_t *gain = qd->StoreEmpty();
+            std::fill(gain, gain + hottailGrid->GetNCells(), 0);
+            tracked_terms->rp_hot->SetExternalSource(gain, unknowns->GetUnknownData(id_ntot));
+            for (len_t i = 0; i < hottailGrid->GetNCells(); ++i)
+                gain[i] = -gain[i];
+        );
+		DEF_HT("hottail/C_boltz", "Total Boltzmann gain from resolved and off-grid primaries [s^-1 m^-3]",
 			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
 			real_t *C_boltz = qd->StoreEmpty();
             for (len_t idx=0; idx<hottailGrid->GetNCells(); idx++){
                 C_boltz[idx] = 0;
             }
-            tracked_terms->knock_on_general_hot_hot->SetVectorElements(C_boltz, ntot);
+            tracked_terms->rp_hot->SetVectorElements(C_boltz, ntot);
+            if (tracked_terms->knock_on_general_hot_hot)
+                tracked_terms->knock_on_general_hot_hot->SetVectorElements(C_boltz, ntot);
             if (tracked_terms->knock_on_general_hot_re != nullptr){
                 tracked_terms->knock_on_general_hot_re->SetVectorElements(C_boltz, ntot);
             }
@@ -915,18 +948,20 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
-    DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
+    DEF_RE("runaway/S_ava", "Legacy RP source; alias for C_boltz_external in Boltzmann mode [s^-1 m^-3]",
         real_t *v = qd->StoreEmpty();
         const len_t nCells = runawayGrid->GetNCells();
         for (len_t idx = 0; idx < nCells; idx++)
             v[idx] = 0;
 
         auto *equation = this->unknown_equations->at(this->id_f_re);
-        if (equation->HasOperatorAt(this->id_n_re)) {
+        if (tracked_terms->rp_re) {
+            tracked_terms->rp_re->SetExternalSource(v, unknowns->GetUnknownData(id_ntot));
+        } else if (equation->HasOperatorAt(this->id_n_re)) {
             auto *avaPos = equation->GetOperatorUnsafe(this->id_n_re);
             avaPos->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re));
         }
-        if (this->id_n_re_neg && equation->HasOperatorAt(this->id_n_re_neg)) {
+        if (!tracked_terms->rp_re && this->id_n_re_neg && equation->HasOperatorAt(this->id_n_re_neg)) {
             auto *avaNeg = equation->GetOperatorUnsafe(this->id_n_re_neg);
             avaNeg->SetVectorElements(v, unknowns->GetUnknownData(this->id_n_re_neg));
         }
@@ -937,14 +972,23 @@ void OtherQuantityHandler::DefineQuantities() {
     );
 
 
-    if (tracked_terms->knock_on_general_re_re != nullptr) {
-		DEF_RE("runaway/C_boltz", "Boltzmann knock-on collision integral [s^-1 m^-3]",
+    if (tracked_terms->rp_re) {
+        DEF_RE("runaway/C_boltz_external", "Boltzmann gain from off-grid primaries [s^-1 m^-3]",
+            real_t *gain = qd->StoreEmpty();
+            std::fill(gain, gain + runawayGrid->GetNCells(), 0);
+            tracked_terms->rp_re->SetExternalSource(gain, unknowns->GetUnknownData(id_ntot));
+            for (len_t i = 0; i < runawayGrid->GetNCells(); ++i)
+                gain[i] = -gain[i];
+        );
+		DEF_RE("runaway/C_boltz", "Total Boltzmann gain from resolved and off-grid primaries [s^-1 m^-3]",
 			const real_t *ntot = this->unknowns->GetUnknownData(this->id_ntot);
 			real_t *C_boltz = qd->StoreEmpty();
             for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++){
                 C_boltz[idx] = 0;
             }
-			tracked_terms->knock_on_general_re_re->SetVectorElements(C_boltz, ntot);
+            tracked_terms->rp_re->SetVectorElements(C_boltz, ntot);
+            if (tracked_terms->knock_on_general_re_re)
+                tracked_terms->knock_on_general_re_re->SetVectorElements(C_boltz, ntot);
             // flip sign since the knock-on term appears in the residual with a minus sign
             for (len_t idx=0; idx<runawayGrid->GetNCells(); idx++){
                 C_boltz[idx] = -C_boltz[idx];

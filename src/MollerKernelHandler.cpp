@@ -1,11 +1,12 @@
 /**
- * Owns and updates the Møller kernels shared by the kinetic source and
- * fluid production terms.
+ * Owns the finite-energy kernels and the shared infinite-energy spectrum
+ * used by the kinetic gain and fluid production terms.
  */
 #include "DREAM/MollerKernelHandler.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
 #include "DREAM/Equations/Kinetic/MollerEnergyKernel.hpp"
+#include "DREAM/Equations/RosenbluthPutvinskiBoltzmann.hpp"
 #include "FVM/TimeKeeper.hpp"
 
 using namespace DREAM;
@@ -32,43 +33,54 @@ void MollerKernelHandler::ValidateParams(
 
 MollerKernelHandler::Bundle MollerKernelHandler::MakeBundle(
     const FVM::Grid *target, const FVM::Grid *primary, real_t pCutoff, len_t nXiStars,
-    len_t poloidalOrder, len_t pitchOrder
+    len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model
 ) {
     return {
         std::make_unique<MollerEnergyKernel>(target, primary, pCutoff),
         std::make_unique<MollerDeltaAngleKernel>(
-            target, primary, pCutoff, nXiStars, poloidalOrder, pitchOrder
+            target, primary, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
         )
     };
 }
 
 MollerKernelHandler::MollerKernelHandler(
-    const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid, real_t pCutoff, len_t nXiStars,
-    len_t poloidalOrder, len_t pitchOrder
+    const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
+    FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
+    len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model, real_t pRe
 )
     : pCutoff(pCutoff),
       nXiStars(nXiStars),
       poloidalOrder(poloidalOrder),
       pitchOrder(pitchOrder) {
-    ValidateParams(pCutoff, nXiStars, poloidalOrder, pitchOrder);
+    const bool resolvedRP = model == OptionConstants::BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI;
+    if (!resolvedRP)
+        ValidateParams(pCutoff, nXiStars, poloidalOrder, pitchOrder);
 
     timeKeeper = std::make_unique<FVM::TimeKeeper>("MøllerKernels");
     timerTot = timeKeeper->AddTimer("total", "Total Boltzmann initialization");
     timeKeeper->StartTimer(timerTot);
 
+    // Every model uses this spectrum for off-grid primaries. Only RP adds
+    // resolved primary moments and needs a second (negative) pole table.
+    rp = std::make_unique<RosenbluthPutvinskiBoltzmann>(
+        hottailGrid, runawayGrid, unknowns, pCutoff, pRe, poloidalOrder, resolvedRP
+    );
+
     // Build kernels for each target and primary grid pair that exists.
-    if (hottailGrid != nullptr) {
-        hot_hot =
-            MakeBundle(hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder);
+    if (!resolvedRP && hottailGrid != nullptr) {
+        hot_hot = MakeBundle(
+            hottailGrid, hottailGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
+        );
         if (runawayGrid != nullptr) {
             hot_re = MakeBundle(
-                hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
+                hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
             );
         }
     }
-    if (runawayGrid != nullptr) {
-        re_re =
-            MakeBundle(runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder);
+    if (!resolvedRP && runawayGrid != nullptr) {
+        re_re = MakeBundle(
+            runawayGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder, model
+        );
     }
     timeKeeper->StopTimer(timerTot);
 }
@@ -105,6 +117,7 @@ const MollerKernelHandler::Bundle &MollerKernelHandler::ReRe() const {
 
 void MollerKernelHandler::GridRebuilt() {
     timeKeeper->StartTimer(timerTot);
+    rp->GridRebuilt();
     if (hot_hot.energy) hot_hot.energy->GridRebuilt();
     if (hot_hot.angle) hot_hot.angle->GridRebuilt();
     if (hot_re.energy) hot_re.energy->GridRebuilt();

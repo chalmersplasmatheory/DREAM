@@ -294,6 +294,12 @@ enum eqterm_avalanche_mode {                        // Avalanche generation is..
     EQTERM_AVALANCHE_MODE_BOLTZMANN = 5             // modelled with the field-particle piece of the full boltzmann collision integral
 };
 
+enum boltzmann_model {
+    BOLTZMANN_MODEL_FULL_MOLLER = 1,
+    BOLTZMANN_MODEL_CHIU_HARVEY = 2,
+    BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI = 3
+};
+
 enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...
     EQTERM_NONLINEAR_MODE_NEGLECT = 1,              // neglected
     EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2,    // accounted for with isotropic Landau-Fokker-Planck operator

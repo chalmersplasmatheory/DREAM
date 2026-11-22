@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/config.h"
 
 class SFile;
@@ -10,11 +11,13 @@ class SFile;
 namespace DREAM::FVM {
     class Grid;
     class TimeKeeper;
+    class UnknownQuantityHandler;
 }
 
 namespace DREAM {
 class MollerEnergyKernel;
 class MollerDeltaAngleKernel;
+class RosenbluthPutvinskiBoltzmann;
 
 /**
  * Helper to manage the unknown-independent parts of the Boltzmann operator.
@@ -38,13 +41,14 @@ class MollerKernelHandler {
     Bundle hot_hot;
     Bundle hot_re;
     Bundle re_re;
+    std::unique_ptr<RosenbluthPutvinskiBoltzmann> rp;
 
     static void ValidateParams(
         real_t pCutoff, len_t nXiStars, len_t poloidalOrder, len_t pitchOrder
     );
     static Bundle MakeBundle(
         const FVM::Grid *target, const FVM::Grid *primary, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder, len_t pitchOrder
+        len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model
     );
 
     std::unique_ptr<FVM::TimeKeeper> timeKeeper;
@@ -52,10 +56,14 @@ class MollerKernelHandler {
 
    public:
     MollerKernelHandler(
-        const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid, real_t pCutoff, len_t nXiStars,
-        len_t poloidalOrder, len_t pitchOrder
+        const FVM::Grid *hottailGrid, const FVM::Grid *runawayGrid,
+        FVM::UnknownQuantityHandler *unknowns, real_t pCutoff, len_t nXiStars,
+        len_t poloidalOrder, len_t pitchOrder, OptionConstants::boltzmann_model model,
+        real_t pRe = 0
     );
     ~MollerKernelHandler();
+
+    RosenbluthPutvinskiBoltzmann *GetRP() const { return rp.get(); }
 
     bool HasHotHot() const { return hot_hot.IsValid(); }
     bool HasHotRe() const { return hot_re.IsValid(); }

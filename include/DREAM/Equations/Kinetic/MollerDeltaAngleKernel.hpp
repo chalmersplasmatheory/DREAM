@@ -4,6 +4,7 @@
 #include "DREAM/Equations/KnockOnUtilities.hpp"
 #include "DREAM/Equations/Kinetic/MollerPitchContraction.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/config.h"
 
 namespace DREAM {
@@ -22,6 +23,7 @@ class MollerDeltaAngleKernel {
     real_t pCutoff = 0;
     len_t nXiStarsTabulate = 0;
     len_t poloidalOrder = 0, pitchOrder = 0;
+    OptionConstants::boltzmann_model model;
 
 
     // xi_star tabulation grid
@@ -52,15 +54,18 @@ class MollerDeltaAngleKernel {
    public:
     MollerDeltaAngleKernel(
         const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t p_cutoff,
-        len_t n_xi_stars_tabulate, len_t poloidal_order, len_t pitch_order=4
+        len_t n_xi_stars_tabulate, len_t poloidal_order, len_t pitch_order=4,
+        OptionConstants::boltzmann_model model=OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER
     );
     ~MollerDeltaAngleKernel();
 
     void GridRebuilt();
 
-    len_t GetPrimaryPitchColumns(len_t ir) const { return gridP->GetNp2(ir); }
+    bool UsesChiuHarvey() const { return model == OptionConstants::BOLTZMANN_MODEL_CHIU_HARVEY; }
+    len_t GetPrimaryPitchColumns(len_t ir) const { return UsesChiuHarvey() ? 2 : gridP->GetNp2(ir); }
     len_t GetPitchScratchSize() const { return nXiStarsTabulate * GetPrimaryPitchColumns(0); }
-    // Single-primary interface, also used by kernel moment/conservation tests.
+
+    // In Chiu–Harvey mode, each momentum has weights for the +1 and -1 poles, in that order.
     void AccumulatePitch(
         len_t ir, len_t i, len_t k, const real_t *W_l, real_t Sik, real_t *outPitch_j
     ) const;

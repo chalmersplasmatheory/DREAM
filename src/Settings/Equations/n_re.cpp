@@ -40,6 +40,8 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/boltzmann/poloidal", "Gauss order per poloidal contact panel", (int_t)8);
     s->DefineSetting(MODULENAME "/boltzmann/pitch", "Gauss order per primary-pitch contact panel", (int_t)4);
     s->DefineSetting(MODULENAME "/boltzmann/nxi", "Number of tabulated scattering cosines", (int_t)80);
+    s->DefineSetting(MODULENAME "/boltzmann/model", "Model for the Boltzmann gain", (int_t)OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER);
+    s->DefineSetting(MODULENAME "/boltzmann/p_re", "Minimum resolved primary momentum for Boltzmann RP, in units of m_e*c", (real_t)0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
     s->DefineSetting(MODULENAME "/negative_re", "When in kinetic mode, properly account for runaways in both positive and negative pitch directions.", (bool)false);
@@ -161,6 +163,15 @@ void SimulationGenerator::ConstructEquation_n_re(
     desc_sources += rsth->GetDescription();
 
     const auto *kh = eqsys->GetMollerKernelHandler();
+    auto *rp = kh ? kh->GetRP() : nullptr;
+    if (rp) {
+        // n_re includes f_re: count births on that grid as well as beyond
+        // the outermost face. Hot-grid births enter n_re only through flux.
+        auto *unknowns = eqsys->GetUnknownHandler();
+        Op_n_tot->AddTerm(new RosenbluthPutvinskiBoltzmannTerm(
+            fluidGrid, unknowns, rp, RosenbluthPutvinskiBoltzmann::RUNAWAY_DENSITY, -1.0));
+        desc_sources += " + infinite-energy births";
+    }
     if (kh && kh->HasReRe()) {
         // add the electrons created due to runaway-runaway knock-ons
         const real_t sourceSign = -1.0;

@@ -1,6 +1,8 @@
 # Settings for the runaway electron density
 import warnings
 
+from numbers import Real
+
 import numpy as np
 from scipy.integrate import quad
 from . EquationException import EquationException
@@ -28,6 +30,10 @@ AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_FLUID_HESSLOW = 3
 AVALANCHE_MODE_ROSENBLUTH_PUTVINSKI = 4
 AVALANCHE_MODE_BOLTZMANN = 5
+
+BOLTZMANN_MODEL_FULL_MOLLER = 1
+BOLTZMANN_MODEL_CHIU_HARVEY = 2
+BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI = 3
 
 COMPTON_MODE_NEGLECT = 1
 COMPTON_MODE_FLUID   = 2
@@ -107,6 +113,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
         self.setBoltzmannQuadrature()
+        self.setBoltzmannModel(BOLTZMANN_MODEL_FULL_MOLLER)
+        self.avalanche_primary_threshold = None
         self.tritium   = tritium
         self.hottail   = hottail
         self.negative_re = False
@@ -210,6 +218,30 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
                   for name, value, minimum in (("poloidal", poloidal, 1),
                                                ("pitch", pitch, 1), ("nxi", nxi, 2))}
         self.boltzmann = values
+
+
+    def setBoltzmannModel(self, model):
+        """Select the resolved-primary gain: full Møller, CH or RP.
+
+        Every model uses the same positive-pole, infinite-energy gain for
+        off-grid primaries. This closure does not describe their slowing down.
+        """
+        if (isinstance(model, (bool, np.bool_)) or not isinstance(model, (int, np.integer))
+            or model not in (BOLTZMANN_MODEL_FULL_MOLLER, BOLTZMANN_MODEL_CHIU_HARVEY,
+                             BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI)):
+            raise EquationException(
+                "n_re: Boltzmann model must be BOLTZMANN_MODEL_FULL_MOLLER, "
+                "BOLTZMANN_MODEL_CHIU_HARVEY or BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI."
+            )
+        self.boltzmann_model = int(model)
+
+
+    def setAvalanchePrimaryThreshold(self, p_re):
+        """Set the minimum resolved primary momentum in units of m_e*c for Boltzmann RP."""
+        if (isinstance(p_re, (bool, np.bool_)) or not isinstance(p_re, Real)
+            or not np.isfinite(p_re) or p_re <= 0):
+            raise EquationException("n_re: Avalanche primary threshold must be finite and positive.")
+        self.avalanche_primary_threshold = float(p_re)
 
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
@@ -383,6 +415,11 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         boltzmann = data.get('boltzmann', {})
         self.setBoltzmannQuadrature(**{name: scal(boltzmann.get(name, default))
             for name, default in (("poloidal", 8), ("pitch", 4), ("nxi", 80))})
+        self.setBoltzmannModel(scal(boltzmann.get('model', BOLTZMANN_MODEL_FULL_MOLLER)))
+        if 'p_re' in boltzmann:
+            self.setAvalanchePrimaryThreshold(scal(boltzmann['p_re']))
+        else:
+            self.avalanche_primary_threshold = None
 
         if 'pCutAvalanche' in data:
             self.pCutAvalanche = data['pCutAvalanche']
@@ -446,7 +483,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche,
-            'boltzmann': dict(self.boltzmann),
+            'boltzmann': dict(self.boltzmann, model=self.boltzmann_model),
             'transport': self.transport.todict(),
             'tritium': self.tritium,
             'hottail': self.hottail,
@@ -456,6 +493,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'lcfs_psi_edge_t0': self.lcfs_psi_edge_t0,
             'extrapolateDreicer': self.extrapolateDreicer
         }
+        if self.avalanche_primary_threshold is not None:
+            data['boltzmann']['p_re'] = self.avalanche_primary_threshold
         if self.compton != COMPTON_MODE_NEGLECT:
             data['compton'] = {
                 'mode': self.compton, 
@@ -492,8 +531,15 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Verify that the settings of this unknown are correctly set.
         """
+        self.setBoltzmannModel(self.boltzmann_model)
         for name, minimum in (("poloidal", 1), ("pitch", 1), ("nxi", 2)):
             self._quadratureInteger(name, self.boltzmann[name], minimum)
+        if self.avalanche_primary_threshold is not None:
+            self.setAvalanchePrimaryThreshold(self.avalanche_primary_threshold)
+        if self.boltzmann_model == BOLTZMANN_MODEL_ROSENBLUTH_PUTVINSKI and self.avalanche_primary_threshold is None:
+            raise EquationException(
+                "n_re: Boltzmann RP requires setAvalanchePrimaryThreshold(p_re)."
+            )
 
         if type(self.avalanche) != int:
             raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected integer.")

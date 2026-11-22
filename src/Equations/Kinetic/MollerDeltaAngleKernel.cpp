@@ -12,13 +12,13 @@ using namespace DREAM;
 
 MollerDeltaAngleKernel::MollerDeltaAngleKernel(
     const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t p_cutoff,
-    len_t n_xi_stars_tabulate, len_t poloidal_order, len_t pitch_order
+    len_t n_xi_stars_tabulate, len_t poloidal_order, len_t pitch_order, OptionConstants::boltzmann_model model
 )
     : gridK(grid_knockon),
       gridP(grid_primary),
       pCutoff(p_cutoff),
       nXiStarsTabulate(n_xi_stars_tabulate),
-      poloidalOrder(poloidal_order), pitchOrder(pitch_order) {
+      poloidalOrder(poloidal_order), pitchOrder(pitch_order), model(model) {
     ValidateInputParameters();
     GridRebuilt();
 }
@@ -91,6 +91,9 @@ void DREAM::MollerDeltaAngleKernel::ValidateGridAssumptions() const {
 }
 
 void DREAM::MollerDeltaAngleKernel::ValidateInputParameters() const {
+    if (model != OptionConstants::BOLTZMANN_MODEL_FULL_MOLLER && !UsesChiuHarvey())
+        throw DREAMException("MollerDeltaAngleKernel: unknown Boltzmann model.");
+
     if (pitchOrder<1)
         throw DREAMException("MollerDeltaAngleKernel: pitchOrder must be >= 1.");
 
@@ -197,9 +200,9 @@ void MollerDeltaAngleKernel::AllocateDeltaTables() {
 /**
  * Tabulate the pitch redistribution as a function of the scattering cosine
  * xi_star(p, p1), which carries the momentum dependence of the angular kernel.
- * Each column integrates one primary pitch cell and is normalized over the
- * outgoing pitch grid. Reuse the rules across the table and the field
- * brackets across all columns on each flux surface.
+ * Each column represents one primary pitch cell or one Chiu–Harvey pole
+ * and is normalized over the outgoing pitch grid. Reuse the rules across
+ * the table and the field brackets across columns on each flux surface.
  */
 void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
     if (!hasActivePairs)
@@ -218,9 +221,15 @@ void MollerDeltaAngleKernel::TabulateDeltaMatrixOnXiStarGrid() {
             real_t *slice = deltaTable[ir][m];
             for (len_t l = 0; l < nColumns; ++l) {
                 real_t *column = slice + l * NxiK;
-                KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
-                    ir, xiStarsTab[m], l, gridK, gridP, column, geometry, poloidalRule, pitchRule
-                );
+                if (UsesChiuHarvey()) {
+                    KnockOnUtilities::SetFieldAlignedDeltaColumnOnGrid(
+                        ir, xiStarsTab[m], l == 0 ? +1 : -1, gridK, column, geometry, poloidalRule
+                    );
+                } else {
+                    KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
+                        ir, xiStarsTab[m], l, gridK, gridP, column, geometry, poloidalRule, pitchRule
+                    );
+                }
             }
         }
     }

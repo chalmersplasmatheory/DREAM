@@ -31,6 +31,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Kinetic/ComptonSource.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/MollerBoltzmannOperator.hpp"
+#include "DREAM/Equations/RosenbluthPutvinskiBoltzmann.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/TimeVaryingBTerm.hpp"
@@ -115,6 +116,9 @@ namespace DREAM {
             DREAM::MollerBoltzmannOperator *knock_on_general_hot_hot=nullptr;
             DREAM::MollerBoltzmannOperator *knock_on_general_hot_re=nullptr;
             DREAM::MollerBoltzmannOperator *knock_on_general_re_re=nullptr;
+            // Common infinite-energy component, present for every Boltzmann model.
+            RosenbluthPutvinskiBoltzmannTerm *rp_hot=nullptr;
+            RosenbluthPutvinskiBoltzmannTerm *rp_re=nullptr;
             DREAM::AvalancheSourceRP *f_hot_knock_on_RP=nullptr;
             DREAM::AvalancheSourceRP *f_re_knock_on_RP=nullptr;
         };
