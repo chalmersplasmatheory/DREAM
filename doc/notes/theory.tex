@@ -830,6 +830,26 @@ from the momentum-grid approximation and the piecewise constant representation
 of the primary distribution.
 
 
+\paragraph{Pole columns and primary weights.}
+For a fixed scattering cosine, use the same orbit numerator
+$h(u)\delta_j(\chi,u)$ at $u=+1$ and $-1$. Normalize each column
+independently by its outgoing width-weighted sum. This cancels $h(\pm1)$.
+At each primary momentum $p_{1,k}$, project the discrete weights onto
+the two poles,
+\begin{align}
+ W_k^\pm &= \Delta p_k\,p_{1,k}^2
+    \sum_l H_l^{\mathrm{grid}} f_{kl}\,w_l^\pm,
+ &
+ w_l^\pm &=
+ \frac{H_l^{\mathrm{pass},\pm}+\tfrac12 H_l^{\mathrm{trap}}}
+ {H_l^{\mathrm{pass},+}+H_l^{\mathrm{pass},-}+H_l^{\mathrm{trap}}}.
+\end{align}
+Here the $H_l$ in the fraction are orbit integrals over the represented
+pieces of the primary cell, and $H_l^{\mathrm{trap}}$ includes both
+directions of motion. Void primary rows carry zero weight. Thus
+$W_k^++W_k^-$ is the same discrete momentum marginal as for full M\o ller
+scattering. The finite-energy momentum kernel and $\chi(p,p_1)$ are shared.
+
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
 We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim S \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
 \begin{align}

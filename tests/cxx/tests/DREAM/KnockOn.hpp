@@ -20,6 +20,7 @@ class KnockOn : public UnitTest {
     bool CheckDeltaConservationPropertyDifferentGrids();
     bool CheckAgreementWithOldRPTerm();
     bool CheckCylindricalDeltaCalculation();
+    bool CheckPoleColumnsOnPitchFaces();
     bool CheckMollerFluxIntegration();
     bool CheckMollerDifferentialConvergesToInfiniteLimit();
     bool CheckMollerFluxConvergesToInfiniteLimit();

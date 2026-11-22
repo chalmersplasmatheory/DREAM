@@ -55,7 +55,7 @@ real_t KnockOnUtilities::Kinematics::EvaluateXiStar(real_t p, real_t p1) {
     real_t g = sqrt(1 + p * p);
     // Handle the limit of an infinitely energetic incident electron.
     if (std::isinf(p1)) {
-        return sqrt((g - 1) / (g + 1));
+        return p / (g + 1);
     }
     real_t g1 = sqrt(1 + p1 * p1);
     return sqrt((g1 + 1) * (g - 1) / ((g1 - 1) * (g + 1)));
@@ -92,7 +92,7 @@ real_t KnockOnUtilities::Kinematics::EvaluateMollerFlux(real_t p, real_t p1) {
 
     real_t g = sqrt(1 + p * p);
     if (std::isinf(p1)) {
-        return -prefactor / (g - 1);
+        return -prefactor * (g + 1) / (p * p);
     }
 
     real_t g1 = sqrt(1 + p1 * p1);
@@ -226,34 +226,22 @@ void KnockOnUtilities::AnalyticDelta::ComputeXi1Bounds(
  * Returns 0 if no contribution exists at this theta, and
  * handles the xi01 = +/-1 (CH/RP) limits carefully.
  */
-
 real_t KnockOnUtilities::AnalyticDelta::EvaluateLocalContribution(
     real_t xi0_f1, real_t xi0_f2, real_t xi01, real_t BOverBmin, real_t xi_star, real_t xi0Cutoff,
     real_t &xi1_over_xi01
 ) {
-    // perform the checks on whether the theta is viable
-    // the "true" condition is z1 <= xi1 <= z2 for us to
-    // take this theta into account. However, roundoff
-    // errors when xi1 == z1, z2 can cause invalid values
-    // to slip through and crash other parts of the calculation.
-    // For the important edge case xi01 == +/- 1,
-    // which define the Chiu-Harvey and Rosenbluth-Putvinski
-    // approximations, we seek these bounding values, and therefore
-    // employ an exacter constraint by inserting values explicitly.
     real_t t1;
     real_t t2;
     AnalyticDelta::ComputeXiIntegrationBounds(t1, t2, xi0_f1, xi0_f2, BOverBmin, xi0Cutoff);
 
-    // handle the xi01 == 1 case (used in the approximate collision terms--RP and CH)
+    // Apply (lower, upper] ownership in the primary's direction, so
+    // opposite poles on mirrored faces deposit into mirrored cells.
     if (fabs(fabs(xi01) - 1.0) < RELAXED_EPS) {
         xi1_over_xi01 = 1.0;
-        // Use the same (lower,upper] ownership as the analytic gyro
-        // integral, including the physical endpoint -1. Strict inequalities
-        // on both faces would lose a pole source lying exactly on a face.
-        const real_t outgoing = xi01 > 0 ? xi_star : -xi_star;
-        if (!((t1 < outgoing && outgoing <= t2) || (outgoing == -1 && t1 == -1))) {
-            return 0.0;
-        }
+        const real_t lower = xi01 > 0 ? t1 : -t2;
+        const real_t upper = xi01 > 0 ? t2 : -t1;
+        if (!((lower < xi_star && xi_star <= upper) || (xi_star == -1 && lower == -1)))
+            return 0;
         return 1.0 / (xi0_f2 - xi0_f1);
     }
 
@@ -551,33 +539,12 @@ void IntegratePrimaryCell(
     }
 }
 
-/**
- * Assemble outgoing rows of the raw cell-averaged kernel A_jl / Hgrid_l.
- * The discrete primary cell measure Hgrid_l is applied after integration,
- * so the integrand can carry the full orbit measure near the separatrix.
- */
-void EvaluateGridRows(
-    len_t ir, real_t xiStar, len_t l, const FVM::Grid *gridK, const FVM::Grid *gridP,
-    len_t firstRow, len_t endRow, Quadrature::OrbitGeometry &geometry,
-    const Quadrature::GaussLegendreRule &poloidalRule, const Quadrature::GaussLegendreRule &pitchRule,
-    real_t *out
+// Both the pitch-cell average and the field-aligned limit use the same
+// outgoing cells, including DREAM's trapped-passing row transfer.
+std::vector<TargetPiece> BuildTargetPieces(
+    len_t ir, const FVM::Grid *gridK, len_t firstRow, len_t endRow, real_t xiT
 ) {
-    const len_t nRows = endRow - firstRow;
-    std::fill(out, out + nRows, 0);
-    const auto *mgP = gridP->GetMomentumGrid(ir);
     const auto *mgK = gridK->GetMomentumGrid(ir);
-    const real_t primaryMetric = gridP->GetVpOverP2AtZero(ir)[l];
-
-    // A void primary column carries no stored particles, even where its
-    // interval includes passing pitch.
-    if (primaryMetric == 0)
-        return;
-
-    const real_t Hgrid = mgP->GetDp2(l) * primaryMetric;
-    if (!(Hgrid > 0) || !std::isfinite(Hgrid))
-        throw DREAMException("Knock-on primary cell has invalid volume.");
-
-    const real_t xiT = std::sqrt(geometry.GetBetaMax());
     std::vector<TargetPiece> targets;
     for (len_t j = firstRow; j < endRow; ++j) {
         if (gridK->GetVpOverP2AtZero(ir)[j] == 0)
@@ -602,8 +569,36 @@ void EvaluateGridRows(
             }
         }
     }
+    return targets;
+}
+
+/**
+ * Assemble outgoing rows of the raw cell-averaged kernel A_jl / Hgrid_l.
+ * The discrete primary cell measure Hgrid_l is applied after integration,
+ * so the integrand can carry the full orbit measure near the separatrix.
+ */
+void EvaluateGridRows(
+    len_t ir, real_t xiStar, len_t l, const FVM::Grid *gridK, const FVM::Grid *gridP,
+    len_t firstRow, len_t endRow, Quadrature::OrbitGeometry &geometry,
+    const Quadrature::GaussLegendreRule &poloidalRule, const Quadrature::GaussLegendreRule &pitchRule,
+    real_t *out
+) {
+    const len_t nRows = endRow - firstRow;
+    std::fill(out, out + nRows, 0);
+    const auto *mgP = gridP->GetMomentumGrid(ir);
+    const real_t primaryMetric = gridP->GetVpOverP2AtZero(ir)[l];
+
+    // A void primary column carries no stored particles, even where its
+    // interval includes passing pitch.
+    if (primaryMetric == 0)
+        return;
+
+    const real_t Hgrid = mgP->GetDp2(l) * primaryMetric;
+    if (!(Hgrid > 0) || !std::isfinite(Hgrid))
+        throw DREAMException("Knock-on primary cell has invalid volume.");
 
     const Quadrature::Interval primary{mgP->GetP2_f(l), mgP->GetP2_f(l + 1)};
+    const auto targets = BuildTargetPieces(ir, gridK, firstRow, endRow, std::sqrt(geometry.GetBetaMax()));
     IntegratePrimaryCell(
         ir, xiStar, primary, targets, gridP->GetRadialGrid(), geometry,
         poloidalRule, pitchRule, out
@@ -611,6 +606,24 @@ void EvaluateGridRows(
     for (len_t j = 0; j < nRows; ++j) {
         out[j] /= Hgrid;
     }
+}
+
+real_t NormalizeDeltaColumn(const FVM::MomentumGrid *mg, len_t ir, real_t xiStar, real_t *column) {
+    const len_t nRows = mg->GetNp2();
+    real_t integral = 0;
+    for (len_t j = 0; j < nRows; ++j) {
+        integral += mg->GetDp2(j) * column[j];
+    }
+    if (!(integral > 0) || !std::isfinite(integral)) {
+        throw DREAMException(
+            "Knock-on quadrature expected a positive column at ir=%ld, xi_star=%.16g.",
+            (long)ir, xiStar
+        );
+    }
+    for (len_t j = 0; j < nRows; ++j) {
+        column[j] /= integral;
+    }
+    return integral;
 }
 
 }  // namespace
@@ -714,22 +727,93 @@ real_t KnockOnUtilities::SetDeltaMatrixColumnOnGrid(
     );
     if (grid_primary->GetVpOverP2AtZero(ir)[l] == 0)
         return 0;
+    return NormalizeDeltaColumn(mg, ir, xi_star, deltaCol);
+}
 
-    real_t columnIntegral = 0;
-    for (len_t j = 0; j < nRows; ++j) {
-        columnIntegral += mg->GetDp2(j) * deltaCol[j];
-    }
-    if (!(columnIntegral > 0) || !std::isfinite(columnIntegral)) {
-        throw DREAMException(
-            "Knock-on quadrature expected a positive column at ir=%ld, l=%ld, xi_star=%.16g.",
-            (long)ir, (long)l, xi_star
-        );
-    }
+/**
+ * Split the stored primary weight between the two poles at fixed (r,p).
+ * For a mixed cell, split the orbit measure h(u) from the theory note into
+ * counter-passing, trapped (both directions) and co-passing pieces. Use
+ * their ratios so the total remains the native discrete cell inventory.
+ */
+void KnockOnUtilities::BuildPrimaryPoleFractions(
+    const FVM::Grid *grid, std::vector<real_t> &positivePoleFraction
+) {
+    const auto *rg = grid->GetRadialGrid();
+    positivePoleFraction.clear();
+    for (len_t ir = 0; ir < grid->GetNr(); ++ir) {
+        const auto *mg = grid->GetMomentumGrid(ir);
+        auto *fsa = rg->GetFluxSurfaceAverager();
+        const real_t xiT = rg->GetXi0TrappedBoundary(ir);
+        const auto measure = [&](real_t lower, real_t upper) -> real_t {
+            if (upper <= lower)
+                return 0;
+            return (upper - lower) * fsa->EvaluateCellAveragedBounceIntegralOverP2(
+                ir, lower, upper, FVM::FLUXGRIDTYPE_DISTRIBUTION,
+                FVM::RadialGrid::BA_FUNC_UNITY, nullptr, FVM::RadialGrid::BA_PARAM_UNITY
+            );
+        };
 
-    for (len_t j = 0; j < nRows; ++j) {
-        deltaCol[j] /= columnIntegral;
+        for (len_t l = 0; l < mg->GetNp2(); ++l) {
+            const real_t lower = mg->GetP2_f(l);
+            const real_t upper = mg->GetP2_f(l + 1);
+            real_t fraction;
+            if (grid->GetVpOverP2AtZero(ir)[l] == 0 || upper <= -xiT) {
+                // A void row contributes no primary inventory.
+                fraction = 0;
+            } else if (lower >= xiT) {
+                fraction = 1;
+            } else if (lower >= -xiT && upper <= xiT) {
+                fraction = 0.5;
+            } else if (xiT == 0) {
+                // Constant field and a pitch cell that straddles zero.
+                fraction = upper / (upper - lower);
+            } else {
+                // The passing measure is even in pitch. Reflect this piece so
+                // the native integral includes it up to the separatrix.
+                const real_t counterPassing = measure(std::max(-upper, xiT), -lower);
+                const real_t trapped = measure(std::max(lower, real_t(0)), std::min(upper, xiT));
+                const real_t coPassing = measure(std::max(lower, xiT), upper);
+                const real_t total = counterPassing + trapped + coPassing;
+                if (!(total > 0) || !std::isfinite(total))
+                    throw DREAMException("Primary pitch cell has invalid orbit measure for the pole split.");
+                fraction = (coPassing + 0.5 * trapped) / total;
+            }
+            positivePoleFraction.push_back(fraction);
+        }
     }
-    return columnIntegral;
+}
+
+/**
+ * Evaluate h(u) delta_j(chi,u) at u = +1 or -1, where h is the primary orbit
+ * measure from the theory note. Column normalization cancels h(u).
+ */
+void KnockOnUtilities::SetFieldAlignedDeltaColumnOnGrid(
+    len_t ir, real_t xi_star, real_t primaryPole, const FVM::Grid *gridK, real_t *deltaCol,
+    Quadrature::OrbitGeometry &geometry, const Quadrature::GaussLegendreRule &poloidalRule
+) {
+    if (primaryPole != 1 && primaryPole != -1)
+        throw DREAMException("The field-aligned primary pitch must be +1 or -1.");
+
+    const auto *mg = gridK->GetMomentumGrid(ir);
+    const len_t nRows = mg->GetNp2();
+    std::fill(deltaCol, deltaCol + nRows, 0);
+
+    const auto targets = BuildTargetPieces(ir, gridK, 0, nRows, std::sqrt(geometry.GetBetaMax()));
+    std::vector<OrbitPiece> pieces;
+    pieces.reserve(targets.size());
+    for (const auto &target : targets) {
+        // The primary is passing at all poloidal angles. The existing orbit
+        // integral evaluates the local pitch delta at the pole analytically.
+        pieces.push_back({target.cell, target.row, target.rowWidthFraction, target.trapped});
+    }
+    // At zero scattering cosine take the limit from positive chi. This
+    // assigns the local bounce point once when the trapped piece is mirrored.
+    const real_t chi = xi_star == 0 ? std::numeric_limits<real_t>::min() : xi_star;
+    IntegratePieces(
+        ir, chi, primaryPole, pieces, gridK->GetRadialGrid(), geometry, poloidalRule, deltaCol
+    );
+    NormalizeDeltaColumn(mg, ir, xi_star, deltaCol);
 }
 
 /**

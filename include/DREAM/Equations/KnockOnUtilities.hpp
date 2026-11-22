@@ -150,6 +150,15 @@ real_t SetDeltaMatrixColumnOnGrid(
     const Quadrature::GaussLegendreRule &poloidalRule, const Quadrature::GaussLegendreRule &pitchRule
 );
 
+// Each entry is the positive-pole fraction of the stored pitch cell, in radial order.
+void BuildPrimaryPoleFractions(const FVM::Grid *grid, std::vector<real_t> &positivePoleFraction);
+
+// Unit-integral angular column for a primary at xi_0=+1 or -1.
+void SetFieldAlignedDeltaColumnOnGrid(
+    len_t ir, real_t xi_star, real_t primaryPole, const FVM::Grid *grid_knockon, real_t *deltaCol,
+    Quadrature::OrbitGeometry &geometry, const Quadrature::GaussLegendreRule &poloidalRule
+);
+
 // Set a single momentum matrix element S_{ik} on a DREAM grid.
 real_t EvaluateMollerFluxMatrixElementOnGrid(
     len_t i, len_t k, const FVM::Grid *grid_knockon, const FVM::Grid *grid_primary, real_t pCutoff

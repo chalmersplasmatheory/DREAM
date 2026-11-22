@@ -134,6 +134,13 @@ bool KnockOn::Run(bool) {
         );
     }
 
+    if (CheckPoleColumnsOnPitchFaces())
+        this->PrintOK("Pole columns are normalized and reflect at pitch-cell faces.");
+    else {
+        success = false;
+        this->PrintError("Knock-on test failed: pole column normalization or face ownership.");
+    }
+
     if (CheckMollerFluxIntegration())
         this->PrintOK("The Møller cross section correctly integrates to the Møller flux.");
     else {
@@ -420,6 +427,35 @@ bool KnockOn::CheckCylindricalDeltaCalculation() {
             std::nextafter(x,2*x),0,0
         );
         if (value!=0.5*x) return false;
+    }
+    return true;
+}
+
+// A pole delta on a face has a single owner. On a symmetric cylindrical
+// grid the two columns must reflect, including zero and the endpoints.
+bool KnockOn::CheckPoleColumnsOnPitchFaces() {
+    namespace K = DREAM::KnockOnUtilities;
+    auto grid = KnockOnTest::OwnedGrid(InitializeGridRCylPXi(1, 1, 20, 1, 0, 2));
+    K::Quadrature::OrbitGeometry geometry(grid->GetRadialGrid()->GetFluxSurfaceAverager(), 0);
+    const K::Quadrature::GaussLegendreRule rule(8);
+    const auto *mg = grid->GetMomentumGrid(0);
+    const len_t n = mg->GetNp2();
+    std::vector<real_t> plus(n), minus(n);
+
+    for (const real_t chi : {0.0, 0.5, 1.0}) {
+        K::SetFieldAlignedDeltaColumnOnGrid(0, chi, +1, grid.get(), plus.data(), geometry, rule);
+        K::SetFieldAlignedDeltaColumnOnGrid(0, chi, -1, grid.get(), minus.data(), geometry, rule);
+        len_t occupied = 0;
+        real_t integral = 0;
+        for (len_t j = 0; j < n; ++j) {
+            if (std::abs(plus[j] - minus[n-1-j]) > 1e-12)
+                return false;
+            if (plus[j] > 0)
+                ++occupied;
+            integral += mg->GetDp2(j) * plus[j];
+        }
+        if (occupied != 1 || std::abs(integral - 1) > 1e-12)
+            return false;
     }
     return true;
 }
