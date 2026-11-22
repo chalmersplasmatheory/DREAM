@@ -642,6 +642,9 @@ real_t KnockOnUtilities::EvaluateOrbitNumerator(
     return result;
 }
 
+// Integrate the orbit-weighted shape h(u) delta_j(chi,u) over the represented
+// pieces of the primary pitch cell. Keeping h inside the integral avoids
+// dividing by the pointwise orbit measure near the separatrix.
 real_t KnockOnUtilities::EvaluatePitchCellNumerator(
     len_t ir, real_t xi_star, Quadrature::Interval primary, Quadrature::Interval secondary,
     const FVM::RadialGrid *rg, Quadrature::OrbitGeometry& geometry,
@@ -657,6 +660,9 @@ real_t KnockOnUtilities::EvaluatePitchCellNumerator(
     return result;
 }
 
+// Orbit-average the local gyro-integrated scattering kernel at fixed primary
+// pitch u and scattering cosine chi. Dividing the poloidal numerator by
+// the primary orbit measure gives the outgoing cell average delta_j(chi,u).
 real_t KnockOnUtilities::EvaluateOrbitAveragedDelta(
     len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1,
     const FVM::RadialGrid *rg, len_t poloidalOrder
@@ -667,6 +673,9 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDelta(
     return EvaluateOrbitNumerator(ir,xi_star,xi01,xi0_f1,xi0_f2,rg,geometry,rule)/Vp1;
 }
 
+// Fold the trapped contributions into DREAM's stored pitch domain. The
+// positive trapped branch represents both directions of motion, so combine
+// the mirrored contributions before averaging over the primary orbit.
 real_t KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
     len_t ir, real_t xi_star, real_t xi01, real_t xi0_f1, real_t xi0_f2, real_t Vp1,
     const FVM::RadialGrid *rg, len_t poloidalOrder
@@ -682,6 +691,9 @@ real_t KnockOnUtilities::EvaluateOrbitAveragedDeltaWithTrappingCorrection(
     return result/Vp1;
 }
 
+// Evaluate one entry of the finite-volume angular kernel for a fixed
+// scattering cosine. The outgoing row receives contributions from the
+// full represented primary pitch cell, with f held constant in that cell.
 real_t KnockOnUtilities::EvaluateDeltaMatrixElementOnGrid(
     len_t ir, real_t xi_star, len_t j, len_t l, const FVM::Grid *grid_knockon,
     const FVM::Grid *grid_primary, len_t poloidalOrder, len_t pitchOrder
