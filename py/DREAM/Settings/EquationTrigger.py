@@ -60,7 +60,8 @@ class EquationTrigger:
         if condition == TYPE_TIME:
             self.trigger_time = trigger_time
         elif condition == TYPE_COLD_ELECTRON_RISE:
-            self.sensitivity = ncold_over_nhot
+            if ncold_over_nhot is not None:
+                self.sensitivity = ncold_over_nhot
 
 
     def setTimeTrigger(self, time):
