@@ -34,18 +34,26 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
     FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, 
     FVM::UnknownQuantityHandler *u, IonHandler *ihdl, const len_t iIon, 
     OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, const len_t id_nf,
-    real_t pThreshold, FVM::MomentQuantity::pThresholdMode pMode
+    real_t pThreshold, FVM::MomentQuantity::pThresholdMode pMode, bool splitRunawayDensity
 ) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, pThreshold, pMode, ihdl, iIon), 
-    ionization_mode(im), isPXiGrid(isPXiGrid), id_nfast(id_nf) 
+    ionization_mode(im), isPXiGrid(isPXiGrid), id_nfast(id_nf),
+    splitRunawayDensity(splitRunawayDensity && im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
 {
     SetName("IonKineticIonizationTerm");
 
     this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
 
-    if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
-        // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
+    if (im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC) {
+        // The density approximation changes only the normalization of the resolved shape.
         this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
+        if (this->splitRunawayDensity) {
+            id_external_pos = u->GetUnknownID(OptionConstants::UQTY_N_EXTERNAL_POS);
+            id_external_neg = u->GetUnknownID(OptionConstants::UQTY_N_EXTERNAL_NEG);
+            this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_external_pos);
+            this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_external_neg);
+        }
+    }
     
 
     this->tableIndexIon = GetTableIndex(Zion);
@@ -277,12 +285,14 @@ bool IonKineticIonizationTerm::SetCSJacobianBlock(
         this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
     }
 
-    if(derivId == id_nfast){
+    const bool exteriorDerivative = splitRunawayDensity && (derivId == id_external_pos || derivId == id_external_neg);
+    if (derivId == id_nfast || exteriorDerivative) {
         contributes = true;
         // Set approximate fast electron jacobian under the assumption that the kinetic
         // ionization equation term is directly proportional to the fast density:
         // if hot, integrate over hot region and divide by fast density (n_hot)
-        // if re, integrate over entire distribution and divide by fast density (n_re)
+        // For a split runaway population the resolved variation is
+        // delta(M[f_re]) = delta(n_re) - delta(n_external_pos) - delta(n_external_neg).
         SetIntegrand(Z0);
         const real_t *n = unknowns->GetUnknownData(id_nfast);
 
@@ -291,9 +301,16 @@ bool IonKineticIonizationTerm::SetCSJacobianBlock(
             tmpVec[ir] = 0;
 
         this->MomentQuantity::SetVectorElements(tmpVec, f);
-        for(len_t ir=0; ir<nr; ir++)
-            if (n[ir] != 0)
-                jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
+        const real_t sign = exteriorDerivative ? -1 : 1;
+        for (len_t ir=0, offset=0; ir<nr; ir++) {
+            real_t density = n[ir];
+            if (splitRunawayDensity) {
+                density = fGrid->IntegralMomentumAtRadius(ir,f+offset);
+                offset += fGrid->GetMomentumGrid(ir)->GetNCells();
+            }
+            if (density != 0)
+                jac->SetElement(ir, ir, sign * tmpVec[ir] / density);
+        }
     } 
     
     jac->SetOffset(rowOffset0,colOffset0);

@@ -20,6 +20,8 @@ namespace DREAM {
         bool isPXiGrid;
         bool collfreqModeIsFull;
         len_t id_ions, id_nfast;
+        bool splitRunawayDensity;
+        len_t id_external_pos=0, id_external_neg=0;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
         real_t *tmpVec;
@@ -43,7 +45,8 @@ namespace DREAM {
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*,
             IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode,
             bool isPXiGrid, const len_t id_nf,
-            real_t pThreshold = 0, FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
+            real_t pThreshold = 0, FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC,
+            bool splitRunawayDensity=false
         );
         virtual ~IonKineticIonizationTerm();
 

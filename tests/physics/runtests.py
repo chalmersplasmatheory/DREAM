@@ -30,6 +30,7 @@ from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
 from runiface_parallel import runiface_parallel
 from runaway_source_symmetry import runaway_source_symmetry
+from exterior_runaway_coupling import exterior_runaway_coupling
 
 
 TESTS = [
@@ -41,7 +42,8 @@ TESTS = [
     'trapping_conductivity',
     'ts_adaptive',
     'runiface_parallel',
-    'runaway_source_symmetry'
+    'runaway_source_symmetry',
+    'exterior_runaway_coupling'
 ]
 
 

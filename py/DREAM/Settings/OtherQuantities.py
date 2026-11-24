@@ -29,6 +29,7 @@ class OtherQuantities:
         'fluid/Tcold_ohmic',
         'fluid/Tcold_fhot_coll',
         'fluid/Tcold_fre_coll',
+        'fluid/Tcold_nre_coll',
         'fluid/Tcold_transport',
         'fluid/Tcold_radiation',
         'fluid/Tcold_binding_energy',

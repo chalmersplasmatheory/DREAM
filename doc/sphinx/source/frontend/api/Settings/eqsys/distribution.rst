@@ -305,11 +305,25 @@ With only the hot-tail grid, ``n_re`` equals the external inventory. Fresh
 inputs and older restart files assign any untagged external population to the
 positive direction.
 
+For cold-electron collisional heating and kinetic impact ionization of the
+bulk ions, the exterior contributes as a population at the momentum of the
+outer face. Both rates use ``n_external_pos + n_external_neg``. The heating
+uses the same superthermal free-electron drag as the kinetic moment, evaluated
+at the face. Kinetic ionization likewise uses the local :math:`v\sigma` at the
+face, in addition to the impact rates from the resolved distributions. The
+``IONIZATION_MODE_FLUID_RE`` option continues to apply its characteristic
+momentum model to all of ``n_re``.
+
+``fluid/Tcold_nre_coll`` records the exterior contribution to the cold-energy
+residual, with heating entering with a negative sign. In a kinetic ionization
+run, ``fluid/reioniz_rate`` records the exterior gain and loss for each ion
+charge state.
+
 The boundary requires the non-linear solver and a numerical :math:`(p,\xi)`
-distribution with at least two momentum cells. This implementation handles
-momentum-boundary exchange. Runaway generation, fluid runaway radial
-transport, frozen-current runaway transport, and LCFS losses require additional signed particle accounting and
-must be disabled when using this setting.
+distribution with at least two momentum cells. Runaway generation, fluid
+runaway radial transport, frozen-current runaway transport, and LCFS losses
+require additional signed particle accounting and must be disabled when using
+this setting.
 
 Add ``fluid/gammaExternal`` for the net outward rate and
 ``fluid/gammaExternalOut`` and ``fluid/gammaExternalIn`` for the two gross rates.
