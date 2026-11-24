@@ -1065,6 +1065,68 @@ Alternatively, the time-derivative can be made to vary in time itself:
    ds.radialgrid.setTimeVaryingB(dB0dt_B0=dB0dt(t)/B0)
 
 
+Triggered equation switch
+*************************
+When running kinetic simulations together with the SPI module, or when material
+otherwise enters the plasma on a time-scale which is long compared to the time
+step ``dt``, the *isotropic* and *superthermal* models are not immediately
+applicable at ``t=0`` everywhere. In order to delay the solution of these
+equations until the plasma conditions are such that the models are valid, one
+can use the equation trigger functionality.
+
+Each unknown quantity can be associated with two separate, independent
+equations, referred to as the *main* and *alternative* equations. The code will
+apply the main equation until the trigger condition is satisfied, and then apply
+the alternative equation for as long as the condition is satisfied. The trigger
+condition can be triggered independently at different radii, meaning that the
+equation will be switched separately at different spatial locations.
+
+At present, two trigger conditions are available:
+
++-----------------------------+--------------------------------------------------------------------------------------------------------+
+| **Condition**               | **Description**                                                                                        |
++=============================+========================================================================================================+
+| ``TYPE_TIME``               | Trigger the equation switch at a specified time.                                                       |
++-----------------------------+--------------------------------------------------------------------------------------------------------+
+| ``TYPE_COLD_ELECTRON_RISE`` | Trigger the equation switch when the ratio :math:`n_{\rm cold}/n_{\rm hot}` exceeds a specified value. |
++-----------------------------+--------------------------------------------------------------------------------------------------------+
+
+While the trigger functionality is implemented in a general manner in the code,
+not all quantities support switching the equation. At present, equations can be
+switched for the following unknown quantities: ``f_hot``, ``j_hot``, ``T_cold``,
+and ``T_hot``.
+
+Example
+-------
+When using the triggered isotropic or superthermal models for calculating the
+hot-tail generation, one can use the helper function
+``enableSuperthermalTrigger()`` to apply the trigger (and other related
+settings) consistently across all relevant unknowns. Specifically, this routine
+will
+
+- Set the desired trigger condition for ``f_hot``, ``j_hot``, ``T_cold``, and ``T_hot``.
+- Apply all current settings for ``f_hot`` and ``T_cold`` to the alternative equation.
+- Set the main equation of ``f_hot`` to an instantaneous Maxwellian.
+- Set the main equation of ``T_cold`` to a constant prescribed value.
+- Set the main equation for ``T_hot`` to a self-consistent temperature evolution, and the alternative equation to a moment of the ``f_hot``.
+- Set the main equation for ``j_hot`` to an Ohm's law, and the alternative equation to a moment of ``f_hot``.
+
+In practice, this could looks something like the following:
+
+.. code-block:: python
+
+   import DREAM.Settings.EquationTrigger as Trigger
+
+   ...
+   ds.hottailgrid.setPmax(1.4)
+   ds.hottailgrid.setNp(80)
+   ds.hottailgrid.setNxi(1)     # Nxi = 1  => use isotropic model
+
+   ds.eqsys.f_hot.setInitialProfiles(n, T, rn0=r0, rT0=r0)
+   # Switch to alternative equaiton when ncold/nhot > 1%
+   ds.eqsys.f_hot.enableSuperthermalTrigger(Trigger.TYPE_COLD_ELECTRON_DENSITY_RISE, ncold_over_nhot=0.01)
+   ...
+
 Analytical distribution
 ***********************
 DREAM supports the option of replacing the numerical kinetic description
