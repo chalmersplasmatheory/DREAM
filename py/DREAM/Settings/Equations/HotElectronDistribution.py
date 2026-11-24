@@ -115,6 +115,17 @@ class HotElectronDistribution(DistributionFunction):
         :param Tcold: Initial cold electron temperature.
         :param args, kwargs: Additional arguments passed onto 'trigger.setCondition()'.
         """
+        self.enableSuperthermalTrigger(condition, Tcold, *args, **kwargs)
+
+
+    def enableSuperthermalTrigger(self, condition, Tcold=1, *args, **kwargs):
+        """
+        Enable the automatically triggered superthermal model.
+
+        :param condition: The trigger condition to use.
+        :param Tcold: Initial cold electron temperature.
+        :param args, kwargs: Additional arguments passed onto 'trigger.setCondition()'.
+        """
         self.trigger.setCondition(condition, *args, **kwargs)
 
         self.settings.eqsys.j_hot.trigger.setCondition(condition, *args, **kwargs)
