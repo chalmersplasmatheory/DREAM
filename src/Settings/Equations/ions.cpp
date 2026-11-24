@@ -41,6 +41,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
 
     s->DefineSetting(MODULENAME "/names", "Names of each ion species", (const string)"");
     s->DefineSetting(MODULENAME "/molecule_masses", "Mass of each ion species that is a molecule [kg] (0 for atoms)", 1, dims, (real_t*)nullptr);
+    s->DefineSetting(MODULENAME "/scattering_radii", "Momentum scattering radius of each ion species [Å] (0 if unknown)", 1, dims, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/isotopes", "List of atomic mass numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
@@ -274,10 +275,11 @@ void SimulationGenerator::ConstructEquation_Ions(
     MultiInterpolator1D *prescribed_densities = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
-    len_t nMoleculeMasses;
+    len_t nMoleculeMasses, nScatteringRadii;
     const real_t *moleculeMasses = s->GetRealArray(MODULENAME "/molecule_masses", 1, &nMoleculeMasses);
+    const real_t *scatteringRadii = s->GetRealArray(MODULENAME "/scattering_radii", 1, &nScatteringRadii);
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames, moleculeMasses);
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames, hydrogenNames, moleculeMasses, scatteringRadii);
     eqsys->SetIonHandler(ih);
 
     const bool reactionsEnabled =

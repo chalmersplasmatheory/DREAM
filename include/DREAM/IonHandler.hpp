@@ -30,6 +30,7 @@ namespace DREAM {
 
         std::vector<std::string> ionNames;
         real_t *moleculeMasses;   // mass of each molecule [kg] (0 for atoms)
+        real_t *scatteringRadii;  // momentum scattering radius of each species [Å]
         std::vector<std::string> tritiumNames, hydrogenNames;
         len_t nTritium=0, nHydrogen=0;
         len_t *tritiumIndices, *hydrogenIndices;
@@ -61,7 +62,8 @@ namespace DREAM {
 			const len_t *Z, len_t NZ, std::vector<std::string>& ionNames,
 			std::vector<std::string>& tritiumNames,
 			std::vector<std::string>& hydrogenNames,
-			const real_t *moleculeMasses = nullptr
+			const real_t *moleculeMasses = nullptr,
+			const real_t *scatteringRadii = nullptr
 		);
         virtual ~IonHandler();
 
@@ -139,8 +141,10 @@ namespace DREAM {
         
         const real_t* GetIonSpeciesMass() const 
             {return mi;}
-        const real_t GetIonSpeciesMass(len_t iz) const 
+        const real_t GetIonSpeciesMass(len_t iz) const
             {return mi[iz];}
+        const real_t GetMomentumScatteringRadius(len_t iz) const
+            {return scatteringRadii[iz];}
         
 
         // DERIVED QUANTITY EVALUATORS

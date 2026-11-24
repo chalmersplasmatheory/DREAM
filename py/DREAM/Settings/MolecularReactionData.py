@@ -29,6 +29,17 @@ MOLECULE_MASS = {
     "DT":  8.35e-27,
 }
 
+# Default momentum scattering radius [Å] of the molecules.
+#//https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Supplemental_Modules_(Physical_and_Theoretical_Chemistry)/Kinetics/06%3A_Modeling_Reaction_Kinetics/6.01%3A_Collision_Theory/6.1.01%3A_Collisional_Cross_Section
+MOMENTUM_SCATTERING_RADIUS = {
+    "D":  1.54,
+    "D2":  2.07,
+    "H2":  2.07,
+    "He":  1.83,
+    "Ne": 1.95,
+    "Ar": 2.39,
+}
+
 # Delta E is computed from the potential energy E of each species, relative to
 # neutral atoms:
 #   D 0,  

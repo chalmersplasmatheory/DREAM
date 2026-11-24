@@ -28,34 +28,6 @@ NeutralCollisionalEnergyTransferTerm::NeutralCollisionalEnergyTransferTerm(
 }
 
 /**
- * Calculates the momentum scattering radius for a given neutral species. In units of Ångström.
- */
-real_t NeutralCollisionalEnergyTransferTerm::getMomentumScatteringRadius(len_t IZ){
-    //https://chem.libretexts.org/Bookshelves/Physical_and_Theoretical_Chemistry_Textbook_Maps/Supplemental_Modules_(Physical_and_Theoretical_Chemistry)/Kinetics/06%3A_Modeling_Reaction_Kinetics/6.01%3A_Collision_Theory/6.1.01%3A_Collisional_Cross_Section
-    const std::string name = ions->GetName(IZ);
-    if (name == "D")
-        return 1.54;
-
-    else if (name == "D2")
-        return 2.07;
-
-    else if (name == "H2")
-        return 2.07;
-
-    else if (name == "He")
-        return 1.83;
-
-    else if (name == "Ne")
-        return 1.95;
-
-    else if (name == "Ar")
-        return 2.39;
-    else{
-        return 0;
-    }
-}
-
-/**
  * Calculates the neutral scattering rate between two neutral species at a given radial position.
  * The scattering rate is calculated using the momentum scattering radius of the two species, their masses,
  * and their temperatures.
@@ -64,8 +36,8 @@ real_t NeutralCollisionalEnergyTransferTerm::CalculateNeutralScatteringRate(
     len_t iz, len_t jz, real_t Ti, real_t Tj, real_t nj
 ) {
 
-    real_t ri = getMomentumScatteringRadius(iz) * 1e-10; // convert to meters
-    real_t rj = getMomentumScatteringRadius(jz) * 1e-10; // convert to meters
+    real_t ri = ions->GetMomentumScatteringRadius(iz) * 1e-10; // Å -> m
+    real_t rj = ions->GetMomentumScatteringRadius(jz) * 1e-10; // Å -> m
     const real_t miAMU = ions->GetIonSpeciesMass(iz)/ Constants::mu;
     const real_t mjAMU = ions->GetIonSpeciesMass(jz)/ Constants::mu;
 

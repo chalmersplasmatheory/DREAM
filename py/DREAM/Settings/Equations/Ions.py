@@ -1102,6 +1102,7 @@ class Ions(UnknownQuantity):
         names   = ""
         kinds   = ""
         molecule_masses = []
+        scattering_radii = []
         init_equil = []
         initialNi = []
 
@@ -1114,6 +1115,7 @@ class Ions(UnknownQuantity):
             names += '{};'.format(ion.getName())
             kinds += '{};'.format(ion.kind)
             molecule_masses.append(ion.molecule_mass)
+            scattering_radii.append(reaction_data.MOMENTUM_SCATTERING_RADIUS.get(ion.kind, 0))
             if ion.molecule_mass == 0 and ion.kind in reaction_data.MOLECULE_MASS:
                 raise EquationException(f"ions: '{ion.getName()}' is a molecule. Add it with addMolecule().")
 
@@ -1220,6 +1222,7 @@ class Ions(UnknownQuantity):
         data = {
             'names': names,
             'molecule_masses': molecule_masses,
+            'scattering_radii': scattering_radii,
             'kinds': kinds,
             'Z': Z,
             'isotopes':isotopes,

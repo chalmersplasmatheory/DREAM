@@ -56,11 +56,12 @@ const real_t IonHandler::atomicMassInMu[nIonMass] =
  *          will be referred (must have 'NZ' elements).
  * tritium: List of names of the tritium ion species.
  * moleculeMasses: Mass of each molecule [kg] (0 for atoms; default: no molecules).
+ * scatteringRadii: Momentum scattering radius of each species [Å] (default: 0).
  */
 IonHandler::IonHandler(
     FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
     vector<string>& names, vector<string>& tritium, vector<string>& hydrogen,
-    const real_t *moleculeMasses
+    const real_t *moleculeMasses, const real_t *scatteringRadii
 ) {
     rGrid = rg;
     unknowns = u;
@@ -81,6 +82,10 @@ IonHandler::IonHandler(
     this->moleculeMasses = new real_t[NZ];
     for (len_t i = 0; i < NZ; i++)
         this->moleculeMasses[i] = (moleculeMasses == nullptr) ? 0 : moleculeMasses[i];
+
+    this->scatteringRadii = new real_t[NZ];
+    for (len_t i = 0; i < NZ; i++)
+        this->scatteringRadii[i] = (scatteringRadii == nullptr) ? 0 : scatteringRadii[i];
 
     this->tritiumNames = tritium;
     this->nTritium = tritium.size();
@@ -124,6 +129,7 @@ IonHandler::~IonHandler(){
     delete [] tritiumIndices;
 	delete [] hydrogenIndices;
     delete [] moleculeMasses;
+    delete [] scatteringRadii;
 }
 
 

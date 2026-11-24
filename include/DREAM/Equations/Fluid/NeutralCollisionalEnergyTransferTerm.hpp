@@ -18,7 +18,6 @@ namespace DREAM {
         real_t mi;
         real_t mj;
 
-        real_t getMomentumScatteringRadius(len_t species);
         real_t CalculateNeutralScatteringRate(len_t, len_t, real_t, real_t, real_t);
 
 
