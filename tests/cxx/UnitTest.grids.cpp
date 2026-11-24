@@ -12,6 +12,7 @@
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 #include "FVM/Grid/NumericBRadialGridGenerator.hpp"
+#include "FVM/Grid/Stellarator/NumericStellaratorRadialGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "UnitTest.hpp"
@@ -105,6 +106,52 @@ DREAM::FVM::Grid *UnitTest::InitializeNumericFluidGrid(const real_t *r_f, const 
     auto *NBrgg = new DREAM::FVM::NumericBRadialGridGenerator(r_f, nr, mf);
 
     auto *rg   = new DREAM::FVM::RadialGrid(NBrgg);
+
+    auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyMomentumGrid(rg));
+    grid->Rebuild(0);
+
+    return grid;
+}
+
+/**
+ * Initialize a fluid grid (only radial grid).
+ *
+ * nr: (optional) Number of radial grid points.
+ */
+DREAM::FVM::Grid *UnitTest::InitializeNumericStellaratorFluidGrid(const real_t *r_f, const len_t nr, SFile_HDF5 *s) {
+    real_t R0 = s->GetDoubles1D("R0", nullptr)[0];
+    len_t nfp = s->GetInt64_1D("nfp", nullptr)[0];
+    len_t ntheta_interp = s->GetInt64_1D("ntheta", nullptr)[0];
+    len_t nphi_interp   = s->GetInt64_1D("nphi", nullptr)[0];
+    real_t b  = s->GetDoubles1D("wall_radius", nullptr)[0];
+
+    DREAM::FVM::NumericStellaratorRadialGridGenerator::eq_data *eqdata =
+        new DREAM::FVM::NumericStellaratorRadialGridGenerator::eq_data;
+    
+    sfilesize_t dims; 
+    eqdata->rho             = s->GetDoubles1D("rho", &dims);
+    eqdata->nrho            = dims;
+    eqdata->theta           = s->GetDoubles1D("theta", &dims);
+    eqdata->ntheta          = dims;
+    eqdata->phi             = s->GetDoubles1D("phi", &dims);
+    eqdata->nphi            = dims;
+    eqdata->dataR           = s->GetDoubles1D("R", nullptr);
+    eqdata->dataZ           = s->GetDoubles1D("Z", nullptr);
+    eqdata->dataG           = s->GetDoubles1D("G", nullptr);
+    eqdata->dataI           = s->GetDoubles1D("I", nullptr);
+    eqdata->dataiota        = s->GetDoubles1D("iota", nullptr);
+    eqdata->datapsi         = s->GetDoubles1D("psi_T", nullptr);
+    eqdata->dataB           = s->GetDoubles1D("B", nullptr);
+    eqdata->dataBdotGradphi = s->GetDoubles1D("BdotGradPhi", nullptr);
+    eqdata->dataJacobian    = s->GetDoubles1D("Jacobian", nullptr);
+    eqdata->datagtt         = s->GetDoubles1D("g_tt", nullptr);
+    eqdata->datagtp         = s->GetDoubles1D("g_tp", nullptr);
+    eqdata->datalambdat     = s->GetDoubles1D("lambda_t", nullptr);
+    eqdata->datalambdap     = s->GetDoubles1D("lambda_p", nullptr);
+
+    auto *NBrgg = new DREAM::FVM::NumericStellaratorRadialGridGenerator(r_f, nr, b, R0, nfp, eqdata, ntheta_interp, nphi_interp);
+
+    auto *rg   = new DREAM::FVM::RadialGridStellarator(NBrgg);
 
     auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyMomentumGrid(rg));
     grid->Rebuild(0);

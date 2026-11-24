@@ -181,10 +181,12 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
  real_t 
     *effectivePassingFraction   = nullptr, 
     *effectivePassingFraction_f = nullptr, 
-    *FSA_B2   = nullptr,
-    *FSA_B2_f = nullptr,
-    *FSA_B    = nullptr,
-    *FSA_B_f  = nullptr,
+    *FSA_B2       = nullptr,
+    *FSA_B2_f     = nullptr,
+    *FSA_B        = nullptr,
+    *FSA_B_f      = nullptr,
+    *FSA_1OverB   = nullptr,
+    *FSA_1OverB_f = nullptr,
     *FSA_nablaR2OverR2   = nullptr,
     *FSA_nablaR2OverR2_f = nullptr, 
     *FSA_1OverR2   = nullptr,
@@ -193,12 +195,13 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, FSA_FUNC_ONE_OVER_R_SQUARED, nullptr, FSA_PARAM_ONE_OVER_R_SQUARED);
     SetFluxSurfaceAverage(FSA_B,FSA_B_f, FSA_FUNC_B, nullptr, FSA_PARAM_B);
     SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, FSA_FUNC_B_SQUARED, nullptr, FSA_PARAM_B_SQUARED);
+    SetFluxSurfaceAverage(FSA_1OverB,FSA_1OverB_f, FSA_FUNC_1OverB, nullptr, FSA_PARAM_1OverB);
     SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED, nullptr, FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED);
     
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
-        FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverR2, FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f);
+        FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverB,FSA_1OverB_f,FSA_1OverR2,FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f);
 
     // set toroidal flux psi_t defined by dpsi_t/dpsi_p = qR0 (safety factor)
     // or equivalently as the toroidal magnetic field integrated over a 
@@ -284,7 +287,7 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
  */
 void RadialGrid::InitializeFSAvg(
     real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
-    real_t *B2avg, real_t *B2avg_f,
+    real_t *B2avg, real_t *B2avg_f, real_t *OneOverBavg, real_t *OneOverBavg_f,
     real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
     real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f
 ){
@@ -295,6 +298,8 @@ void RadialGrid::InitializeFSAvg(
     this->FSA_B_f                    = Bavg_f;
     this->FSA_B2                     = B2avg;
     this->FSA_B2_f                   = B2avg_f;
+    this->FSA_1OverB                 = OneOverBavg;
+    this->FSA_1OverB_f               = OneOverBavg_f;
     this->FSA_1OverR2                = OneOverR2_avg;
     this->FSA_1OverR2_f              = OneOverR2_avg_f;
     this->FSA_nablaR2OverR2          = nablaR2OverR2_avg;
@@ -306,14 +311,24 @@ void RadialGrid::InitializeFSAvg(
  * Deallocate flux surface averages
  */
 void RadialGrid::DeallocateFSAvg(){
-    if (this->effectivePassingFraction == nullptr)
+    if (this->FSA_nablaR2OverR2 == nullptr)
         return;
 
-    delete [] this->FSA_B;
-    delete [] this->FSA_B_f;
-    delete [] this->FSA_B2;
-    delete [] this->FSA_B2_f;
-    delete [] this->effectivePassingFraction;
+    if (this->FSA_B != nullptr)
+        delete [] this->FSA_B;
+    if (this->FSA_B_f != nullptr)
+        delete [] this->FSA_B_f;
+    if (this->FSA_B2 != nullptr)
+        delete [] this->FSA_B2;
+    if (this->FSA_B2_f != nullptr)
+        delete [] this->FSA_B2_f;
+    if (this->FSA_1OverB != nullptr)
+        delete [] this->FSA_1OverB;
+    if (this->FSA_1OverB_f != nullptr)
+        delete [] this->FSA_1OverB_f;
+    if (this->effectivePassingFraction != nullptr)
+        delete [] this->effectivePassingFraction;
+
     delete [] this->FSA_nablaR2OverR2;
     delete [] this->FSA_nablaR2OverR2_f;
     delete [] this->FSA_1OverR2;
