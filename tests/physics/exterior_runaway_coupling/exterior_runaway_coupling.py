@@ -64,6 +64,9 @@ def settings(layout, p, mode):
     ds.eqsys.n_i.setIonization(mode)
     ds.solver.setType(Solver.NONLINEAR)
     ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
+    ds.solver.tolerance.set(reltol=1e-9)
+    ds.solver.tolerance.set(['j_re', 'j_tot', 'I_p'], abstol=1e-9)
+    ds.solver.tolerance.set(['psi_p', 'psi_edge'], abstol=1e-12)
     ds.timestep.setTmax(DT)
     ds.timestep.setNt(1)
     return ds
