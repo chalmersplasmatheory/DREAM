@@ -530,8 +530,8 @@ which can either be specified as constant in time or as following a specified
 time evolution. The user can choose to either inject particles of a specific
 charge state, or to inject particles of multiple charge states simultaneously.
 
-Edge Injection Example
-^^^^^^^^^^^^^^^^^^^^^^
+Edge source
+^^^^^^^^^^^
 The ion source is enabled via a single line:
 
 .. code-block:: python
@@ -589,11 +589,11 @@ Finally, particles in **several charge states** may be added simultaneously:
    Thus, the unit of ``dNdt`` is simply :math:`\mathrm{s}^{-1}` (or particles
    per second).
 
-Radial Injection Example
-^^^^^^^
+Volumetric source
+^^^^^^^^^^^^^^^^^
 A volumetric ion source can be prescribed by providing the source on both a
 time grid and a radial grid by setting the source type to
-``ION_SOURCE_PRESCRIBED_VOLUMETRIC``, like the following example:
+``ION_SOURCE_PRESCRIBED_VOLUMETRIC``:
 
 .. code-block:: python
 
@@ -630,18 +630,66 @@ time grid and a radial grid by setting the source type to
        source_type=Ions.ION_SOURCE_PRESCRIBED_VOLUMETRIC
    )
 
-In this case, ``dNdt`` must be given as a three-dimensional array with shape
-
-.. math::
-
-   (Z+1,\; N_t,\; N_r),
-
-where :math:`Z+1` is the number of charge states, :math:`N_t` is the number of
+The source function ``dNdt`` can be given, as shown above, as a
+three-dimensional array with shape :math:`(Z+1,\; N_t,\; N_r)`, where
+:math:`Z+1` is the number of charge states, :math:`N_t` is the number of time
 time points, and :math:`N_r` is the number of radial grid points. Each element
-specifies the source strength for a given charge state, time, and radius. For a prescribed volumetric source, 
-the quantity ``dNdt`` represents the particle source density distributed over radius and time. Its normalization 
-should be chosen such that the intended total particle content is obtained
-when integrating over the radial grid and over the relevant time interval.
+specifies the source strength for a given charge state, time, and radius. For a
+prescribed volumetric source, the quantity ``dNdt`` represents the particle
+source density distributed over radius and time. Its normalization should be
+chosen such that the intended total particle content is obtained when
+integrating over the radial grid and over the relevant time interval.
+
+It is also possible to only specify the source function as a scalar, a
+one-dimensional array, or a two-dimensional array. Which dimensions the data
+refers to is determined by which of the ``t``, ``r``, and ``Z0`` arguments are
+provided to ``addIonSource()``. If ``dNdt`` is a two-dimensional array, it is
+expected to have one of the shapes :math:`(Z+1, n_t)`, :math:`(Z+1, n_r)`, or
+:math:`(n_t, n_r)`. Examples of how 0-D, 1-D, and 2-D sources can be specified
+are given below:
+
+.. code-block:: python
+
+   # 0-D source (uniform in time and radius)
+   source_0D = 1e20
+
+   ds.eqsys.n_i.addIonSource(
+       'Ne',
+       dNdt=source_0D,
+       Z0=0,
+       source_type=Ions.ION_SOURCE_PRESCRIBED_VOLUMETRIC
+   )
+
+   # 1-D source (function of time, uniform in radius)
+   source_1D = [0, 1e20, 1e20, 0]
+   source_1D_t = [0, 0.0099, 0.01, 0.02, 0.0201]
+
+   ds.eqsys.n_i.addIonSource(
+       'Ne',
+       dNdt=source_1D,
+       t=source_1D_t,
+       Z0=0,
+       source_type=Ions.ION_SOURCE_PRESCRIBED_VOLUMETRIC
+   )
+
+   # 2-D source (function of time and radius)
+   a = 2.1  # minor radius (m)
+
+   source_2D_r = np.linspace(0, a, 40)
+   source_2D_t = [0, 0.0099, 0.01, 0.02, 0.0201]
+   source_2D = np.zeros((len(source_2D_t), len(source_2D_r)))
+
+   source_2D[2:4,:] = 1e20  # apply between 0.01-0.02s
+
+   ds.eqsys.n_i.addIonSource(
+       'Ne',
+       dNdt=source_2D,
+       t=source_2D_t,
+       r=source_2D_r,
+       Z0=0,
+       source_type=Ions.ION_SOURCE_PRESCRIBED_VOLUMETRIC
+   )
+
 
 Ion/neutral transport
 ---------------------
