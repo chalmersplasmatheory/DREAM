@@ -11,6 +11,7 @@
 #include "FVM/Interpolator1D.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/IO.hpp"
 #include <tuple>
 #include <vector>
 
@@ -36,18 +37,22 @@ NBIHandler::NBIHandler(FVM::Grid* grid, ADAS* adas, IonHandler* ions
     Deposition_profile = new real_t[nr];
     Deposition_profile_times_Vprime = new real_t[nr];
     dV_beam_prime_tot = new real_t[nr];
-    H_r_dTe = new real_t[nr];
-    H_r_dne = new real_t[nr];
-    d_NBIHeatTerm_e_d_Te = new real_t[nr];
-    d_NBIHeatTerm_e_d_ne = new real_t[nr];
-    d_NBIHeatTerm_i_d_Te = new real_t[nr];
-    d_NBIHeatTerm_i_d_ne = new real_t[nr];
-    d_NBIHeatTerm_i_d_T_ij = new real_t[maxidx];
-    d_NBIHeatTerm_i_d_n_ij = new real_t[maxidx];
-    d_NBIHeatTerm_e_d_T_ij = new real_t[maxidx];
-    d_NBIHeatTerm_e_d_n_ij = new real_t[maxidx];
-    H_r_dn_ij = new real_t[maxidx];
-    H_r_dT_ij = new real_t[maxidx];
+    // Derivatives are non-local (attenuation upstream changes the deposition downstream),
+    // so they are stored as matrices: row = deposition cell ir, column = cell k.
+    //   d/dTe, d/dne:     [ir*nr + k]
+    //   d/dn_ij, d/dT_ij: [ir*maxidx + idx(k, iz, Z0)]
+    H_r_dTe = new real_t[nr * nr];
+    H_r_dne = new real_t[nr * nr];
+    d_NBIHeatTerm_e_d_Te = new real_t[nr * nr];
+    d_NBIHeatTerm_e_d_ne = new real_t[nr * nr];
+    d_NBIHeatTerm_i_d_Te = new real_t[nr * nr];
+    d_NBIHeatTerm_i_d_ne = new real_t[nr * nr];
+    d_NBIHeatTerm_i_d_T_ij = new real_t[nr * maxidx];
+    d_NBIHeatTerm_i_d_n_ij = new real_t[nr * maxidx];
+    d_NBIHeatTerm_e_d_T_ij = new real_t[nr * maxidx];
+    d_NBIHeatTerm_e_d_n_ij = new real_t[nr * maxidx];
+    H_r_dn_ij = new real_t[nr * maxidx];
+    H_r_dT_ij = new real_t[nr * maxidx];
 }
 
 /**
@@ -87,18 +92,12 @@ void NBIHandler::ConfigureFromSettings(
         this->energy_fractions[i] = energy_fractions[i];
     }
 
-    // Compute the beam basis vectors e1 and e2 and the start and stop of the beam in beam coordinates, initialized to extreme values
-    this->s_start = 1e10;
-    this->s_stop = 0;
+    // Compute the beam basis vectors e1 and e2. The beam is sampled along its full
+    // length from P0 (s = 0) to s_max; samples in vacuum are skipped in the deposition.
+    this->s_start = 0;
+    this->s_stop = s_max;
     PrecomputeBeamBasisVectors();
     PrecomputeFluxSurfaces();
-
-    if (s_start > s_stop) 
-        throw DREAMException("Beam does not intersect with any flux surface.");
-    if (s_max < s_stop) 
-        throw DREAMException("Beam does not extend all the way through the plasma.");
-    if (s_start < 0) 
-        throw DREAMException("Beam starts in the plasma (s_start < 0).");
 
     this->j_B_profile = j_B_profile;
     this->Power_Profile = Power_Profile;
@@ -117,8 +116,38 @@ void NBIHandler::ConfigureFromSettings(
     this->n_beam_s = n_beam_s;
     this->d_beam_s = (s_stop - s_start) / n_beam_s;
 
+    // Warn if the beam step is too coarse to resolve the radial cells
+    const real_t* dr_grid = this->radialGrid->GetDr();
+    real_t dr_min = dr_grid[0];
+    for (len_t ir = 1; ir < nr; ir++)
+        if (dr_grid[ir] < dr_min)
+            dr_min = dr_grid[ir];
+    if (d_beam_s > 0.5 * dr_min)
+        IO::PrintWarning(
+            "NBI: Beam step d_s = %.3e m is larger than half the smallest radial cell (dr = %.3e m). "
+            "Increase n_beam_s to resolve the deposition profile.",
+            d_beam_s, dr_min
+        );
+
     //Precompute the ir-flux surface mapping
     PrecomputeBeamMapLUT();
+
+    // Check that every pencil beam starts and ends outside the plasma (vacuum = nr),
+    // and that at least one sample lies inside the plasma
+    bool hitsPlasma = false;
+    for (len_t it = 0; it < n_beam_theta; ++it) {
+        for (len_t irad = 0; irad < n_beam_radius; ++irad) {
+            if (ir_lut[lut_index(it, irad, 0)] != nr)
+                throw DREAMException("NBI: Beam starts inside the plasma. Move P0 outside the plasma.");
+            if (ir_lut[lut_index(it, irad, n_beam_s - 1)] != nr)
+                throw DREAMException("NBI: Beam does not extend all the way through the plasma. Increase s_max.");
+            for (len_t is = 0; is < n_beam_s; ++is)
+                if (ir_lut[lut_index(it, irad, is)] != nr)
+                    hitsPlasma = true;
+        }
+    }
+    if (!hitsPlasma)
+        throw DREAMException("NBI: Beam does not intersect the plasma.");
 
     // Trapezoidal integration to get total beam current, if a jB_profile is set
     this->I_B = 0.0;
@@ -174,37 +203,19 @@ real_t NBIHandler::Calculate_jB_IB(real_t r_B, real_t theta_B) {
 }
 
 /**
- * Precomputes the flux surfaces in R and Z. Also find the start and end of the beam in beam coordinates.
+ * Precomputes the flux surfaces (cell faces) in R and Z.
  */
 void NBIHandler::PrecomputeFluxSurfaces() {
 
-    cachedFluxSurfaces.resize(nr);
-    for (len_t ir = 0; ir < nr; ++ir) {
+    // Cache the nr+1 cell faces r_f[0..nr], including the plasma edge r_f[nr]
+    cachedFluxSurfaces.resize(nr + 1);
+    for (len_t ir = 0; ir <= nr; ++ir) {
         cachedFluxSurfaces[ir].resize(ntheta);
         for (real_t itheta = 0; itheta < ntheta; ++itheta) {
             real_t theta = itheta * dtheta;
             real_t R = R0 + radialGrid->GetFluxSurfaceRMinusR0_theta(ir, theta);
             real_t Z = radialGrid->GetFluxSurfaceZMinusZ0_theta(ir, theta);
             cachedFluxSurfaces[ir][itheta] = {R, Z};
-
-            real_t nphi = 200;
-            real_t dphi = 2.0 * M_PI / nphi;
-            if (ir == nr - 1) {
-                for (real_t iphi = 0; iphi < nphi; ++iphi) {
-                    real_t phi = iphi * dphi;
-                    real_t x = R * std::cos(phi);
-                    real_t y = R * std::sin(phi);
-                    real_t z = Z;
-                    real_t r_B, theta_B, s_B;
-                    CartesianToCylindrical(x, y, z, r_B, theta_B, s_B);
-                    if (r_B < r_beam) {
-                        if (s_B > s_stop)
-                            s_stop = s_B;
-                        if (s_B < s_start)
-                            s_start = s_B;
-                    }
-                }
-            }
         }
     }
 }
@@ -246,7 +257,8 @@ void NBIHandler::PrecomputeBeamMapLUT() {
         for (len_t irad = 0; irad < n_beam_radius; ++irad) {
             for (len_t is = 0; is < n_beam_s; ++is) {
                 real_t beam_theta = it * d_beam_theta;
-                real_t beam_radius = (irad) *d_beam_radius;
+                // Midpoint of each beam ring, so that sum r_i*dr equals the disk area exactly
+                real_t beam_radius = (irad + 0.5) * d_beam_radius;
                 real_t beam_s = s_start + is * d_beam_s;
 
                 len_t ir_now =
@@ -291,92 +303,86 @@ void NBIHandler::Build(const real_t t, const real_t,
     // Setting values to zero since build is called multiple times per timestep
     const real_t* VpVol = this->radialGrid->GetVpVol();
     const real_t* dr = this->radialGrid->GetDr();
+    const len_t nIdx = nr * nZ * nCharge;
     for (len_t ir = 0; ir < nr; ++ir) {
         NBIHeatTerm_e[ir] = 0.0;
         NBIHeatTerm_i[ir] = 0.0;
         Deposition_profile[ir] = 0.0;
         Deposition_profile_times_Vprime[ir] = 0.0;
         dV_beam_prime_tot[ir] = 0.0;
-        H_r_dTe[ir] = 0.0;
-        H_r_dne[ir] = 0.0;
-        d_NBIHeatTerm_e_d_Te[ir] = 0.0;
-        d_NBIHeatTerm_e_d_ne[ir] = 0.0;
-        d_NBIHeatTerm_i_d_Te[ir] = 0.0;
-        d_NBIHeatTerm_i_d_ne[ir] = 0.0;
-        for (len_t iz = 0; iz < nZ; iz++) {
-            for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
-                H_r_dT_ij[idx(ir, iz, Z0)] = 0.0;
-                H_r_dn_ij[idx(ir, iz, Z0)] = 0.0;
-                d_NBIHeatTerm_i_d_n_ij[idx(ir, iz, Z0)] = 0.0;
-                d_NBIHeatTerm_i_d_T_ij[idx(ir, iz, Z0)] = 0.0;
-                d_NBIHeatTerm_e_d_n_ij[idx(ir, iz, Z0)] = 0.0;
-                d_NBIHeatTerm_e_d_T_ij[idx(ir, iz, Z0)] = 0.0;
-            }
-        }
+    }
+    for (len_t i = 0; i < nr * nr; ++i) {
+        H_r_dTe[i] = 0.0;
+        H_r_dne[i] = 0.0;
+        d_NBIHeatTerm_e_d_Te[i] = 0.0;
+        d_NBIHeatTerm_e_d_ne[i] = 0.0;
+        d_NBIHeatTerm_i_d_Te[i] = 0.0;
+        d_NBIHeatTerm_i_d_ne[i] = 0.0;
+    }
+    for (len_t i = 0; i < nr * nIdx; ++i) {
+        H_r_dT_ij[i] = 0.0;
+        H_r_dn_ij[i] = 0.0;
+        d_NBIHeatTerm_i_d_n_ij[i] = 0.0;
+        d_NBIHeatTerm_i_d_T_ij[i] = 0.0;
+        d_NBIHeatTerm_e_d_n_ij[i] = 0.0;
+        d_NBIHeatTerm_e_d_T_ij[i] = 0.0;
     }
     const real_t* p = this->Power_Profile->Eval(t);
     real_t powerNow = p[0];
     
-    // If the power is not 0, then compute the calculation
-    if (powerNow != 0) {
+    // If the power is 0, everything stays zero
+    if (powerNow == 0)
+        return;
 
-        // Compute the deposition profile
-        ComputeDepositionProfile(unknowns, Ti_beam_input);
+    // Compute the deposition profile and its derivatives
+    ComputeDepositionProfile(unknowns, Ti_beam_input);
 
-        // Compute the deposited fraction of the beam
-        real_t frac = 0.0;
-        for (len_t ir = 1; ir < nr; ir++) {
-            frac += Deposition_profile_times_Vprime[ir] * d_beam_radius;
-        }
-        real_t fi, fe, dfe_dne, dfe_dTe, dfi_dne, dfi_dTe;
-        std::vector<real_t> dfe_dn_ij(nZ), dfi_dn_ij(nZ), dfe_dT_ij(nZ), dfi_dT_ij(nZ);
-        for (len_t ir = 0; ir < nr; ++ir) {
+    real_t fi, fe, dfe_dne, dfe_dTe, dfi_dne, dfi_dTe;
+    std::vector<real_t> dfe_dn_ij(nZ * nCharge), dfi_dn_ij(nZ * nCharge), dfe_dT_ij(nZ), dfi_dT_ij(nZ);
+    for (len_t ir = 0; ir < nr; ++ir) {
 
-            // Calculate ion and electron fractions and their derivatives
-            IonElectronFractions(unknowns, ir, fi, fe, dfe_dne, dfe_dTe, dfe_dn_ij,
-                                 dfe_dT_ij, dfi_dne, dfi_dTe, dfi_dn_ij, dfi_dT_ij,
-                                 Ti_beam_input);
-            real_t K = powerNow * d_beam_radius / (VpVol[ir] * dr[ir]);
+        // Calculate ion and electron fractions and their derivatives
+        IonElectronFractions(unknowns, ir, fi, fe, dfe_dne, dfe_dTe, dfe_dn_ij,
+                             dfe_dT_ij, dfi_dne, dfi_dTe, dfi_dn_ij, dfi_dT_ij,
+                             Ti_beam_input);
+        // VpVol is normalized to R0, so the physical cell volume is R0*VpVol*dr [m^3]
+        real_t K = powerNow * d_beam_radius / (R0 * VpVol[ir] * dr[ir]);
+        real_t Dep = Deposition_profile_times_Vprime[ir];
 
-            // Set heating terms
-            NBIHeatTerm_e[ir] = fe * powerNow * Deposition_profile_times_Vprime[ir] * d_beam_radius / (VpVol[ir] * dr[ir]);
-            NBIHeatTerm_i[ir] = fi * powerNow * Deposition_profile_times_Vprime[ir] * d_beam_radius / (VpVol[ir] * dr[ir]);
+        // Set heating terms
+        NBIHeatTerm_e[ir] = fe * K * Dep;
+        NBIHeatTerm_i[ir] = fi * K * Dep;
 
-            //Set derivatives of heating terms
-            d_NBIHeatTerm_e_d_Te[ir] = K * (fe * H_r_dTe[ir] + dfe_dTe * Deposition_profile_times_Vprime[ir]);
-            d_NBIHeatTerm_e_d_ne[ir] = K * (fe * H_r_dne[ir] + dfe_dne * Deposition_profile_times_Vprime[ir]);
-            d_NBIHeatTerm_i_d_Te[ir] = K * (fi * H_r_dTe[ir] + dfi_dTe * Deposition_profile_times_Vprime[ir]);
-            d_NBIHeatTerm_i_d_ne[ir] = K * (fi * H_r_dne[ir] + dfi_dne * Deposition_profile_times_Vprime[ir]);
+        // Derivatives of the deposition with respect to the plasma in every cell k
+        // (Q = K f Dep: the deposition part is non-local, the split f is local)
+        for (len_t k = 0; k < nr; ++k) {
+            d_NBIHeatTerm_e_d_Te[ir * nr + k] = K * fe * H_r_dTe[ir * nr + k];
+            d_NBIHeatTerm_e_d_ne[ir * nr + k] = K * fe * H_r_dne[ir * nr + k];
+            d_NBIHeatTerm_i_d_Te[ir * nr + k] = K * fi * H_r_dTe[ir * nr + k];
+            d_NBIHeatTerm_i_d_ne[ir * nr + k] = K * fi * H_r_dne[ir * nr + k];
             for (len_t iz = 0; iz < nZ; iz++) {
                 for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
-                    d_NBIHeatTerm_i_d_n_ij[idx(ir, iz, Z0)] = K * (fi * H_r_dn_ij[idx(ir, iz, Z0)] + dfi_dn_ij[iz] * Deposition_profile_times_Vprime[ir]);
-                    d_NBIHeatTerm_i_d_T_ij[idx(ir, iz, Z0)] = K * (fi * H_r_dT_ij[idx(ir, iz, Z0)] + dfi_dT_ij[iz] * Deposition_profile_times_Vprime[ir]);
-                    d_NBIHeatTerm_e_d_n_ij[idx(ir, iz, Z0)] = K * (fe * H_r_dn_ij[idx(ir, iz, Z0)] + dfe_dn_ij[iz] * Deposition_profile_times_Vprime[ir]);
-                    d_NBIHeatTerm_e_d_T_ij[idx(ir, iz, Z0)] = K * (fe * H_r_dT_ij[idx(ir, iz, Z0)] + dfe_dT_ij[iz] * Deposition_profile_times_Vprime[ir]);
+                    len_t j = ir * nIdx + idx(k, iz, Z0);
+                    d_NBIHeatTerm_i_d_n_ij[j] = K * fi * H_r_dn_ij[j];
+                    d_NBIHeatTerm_i_d_T_ij[j] = K * fi * H_r_dT_ij[j];
+                    d_NBIHeatTerm_e_d_n_ij[j] = K * fe * H_r_dn_ij[j];
+                    d_NBIHeatTerm_e_d_T_ij[j] = K * fe * H_r_dT_ij[j];
                 }
             }
-        } 
+        }
 
-    } else {
-        // If power is 0, set everything to zero
-        for (len_t ir = 0; ir < nr; ir++) {
-            NBIHeatTerm_e[ir] = 0;
-            NBIHeatTerm_i[ir] = 0;
-            H_r_dTe[ir] = 0;
-            H_r_dne[ir] = 0;
-            d_NBIHeatTerm_e_d_Te[ir] = 0;
-            d_NBIHeatTerm_e_d_ne[ir] = 0;
-            d_NBIHeatTerm_i_d_Te[ir] = 0;
-            d_NBIHeatTerm_i_d_ne[ir] = 0;
-            for (len_t iz = 0; iz < nZ; iz++) {
-                for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
-                    H_r_dT_ij[idx(ir, iz, Z0)] = 0;
-                    H_r_dn_ij[idx(ir, iz, Z0)] = 0;
-                    d_NBIHeatTerm_i_d_n_ij[idx(ir, iz, Z0)] = 0;
-                    d_NBIHeatTerm_i_d_T_ij[idx(ir, iz, Z0)] = 0;
-                    d_NBIHeatTerm_e_d_n_ij[idx(ir, iz, Z0)] = 0;
-                    d_NBIHeatTerm_e_d_T_ij[idx(ir, iz, Z0)] = 0;
-                }
+        // Local derivatives of the electron/ion split f
+        d_NBIHeatTerm_e_d_Te[ir * nr + ir] += K * dfe_dTe * Dep;
+        d_NBIHeatTerm_e_d_ne[ir * nr + ir] += K * dfe_dne * Dep;
+        d_NBIHeatTerm_i_d_Te[ir * nr + ir] += K * dfi_dTe * Dep;
+        d_NBIHeatTerm_i_d_ne[ir * nr + ir] += K * dfi_dne * Dep;
+        for (len_t iz = 0; iz < nZ; iz++) {
+            for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
+                len_t j = ir * nIdx + idx(ir, iz, Z0);
+                d_NBIHeatTerm_i_d_n_ij[j] += K * dfi_dn_ij[iz * nCharge + Z0] * Dep;
+                d_NBIHeatTerm_i_d_T_ij[j] += K * dfi_dT_ij[iz] * Dep;
+                d_NBIHeatTerm_e_d_n_ij[j] += K * dfe_dn_ij[iz * nCharge + Z0] * Dep;
+                d_NBIHeatTerm_e_d_T_ij[j] += K * dfe_dT_ij[iz] * Dep;
             }
         }
     }
@@ -417,13 +423,14 @@ void NBIHandler::ComputeMeanFreePath(
         // Calculate temperature for individual species, assumed same for charge states
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /(1.5 * niZ_tot * Constants::ec);
 
-        // Calculate total CX rate
+        // Calculate total CX rate. Only ions (Z0 >= 1) can capture an electron from the
+        // beam neutral. The CCD table is unshifted, so the receiving stage Z0 is block Z0-1.
         ADASRateInterpolator* ccd = adas->GetCCD(Zmax);
-        for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
+        for (len_t Z0 = 1; Z0 <= Zmax; Z0++) {
             real_t niZ = ions->GetIonDensity(ir, iz, Z0);
 
             // Evaluate CX rate coefficient for every species and charge state
-            real_t I_ij = ccd->Eval(Z0, niZ, TiZ);
+            real_t I_ij = ccd->Eval(Z0 - 1, niZ, TiZ);
             total_CX += I_ij * niZ;
         }
     }
@@ -442,12 +449,16 @@ void NBIHandler::ComputeMeanFreePath(
             continue;
         real_t TiZ = (unknowns->GetUnknownData(id_ion_temperature)[iz * nr + ir]) /
             (1.5 * niZ_tot * Constants::ec);
-        for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
+        // Neutrals (Z0 = 0) do not contribute to CX
+        dI_ij_dT_ij[idx(ir, iz, 0)] = 0.0;
+        dlambda_dI_ij[idx(ir, iz, 0)] = 0.0;
+        dlambda_dn_ij[idx(ir, iz, 0)] = 0.0;
+        for (len_t Z0 = 1; Z0 <= Zmax; Z0++) {
             real_t niZ = ions->GetIonDensity(ir, iz, Z0);
-            real_t I_ij = ccd->Eval(Z0, niZ, TiZ);
-            real_t dI_ij_dn_ij = ccd->Eval_deriv_n(Z0, niZ, TiZ);
+            real_t I_ij = ccd->Eval(Z0 - 1, niZ, TiZ);
+            real_t dI_ij_dn_ij = ccd->Eval_deriv_n(Z0 - 1, niZ, TiZ);
             
-            dI_ij_dT_ij[idx(ir, iz, Z0)] = ccd->Eval_deriv_T(Z0, niZ, TiZ);
+            dI_ij_dT_ij[idx(ir, iz, Z0)] = ccd->Eval_deriv_T(Z0 - 1, niZ, TiZ);
             dlambda_dI_ij[idx(ir, iz, Z0)] = -v_NBI * niZ / ((ncold * I_e + total_CX) * (ncold * I_e + total_CX));
             dlambda_dn_ij[idx(ir, iz, Z0)] = -v_NBI * (I_ij + dI_ij_dn_ij * niZ) / ((ncold * I_e + total_CX) * (ncold * I_e + total_CX));
         }
@@ -459,8 +470,11 @@ void NBIHandler::ComputeMeanFreePath(
 }
 
 /**
- * Computes the flux surface index for a given pencil beam position (s_B, r_B, theta_B).
- * This function checks if the pencil beam intersects with any flux surface and returns the index of the first one it finds.
+ * Computes the cell index for a given pencil beam position (s_B, r_B, theta_B).
+ * The pencil beam is intersected with each face r_f[ir]. Since the beam starts
+ * outside the plasma, the point s_B lies inside face ir if the beam has crossed
+ * that face an odd number of times before s_B. The cell is the innermost face
+ * enclosing the point minus one. Returns nr if the point lies outside the plasma.
  */
 int_t NBIHandler::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t theta_B) {
     // Convert the beam coordinates (s_B, r_B, theta_B) to Cartesian coordinates
@@ -470,10 +484,10 @@ int_t NBIHandler::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t the
                                         P0[1] + dx * e1[1] + dy * e2[1],
                                         P0[2] + dx * e1[2] + dy * e2[2]};
 
-    int_t best_ir = -1;
-    real_t smallest_diff = std::numeric_limits<real_t>::infinity();
+    for (len_t ir = 1; ir <= nr; ir++) {
 
-    for (len_t ir = 1; ir < nr; ir++) {
+        // Number of crossings of face ir between the beam start and s_B
+        len_t n_crossings = 0;
 
         for (len_t i = 0; i < ntheta; i++) {
             len_t j = (i + 1) % ntheta;
@@ -509,31 +523,27 @@ int_t NBIHandler::CalculatePencilBeamFindFlux(real_t s_B, real_t r_B, real_t the
             real_t l1 = (-a1 / (2 * a2) + sqrt_disc);
             real_t l2 = (-a1 / (2 * a2) - sqrt_disc);
 
-            auto check_solution = [&](real_t l) -> std::pair<bool, real_t> {
-                if (l < 0)
-                    return {false, 0};
+            // A crossing counts if it lies on the segment and between the beam start and s_B.
+            // t < 1 (not t <= 1) so that a crossing exactly at a vertex is only counted once.
+            auto is_crossing = [&](real_t l) -> bool {
+                if (l < 0 || l > s_B)
+                    return false;
                 real_t t = (P0_current[2] - Z1 + l * n_norm[2]) / dZ;
-                if (t < 0 || t > 1)
-                    return {false, 0};
-                return {true, std::abs(l - s_B)};
+                return (t >= 0 && t < 1);
             };
 
-            // Check both solutions and update if better match found
-            auto [valid1, diff1] = check_solution(l1);
-
-            if (valid1 && diff1 < smallest_diff) {
-                smallest_diff = diff1;
-                best_ir = ir;
-            }
-
-            auto [valid2, diff2] = check_solution(l2);
-            if (valid2 && diff2 < smallest_diff) {
-                smallest_diff = diff2;
-                best_ir = ir;
-            }
+            if (is_crossing(l1))
+                n_crossings++;
+            if (is_crossing(l2))
+                n_crossings++;
         }
+
+        // Odd number of crossings -> inside face ir -> between faces ir-1 and ir -> cell ir-1
+        if (n_crossings % 2 == 1)
+            return ir - 1;
     }
-    return best_ir;
+    // Not inside any face: outside the plasma (vacuum)
+    return nr;
 }
 /**
  * Takes in the beam paramaters and turns a point on a flux surface (in x y z) into the beam coordinate system
@@ -561,19 +571,22 @@ void NBIHandler::CartesianToCylindrical(real_t x, real_t y, real_t z, real_t& r,
  */
 void NBIHandler::ComputeDepositionProfile(FVM::UnknownQuantityHandler* unknowns, real_t Ti_beam_input) {
 
+    const len_t nIdx = nr * nZ * nCharge;
     for (len_t ir = 0; ir < nr; ++ir) {
         Deposition_profile_times_Vprime[ir] = 0.0;
         Deposition_profile[ir] = 0.0;
         dV_beam_prime_tot[ir] = 0.0;
-        H_r_dTe[ir] = 0.0;
-        H_r_dne[ir] = 0.0;
-        for (len_t iz = 0; iz < nZ; iz++) {
-            for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
-                H_r_dT_ij[idx(ir, iz, Z0)] = 0.0;
-                H_r_dn_ij[idx(ir, iz, Z0)] = 0.0;
-            }
-        }
     }
+    for (len_t i = 0; i < nr * nr; ++i) {
+        H_r_dTe[i] = 0.0;
+        H_r_dne[i] = 0.0;
+    }
+    for (len_t i = 0; i < nr * nIdx; ++i) {
+        H_r_dT_ij[i] = 0.0;
+        H_r_dn_ij[i] = 0.0;
+    }
+    // Derivative of the deposition in cell ir with respect to the mean free path in cell k: [ir*nr + k]
+    std::vector<real_t> dDep_dlambda(nr * nr, 0.0);
     std::vector<real_t> lambda_cache(nr, -1.0); // -1 = not yet computed
     std::vector<real_t> dlambda_dI_cache(nr, -1.0);
     std::vector<real_t> dlambda_dne_cache(nr, -1.0);
@@ -592,15 +605,22 @@ void NBIHandler::ComputeDepositionProfile(FVM::UnknownQuantityHandler* unknowns,
         real_t beam_theta = i_beam_theta * d_beam_theta;
         for (real_t i_beam_radius = 0; i_beam_radius < n_beam_radius; i_beam_radius++) {
 
-            real_t beam_radius = (i_beam_radius) *d_beam_radius;
+            // Midpoint of each beam ring (same as in PrecomputeBeamMapLUT)
+            real_t beam_radius = (i_beam_radius + 0.5) * d_beam_radius;
             real_t I_s = 0.0;
-            real_t I_s_squared = 0.0;
+            // A[k] = sum of ds/lambda_k^2 over the earlier samples of this pencil beam in cell k,
+            // i.e. d(I_s)/d(lambda_k) = -A[k]
+            std::vector<real_t> A(nr, 0.0);
             real_t jB_divided_IB = Calculate_jB_IB(beam_radius, beam_theta);
             for (real_t i_beam_s = 0; i_beam_s < n_beam_s; i_beam_s++) {
                 real_t beam_s = s_start + i_beam_s * d_beam_s;
                 len_t ir_now = ir_lut[lut_index(i_beam_theta, i_beam_radius, i_beam_s)];
 
-                if (ir_now >= nr) {
+                // Vacuum: no attenuation and no deposition
+                if (ir_now == nr)
+                    continue;
+
+                if (ir_now > nr) {
                     throw DREAMException(
                         "NBIElectronHeatTerm: ir_now out of bounds: ir_now = "
                         LEN_T_PRINTF_FMT " (s_B = %.4f, r_B = %.4f, theta_B = %.4f)",
@@ -643,33 +663,50 @@ void NBIHandler::ComputeDepositionProfile(FVM::UnknownQuantityHandler* unknowns,
                         }
                     }
                 }
+                real_t survivalProbBefore = std::exp(-I_s);
                 I_s += 1 / lambda_s * d_beam_s;
-                I_s_squared += 1 / (lambda_s * lambda_s) * d_beam_s;
                 real_t survivalProb = std::exp(-I_s);
 
                 real_t dV_beam_prime = beam_radius * d_beam_theta * d_beam_s;
-                real_t H_r_theta_phi = jB_divided_IB * (1.0 / lambda_s) * survivalProb;
+                // Exact fraction of the beam removed in this step (per unit length):
+                // [exp(-I_before) - exp(-I_after)] / ds, so that deposition + shine-through = 1
+                real_t H_r_theta_phi = jB_divided_IB * (survivalProbBefore - survivalProb) / d_beam_s;
                 Deposition_profile[ir_now] += H_r_theta_phi;
 
                 Deposition_profile_times_Vprime[ir_now] += H_r_theta_phi * dV_beam_prime;
 
                 dV_beam_prime_tot[ir_now] += dV_beam_prime;
 
-                // Derivatives
-                H_r_dTe[ir_now] += jB_divided_IB * dlambda_dI_e * dI_e_dTe * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
-                H_r_dne[ir_now] += jB_divided_IB * dlambda_dne * ((-1.0 / (lambda_s * lambda_s)) * survivalProb + 1 / lambda_s * I_s_squared * survivalProb) * dV_beam_prime;
-                for (len_t iz = 0; iz < nZ; iz++) {
-                    for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
-                        H_r_dT_ij[idx(ir_now, iz, Z0)] += jB_divided_IB * dlambda_dI_ij[idx(ir_now, iz, Z0)] * dI_ij_dT_ij[idx(ir_now, iz, Z0)] *
-                            ((-1.0 / (lambda_s * lambda_s)) * survivalProb +
-                             1 / lambda_s * I_s_squared * survivalProb) *
-                            dV_beam_prime;
-                        H_r_dn_ij[idx(ir_now, iz, Z0)] += jB_divided_IB *
-                            dlambda_dn_ij[idx(ir_now, iz, Z0)] *
-                            ((-1.0 / (lambda_s * lambda_s)) * survivalProb +
-                             1 / lambda_s * I_s_squared * survivalProb) *
-                            dV_beam_prime;
-                    }
+                // Derivatives with respect to the mean free path. With S = exp(-I_s),
+                //   dS/dlambda_k = S * A[k]                    (upstream samples in cell k)
+                // and for this step S_after = S_before * exp(-ds/lambda_now), so
+                //   d(S_before - S_after)/dlambda_k = (S_before - S_after) * A[k]
+                //                                    - delta_{k,now} * S_after * ds/lambda_now^2
+                real_t c = jB_divided_IB * dV_beam_prime / d_beam_s;
+                for (len_t k = 0; k < nr; k++) {
+                    if (A[k] != 0)
+                        dDep_dlambda[ir_now * nr + k] += c * (survivalProbBefore - survivalProb) * A[k];
+                }
+                dDep_dlambda[ir_now * nr + ir_now] -= c * survivalProb * d_beam_s / (lambda_s * lambda_s);
+                A[ir_now] += d_beam_s / (lambda_s * lambda_s);
+            }
+        }
+    }
+
+    // Chain rule: d(Dep_ir)/dX_k = d(Dep_ir)/dlambda_k * dlambda_k/dX_k,
+    // where X_k is T_cold, n_cold, T_ij or n_ij in cell k
+    for (len_t k = 0; k < nr; k++) {
+        if (lambda_cache[k] < 0)    // the beam never passes cell k
+            continue;
+        for (len_t ir = 0; ir < nr; ir++) {
+            real_t D = dDep_dlambda[ir * nr + k];
+            H_r_dTe[ir * nr + k] = D * dlambda_dI_cache[k] * dI_e_dTe_cache[k];
+            H_r_dne[ir * nr + k] = D * dlambda_dne_cache[k];
+            for (len_t iz = 0; iz < nZ; iz++) {
+                for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
+                    len_t j = idx(k, iz, Z0);
+                    H_r_dT_ij[ir * nIdx + j] = D * dlambda_dI_ij_cache[j] * dI_ij_dT_ij_cache[j];
+                    H_r_dn_ij[ir * nIdx + j] = D * dlambda_dn_ij_cache[j];
                 }
             }
         }
@@ -701,29 +738,13 @@ void NBIHandler::IonElectronFractions(
     real_t ve = std::sqrt(2 * Te / Me);
     real_t vb = std::sqrt(2 * (Ti_beam_input / evJ) / Mb);
 
-    std::vector<real_t> ni_species(nZ, 0.0);
-    std::vector<real_t> Zi(nZ, 0.0);
-    std::vector<real_t> Mi(nZ, 0.0);
-    // Loop over all atomic species
-    for (len_t iz = 0; iz < nZ; iz++) {
-        len_t Zmax = ions->GetZ(iz);
-        Zi[iz] = Zmax;
-        Mi[iz] = ions->GetIonSpeciesMass(iz) / m_u;
-
-
-        // Loop over charge states of this species
-        real_t sum_ni = 0.0;
-        for (len_t Z0 = 0; Z0 <= Zmax; Z0++) {
-            real_t niZ = ions->GetIonDensity(ir, iz, Z0);
-            sum_ni += niZ;
-
-        }
-        ni_species[iz] = sum_ni;
-    }
+    // Coulomb sum over the populated charge states, sum_j sum_{Z0>=1} n_{j,Z0} Z0^2 / M_j.
+    // Neutrals (Z0 = 0) do not slow down the beam ions through Coulomb collisions.
     real_t Z1_sum = 0.0;
     for (len_t iz = 0; iz < nZ; iz++) {
-        if (Mi[iz] > 0.0)
-            Z1_sum += ni_species[iz] * (Zi[iz] * Zi[iz]) / Mi[iz];
+        real_t Mi = ions->GetIonSpeciesMass(iz) / m_u;
+        for (len_t Z0 = 1; Z0 <= ions->GetZ(iz); Z0++)
+            Z1_sum += ions->GetIonDensity(ir, iz, Z0) * Z0 * Z0 / Mi;
     }
     
     real_t Z1 = (Mb / ne) * Z1_sum;
@@ -740,18 +761,20 @@ void NBIHandler::IonElectronFractions(
     //Derivatives calculation
     real_t F_x = 1 / std::sqrt(3) * std::atan((2 * x - 1) / std::sqrt(3)) +
         M_PI / (6 * std::sqrt(3)) - std::log((1 + x) * (1 + x) / (1 - x + x * x)) / 6;
-    real_t F_x_prime = 2 / (3 + (2 * x - 1) * (2 * x - 1)) - 1 / (3 * (1 + x)) -
+    real_t F_x_prime = 2 / (3 + (2 * x - 1) * (2 * x - 1)) - 1 / (3 * (1 + x)) +
         (2 * x - 1) / (6 * (1 - x + x * x));
     real_t G_x = 2 / (x * x * x) * (x * F_x_prime - 2 * F_x);
 
-    dfe_dne = -G_x * x / (2 * ne);
-    dfe_dTe = G_x * x / (3 * Te);
+    dfe_dne = -G_x * x / (3 * ne);
+    dfe_dTe = G_x * x / (2 * Te);
     for (len_t iz = 0; iz < nZ; iz++) {
-        dfe_dn_ij[iz] = G_x * x / 3 *
-            (ions->GetZ(iz) * ions->GetZ(iz) / (ions->GetIonSpeciesMass(iz) / m_u) /
-             Z1_sum);
+        // Derivative with respect to each charge state density n_{iz,Z0} (zero for neutrals)
+        for (len_t Z0 = 0; Z0 <= ions->GetZ(iz); Z0++) {
+            dfe_dn_ij[iz * nCharge + Z0] = G_x * x / 3 *
+                (Z0 * Z0 / (ions->GetIonSpeciesMass(iz) / m_u) / Z1_sum);
+            dfi_dn_ij[iz * nCharge + Z0] = -dfe_dn_ij[iz * nCharge + Z0];
+        }
         dfe_dT_ij[iz] = 0;
-        dfi_dn_ij[iz] = -dfe_dn_ij[iz];
         dfi_dT_ij[iz] = -dfe_dT_ij[iz];
     }
     dfi_dne = -dfe_dne;

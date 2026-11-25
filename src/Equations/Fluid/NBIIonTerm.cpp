@@ -41,20 +41,22 @@ NBIIonTerm::NBIIonTerm(
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
     Qe_3 = new real_t[nr];
-    d_Qe1_d_Te = new real_t[nr];
-    d_Qe1_d_ne = new real_t[nr];
-    d_Qe1_d_n_ij = new real_t[deriv_size];
-    d_Qe1_d_T_ij = new real_t[deriv_size];
+    // Derivatives are non-local: [ir*nr + k] and [ir*deriv_size + idx(k, iz, Z0)]
+    this->deriv_size = deriv_size;
+    d_Qe1_d_Te = new real_t[nr * nr];
+    d_Qe1_d_ne = new real_t[nr * nr];
+    d_Qe1_d_n_ij = new real_t[nr * deriv_size];
+    d_Qe1_d_T_ij = new real_t[nr * deriv_size];
     
-    d_Qe2_d_Te = new real_t[nr];
-    d_Qe2_d_ne = new real_t[nr];
-    d_Qe2_d_n_ij = new real_t[deriv_size];
-    d_Qe2_d_T_ij = new real_t[deriv_size];
+    d_Qe2_d_Te = new real_t[nr * nr];
+    d_Qe2_d_ne = new real_t[nr * nr];
+    d_Qe2_d_n_ij = new real_t[nr * deriv_size];
+    d_Qe2_d_T_ij = new real_t[nr * deriv_size];
     
-    d_Qe3_d_Te = new real_t[nr];
-    d_Qe3_d_ne = new real_t[nr];
-    d_Qe3_d_n_ij = new real_t[deriv_size];
-    d_Qe3_d_T_ij = new real_t[deriv_size];
+    d_Qe3_d_Te = new real_t[nr * nr];
+    d_Qe3_d_ne = new real_t[nr * nr];
+    d_Qe3_d_n_ij = new real_t[nr * deriv_size];
+    d_Qe3_d_T_ij = new real_t[nr * deriv_size];
 }
 NBIIonTerm::~NBIIonTerm(){
         delete[] Qe_1;
@@ -90,20 +92,15 @@ void NBIIonTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHa
         const real_t* d_n_ij = handler->Getd_NBIHeatTerm_i_d_n_ij();
         const real_t* d_T_ij = handler->Getd_NBIHeatTerm_i_d_T_ij();
 
-        for (len_t ir = 0; ir < nr; ++ir) {
+        for (len_t ir = 0; ir < nr; ++ir)
             Qe_target[ir] = Qe[ir];
-            d_Te_target[ir] = d_Te[ir];
-            d_ne_target[ir] = d_ne[ir];
+        for (len_t i = 0; i < nr * nr; ++i) {
+            d_Te_target[i] = d_Te[i];
+            d_ne_target[i] = d_ne[i];
         }
-        
-        for (len_t ir = 0; ir < nr; ++ir) {
-            for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
-                for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
-                    len_t idx = handler->idx(ir, iIon, Zp);
-                    d_n_ij_target[idx] = d_n_ij[idx];
-                    d_T_ij_target[idx] = d_T_ij[idx];
-                }
-            }
+        for (len_t i = 0; i < nr * deriv_size; ++i) {
+            d_n_ij_target[i] = d_n_ij[i];
+            d_T_ij_target[i] = d_T_ij[i];
         }
     };
     
@@ -165,76 +162,86 @@ void NBIIonTerm::SetCSMatrixElements(
 }
 /**
  * Set the Jacobian elements corresponding to this term.
+ * The ion heating of species iIon in cell ir is w_iIon(ir) * Q_i(ir). Q_i depends on the
+ * plasma in every cell k that the beam passes before ir (non-local), while the weight
+ * w depends on the local charge-state densities of all species.
  */
 bool NBIIonTerm::SetCSJacobianBlock(
            const len_t /*uqtyId*/, const len_t derivId,
                         FVM::Matrix *jac, const real_t* /*x*/,
                         const len_t iIon, const len_t Z0, const len_t /*rOffset*/
 ){
+    // The ion energy equation has one row per species, so only act once (Z0 = 0)
+    if (Z0 != 0)
+        return false;
+
     const real_t* energy_fractions = handler->GetEnergyFractions(); 
 
-    // Set Jacobian elements for each radial point
-    if (derivId == id_ncold && Z0 == 0) {
+    if (derivId == id_ncold || derivId == id_Tcold) {
+        const real_t *d1 = (derivId == id_ncold ? d_Qe1_d_ne : d_Qe1_d_Te);
+        const real_t *d2 = (derivId == id_ncold ? d_Qe2_d_ne : d_Qe2_d_Te);
+        const real_t *d3 = (derivId == id_ncold ? d_Qe3_d_ne : d_Qe3_d_Te);
         for (len_t ir = 0; ir < nr; ++ir) {
             len_t row = iIon*nr+ir;
-            len_t col = ir;
-            real_t deriv = energy_fractions[0] * d_Qe1_d_ne[ir]
-                         + energy_fractions[1] * d_Qe2_d_ne[ir]
-                         + energy_fractions[2] * d_Qe3_d_ne[ir];
-            real_t w= ComputeWeightFactor(ir, iIon);
-            jac->SetElement(row, col, w*deriv); 
+            real_t w = ComputeWeightFactor(ir, iIon);
+            for (len_t k = 0; k < nr; ++k) {
+                real_t deriv = energy_fractions[0] * d1[ir * nr + k]
+                             + energy_fractions[1] * d2[ir * nr + k]
+                             + energy_fractions[2] * d3[ir * nr + k];
+                if (deriv != 0)
+                    jac->SetElement(row, k, w*deriv);
+            }
         }
     }
     
-    else if (derivId == id_Tcold && Z0 == 0) {
-        for (len_t ir = 0; ir < nr; ++ir) {
-            len_t row = iIon*nr+ir;
-            len_t col = ir;
-            real_t deriv = energy_fractions[0] * d_Qe1_d_Te[ir]
-                         + energy_fractions[1] * d_Qe2_d_Te[ir]
-                         + energy_fractions[2] * d_Qe3_d_Te[ir];
-            real_t w= ComputeWeightFactor(ir, iIon);
-            jac->SetElement(row, col, w*deriv); 
-        }
-    }
-    
-    else if (derivId == id_ni && Z0 == 0) {
+    else if (derivId == id_ni) {
         for (len_t ir = 0; ir < nr; ++ir) {
             len_t row = iIon * nr + ir;
-            len_t col = ions->GetIndex(iIon, Z0) * nr + ir;
-            len_t idx = handler->idx(ir, iIon, Z0);
-            real_t deriv = energy_fractions[0] * d_Qe1_d_n_ij[idx]
-                         + energy_fractions[1] * d_Qe2_d_n_ij[idx]
-                         + energy_fractions[2] * d_Qe3_d_n_ij[idx];
-            real_t w= ComputeWeightFactor(ir, iIon);
-            real_t dw_dni = ComputeWeightFactorDerivative(ir, iIon);
-            jac->SetElement(row, col, w*deriv + dw_dni*(energy_fractions[0] * (Qe_1[ir]) + energy_fractions[1] * (Qe_2[ir]) + energy_fractions[2] * (Qe_3[ir])));
+            real_t w = ComputeWeightFactor(ir, iIon);
+            real_t Qi = energy_fractions[0] * Qe_1[ir] + energy_fractions[1] * Qe_2[ir] + energy_fractions[2] * Qe_3[ir];
+            for (len_t k = 0; k < nr; ++k) {
+                for (len_t jIon = 0; jIon < ions->GetNZ(); ++jIon) {
+                    for (len_t Zp = 0; Zp <= ions->GetZ(jIon); ++Zp) {
+                        len_t col = ions->GetIndex(jIon, Zp) * nr + k;
+                        len_t idx = ir * deriv_size + handler->idx(k, jIon, Zp);
+                        real_t deriv = energy_fractions[0] * d_Qe1_d_n_ij[idx]
+                                     + energy_fractions[1] * d_Qe2_d_n_ij[idx]
+                                     + energy_fractions[2] * d_Qe3_d_n_ij[idx];
+                        real_t val = w * deriv;
+                        // The weight factor only depends on the local densities
+                        if (k == ir)
+                            val += ComputeWeightFactorDerivative(ir, iIon, jIon, Zp) * Qi;
+                        if (val != 0)
+                            jac->SetElement(row, col, val);
+                    }
+                }
+            }
         }
     }
     
-    else if (derivId == id_ion_temperature && Z0 == 0) {
+    else if (derivId == id_ion_temperature) {
+        // The unknown is W_j = 1.5 e n_j T_j, and T_j enters through the CX rates
+        const real_t eq = Constants::ec;
         for (len_t ir = 0; ir < nr; ++ir) {
-            
-            
-            const len_t Zmax = ions->GetZ(iIon);
-            real_t ni_species = 0.0;
-            real_t dQi_dTi_total = 0.0;
-            //Sum over charges
-            for (len_t Zp = 0; Zp <= Zmax; ++Zp) {
-                ni_species += ions->GetIonDensity(ir, iIon, Zp);
-                len_t idx = handler->idx(ir, iIon, Zp);
-                dQi_dTi_total += energy_fractions[0] * d_Qe1_d_T_ij[idx]
-                           + energy_fractions[1] * d_Qe2_d_T_ij[idx]
-                           + energy_fractions[2] * d_Qe3_d_T_ij[idx];
-            }
-            const real_t eq = Constants::ec;
-
-            real_t dP = 0.0;
-            dP = dQi_dTi_total / (1.5 * ni_species * eq);
-            len_t col = iIon*nr+ir;
             len_t row = iIon*nr+ir;
-            real_t w= ComputeWeightFactor(ir, iIon);
-            jac->SetElement(row, col, w*dP);
+            real_t w = ComputeWeightFactor(ir, iIon);
+            for (len_t k = 0; k < nr; ++k) {
+                for (len_t jIon = 0; jIon < ions->GetNZ(); ++jIon) {
+                    real_t nj = 0.0;
+                    real_t dQi_dTj = 0.0;
+                    //Sum over charges
+                    for (len_t Zp = 0; Zp <= ions->GetZ(jIon); ++Zp) {
+                        nj += ions->GetIonDensity(k, jIon, Zp);
+                        len_t idx = ir * deriv_size + handler->idx(k, jIon, Zp);
+                        dQi_dTj += energy_fractions[0] * d_Qe1_d_T_ij[idx]
+                                 + energy_fractions[1] * d_Qe2_d_T_ij[idx]
+                                 + energy_fractions[2] * d_Qe3_d_T_ij[idx];
+                    }
+                    len_t col = jIon*nr+k;
+                    if (dQi_dTj != 0)
+                        jac->SetElement(row, col, w * dQi_dTj / (1.5 * nj * eq));
+                }
+            }
         }
     }
     else {
@@ -245,33 +252,29 @@ bool NBIIonTerm::SetCSJacobianBlock(
 
 /**
  * Compute the weight factor for ion species iIon at radial index ir.
+ * The ion share of the beam power is split between species in proportion to
+ * sum_{Z0>=1} n_{j,Z0} Z0^2 / M_j (Coulomb collisions; neutrals receive nothing).
  */
 real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
     len_t NZ = ions->GetNZ();
     if (NZ == 0) {
         throw DREAMException("No ion species found in NBIIonTerm");
     }
-    std::vector<real_t> ni_species(NZ, 0.0);   
-    std::vector<real_t> Zi(NZ, 0.0);           
-    std::vector<real_t> Mi(NZ, 0.0);  
-    
-    real_t denom = 0;
-    for (len_t iz_denom = 0; iz_denom < NZ; iz_denom++){
-            len_t Zmax = ions->GetZ(iz_denom);
-            Zi[iz_denom] = Zmax;
-            Mi[iz_denom] = ions->GetIonSpeciesMass(iz_denom);
 
-            real_t sum_ni = 0.0;
-            for (len_t Z0_inner = 0; Z0_inner <= Zmax; Z0_inner++){
+    real_t denom = 0;
+    real_t numer = 0;
+    for (len_t iz_denom = 0; iz_denom < NZ; iz_denom++){
+            real_t Mi = ions->GetIonSpeciesMass(iz_denom);
+            real_t sum_nZ2 = 0.0;
+            for (len_t Z0_inner = 1; Z0_inner <= ions->GetZ(iz_denom); Z0_inner++){
                 real_t niZ = ions->GetIonDensity(ir, iz_denom, Z0_inner);
-                sum_ni += niZ; 
+                sum_nZ2 += niZ * Z0_inner * Z0_inner;
             }
-            ni_species[iz_denom] = sum_ni;  
-            denom += ni_species[iz_denom] * Zi[iz_denom]  / Mi[iz_denom];
+            denom += sum_nZ2 / Mi;
+            if (iz_denom == iIon)
+                numer = sum_nZ2 / Mi;
     }
 
-    real_t MiIon = ions->GetIonSpeciesMass(iIon);
-    real_t zIon = ions->GetZ(iIon);
     const real_t denom_min = 1e5;
     if (denom < denom_min){
        DREAM::IO::PrintWarning(
@@ -280,36 +283,30 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
 			);
         denom = denom_min;
     }
-    real_t w = ni_species[iIon] * zIon / MiIon / denom;
+    real_t w = numer / denom;
     return w;
 }
 
-real_t NBIIonTerm::ComputeWeightFactorDerivative(len_t ir, len_t iIon) {
+/**
+ * Derivative of the weight factor of species iIon with respect to the charge state
+ * density n_{jIon,Z0} (same cell):
+ *   dw_i/dn_{j,Z0} = (delta_ij - w_i) * (Z0^2/M_j) / denom
+ */
+real_t NBIIonTerm::ComputeWeightFactorDerivative(len_t ir, len_t iIon, len_t jIon, len_t Z0) {
     len_t NZ = ions->GetNZ();
     if (NZ == 0) {
         throw DREAMException("No ion species found in NBIIonTerm");
     }
-    std::vector<real_t> ni_species(NZ, 0.0);   
-    std::vector<real_t> Zi(NZ, 0.0);           
-    std::vector<real_t> Mi(NZ, 0.0);  
-    
-    real_t denom = 0;
-    for (len_t iz_denom = 0; iz_denom < ions->GetNZ(); iz_denom++){
-            len_t Zmax = ions->GetZ(iz_denom);
-            Zi[iz_denom] = Zmax;
-            Mi[iz_denom] = ions->GetIonSpeciesMass(iz_denom);
 
-            real_t sum_ni = 0.0;
-            for (len_t Z0_inner = 0; Z0_inner <= Zmax; Z0_inner++){
+    real_t denom = 0;
+    for (len_t iz_denom = 0; iz_denom < NZ; iz_denom++){
+            real_t Mi = ions->GetIonSpeciesMass(iz_denom);
+            for (len_t Z0_inner = 1; Z0_inner <= ions->GetZ(iz_denom); Z0_inner++){
                 real_t niZ = ions->GetIonDensity(ir, iz_denom, Z0_inner);
-                sum_ni += niZ; 
+                denom += niZ * Z0_inner * Z0_inner / Mi;
             }
-            ni_species[iz_denom] = sum_ni;  
-            denom += ni_species[iz_denom] * Zi[iz_denom]  / Mi[iz_denom];
     }
 
-    real_t MiIon = ions->GetIonSpeciesMass(iIon);
-    real_t zIon = ions->GetZ(iIon);
     const real_t denom_min = 1e5;
     if (denom < denom_min){
         DREAM::IO::PrintWarning(
@@ -318,6 +315,8 @@ real_t NBIIonTerm::ComputeWeightFactorDerivative(len_t ir, len_t iIon) {
 			);
         denom = denom_min;
     }
-    real_t dwdni = zIon/(MiIon * denom) - (ni_species[iIon] * zIon / MiIon) * (zIon / MiIon) / (denom * denom);
+    real_t Mj = ions->GetIonSpeciesMass(jIon);
+    real_t w = ComputeWeightFactor(ir, iIon);
+    real_t dwdni = ((iIon == jIon ? 1.0 : 0.0) - w) * (real_t)(Z0 * Z0) / (Mj * denom);
     return dwdni;
 }

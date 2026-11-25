@@ -37,16 +37,20 @@ class NBIIonTerm : public IonEquationTerm<FVM::EquationTerm> {
     real_t* d_Qe3_d_n_ij;   
     real_t* d_Qe3_d_T_ij;
 
+    len_t deriv_size;   // nr * nZ * nCharge
+
+    // The Jacobian is non-local in radius (beam attenuation), so every row
+    // may couple to all nr cells of each unknown
     len_t CalculateNonZeros() const {
         len_t nnz = 2;  // T_cold and n_cold
         for (len_t iz = 0; iz < ions->GetNZ(); iz++)
             nnz += ions->GetZ(iz) + 1;  // All charge states
         
         nnz += ions->GetNZ();  // Ion temperatures
-        return nnz;
+        return nnz * nr;
     }
     real_t ComputeWeightFactor(len_t ir, len_t iIon);
-    real_t ComputeWeightFactorDerivative(len_t ir, len_t iIon);
+    real_t ComputeWeightFactorDerivative(len_t ir, len_t iIon, len_t jIon, len_t Z0);
 
 
 public:

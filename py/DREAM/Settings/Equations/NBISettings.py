@@ -233,4 +233,10 @@ class NBISettings:
     def fromdict(self, data):
         """Load NBISettings from a dictionary."""
         for k, v in data.items():
-            setattr(self, k, v)
+            # The profiles are stored as nested dictionaries {t, x, tinterp}
+            if k in ('j_B', 'P_NBI'):
+                setattr(self, k + '_t', v['t'])
+                setattr(self, k + '_x', v['x'])
+                setattr(self, k + '_tinterp', int(v['tinterp']))
+            else:
+                setattr(self, k, v)

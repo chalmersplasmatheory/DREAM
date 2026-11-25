@@ -34,20 +34,22 @@ NBIElectronTerm::NBIElectronTerm(
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
     Qe_3 = new real_t[nr];
-    d_Qe1_d_Te = new real_t[nr];
-    d_Qe1_d_ne = new real_t[nr];
-    d_Qe1_d_n_ij = new real_t[deriv_size];
-    d_Qe1_d_T_ij = new real_t[deriv_size];
+    // Derivatives are non-local: [ir*nr + k] and [ir*deriv_size + idx(k, iz, Z0)]
+    this->deriv_size = deriv_size;
+    d_Qe1_d_Te = new real_t[nr * nr];
+    d_Qe1_d_ne = new real_t[nr * nr];
+    d_Qe1_d_n_ij = new real_t[nr * deriv_size];
+    d_Qe1_d_T_ij = new real_t[nr * deriv_size];
 
-    d_Qe2_d_Te = new real_t[nr];
-    d_Qe2_d_ne = new real_t[nr];
-    d_Qe2_d_n_ij = new real_t[deriv_size];
-    d_Qe2_d_T_ij = new real_t[deriv_size];
+    d_Qe2_d_Te = new real_t[nr * nr];
+    d_Qe2_d_ne = new real_t[nr * nr];
+    d_Qe2_d_n_ij = new real_t[nr * deriv_size];
+    d_Qe2_d_T_ij = new real_t[nr * deriv_size];
 
-    d_Qe3_d_Te = new real_t[nr];
-    d_Qe3_d_ne = new real_t[nr];
-    d_Qe3_d_n_ij = new real_t[deriv_size];
-    d_Qe3_d_T_ij = new real_t[deriv_size];
+    d_Qe3_d_Te = new real_t[nr * nr];
+    d_Qe3_d_ne = new real_t[nr * nr];
+    d_Qe3_d_n_ij = new real_t[nr * deriv_size];
+    d_Qe3_d_T_ij = new real_t[nr * deriv_size];
 
     AddUnknownForJacobian(unknowns, id_ncold);
     AddUnknownForJacobian(unknowns, id_Tcold);
@@ -90,20 +92,15 @@ void NBIElectronTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuant
         const real_t* d_n_ij = handler->Getd_NBIHeatTerm_e_d_n_ij();
         const real_t* d_T_ij = handler->Getd_NBIHeatTerm_e_d_T_ij();
 
-        for (len_t ir = 0; ir < nr; ++ir) {
+        for (len_t ir = 0; ir < nr; ++ir)
             Qe_target[ir] = Qe[ir];
-            d_Te_target[ir] = d_Te[ir];
-            d_ne_target[ir] = d_ne[ir];
+        for (len_t i = 0; i < nr * nr; ++i) {
+            d_Te_target[i] = d_Te[i];
+            d_ne_target[i] = d_ne[i];
         }
-
-        for (len_t ir = 0; ir < nr; ++ir) {
-            for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
-                for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
-                    len_t idx = handler->idx(ir, iIon, Zp);
-                    d_n_ij_target[idx] = d_n_ij[idx];
-                    d_T_ij_target[idx] = d_T_ij[idx];
-                }
-            }
+        for (len_t i = 0; i < nr * deriv_size; ++i) {
+            d_n_ij_target[i] = d_n_ij[i];
+            d_T_ij_target[i] = d_T_ij[i];
         }
     };
 
@@ -137,59 +134,73 @@ void NBIElectronTerm::SetMatrixElements(FVM::Matrix*, real_t* rhs) {
 
 /**
  * Set the Jacobian elements corresponding to this term.
+ * The residual contains -Q (see SetVectorElements), so the Jacobian is -dQ/dx.
+ * The derivatives are non-local: the heating in cell ir depends on the plasma
+ * in every cell k that the beam passes before reaching ir.
  */
 bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix* jac, const real_t*) {
     const real_t* energy_fractions = handler->GetEnergyFractions();
 
     if (derivId == id_Tcold) {
         for (len_t ir = 0; ir < nr; ++ir) {
-            real_t deriv = energy_fractions[0] * d_Qe1_d_Te[ir] +
-                energy_fractions[1] * d_Qe2_d_Te[ir] +
-                energy_fractions[2] * d_Qe3_d_Te[ir];
-            jac->SetElement(ir, ir, deriv);
+            for (len_t k = 0; k < nr; ++k) {
+                real_t deriv = energy_fractions[0] * d_Qe1_d_Te[ir * nr + k] +
+                    energy_fractions[1] * d_Qe2_d_Te[ir * nr + k] +
+                    energy_fractions[2] * d_Qe3_d_Te[ir * nr + k];
+                if (deriv != 0)
+                    jac->SetElement(ir, k, -deriv);
+            }
         }
     }
 
     else if (derivId == id_ncold) {
         for (len_t ir = 0; ir < nr; ++ir) {
-            real_t deriv = energy_fractions[0] * d_Qe1_d_ne[ir] +
-                energy_fractions[1] * d_Qe2_d_ne[ir] +
-                energy_fractions[2] * d_Qe3_d_ne[ir];
-            jac->SetElement(ir, ir, deriv);
+            for (len_t k = 0; k < nr; ++k) {
+                real_t deriv = energy_fractions[0] * d_Qe1_d_ne[ir * nr + k] +
+                    energy_fractions[1] * d_Qe2_d_ne[ir * nr + k] +
+                    energy_fractions[2] * d_Qe3_d_ne[ir * nr + k];
+                if (deriv != 0)
+                    jac->SetElement(ir, k, -deriv);
+            }
         }
     }
 
-     else if (derivId == id_ni) {
+    else if (derivId == id_ni) {
         for (len_t ir = 0; ir < nr; ++ir) {
-            for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
-                const len_t Zmax = ions->GetZ(iIon);
-                const len_t speciesStart = ions->GetIndex(iIon, 0) * nr;
-                for (len_t Zp = 0; Zp <= Zmax; ++Zp) {
-                    len_t idx = handler->idx(ir, iIon, Zp);
-                    real_t deriv = energy_fractions[0] * d_Qe1_d_n_ij[idx] +
-                        energy_fractions[1] * d_Qe2_d_n_ij[idx] +
-                        energy_fractions[2] * d_Qe3_d_n_ij[idx];
-                    len_t col = speciesStart + Zp * nr + ir;
-                    jac->SetElement(ir, col, deriv);
+            for (len_t k = 0; k < nr; ++k) {
+                for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
+                    for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
+                        len_t idx = ir * deriv_size + handler->idx(k, iIon, Zp);
+                        real_t deriv = energy_fractions[0] * d_Qe1_d_n_ij[idx] +
+                            energy_fractions[1] * d_Qe2_d_n_ij[idx] +
+                            energy_fractions[2] * d_Qe3_d_n_ij[idx];
+                        len_t col = ions->GetIndex(iIon, Zp) * nr + k;
+                        if (deriv != 0)
+                            jac->SetElement(ir, col, -deriv);
+                    }
                 }
             }
         }
     }
 
-     else if (derivId == id_ion_temperature) {
+    else if (derivId == id_ion_temperature) {
+        // The unknown is W_i = 1.5 e n_i T_i, and T_i enters through the CX rates
         for (len_t ir = 0; ir < nr; ++ir) {
-            for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
-                real_t deriv_sum = 0.0;
-                real_t tot_density = 0.0;
-                for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
-                    len_t idx = handler->idx(ir, iIon, Zp);
-                    tot_density += ions->GetIonDensity(ir, iIon, Zp);
-                    deriv_sum += energy_fractions[0] * d_Qe1_d_T_ij[idx] +
-                        energy_fractions[1] * d_Qe2_d_T_ij[idx] +
-                        energy_fractions[2] * d_Qe3_d_T_ij[idx];
+            for (len_t k = 0; k < nr; ++k) {
+                for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {
+                    real_t deriv_sum = 0.0;
+                    real_t tot_density = 0.0;
+                    for (len_t Zp = 0; Zp <= ions->GetZ(iIon); ++Zp) {
+                        len_t idx = ir * deriv_size + handler->idx(k, iIon, Zp);
+                        tot_density += ions->GetIonDensity(k, iIon, Zp);
+                        deriv_sum += energy_fractions[0] * d_Qe1_d_T_ij[idx] +
+                            energy_fractions[1] * d_Qe2_d_T_ij[idx] +
+                            energy_fractions[2] * d_Qe3_d_T_ij[idx];
+                    }
+                    len_t col = iIon * nr + k;
+                    if (deriv_sum != 0)
+                        jac->SetElement(ir, col, -deriv_sum / (Constants::ec * tot_density * 1.5));
                 }
-                len_t col = iIon * nr + ir;
-                jac->SetElement(ir, col, deriv_sum/(Constants::ec * tot_density*1.5) );
             }
         }
     }
@@ -199,3 +210,4 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
 
     return true;
 }
+
