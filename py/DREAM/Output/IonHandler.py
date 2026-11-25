@@ -1,10 +1,12 @@
 # Object for handling the ion density 'n_i'
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .IonSpecies import IonSpecies
 from .OutputException import OutputException
 from .UnknownQuantity import UnknownQuantity
+from ..Settings import MolecularReactionData as reaction_data
 
 
 class IonHandler(UnknownQuantity):
@@ -187,3 +189,73 @@ class IonHandler(UnknownQuantity):
         return ax
 
 
+    def plotRates(self, r=None, ax=None, show=None, log=False, decades=15, **kwargs):
+        """
+        Plot the rate of each enabled molecular reaction vs time.
+
+        :param r:   Radial grid index (0, 1, ...). If None, plot the volume average over radius.
+        :param log: If True, use a logarithmic y-axis.
+        :param decades: With log=True, number of decades shown below the largest rate.
+        """
+        genax = ax is None
+        if genax:
+            ax = plt.axes()
+            if show is None:
+                show = True
+
+        R = self.output.other.fluid['molecularReactionRates'].data   # (nt, nReactions, nr)
+        names = self.output.settings.eqsys.n_i.enabled_reaction_names
+        t = self.grid.t[1:]
+        reactions = {reaction["name"]: reaction for reaction in reaction_data.MOLECULAR_REACTIONS}
+        # One distinct colour per reaction (the default cycle repeats after 10)
+        colors = plt.cm.turbo(np.linspace(0, 1, len(names)))
+
+        ymax = 0
+        for k, name in enumerate(names):
+            if r is None:
+                y = self.grid.integrate(R[:, k, :]) / self.grid.integrate(np.ones(R.shape[2]))
+            else:
+                y = R[:, k, r]
+
+            # Legend: the reaction in mathtext, e.g. e⁻ + D₂ → 2 e⁻ + D₂⁺
+            sides = []
+            for side in ("reactants", "products"):
+                terms = []
+                for species, Z0, coefficient in reactions[name][side]:
+                    if species == "e":
+                        term = r"\mathrm{e}^{-}"
+                    elif species == "RE":
+                        term = r"\mathrm{e}^{-}_{\mathrm{RE}}"
+                    else:
+                        # Trailing digits are the number of atoms (subscript)
+                        letters = species.rstrip("0123456789")
+                        digits = species[len(letters):]
+                        term = r"\mathrm{" + letters + "}"
+                        if digits:
+                            term += "_{" + digits + "}"
+                        if Z0 == 1:
+                            term += "^{+}"
+                        elif Z0 > 1:
+                            term += "^{" + str(Z0) + "+}"
+                    if coefficient > 1:
+                        term = str(coefficient) + r"\," + term
+                    terms.append(term)
+                sides.append(" + ".join(terms))
+            label = "$" + r" \rightarrow ".join(sides) + "$"
+
+            ax.plot(t, y, label=label, color=colors[k], **kwargs)
+            ymax = max(ymax, np.max(y))
+
+        ax.set_xlabel(r'Time $t$ (s)')
+        ax.set_ylabel(r'Reaction rate (m$^{-3}$ s$^{-1}$)')
+        if log:
+            ax.set_yscale('log')
+            # Rates far below the largest one would otherwise squash the plot
+            if ymax > 0:
+                ax.set_ylim(bottom=ymax * 10**(-decades), top=ymax * 10)
+        ax.legend()
+
+        if show:
+            plt.show(block=False)
+
+        return ax

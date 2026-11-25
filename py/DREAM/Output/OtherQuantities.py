@@ -21,6 +21,7 @@ class OtherQuantities:
         'Ti_NBI': OtherIonSpeciesFluidQuantity,
         'Ti_Qij': OtherIonSpeciesFluidQuantity,
         'Ti_Qie': OtherIonSpeciesFluidQuantity,
+        'molecularReactionRates': OtherIonSpeciesFluidQuantity,
         'GammaAva': AvalancheGrowthRate,
         'gammaLCFSLoss': LCFSLoss,
         'nu_D_f1': OtherKineticQuantity,

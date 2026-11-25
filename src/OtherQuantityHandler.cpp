@@ -544,6 +544,14 @@ void OtherQuantityHandler::DefineQuantities() {
         }
     }
 
+    if (tracked_terms->rateHandler != nullptr && !tracked_terms->rateHandler->GetMolecularReactions().empty()) {
+        const len_t nReactions = tracked_terms->rateHandler->GetMolecularReactions().size();
+        DEF_FL_MUL("fluid/molecularReactionRates", nReactions,
+            "Rate of each enabled molecular reaction, K*nA*nB [m^-3 s^-1]",
+            qd->Store(this->tracked_terms->rateHandler->GetReactionRate(0));
+        );
+    }
+
     if (!this->tracked_terms->T_i_Qij.empty()) {
         const len_t nZ = this->tracked_terms->T_i_Qij.size();
         DEF_FL_MUL("fluid/Ti_Qij", nZ,

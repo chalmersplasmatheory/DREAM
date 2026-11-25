@@ -35,6 +35,7 @@ class OtherQuantities:
         'fluid/Ti_NBI',
         'fluid/Ti_Qij',
         'fluid/Ti_Qie',
+        'fluid/molecularReactionRates',
         'fluid/tIoniz',
         'fluid/W_hot',
         'fluid/W_re',

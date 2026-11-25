@@ -31,6 +31,8 @@ void SimulationGenerator::ConstructOtherQuantityHandler(
     EquationSystem *eqsys, Settings *s,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
+    oqty_terms->rateHandler = eqsys->GetRateHandler();
+
     OtherQuantityHandler *oqh = new OtherQuantityHandler(
         eqsys->GetHotTailCollisionHandler(), eqsys->GetRunawayCollisionHandler(),
         eqsys->GetPostProcessor(), eqsys->GetREFluid(), eqsys->GetUnknownHandler(),

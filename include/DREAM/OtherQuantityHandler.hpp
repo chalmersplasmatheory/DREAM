@@ -41,6 +41,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/NBIIonTerm.hpp"
 #include "DREAM/NBIHandler.hpp"
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
+#include "DREAM/Equations/Fluid/RateHandler.hpp"
 
 
 
@@ -63,6 +64,8 @@ namespace DREAM {
             std::vector<NBIIonTerm*> T_i_NBI;
             std::vector<std::vector<MaxwellianCollisionalEnergyTransferTerm*>> T_i_Qij;
             std::vector<MaxwellianCollisionalEnergyTransferTerm*> T_i_Qie;
+            // Molecular reaction rates:
+            DREAM::RateHandler *rateHandler = nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
