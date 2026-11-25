@@ -129,7 +129,7 @@ real_t ComptonSource::integrand(real_t p, void * params){
     gsl_function F;
     F.function = &(ComptonSource::innerIntegrand);
     F.params = &innerparams;
-    gsl_integration_qagiu(&F, E0, 0., 1e-8, iparams->limit, iparams->wp, &integral, &abserr);
+    gsl_integration_qagiu(&F, E0, 0., 1e-12, iparams->limit, iparams->wp, &integral, &abserr);
     
     real_t S = p / g * integral;
     return S;
