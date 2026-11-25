@@ -97,7 +97,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, SynchrotronTerm **synchrotron,
-	TimeVaryingBTerm **timevaryingb, bool rescaleMaxwellian
+	TimeVaryingBTerm **timevaryingb,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -178,7 +179,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     bool hasTransport = ConstructTransportTerm(
         eqn, mod, grid,
         gridtype, eqsys,
-        s, true, false, advective_bc, diffusive_bc
+        s, true, false, advective_bc, diffusive_bc, oqty_terms
     );
 
     // If a separate 'transport' operator is desired, repeat

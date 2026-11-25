@@ -8,6 +8,7 @@
 #include "DREAM/Equations/Fluid/RunawayTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Fluid/RunawayTransportRRAdaptiveMHDLike.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
+#include "DREAM/Equations/Kinetic/TrappingLimitedRRTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
@@ -62,6 +63,16 @@ void SimulationGenerator::DefineOptions_Transport(
 
     // Rechester-Rosenbluth diffusion
     DefineDataRT(mod + "/" + subname, s, "dBB");
+    s->DefineSetting(
+        mod + "/" + subname + "/detrapping_mode",
+        "Stored detrapping model identifier. The eigenmode uses 3.",
+        (int_t)0
+    );
+    s->DefineSetting(
+        mod + "/" + subname + "/detrapping_scale",
+        "Legacy detrapping scale. The eigenmode requires a value of one.",
+        (real_t)1.0
+    );
 
 	// Adaptive MHD-like transport options
 	s->DefineSetting(
@@ -316,6 +327,20 @@ bool SimulationGenerator::ConstructTransportTerm(
     enum OptionConstants::eqterm_transport_bc bc =
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
+    if (type == OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING) {
+        if (!kinetic || heat)
+            throw SettingsException(
+                "%s: Trapping-limited Rechester-Rosenbluth transport requires a kinetic isotropic grid.",
+                path.c_str()
+            );
+        if (!hasCoeff("dBB", 2))
+            throw SettingsException("%s: Trapping-limited Rechester-Rosenbluth transport requires dBB.", path.c_str());
+        if (s->GetInteger(path + "/detrapping_mode") != OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_EIGENMODE)
+            throw SettingsException("%s: Only the eigenmode detrapping closure (detrapping_mode=3) is supported.", path.c_str());
+        if (s->GetReal(path + "/detrapping_scale") != 1.0)
+            throw SettingsException("%s: Eigenmode detrapping requires detrapping_scale=1.", path.c_str());
+    }
+
     // Has advection?
     if (hasCoeff("ar", (kinetic?4:2))) {
         hasNonTrivialTransport = true;
@@ -389,12 +414,28 @@ bool SimulationGenerator::ConstructTransportTerm(
 
         FVM::DiffusionTerm *dt;
         if (kinetic) { // Particle transport
-            RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
-                grid, momtype, dBB
-            );
-            oprtr->AddTerm(rrt);
+            if (type == OptionConstants::EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING) {
+                CollisionQuantityHandler *cqh = nullptr;
+                if (grid == eqsys->GetHotTailGrid())
+                    cqh = eqsys->GetHotTailCollisionHandler();
+                else if (grid == eqsys->GetRunawayGrid())
+                    cqh = eqsys->GetRunawayCollisionHandler();
+                if (cqh == nullptr)
+                    throw SettingsException("%s: No collision handler for trapping-limited RR transport.", path.c_str());
 
-            dt = rrt;
+                auto *rrt = new TrappingLimitedRRTransport(
+                    grid, momtype, dBB, cqh, eqsys->GetUnknownHandler(),
+                    s->GetBool(mod + "/fullIonJacobian")
+                );
+                if (oqty_terms != nullptr && grid == eqsys->GetHotTailGrid())
+                    oqty_terms->f_hot_trappinglimited_rr = rrt;
+                oprtr->AddTerm(rrt);
+                dt = rrt;
+            } else {
+                auto *rrt = new RechesterRosenbluthTransport(grid, momtype, dBB);
+                oprtr->AddTerm(rrt);
+                dt = rrt;
+            }
         } else if (heat) {	// Heat transport
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
                 grid, dBB, eqsys->GetUnknownHandler()

@@ -20,6 +20,7 @@
 #include "tests/DREAM/BoundaryFlux.hpp"
 #include "tests/DREAM/IonRateEquation.hpp"
 #include "tests/DREAM/RunawayFluid.hpp"
+#include "tests/DREAM/TrappingLimitedRRTransport.hpp"
 #include "tests/DREAM/AvalancheSourceRP.hpp"
 #include "tests/DREAM/MeanExcitationEnergy.hpp"
 
@@ -46,6 +47,7 @@ void init() {
     add_test(new DREAMTESTS::_DREAM::IonRateEquation("dream/ionrateequation"));
     add_test(new DREAMTESTS::_DREAM::MeanExcitationEnergy("dream/meanexcitationenergy"));
     add_test(new DREAMTESTS::_DREAM::RunawayFluid("dream/runawayfluid"));
+    add_test(new DREAMTESTS::_DREAM::TrappingLimitedRRTransport("dream/trappinglimitedrr"));
 
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
     add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));

@@ -1,0 +1,6 @@
+/.matplotlib/
+/__pycache__/
+/output/
+/output_timescale/
+*_settings.h5
+*_output.h5

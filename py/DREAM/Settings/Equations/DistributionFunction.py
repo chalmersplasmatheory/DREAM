@@ -3,7 +3,7 @@ import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from .. import AdvectionInterpolation
-from .. TransportSettings import TransportSettings
+from .. TransportSettings import TransportSettings, UnsupportedDetrappingSettings
 
 
 # BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
@@ -384,7 +384,12 @@ class DistributionFunction(UnknownQuantity):
             else:
                 raise EquationException("Expected either 'p' and 'xi', or 'ppar' and 'pperp', to be present under 'f_prescribed'.")
 
-        self.verifySettings()
+        try:
+            self.verifySettings()
+        except UnsupportedDetrappingSettings:
+            # Archived outputs retain their original transport settings for inspection.
+            # Verification before saving or running still reports the incompatible model.
+            pass
 
 
     def todict(self):

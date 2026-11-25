@@ -730,6 +730,68 @@ can also be used. In this example, the magnetic perturbation
 positions.
 
 
+Trapping-limited isotropic Rechester-Rosenbluth
+----------------------------------------------
+For a kinetic :math:`(p,\xi)` grid with ``nxi=1``, finite detrapping time
+can reduce the isotropic RR coefficient. This model uses the usual conservative
+radial diffusion operator and its boundary conditions. The ordinary isotropic
+coefficient is
+
+.. math::
+
+   D_{\rm RR} = \pi R_0 (\delta B/B)^2 v\,g,
+   \qquad g = \tfrac12\langle B/B_{\min}\rangle(1-\xi_T^2),
+
+where :math:`\xi_T` is the trapped-passing boundary. As in the existing kinetic
+RR implementation, :math:`q=1`; cylindrical geometry uses :math:`R_0=1\,\mathrm{m}`.
+The pitch-scattering frequency :math:`\nu_D` is interpolated from neighboring
+radial cells to each radial face and rebuilt with the plasma state.
+
+The lowest even eigenmode of the pitch-scattering operator on the trapped
+interval sets the detrapping rate :math:`\nu_{\rm dt}=\kappa(\xi_T)\nu_D`,
+
+.. math::
+
+   -\frac12\frac{d}{d\xi}\left[(1-\xi^2)\frac{du}{d\xi}\right]=\kappa u,
+   \qquad u(-\xi_T)=u(\xi_T)=0.
+
+Matching this rate to the lowest cylindrical radial diffusion mode gives a
+parameter-free cap and the effective diffusion coefficient
+
+.. math::
+
+   D_{\rm detrap} = \frac{a^2\kappa(\xi_T)\max(\nu_D,0)}{j_{0,1}^2},
+   \qquad
+   D = \frac{D_{\rm RR} D_{\rm detrap}}{D_{\rm RR}+D_{\rm detrap}},
+   \qquad j_{0,1}=2.404825557695773.
+
+Here :math:`a` is the minor radius and :math:`j_{0,1}` is the first positive
+zero of :math:`J_0`. This normalization represents a cylindrical loss rate
+:math:`j_{0,1}^2 D/a^2`. The eigenvalue is computed once per radial face for
+:math:`0<\xi_T<0.98` and refreshed when the grid is rebuilt.
+
+At a face with trapping, zero scattering or zero magnetic perturbation gives
+zero net diffusion. Negative trial values of the face scattering frequency are
+clamped to zero. Newton uses the positive-side derivative at zero scattering
+when :math:`D_{\rm RR}>0`. At a face with :math:`\xi_T=0`, ordinary RR
+diffusion applies.
+
+.. code-block:: python
+
+   ds.hottailgrid.setNxi(1)
+   ds.eqsys.f_hot.transport.setDetrappingRechesterRosenbluth(dBB=3e-3)
+
+The setter accepts the same ``t`` and ``r`` arrays as ``setMagneticPerturbation``.
+Existing eigenmode settings with a unit scale can be rerun. Archived runs with
+other closures or scales can be opened for analysis.
+
+``hottail/Drr`` gives the net radial diffusion. ``hottail/Drr_detrapping``
+gives the collisional cap even when :math:`\delta B/B=0`.
+``hottail/kappa_detrapping`` gives the eigenvalue on the :math:`n_r+1` radial
+faces. Both diagnostics use zero at faces without trapping or when the
+detrapping model is disabled.
+
+
 Frozen current mode
 -------------------
 In the frozen current mode, a target plasma current :math:`I_{\rm p}` is

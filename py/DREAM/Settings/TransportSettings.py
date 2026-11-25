@@ -15,6 +15,10 @@ TRANSPORT_SVENSSON = 4
 TRANSPORT_FROZEN_CURRENT = 5
 TRANSPORT_MHD_LIKE = 6
 TRANSPORT_MHD_LIKE_LOCAL = 7
+TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING = 8
+
+# Stored eigenmode identifier in existing DREAM settings files.
+DETRAPPING_RR_MODE_EIGENMODE = 3
 
 INTERP3D_NEAREST     = 0
 INTERP3D_LINEAR      = 1
@@ -97,9 +101,11 @@ class TransportSettings:
         self.s_drr_interp1d = None
 
         # Rechester-Rosenbluth (diffusive) transport
-        self.dBB   = None
-        self.dBB_t = None
-        self.dBB_r = None
+        self.dBB             = None
+        self.dBB_t           = None
+        self.dBB_r           = None
+        self.detrapping_mode = DETRAPPING_RR_MODE_EIGENMODE
+        self.detrapping_scale = 1.0
 
         # MHD-like Rechester-Rosenbluth (diffusive) heat transport
         self.mhdlike_dBB0 = None
@@ -291,6 +297,35 @@ class TransportSettings:
         self.dBB   = dBB
 
 
+    def setDetrappingRechesterRosenbluth(
+        self, dBB, t=None, r=None, mode=DETRAPPING_RR_MODE_EIGENMODE,
+        detrapping_scale=1.0
+    ):
+        """
+        Prescribe dB/B for isotropic RR diffusion limited by the collisional
+        trapped-pitch eigenmode. The inputs dBB, t and r follow
+        setMagneticPerturbation(). Older calls may explicitly specify the
+        eigenmode and its fixed unit scale.
+        """
+        self._verifyDetrappingParameters(mode, detrapping_scale)
+        self.setMagneticPerturbation(dBB, t=t, r=r)
+        self.type = TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING
+        self.detrapping_mode = DETRAPPING_RR_MODE_EIGENMODE
+        self.detrapping_scale = 1.0
+
+
+    @staticmethod
+    def _verifyDetrappingParameters(mode, scale):
+        mode = scal(mode)
+        if isinstance(mode, str):
+            if mode.strip().lower().replace('-', '_') in ('eigenmode', 'kappa', 'collisional_eigenmode'):
+                mode = DETRAPPING_RR_MODE_EIGENMODE
+        if mode != DETRAPPING_RR_MODE_EIGENMODE:
+            raise UnsupportedDetrappingSettings(f"Only the eigenmode detrapping closure (mode=3) is supported. Got {mode!r}.")
+        if float(scal(scale)) != 1.0:
+            raise UnsupportedDetrappingSettings(f"Eigenmode detrapping requires detrapping_scale=1. Got {scale!r}.")
+
+
     def setMHDLikeRechesterRosenbluth(
         self, dBB0, grad_j_tot_max=None,
         grad_j_tot_max_norm=None,
@@ -395,6 +430,8 @@ class TransportSettings:
         self.dBB = None
         self.dBB_r = None
         self.dBB_t = None
+        self.detrapping_mode = DETRAPPING_RR_MODE_EIGENMODE
+        self.detrapping_scale = 1.0
 
         self.mhdlike_dBB0 = None
         self.mhdlike_grad_j_tot_max = None
@@ -469,6 +506,12 @@ class TransportSettings:
             self.dBB   = data['dBB']['x']
             self.dBB_r = data['dBB']['r']
             self.dBB_t = data['dBB']['t']
+
+        if self.type == TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING:
+            # Preserve the model used in archived outputs. Omitting the mode
+            # selected local detrapping in the original settings format.
+            self.detrapping_mode = scal(data.get('detrapping_mode', 1))
+            self.detrapping_scale = scal(data.get('detrapping_scale', 1.0))
 
         if 'mhdlike_dBB0' in data:
             self.mhdlike_dBB0 = float(scal(data['mhdlike_dBB0']))
@@ -574,12 +617,15 @@ class TransportSettings:
                 data['s_drr']['pperp'] = self.s_drr_pperp
 
         
-        if self.type == TRANSPORT_RECHESTER_ROSENBLUTH and self.dBB is not None:
+        if self.type in [TRANSPORT_RECHESTER_ROSENBLUTH, TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING] and self.dBB is not None:
             data['dBB'] = {
                 'x': self.dBB,
                 'r': self.dBB_r,
                 't': self.dBB_t
             }
+            if self.type == TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING:
+                self._verifyDetrappingParameters(self.detrapping_mode, self.detrapping_scale)
+                data['detrapping_mode'] = DETRAPPING_RR_MODE_EIGENMODE
 
         if self.type == TRANSPORT_MHD_LIKE or self.type == TRANSPORT_MHD_LIKE_LOCAL and self.mhdlike_dBB0 is not None:
             data['mhdlike_dBB0'] = self.mhdlike_dBB0
@@ -618,8 +664,12 @@ class TransportSettings:
                 raise TransportException("pstar = %0.3f <= 0 not allowed." % self.pstar)
             
             self.verifyBoundaryCondition() 
-        elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
+        elif self.type in (TRANSPORT_RECHESTER_ROSENBLUTH, TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING):
             self.verifySettingsRechesterRosenbluth()
+            if self.type == TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING:
+                if not self.kinetic:
+                    raise TransportException("Eigenmode detrapping requires kinetic isotropic transport.")
+                self._verifyDetrappingParameters(self.detrapping_mode, self.detrapping_scale)
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_FROZEN_CURRENT:
             self.verifyFrozenCurrent()
@@ -716,3 +766,5 @@ class TransportException(DREAMException):
         super().__init__(msg)
 
 
+class UnsupportedDetrappingSettings(TransportException):
+    """An archived detrapping closure or scale that cannot be run."""

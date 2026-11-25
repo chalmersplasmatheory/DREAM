@@ -341,7 +341,13 @@ enum eqterm_transport_type {
 	EQTERM_TRANSPORT_SVENSSON=4,					// Svensson transport model (only n_re)
 	EQTERM_TRANSPORT_FROZEN_CURRENT=5,				// Frozen current transport (only n_re)
 	EQTERM_TRANSPORT_MHD_LIKE=6,					// MHD-like adaptive transport (n_re and T_cold)
-	EQTERM_TRANSPORT_MHD_LIKE_LOCAL=7				// MHD-like adaptive transport, applied locally (n_re and T_cold)
+	EQTERM_TRANSPORT_MHD_LIKE_LOCAL=7,				// MHD-like adaptive transport, applied locally (n_re and T_cold)
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING=8 // Trapping-limited isotropic Rechester-Rosenbluth transport
+};
+
+enum eqterm_transport_rechester_rosenbluth_detrapping_mode {
+	// Serialized eigenmode identifier. Values 1 and 2 belonged to retired closures.
+	EQTERM_TRANSPORT_RECHESTER_ROSENBLUTH_DETRAPPING_MODE_EIGENMODE=3
 };
 
 enum eqterm_frozen_current_mode {

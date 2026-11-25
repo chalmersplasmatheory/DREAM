@@ -202,13 +202,14 @@ void DREAM::TransportBC<T>::__SetElements(
 
 			real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
 
-			// Interpolation in radius
+			// The coefficient is evaluated at face ir+1 (the outer boundary).
+			// Its final interpolation weight belongs entirely to the last cell.
 			if (set_mode == JACOBIAN_SET_LOWER)
 				v = 0;
 			else if (set_mode == JACOBIAN_SET_CENTER)
-				v *= 1 - deltaRadialFlux[ir];
+				v *= 1 - deltaRadialFlux[ir+1];
 			else if (set_mode == JACOBIAN_SET_UPPER)
-				v *= deltaRadialFlux[ir];
+				v *= deltaRadialFlux[ir+1];
 
 			// Select appropriate form for the boundary condition
 			switch (this->type) {

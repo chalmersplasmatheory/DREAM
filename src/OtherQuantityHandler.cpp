@@ -22,6 +22,8 @@
  */
 
 #include <map>
+#include <algorithm>
+#include "DREAM/Equations/Kinetic/TrappingLimitedRRTransport.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
@@ -693,6 +695,23 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_FR("hottail/Drr", "Net radial diffusion on hot electron grid [m/s]",
         const real_t *const* Drr = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeffRR();
         qd->Store(nr_ht+1, n1_ht*n2_ht, Drr);
+    );
+    DEF_HT_FR("hottail/Drr_detrapping", "Eigenmode detrapping diffusion limit [m^2/s]",
+        if (tracked_terms->f_hot_trappinglimited_rr != nullptr)
+            qd->Store(nr_ht+1, n1_ht*n2_ht, tracked_terms->f_hot_trappinglimited_rr->GetDetrappingLimit());
+        else {
+            real_t *Ddetrap = qd->StoreEmpty();
+            std::fill(Ddetrap, Ddetrap + (nr_ht+1)*n1_ht*n2_ht, 0.0);
+        }
+    );
+    // A radial-face scalar: use the fluid flux grid, without momentum axes.
+    DEF_FL_FR("hottail/kappa_detrapping", "Trapped-cone collisional eigenvalue kappa [dimensionless]",
+        if (tracked_terms->f_hot_trappinglimited_rr != nullptr)
+            qd->Store(tracked_terms->f_hot_trappinglimited_rr->GetDetrappingEigenvalue());
+        else {
+            real_t *kappa = qd->StoreEmpty();
+            std::fill(kappa, kappa + fluidGrid->GetNr()+1, 0.0);
+        }
     );
     DEF_HT_F1("hottail/Dpp", "Net momentum-momentum diffusion on hot electron grid [m/s]",
         const real_t *const* Dpp = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff11();

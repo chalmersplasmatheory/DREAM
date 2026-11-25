@@ -30,6 +30,7 @@ from numericmag import numericmag
 from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
 from runiface_parallel import runiface_parallel
+from detrapping_transport import detrapping_transport
 
 
 TESTS = [
@@ -41,7 +42,8 @@ TESTS = [
     'numericmag',
     'trapping_conductivity',
     'ts_adaptive',
-    'runiface_parallel'
+    'runiface_parallel',
+    'detrapping_transport'
 ]
 
 
