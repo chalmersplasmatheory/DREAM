@@ -280,12 +280,13 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
             const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
 
             std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_JtotFromJohm =
-    			[id_j_bs, fluidGrid, johm_init](FVM::UnknownQuantityHandler *u, real_t *jtot_init) {
+    			[id_j_bs, id_j_re, fluidGrid, johm_init](FVM::UnknownQuantityHandler *u, real_t *jtot_init) {
 
                 const real_t *j_bs = u->GetUnknownData(id_j_bs);
+				const real_t *j_re = u->GetUnknownData(id_j_re);
     			const len_t nr = fluidGrid->GetNCells();
     			for (len_t ir = 0; ir < nr; ir++){
-                    jtot_init[ir] = johm_init[ir] + j_bs[ir];
+                    jtot_init[ir] = johm_init[ir] + j_bs[ir] + j_re[ir];
                 }
                 delete [] johm_init;
     		};
@@ -294,11 +295,27 @@ void SimulationGenerator::ConstructEquation_j_tot_consistent(
     			EqsysInitializer::INITRULE_EVAL_FUNCTION,
     			initfunc_JtotFromJohm,
     			// Dependencies..
-    			id_j_bs
+    			id_j_bs,
+				id_j_re
     		);
         } else {
-		      eqsys->SetInitialValue(OptionConstants::UQTY_J_TOT, johm_init);
-              delete [] johm_init;
+			std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_JtotFromJohm =
+				[id_j_re, fluidGrid, johm_init](FVM::UnknownQuantityHandler *u, real_t *jtot_init) {
+
+				const real_t *j_re = u->GetUnknownData(id_j_re);
+				const len_t nr = fluidGrid->GetNCells();
+				for (len_t ir = 0; ir < nr; ir++){
+					jtot_init[ir] = johm_init[ir] + j_re[ir];
+				}
+				delete [] johm_init;
+			};
+			eqsys->initializer->AddRule(
+				id_j_tot,
+				EqsysInitializer::INITRULE_EVAL_FUNCTION,
+				initfunc_JtotFromJohm,
+				// Dependencies..
+				id_j_re
+			);
         }
 
 	} else {

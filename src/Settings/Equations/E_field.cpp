@@ -216,6 +216,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 ) {
 	const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 	const len_t id_j_tot   = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+	const len_t id_j_re    = eqsys->GetUnknownID(OptionConstants::UQTY_J_RE);
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -299,15 +300,16 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
             const len_t id_j_bs = eqsys->GetUnknownID(OptionConstants::UQTY_J_BS);
 
             std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot_bs =
-    			[id_j_tot, id_j_bs, REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+    			[id_j_tot, id_j_bs, id_j_re, REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
     			const real_t *j_tot = u->GetUnknownData(id_j_tot);
                 const real_t *j_bs = u->GetUnknownData(id_j_bs);
+				const real_t *j_re = u->GetUnknownData(id_j_re);
     			const len_t nr = fluidGrid->GetNCells();
     			for (len_t ir = 0; ir < nr; ir++) {
     				real_t s = REFluid->GetElectricConductivity(ir);
     				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
 
-    				Efield_init[ir] = (j_tot[ir] - j_bs[ir]) * B / s;
+    				Efield_init[ir] = (j_tot[ir] - j_bs[ir] - j_re[ir]) * B / s;
     			}
     		};
             // Initialize electric field to dummy value to allow RunawayFluid
@@ -320,19 +322,21 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     			// Dependencies..
     			id_j_tot,
                 id_j_bs,
+				id_j_re,
     			EqsysInitializer::RUNAWAY_FLUID
     		);
 
         } else {
     		std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_EfieldFromJtot =
-    			[id_j_tot, REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
+    			[id_j_tot,id_j_re,REFluid,fluidGrid](FVM::UnknownQuantityHandler *u, real_t *Efield_init) {
     			const real_t *j_tot = u->GetUnknownData(id_j_tot);
+				const real_t *j_re = u->GetUnknownData(id_j_re);
     			const len_t nr = fluidGrid->GetNCells();
     			for (len_t ir = 0; ir < nr; ir++) {
     				real_t s = REFluid->GetElectricConductivity(ir);
     				real_t B = sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));
 
-    				Efield_init[ir] = j_tot[ir] * B / s;
+    				Efield_init[ir] = (j_tot[ir] - j_re[ir]) * B / s;
     			}
     		};
     		// Initialize electric field to dummy value to allow RunawayFluid
@@ -344,6 +348,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     			initfunc_EfieldFromJtot,
     			// Dependencies..
     			id_j_tot,
+				id_j_re,
     			EqsysInitializer::RUNAWAY_FLUID
     		);
         }

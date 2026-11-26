@@ -67,6 +67,7 @@ namespace DREAM::FVM {
         void SaveSFileCurrent(SFile *sf, const std::string& path="", bool saveMeta=false);
 
         void SetInitialValue(const real_t*, const real_t t0=0);
+		void ResetInitialValue();
     };
 }
 

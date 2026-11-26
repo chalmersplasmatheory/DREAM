@@ -140,9 +140,17 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
                 pLower = runawayGrid->GetMomentumGrid(0)->GetP1_f(0);
             
             if(grid == fluidGrid) {
+                // NOTE: This function is called once for each equation that the
+                // source term should be added to (e.g. n_re and S_particle), and
+                // each call must create its own term object, since each operator
+                // takes ownership of (and deletes) its terms. Only the first set
+                // of terms is stored in 'oqty_terms' for diagnostics.
+                bool storeOqty = oqty_terms->tritiumSource_fluid.empty();
                 for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
-		    oqty_terms->tritiumSource_fluid.push_back(new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid));
-                    rsth->AddSourceTerm(eqnSign + "fluid tritium", oqty_terms->tritiumSource_fluid[iT]);
+                    TritiumSource *tritiumSource = new TritiumSource(grid, unknowns, ions, ti[iT], pLower, -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid);
+                    rsth->AddSourceTerm(eqnSign + "fluid tritium", tritiumSource);
+                    if (storeOqty)
+                        oqty_terms->tritiumSource_fluid.push_back(tritiumSource);
                 }
             } else {
                 for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
@@ -155,9 +163,13 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
         } else {
             DREAM::IO::PrintWarning(DREAM::IO::WARNING_KINETIC_TRITIUM_NO_HOT_GRID, "A kinetic tritium term is used, but the hot-tail and runaway grids are disabled. Integrating kinetic tritium source.");
 	    const len_t *ti = ions->GetTritiumIndices();
+            // See note above on why each call creates new term objects
+            bool storeOqty = oqty_terms->tritiumSource_fluid.empty();
             for (len_t iT = 0; iT < ions->GetNTritiumIndices(); iT++){
-                    oqty_terms->tritiumSource_fluid.push_back(new TritiumSource(grid, unknowns, ions, ti[iT], 0., -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid));
-                    rsth->AddSourceTerm(eqnSign + "fluid tritium", oqty_terms->tritiumSource_fluid[iT]);
+                TritiumSource *tritiumSource = new TritiumSource(grid, unknowns, ions, ti[iT], 0., -1.0, TritiumSource::SOURCE_MODE_FLUID, REFluid);
+                rsth->AddSourceTerm(eqnSign + "fluid tritium", tritiumSource);
+                if (storeOqty)
+                    oqty_terms->tritiumSource_fluid.push_back(tritiumSource);
             }
         }
     } 
