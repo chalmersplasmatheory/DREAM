@@ -10,12 +10,12 @@
 namespace DREAM::FVM {
 	class MIGMRES : public MatrixInverter {
     private:
-        Vec x;
+        Vec x = nullptr;
 
-        PetscScalar *x_data;
+        PetscScalar *x_data = nullptr;
         len_t xn;
 
-        PetscInt *blocks;
+        PetscInt *blocks = nullptr;
         len_t nBlocks;
 	public:
 		MIGMRES(const len_t, std::vector<len_t>&, UnknownQuantityHandler*,
