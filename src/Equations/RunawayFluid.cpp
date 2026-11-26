@@ -662,10 +662,10 @@ void RunawayFluid::CalculateCriticalMomentum(){
             const real_t *nc = unknowns->GetUnknownData(id_ncold);
             const real_t *Tc = unknowns->GetUnknownData(id_Tcold);
             throw DREAMException(
-                "%s Critical momentum at ir = %llu: E_field = %.6e V/m, Eceff = %.6e V/m, "
+                "%s Critical momentum at ir = " LEN_T_PRINTF_FMT ": E_field = %.6e V/m, Eceff = %.6e V/m, "
                 "E (normalized, used) = %.6e, constTerm = %.6e, n_cold = %.6e m^-3, T_cold = %.6e eV, "
                 "pc (complete screening) = %.6e, pc (no screening) = %.6e.",
-                ex.what(), (unsigned long long)ir, E_term[ir], effectiveCriticalField[ir],
+                ex.what(), ir, E_term[ir], effectiveCriticalField[ir],
                 E, constTerm, nc[ir], Tc[ir], pc_COMPLETESCREENING[ir], pc_NOSCREENING[ir]
             );
         }
