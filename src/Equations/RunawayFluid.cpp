@@ -331,9 +331,9 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
     while(!isLoUnderestimate){
         if (++iter > max_iter)
             throw DREAMException(
-                "RunawayFluid::FindInterval: failed to bracket root after %llu downward expansions: "
+                "RunawayFluid::FindInterval: failed to bracket root after " LEN_T_PRINTF_FMT " downward expansions: "
                 "x_lower = %.6e, f(x_lower) = %.6e, x_upper = %.6e.",
-                (unsigned long long)max_iter, *x_lower, f_lo, *x_upper
+                max_iter, *x_lower, f_lo, *x_upper
             );
         *x_upper = *x_lower;
         *x_lower *= 0.7;
@@ -345,9 +345,9 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
     while (!isUpOverestimate){
         if (++iter > max_iter)
             throw DREAMException(
-                "RunawayFluid::FindInterval: failed to bracket root after %llu upward expansions: "
+                "RunawayFluid::FindInterval: failed to bracket root after " LEN_T_PRINTF_FMT " upward expansions: "
                 "x_lower = %.6e, x_upper = %.6e, f(x_upper) = %.6e.",
-                (unsigned long long)max_iter, *x_lower, *x_upper, f_up
+                max_iter, *x_lower, *x_upper, f_up
             );
         *x_lower = *x_upper;
         *x_upper *= 1.4;
