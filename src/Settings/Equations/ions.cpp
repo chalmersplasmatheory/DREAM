@@ -285,6 +285,9 @@ void SimulationGenerator::ConstructEquation_Ions(
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
     bool includeFluidREIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID_RE);
+    const FVM::Grid *exteriorGrid = nullptr;
+    if (includeKineticIonization && eqsys->GetUnknownHandler()->HasUnknown(OptionConstants::UQTY_N_EXTERNAL_POS))
+        exteriorGrid = eqsys->HasRunawayGrid() ? eqsys->GetRunawayGrid() : eqsys->GetHotTailGrid();
 
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
@@ -347,10 +350,18 @@ void SimulationGenerator::ConstructEquation_Ions(
 								fluidGrid, eqsys->GetRunawayGrid(), id_ni,
 								eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(),
 								ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI,
-								eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
+								eqsys->GetUnknownID(OptionConstants::UQTY_N_RE),
+                                0, FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC, exteriorGrid != nullptr
 							);
 						oqty_terms->f_re_kin_rates.push_back(ikit);
 						Op_kiniz_re->AddTerm(ikit);
+                    }
+                    if (exteriorGrid != nullptr) {
+                        auto *impact = new IonFluidRunawayIonizationTerm(
+                            fluidGrid, eqsys->GetUnknownHandler(), ih, iZ, 1.0, exteriorGrid
+                        );
+                        oqty_terms->n_re_kin_rates.push_back(impact);
+                        eqn->AddTerm(impact);
                     }
                 }
                 else if (includeFluidREIonization) {

@@ -61,7 +61,8 @@ class DistributionFunction(UnknownQuantity):
         self.grid = grid
 
         self.boundarycondition = bc
-        
+        self.external_kinetic_boundary = False
+
         self.mode = mode
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
@@ -105,6 +106,28 @@ class DistributionFunction(UnknownQuantity):
         :param int bc: Flag specifying which boundary condition to use.
         """
         self.boundarycondition = bc
+
+    def setExternalKineticBoundary(self, enabled=True):
+        """
+        Enable exchange with a pitch-tagged external density at p=pmax.
+
+        Use f_hot when only the hot-tail grid is enabled and f_re whenever
+        the runaway grid is enabled. Disabling restores the configured
+        boundary condition at p=pmax.
+
+        :param bool enabled: Whether to enable the two-way boundary.
+        """
+        if enabled:
+            self._verifyExternalKineticBoundary()
+        self.external_kinetic_boundary = bool(enabled)
+
+    def _verifyExternalKineticBoundary(self):
+        if not self.grid.enabled:
+            raise EquationException(f"{self.name}: The external kinetic boundary requires an enabled grid.")
+        if self.name == 'f_hot' and self.settings.runawaygrid.enabled:
+            raise EquationException("The external kinetic boundary belongs on f_re when the runaway grid is enabled.")
+        if self.mode != DISTRIBUTION_MODE_NUMERICAL:
+            raise EquationException(f"{self.name}: The external kinetic boundary requires a numerical distribution.")
 
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
         ad_int_p1=AD_INTERP_CENTRED, ad_int_p2=AD_INTERP_CENTRED, ad_jac=None, 
@@ -343,6 +366,7 @@ class DistributionFunction(UnknownQuantity):
             self.mode = data['mode']
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
+        self.external_kinetic_boundary = bool(scal(data.get('external_kinetic_boundary', False)))
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
@@ -396,6 +420,7 @@ class DistributionFunction(UnknownQuantity):
         """
         data = {}
         data['mode'] = self.mode
+        data['external_kinetic_boundary'] = self.external_kinetic_boundary
         if self.grid.enabled:
             data['boundarycondition'] = self.boundarycondition
 
@@ -448,6 +473,8 @@ class DistributionFunction(UnknownQuantity):
         """
         Verify that the settings of this unknown are correctly set.
         """
+        if self.external_kinetic_boundary:
+            self._verifyExternalKineticBoundary()
         if self.grid.enabled:
             if self.mode not in [DISTRIBUTION_MODE_NUMERICAL, DISTRIBUTION_MODE_PRESCRIBED]:
                 raise EquationException("{}: Invalid mode set. Must be 'NUMERICAL' or 'PRESCRIBED' when the grid is 'enabled'.".format(self.name))

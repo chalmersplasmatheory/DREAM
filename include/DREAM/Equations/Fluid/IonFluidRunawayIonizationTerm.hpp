@@ -1,7 +1,7 @@
 #ifndef _DREAM_EQUATION_ION_FLUID_RUNAWAY_IONIZATION_TERM_HPP
 #define _DREAM_EQUATION_ION_FLUID_RUNAWAY_IONIZATION_TERM_HPP
 
-
+#include <vector>
 #include "DREAM/Constants.hpp"
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
@@ -14,10 +14,12 @@ namespace DREAM {
     class IonFluidRunawayIonizationTerm : public IonEquationTerm<FVM::EquationTerm> {
         private:
 
-            len_t id_ions, id_nre;
+            len_t id_ions;
+            std::vector<len_t> idRunaways;
             len_t tableIndexIon;
 
             FVM::UnknownQuantityHandler *u;
+            const FVM::Grid *exteriorGrid;
             real_t scaleFactor;
 
             real_t *weights;
@@ -32,18 +34,20 @@ namespace DREAM {
              */
             const real_t CHARACTERISTIC_RUNAWAY_MOMENTUM = 20.0;
 
-            real_t preFactor;
+            real_t GetRunawayDensity(len_t ir) const;
 
         public:
             IonFluidRunawayIonizationTerm(
-                FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, const len_t, real_t
+                FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, const len_t,
+                real_t scaleFactor=1.0, const FVM::Grid *exteriorGrid=nullptr
             );
             virtual ~IonFluidRunawayIonizationTerm();
 
             real_t *GetWeights() { return weights; }
+            void SetRateCoefficients(real_t *coefficients) const;
 
-            virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
-            virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
+            virtual len_t GetNumberOfNonZerosPerRow() const override { return 2; }
+            virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 2 + idRunaways.size(); }
 
 
             virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

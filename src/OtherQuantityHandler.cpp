@@ -21,7 +21,9 @@
  * appropriate structs in the output file.
  */
 
+#include <algorithm>
 #include <map>
+#include "DREAM/Equations/Kinetic/ExternalKineticBoundary.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
@@ -343,7 +345,29 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     }
 
-	if (tracked_terms->n_re_f_hot_flux != nullptr) {
+    if (tracked_terms->external_kinetic_boundary) {
+        DEF_FL("fluid/gammaExternal", "Net electron flux out of the outer kinetic grid [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaExternalOut", "Outward electron flux at the outer kinetic boundary [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(nullptr, qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaExternalIn", "Inward electron flux at the outer kinetic boundary [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(nullptr, nullptr, qd->StoreEmpty());
+        );
+        DEF_FL("fluid/gammaExternalPos", "Net outward flux of the positive external population [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty(), nullptr, nullptr, ExternalKineticBoundary::POSITIVE);
+        );
+        DEF_FL("fluid/gammaExternalNeg", "Net outward flux of the negative external population [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty(), nullptr, nullptr, ExternalKineticBoundary::NEGATIVE);
+        );
+    }
+
+    if (tracked_terms->external_kinetic_boundary && !runawayGrid) {
+        DEF_FL("fluid/gammaFhot", "Net electron flux from f_hot to n_re [s^-1 m^-3]",
+            tracked_terms->external_kinetic_boundary->GetFlux(qd->StoreEmpty());
+        );
+    } else if (tracked_terms->n_re_f_hot_flux != nullptr) {
 		DEF_FL("fluid/gammaFhot", "Electron flux from f_hot to n_re [s^-1 m^-3]",
 			const real_t *f_hot = this->unknowns->GetUnknownData(this->id_f_hot);
 			real_t *v = qd->StoreEmpty();
@@ -484,12 +508,16 @@ void OtherQuantityHandler::DefineQuantities() {
             this->tracked_terms->T_cold_fre_coll->SetVectorElements(vec, fre);
         );
     if (tracked_terms->T_cold_nre_coll != nullptr)
-        DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
-            real_t *nre = this->unknowns->GetUnknownData(id_n_re);
+        DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by unresolved runaways [J s^-1 m^-3]",
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
-                vec[ir] = 0;
-            this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
+            std::fill_n(vec, qd->Size(), 0);
+            auto *term = this->tracked_terms->T_cold_nre_coll;
+            if (unknowns->HasUnknown(OptionConstants::UQTY_N_EXTERNAL_POS)) {
+                term->SetVectorElements(vec, unknowns->GetUnknownData(OptionConstants::UQTY_N_EXTERNAL_POS));
+                term->SetVectorElements(vec, unknowns->GetUnknownData(OptionConstants::UQTY_N_EXTERNAL_NEG));
+            } else {
+                term->SetVectorElements(vec, unknowns->GetUnknownData(id_n_re));
+            }
         );
 
     if (tracked_terms->T_cold_transport != nullptr)
@@ -895,6 +923,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
     DEF_RE("runaway/S_ava", "Rosenbluth-Putvinski avalanche source term",
         real_t *v = qd->StoreEmpty();
+        std::fill_n(v, this->runawayGrid->GetNCells(), 0);
 
         FVM::Operator *avaPos = this->unknown_equations->at(this->id_f_re)->GetOperatorUnsafe(this->id_n_re);
         const real_t *nre = unknowns->GetUnknownData(id_n_re);
@@ -1205,26 +1234,18 @@ void OtherQuantityHandler::DefineQuantities() {
 	}
 
     if (this->tracked_terms->n_re_kin_rates.size() > 0) {
-		DEF_FL_MUL("fluid/reioniz_rate", nChargeStates, "Ionization rate due to runaway impact ionization [m^-3 s^-1]",
+		DEF_FL_MUL("fluid/reioniz_rate", nChargeStates, "Ionization rate due to fluid runaway impact ionization [m^-3 s^-1]",
 			real_t *v = qd->StoreEmpty();
-			const real_t *n_i = unknowns->GetUnknownData(id_n_i);
+            std::fill_n(v, qd->Size(), 0);
+			const real_t *n_i = unknowns->GetUnknownData(OptionConstants::UQTY_ION_SPECIES);
 			for (auto t : this->tracked_terms->n_re_kin_rates)
 				t->SetVectorElements(v, n_i);
 		);
-        DEF_FL_MUL("fluid/reioniz_vsigma", nChargeStates, "Approximated runaway impact ionization cross-section multiplied by the electron speed [m^-1 s^-1]",
+        DEF_FL_MUL("fluid/reioniz_vsigma", nChargeStates, "Fluid runaway impact ionization rate coefficient including runaway density [s^-1]",
             real_t *v = qd->StoreEmpty();
-            const len_t nr = this->fluidGrid->GetNr();
-            const real_t *nre = unknowns->GetUnknownData(id_n_re);
-            len_t offset = 0;
-            for (len_t iz = 0; iz < this->tracked_terms->n_re_kin_rates.size(); iz++) {
-                IonFluidRunawayIonizationTerm *ifrit = this->tracked_terms->n_re_kin_rates[iz];
-                real_t *weights = ifrit->GetWeights();
-                len_t Z = ions->GetZ(iz);
-                for (len_t Z0 = 0; Z0 <= Z; Z0++)
-                    for (len_t ir = 0; ir < nr; ir++)
-                        v[offset+Z0*nr+ir] = weights[ir*(Z+1)+Z0] * nre[ir];
-                offset+=(Z+1)*nr;
-            }
+            std::fill_n(v, qd->Size(), 0);
+            for (auto *term : this->tracked_terms->n_re_kin_rates)
+                term->SetRateCoefficients(v);
         );
     }
 
@@ -1369,7 +1390,7 @@ void OtherQuantityHandler::DefineQuantities() {
     };
     this->groups["energy"] = {
         "fluid/Tcold_ohmic", "fluid/Tcold_fhot_coll", "fluid/Tcold_fre_coll",
-        "fluid/Tcold_transport", "fluid/Tcold_radiation", "fluid/Tcold_ion_coll",
+        "fluid/Tcold_nre_coll", "fluid/Tcold_transport", "fluid/Tcold_radiation", "fluid/Tcold_ion_coll",
         "fluid/W_hot", "fluid/W_re", "scalar/E_mag", "scalar/L_i", "scalar/l_i",
         "scalar/energyloss_T_cold", "scalar/energyloss_f_re", "scalar/energyloss_f_hot"
     };

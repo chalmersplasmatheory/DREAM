@@ -10,6 +10,7 @@
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/IonisationHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
@@ -338,8 +339,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
         desc += " + int(W*nu_E*f_hot)";
     }
-    // If runaway grid and not FULL collfreqmode, add collisional
-    // energy transfer from runaways to T_cold.
+    // Collisional heating by the resolved runaway distribution.
     if( eqsys->HasRunawayGrid() ){
         len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
@@ -352,7 +352,22 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op5->AddTerm( oqty_terms->T_cold_fre_coll );
         eqsys->SetOperator(id_T_cold, id_f_re, Op5);
         desc += " + int(W*nu_E*f_re)";
-    } else {
+    }
+
+    if (unknowns->HasUnknown(OptionConstants::UQTY_N_EXTERNAL_POS)) {
+        const auto *outerGrid = eqsys->HasRunawayGrid() ? eqsys->GetRunawayGrid() : eqsys->GetHotTailGrid();
+        for (const auto &pole : {OptionConstants::UQTY_N_EXTERNAL_POS, OptionConstants::UQTY_N_EXTERNAL_NEG}) {
+            auto *term = new CollisionalEnergyTransferREFluidTerm(
+                fluidGrid, unknowns, eqsys->GetREFluid()->GetLnLambda(), -1.0, outerGrid
+            );
+            auto *heating = new FVM::Operator(fluidGrid);
+            heating->AddTerm(term);
+            eqsys->SetOperator(id_T_cold, unknowns->GetUnknownID(pole), heating);
+            // Both pole terms have identical weights for the heating diagnostic.
+            oqty_terms->T_cold_nre_coll = term;
+        }
+        desc += " + collisional heating by exterior runaways";
+    } else if (!eqsys->HasRunawayGrid()) {
         len_t id_n_re = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
         oqty_terms->T_cold_nre_coll = new CollisionalEnergyTransferREFluidTerm(
             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()->GetLnLambda(), -1.0

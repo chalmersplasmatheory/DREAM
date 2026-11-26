@@ -35,6 +35,8 @@ class EquationSystem:
         'j_tot':        CurrentDensity,
         'n_cold':       FluidQuantity,
         'n_hot':        FluidQuantity,
+        'n_external_pos': FluidQuantity,
+        'n_external_neg': FluidQuantity,
         'n_i':          IonHandler,
         'N_i':          IonSpeciesFluidQuantity,
         'n_re':         RunawayElectronDensity,

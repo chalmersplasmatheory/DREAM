@@ -5,6 +5,7 @@
 #include <string>
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/Kinetic/ExternalKineticBoundary.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
@@ -41,6 +42,8 @@ using namespace std;
 void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod) {
     // External boundary condition
     s->DefineSetting(mod + "/boundarycondition", "Type of boundary condition to use at pMax.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
+
+    s->DefineSetting(mod + "/external_kinetic_boundary", "Enable two-way exchange with a signed external density at pMax.", false);
 
     // Flux limiter settings
     s->DefineSetting(mod + "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
@@ -193,8 +196,13 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     }
 
     // EXTERNAL BOUNDARY CONDITIONS
-    // Lose particles to n_re?
-	if (addExternalBC) {
+    if (addExternalBC && s->GetBool(mod + "/external_kinetic_boundary")) {
+        auto *unknowns = eqsys->GetUnknownHandler();
+        eqn->AddBoundaryCondition(new ExternalKineticBoundary(grid, grid, eqn, id_f, {
+            unknowns->GetUnknownID(OptionConstants::UQTY_N_EXTERNAL_POS),
+            unknowns->GetUnknownID(OptionConstants::UQTY_N_EXTERNAL_NEG)
+        }, unknowns));
+    } else if (addExternalBC) {
 		enum FVM::BC::PXiExternalLoss::bc_type bc =
 			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(mod + "/boundarycondition");
 

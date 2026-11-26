@@ -45,6 +45,8 @@ namespace DREAM { class OtherQuantityHandler; }
 
 
 namespace DREAM {
+    class ExternalKineticBoundary;
+
     class OtherQuantityHandler {
     public:
         struct eqn_terms {
@@ -95,6 +97,8 @@ namespace DREAM {
 			// Flux of RE from hottail grid
 			DREAM::FVM::BC::PXiExternalLoss *n_re_f_hot_flux=nullptr;
 			DREAM::FVM::BC::PXiExternalKineticKinetic *f_re_f_hot_flux=nullptr;
+            // Outer momentum boundary (owned by its equation operator)
+            DREAM::ExternalKineticBoundary *external_kinetic_boundary=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
             // LCFS runaway loss rate term

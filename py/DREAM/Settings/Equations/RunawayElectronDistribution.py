@@ -121,6 +121,8 @@ class RunawayElectronDistribution(DistributionFunction, PrescribedInitialParamet
         """
         Verify the settings of this module.
         """
+        if self.external_kinetic_boundary:
+            self._verifyExternalKineticBoundary()
         self.verifySettingsPrescribedInitialData()
 
 
