@@ -8,9 +8,9 @@
 namespace DREAM::FVM {
 	class MIMUMPS : public MatrixInverter {
     private:
-        Vec x;
+        Vec x = nullptr;
 
-        PetscScalar *x_data;
+        PetscScalar *x_data = nullptr;
         len_t xn;
 	public:
 		MIMUMPS(const len_t);

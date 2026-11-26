@@ -57,6 +57,15 @@ void MISuperLU::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPSetType(this->ksp, KSPPREONLY);
 
     // Solve
-    KSPSolve(this->ksp, *b, *x);
+    this->errorcode = KSPSolve(this->ksp, *b, *x);
+
+    // A failed factorization (e.g. zero pivot) does not make KSPSolve
+    // return an error; it is reported through the converged reason
+    if (this->errorcode == 0) {
+        KSPConvergedReason reason;
+        KSPGetConvergedReason(this->ksp, &reason);
+        if (reason < 0)
+            this->errorcode = reason;
+    }
 }
 
