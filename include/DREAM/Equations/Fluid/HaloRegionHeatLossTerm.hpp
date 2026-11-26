@@ -26,6 +26,8 @@ namespace DREAM {
         bool signFixed = false;
         real_t sign = -1;
 
+        len_t iZMain;   // main ion species
+
         real_t kappa = 8.;
         real_t gamma = 5./3.;
 
