@@ -43,6 +43,7 @@ namespace DREAM {
         CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih)
         {
+			SetName("CurrentFromConductivityTerm");
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));

@@ -47,9 +47,11 @@ class EquationSystem:
         'S_particle':   FluidQuantity,
         'tau_coll':     FluidQuantity,
         'T_cold':       Temperature,
+        'T_hot':        Temperature,
         'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
+        'W_hot':        FluidQuantity,
         'W_i':          IonThermalEnergy,
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
@@ -102,7 +104,7 @@ class EquationSystem:
         self.grid = grid
 
 
-    def setUnknown(self, name, data, attr, datatype=None):
+    def setUnknown(self, name, data, attr, triggerinfo=None, datatype=None):
         """
         Add the given unknown to this equation system.
 
@@ -111,11 +113,11 @@ class EquationSystem:
         attr: List of attributes set to this unknown in the output file.
         """
         if datatype is not None:
-            o = datatype(name=name, data=data, attr=attr, grid=self.grid, output=self.output)
+            o = datatype(name=name, data=data, attr=attr, grid=self.grid, output=self.output, triggerinfo=triggerinfo)
         elif name in self.SPECIAL_TREATMENT:
-            o = self.SPECIAL_TREATMENT[name](name=name, data=data, attr=attr, grid=self.grid, output=self.output)
+            o = self.SPECIAL_TREATMENT[name](name=name, data=data, attr=attr, grid=self.grid, output=self.output, triggerinfo=triggerinfo)
         else:
-            o = UnknownQuantity(name=name, data=data, attr=attr, grid=self.grid, output=self.output)
+            o = UnknownQuantity(name=name, data=data, attr=attr, grid=self.grid, output=self.output, triggerinfo=triggerinfo)
 
         setattr(self, name, o)
         self.unknowns[name] = o
@@ -128,12 +130,19 @@ class EquationSystem:
         for uqn in unknowns:
             # Skip attributes
             if uqn[-2:] == '@@': continue
+            # Skip the 'triggers' category
+            if uqn == 'triggers': continue
 
             attr = []
             if uqn+'@@' in unknowns:
                 attr = unknowns[uqn+'@@']
 
-            self.setUnknown(name=uqn, data=unknowns[uqn], attr=attr)
+            if ('triggers' in unknowns) and (uqn in unknowns['triggers']):
+                triggerinfo = unknowns['triggers'][uqn]
+            else:
+                triggerinfo = None
+
+            self.setUnknown(name=uqn, data=unknowns[uqn], attr=attr, triggerinfo=triggerinfo)
 
 
     def resetUnknown(self, unknown, datatype):

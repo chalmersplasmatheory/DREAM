@@ -35,9 +35,13 @@ namespace DREAM {
     protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
     public:
-        SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
+        SlowingDownFrequency(
+			FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+			CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
+			enum OptionConstants::momentumgrid_type mgtype,
+			struct collqty_settings *cqset,
+			const len_t id_T, const len_t id_n
+		);
         ~SlowingDownFrequency();
         virtual real_t evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         real_t GetMeanExcitationEnergy(len_t iz, len_t Z0)

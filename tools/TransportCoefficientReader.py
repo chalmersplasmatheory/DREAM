@@ -116,6 +116,7 @@ class TransportCoefficientReader:
             ip = np.argmin(self.p)
         if ixi is None:
             ixi = np.argmax(self.xi)
+
         dBB = np.sqrt(self.Drr[:,:,ixi,ip]/(np.pi*q*dsObj.radialgrid.getMajorRadius()*c*self.p[ip]/np.sqrt(1+self.p[ip]**2)*self.xi[ixi]))
         print(f'R0 = {dsObj.radialgrid.R0}')
         print(f'dB/B = {np.amax(dBB)}')

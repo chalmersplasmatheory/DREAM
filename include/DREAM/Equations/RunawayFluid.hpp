@@ -30,9 +30,10 @@ namespace DREAM {
         FVM::RadialGrid *rGrid;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
-        CoulombLogarithm *lnLambdaEE;
+        CoulombLogarithm *lnLambdaEE=nullptr;
+		CoulombLogarithm *lnLambdaEEhot=nullptr;
         bool extrapolateDreicer;
-        CoulombLogarithm *lnLambdaEI;
+        CoulombLogarithm *lnLambdaEI=nullptr;
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
@@ -58,16 +59,22 @@ namespace DREAM {
         real_t integratedComptonSpectrum; // Integral of the photon flux spectrum over all Eg (in units of mc2).
         real_t  C1_Compton, C2_Compton, C3_Compton; // Shaping parameters for photon flux spectrum
 
+		bool hasThot = false;
+
         len_t id_ncold;
+		len_t id_nhot;
         len_t id_ntot;
         len_t id_ni;
         len_t id_Tcold;
+		len_t id_Thot;
         len_t id_Eterm;
         len_t id_jtot;
 
         real_t *ncold;
+		real_t *nhot;
         real_t *ntot;
         real_t *Tcold;
+		real_t *Thot;
         real_t *Eterm;
 
         real_t *Ec_free=nullptr;                 // Connor-Hastie field with only free
@@ -87,6 +94,7 @@ namespace DREAM {
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
+		real_t *electricHotConductivity=nullptr; // Conductivity evaluated with hot electron properties
 		real_t *pStar=nullptr;					 // Effective critical momentum pStar
 		real_t *nusnuDatPStar=nullptr;			 // normalized nu_s*nu_D evaluated at pStar
 
@@ -95,7 +103,7 @@ namespace DREAM {
         FVM::TimeKeeper *timeKeeper;
         len_t
             timerTot,
-            timerLnLambdaEE, timerLnLambdaEI,
+            timerLnLambdaEE, timerLnLambdaEEhot, timerLnLambdaEI,
             timerNuS, timerNuD, timerDerived,
             timerEcEff, timerPCrit, timerGrowthrates;
 
@@ -136,7 +144,7 @@ namespace DREAM {
     public:
         RunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-            PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
+            PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE, CoulombLogarithm *lnLEEhot,
             bool extrapolateDreicer,
             CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
             CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
@@ -174,8 +182,12 @@ namespace DREAM {
         
         const real_t GetElectricConductivity(len_t ir) const
             {return electricConductivity[ir];}
-        const real_t* GetElectricConductivity() const
+        const real_t *GetElectricConductivity() const
             {return electricConductivity;}
+		const real_t GetElectricHotConductivity(len_t ir) const
+			{return electricHotConductivity[ir];}
+		const real_t *GetElectricHotConductivity() const
+			{return electricHotConductivity;}
 
         const real_t GetDreicerElectricField(len_t ir) const
             {return EDreic[ir];}
@@ -245,21 +257,40 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
         AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
 
-        CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
+        CoulombLogarithm *GetLnLambda(){return lnLambdaEE;}
+		CoulombLogarithm *GetLnLambdaHot(){return lnLambdaEEhot;}
         SlowingDownFrequency* GetNuS(){return nuS;}
         PitchScatterFrequency* GetNuD(){return nuD;}
 
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless);
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless);
+        real_t evaluateNeoclassicalConductivityCorrection_hot(len_t ir, bool collisionless);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t T, real_t Zeff, real_t n, bool collisionless);
 
         real_t evaluateSauterElectricConductivity(len_t ir, bool collisionless);
+        real_t evaluateSauterElectricConductivity_hot(len_t ir, bool collisionless);
         real_t evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless);
         real_t evaluateBraamsElectricConductivity(len_t ir);
-        real_t evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff);
+        real_t evaluateBraamsElectricConductivity_hot(len_t ir);
+        real_t evaluateBraamsElectricConductivity(len_t ir, real_t T, real_t Zeff);
 
         real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n); 
-        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless);
-        real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n);
+        real_t evaluatePartialContributionHotConductivity(len_t ir, len_t derivId, len_t n); 
+
+        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t nidx, bool collisionless);
+        real_t evaluatePartialContributionSauterConductivity_hot(len_t ir, len_t derivId, len_t nidx, bool collisionless);
+        real_t evaluatePartialContributionSauterConductivity_inner(
+			len_t ir, len_t derivId, len_t nidx, bool collisionless,
+			const len_t id_T, const len_t id_n,
+			const real_t *T, const real_t *n
+		);
+
+        real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t nidx);
+        real_t evaluatePartialContributionBraamsConductivity_hot(len_t ir, len_t derivId, len_t nidx);
+        real_t evaluatePartialContributionBraamsConductivity_inner(
+			len_t ir, len_t derivId, len_t nidx,
+			const len_t id_T, const real_t *T
+		);
+
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);
 

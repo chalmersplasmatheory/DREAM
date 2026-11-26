@@ -7,11 +7,11 @@ from . UnknownQuantity import UnknownQuantity
 class IonSpeciesScalarQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, attr, grid, output):
+    def __init__(self, name, data, attr, grid, output, triggerinfo=None):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, triggerinfo=triggerinfo)
 
         self.attr = attr
         self.ions = output.ionmeta
