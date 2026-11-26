@@ -12,7 +12,8 @@ Mathias Hoppe (KTH)
 Ida Ekmark (Chalmers)
 Linn Ekman (KTH)
 Lorenzo Votta (KTH)
-Peter Halldestam (Max Planck Institute for Plasma Physics)
+Peter Halldestam (KTH)
+Björn Zaar (Chalmers)
 Ola Embreus
 
 # Contributors
