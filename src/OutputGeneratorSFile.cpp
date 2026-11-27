@@ -19,13 +19,15 @@ using namespace std;
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, const std::string& filename,
-    bool savesettings
-) : OutputGenerator(eqsys, savesettings), filename(filename) {}
+	struct static_qtys *staticQuantities, bool savesettings
+) : OutputGenerator(eqsys, staticQuantities, savesettings),
+	filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, SFile *sf,
+	struct static_qtys *staticQuantities,
     bool savesettings
-) : OutputGenerator(eqsys, savesettings), sf(sf) {}
+) : OutputGenerator(eqsys, staticQuantities, savesettings), sf(sf) {}
 
 /**
  * Destructor.
@@ -171,6 +173,12 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
         this->sf->CreateStruct(group + "runaway");
         SaveMomentumGrid(this->sf, group + "runaway/", this->runawayGrid, this->eqsys->GetRunawayGridType());
     }
+
+	// Boltzmann operator quantities
+	if (this->staticQuantities->mollerKernelHandler != nullptr) {
+		this->sf->CreateStruct(group + "boltzmann");
+		this->SaveGridBoltzmann(group + "boltzmann/");
+	}
 }
 
 /**
@@ -283,6 +291,46 @@ void OutputGeneratorSFile::SaveIonMetaData(const std::string& name) {
         names += *it + ";";
 
     sf->WriteString(group + "names", names);
+}
+
+void OutputGeneratorSFile::SaveGridBoltzmann(const std::string& group) {
+	MollerKernelHandler *MKH = this->staticQuantities->mollerKernelHandler;
+	if (MKH->HasHotHot())
+		this->SaveGridBoltzmannDeltaKernel(
+			group + "deltaAngleKernel_hot_hot",
+			MKH->AngleHotHot()
+		);
+	
+	if (MKH->HasHotRe())
+		this->SaveGridBoltzmannDeltaKernel(
+			group + "deltaAngleKernel_hot_re",
+			MKH->AngleHotRe()
+		);
+	
+	if (MKH->HasReRe())
+		this->SaveGridBoltzmannDeltaKernel(
+			group + "deltaAngleKernel_re_re",
+			MKH->AngleReRe()
+		);
+}
+
+void OutputGeneratorSFile::SaveGridBoltzmannDeltaKernel(
+	const std::string& name, const MollerDeltaAngleKernel *kernel
+) {
+	len_t N = kernel->GetDeltaTableSize();
+	len_t Nr = this->fluidGrid->GetNr();
+	len_t NxiStarsTabulate = kernel->GetNxiStarsTabulate();
+	len_t sliceSize = N/(Nr*NxiStarsTabulate);
+	real_t *storage = new real_t[N];
+	real_t ***deltaTable = kernel->GetDeltaTable();
+
+	for (len_t i = 0, ir = 0; ir < Nr; ir++)
+		for (len_t m = 0; m < NxiStarsTabulate; ++m)
+			for (len_t j = 0; j < sliceSize; ++j, ++i)
+				storage[i] = deltaTable[ir][m][j];
+
+	sfilesize_t dims[3] = {Nr, NxiStarsTabulate, sliceSize};
+	this->sf->WriteMultiArray(name, storage, 3, dims);
 }
 
 /**

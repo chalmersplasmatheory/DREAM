@@ -13,12 +13,13 @@ using namespace DREAM;
  * Constructor.
  */
 OutputGenerator::OutputGenerator(
-	EquationSystem *eqsys, bool savesettings
+	EquationSystem *eqsys, struct static_qtys *staticQuantities,
+	bool savesettings
 ) : scalarGrid(eqsys->GetScalarGrid()), fluidGrid(eqsys->GetFluidGrid()),
     hottailGrid(eqsys->GetHotTailGrid()), runawayGrid(eqsys->GetRunawayGrid()),
     unknowns(eqsys->GetUnknownHandler()), ions(eqsys->GetIonHandler()),
     oqty(eqsys->GetOtherQuantityHandler()), eqsys(eqsys),
-    savesettings(savesettings) { }
+    staticQuantities(staticQuantities), savesettings(savesettings) { }
 
 OutputGenerator::~OutputGenerator() {}
 
