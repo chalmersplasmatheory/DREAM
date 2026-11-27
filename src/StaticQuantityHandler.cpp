@@ -23,6 +23,7 @@ StaticQuantityHandler::StaticQuantityHandler(
 ) : includeNames(includeNames), staticData(staticData),
 	fluidGrid(fluidGrid), hotTailGrid(hotTailGrid), runawayGrid(runawayGrid) {
 
+	this->InitializeQuantities();
 }
 
 

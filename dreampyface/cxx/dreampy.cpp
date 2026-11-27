@@ -229,7 +229,7 @@ static PyObject *dreampy_run_simulation(
     try {
         ogs = new DREAM::OutputGeneratorSFile(
             sim->GetEquationSystem(), sfp,
-			sim->GetOutputGenerator()->GetStaticQuantities()->Clone()
+            sim->GetOutputGenerator()->GetStaticQuantities()->Clone()
         );
         sim->Run();
 
