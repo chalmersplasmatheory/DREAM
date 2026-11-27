@@ -13,6 +13,7 @@ DREAMSettings
    output
    radialgrid
    solver
+   static
    timestep
 
 The ``DREAMSettings`` object represents the settings which are given to a DREAM
@@ -47,6 +48,8 @@ settings for a particular module of the kernel:
 | :ref:`runawaygrid<ds-momentumgrid>`   | Runaway momentum grid settings.                                              |
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`solver<ds-solver>`              | Settings for the equation system solver.                                     |
++---------------------------------------+------------------------------------------------------------------------------+
+| :ref:`static<ds-static>`              | Settings for the static (non-time evolving) quantities.                      |
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`timestep<ds-timestep>`          | Settings for the module determining the size of time steps to take.          |
 +---------------------------------------+------------------------------------------------------------------------------+
