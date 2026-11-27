@@ -509,8 +509,6 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     DREAM::FVM::UnknownQuantityHandler *uqn = REFluid->GetUnknowns();
     len_t id_n_cold = uqn->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);
     real_t ncold = uqn->GetUnknownData(id_n_cold)[0];
-    this->PrintStatus("ncold = %e", ncold);
-    //real_t ncold = 4.6009999999999997e+21;
     real_t Zeff  = REFluid->GetIonHandler()->GetZeff(0);
 
     real_t Ec = REFluid->GetConnorHastieField_COMPLETESCREENING(0);

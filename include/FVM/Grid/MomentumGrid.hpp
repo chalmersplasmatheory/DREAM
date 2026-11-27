@@ -136,23 +136,53 @@ namespace DREAM::FVM {
          */
         static real_t evaluateXiOverXi0(real_t xi0, real_t BOverBmin){
             real_t eps = 100*std::numeric_limits<real_t>::epsilon();
-            if(BOverBmin<1+eps)
+            if(BOverBmin < 1+eps) {
                 return 1;
+}
             if(fabs(xi0)<eps){
                 printf("WARNING: MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
                 return 1;
             }
-                
+
+            return XiFromXi0(xi0, BOverBmin) / xi0;
+        }
+
+        static real_t XiFromXi0(real_t xi0, real_t BOverBmin){
+            real_t eps = 100*std::numeric_limits<real_t>::epsilon();
+            if(BOverBmin<1+eps) {
+                return xi0;
+}
+
             real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
-            if(xi2>eps)
-                return sqrt(xi2/(xi0*xi0));
-            else if (xi2>-eps) // xi ~ 0 within roundoff
+            if(xi2>eps) {
+                return sqrt(xi2) * (xi0>=0 ? 1 : -1);
+            } if (xi2>-eps) // xi ~ 0 within roundoff
                 return 0;
             else {
-                throw FVMException("MomentumGrid: Cannot evaluate XiOverXi0 in region unreachable by orbit (xi^2 < 0)");
+                throw FVMException("MomentumGrid: Cannot evaluate xi from xi0 in region unreachable by orbit (xi^2 < 0)");
                 return std::numeric_limits<real_t>::infinity();
             }
         }
+
+        static real_t Xi0FromXi(real_t xi, real_t BOverBmin){
+            real_t eps = 100*std::numeric_limits<real_t>::epsilon();
+            if(BOverBmin<1+eps) {
+                return xi;
+}
+
+            real_t xi02 = 1-(1-xi*xi)/BOverBmin;
+            if(xi02>eps) {
+                return sqrt(xi02) * (xi>=0 ? 1 : -1);
+            } if (xi02>-eps) // xi0 ~ 0 within roundoff
+                return 0;
+            else {
+                throw FVMException("MomentumGrid: Cannot evaluate xi0 from xi in region unreachable by orbit (xi0^2 < 0)");
+                return std::numeric_limits<real_t>::infinity();
+            }
+
+        }
+
+        
 
         /**
          * Evaluates the phase-space jacobian (the metric 'sqrt(g)') 
@@ -160,10 +190,10 @@ namespace DREAM::FVM {
          * values of xi/xi0 and B/Bmin.
          */
         static real_t evaluatePXiMetricOverP2(real_t xiOverXi0, real_t BOverBmin){
-			if (xiOverXi0 == 0)
+			if (xiOverXi0 == 0) {
 				return 0;
-			else
-				return 2*M_PI* BOverBmin / xiOverXi0; 
+			} 				
+            return 2*M_PI* BOverBmin / xiOverXi0; 
         }
 
 
