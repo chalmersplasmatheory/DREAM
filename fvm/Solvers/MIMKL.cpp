@@ -3,6 +3,9 @@
  * factorization (i.e. direct inversion).
  */
 
+#include <algorithm>
+#include <functional>
+#include <utility>
 #include <petscmat.h>
 #include <petscvec.h>
 #include "FVM/config.h"
@@ -17,10 +20,11 @@ using namespace DREAM::FVM;
  *
  * n: Number of elements in solution vector.
  */
-MIMKL::MIMKL(const len_t n, bool verbose) {
-    this->verbose = verbose;
-
-    KSPCreate(PETSC_COMM_WORLD, &this->ksp);
+MIMKL::MIMKL(const len_t n, bool verbose, std::vector<PetscInt> schurIndices)
+    : verbose(verbose), schurIndices(std::move(schurIndices)) {
+    this->ksp = nullptr;
+    if (this->schurIndices.empty())
+        KSPCreate(PETSC_COMM_WORLD, &this->ksp);
     this->xn = n;
 }
 
@@ -30,6 +34,49 @@ MIMKL::MIMKL(const len_t n, bool verbose) {
 MIMKL::~MIMKL() {
     KSPDestroy(&this->ksp);
 }
+
+#ifdef PETSC_HAVE_MKL_PARDISO
+/**
+ * Factor a fresh matrix so PARDISO always sees the index set before symbolic
+ * analysis, including when the Jacobian's sparsity pattern changes.
+ */
+static PetscErrorCode SolveSchur(Mat factor, Mat A, Vec b, Vec x,
+    const std::vector<PetscInt>& indices, bool verbose
+) {
+    const MPI_Comm comm = PetscObjectComm(reinterpret_cast<PetscObject>(A));
+    PetscInt rows;
+    IS schur = nullptr;
+    MatFactorError factorError;
+
+    PetscFunctionBeginUser;
+    PetscCall(MatGetSize(A, &rows, nullptr));
+    PetscCheck(indices.size() < static_cast<size_t>(rows) && indices.front() >= 0 &&
+        indices.back() < rows &&
+        std::adjacent_find(indices.begin(), indices.end(), std::greater_equal<PetscInt>()) == indices.end(),
+        comm, PETSC_ERR_ARG_OUTOFRANGE, "Expected sorted, unique Schur indices in a proper subset of the rows");
+
+    // Use the same one-thread setting as the ordinary DREAM MKL solver.
+    PetscCall(MatMkl_PardisoSetCntl(factor, 65, 1));
+    if (verbose)
+        PetscCall(MatMkl_PardisoSetCntl(factor, 68, 1));
+
+    PetscCall(ISCreateGeneral(comm, static_cast<PetscInt>(indices.size()), indices.data(), PETSC_COPY_VALUES, &schur));
+    const PetscErrorCode setError = MatFactorSetSchurIS(factor, schur);
+    const PetscErrorCode destroyError = ISDestroy(&schur);
+    PetscCall(setError);
+    PetscCall(destroyError);
+
+    PetscCall(MatLUFactorSymbolic(factor, A, nullptr, nullptr, nullptr));
+    PetscCall(MatLUFactorNumeric(factor, A, nullptr));
+    PetscCall(MatFactorGetError(factor, &factorError));
+    PetscCheck(factorError == MAT_FACTOR_NOERROR, comm, PETSC_ERR_NOT_CONVERGED,
+        "PARDISO Schur factorization failed with reason %d", static_cast<int>(factorError));
+
+    // PETSc solves the dense Schur system and expands the full correction.
+    PetscCall(MatSolve(factor, b, x));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+#endif
 
 /**
  * Solves the linear equation system represented by
@@ -46,6 +93,17 @@ MIMKL::~MIMKL() {
  */
 #ifdef PETSC_HAVE_MKL_PARDISO
 void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
+    if (!this->schurIndices.empty()) {
+        Mat factor = nullptr;
+        this->errorcode = MatGetFactor(A->mat(), MATSOLVERMKL_PARDISO, MAT_FACTOR_LU, &factor);
+        if (this->errorcode == 0)
+            this->errorcode = SolveSchur(factor, A->mat(), *b, *x, this->schurIndices, this->verbose);
+        const PetscErrorCode destroyError = MatDestroy(&factor);
+        if (this->errorcode == 0)
+            this->errorcode = destroyError;
+        return;
+    }
+
     Mat F;
     PC pc;
 
