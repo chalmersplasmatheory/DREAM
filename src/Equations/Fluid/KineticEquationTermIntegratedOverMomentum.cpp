@@ -193,6 +193,17 @@ bool KineticEquationTermIntegratedOverMomentum::SetJacobianBlock(const len_t /*u
     kineticMatrix->Zero();
     const real_t *f = unknowns->GetUnknownData(id_f);
     bool contributes = kineticOperator->SetJacobianBlock(id_f, derivId, kineticMatrix, f);
+
+    // If the kinetic operator does not depend on this unknown, nothing has
+    // been set in kineticMatrix and the Jacobian block is zero. Return
+    // without assembling: assembling the (empty) matrix removes the space
+    // preallocated for its non-zeros, and when the unknowns that do
+    // contribute fill it later, PETSc must then reallocate the whole matrix
+    // once for every row. With ~1e6 kinetic cells, this took over an hour
+    // for the first Jacobian of every simulation.
+    if (!contributes)
+        return false;
+
     kineticMatrix->Assemble();
     
     // performs matrix multiplication C = A*B
