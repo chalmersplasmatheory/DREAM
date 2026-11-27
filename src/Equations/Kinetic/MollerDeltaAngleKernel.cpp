@@ -201,11 +201,11 @@ void MollerDeltaAngleKernel::AllocateDeltaTables() {
 len_t MollerDeltaAngleKernel::GetDeltaTableSize() const {
 	len_t n = 0;
 	for (len_t ir = 0; ir < nrAllocated; ++ir) {
-		len_t NxiK = gridK->GetNp2(0);
-		len_t NxiP = gridP->GetNp2(0);
+		len_t NxiK = gridK->GetNp2(ir);
+		len_t NxiP = gridP->GetNp2(ir);
 		len_t sliceSize = NxiK * NxiP;
 
-		n += NxiK * nXiStarsTabulate * sliceSize;
+		n += nXiStarsTabulate * sliceSize;
 	}
 
 	return n;
