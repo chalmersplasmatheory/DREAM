@@ -35,6 +35,7 @@ namespace DREAM {
 		~StaticQuantityHandler();
 
 		void ActivateQuantities();
+		StaticQuantityHandler *Clone();
 		void InitializeQuantities();
 		void WriteQuantities(SFile*, const std::string&);
 	};

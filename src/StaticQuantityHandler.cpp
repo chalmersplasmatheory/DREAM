@@ -53,6 +53,20 @@ void StaticQuantityHandler::ActivateQuantities() {
 
 
 /**
+ * Clone this StaticQuantityHandler.
+ */
+StaticQuantityHandler *StaticQuantityHandler::Clone() {
+	struct static_qtys *staticData = new struct static_qtys;
+	*staticData = *(this->staticData);
+
+	return new StaticQuantityHandler(
+		this->includeNames, staticData,
+		this->fluidGrid, this->hotTailGrid, this->runawayGrid
+	);
+}
+
+
+/**
  * Initialize the list of static quantities.
  */
 void StaticQuantityHandler::InitializeQuantities() {
