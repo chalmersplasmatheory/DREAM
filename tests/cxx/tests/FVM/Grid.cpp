@@ -17,6 +17,14 @@
 #include "UnitTest.hpp"
 #include "Grid.hpp"
 
+#include <cmath>
+#include <memory>
+#include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiCustomGridGenerator.hpp"
+
 
 using namespace DREAMTESTS::FVM;
 
@@ -57,6 +65,40 @@ bool Grid::CheckGridRCylPXi() {
     delete grid;
 
     return success;
+}
+
+/**
+ * Compare the metric in a cell that straddles zero with the direct pitch
+ * integral of the represented trapped orbit.
+ */
+bool Grid::CheckZeroCrossingPitchCell() {
+    using namespace DREAM::FVM;
+    static const real_t r[] = {0, 1}, one[] = {1, 1}, zero[] = {0, 0};
+    auto *profiles = new AnalyticBRadialGridGenerator::shape_profiles{
+        2, 2, 2, 2, 2, one, r, zero, r, one, r, zero, r, zero, r
+    };
+    auto radial = std::make_unique<RadialGrid>(
+        new AnalyticBRadialGridGenerator(1, 0.29, 0.31, 1, 128, profiles)
+    );
+    const real_t faces[] = {-1, -0.01, 0.02, 1};
+    auto *momentum = new PXiGrid::MomentumGridGenerator(
+        new PXiGrid::PUniformGridGenerator(1, 0, 2),
+        new PXiGrid::XiCustomGridGenerator(faces, 3)
+    );
+    DREAM::FVM::Grid grid(radial.get(), new PXiGrid::PXiMomentumGrid(momentum, 0, radial.get()));
+    grid.Rebuild(0);
+
+    const real_t reference = radial->GetFluxSurfaceAverager()->EvaluateCellAveragedBounceIntegralOverP2(
+        0, faces[1], faces[2], FLUXGRIDTYPE_DISTRIBUTION,
+        RadialGrid::BA_FUNC_UNITY, nullptr, RadialGrid::BA_PARAM_UNITY
+    );
+    const real_t metric = grid.GetVpOverP2AtZero(0)[1];
+    // The grid uses a linear approximation in pitch for this narrow cell.
+    if (!(reference > 0 && std::abs(metric - reference) < 5e-3 * reference)) {
+        this->PrintError("Zero-crossing pitch cell metric %.8g, direct average %.8g.", metric, reference);
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -129,7 +171,6 @@ bool Grid::CheckDeeplyTrappedVolume() {
     PrintError("Expected a deeply trapped face-to-centre volume ratio near 2, got %.6f.", ratio);
     return false;
 }
-
 /**
  * Run all Grid tests.
  * Returns 'true' if all tests passed. 'false' otherwise.
@@ -146,6 +187,11 @@ bool Grid::Run(bool) {
         this->PrintError("Failed to construct a cylindrical r-grid with p/xi momentum grid.");
     }
 
+    if (CheckZeroCrossingPitchCell())
+        this->PrintOK("The zero-crossing pitch cell metric agrees with the direct average.");
+    else
+        success = false;
+
     if (!CheckDeeplyTrappedVolume())
         success = false;
 
@@ -155,4 +201,3 @@ bool Grid::Run(bool) {
     
     return success;
 }
-
