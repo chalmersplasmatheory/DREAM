@@ -235,10 +235,14 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // Free the simulation (and all PETSc objects it owns, e.g. KSP
+    // solvers) before PETSc is finalized; calling PETSc destroy routines
+    // after PetscFinalize() aborts.
+	delete sim;
+
     // De-initialize the DREAM library
     dream_finalize();
 
-	delete sim;
 	delete a;
 
     return exit_code;

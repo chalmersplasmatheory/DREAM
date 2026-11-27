@@ -58,18 +58,32 @@ void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPSetType(this->ksp, KSPPREONLY);
 
     // Solve
-    KSPSolve(this->ksp, *b, *x);
+    this->errorcode = KSPSolve(this->ksp, *b, *x);
+    if (this->errorcode != 0)
+        return;
 
-    PCFactorGetMatrix(pc, &F);
+    // A failed factorization does not make KSPSolve return an
+    // error; it is reported through the converged reason
+    KSPConvergedReason reason;
+    KSPGetConvergedReason(this->ksp, &reason);
+    if (reason < 0)
+        this->errorcode = reason;
+
+    if (PCFactorGetMatrix(pc, &F) != 0)
+        return;
 
     PetscInt info1, info2;
     MatMumpsGetInfo(F, 1, &info1);
     MatMumpsGetInfo(F, 2, &info2);
 
     if (info1 != 0) {
-        printf(":: MUMPS INFO(1) = %d\n", info1);
-        printf(":: MUMPS INFO(2) = %d\n", info2);
+        PetscPrintf(PETSC_COMM_WORLD, ":: MUMPS INFO(1) = %" PetscInt_FMT "\n", info1);
+        PetscPrintf(PETSC_COMM_WORLD, ":: MUMPS INFO(2) = %" PetscInt_FMT "\n", info2);
     }
+
+    // INFO(1) < 0 signals an error in MUMPS (INFO(1) > 0 is a warning)
+    if (info1 < 0 && this->errorcode == 0)
+        this->errorcode = info1;
 #else
 void MIMUMPS::Invert(Matrix*, Vec*, Vec*) {
 #endif

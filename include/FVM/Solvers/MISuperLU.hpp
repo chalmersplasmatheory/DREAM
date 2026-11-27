@@ -8,9 +8,9 @@
 namespace DREAM::FVM {
 	class MISuperLU : public MatrixInverter {
     private:
-        Vec x;
+        Vec x = nullptr;
 
-        PetscScalar *x_data;
+        PetscScalar *x_data = nullptr;
         len_t xn;
 	public:
 		MISuperLU(const len_t);

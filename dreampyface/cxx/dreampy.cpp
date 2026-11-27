@@ -253,28 +253,15 @@ static PyObject *dreampy_run_simulation(
         }
     }
 
-    // De-initialize the DREAM kernel
+    PyObject *result = success ? sfp->GetPythonDict() : nullptr;
+    delete ogs;
+
+    // Destroy the simulation and its solver contexts while PETSc is active.
+    delete sim;
     dream_finalize();
     std::signal(SIGQUIT, SIG_DFL);
 
-    if (success) {
-        SFile_Python *sfp = static_cast<SFile_Python*>(ogs->GetSFile());
-        PyObject *d = sfp->GetPythonDict();
-        
-        // TODO delete simulation
-
-		if (ogs != nullptr)
-			delete ogs;
-
-        delete sim;
-        return d;
-    } else {
-		if (ogs != nullptr)
-			delete ogs;
-
-        delete sim;
-        return NULL;
-    }
+    return result;
 }
 
 /**
