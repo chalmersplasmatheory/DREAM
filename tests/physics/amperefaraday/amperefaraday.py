@@ -13,6 +13,7 @@ import pathlib
 import scipy.constants
 import scipy.special
 import sys
+import traceback
 
 import dreamtests
 
@@ -152,7 +153,7 @@ def run(args):
                 sigma_braams[i,j] = s_braams[-1,0]
             except Exception as e:
                 print('\x1B[1;31mFAIL\x1B[0m')
-                print(e)
+                traceback.print_exc()
                 sigma_calc[i,j] = 0
                 sigma_braams[i,j] = 0
                 return False

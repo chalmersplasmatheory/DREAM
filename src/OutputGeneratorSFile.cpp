@@ -19,13 +19,15 @@ using namespace std;
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, const std::string& filename,
-    bool savesettings
-) : OutputGenerator(eqsys, savesettings), filename(filename) {}
+	StaticQuantityHandler *staticQuantities, bool savesettings
+) : OutputGenerator(eqsys, staticQuantities, savesettings),
+	filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, SFile *sf,
+	StaticQuantityHandler *staticQuantities,
     bool savesettings
-) : OutputGenerator(eqsys, savesettings), sf(sf) {}
+) : OutputGenerator(eqsys, staticQuantities, savesettings), sf(sf) {}
 
 /**
  * Destructor.
@@ -171,6 +173,11 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
         this->sf->CreateStruct(group + "runaway");
         SaveMomentumGrid(this->sf, group + "runaway/", this->runawayGrid, this->eqsys->GetRunawayGridType());
     }
+
+	// Write static quantities
+	if (this->staticQuantities != nullptr) {
+		this->staticQuantities->WriteQuantities(this->sf, group + "static/");
+	}
 }
 
 /**

@@ -26,7 +26,7 @@ import guzzle_sphinx_theme
 # -- Project information -----------------------------------------------------
 
 project = 'DREAM'
-copyright = '2021, Mathias Hoppe, Ola Embreus'
+copyright = '2026, Mathias Hoppe, Ola Embreus'
 author = 'Mathias Hoppe, Ola Embreus'
 
 
@@ -40,7 +40,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'guzzle_sphinx_theme',
     'sphinx.ext.todo',
-    'otherquantitylist'
+    'otherquantitylist',
+    'staticquantitylist'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

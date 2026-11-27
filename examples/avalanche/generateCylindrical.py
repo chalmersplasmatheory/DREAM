@@ -141,5 +141,6 @@ ds.output.setTiming(stdout=True)
 
 ds.other.include("fluid")
 ds.other.include("hottail/C_boltz", "hottail/S_ava")
+ds.static.include("boltzmann/deltaAngleKernel_hot_hot")
 
 ds.save("settingsCylindrical.h5")

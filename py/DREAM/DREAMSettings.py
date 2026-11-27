@@ -17,6 +17,7 @@ from .Settings.OtherQuantities import OtherQuantities
 from .Settings.Output import Output
 from .Settings.RadialGrid import RadialGrid
 from .Settings.Solver import Solver
+from .Settings.StaticQuantities import StaticQuantities
 from .Settings.TimeStepper import TimeStepper
 from .Settings.Atomics import Atomics
 
@@ -51,6 +52,7 @@ class DREAMSettings:
         self.addSetting('radialgrid', RadialGrid())
         self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
         self.addSetting('solver', Solver())
+        self.addSetting('static', StaticQuantities())
         self.addSetting('timestep', TimeStepper())
         self.addSetting('atomic', Atomics())
 

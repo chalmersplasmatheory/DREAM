@@ -70,6 +70,10 @@ class MollerDeltaAngleKernel {
         len_t ir, len_t i, const real_t *W_kl, const real_t *S_ik,
         real_t *scratch, real_t *outPitch_j
     ) const;
+
+	real_t ***GetDeltaTable() const { return deltaTable; }
+	len_t GetDeltaTableSize() const;
+	len_t GetNxiStarsTabulate() const { return nXiStarsTabulate; }
 };
 
 }  // namespace DREAM

@@ -38,11 +38,11 @@ void SimulationGenerator::DefineOptions_Initializer(Settings *s) {
     s->DefineSetting(INITIALIZATION "/fromfile", "Name of DREAM output file from which simulation should be initialized.", (const string)"");
     s->DefineSetting(INITIALIZATION "/t0", "Simulation at which to initialize the simulation.", (real_t)0.0);
 
-	s->DefineSetting(INITIALIZATION "/solver_maxiter", "Maximum number of iterations for non-linear steady-state solver.", (int_t)100);
-	s->DefineSetting(INITIALIZATION "/solver_reltol", "Relative tolerance used for non-linear steady-state solver.", (real_t)1e-6);
-	s->DefineSetting(INITIALIZATION "/solver_verbose", "Whether or not to print convergence information for non-linear steady-state solver.", (bool)false);
-	s->DefineSetting(INITIALIZATION "/solver_linear", "Primary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_LU);
-	s->DefineSetting(INITIALIZATION "/solver_backup", "Secondary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_NONE);
+    s->DefineSetting(INITIALIZATION "/solver_maxiter", "Maximum number of iterations for non-linear steady-state solver.", (int_t)100);
+    s->DefineSetting(INITIALIZATION "/solver_reltol", "Relative tolerance used for non-linear steady-state solver.", (real_t)1e-6);
+    s->DefineSetting(INITIALIZATION "/solver_verbose", "Whether or not to print convergence information for non-linear steady-state solver.", (bool)false);
+    s->DefineSetting(INITIALIZATION "/solver_linear", "Primary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_LU);
+    s->DefineSetting(INITIALIZATION "/solver_backup", "Secondary linear solver to use.", (int_t)OptionConstants::LINEAR_SOLVER_NONE);
 }
 
 /**
@@ -66,7 +66,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
-    ADAS *adas, NIST *nist, AMJUEL *amjuel
+    ADAS *adas, NIST *nist, AMJUEL *amjuel, struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid, s);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
@@ -82,7 +82,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas, nist, amjuel, oqty_terms);
+    ConstructEquations(eqsys, s, adas, nist, amjuel, oqty_terms, staticQuantities);
 
     // Construct the "other" quantity handler
     ConstructOtherQuantityHandler(eqsys, s, oqty_terms);
@@ -123,7 +123,8 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  */
 void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -147,7 +148,7 @@ void SimulationGenerator::ConstructEquations(
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(ht_type, hottailGrid, unknowns, ionHandler, s);
         eqsys->SetHotTailCollisionHandler(cqh);
     }
-	if (runawayGrid != nullptr) {
+    if (runawayGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(re_type, runawayGrid, unknowns, ionHandler, s);
         eqsys->SetRunawayCollisionHandler(cqh);
     }
@@ -197,9 +198,12 @@ void SimulationGenerator::ConstructEquations(
         if (nXiStars < 2 || pitchOrder < 1)
             throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
 
-        eqsys->SetMollerKernelHandler(new MollerKernelHandler(
+        auto MKH = new MollerKernelHandler(
             hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
-        ));
+        );
+
+        eqsys->SetMollerKernelHandler(MKH);
+        staticQuantities->mollerKernelHandler = MKH;
     }
 
     // Hot-tail quantities
@@ -222,16 +226,16 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
 
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
-		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
-		ConstructEquation_n_abl(eqsys, s);
-		ConstructEquation_T_abl(eqsys, s, adas, nist, amjuel, oqty_terms);
-	}
+        ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
+        ConstructEquation_n_abl(eqsys, s);
+        ConstructEquation_T_abl(eqsys, s, adas, nist, amjuel, oqty_terms);
+    }
 
     if(eqsys->GetSPIHandler()!=nullptr){
         ConstructEquation_SPI(eqsys,s);
         if(hottailGrid != nullptr){
-        	ConstructEquation_W_hot(eqsys,s);
-        	ConstructEquation_q_hot(eqsys,s);
+            ConstructEquation_W_hot(eqsys,s);
+            ConstructEquation_q_hot(eqsys,s);
         }
     }
 
@@ -287,15 +291,15 @@ real_t SimulationGenerator::ConstructInitializer(
         eqsys->SetInitializerFile(filename, ignoreList, timeIndex);
     }
 
-	len_t maxiter = (len_t)s->GetInteger(INITIALIZATION "/solver_maxiter");
-	real_t reltol = s->GetReal(INITIALIZATION "/solver_reltol");
-	bool verbose  = s->GetBool(INITIALIZATION "/solver_verbose");
-	enum OptionConstants::linear_solver linear_solver =
-		(enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_linear");
-	enum OptionConstants::linear_solver backup_solver =
-		(enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_backup");
+    len_t maxiter = (len_t)s->GetInteger(INITIALIZATION "/solver_maxiter");
+    real_t reltol = s->GetReal(INITIALIZATION "/solver_reltol");
+    bool verbose  = s->GetBool(INITIALIZATION "/solver_verbose");
+    enum OptionConstants::linear_solver linear_solver =
+        (enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_linear");
+    enum OptionConstants::linear_solver backup_solver =
+        (enum OptionConstants::linear_solver)s->GetInteger(INITIALIZATION "/solver_backup");
 
-	eqsys->SetInitializerSolver(maxiter, reltol, linear_solver, backup_solver, verbose);
+    eqsys->SetInitializerSolver(maxiter, reltol, linear_solver, backup_solver, verbose);
 
     return t0;
 }
@@ -384,15 +388,15 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_SCL_N(V_P,3*nShard);
 
         if (hottailGrid != nullptr){
-        	DEFU_FLD(Q_HOT);
-        	DEFU_FLD(W_HOT);
-    	}
-    	if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
-    		DEFU_FLD_N(ION_SPECIES_ABL, nIonChargeStates);
-    		DEFU_FLD(N_ABL);
-    		DEFU_FLD(T_ABL);
-    		DEFU_FLD(W_ABL);
-		}
+            DEFU_FLD(Q_HOT);
+            DEFU_FLD(W_HOT);
+        }
+        if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
+            DEFU_FLD_N(ION_SPECIES_ABL, nIonChargeStates);
+            DEFU_FLD(N_ABL);
+            DEFU_FLD(T_ABL);
+            DEFU_FLD(W_ABL);
+        }
     }
 
     enum OptionConstants::eqterm_bootstrap_mode bootstrap_mode = (enum OptionConstants::eqterm_bootstrap_mode)s->GetInteger("eqsys/j_bs/mode");

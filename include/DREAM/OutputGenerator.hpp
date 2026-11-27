@@ -8,6 +8,8 @@ namespace DREAM { class OutputGenerator; }
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
+#include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
+#include "DREAM/StaticQuantityHandler.hpp"
 
 namespace DREAM {
 	class OutputGenerator {
@@ -17,6 +19,7 @@ namespace DREAM {
 		IonHandler *ions;
 		OtherQuantityHandler *oqty;
 		EquationSystem *eqsys;
+		StaticQuantityHandler *staticQuantities;
 
         bool savesettings = true;
 
@@ -29,8 +32,13 @@ namespace DREAM {
 		virtual void SaveTimings(const std::string&) = 0;
 		virtual void SaveUnknowns(const std::string&, bool) = 0;
 	public:
-		OutputGenerator(EquationSystem*, bool savesettings=true);
+		OutputGenerator(
+			EquationSystem*, StaticQuantityHandler *static_qtys=nullptr,
+			bool savesettings=true
+		);
         virtual ~OutputGenerator();
+
+		StaticQuantityHandler *GetStaticQuantities() { return this->staticQuantities; }
 
 		virtual void Save(bool current=false);
         virtual void SaveCurrent() { this->Save(true); }
