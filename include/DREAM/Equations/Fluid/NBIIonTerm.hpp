@@ -37,10 +37,8 @@ class NBIIonTerm : public IonEquationTerm<FVM::EquationTerm> {
     real_t* d_Qe3_d_n_ij;   
     real_t* d_Qe3_d_T_ij;
 
-    len_t deriv_size;   // nr * nZ * nCharge
+    len_t deriv_size;   
 
-    // The Jacobian is non-local in radius (beam attenuation), so every row
-    // may couple to all nr cells of each unknown
     len_t CalculateNonZeros() const {
         len_t nnz = 2;  // T_cold and n_cold
         for (len_t iz = 0; iz < ions->GetNZ(); iz++)

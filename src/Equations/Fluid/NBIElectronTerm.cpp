@@ -34,7 +34,7 @@ NBIElectronTerm::NBIElectronTerm(
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
     Qe_3 = new real_t[nr];
-    // Derivatives are non-local: [ir*nr + k] and [ir*deriv_size + idx(k, iz, Z0)]
+
     this->deriv_size = deriv_size;
     d_Qe1_d_Te = new real_t[nr * nr];
     d_Qe1_d_ne = new real_t[nr * nr];
@@ -134,9 +134,6 @@ void NBIElectronTerm::SetMatrixElements(FVM::Matrix*, real_t* rhs) {
 
 /**
  * Set the Jacobian elements corresponding to this term.
- * The residual contains -Q (see SetVectorElements), so the Jacobian is -dQ/dx.
- * The derivatives are non-local: the heating in cell ir depends on the plasma
- * in every cell k that the beam passes before reaching ir.
  */
 bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix* jac, const real_t*) {
     const real_t* energy_fractions = handler->GetEnergyFractions();
@@ -184,7 +181,6 @@ bool NBIElectronTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
     }
 
     else if (derivId == id_ion_temperature) {
-        // The unknown is W_i = 1.5 e n_i T_i, and T_i enters through the CX rates
         for (len_t ir = 0; ir < nr; ++ir) {
             for (len_t k = 0; k < nr; ++k) {
                 for (len_t iIon = 0; iIon < ions->GetNZ(); ++iIon) {

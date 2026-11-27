@@ -41,7 +41,7 @@ NBIIonTerm::NBIIonTerm(
     Qe_1 = new real_t[nr];
     Qe_2 = new real_t[nr];
     Qe_3 = new real_t[nr];
-    // Derivatives are non-local: [ir*nr + k] and [ir*deriv_size + idx(k, iz, Z0)]
+
     this->deriv_size = deriv_size;
     d_Qe1_d_Te = new real_t[nr * nr];
     d_Qe1_d_ne = new real_t[nr * nr];
@@ -162,16 +162,12 @@ void NBIIonTerm::SetCSMatrixElements(
 }
 /**
  * Set the Jacobian elements corresponding to this term.
- * The ion heating of species iIon in cell ir is w_iIon(ir) * Q_i(ir). Q_i depends on the
- * plasma in every cell k that the beam passes before ir (non-local), while the weight
- * w depends on the local charge-state densities of all species.
  */
 bool NBIIonTerm::SetCSJacobianBlock(
            const len_t /*uqtyId*/, const len_t derivId,
                         FVM::Matrix *jac, const real_t* /*x*/,
                         const len_t iIon, const len_t Z0, const len_t /*rOffset*/
 ){
-    // The ion energy equation has one row per species, so only act once (Z0 = 0)
     if (Z0 != 0)
         return false;
 
@@ -252,8 +248,6 @@ bool NBIIonTerm::SetCSJacobianBlock(
 
 /**
  * Compute the weight factor for ion species iIon at radial index ir.
- * The ion share of the beam power is split between species in proportion to
- * sum_{Z0>=1} n_{j,Z0} Z0^2 / M_j (Coulomb collisions; neutrals receive nothing).
  */
 real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
     len_t NZ = ions->GetNZ();
@@ -289,8 +283,6 @@ real_t NBIIonTerm::ComputeWeightFactor(len_t ir, len_t iIon) {
 
 /**
  * Derivative of the weight factor of species iIon with respect to the charge state
- * density n_{jIon,Z0} (same cell):
- *   dw_i/dn_{j,Z0} = (delta_ij - w_i) * (Z0^2/M_j) / denom
  */
 real_t NBIIonTerm::ComputeWeightFactorDerivative(len_t ir, len_t iIon, len_t jIon, len_t Z0) {
     len_t NZ = ions->GetNZ();
