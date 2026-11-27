@@ -23,6 +23,7 @@
 #include "DREAM/TimeStepper/TimeStepperAdaptive.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
 #include "DREAM/TimeStepper/TimeStepperIonization.hpp"
+#include "DREAM/TimeStepper/TimeStepperPrescribed.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -244,6 +245,7 @@ namespace DREAM {
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
         static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*, std::vector<len_t>*);
         static TimeStepperIonization *ConstructTimeStepper_ionization(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
+        static TimeStepperPrescribed *ConstructTimeStepper_prescribed(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
 
         // Data loading routines
         static void DefineDataR(const std::string&, Settings*, const std::string& name="data");
