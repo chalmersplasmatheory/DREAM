@@ -27,8 +27,8 @@ namespace DREAM {
         void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
         void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 	public:
-		OutputGeneratorSFile(EquationSystem*, const std::string&, struct OutputGenerator::static_qtys *staticQuantities=nullptr, bool savesettings=true);
-		OutputGeneratorSFile(EquationSystem*, SFile*, struct OutputGenerator::static_qtys *staticQuantities=nullptr, bool savesettings=true);
+		OutputGeneratorSFile(EquationSystem*, const std::string&, StaticQuantityHandler *staticQuantities=nullptr, bool savesettings=true);
+		OutputGeneratorSFile(EquationSystem*, SFile*, StaticQuantityHandler *staticQuantities=nullptr, bool savesettings=true);
         virtual ~OutputGeneratorSFile();
 
         SFile *GetSFile() { return this->sf; }

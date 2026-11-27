@@ -9,21 +9,17 @@ namespace DREAM { class OutputGenerator; }
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
+#include "DREAM/StaticQuantityHandler.hpp"
 
 namespace DREAM {
 	class OutputGenerator {
-	public:
-		struct static_qtys {
-			MollerKernelHandler *mollerKernelHandler=nullptr;
-		};
-
 	protected:
 		FVM::Grid *scalarGrid, *fluidGrid, *hottailGrid, *runawayGrid;
 		FVM::UnknownQuantityHandler *unknowns;
 		IonHandler *ions;
 		OtherQuantityHandler *oqty;
 		EquationSystem *eqsys;
-		struct static_qtys *staticQuantities;
+		StaticQuantityHandler *staticQuantities;
 
         bool savesettings = true;
 
@@ -39,12 +35,12 @@ namespace DREAM {
 		virtual void SaveUnknowns(const std::string&, bool) = 0;
 	public:
 		OutputGenerator(
-			EquationSystem*, struct static_qtys *staticQuantities=nullptr,
+			EquationSystem*, StaticQuantityHandler *static_qtys=nullptr,
 			bool savesettings=true
 		);
         virtual ~OutputGenerator();
 
-		struct static_qtys *GetStaticQuantities() { return this->staticQuantities; }
+		StaticQuantityHandler *GetStaticQuantities() { return this->staticQuantities; }
 
 		virtual void Save(bool current=false);
         virtual void SaveCurrent() { this->Save(true); }

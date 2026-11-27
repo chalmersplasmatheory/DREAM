@@ -66,7 +66,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
-    ADAS *adas, NIST *nist, AMJUEL *amjuel, struct OutputGenerator::static_qtys *staticQuantities
+    ADAS *adas, NIST *nist, AMJUEL *amjuel, struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid, s);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
@@ -124,7 +124,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
-	struct OutputGenerator::static_qtys *staticQuantities
+	struct StaticQuantityHandler::static_qtys*
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();

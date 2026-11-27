@@ -26,7 +26,7 @@ using namespace DREAM;
  */
 Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     const real_t t0 = 0;
-	struct OutputGenerator::static_qtys *staticQuantities = new OutputGenerator::static_qtys();
+	struct StaticQuantityHandler::static_qtys *staticQuantities = new StaticQuantityHandler::static_qtys();
 
     // Construct grids
     enum OptionConstants::momentumgrid_type ht_type, re_type;
@@ -131,12 +131,17 @@ AMJUEL *SimulationGenerator::LoadAMJUEL(Settings*){
  */
 void SimulationGenerator::LoadOutput(
 	Settings *s, Simulation *sim,
-	OutputGenerator::static_qtys *staticQuantities
+	struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     std::string filename = s->GetString("output/filename");
+	std::vector<std::string> staticQuantitiesList = s->GetStringList("output/static_quantities");
+
+	StaticQuantityHandler *staticQtyHandler = new StaticQuantityHandler(
+		staticQuantitiesList, staticQuantities
+	);
 
     sim->SetOutputGenerator(new OutputGeneratorSFile(
-        sim->GetEquationSystem(), filename, staticQuantities
+        sim->GetEquationSystem(), filename, staticQtyHandler
     ));
 }
 
