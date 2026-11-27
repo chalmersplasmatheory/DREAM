@@ -14,6 +14,11 @@
 #include "FVM/Matrix.hpp"
 #include "Matrix.hpp"
 
+#ifdef PETSC_HAVE_SUPERLU
+#include <cfenv>
+#include "FVM/Solvers/MISuperLU.hpp"
+#endif
+
 
 using namespace DREAMTESTS::FVM;
 using namespace std;
@@ -371,6 +376,51 @@ bool Matrix::CheckSetColumn() {
     return success;
 }
 
+#ifdef PETSC_HAVE_SUPERLU
+/**
+ * A zero pivot is reported through the KSP convergence reason. Check that
+ * DREAM exposes that failure and clears it after the next successful solve.
+ */
+static bool CheckSuperLUFailure() {
+    DREAM::FVM::Matrix matrix(2, 2, 2);
+    matrix.SetElement(0, 0, 1);
+    matrix.SetElement(0, 1, 1);
+    matrix.SetElement(1, 0, 1);
+    matrix.SetElement(1, 1, 1);
+    matrix.Assemble();
+
+    // SuperLU can raise floating-point flags while diagnosing a zero pivot.
+    // Keep the test runner's trap settings for the other checks.
+    std::fenv_t environment;
+    if (std::feholdexcept(&environment) != 0)
+        return false;
+
+    Vec solution, rhs;
+    MatCreateVecs(matrix.mat(), &solution, &rhs);
+    VecSet(rhs, 1);
+
+    DREAM::FVM::MISuperLU inverter(2);
+    inverter.Invert(&matrix, &rhs, &solution);
+    const bool reportedFailure = inverter.GetReturnCode() == KSP_DIVERGED_PC_FAILED;
+    const bool restoredEnvironment = std::fesetenv(&environment) == 0;
+
+    matrix.SetElement(0, 0, 1, ADD_VALUES);
+    matrix.Assemble();
+    inverter.Invert(&matrix, &rhs, &solution);
+
+    const PetscInt indices[] = {0, 1};
+    PetscScalar values[2];
+    VecGetValues(solution, 2, indices, values);
+    const bool solved = inverter.GetReturnCode() == 0 &&
+        PetscAbsScalar(values[0]) < 10 * PETSC_MACHINE_EPSILON &&
+        PetscAbsScalar(values[1] - 1) < 10 * PETSC_MACHINE_EPSILON;
+
+    VecDestroy(&rhs);
+    VecDestroy(&solution);
+    return restoredEnvironment && reportedFailure && solved;
+}
+#endif
+
 /**
  * Run all Matrix tests.
  * Returns 'true' if all tests passed. 'false' otherwise.
@@ -405,6 +455,15 @@ bool Matrix::Run(bool) {
         success = false;
         this->PrintError("SetColumn() does not insert the expected values.");
     }
+
+#ifdef PETSC_HAVE_SUPERLU
+    if (CheckSuperLUFailure())
+        this->PrintOK("SuperLU reports a singular factorization and recovers on the next solve.");
+    else {
+        success = false;
+        this->PrintError("SuperLU did not report the singular factorization or failed to recover.");
+    }
+#endif
 
     return success;
 }

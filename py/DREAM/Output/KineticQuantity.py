@@ -254,7 +254,7 @@ class KineticQuantity(UnknownQuantity):
         ty = lymin+yp*(lymax-lymin)
         txt = ax.text(tx, 10**ty, r't = {:.3f} {}'.format(self.time[0]*tfac, tunits[idx]), usetex=False)
 
-        ax.set_xlabel(r'$r/a$ (m)')
+        ax.set_xlabel(r'$p/mc$')
 
         # Create the animation
         nframes = int(self.time.size)
@@ -290,39 +290,44 @@ class KineticQuantity(UnknownQuantity):
         return self.data[tuple(sel)]
 
 
-    def moment(self, weight, t=None, r=None):
+    def moment(self, weight, t=None, r=None, cumulative=False):
         """
         Evaluate a moment of this distribution function with the given weighting
         factor.
+
+        weight:     Weight function. Scalar, or array with shape (np1,),
+                    (np2, np1), (nr, np2, np1) or (nt, nr, np2, np1).
+        t:          Time index/indices (default: all).
+        r:          Radial index/indices (default: all).
+        cumulative: If True, integrate cumulatively in p1.
+
+        Returns an array of shape (len(t), len(r)), or (len(t), len(r), np1)
+        if cumulative.
         """
         if t is None:
             t = range(len(self.time))
         if r is None:
             r = range(len(self.grid.r))
 
-        if np.isscalar(t):
-            t = np.asarray([t])
-        if np.isscalar(r):
-            r = np.asarray([r])
+        t = np.atleast_1d(t)
+        r = np.atleast_1d(r)
+        weight = np.asarray(weight)
 
-        if np.ndim(weight) != 4:
-            _weight = np.ones((self.time.size,self.grid.r.size,self.momentumgrid.p2.size,self.momentumgrid.p1.size))
-            
-            if np.ndim(weight) == 0:
-                weight = _weight*weight
-            if np.ndim(weight) == 1:
-                weight = _weight*weight[np.newaxis,np.newaxis,np.newaxis,:]
-            elif np.ndim(weight) == 2:
-                weight = _weight*weight[np.newaxis,np.newaxis,:]
-            elif np.ndim(weight) == 3:
-                weight = _weight*weight[np.newaxis,:]
-                
-        q = np.zeros((len(t), len(r)))
-        for iT in range(len(t)):
-            for iR in range(len(r)):
-                q[iT,iR] = self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[iR]
-        
-        return q
+        if cumulative:
+            integrate = self.momentumgrid.integrate2DCumulative
+        else:
+            integrate = self.momentumgrid.integrate2D
+
+        q = []
+        for it in t:
+            if weight.ndim == 4:
+                w = weight[it]
+            else:
+                w = weight
+            Q = integrate(self.data[it,:] * w)
+            q.append(Q[r])
+
+        return np.asarray(q)
 
 
     def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, interpolateCylindrical=False, **kwargs):

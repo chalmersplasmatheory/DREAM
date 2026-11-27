@@ -61,6 +61,8 @@ MIGMRES::~MIGMRES() {
     VecDestroy(&this->x);
 
     delete [] this->x_data;
+    // PETSc keeps its own copy of the block sizes
+    delete [] this->blocks;
 }
 
 /**
@@ -81,7 +83,16 @@ void MIGMRES::Invert(Matrix *A, Vec *b, Vec *x) {
 
     // Solve
     KSPSetType(this->ksp, KSPGMRES);
-    KSPSolve(this->ksp, *b, *x);
+    this->errorcode = KSPSolve(this->ksp, *b, *x);
+
+    // Divergence (e.g. hitting the iteration limit) does not make
+    // KSPSolve return an error; it is reported through the converged reason
+    if (this->errorcode == 0) {
+        KSPConvergedReason reason;
+        KSPGetConvergedReason(this->ksp, &reason);
+        if (reason < 0)
+            this->errorcode = reason;
+    }
 }
 
 /*
