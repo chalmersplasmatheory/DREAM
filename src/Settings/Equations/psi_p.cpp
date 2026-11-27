@@ -372,7 +372,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             eqsys->SetInitialValue(id_I_w, &I_wall_0);
         }
     } else
-        FVM::FVMException("Unrecognized equation type for '%s': %d.",
+        throw FVM::FVMException("Unrecognized equation type for '%s': %d.",
                 OptionConstants::UQTY_V_LOOP_WALL, type);
     // Set equation dpsi_w/dt = V_loop_wall
     FVM::Operator *Op_psi_wall_1 = new FVM::Operator(scalarGrid);
