@@ -32,6 +32,7 @@ namespace DREAM {
 
 		void WriteSFile(SFile *sf, const std::string& path) {
 			this->writeFunction(sf, path +  this->name);
+			sf->WriteAttribute_string(path + this->name, "description", this->description);
 		}
 	};
 }
