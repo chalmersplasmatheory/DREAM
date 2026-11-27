@@ -19,9 +19,9 @@ using namespace DREAM;
  * Constructor.
  */
 HeatTransportDiffusion::HeatTransportDiffusion(
-    FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
+    FVM::Grid *grid, enum OptionConstants::momentumgrid_type /*mgtype*/,
     FVM::Interpolator1D *D, FVM::UnknownQuantityHandler *unknowns
-) : FVM::DiffusionTerm(grid), mgtype(mgtype), coeffD(D) {
+) : FVM::DiffusionTerm(grid), coeffD(D) {
 
     SetName("HeatTransportDiffusion");
 

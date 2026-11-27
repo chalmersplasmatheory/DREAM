@@ -10,7 +10,6 @@
 namespace DREAM {
     class HeatTransportDiffusion : public FVM::DiffusionTerm {
     private:
-        enum OptionConstants::momentumgrid_type mgtype;
         FVM::Interpolator1D *coeffD;
 
         FVM::UnknownQuantityHandler *unknowns;

@@ -3,15 +3,16 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cinttypes>
 
 typedef double real_t;
 typedef uint64_t len_t;
 typedef int64_t int_t;
 
-#define LEN_T_PRINTF_FMT "%zu"
-#define LEN_T_PRINTF_FMT_PART "zu"
-#define INT_T_PRINTF_FMT "%lld"
-#define INT_T_PRINTF_FMT_PART "lld"
+#define LEN_T_PRINTF_FMT "%" PRIu64
+#define LEN_T_PRINTF_FMT_PART PRIu64
+#define INT_T_PRINTF_FMT "%" PRId64
+#define INT_T_PRINTF_FMT_PART PRId64
 
 #cmakedefine COLOR_TERMINAL
 #cmakedefine DREAM_BUILD_PYFACE

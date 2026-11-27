@@ -197,7 +197,7 @@ void SimulationGenerator::ConstructEquation_Ions(
         neutral_advection_mode[i] = (enum OptionConstants::ion_neutral_advection_mode)ineutral_advection_modes[i];
 
 	// Ion source settings
-	enum OptionConstants::ion_source_type *source_types = new enum OptionConstants::ion_source_type[ntypes];
+    enum OptionConstants::ion_source_type *source_types = new enum OptionConstants::ion_source_type[ntypes];
 	if (iion_source_types != nullptr) {
 		for (len_t i = 0; i < ntypes; i++)
 			source_types[i] = (enum OptionConstants::ion_source_type)iion_source_types[i];
@@ -485,7 +485,7 @@ void SimulationGenerator::ConstructEquation_Ions(
         eqsys->SetOperator(id_ni, OptionConstants::UQTY_F_RE, Op_kiniz_re, desc);
 
 	// Add ion source boundary conditions
-	for (len_t iZ = 0; iZ < nZ; iZ++) {
+    for (len_t iZ = 0; iZ < nZ; iZ++) {
 		if (source_types[iZ] == OptionConstants::ION_SOURCE_PRESCRIBED) {
 			if (types[iZ] == OptionConstants::ION_DATA_PRESCRIBED)
 				throw SettingsException(

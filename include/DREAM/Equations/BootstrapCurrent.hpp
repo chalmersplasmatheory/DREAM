@@ -29,14 +29,12 @@ namespace DREAM {
         len_t iZMain;   // main ion species
         len_t nr;
 
-        len_t id_jtot;
         len_t id_ncold;
         len_t id_ions;
         len_t id_Ni;
         len_t id_Tcold;
         len_t id_Wi;
 
-        real_t *jtot;
         real_t *NiMain=nullptr;
         real_t *WiMain=nullptr;
 

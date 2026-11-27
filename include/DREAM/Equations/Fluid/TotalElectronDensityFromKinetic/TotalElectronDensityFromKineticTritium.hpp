@@ -27,7 +27,7 @@ namespace DREAM {
 
         void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
-        bool SetJacobianBlock(const len_t , const len_t derivId, FVM::Matrix *jac, const real_t*);
+        bool SetJacobianBlock(const len_t , const len_t derivId, FVM::Matrix *jac, const real_t*) override;
         void SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/) override;
         void SetVectorElements(real_t *vec, const real_t *x) override;
         void SetWeights();

@@ -250,7 +250,7 @@ MultiInterpolator1D *SimulationGenerator::LoadDataIonT(
     for (len_t it = 0; it < nt; it++)
         new_t[it] = t[it];
 
-	for (len_t iZ = 0; iZ < nZ0; iZ++)
+    for (len_t iZ = 0; iZ < nZ0; iZ++)
 		for (len_t it = 0; it < nt; it++)
 			new_x[iZ*nt + it] = x[iZ*nt + it];
 
@@ -579,7 +579,7 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataT(
             (modname+"/"+name).c_str(), nx, nt
         );
 	
-	if (nt == 0)
+    if (nt == 0)
 		return nullptr;
 
     enum OptionConstants::prescribed_data_interp tinterp =

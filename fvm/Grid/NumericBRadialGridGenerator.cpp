@@ -81,7 +81,7 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
     if (this->rf_provided != nullptr)
         delete [] this->rf_provided;
 	
-	if (this->input_r != nullptr)
+    if (this->input_r != nullptr)
 		delete [] this->input_r;
 	
 	if (this->dataB != nullptr)
@@ -275,7 +275,7 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     // Verify that the magnetic field contains exactly one maximum and
     // one minimum
 
-	this->guess_theta_global_Bmin = new real_t[this->npsi];
+    this->guess_theta_global_Bmin = new real_t[this->npsi];
 	this->guess_theta_global_Bmax = new real_t[this->npsi];
 
     // Tolelance for an extremum to be announced...
@@ -359,7 +359,7 @@ real_t *NumericBRadialGridGenerator::addR0DataPoint(
     if (std::isnan(c))
         c = x[0] - (r[0]-0.0)/(r[1]-r[0]) * (x[1] - x[0]);
 
-	for (len_t j = 0; j < ntheta; j++) {
+    for (len_t j = 0; j < ntheta; j++) {
 		// Value at r=0
 		arr[j*(nr+1)] = c;
 

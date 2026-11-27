@@ -75,12 +75,12 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
                 collFreq +=  evaluateScreenedTermAtP(iz,Z0,p,inSettings->collfreq_type) * ionDensities[ir][ind];
             }
     // Add stopping contribution
-	if(isPartiallyScreened)
-	for(len_t iz = 0; iz<nZ; iz++)
-		for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-			ind = ionIndex[iz][Z0];
-			collFreq +=  evaluateStoppingTermAtP(iz,Z0,p,inSettings->collfreq_mode) * ionDensities[ir][ind];
-		}
+    if(isPartiallyScreened)
+        for(len_t iz = 0; iz<nZ; iz++)
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                ind = ionIndex[iz][Z0];
+                collFreq +=  evaluateStoppingTermAtP(iz,Z0,p,inSettings->collfreq_mode) * ionDensities[ir][ind];
+            }
     collFreq *= preFact;
 
     // Add Bremsstrahlung contribution
@@ -1346,7 +1346,7 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     // Add bound-electron contribution
     if(isPartiallyScreened)
         collFreq += evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_type);
-	if(isPartiallyScreened)
+    if(isPartiallyScreened)
 		collFreq += evaluateStoppingTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
 
     collFreq *= preFact;

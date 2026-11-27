@@ -323,11 +323,6 @@ void NBIHandler::Build(const real_t t, const real_t,
         // Compute the deposition profile
         ComputeDepositionProfile(unknowns, Ti_beam_input);
 
-        // Compute the deposited fraction of the beam
-        real_t frac = 0.0;
-        for (len_t ir = 1; ir < nr; ir++) {
-            frac += Deposition_profile_times_Vprime[ir] * d_beam_radius;
-        }
         real_t fi, fe, dfe_dne, dfe_dTe, dfi_dne, dfi_dTe;
         std::vector<real_t> dfe_dn_ij(nZ), dfi_dn_ij(nZ), dfe_dT_ij(nZ), dfi_dT_ij(nZ);
         for (len_t ir = 0; ir < nr; ++ir) {

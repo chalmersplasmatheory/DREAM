@@ -53,6 +53,6 @@ void OutputGenerator::Save(bool current) {
         this->SaveOtherQuantities("other");
 	
 	// Save information about the code
-	this->SaveCodeInfo("code");
+    this->SaveCodeInfo("code");
 }
 

@@ -12,13 +12,14 @@
 namespace DREAM {
 	class IonChargedDiffusionStochasticBTerm : public IonChargedAdvectionDiffusionTerm<FVM::DiffusionTerm> {
 	private:
-		FVM::Interpolator1D *dBOverB;
-		MultiInterpolator1D *DrrHat;
+		// This term is not finished: these are not used yet
+		[[maybe_unused]] FVM::Interpolator1D *dBOverB;
+		[[maybe_unused]] MultiInterpolator1D *DrrHat;
 		
 		real_t **dDrrdni;
 		real_t **dDrrdWi;
 		real_t **dDrrdNi;
-		real_t **dDrrdTcold;
+		[[maybe_unused]] real_t **dDrrdTcold;
 		
 		len_t id_ni, id_Wi, id_Ni;
 		

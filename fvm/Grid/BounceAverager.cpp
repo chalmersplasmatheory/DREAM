@@ -188,7 +188,7 @@ void BounceAverager::Rebuild(){
     }
 
     // Calculate bounce-averaged metric and hand over to grid 
-    real_t **Vp, **Vp_fr, **Vp_f1, **Vp_f2, **VpOverP2AtZero;
+    real_t **Vp, **Vp_fr, **Vp_f1, **Vp_f2, **VpOverP2AtZero = nullptr;
     bool isPXiGrid = true; 
     if(isPXiGrid)
         SetVpsPXi(Vp, Vp_f1, VpOverP2AtZero);

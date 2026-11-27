@@ -83,7 +83,7 @@ if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 endif()
 
 # Enable compilation warnings on all targets
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")  # Clang and AppleClang
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-ignored-qualifiers)
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O3)

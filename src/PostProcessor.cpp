@@ -67,7 +67,7 @@ void PostProcessor::Process(const real_t t) {
 
 	// IONIZATION TIME
 	// as calculated by the adaptive ionization time stepper.
-	real_t *n = this->unknowns->GetUnknownData(this->id_n_cold);
+    real_t *n = this->unknowns->GetUnknownData(this->id_n_cold);
 	real_t *np = this->unknowns->GetUnknownDataPrevious(this->id_n_cold);
 	real_t tp = this->unknowns->GetUnknownDataPreviousTime(this->id_n_cold);
 	real_t dt = t - tp;

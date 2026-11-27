@@ -61,6 +61,8 @@ bool Grid::CheckGridRCylPXi() {
             }
         }
     }
+    // The sums only exist to force every element to be read
+    (void)sr; (void)sp1; (void)sp2;
 
     delete grid;
 

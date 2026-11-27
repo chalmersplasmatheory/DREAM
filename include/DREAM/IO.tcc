@@ -50,7 +50,7 @@ void IO::PrintWarning(const IO::message_t id, const char *msg, Args&& ... args) 
         return;
 
 	// Generate warning string
-	int size = std::snprintf(nullptr, 0, msg, args ...) + 1;
+    int size = std::snprintf(nullptr, 0, msg, args ...) + 1;
 	if (size <= 0)
 		return;
 	char *buf = new char[size];
