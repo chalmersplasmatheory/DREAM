@@ -26,8 +26,11 @@ class Grid:
         self.eq = None
         self.hottail = None
         self.runaway = None
+
         if 'static' in grid:
             self.static = StaticQuantityHandler(grid['static'])
+        else:
+            self.static = None
 
         # Geometric quantities
         self.effectivePassingFraction = None

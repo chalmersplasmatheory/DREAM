@@ -26,7 +26,7 @@ using namespace DREAM;
  */
 Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     const real_t t0 = 0;
-	struct StaticQuantityHandler::static_qtys *staticQuantities = new StaticQuantityHandler::static_qtys();
+    struct StaticQuantityHandler::static_qtys *staticQuantities = new StaticQuantityHandler::static_qtys();
 
     // Construct grids
     enum OptionConstants::momentumgrid_type ht_type, re_type;
@@ -39,7 +39,7 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     if (hottailGrid)
         hottailGrid->Rebuild(t0);
 
-	// The runaway grid depends on the hot-tail grid (if it exists)
+    // The runaway grid depends on the hot-tail grid (if it exists)
     FVM::Grid *runawayGrid = ConstructRunawayGrid(s, fluidGrid->GetRadialGrid(), hottailGrid, &re_type);
     if (runawayGrid)
         runawayGrid->Rebuild(t0);
@@ -66,7 +66,7 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
 
     LoadOutput(s, sim, staticQuantities);
 
-	IO::Init(sim);
+    IO::Init(sim);
 
     return sim;
 }
@@ -123,24 +123,24 @@ NIST *SimulationGenerator::LoadNIST(Settings*) {
  * for hydrogen isotopes, including coefficients for Lyman opaque conditions).
  */
 AMJUEL *SimulationGenerator::LoadAMJUEL(Settings*){
-	return new AMJUEL();
+    return new AMJUEL();
 }
 
 /**
  * Load output settings.
  */
 void SimulationGenerator::LoadOutput(
-	Settings *s, Simulation *sim,
-	struct StaticQuantityHandler::static_qtys *staticQuantities
+    Settings *s, Simulation *sim,
+    struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     std::string filename = s->GetString("output/filename");
-	std::vector<std::string> staticQuantitiesList = s->GetStringList("static/include");
+    std::vector<std::string> staticQuantitiesList = s->GetStringList("static/include");
 
-	EquationSystem *eqsys = sim->GetEquationSystem();
-	StaticQuantityHandler *staticQtyHandler = new StaticQuantityHandler(
-		staticQuantitiesList, staticQuantities, eqsys->GetFluidGrid(),
-		eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid()
-	);
+    EquationSystem *eqsys = sim->GetEquationSystem();
+    StaticQuantityHandler *staticQtyHandler = new StaticQuantityHandler(
+        staticQuantitiesList, staticQuantities, eqsys->GetFluidGrid(),
+        eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid()
+    );
 
     sim->SetOutputGenerator(new OutputGeneratorSFile(
         sim->GetEquationSystem(), filename, staticQtyHandler

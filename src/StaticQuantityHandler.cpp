@@ -6,6 +6,7 @@
 #include "DREAM/StaticQuantityHandler.hpp"
 #include "DREAM/MollerKernelHandler.hpp"
 #include "DREAM/Equations/Kinetic/MollerDeltaAngleKernel.hpp"
+#include "DREAM/IO.hpp"
 
 
 using namespace DREAM;
@@ -43,12 +44,22 @@ StaticQuantityHandler::~StaticQuantityHandler() {
  */
 void StaticQuantityHandler::ActivateQuantities() {
 	for (auto name : this->includeNames) {
+		bool added = false;
 		for (auto qty : this->staticQuantities) {
 			if (qty->GetName() == name) {
 				qty->Activate();
+				added = true;
 				break;
 			}
 		}
+
+		if (!added)
+			IO::PrintWarning(
+				IO::WARNING_STATIC_QUANTITY_NOT_FOUND,
+				"The static quantity '%s' was requested, but not defined in "
+				"code. Please check the spelling of the quantity name.",
+				name.c_str()
+			);
 	}
 }
 

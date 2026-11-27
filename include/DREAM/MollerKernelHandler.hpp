@@ -70,10 +70,10 @@ class MollerKernelHandler {
     const MollerDeltaAngleKernel *AngleHotRe() const { return HotRe().angle.get(); }
     const MollerDeltaAngleKernel *AngleReRe() const { return ReRe().angle.get(); }
 
-	void GridRebuilt();
-	bool HasHotHot() const { return hot_hot.IsValid(); }
-	bool HasHotRe() const { return hot_re.IsValid(); }
-	bool HasReRe() const { return re_re.IsValid(); }
+    void GridRebuilt();
+    bool HasHotHot() const { return hot_hot.IsValid(); }
+    bool HasHotRe() const { return hot_re.IsValid(); }
+    bool HasReRe() const { return re_re.IsValid(); }
 
     real_t GetPCutoff() const { return pCutoff; }
     len_t GetNXiStars() const { return nXiStars; }
