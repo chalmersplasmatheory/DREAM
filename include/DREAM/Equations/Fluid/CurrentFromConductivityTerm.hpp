@@ -13,7 +13,6 @@ namespace DREAM {
     class CurrentFromConductivityTerm : public FVM::DiagonalComplexTerm {
     private:
         RunawayFluid *REFluid;
-        IonHandler *ionHandler;
     protected:
         // Set weights for the Jacobian block. Uses differentiated conductivity provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
@@ -40,8 +39,8 @@ namespace DREAM {
             }
         }
     public:
-        CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
-            : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih)
+        CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler* /*ih*/) 
+            : FVM::DiagonalComplexTerm(g,u), REFluid(ref)
         {
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));

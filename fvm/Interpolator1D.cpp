@@ -75,7 +75,7 @@ Interpolator1D::~Interpolator1D() {
         delete [] this->buffer;
     if (logy != nullptr)
         delete [] this->logy;
-	if (this->owns_data) {
+    if (this->owns_data) {
 		delete [] this->x;
 		delete [] this->y;
 	}

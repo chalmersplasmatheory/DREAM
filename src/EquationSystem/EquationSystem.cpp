@@ -76,7 +76,7 @@ EquationSystem::~EquationSystem() {
     if (this->settings != nullptr)
         delete this->settings;
 	
-	for (auto rsth : this->rsths)
+    for (auto rsth : this->rsths)
 		delete rsth;
 
     if (this->otherQuantityHandler != nullptr)
@@ -155,7 +155,7 @@ void EquationSystem::ProcessSystem(const real_t t0) {
         );
 	
 	// Set external iterator
-	this->extiter = new ExternalIterator(
+    this->extiter = new ExternalIterator(
 		&this->unknowns, &this->unknown_equations
 	);
 	this->extiter->Initialize(this->external_unknowns);
@@ -269,7 +269,6 @@ void EquationSystem::Solve() {
     cout << "Beginning time advance..." << endl;
 
     Timer tim;
-    len_t istep = 0;    // Number of times 'solver->Solve()' has been called...
     while (!timestepper->IsFinished()) {
         // Take step
         real_t tNext = timestepper->NextTime();
@@ -279,7 +278,6 @@ void EquationSystem::Solve() {
         this->fluidGrid->Rebuild(tNext);
 
         try {
-            istep++;
             solver->Solve(tNext, dt);
 
             timestepper->ValidateStep();

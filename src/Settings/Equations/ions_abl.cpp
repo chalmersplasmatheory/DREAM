@@ -109,13 +109,12 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
     /// LOAD ION DATA ///
     /////////////////////
     // Count number of prescribed/dynamic charge states
-    len_t nZ0_prescribed=0, nZ_prescribed=0, nZ_dynamic=0, nZ0_dynamic=0;
+    len_t nZ_prescribed=0, nZ_dynamic=0, nZ0_dynamic=0;
     len_t *prescribed_indices = new len_t[nZ];
     len_t *dynamic_indices = new len_t[nZ];
     for (len_t i = 0; i < nZ; i++) {
         switch (types[i]) {
             case OptionConstants::ION_DATA_PRESCRIBED:
-                nZ0_prescribed += Z[i] + 1;
                 prescribed_indices[nZ_prescribed++] = i;
                 break;
 

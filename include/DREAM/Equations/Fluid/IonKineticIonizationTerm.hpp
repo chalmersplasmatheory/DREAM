@@ -18,7 +18,6 @@ namespace DREAM {
 
         OptionConstants::eqterm_ionization_mode ionization_mode;
         bool isPXiGrid;
-        bool collfreqModeIsFull;
         len_t id_ions, id_nfast;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;

@@ -125,7 +125,7 @@ RunawayFluid::~RunawayFluid(){
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
 	
-	if (this->nuS != nullptr)
+    if (this->nuS != nullptr)
 		delete this->nuS;
 	if (this->nuD != nullptr)
 		delete this->nuD;

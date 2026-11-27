@@ -108,7 +108,7 @@ void SolverNonLinear::Allocate() {
 void SolverNonLinear::AllocateJacobianMatrix() {
     if (this->jacobian != nullptr)
         delete this->jacobian;
-	this->jacobian = new FVM::BlockMatrix();
+    this->jacobian = new FVM::BlockMatrix();
 
 	for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
 		len_t id = nontrivial_unknowns[i];

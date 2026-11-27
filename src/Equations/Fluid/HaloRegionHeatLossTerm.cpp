@@ -177,7 +177,7 @@ void HaloRegionHeatLossTerm::SetWeights() {
 /**
  * SETDIFFWEIGHTS: Needed for DiagonalComplexTerm
  */
-void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t nMultiples) {
+void HaloRegionHeatLossTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/) {
     // Retrieve necessary arrays from the unknowns handler
     real_t *T_cold = unknowns->GetUnknownData(id_T_cold);
     real_t *W_i = unknowns->GetUnknownData(id_W_i);

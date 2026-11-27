@@ -63,7 +63,6 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 
 	// Get the major radius, to be used to properly normalize VpVol
 	real_t R0 = this->rGrid->GetR0();
-    rf = this->rf;
     qBgDrift = 1; //TODO Update if a self-consistent calculation of the q-profile becomes available
 
 	// If R0 is infinite, i.e. toroidicity is not included in the simulation,

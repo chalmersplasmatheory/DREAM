@@ -24,7 +24,7 @@ namespace DREAM {
         ~ConstantSPIVelocityPositionTerm();
 
 
-        const real_t *GetData() { return currentData; }
+        const real_t *GetData() override { return currentData; }
         void SetData(const real_t* xp_init, bool copy=true);
         void SetTimeDelay(const real_t *t_delay, bool copy=true);
         virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler* u) override;

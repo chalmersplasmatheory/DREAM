@@ -30,9 +30,11 @@ DREAM::TransportBC<T>::TransportBC(
 /**
  * Destructor.
  */
+namespace DREAM {
 template<typename T>
-DREAM::TransportBC<T>::~TransportBC() {
+TransportBC<T>::~TransportBC() {
     delete [] this->jacobianColumn;
+}
 }
 
 /**
@@ -155,7 +157,7 @@ void DREAM::TransportBC<T>::__SetElements(
         nr = this->grid->GetNr(),
         ir = nr-1;
 
-    __SetElements(f, GetCoefficient(ir+1));
+    __SetElements(f, GetCoefficient(ir+1), set_mode);
 }
 
 template<typename T>

@@ -22,8 +22,8 @@ namespace DREAM {
         );
         ~SPIHeatAbsorbtionTerm(){}
         
-        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 3; }   /*1 for ncold, 1 for Tcold and 1 for rp. NOTE: could be more due to non-locality! */
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 3; }   /*1 for ncold, 1 for Tcold and 1 for rp. NOTE: could be more due to non-locality! */
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
         virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;

@@ -61,7 +61,6 @@ namespace DREAM {
         PitchScatterFrequency *nuD;
         IonHandler *ions;
         CoulombLogarithm *lnLambda;
-        real_t thresholdToNeglectTrappedContribution;
 
         REPitchDistributionAveragedBACoeff *AveragedEFieldTerm;
         REPitchDistributionAveragedBACoeff *AveragedSynchrotronTerm;

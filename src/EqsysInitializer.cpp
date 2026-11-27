@@ -95,7 +95,7 @@ void EqsysInitializer::Execute(const real_t t0) {
         this->AddRule(COLLQTYHDL_HOTTAIL, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
     if (this->cqhRunaway != nullptr)
         this->AddRule(COLLQTYHDL_RUNAWAY, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
-	if (this->eqsys->GetBootstrap() != nullptr) {
+    if (this->eqsys->GetBootstrap() != nullptr) {
 		int_t id_Ni = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS);
 		if (this->unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER)) {
 			int_t id_Wi = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER);

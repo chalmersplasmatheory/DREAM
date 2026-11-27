@@ -254,27 +254,27 @@ void OtherQuantityHandler::DefineQuantities() {
 
     // Define on hot-tail grid
     #define DEF_HT(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {(void)nr_ht; (void)n1_ht; (void)n2_ht; FUNC}));
     #define DEF_HT_FR(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {(void)nr_ht; (void)n1_ht; (void)n2_ht; FUNC}));
     #define DEF_HT_F1(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {(void)nr_ht; (void)n1_ht; (void)n2_ht; FUNC}));
     #define DEF_HT_F2(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {(void)nr_ht; (void)n1_ht; (void)n2_ht; FUNC}));
 	#define DEF_HT_MUL(NAME, MUL, DESC, FUNC) \
-		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {FUNC}));
+		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](const real_t, QuantityData *qd) {(void)nr_ht; (void)n1_ht; (void)n2_ht; FUNC}));
 
     // Define on runaway grid
     #define DEF_RE(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {(void)nr_re; (void)n1_re; (void)n2_re; FUNC}));
     #define DEF_RE_FR(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {(void)nr_re; (void)n1_re; (void)n2_re; FUNC}));
     #define DEF_RE_F1(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {(void)nr_re; (void)n1_re; (void)n2_re; FUNC}));
     #define DEF_RE_F2(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {(void)nr_re; (void)n1_re; (void)n2_re; FUNC}));
 	#define DEF_RE_MUL(NAME, MUL, DESC, FUNC) \
-		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {FUNC}));
+		this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](const real_t, QuantityData *qd) {(void)nr_re; (void)n1_re; (void)n2_re; FUNC}));
 
     // fluid/...
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););

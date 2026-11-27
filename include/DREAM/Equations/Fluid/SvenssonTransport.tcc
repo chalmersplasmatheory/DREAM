@@ -64,8 +64,9 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
 /**
  * Destructor.
  */
+namespace DREAM {
 template<typename T>
-DREAM::SvenssonTransport<T>::~SvenssonTransport() {
+SvenssonTransport<T>::~SvenssonTransport() {
     delete [] this->param1d;
     delete [] this->r;
     delete [] this->p1;
@@ -82,6 +83,7 @@ DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     delete [] this->coeffTRXiP;
     delete [] this->coeffRP;
     delete [] this->integrand;
+}
 }
 
 

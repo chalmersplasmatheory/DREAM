@@ -250,11 +250,10 @@ void SimulationGenerator::ConstructEquation_n_re(
                 break;
             }
         len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
-        RunawayFluid *REFluid = eqsys->GetREFluid();
         eqsys->initializer->AddRule(
             id_n_re,
             EqsysInitializer::INITRULE_EVAL_FUNCTION,
-            [id_f_re,REFluid](FVM::UnknownQuantityHandler *unknowns, real_t *ninit){
+            [id_f_re](FVM::UnknownQuantityHandler *unknowns, real_t *ninit){
                 const real_t *f_re = unknowns->GetUnknownData(OptionConstants::UQTY_F_RE);
                 FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
                 const len_t nr = runawayGrid->GetNr();

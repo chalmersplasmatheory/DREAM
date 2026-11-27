@@ -20,7 +20,6 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
 
         len_t id_T_cold, id_n_cold, id_W_i, id_N_i, id_jtot;
-        real_t *T_cold, *n_cold;
         real_t mi; // Ion mass [kg]
         len_t Z; // Ion charge number 
 

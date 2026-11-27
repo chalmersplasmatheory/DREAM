@@ -16,7 +16,6 @@ namespace DREAM {
         NIST *nist;
         IonHandler *ionHandler;
 
-        bool initParamsInitialised = false;
         real_t *T_cold_init = nullptr;
         //real_t *n_cold_init = nullptr;
         len_t nr_init=0;

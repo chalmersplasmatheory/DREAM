@@ -22,7 +22,7 @@ namespace DREAM {
         ~ConstantSPIVelocityTerm(){delete [] this->data;}
 
 
-        const real_t *GetData() { return data; }
+        const real_t *GetData() override { return data; }
         void SetData(const real_t *vp, bool copy=true){
             if(copy){
                 real_t *data_vp=new real_t[3*nShard];
