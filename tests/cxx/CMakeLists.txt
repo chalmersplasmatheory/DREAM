@@ -11,6 +11,9 @@ set(dreamtests_dream
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/IonRateEquation.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/KnockOn.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/KnockOnQuadrature.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/MollerBoltzmannOperator.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/MollerEnergyKernel.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/MollerDeltaAngleKernel.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/MeanExcitationEnergy.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/DREAM/RunawayFluid.cpp"
 )
@@ -85,4 +88,3 @@ if (PETSC_FOUND)
     target_link_libraries(dreamtests PUBLIC "${PETSC_LIBRARIES}")
     add_definitions(${PETSC_DEFINITIONS})
 endif()
-
