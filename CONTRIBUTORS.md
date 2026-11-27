@@ -10,10 +10,11 @@ consists of
 
 Mathias Hoppe (KTH)
 Ida Ekmark (Chalmers)
-Lorenzo Votta (KTH)
-Oskar Vallhagen (Chalmers)
-Peter Halldestam (Max Planck Institute for Plasma Physics)
 Linn Ekman (KTH)
+Lorenzo Votta (KTH)
+Peter Halldestam (KTH)
+Björn Zaar (Chalmers)
+Ola Embreus
 
 # Contributors
 The following people have contributed to the development of DREAM (in
@@ -29,6 +30,7 @@ Ferenc Lengyel
 Ida Ekmark
 Ida Svenningsson
 Istvan Pusztai
+Javier Artola
 Jędrzej Walkowiak
 Liam Antonsson
 Linn Ekman
@@ -39,6 +41,7 @@ Luc Bouwmeester
 Lucas Unnerfelt
 Marcin Wilczyński
 Mathias Hoppe
+Nathan Schoonheere
 Ola Embreus
 Oskar Vallhagen
 Peter Halldestam
