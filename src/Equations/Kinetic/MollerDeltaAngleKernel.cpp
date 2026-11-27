@@ -208,7 +208,7 @@ len_t MollerDeltaAngleKernel::GetDeltaTableSize() const {
 		n += NxiK * nXiStarsTabulate * sliceSize;
 	}
 
-	return nrAllocated * n;
+	return n;
 }
 
 /**
