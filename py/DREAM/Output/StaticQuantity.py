@@ -27,7 +27,7 @@ class StaticQuantity:
         return f"({self.name}) Static quantity of size {self.data.shape}"
 
 
-    def __getitem(self, index):
+    def __getitem__(self, index):
         """
         Direct access to data.
         """
