@@ -9,6 +9,7 @@
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/TimeKeeper.hpp"
@@ -317,18 +318,41 @@ void RunawayFluid::FindRoot_fdf_bounded(real_t x_lower, real_t x_upper, real_t &
  * if a root of the provided gsl_function is not in the interval.
  */
 void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func ){
-    bool isLoUnderestimate = (gsl_func.function(*x_lower, gsl_func.params ) > 0);
-    bool isUpOverestimate = (gsl_func.function(*x_upper, gsl_func.params ) < 0);
+    // The interval is expanded by a factor 0.7 (downwards) or 1.4 (upwards)
+    // per iteration, so 200 iterations span a factor ~1e31 (~1e29). If the
+    // root is not bracketed by then, the function is most likely NaN (both
+    // comparisons below are then false), and the loops would never end.
+    const len_t max_iter = 200;
+    len_t iter = 0;
+    real_t f_lo = gsl_func.function(*x_lower, gsl_func.params);
+    real_t f_up = gsl_func.function(*x_upper, gsl_func.params);
+    bool isLoUnderestimate = (f_lo > 0);
+    bool isUpOverestimate = (f_up < 0);
     while(!isLoUnderestimate){
+        if (++iter > max_iter)
+            throw DREAMException(
+                "RunawayFluid::FindInterval: failed to bracket root after " LEN_T_PRINTF_FMT " downward expansions: "
+                "x_lower = %.6e, f(x_lower) = %.6e, x_upper = %.6e.",
+                max_iter, *x_lower, f_lo, *x_upper
+            );
         *x_upper = *x_lower;
         *x_lower *= 0.7;
-        isLoUnderestimate = (gsl_func.function(*x_lower, gsl_func.params ) > 0);
+        f_lo = gsl_func.function(*x_lower, gsl_func.params);
+        isLoUnderestimate = (f_lo > 0);
         isUpOverestimate = true;
     }
+    iter = 0;
     while (!isUpOverestimate){
+        if (++iter > max_iter)
+            throw DREAMException(
+                "RunawayFluid::FindInterval: failed to bracket root after " LEN_T_PRINTF_FMT " upward expansions: "
+                "x_lower = %.6e, x_upper = %.6e, f(x_upper) = %.6e.",
+                max_iter, *x_lower, *x_upper, f_up
+            );
         *x_lower = *x_upper;
         *x_upper *= 1.4;
-        isUpOverestimate = (gsl_func.function(*x_upper, gsl_func.params ) < 0);
+        f_up = gsl_func.function(*x_upper, gsl_func.params);
+        isUpOverestimate = (f_up < 0);
     }
 }
 
@@ -628,19 +652,29 @@ void RunawayFluid::CalculateCriticalMomentum(){
         gsl_func.params = &pStar_params;
 
 
-        if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
-            gsl_func.function = &(pStarFunctionAlt);
+        bool hesslow = (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW);
+        gsl_func.function = hesslow ? &(pStarFunctionAlt) : &(pStarFunction);
+        try {
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
-
-            real_t s = pStar*constTerm;
-            nuSnuDTerm = s*s*s*s + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
-        } else {
-	        gsl_func.function = &(pStarFunction);
-	        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
-
-            real_t s = pStar*constTerm;
-	        nuSnuDTerm = s*s*s*s;
+        } catch (DREAMException &ex) {
+            // Add the plasma state to the error message, to make it possible
+            // to tell which quantity made the pStar function ill-behaved
+            const real_t *nc = unknowns->GetUnknownData(id_ncold);
+            const real_t *Tc = unknowns->GetUnknownData(id_Tcold);
+            throw DREAMException(
+                "%s Critical momentum at ir = " LEN_T_PRINTF_FMT ": E_field = %.6e V/m, Eceff = %.6e V/m, "
+                "E (normalized, used) = %.6e, constTerm = %.6e, n_cold = %.6e m^-3, T_cold = %.6e eV, "
+                "pc (complete screening) = %.6e, pc (no screening) = %.6e.",
+                ex.what(), ir, E_term[ir], effectiveCriticalField[ir],
+                E, constTerm, nc[ir], Tc[ir], pc_COMPLETESCREENING[ir], pc_NOSCREENING[ir]
+            );
         }
+
+        real_t s = pStar*constTerm;
+        if (hesslow)
+            nuSnuDTerm = s*s*s*s + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
+        else
+            nuSnuDTerm = s*s*s*s;
         
         // Set 1/pc^2 which is to be used in the avalanche growth rate which contains this factor;
         // note that it is allowed to be negative for E<Eceff
