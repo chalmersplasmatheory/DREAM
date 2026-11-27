@@ -124,7 +124,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms,
-	struct StaticQuantityHandler::static_qtys*
+	struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -198,9 +198,12 @@ void SimulationGenerator::ConstructEquations(
         if (nXiStars < 2 || pitchOrder < 1)
             throw SettingsException("Boltzmann quadrature requires pitch>=1 and nxi>=2.");
 
-        eqsys->SetMollerKernelHandler(new MollerKernelHandler(
+		auto MKH = new MollerKernelHandler(
             hottailGrid, runawayGrid, pCutoff, nXiStars, poloidalOrder, pitchOrder
-        ));
+		);
+
+        eqsys->SetMollerKernelHandler(MKH);
+		staticQuantities->mollerKernelHandler = MKH;
     }
 
     // Hot-tail quantities

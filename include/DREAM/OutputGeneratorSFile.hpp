@@ -13,8 +13,6 @@ namespace DREAM {
 
 		virtual void SaveCodeInfo(const std::string&) override;
 		virtual void SaveGrids(const std::string&, bool) override;
-		virtual void SaveGridBoltzmann(const std::string&) override;
-		virtual void SaveGridBoltzmannDeltaKernel(const std::string&, const MollerDeltaAngleKernel*) override;
 		virtual void SaveIonMetaData(const std::string&) override;
 		virtual void SaveOtherQuantities(const std::string&) override;
 		virtual void SaveSettings(const std::string&) override;

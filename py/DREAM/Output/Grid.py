@@ -5,6 +5,7 @@ from .Equilibrium import Equilibrium
 from .OutputException import OutputException
 from .PXiGrid import PXiGrid
 from .PparPperpGrid import PparPperpGrid
+from .StaticQuantityHandler import StaticQuantityHandler
 
 
 class Grid:
@@ -25,6 +26,7 @@ class Grid:
         self.eq = None
         self.hottail = None
         self.runaway = None
+        self.static = StaticQuantityHandler(grid['static'])
 
         # Geometric quantities
         self.effectivePassingFraction = None

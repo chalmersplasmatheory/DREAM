@@ -25,8 +25,6 @@ namespace DREAM {
 
 		virtual void SaveCodeInfo(const std::string&) = 0;
 		virtual void SaveGrids(const std::string&, bool) = 0;
-		virtual void SaveGridBoltzmann(const std::string&) = 0;
-		virtual void SaveGridBoltzmannDeltaKernel(const std::string&, const MollerDeltaAngleKernel*) = 0;
 		virtual void SaveIonMetaData(const std::string&) = 0;
 		virtual void SaveOtherQuantities(const std::string&) = 0;
 		virtual void SaveSettings(const std::string&) = 0;

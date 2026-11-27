@@ -175,7 +175,10 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     }
 
 	// Write static quantities
-	this->staticQuantities->WriteQuantities(this->sf, group + "static/");
+	if (this->staticQuantities != nullptr) {
+		this->staticQuantities->InitializeQuantities();
+		this->staticQuantities->WriteQuantities(this->sf, group + "static/");
+	}
 }
 
 /**

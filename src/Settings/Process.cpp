@@ -134,10 +134,12 @@ void SimulationGenerator::LoadOutput(
 	struct StaticQuantityHandler::static_qtys *staticQuantities
 ) {
     std::string filename = s->GetString("output/filename");
-	std::vector<std::string> staticQuantitiesList = s->GetStringList("output/static_quantities");
+	std::vector<std::string> staticQuantitiesList = s->GetStringList("static/include");
 
+	EquationSystem *eqsys = sim->GetEquationSystem();
 	StaticQuantityHandler *staticQtyHandler = new StaticQuantityHandler(
-		staticQuantitiesList, staticQuantities
+		staticQuantitiesList, staticQuantities, eqsys->GetFluidGrid(),
+		eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid()
 	);
 
     sim->SetOutputGenerator(new OutputGeneratorSFile(
