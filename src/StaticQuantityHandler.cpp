@@ -55,7 +55,7 @@ void StaticQuantityHandler::ActivateQuantities() {
 
 		if (!added)
 			IO::PrintWarning(
-				IO::WARNING_STATIC_QUANTITY_NOT_FOUND,
+				IO::MESSAGE_GENERAL,
 				"The static quantity '%s' was requested, but not defined in "
 				"code. Please check the spelling of the quantity name.",
 				name.c_str()
